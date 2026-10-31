@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState, type ComponentType, type CSSP
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
 import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
-import type { DocumentPreviewProps } from '../document/contract.ts'
+import type { DocumentPreviewProps } from '../contract/document.ts'
 import type { PdfStore, PdfView } from './store.ts'
 import { renderPdfPage, type PdfDocument } from './document.ts'
 import { openPdf } from './runtime.ts'

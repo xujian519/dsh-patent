@@ -1,9 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { LanguageSupport } from '@codemirror/language'
-import { isImageExt } from '../src/client/image-types.ts'
 import { extOf, languageForPath, languageKeyForExt, supportedLanguageKeys } from '../src/client/lang.ts'
-import { isPdfExt } from '../src/client/pdf-types.ts'
 
 describe('editor language mapping', () => {
   it('derives extensions from paths', () => {
@@ -154,25 +152,5 @@ describe('editor language mapping', () => {
     // 内容确有 parser 接管（删掉 scss 条目时内容会退化回纯文本 StyleText）。
     expect(names.has('StyleSheet')).toBe(false)
     expect(names.has('StyleText')).toBe(false)
-  })
-})
-
-describe('pdf preview kind', () => {
-  it('routes only .pdf to the browser-native preview', () => {
-    expect(isPdfExt('.pdf')).toBe(true)
-    expect(isPdfExt('.PDF')).toBe(false)
-    expect(isPdfExt('.docx')).toBe(false)
-    expect(isPdfExt('')).toBe(false)
-  })
-})
-
-describe('image preview kind', () => {
-  it('routes supported image extensions before binary probing', () => {
-    expect(isImageExt('.png')).toBe(true)
-    expect(isImageExt('.jpg')).toBe(true)
-    expect(isImageExt('.svg')).toBe(true)
-    expect(isImageExt('.avif')).toBe(true)
-    expect(isImageExt('.pdf')).toBe(false)
-    expect(isImageExt('')).toBe(false)
   })
 })

@@ -2,7 +2,7 @@ import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, sy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it } from 'vitest'
-import { removeOwnedDirectory } from '../src/owned-directory.ts'
+import { removeOwnedDirectory } from '../scripts/owned-directory.ts'
 
 const roots: string[] = []
 function fixture(): string {

@@ -772,9 +772,6 @@
     "0d6bbfeee1ecc339e2a8ab3eda31c95d0ffcf884c1436ae41e66ebca2bdd1a82": 1,
     "6e73960a5b64493ed9d38bb0260b4d99d38e040932d9d44b71e8a8b1ebc8ec9a": 1
   },
-  "packages/client/ui-chat/tests/tool-call-tree.client.spec.ts": {
-    "427f7efc431dec431f6707ea0e4431c54fafc97efbcc9c93865d29f2488300d9": 1
-  },
   "packages/client/ui-commands/tests/browser-plugin.client.spec.ts": {
     "04984a2ce1486250236e638e0197da0a1a840855ed3975c59130a85358c7e5fe": 1
   },

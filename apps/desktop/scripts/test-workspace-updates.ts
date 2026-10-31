@@ -6,7 +6,7 @@ import { createRequire } from 'node:module'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createDevelopmentProjectMetadata, createPluginProfile } from '../src/project-manager.ts'
-import { removeOwnedDirectory } from '../src/owned-directory.ts'
+import { removeOwnedDirectory } from './owned-directory.ts'
 import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
 import { desktopTargetPlatform, developmentRuntimeDirectory, resolveDesktopBuildTarget } from './desktop-build-paths.mjs'
 

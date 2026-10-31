@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readFile, symlink, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createDevelopmentProjectMetadata } from '../src/project-manager.ts'
-import { removeOwnedDirectory } from '../src/owned-directory.ts'
+import { removeOwnedDirectory } from './owned-directory.ts'
 import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
 
 const repo = resolve(import.meta.dirname, '../../..')

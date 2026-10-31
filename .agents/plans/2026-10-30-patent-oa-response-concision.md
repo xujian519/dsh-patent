@@ -1186,7 +1186,7 @@ D-1 由用户于 2026-10-31 拍定：修改对照表与修改后独权全文**�
 1. **本机跑快照要三个前置**：`npx tsx native/system/scripts/build.ts --host-addon-only`（`native/system/packages/darwin-arm64/bin/system.node` 被 gitignore，新 worktree 没有，`dsh` 起不来）；`env -u CODEBUDDY_SAFE_DELETE_BULK_STATE_DIR -u CODEBUDDY_TOOL_CALL_ID`（harness 清临时 profile 目录时撞上批量删除护栏，报 `SAFE_DELETE_BULK_CONFIRM_REQUIRED`）；`DSH_SNAPSHOT_MAX_CONCURRENCY=2`（默认 5 并发下 10 个场景 30s 启动超时，单场景复跑全过）。
 2. **`refresh` 不改模型文本**：它只重写 pinned 侧车（`tool-schemas.expected.json`）与期望输出，模型说的话保持原样；所以工具描述一改，非 pinned 场景的请求头要靠 `refresh` 重写侧车，而「叙述写错阶段数」这类问题只能靠 `record`。本次两种都用了：先 `refresh` 让侧车与期望跟上，再 `record` 修文本。
 3. **`record` 不会写 `workspace.expected`**：它会写夹具与侧车，但工作区树期望是手维护的；`patent-oa-response` 因此先红后按 `outputs` 回填。若以后还要重录带 `workspace.final` 的场景，记得留出回填这一步。
-4. **`verify-tech-debt-counters` 仍红，且与本计划无关**：主工作树（master，`09a74da1f2`）同一门禁也红，数字更大（long-functions 187/208、large-files 74/95、v8-ignore 1272/1341、ts-expect-error 173/193，另有 `patent-workflow-run.ts` 858 与 `render-check-findings` 946→951 两条无裁定）。本工作树读数 206/93/1341/193、`manifests.ts` 852→855 的裁定已在 PR-8 补过。属仓库级既有漂移，不在本计划范围，记录于此以免误判成 PR 引入。
+4. **`verify-tech-debt-counters` 仍红，且与本计划无关**：主工作树（master）同一门禁也红，数字更大（long-functions 187/208、large-files 74/95、v8-ignore 1272/1341、ts-expect-error 173/193，另有 `patent-workflow-run.ts` 858 与 `render-check-findings` 946→951 两条无裁定）。本工作树读数 206/93/1341/193、`manifests.ts` 852→855 的裁定已在 PR-8 补过。属仓库级既有漂移，不在本计划范围，记录于此以免误判成 PR 引入。
 5. **工具目录的中英两侧不是同一套生成器**：英文由 `gen-tool-catalog` 生成，中文是人工译文 + 逐字一致的代码块；改工具描述要同时改两处，否则 `verify-translation-pairing` 报「code block #N diverges」。
 
 ### PR-12（2026-10-31）：P2-06 篇幅计数口径修正（执行中发现）

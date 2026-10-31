@@ -131,6 +131,13 @@ jobs:
       - name: Documentation checks
         run: pnpm run test:docs
 
+      - name: Module graph freshness
+        # `test:docs` reads documentation format and references but does not
+        # regenerate the package graph, so a package addition left
+        # `docs/module-graph*.md` stale without failing this lane. The check is
+        # keyless and reads workspace manifests only.
+        run: pnpm run verify-module-graph
+
   node-cad-render:
     # The FreeCAD and Inkscape smoke suites skip themselves when their executable
     # is missing, so the STEP → TechDraw and SVG → path chains shipped no CI

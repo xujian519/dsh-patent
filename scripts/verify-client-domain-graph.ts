@@ -236,7 +236,7 @@ export function compareBaseline(
 function readBaseline(): DomainGraphBaseline {
   const path = resolve(root, BASELINE_PATH)
   if (!existsSync(path)) return { entries: [] }
-  return parseBaseline(JSON.parse(readFileSync(path, 'utf8')) as unknown)
+  return parseBaseline(JSON.parse(readFileSync(path, 'utf8')))
 }
 
 /**

@@ -138,6 +138,12 @@ jobs:
         # keyless and reads workspace manifests only.
         run: pnpm run verify-module-graph
 
+      - name: Client domain layering
+        # The gate lived only in `check:all`, which no fork lane runs, so every
+        # cross-domain import stayed unreported. It reads client sources and the
+        # recorded baseline only: no key, no build.
+        run: pnpm run verify-client-domain-graph
+
   node-cad-render:
     # The FreeCAD and Inkscape smoke suites skip themselves when their executable
     # is missing, so the STEP → TechDraw and SVG → path chains shipped no CI

@@ -29,7 +29,7 @@ describe('desktop composition overlay', () => {
   // The overlay names packages outside the dsh CLI's dependency closure, which
   // is why the Host seeds the profile resolution table from its own manifest:
   // a mount this package does not declare would not resolve.
-  it.each(['desktop-shell', 'macos-tools', 'better-sidebar'])('declares %s for the resolution table', (id) => {
+  it.each(['desktop-shell', 'macos-tools'])('declares %s for the resolution table', (id) => {
     expect(Object.keys(manifest.dependencies)).toContain(row(id)?.name)
   })
 
@@ -38,7 +38,8 @@ describe('desktop composition overlay', () => {
     expect(row('macos-tools')?.disabled).toMatchObject({ __jsExpr: "process.platform !== 'darwin'" })
   })
 
-  it('keeps the workspace sidebar off the desktop surface', () => {
-    expect(row('better-sidebar')).toMatchObject({ name: '@deepseek-ai/dsh-better-sidebar', disabled: true })
+  it('does not mount the removed workspace sidebar package', () => {
+    expect(row('better-sidebar')).toBeUndefined()
+    expect(Object.keys(manifest.dependencies)).not.toContain('@deepseek-ai/dsh-better-sidebar')
   })
 })

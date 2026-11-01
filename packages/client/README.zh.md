@@ -99,7 +99,6 @@ kind: "package-group"
 | [`ui-directory-picker-browse/`](ui-directory-picker-browse/README.zh.md) | 面向工作区目录流程的应用内目录浏览界面 | — |
 | [`ui-directory-picker-native/`](ui-directory-picker-native/README.zh.md) | 驱动本地 Desktop 或 Host OS 选择器的原生目录选择界面 | — |
 | [`ui-file-drag/`](ui-file-drag/README.zh.md) | 应用级文件传输，并为拖拽失败提供本地化提示 | — |
-| [`better-sidebar/`](better-sidebar/README.zh.md) | 呈现按会话隔离的工作区右侧边栏：explorer、editor、terminal、git、side chat、subagent 与 browser 标签页 | `ctx.betterSidebar`（客户端） |
 | [`ui-open-in-app/`](ui-open-in-app/README.zh.md) | 在已安装应用中打开工作区目录的会话标题栏拆分按钮，以及文档预览里用默认应用打开单个文件的控件 | — |
 | [`ui-patent-teams/`](ui-patent-teams/README.zh.md) | 把 PatentTeams 监视面带回 Web UI：一张持久团队卡片与固定的「团队」会话视图 | — |
 

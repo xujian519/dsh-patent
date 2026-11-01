@@ -1,6 +1,0 @@
-{
-  "meta": {
-    "title": "Sidebar workspace",
-    "description": "Adds a VSCode-like right sidebar with explorer, editor, terminal, git, and browser tabs, isolated per session."
-  }
-}

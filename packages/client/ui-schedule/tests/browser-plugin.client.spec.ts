@@ -10,7 +10,6 @@ import { apply, inject } from '../src/client/index.ts'
 import { apply as applyNode } from '../src/index.ts'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import type {
   ScheduleId, ScheduleCatalogEntry, ScheduleDeleteInactiveResult, ScheduleUpdateRequest, ScheduleUpdateResult,
@@ -466,9 +465,8 @@ describe('ui-schedule browser half', () => {
       expect(openSession).not.toHaveBeenCalled()
       face.onOpenSession(record.sessionId)
       expect(openSession).toHaveBeenCalledWith(record.sessionId)
-      // This aggregate loads both compiler faces, and the Host face wins the merged
-      // `sessions` key; the Client store is what the plugin actually reads.
-      const sessions = ctx.sessions as object as ISessions
+      // Client Sessions store: list snapshots drive the open-session gating below.
+      const sessions = ctx.sessions
       const available = sessions.list.getSnapshot()
       const workspace = ctx.workspaces.list.getSnapshot()
       const sessionRead = vi.spyOn(sessions.list, 'getSnapshot')

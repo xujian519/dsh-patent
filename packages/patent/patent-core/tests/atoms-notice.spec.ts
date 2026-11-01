@@ -32,6 +32,8 @@ describe('oa-parse 原子', () => {
     expect(parsed.examinerArguments.length).toBeGreaterThan(0)
     expect(String(out.office_action_summary)).toContain('创造性（专利法第22条第3款）')
     expect(String(out.office_action_summary)).toContain('影响权利要求: 1, 2, 3, 4, 5')
+    // #653：oa-parse 作为 reference_documents 生产者，把引用文献写成可读文本供换位审查消费。
+    expect(String(out.reference_documents)).toContain('CN112345678A')
   })
 
   it('正文为空时降级并归因到原子', async () => {

@@ -266,6 +266,18 @@ export const LEGAL_GAP_CHECKS: Record<LegalGapProfile, readonly LegalGapCheckpoi
       notApplicable: state => state['amendment_basis_scope'] === '未检测到修改后权利要求',
       scopeKey: 'amendment_basis_scope',
     },
+    {
+      // 换位审查：确定性骨架可假阳性，故 severity 记 warn——不翻转 legal_gaps_passed，
+      // 但失败会出现在汇总里，避免「gate 从不拒绝」的空跑。反哺目标关掉：关键词缺口
+      // 不是采集阶段能补提的事实。
+      id: 'adversary-review',
+      provision: '换位审查（对立审查员视角的论证强度）',
+      label: '换位审查：遗漏驳回理由与证据缺口',
+      severity: 'warn',
+      assessKeys: ['adversary_review_report'],
+      failureKey: 'adversary_review_passed',
+      revisionTarget: false,
+    },
   ],
   invalidation: [
     EVIDENCE_CHECK,

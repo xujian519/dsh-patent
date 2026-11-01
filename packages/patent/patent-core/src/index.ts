@@ -275,9 +275,15 @@ export {
   detectEvidenceGaps,
   detectClaimsCoverage,
   identifyReviewDisputes,
+  statuteForEvidenceGap,
+  confidenceForEvidenceGap,
   assessArgumentStrength,
   computeReviewConfidence,
   buildReviewSummary,
+  MISSED_REJECTION_HEURISTIC_CONFIDENCE,
+  CITATION_GAP_HEURISTIC_CONFIDENCE,
+  INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE,
+  CLAIMS_COVERAGE_GAP_HEURISTIC_CONFIDENCE,
 } from './adversary/review.ts'
 
 // Patent analysis product contract + deterministic aggregator (Athena-inspired report).
@@ -544,7 +550,9 @@ export {
   REJECTION_ORDER,
   REJECTION_SHORT_LABELS,
   extractCitations,
+  describeCitation,
   formatOfficeActionSummary,
+  formatReferenceDocuments,
   identifyInvalidationGrounds,
   parseOfficeAction,
 } from './notice/index.ts'

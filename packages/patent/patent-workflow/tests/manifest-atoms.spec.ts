@@ -509,7 +509,7 @@ describe('内置 manifest 的收口阶段依赖声明', () => {
     )
   })
 
-  it('OA 答复：response-check 接在 adversary-review 之后、approval 之前，确定性原子不消费换位审查产出', () => {
+  it('OA 答复：response-check 接在 adversary-review 之后、legal-gaps 消费换位审查产出（#653）', () => {
     const check = stageOf('patent_oa_response_v1', 'response_check')
     expect(check?.atom).toBe('response-check')
     expect(check?.consumes).toBeUndefined()
@@ -517,8 +517,14 @@ describe('内置 manifest 的收口阶段依赖声明', () => {
       indexOf('patent_oa_response_v1', 'response_check'),
     )
     expect(indexOf('patent_oa_response_v1', 'response_check')).toBeLessThan(
+      indexOf('patent_oa_response_v1', 'legal_gaps'),
+    )
+    expect(indexOf('patent_oa_response_v1', 'legal_gaps')).toBeLessThan(
       indexOf('patent_oa_response_v1', 'approval'),
     )
+    // legal-gaps 以 state 键消费 adversary_review_*（见 LEGAL_GAP_CHECKS['oa-response']），
+    // 不经 consumes 投影——原子阶段靠 inputSchema / assessKeys 声明依赖。
+    expect(stageOf('patent_oa_response_v1', 'legal_gaps')?.atom).toBe('legal-gaps')
   })
 
   it('OA 答复：amendment-basis 接在 response-check 之后、approval 之前，原子直接读修改稿', () => {

@@ -514,10 +514,21 @@ export function parseOfficeAction(text: string): ParsedOfficeAction {
  * @param reference - 引用文献。
  * @returns `文献号（X 类）`；未标注相关性时只有文献号。
  */
-function describeCitation(reference: CitedReference): string {
+export function describeCitation(reference: CitedReference): string {
   return reference.relevancy === undefined
     ? reference.documentNumber
     : `${reference.documentNumber}（${reference.relevancy} 类）`
+}
+
+/**
+ * 把通知书引用的对比文件格式化为换位审查可读的 `reference_documents` 文本。
+ *
+ * @param citations - `oa-parse` / `ParsedOfficeAction.citations`。
+ * @returns 用顿号连接的文献描述；无引用时为空串。
+ */
+export function formatReferenceDocuments(citations: readonly CitedReference[]): string {
+  if (citations.length === 0) return ''
+  return citations.map(describeCitation).join('、')
 }
 
 /**

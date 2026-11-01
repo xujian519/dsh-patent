@@ -139,7 +139,7 @@ Stage params 可调整这些 handler。缺省键保留各原子默认值；畸�
 <a id="draft-model-controlled-drafts"></a>
 ## 受控草案模型
 
-`draft` 模块定义了受控草案契约，取代专利交付工具中由模型产出的 HTML：`SpecDraft` 用于 claims-spec 申请文件（著录项 `meta`（含抬头编号行与页脚印出的案卷号）、不带项号的 `claims`、多段 `abstract`、`figureFiles`、摘要附图号 `abstractFigure`（1 起，缺省 1），以及按 `SPEC_PART_HEADINGS` 五部分 keyed 的 `sections`（附图说明部分恰每幅附图一条列表项，条数等于 `figureFiles` 项数））；`TemplateDraft` 用于其余文书模板：`fields` 承载 `text` 文本槽（填入 `.fill` 值位）与 `choice` 选项槽（选中项的选项 id，多选组为 id 数组），`sections` 承载 `blocks` 正文块（paragraph/list，每段或每项一行）或 `rows` 数据行（等宽字符串数组，供表单数据行克隆）。块仅有 `paragraph`/`list`/`table` 三种；表题与权项编号由下游转换器生成，因此合法草案不会携带标题或任意表格标记。两通道共享的词汇——`SPEC_PART_ORDER` 与生成「图N为……；/。」附图说明的 `numberedFigureDescriptions`——也在这里持有，HTML 与 DOCX 转换器不可能分叉。`validateSpecDraft`/`validateTemplateDraft` 把无类型的工具 JSON 窄化为上述类型，并把全部违规聚合进一次抛出的 `DraftValidationError`，消息中对每个未知键列出可用项。支撑 `TemplateDraft` 校验的槽位注册表随 `dsh-patent-document` 分发。
+`draft` 模块定义了受控草案契约，取代专利交付工具中由模型产出的 HTML：`SpecDraft` 用于 claims-spec 申请文件（著录项 `meta`（含抬头编号行与页脚印出的案卷号）、不带项号的 `claims`、多段 `abstract`、`figureFiles`、摘要附图号 `abstractFigure`（1 起，缺省 1），以及按 `SPEC_PART_HEADINGS` 五部分 keyed 的 `sections`（附图说明部分恰每幅附图一条列表项，条数等于 `figureFiles` 项数，且每项只写图名与描述文字，不含图号前缀与句末标点））；`TemplateDraft` 用于其余文书模板：`fields` 承载 `text` 文本槽（填入 `.fill` 值位）与 `choice` 选项槽（选中项的选项 id，多选组为 id 数组），`sections` 承载 `blocks` 正文块（paragraph/list，每段或每项一行）或 `rows` 数据行（等宽字符串数组，供表单数据行克隆）。块仅有 `paragraph`/`list`/`table` 三种；表题与权项编号由下游转换器生成，因此合法草案不会携带标题或任意表格标记。两通道共享的词汇——`SPEC_PART_ORDER` 与生成「图N为……；/。」附图说明的 `numberedFigureDescriptions`——也在这里持有，HTML 与 DOCX 转换器不可能分叉。`validateSpecDraft`/`validateTemplateDraft` 把无类型的工具 JSON 窄化为上述类型，并把全部违规聚合进一次抛出的 `DraftValidationError`，消息中对每个未知键列出可用项。支撑 `TemplateDraft` 校验的槽位注册表随 `dsh-patent-document` 分发。
 
 <a id="model-experience"></a>
 ## Model Experience

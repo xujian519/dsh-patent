@@ -484,6 +484,15 @@ describe('abstract and claim coverage edge cases', () => {
     const ids = out.not_assessed.map(item => item.id)
     expect(ids).toContain('abstract-drawing-designation')
     expect(ids).toContain('drawing-legibility')
+    // A26.3 由 enablement-report 原子判定，确定性规则不再列为未评估。
+    expect(ids).not.toContain('enablement')
+  })
+
+  it('records an upstream enablement report as an evaluated input', () => {
+    const report = '充分公开实体判定（A26.3）：通过'
+    const out = validateSpecification({ text: VALID_SPEC, enablement_report: report })
+    const evaluated = out.evaluated.find(item => item.field === 'enablement_report')
+    expect(evaluated).toMatchObject({ field: 'enablement_report', chars: report.length })
   })
 
   it('warns at 50% claim coverage and passes when fully covered', () => {

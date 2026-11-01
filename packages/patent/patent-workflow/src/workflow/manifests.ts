@@ -282,6 +282,12 @@ export const patentDisclosureManifest: WorkflowManifest = {
       params: { mode: 'spec', text_key: 'specification', claims_key: 'claims_draft' },
     },
     {
+      id: 'enablement_report',
+      strategy: 'chain',
+      description: '充分公开实体判定（A26.3）：逐独权特征在说明书中定位实施例摘录，并复核原文锚点',
+      atom: 'enablement-report',
+    },
+    {
       id: 'slop_clean',
       strategy: 'chain',
       description: '反套话评分门（未通过自动带证据提示回退权利要求修订）',

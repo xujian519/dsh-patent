@@ -65,6 +65,7 @@ export const specCheckAtom: Atom = {
     'figure_analysis',
     'drawing_count',
     'abstract_figure_number',
+    'enablement_report',
   ],
   outputSchema: [
     'spec_check_report',
@@ -169,6 +170,7 @@ export class SpecCheckHandler implements StageHandler {
       state,
       getStateString(state, 'abstract_figure_number_key', 'abstract_figure_number'),
     )
+    const enablementReport = firstStateString(state, ['enablement_report'])
     const validationInput: ValidateSpecificationInput = {
       text,
       ...(claims.trim().length > 0 ? { claims } : {}),
@@ -182,6 +184,10 @@ export class SpecCheckHandler implements StageHandler {
       ...(abstractFigureNumber !== undefined ? { abstract_figure_number: abstractFigureNumber } : {}),
       ...(claimUnits !== undefined ? { claim_units: claimUnits } : {}),
       ...(coverageEntries !== undefined ? { coverage_entries: coverageEntries } : {}),
+      // 上游 enablement-report 原子的报告只作为评估输入记录；降级标记不是报告。
+      ...(enablementReport.length > 0 && !enablementReport.startsWith('[WORKFLOW_DEGRADED]')
+        ? { enablement_report: enablementReport }
+        : {}),
     }
 
     if (mode === 'spec') {

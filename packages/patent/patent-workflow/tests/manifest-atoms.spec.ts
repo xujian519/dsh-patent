@@ -85,7 +85,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     const disclosure = manifestOf('patent_disclosure_v1').stages.map(stage => stage.id)
     expect(disclosure).not.toContain('dispute-framing')
     expect(disclosure).not.toContain('dispute-framing-refine')
-    expect(disclosure).toHaveLength(23)
+    expect(disclosure).toHaveLength(24)
   })
 
   it('修正阶段排在已锁定的时间基准或程序理由之后，且阶段数在默认预算内', () => {
@@ -100,7 +100,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     }
     const expectedCounts: Record<string, number> = {
       patent_novelty_v1: 14,
-      patent_disclosure_v1: 23,
+      patent_disclosure_v1: 24,
       patent_inventiveness_v1: 16,
       patent_patentability_v1: 16,
       patent_oa_response_v1: 15,
@@ -131,7 +131,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     })
     const expectedLlmStages: Record<string, number> = {
       patent_novelty_v1: 4,
-      patent_disclosure_v1: 10,
+      patent_disclosure_v1: 11,
       patent_inventiveness_v1: 7,
       patent_patentability_v1: 5,
       patent_oa_response_v1: 5,

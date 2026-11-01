@@ -581,7 +581,7 @@ describe('workflow retry validation', () => {
   it('patentDisclosureManifest: structure and retry declarations are valid', () => {
     expect(() => { validateWorkflowManifest(patentDisclosureManifest) }).not.toThrow()
     expect(patentDisclosureManifest.id).toBe('patent_disclosure_v1')
-    expect(patentDisclosureManifest.stages).toHaveLength(23)
+    expect(patentDisclosureManifest.stages).toHaveLength(24)
     const consistency = patentDisclosureManifest.stages.find(s => s.id === 'consistency')!
     expect(consistency.retry?.rewindTo).toBe('extract_problem')
     expect(consistency.retry!.whenOutputMatches).toMatch(/不一致\|矛盾\|缺少\|孤立/)
@@ -590,7 +590,7 @@ describe('workflow retry validation', () => {
     expect(consistency.atom).toBe('pfe-consistency')
     const atoms = patentDisclosureManifest.stages.filter(s => s.atom !== undefined).map(s => s.atom)
     expect([...new Set(atoms)].sort()).toEqual([
-      'approval-gate', 'citation-check', 'draft-claims', 'draft-specification', 'eligibility', 'extract', 'figure-analysis', 'groundedness', 'keywords',
+      'approval-gate', 'citation-check', 'draft-claims', 'draft-specification', 'eligibility', 'enablement-report', 'extract', 'figure-analysis', 'groundedness', 'keywords',
       'legal-gaps', 'merge', 'novelty', 'pfe-consistency', 'prior-art-filter', 'search', 'slop-gate',
       'spec-check', 'time-baseline',
     ])

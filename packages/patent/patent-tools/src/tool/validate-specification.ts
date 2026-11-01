@@ -124,6 +124,7 @@ export function validateSpecification(input: ValidateSpecificationInput): Valida
       title: input.title,
       abstract: input.abstract,
       claims: input.claims,
+      enablement_report: input.enablement_report,
     }),
   }
 }
@@ -136,8 +137,8 @@ export function validateSpecification(input: ValidateSpecificationInput): Valida
  * @returns the not-assessed items.
  */
 function notAssessedItems(input: ValidateSpecificationInput, hasDrawings: boolean): SpecNotAssessed[] {
+  // A26.3 由 enablement-report 原子（带原文锚点）判定，确定性规则不再把它列为未评估。
   const items: SpecNotAssessed[] = [
-    { id: 'enablement', label: '充分公开（A26.3）', reason: '能否实现需要所属领域技术人员作技术判断' },
     { id: 'claim-support-breadth', label: '权利要求概括范围（A26.4）', reason: '概括是否超出实施例支持需要实体判断' },
   ]
   if (input.title !== undefined && input.title.trim().length > 0) {

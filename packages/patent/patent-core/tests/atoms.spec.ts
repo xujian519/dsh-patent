@@ -107,7 +107,7 @@ describe('registry', () => {
     expect(globalAtomRegistry.lookup('temp-global-atom')).toBeUndefined()
   })
 
-  it('registerBuiltinAtoms 注册 28 个内置原子与 handler', () => {
+  it('registerBuiltinAtoms 注册 29 个内置原子与 handler', () => {
     registerBuiltinAtoms()
     const names = ListAtoms().map(a => a.name).sort()
     expect(names).toEqual([
@@ -123,6 +123,7 @@ describe('registry', () => {
       'dispute-framing',
       'dispute-framing-refine',
       'draft-claims',
+      'enablement-report',
       'evidence-check',
       'extract',
       'groundedness',

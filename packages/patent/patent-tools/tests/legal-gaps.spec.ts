@@ -384,6 +384,46 @@ describe('legal-gaps 原子', () => {
     })
   })
 
+  it('披露清单：充分公开报告存在但判定缺失时记未评估，不静默判通过', async () => {
+    const items = await itemsOf({
+      profile: 'disclosure',
+      enablement_report: '充分公开实体判定（A26.3）：通过',
+    })
+    expect(items.find(item => item.id === 'enablement')).toMatchObject({
+      status: 'not-assessed',
+      severity: 'warn',
+    })
+    expect(items.find(item => item.id === 'enablement')?.evidence).toContain(
+      '缺少 state.enablement_passed 的布尔判定',
+    )
+  })
+
+  it('披露清单：充分公开实体判定为 false 时形成警告项', async () => {
+    const items = await itemsOf({
+      profile: 'disclosure',
+      enablement_report: '充分公开实体判定（A26.3）：未通过',
+      enablement_passed: false,
+    })
+    expect(items.find(item => item.id === 'enablement')).toMatchObject({
+      status: 'failed',
+      severity: 'warn',
+      provision: '专利法第26条第3款',
+    })
+    expect(items.find(item => item.id === 'enablement')?.evidence).toBe('state.enablement_passed = false')
+  })
+
+  it('披露清单：降级报告不构成充分公开判定', async () => {
+    const items = await itemsOf({
+      profile: 'disclosure',
+      enablement_report: '[WORKFLOW_DEGRADED] 未配置模型客户端',
+      enablement_passed: true,
+    })
+    expect(items.find(item => item.id === 'enablement')).toMatchObject({
+      status: 'not-assessed',
+      severity: 'warn',
+    })
+  })
+
   it('创造性清单：技术问题校验失败形成阻断项，结论阶段产出覆盖 A22.3', async () => {
     const out = await new LegalGapsHandler().execute({
       state: {

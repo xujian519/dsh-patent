@@ -21,6 +21,7 @@
  * - evidence-check.ts：evidence-check（无效/复审证据形式、期限与关联性审查）
  * - adversary-model.ts：adversary-model（对立审查员模型：独立评估答复计划的薄弱环节）
  * - adversary-review.ts：adversary-review（换位重跑：从对立审查员视角评估最终意见陈述书）
+ * - enablement-report.ts：enablement-report（充分公开 A26.3：逐独权特征锚点复核）
  *
  * 注：rule-lock 原子位于 @deepseek-ai/dsh-patent-law，由插件 effect 注册。
  */
@@ -160,3 +161,9 @@ export {
   adversaryReviewAtom,
   AdversaryReviewHandler,
 } from './adversary-review.ts'
+export {
+  enablementReportAtom,
+  EnablementReportHandler,
+  type EnablementRecord,
+  type EnablementResult,
+} from './enablement-report.ts'

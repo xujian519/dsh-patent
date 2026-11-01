@@ -480,6 +480,16 @@ function evaluateCheckpoint(
   }
   const assessedKey = checkpoint.assessKeys.find(key => hasValue(state[key]))
   if (assessedKey !== undefined) {
+    // 报告存在不等于有判定：声明了判定键的检查必须写明布尔结论，否则不能判通过。
+    if (checkpoint.failureKey !== undefined && state[checkpoint.failureKey] !== true) {
+      return {
+        ...base,
+        status: 'not-assessed',
+        evidence: supplemented(
+          `已由 state.${assessedKey} 产出报告，但缺少 state.${checkpoint.failureKey} 的布尔判定`,
+        ),
+      }
+    }
     return { ...base, status: 'passed', evidence: `已由 state.${assessedKey} 评估` }
   }
   return {

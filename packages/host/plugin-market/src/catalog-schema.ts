@@ -10,10 +10,10 @@
 import { z } from 'zod'
 
 /** Protocol version this package accepts from a source manifest. */
-export const CATALOG_MANIFEST_VERSION = '1.0.0' as const
+const CATALOG_MANIFEST_VERSION = '1.0.0' as const
 
 /** The query parameters the protocol defines; a source declares its subset. */
-export const CATALOG_QUERY_PARAMS = ['q', 'category', 'capability', 'cursor', 'limit', 'sort', 'locale'] as const
+const CATALOG_QUERY_PARAMS = ['q', 'category', 'capability', 'cursor', 'limit', 'sort', 'locale'] as const
 
 const urlSchema = z.string().max(2048).refine((value) => {
   try {
@@ -61,18 +61,4 @@ const catalogEntryFields = {
 export const catalogProviderPageSchema = z.object({
   items: z.array(z.object(catalogEntryFields).strict()).max(200),
   nextCursor: z.string().max(256).optional(),
-}).strict()
-
-/** The normalized snapshot entry the host exposes (docs/schemas/catalog-snapshot.schema.json). */
-export const catalogSnapshotEntrySchema = z.object(catalogEntryFields).strict()
-
-/** Query the host may send a source (docs/schemas/catalog-query.schema.json). */
-export const catalogQuerySchema = z.object({
-  q: z.string().max(256).optional(),
-  category: z.string().max(64).optional(),
-  capability: z.string().max(64).optional(),
-  cursor: z.string().max(256).optional(),
-  limit: z.number().int().min(1).max(200).optional(),
-  sort: z.string().max(32).optional(),
-  locale: z.string().max(32).optional(),
 }).strict()

@@ -88,7 +88,7 @@ export interface InsertTextRequest {
 }
 
 /** Trigger hit used to open one source programmatically. */
-export interface InputTriggerHit {
+interface InputTriggerHit {
   readonly trigger: '/' | '@'
   readonly query: string
   readonly quoted: boolean
@@ -173,7 +173,7 @@ export type DraftAttachmentId = Branded<'DraftAttachmentId'>
  * and the boolean answer IS the event's bail value (true ⟺ the editor
  * applied the edit after phase and span guards).
  */
-export interface InputTarget {
+interface InputTarget {
   /** Replace the leading trigger span with a command chip and enter claimed (span-CAS'd). */
   beginCommand(claim: CommandClaim, span: TokenSpan): boolean
   /** Replace the trigger span with one reference chip (span-CAS'd). */
@@ -287,9 +287,6 @@ export interface InputNotice {
   readonly text: string
   readonly seq: number
 }
-
-/** Guard union of the scoped consume-token event, checked by the shell. */
-export type ConsumeTokenGuard = ConsumeTokenRequest['guard']
 
 /** Published input state (the currency; per-session). */
 export interface InputState {

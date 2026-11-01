@@ -49,16 +49,8 @@ export interface OutgoingShare {
   readonly access?: unknown
 }
 
-/** One durable audit entry shown in the owner share history. */
-export interface ShareAuditEntry {
-  readonly id: string
-  readonly action: string
-  readonly createdAt: string
-  readonly actor?: string
-}
-
 /** Browser-safe summary of the persisted ACL scope for one share. */
-export interface ConfirmedShareAccess {
+interface ConfirmedShareAccess {
   readonly mode: 'open' | 'selected'
   readonly selectedCount: number
   readonly deploymentCount: number

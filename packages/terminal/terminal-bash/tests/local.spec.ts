@@ -226,7 +226,9 @@ describe.skipIf(process.platform === 'win32')('terminal-bash real shell', () => 
     const answer = ctx.terminals.startSend(agent, created.sessionId, { text: 'accepted', submit: true })
     const answered = await answer.done
     expect(answered.waitReason).toBe('stdin_read')
-    expect(answered.viewport).toContain('ANSWER=accepted')
+    // The answer print races the foreground handoff back to bash, so the rendered
+    // line is read from retained scrollback like the marker above.
+    expect(await waitForRendered(ctx, agent, created.sessionId, 'ANSWER=accepted', 5_000)).toContain('ANSWER=accepted')
     await ctx.terminals.kill(agent, created.sessionId, 'test cleanup')
   }, 35_000)
 

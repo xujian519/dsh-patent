@@ -5,9 +5,15 @@ import {
   reviewFinalDraft,
   detectMissedRejections,
   detectEvidenceGaps,
+  identifyReviewDisputes,
+  statuteForEvidenceGap,
+  confidenceForEvidenceGap,
   assessArgumentStrength,
   computeReviewConfidence,
   buildReviewSummary,
+  CITATION_GAP_HEURISTIC_CONFIDENCE,
+  INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE,
+  CLAIMS_COVERAGE_GAP_HEURISTIC_CONFIDENCE,
   globalAtomRegistry,
   globalStageHandlerRegistry,
   registerBuiltinAtoms,
@@ -39,6 +45,7 @@ describe('adversary-review atom', () => {
       'adversary_review_disputes',
       'adversary_review_confidence',
       'adversary_review_full_report',
+      'adversary_review_passed',
     ])
   })
 
@@ -112,6 +119,82 @@ describe('detectEvidenceGaps', () => {
   it('无输入时返回空', () => {
     const gaps = detectEvidenceGaps('', '', undefined)
     expect(gaps).toEqual([])
+  })
+})
+
+describe('identifyReviewDisputes 法条归因与置信度分档（#653）', () => {
+  it('新颖性遗漏驳回理由归 A22.2，且关键词启发式置信度低于 0.9', () => {
+    const disputes = identifyReviewDisputes(
+      { rejectionTypes: ['novelty'], affectedClaims: [1] },
+      ['novelty'],
+      [],
+    )
+    expect(disputes).toHaveLength(1)
+    expect(disputes[0]?.statute).toBe('A22.2')
+    expect(disputes[0]?.confidence).toBeLessThan(0.9)
+    expect(disputes[0]?.confidence).toBeGreaterThan(0)
+  })
+
+  it('不清楚（clarity）遗漏驳回理由归 A26.4，不标成 A22.3', () => {
+    const disputes = identifyReviewDisputes(
+      { rejectionTypes: ['clarity'], affectedClaims: [2] },
+      ['clarity'],
+      [],
+    )
+    expect(disputes[0]?.statute).toBe('A26.4')
+    expect(disputes[0]?.statute).not.toBe('A22.3')
+  })
+
+  it('仅新颖性通知书下的对比文件缺口归 A22.2，不默认 A22.3', () => {
+    const disputes = identifyReviewDisputes(
+      { rejectionTypes: ['novelty'], affectedClaims: [1] },
+      [],
+      ['最终产物未引用对比文件内容'],
+    )
+    expect(disputes).toHaveLength(1)
+    expect(disputes[0]?.statute).toBe('A22.2')
+    expect(disputes[0]?.statute).not.toBe('A22.3')
+  })
+
+  it('权利要求覆盖缺口归 A26.4', () => {
+    const disputes = identifyReviewDisputes(
+      { rejectionTypes: ['claim-clarity'], affectedClaims: [1, 2] },
+      [],
+      ['最终产物未引用任何权利要求编号（共 2 项权项标记未覆盖）'],
+    )
+    expect(disputes[0]?.statute).toBe('A26.4')
+  })
+
+  it('无通知书驳回类型时，对比文件缺口不捏造 A22.3', () => {
+    const disputes = identifyReviewDisputes(undefined, [], ['最终产物未引用对比文件内容'])
+    expect(disputes[0]?.statute).toBe('unknown')
+  })
+})
+
+describe('statuteForEvidenceGap / confidenceForEvidenceGap', () => {
+  it('对比文件缺口遇到未映射驳回类型时返回 unknown', () => {
+    expect(
+      statuteForEvidenceGap('最终产物未引用对比文件内容', {
+        rejectionTypes: ['not-a-real-ground'],
+      }),
+    ).toBe('unknown')
+  })
+
+  it('无法归因关键词的缺口不捏造 A22.3', () => {
+    expect(statuteForEvidenceGap('论证力度不足', { rejectionTypes: ['novelty'] })).toBe('unknown')
+  })
+
+  it('按缺口文案分档置信度，未命中关键词时回落创造性档', () => {
+    expect(confidenceForEvidenceGap('最终产物未引用对比文件内容')).toBe(
+      CITATION_GAP_HEURISTIC_CONFIDENCE,
+    )
+    expect(confidenceForEvidenceGap('通知书指出创造性问题但最终产物未论证')).toBe(
+      INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE,
+    )
+    expect(confidenceForEvidenceGap('最终产物未引用任何权利要求编号')).toBe(
+      CLAIMS_COVERAGE_GAP_HEURISTIC_CONFIDENCE,
+    )
+    expect(confidenceForEvidenceGap('论证力度不足')).toBe(INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE)
   })
 })
 
@@ -238,17 +321,96 @@ describe('handler execute', () => {
     expect(result.adversary_review_confidence).toBeGreaterThanOrEqual(0)
   })
 
-  it('无通知书时，证据缺口争议点使用空权项列表', async () => {
+  it('无通知书时，证据缺口争议点使用空权项列表且不捏造 A22.3', async () => {
     const handler = new AdversaryReviewHandler()
     const result = await handler.execute({
       state: {
         draft: '本申请具有创造性',
         claims: '权利要求1：一种结构',
-        reference_documents: 'D1 公开了阀体与直管加热结构',
+        // 须含 CN 文献号，才能触发 extractReferenceKeywords 的对比文件引用检查。
+        reference_documents: 'CN1234567A 公开了阀体与直管加热结构',
       },
     })
-    const disputes = result.adversary_review_disputes as Array<{ statute: string; claims: number[] }>
-    expect(disputes.some(dispute => dispute.statute === 'A22.3' && dispute.claims.length === 0)).toBe(true)
+    const disputes = result.adversary_review_disputes as Array<{
+      statute: string
+      claims: number[]
+      point: string
+    }>
+    const citationDispute = disputes.find(dispute => dispute.point.includes('对比文件'))
+    expect(citationDispute).toBeDefined()
+    expect(citationDispute?.claims).toEqual([])
+    expect(citationDispute?.statute).toBe('unknown')
+    expect(disputes.every(dispute => dispute.statute !== 'A22.3')).toBe(true)
+  })
+
+  it('reference_documents 为空时，从 office_action.citations 派生对比文件文本', async () => {
+    const handler = new AdversaryReviewHandler()
+    const withCitations = await handler.execute({
+      state: {
+        draft: '本申请具有创造性，符合专利法第22条第3款',
+        claims: '权利要求1',
+        office_action: JSON.stringify({
+          rejectionTypes: ['inventiveness'],
+          affectedClaims: [1],
+          citations: [{ documentNumber: 'CN1234567A', claimsAffected: [1] }],
+        }),
+      },
+    })
+    const withoutCitations = await handler.execute({
+      state: {
+        draft: '本申请具有创造性，符合专利法第22条第3款',
+        claims: '权利要求1',
+        office_action: JSON.stringify({
+          rejectionTypes: ['inventiveness'],
+          affectedClaims: [1],
+          citations: [],
+        }),
+      },
+    })
+    // 有引用文献时应跑到对比文件引用检查；无引用时不应凭空产出「未引用对比文件」缺口。
+    const withGaps = (withCitations.adversary_review_full_report as { evidenceGaps: string[] }).evidenceGaps
+    const withoutGaps = (withoutCitations.adversary_review_full_report as { evidenceGaps: string[] })
+      .evidenceGaps
+    expect(withGaps.some(gap => gap.includes('对比文件'))).toBe(true)
+    expect(withoutGaps.some(gap => gap.includes('对比文件'))).toBe(false)
+  })
+
+  it('citations 派生时跳过非法条目，并接受合法 relevancy / 非数组 claimsAffected', async () => {
+    const handler = new AdversaryReviewHandler()
+    const result = await handler.execute({
+      state: {
+        draft: '本申请具有创造性，符合专利法第22条第3款',
+        claims: '权利要求1',
+        office_action: JSON.stringify({
+          rejectionTypes: ['inventiveness'],
+          affectedClaims: [1],
+          citations: [
+            null,
+            ['not-an-object'],
+            { documentNumber: '   ' },
+            { documentNumber: 'CN1111111A', relevancy: 'not-a-code', claimsAffected: '1' },
+            { documentNumber: 'CN1234567A', relevancy: 'X', claimsAffected: [1] },
+          ],
+        }),
+      },
+    })
+    const gaps = (result.adversary_review_full_report as { evidenceGaps: string[] }).evidenceGaps
+    // 合法 documentNumber 仍应派生出对比文件文本并触发缺口检查。
+    expect(gaps.some(gap => gap.includes('对比文件'))).toBe(true)
+  })
+
+  it('论证严重不足时 adversary_review_passed 为 false', async () => {
+    const handler = new AdversaryReviewHandler()
+    const result = await handler.execute({
+      state: {
+        draft: '本申请符合专利法规定',
+        office_action: JSON.stringify({
+          rejectionTypes: ['novelty', 'inventiveness'],
+          affectedClaims: [1],
+        }),
+      },
+    })
+    expect(result.adversary_review_passed).toBe(false)
   })
 
   it('共享 state 含上游中间产物时，审查结果与干净 state 完全相同', async () => {

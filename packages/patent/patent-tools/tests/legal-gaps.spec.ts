@@ -69,7 +69,7 @@ describe('legal-gaps 原子', () => {
     expect(legalGapsAtom.inputSchema).toContain('amendment_basis_scope')
   })
 
-  it('答复清单：两项检查均通过时判定通过，并给出法条依据', async () => {
+  it('答复清单：检查均通过时判定通过，并给出法条依据', async () => {
     const out = await new LegalGapsHandler().execute({
       state: {
         profile: 'oa-response',
@@ -81,6 +81,8 @@ describe('legal-gaps 原子', () => {
         amendment_basis_report: '修改依据检查：通过',
         amendment_basis_passed: true,
         amendment_basis_scope: '原始权利要求书、原说明书',
+        adversary_review_report: '论证强度：充分；整体置信度：80.0%',
+        adversary_review_passed: true,
       },
     })
     expect(out['legal_gaps_passed']).toBe(true)
@@ -89,9 +91,33 @@ describe('legal-gaps 原子', () => {
     expect(report).toContain('无阻断项')
     expect(report).toContain('专利法第26条第3款')
     expect(report).toContain('专利法第33条')
+    expect(report).toContain('换位审查')
     expect(report).toContain('不替代审查意见')
     const items = out['legal_gaps_items'] as LegalGapItem[]
     expect(items.every(item => item.status === 'passed')).toBe(true)
+  })
+
+  it('答复清单：换位审查未通过记为 warn 项，不翻转 legal_gaps_passed（#653）', async () => {
+    const out = await new LegalGapsHandler().execute({
+      state: {
+        profile: 'oa-response',
+        response_check_report: '答复规范检查：通过',
+        response_check_passed: true,
+        response_concision_report: '答复表达质量检查：通过',
+        response_concision_passed: true,
+        amendment_basis_report: '修改依据检查：通过',
+        amendment_basis_passed: true,
+        adversary_review_report: '论证强度：严重不足；遗漏 1 项驳回理由',
+        adversary_review_passed: false,
+      },
+    })
+    expect(out['legal_gaps_passed']).toBe(true)
+    const items = out['legal_gaps_items'] as LegalGapItem[]
+    expect(items.find(item => item.id === 'adversary-review')).toMatchObject({
+      status: 'failed',
+      severity: 'warn',
+      evidence: 'state.adversary_review_passed = false',
+    })
   })
 
   it('答复清单：答复检查失败时形成阻断项（G-13 反例）', async () => {
@@ -127,6 +153,8 @@ describe('legal-gaps 原子', () => {
         response_concision_passed: true,
         amendment_basis_report: '修改依据检查：通过',
         amendment_basis_passed: true,
+        adversary_review_report: '论证强度：充分',
+        adversary_review_passed: true,
       },
     })
     expect(out['legal_gaps_passed']).toBe(true)
@@ -145,6 +173,8 @@ describe('legal-gaps 原子', () => {
         response_concision_passed: false,
         amendment_basis_report: '修改依据检查：通过',
         amendment_basis_passed: true,
+        adversary_review_report: '论证强度：充分',
+        adversary_review_passed: true,
       },
     })
     expect(out['legal_gaps_passed']).toBe(true)
@@ -167,6 +197,8 @@ describe('legal-gaps 原子', () => {
       amendment_basis_report: '修改依据检查：通过（A33 不适用）',
       amendment_basis_passed: true,
       amendment_basis_scope: '未检测到修改后权利要求',
+      adversary_review_report: '论证强度：充分',
+      adversary_review_passed: true,
     })
     expect(items.find(item => item.id === 'amendment-basis')?.status).toBe('not-applicable')
   })
@@ -178,11 +210,13 @@ describe('legal-gaps 原子', () => {
       'response-compliance',
       'response-concision',
       'amendment-basis',
+      'adversary-review',
     ])
     const report = String(out['legal_gaps_report'])
-    expect(report).toContain('3 项未评估')
+    expect(report).toContain('4 项未评估')
     expect(report).toContain('专利法第26条第3款')
     expect(report).toContain('专利法第33条')
+    expect(report).toContain('换位审查')
     expect(report).toContain('未被任何确定性阶段覆盖')
   })
 
@@ -451,8 +485,12 @@ describe('legal-gaps 原子', () => {
         profile: 'oa-response',
         response_check_report: '答复规范检查：通过',
         response_check_passed: true,
+        response_concision_report: '答复表达质量检查：通过',
+        response_concision_passed: true,
         amendment_basis_report: '修改依据检查：通过',
         amendment_basis_passed: true,
+        adversary_review_report: '论证强度：充分',
+        adversary_review_passed: true,
       },
     })
     expect(out['revision_targets']).toEqual([])

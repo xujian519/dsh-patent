@@ -46,7 +46,13 @@ export {
   detectEvidenceGaps,
   detectClaimsCoverage,
   identifyReviewDisputes,
+  statuteForEvidenceGap,
+  confidenceForEvidenceGap,
   assessArgumentStrength,
   computeReviewConfidence,
   buildReviewSummary,
+  MISSED_REJECTION_HEURISTIC_CONFIDENCE,
+  CITATION_GAP_HEURISTIC_CONFIDENCE,
+  INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE,
+  CLAIMS_COVERAGE_GAP_HEURISTIC_CONFIDENCE,
 } from './review.ts'

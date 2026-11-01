@@ -206,6 +206,57 @@ export function detectClaimsCoverage(finalDraft: string, claims: string): string
 }
 
 /**
+ * 关键词未命中驳回理由的启发式置信度。
+ *
+ * 低于 0.9：确定性骨架只做字面扫描，不能当高置信度实体判断。
+ */
+export const MISSED_REJECTION_HEURISTIC_CONFIDENCE = 0.6
+
+/** 对比文件引用缺口的启发式置信度。 */
+export const CITATION_GAP_HEURISTIC_CONFIDENCE = 0.75
+
+/** 创造性论证缺口的启发式置信度。 */
+export const INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE = 0.7
+
+/** 权利要求覆盖缺口的启发式置信度。 */
+export const CLAIMS_COVERAGE_GAP_HEURISTIC_CONFIDENCE = 0.65
+
+/**
+ * 按证据缺口文案与通知书驳回类型归因法条；无可靠来源时返回 `unknown`，不默认 A22.3。
+ *
+ * @param gap - 证据缺口文案。
+ * @param officeAction - 通知书结构化字段。
+ * @returns 规范化法条编号或 `unknown`。
+ */
+export function statuteForEvidenceGap(
+  gap: string,
+  officeAction: AdversaryReviewOfficeAction | undefined,
+): string {
+  if (gap.includes('创造性')) return 'A22.3'
+  if (gap.includes('权利要求')) return 'A26.4'
+  if (gap.includes('对比文件')) {
+    for (const ground of officeAction?.rejectionTypes ?? []) {
+      const statute = GROUND_TO_STATUTE.get(ground)
+      if (statute !== undefined) return statute
+    }
+    return 'unknown'
+  }
+  return 'unknown'
+}
+
+/**
+ * 按证据缺口类型给出启发式置信度分档。
+ * @param gap - 证据缺口文案。
+ * @returns 置信度 [0,1]。
+ */
+export function confidenceForEvidenceGap(gap: string): number {
+  if (gap.includes('对比文件')) return CITATION_GAP_HEURISTIC_CONFIDENCE
+  if (gap.includes('创造性')) return INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE
+  if (gap.includes('权利要求')) return CLAIMS_COVERAGE_GAP_HEURISTIC_CONFIDENCE
+  return INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE
+}
+
+/**
  * 识别争议点：从最终产物角度识别需要关注的争议。
  *
  * @param officeAction - 通知书结构化字段。
@@ -228,19 +279,19 @@ export function identifyReviewDisputes(
       claims: officeAction?.affectedClaims ?? [],
       point: `遗漏驳回理由：${ground}`,
       relation: 'missed_by_baseline',
-      confidence: 0.9,
+      confidence: MISSED_REJECTION_HEURISTIC_CONFIDENCE,
       tag: 'heuristic',
     })
   }
 
-  // 从证据缺口生成争议点
+  // 从证据缺口生成争议点：法条随缺口来源归因，不一律写 A22.3。
   for (const gap of evidenceGaps) {
     disputes.push({
-      statute: 'A22.3', // 默认归为创造性相关
+      statute: statuteForEvidenceGap(gap, officeAction),
       claims: officeAction?.affectedClaims ?? [],
       point: `证据缺口：${gap}`,
       relation: 'disagreement',
-      confidence: 0.7,
+      confidence: confidenceForEvidenceGap(gap),
       tag: 'heuristic',
     })
   }
@@ -357,9 +408,13 @@ function getRejectionKeywords(ground: string): string[] {
     novelty: ['新颖性', 'A22.2', '第二十二条第二款'],
     inventiveness: ['创造性', 'A22.3', '第二十二条第三款', '三步法'],
     utility: ['实用性', 'A22.4', '第二十二条第四款'],
-    disclosure: ['说明不充分', 'A26.3', '第二十六条第三款'],
-    'claim-clarity': ['权利要求不清楚', 'A26.4', '第二十六条第四款'],
+    disclosure: ['说明不充分', '充分公开', 'A26.3', '第二十六条第三款'],
+    clarity: ['不清楚', '权利要求不清楚', 'A26.4', '第二十六条第四款'],
+    support: ['得不到说明书支持', '说明书支持', 'A26.4', '第二十六条第四款'],
+    'claim-clarity': ['权利要求不清楚', '不清楚', 'A26.4', '第二十六条第四款'],
+    'necessary-features': ['必要技术特征', 'A26.4', '第二十六条第四款'],
     amendment: ['修改超范围', 'A33', '第三十三条'],
+    scope: ['修改超范围', 'A33', '第三十三条'],
   }
   return keywordMap[ground] ?? [ground]
 }

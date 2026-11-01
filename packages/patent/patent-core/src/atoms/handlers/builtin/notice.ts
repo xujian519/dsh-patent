@@ -19,6 +19,7 @@ import {
   REJECTION_LABELS,
   REJECTION_PATTERNS,
   formatOfficeActionSummary,
+  formatReferenceDocuments,
   parseOfficeAction,
   type NoticeRejectionGround,
   type NoticeRejectionType,
@@ -47,7 +48,7 @@ export const oaParseAtom: Atom = {
   description: '审查意见通知书解析：驳回类型、引用文献、涉及权项、审查员论点（纯函数，不调用模型）',
   category: 'extract',
   inputSchema: ['input'],
-  outputSchema: ['office_action', 'office_action_summary'],
+  outputSchema: ['office_action', 'office_action_summary', 'reference_documents'],
 }
 
 /** oa-parse 执行器：解析通知书正文，输出结构化结果与中文摘要。 */
@@ -58,7 +59,8 @@ export class OaParseHandler implements StageHandler {
   /**
    * 解析通知书正文；正文为空时降级。
    * @param input - 阶段执行输入（state 携带文书正文）。
-   * @returns `office_action`（JSON）与 `office_action_summary`（中文摘要）两键。
+   * @returns `office_action`（JSON）、`office_action_summary`（中文摘要）与
+   *   `reference_documents`（引用文献可读文本，供 adversary-review 等下游消费）。
    */
   // oxlint-disable-next-line typescript/require-await -- StageHandler contract requires async execute
   async execute(input: StageExecuteInput): Promise<PipelineState> {
@@ -70,6 +72,7 @@ export class OaParseHandler implements StageHandler {
     return {
       office_action: JSON.stringify(parsed),
       office_action_summary: formatOfficeActionSummary(parsed),
+      reference_documents: formatReferenceDocuments(parsed.citations),
     }
   }
 }

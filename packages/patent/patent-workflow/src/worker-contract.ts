@@ -74,7 +74,10 @@ export type WorkerOutputValidation = {
   degradationReason?: string | undefined
 }
 
-/** Worker 单次执行记录（输入输出有效性、是否降级、起止与耗时）。 */
+/**
+ * Worker 单次执行记录（输入输出有效性、是否降级、起止与耗时）。
+ * 经包入口 `export *` 挂在 `@deepseek-ai/dsh-patent-workflow` 公开面上，供外部编排读取 worker 遥测。
+ */
 export type WorkerExecutionRecord = {
   workerName: string
   inputValid: boolean

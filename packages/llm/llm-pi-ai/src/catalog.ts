@@ -115,7 +115,7 @@ const THINKING_FORMAT_GATE: Record<PiAiThinkingFormat, true> = {
 export const SUPPORTED_THINKING_FORMATS = Object.keys(THINKING_FORMAT_GATE) as readonly PiAiThinkingFormat[]
 
 /** The output-cap field spellings pi-ai accepts. */
-export type PiAiMaxTokensField = NonNullable<OpenAICompletionsCompat['maxTokensField']>
+type PiAiMaxTokensField = NonNullable<OpenAICompletionsCompat['maxTokensField']>
 
 /** Drift gate over {@link PiAiMaxTokensField}; an upstream spelling added here fails compilation until named. */
 const MAX_TOKENS_FIELD_GATE: Record<PiAiMaxTokensField, true> = {
@@ -127,7 +127,7 @@ const MAX_TOKENS_FIELD_GATE: Record<PiAiMaxTokensField, true> = {
 export const MAX_TOKENS_FIELDS = Object.keys(MAX_TOKENS_FIELD_GATE) as readonly PiAiMaxTokensField[]
 
 /** The reasoning-budget field spellings pi-ai accepts. */
-export type PiAiThinkingTokenBudgetField = NonNullable<OpenAICompletionsCompat['thinkingTokenBudgetField']>
+type PiAiThinkingTokenBudgetField = NonNullable<OpenAICompletionsCompat['thinkingTokenBudgetField']>
 
 /** An upstream reasoning-budget spelling must be classified before it can be configured. */
 const THINKING_TOKEN_BUDGET_FIELD_GATE: Record<PiAiThinkingTokenBudgetField, true> = {
@@ -140,7 +140,7 @@ const THINKING_TOKEN_BUDGET_FIELD_GATE: Record<PiAiThinkingTokenBudgetField, tru
 export const THINKING_TOKEN_BUDGET_FIELDS = Object.keys(THINKING_TOKEN_BUDGET_FIELD_GATE) as readonly PiAiThinkingTokenBudgetField[]
 
 /** The prompt-cache marker conventions pi-ai accepts. */
-export type PiAiCacheControlFormat = NonNullable<OpenAICompletionsCompat['cacheControlFormat']>
+type PiAiCacheControlFormat = NonNullable<OpenAICompletionsCompat['cacheControlFormat']>
 
 /** Drift gate over {@link PiAiCacheControlFormat}; a new upstream convention fails compilation until named. */
 const CACHE_CONTROL_FORMAT_GATE: Record<PiAiCacheControlFormat, true> = {
@@ -151,7 +151,7 @@ const CACHE_CONTROL_FORMAT_GATE: Record<PiAiCacheControlFormat, true> = {
 export const CACHE_CONTROL_FORMATS = Object.keys(CACHE_CONTROL_FORMAT_GATE) as readonly PiAiCacheControlFormat[]
 
 /** The request-state placeholders a `chat_template_kwargs` value may name. */
-export type PiAiChatTemplateVar = Extract<ChatTemplateKwargValue, { $var: string }>['$var']
+type PiAiChatTemplateVar = Extract<ChatTemplateKwargValue, { $var: string }>['$var']
 
 /** Drift gate over {@link PiAiChatTemplateVar}; a new upstream placeholder fails compilation until named. */
 const CHAT_TEMPLATE_VAR_GATE: Record<PiAiChatTemplateVar, true> = {
@@ -472,6 +472,7 @@ type AssertNever<T extends never> = T
 /**
  * Proof that every documented field is one a gate offers. A field the profile
  * declares past the gates fails compilation with its own name in the error.
+ * Intentionally unreferenced at runtime: exporting the alias forces the check.
  */
 export type EveryProfileFieldIsOffered = AssertNever<Exclude<keyof PiAiCompatProfile, OfferedCompatField>>
 
@@ -479,6 +480,7 @@ export type EveryProfileFieldIsOffered = AssertNever<Exclude<keyof PiAiCompatPro
  * Proof that every offered field is documented. A gate entry flipped to
  * `offer` without a profile field fails compilation with its own name in the
  * error, which is the half a schema alone cannot catch.
+ * Intentionally unreferenced at runtime: exporting the alias forces the check.
  */
 export type EveryOfferedFieldIsDocumented = AssertNever<Exclude<OfferedCompatField, keyof PiAiCompatProfile>>
 
@@ -496,6 +498,7 @@ type UpstreamCompat = OpenAICompletionsCompat & OpenAIResponsesCompat & Anthropi
  * `resolveModelCompat`'s cast to `ModelCompat` would hide it; a narrower one
  * refuses a value the provider accepts, which is how an upgrade that widens a
  * union would otherwise leave configuration silently behind.
+ * Intentionally unreferenced at runtime: exporting the alias forces the check.
  */
 export type EveryProfileFieldMatchesUpstream = AssertTrue<
   PiAiCompatProfile extends Partial<Pick<UpstreamCompat, OfferedCompatField>>
@@ -655,7 +658,7 @@ export interface PiAiModelProfile {
 export type PiAiModelOverride = Omit<PiAiModelProfile, 'id'>
 
 /** The route-level facts model materialization reads. */
-export interface RouteCatalogRequest {
+interface RouteCatalogRequest {
   /** Provider route key, stamped onto every materialized model. */
   provider: string
   /** Wire protocol override; absent defers to each catalog model's own API. */

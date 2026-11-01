@@ -392,6 +392,20 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-tools/src/tool/generate-structure-figure.ts` | 拆分 | 800 | 类型、模型 I/O、渲染收尾已分模块；入口保留 schema 与工具装配 |
 <!-- structure-baseline:end -->
 
+### 客户端与实验域大文件裁定（2026-11-02，Issue #654）
+
+#654 点名的六个文件里，`better-sidebar` 的 `Sidebar.tsx` 与 `state.ts` 已随该包在 PR #677 整体删除；其余五个保留为「接受」。当前全仓计数为 186 个 >150 行函数、89 个 >800 行文件，与上方计数表一致。裁定按 #86 的「能说出切割换来什么」作出：五个文件都已是所在界面的组合根，可独立命名的子面已拆成兄弟模块，余下的是同一次渲染的状态、事件与 JSX；再切会把同一组 props 与草稿状态原样转交，行数下降而调用面不变。上限是裁定当日的行数，出现第二个消费方或新增职责时须重新定性。该表不在 `verify-tech-debt-counters` 的审计域内，由人工复审维护；审计域（`packages/patent`、`packages/legal`、`packages/document`）仍由上方结构裁定表机检。
+
+| 文件 | 行数 | 裁定 | 上限 | 理由 |
+| --- | ---: | --- | ---: | --- |
+| `packages/client/ui-schedule/src/client/TaskDetail.tsx` | 2231 | 接受 | 2231 | 单个保留任务的详情页：时间、cron、频率格式化、时区、历史与菜单已分别在 `task-timing.ts`、`task-cron.ts`、`schedule-format.ts`、`recent-time-zones.ts`、`DeliveryHistory.tsx`、`TaskMenu.tsx`。余下是规则/记录两个标签的页面编排；`RuleCard`（392 行）与 `CronRows`（227 行）共用同一份草稿、权威记录与保存回调，拆出只会把草稿的读取与回写分到两个文件 |
+| `packages/client/ui-plugin-manager/src/client/PluginManagerPage.tsx` | 1887 | 接受 | 1887 | 插件管理页的组合根：状态机在 `manager-store.ts`（1527 行），文案投影在 `presentation.ts`，版本区与 bundle 详情已拆成 `versions.tsx`、`BundleDetailSection.tsx`。余下是目录卡片、详情页与安装向导；`InstallDialog`（489 行）只被本页调用，带 12 个回调与共享的 `InstallState`，抽出只改变文件归属，不减少回调或状态 |
+| `packages/client/ui-workspace/src/client/rows/WorkspaceBrowser.tsx` | 1579 | 接受 | 1579 | 工作区/会话浏览区的组合根：行渲染在 `Rows.tsx`（813 行），树投影在 `tree.ts`，持久化在 `stores.ts`，目录流在 `WorkspacePicker.tsx`。`WorkspaceBrowser`（671 行）与 `SessionTree`（375 行）共享同一组 store 选择器、会话状态与搜索请求；拆成兄弟文件要把三十余个选择器与回调逐层传递 |
+| `packages/client/ui-trajectory/src/client/trajectory-record-inspector.tsx` | 1003 | 接受 | 1003 | 记录检查器的组合根：payload/schema、timing、usage、markdown、prompt diff、detail tabs 与 presentation 已是同目录模块。`RecordInspector`（684 行）按标签把这些面板装进详情栏；再拆只是把已有的二十余个 props 转交一层 |
+| `packages/experimental/ptc-runtime-python/src/supervisor.ts` | 902 | 接受 | 902 | Python 子进程单次运行的生命周期：`superviseChildRun`（766 行）与其内部匿名阶段（704 行）共享子进程句柄、三路流、abort、帧上限与输出台账，边界由进程事件而非职责划分。拆函数需要把运行期状态装进更大的 deps 对象并跨模块传递，正好是 2026-09-15 从 `index.ts` 收拢到本文件的反向操作 |
+
+重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
+
 - **2026-11-02 A26.4 概括范围判定**:`lint.v8-ignore` 由 1312 升至 **1313**;A1 锚点件的 `matchRange` 对两个平行下标的取值守卫补一处带理由的豁免(`indexOf` 命中保证下标落在数组内),其余新增分支由用例覆盖。`structure.long-functions` 与 `structure.large-files` 不变;`manifests.ts` 因披露链新增 `claim_breadth` 阶段由 859 升至 **871**,接受上限同步重定。
 - **2026-10-28 文档工作室覆盖率豁免退休**:`lint.v8-ignore` 由 1270 升至 **1272**;`ui-document-studio` 撤回最后 4 条 coverage `exclude`(StudioView / document-deliverables / file-reads / client/index),包内 9 个源文件补齐到逐文件 100%;补齐过程中不可达的编译器收窄与防御守卫改为带理由的豁免,其中计入本计数的两处——`document-deliverables.ts` 的折叠索引守卫(提前 `continue`,其后的合并路径仍计入统计)与 `client/index.ts` 的重试窗口「会话已离开」守卫(离开会话必经 catalog 订阅触发 `stopRetry`);`StudioView.tsx` 的两处捕获组收窄不计入该计数,该行统计的路径 spec 只收 `src` 下的 `.ts`。其余新增分支由用例覆盖。
 - **2026-10-27 CI 门槛清理**:`lint.v8-ignore` 由 1271 降至 **1270**;`figure-set-consistency.ts` 的 `matchAll` 偏移取值被 lint 判为不必要空值合并,去掉 `?? 0` 后原「`RegExpStringIterator` 必带 `index`」的豁免随之删除,该函数本就由用例覆盖;其余计数不变。
@@ -560,7 +574,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 **2026-09-15 收尾**:Issue #86 已关闭,其清单上七个在范围的文件全部拆完——`client/connection/src/client/fixture.ts` 4052 → 2288、`client/ui-trajectory/src/client/TrajectoryTable.tsx` 3208 → 693、`typert/generator/src/analyzer.ts` 3235 → 1253、`experimental/code-runtime-python/src/index.ts` 2441 → 364、`core/session/src/index.ts` 1281 → 488、`core/tools/src/ptc.ts` 386 → 372、`acp/acp/src/index.ts` 543 → 503(`apply` 仍 341 行;此行的起始值此前记为 543 且被当作现值,2026-09-15 实测为 503)。四条贯穿规则、十二文件清单、每批落地了什么都记在 `.agents/notes/implemented/simplification/2026-09-14-god-file-split-plan.md`,逐刀的记录见 09-14/09-15 各条台账项。
 
-清单上余下四个候选,均因缺证成理由而未动,留在本段等待有人能说出切割换来什么:`client/better-sidebar/src/client/state.ts`(1900)与 `Sidebar.tsx`(1775)——#86 已把它们点为克隆中心,其正解是去重,再拆只会把一处文件内克隆变成一处跨文件克隆;`core/tools/src/index.ts`(1913)与 `self-evolve/self-evolve-basic/src/index.ts`(1857)——两者都在 #86 记录的行数之下或持平。`subagent/subagent/src/continuation.ts`(550)已从 1483 收敛,随 #86 销案。
+清单上余下候选,均因缺证成理由而未动,留在本段等待有人能说出切割换来什么:`core/tools/src/index.ts` 已由后续的工具准入重构降到 **412** 行,不再是候选;`self-evolve/self-evolve-basic/src/index.ts` 当前 **2580** 行,文件内是自演进循环的各阶段实现。`client/better-sidebar` 连同其 `state.ts`/`Sidebar.tsx` 已由 PR #677 整包移除,该候选不再有指称对象。`subagent/subagent/src/continuation.ts`(550)已从 1483 收敛,随 #86 销案。
 
 下表是 2026-08-17 探查时的原始记录,除本段点名的文件外未逐行复核(其中 `host/apiproxy` 已随上游删除)。
 
@@ -712,9 +726,9 @@ hygiene 16/16 PASS、doc-sync 43/43 PASS、duplication 0 clones / 2350 files / 4
 - **L5 skill-filesystem abort listener**：`:167` → `:172`（台账已定性无害）
 - **L5 llm-pi-ai 错误分类靠正则**：`stream.ts:31-70` → `:35-72`（XXX 注释保留，等上游）
 - **L5 tool-todo 双 schema 库混用**：`index.ts:11-13` → `:9-10`
-- **M6 better-sidebar** `state.ts` 1900 / `Sidebar.tsx` 1775：不变，缺证成理由
-- **M6 `core/tools/src/index.ts`**：1913 → **1932（+19）**，恶化
-- **M6 `self-evolve-basic/src/index.ts`**：1857，不变
+- **M6 better-sidebar** `state.ts` 1900 / `Sidebar.tsx` 1775：该包已由 PR #677 整包移除，行号不再有指称对象
+- **M6 `core/tools/src/index.ts`**：1913 → **412**，已随工具准入重构收敛
+- **M6 `self-evolve-basic/src/index.ts`**：1857 → **2580**，继续增长
 - **M10 sdk `settleStreams` 定时器泄漏**：`client.ts:444-449` → `:464-469`，立为 Issue #170——**2026-09-16 已收敛**（PR #173）：改为手写 promise 并在 `streamsSettled` 先结算时清定时器，等待时长不变；见 `.agents/notes/implemented/bug-fix/2026-09-16-sdk-stream-settle-timer.md`
 - **M10 gateway 同构扫描循环**：`index.ts:117-134`/`:233-260` → `:272-287`/`:636-664`，立为 Issue #171——**2026-09-16 已收敛**（PR #175）：六步前缀抽为 `remoteBindingValues()` 生成器，两个消费方各自保留分叉校验，行为不变；见 `.agents/notes/implemented/simplification/2026-09-16-gateway-remote-service-scan.md`
 - **M10 llm-deepseek vs llm-pi-ai 平行重建**：llm-deepseek 已集中到 `common/defaults.ts`；llm-pi-ai 仍内联，部分收敛

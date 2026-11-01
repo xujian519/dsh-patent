@@ -22,7 +22,7 @@ import { runShellProcess } from './child.ts'
 import type { ProcessScope } from './child.ts'
 
 /** What the caller must supply to start one process. */
-export interface ProcessStartOptions {
+interface ProcessStartOptions {
   /** Command source for `bash -c`, or undefined when `argv` names a program. */
   script?: string | undefined
   /** The program and its arguments. */

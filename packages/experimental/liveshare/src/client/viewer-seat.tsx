@@ -25,10 +25,10 @@ import css from './viewer-seat.module.css'
 export const VIEWER_SEAT_PRIORITY = -10
 
 /** Which fact one seat states; also the seat's own data attribute. */
-export type ViewerSeatKind = 'model' | 'permission'
+type ViewerSeatKind = 'model' | 'permission'
 
 /** One read-only or selectable statement about the Session this page presents. */
-export interface ViewerSeatProps {
+interface ViewerSeatProps {
   /** Fact this seat states. */
   readonly kind: ViewerSeatKind
   /** What this seat states, already localized. */

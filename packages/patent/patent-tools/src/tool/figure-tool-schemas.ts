@@ -29,7 +29,7 @@ export const LAYOUT_SCHEMA = {
 
 
 /** 电路图元件条目 schema。 */
-export const CIRCUIT_COMPONENT_SCHEMA = {
+const CIRCUIT_COMPONENT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: {
@@ -62,7 +62,7 @@ export const CIRCUIT_INPUT_SCHEMA = {
 } as const
 
 /** 曲线图数据序列 schema。 */
-export const PLOT_SERIES_SCHEMA = {
+const PLOT_SERIES_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: {
@@ -92,7 +92,7 @@ export const PLOT_INPUT_SCHEMA = {
 } as const
 
 /** 二维点 schema（[x, y]，毫米）。 */
-export const POINT_SCHEMA = { type: 'array', required: true, items: { type: 'number' } } as const
+const POINT_SCHEMA = { type: 'array', required: true, items: { type: 'number' } } as const
 
 /**
  * 三维坐标 schema（剖切平面参数与零件尺寸共用；模型坐标不是图面坐标，故与 {@link POINT_SCHEMA} 分开）。

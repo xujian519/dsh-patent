@@ -63,7 +63,7 @@ type ShareRegistrationSource = Pick<
 }
 
 /** Node process and argv that start the owner gateway worker. */
-export interface TunnelProcessCommand {
+interface TunnelProcessCommand {
   readonly executable: string
   readonly args: readonly string[]
 }
@@ -93,7 +93,7 @@ function tunnelCommand(): TunnelProcessCommand {
 }
 
 /** Owner state, credential, and worker channels one host's registration and timers read. */
-export interface TunnelSupervisionDeps {
+interface TunnelSupervisionDeps {
   /** Host context, read for the optional title services the reconcile step uses. */
   readonly ctx: Context
   /** Shares this host publishes; registration replay walks them. */

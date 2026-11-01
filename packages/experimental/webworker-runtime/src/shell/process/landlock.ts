@@ -6,7 +6,7 @@ import type { ShellDirent, ShellFileSystem, ShellStats } from '../types.ts'
 import type { VirtualExecutable, VirtualExecutableExit } from './virtual-executables.ts'
 
 /** Parsed invocation of the native launcher's unchanged argv grammar. */
-export type LandlockInvocation =
+type LandlockInvocation =
   | { readonly kind: 'probe' }
   | {
     readonly kind: 'run'
@@ -16,7 +16,7 @@ export type LandlockInvocation =
   }
 
 /** Launcher-owned failure; callers print its message with the `landlock-run:` prefix. */
-export class LandlockLauncherError extends Error {}
+class LandlockLauncherError extends Error {}
 
 /**
  * Parse the native launcher's argv grammar.

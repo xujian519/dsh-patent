@@ -28,7 +28,7 @@ export const GLYPH_DESCENT_RATIO = 0.12
  * 止点可能落在边界上或落进 0.0005 毫米；贴着框边不算穿过（字身离框边还有余量），只有
  * 真正进入框内才报。
  */
-export const GLYPH_BOX_TOLERANCE_MM = 0.01
+const GLYPH_BOX_TOLERANCE_MM = 0.01
 
 /**
  * 全角码点区间（含首尾）：Unicode East Asian Width 取 W 与 F 的常用范围。逐码点

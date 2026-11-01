@@ -14,13 +14,13 @@ import { MM_PER_USER_UNIT, parseLengthMm, resolveSvgViewport } from './svg-viewp
  * 绘图侧标注同一材料轮廓分组的属性名（见 `section-diagram.ts` 的 `polygonElement`）。
  * 同一零件的多个轮廓各给一段是输入约定；没有这个标注时复核只能把每段各自当成一件。
  */
-export const HATCH_GROUP_ATTRIBUTE = 'data-dsh-hatch-group'
+const HATCH_GROUP_ATTRIBUTE = 'data-dsh-hatch-group'
 /**
  * 绘图侧标注线段角色的属性名（见 `section-diagram.ts` 的 `segmentElement`）：值为
  * {@link LEADER_ROLE} 的线段是引线。引线止于文字占位框外框，参与「贯穿」判定才有的
  * 可读性；「净距」判据必须排除它，否则工具自己画的每条引线都会被报成贴线。
  */
-export const ROLE_ATTRIBUTE = 'data-dsh-role'
+const ROLE_ATTRIBUTE = 'data-dsh-role'
 /** 引线的角色取值。 */
 export const LEADER_ROLE = 'leader'
 const DEFAULT_STROKE_WIDTH = 1
@@ -46,19 +46,19 @@ export type Poly = readonly Point[]
 /** 子路径：顶点序列与是否闭合（闭合子路径隐含最后一点回到首点）。 */
 export type SubPath = { readonly points: Poly; readonly closed: boolean }
 /** 仿射矩阵 `[a b c d e f]`：`x' = a·x + c·y + e`、`y' = b·x + d·y + f`（SVG `matrix()` 同序）。 */
-export type Matrix = readonly [number, number, number, number, number, number]
+type Matrix = readonly [number, number, number, number, number, number]
 /** 文字占位框经变换后的像：`O`、`O+e1`、`O+e1+e2`、`O+e2`。 */
-export type Quad = readonly [Point, Point, Point, Point]
+type Quad = readonly [Point, Point, Point, Point]
 
 /**
  * 语义分组：Graphviz 把节点与边各自包在 `<g class="node|edge">` 内，节点标签与
  * 节点轮廓、边标签与边路径因此同组。复核据此区分「同一语义元素内部的排版贴靠」
  * 与「跨元素的真实压线」。
  */
-export type ScanGroup = { readonly id: number; readonly kind: 'node' | 'edge' }
+type ScanGroup = { readonly id: number; readonly kind: 'node' | 'edge' }
 
 /** 一个描边图形（元素可能含多条子路径）。 */
-export type Shape = {
+type Shape = {
   readonly subpaths: readonly SubPath[]
   /** 线宽（毫米，已按元素的累计缩放换算）。 */
   readonly strokeWidthMm: number
@@ -112,7 +112,7 @@ export type BoundsBox = {
 }
 
 /** 元素按文档序应用后的帧：变换与继承来的样式取值。 */
-export type Frame = {
+type Frame = {
   readonly matrix: Matrix
   readonly strokeWidthMm: number
   readonly stroked: boolean

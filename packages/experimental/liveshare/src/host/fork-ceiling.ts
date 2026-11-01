@@ -11,7 +11,7 @@
 import type { ForkCeiling } from './fork-policy.ts'
 
 /** One tool use a child is attempting. */
-export interface ForkToolRequest {
+interface ForkToolRequest {
   /** Child session attempting the use. */
   readonly childSessionId: string
   /** Session the requesting page holds, which must be that child. */
@@ -21,7 +21,7 @@ export interface ForkToolRequest {
 }
 
 /** Stable refusals a child's tool use can receive. */
-export type ForkToolRefusal =
+type ForkToolRefusal =
   | 'fork-ceiling-uninstalled'
   | 'fork-tool-not-permitted'
   | 'fork-child-mismatch'

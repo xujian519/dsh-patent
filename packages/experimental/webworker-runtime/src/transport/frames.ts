@@ -49,7 +49,7 @@ export interface TunnelAbortFrame {
  * First inbound frame: the base image URL and ordered data overlays selected
  * before the worker assembly starts.
  */
-export interface TunnelInitFrame {
+interface TunnelInitFrame {
   readonly t: 'init'
   readonly image: string
   readonly overlays: readonly string[]
@@ -134,7 +134,7 @@ export interface TunnelStreamErrorFrame {
 }
 
 /** Worker request to show one VFS text file in the page's read-only viewer; no reply follows. */
-export interface TunnelViewTextFrame {
+interface TunnelViewTextFrame {
   readonly t: 'view-text'
   /** Absolute VFS path, shown as the viewer title. */
   readonly path: string

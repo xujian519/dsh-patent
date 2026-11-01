@@ -5,7 +5,7 @@ import type { CordisTreeSnapshot } from './snapshot.ts'
 import { CordisTreeCollector, type CordisTreeLimits } from './collector.ts'
 
 /** Receives one complete semantic snapshot after a coalesced Cordis mutation. */
-export type CordisTreeSnapshotListener = (snapshot: CordisTreeSnapshot) => void
+type CordisTreeSnapshotListener = (snapshot: CordisTreeSnapshot) => void
 
 /**
  * Observe one Cordis realm and publish immutable tree replacements.

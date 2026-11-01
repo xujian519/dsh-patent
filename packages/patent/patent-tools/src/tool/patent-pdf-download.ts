@@ -78,7 +78,7 @@ export type PatentPdfDownloadInput = {
 }
 
 /** One patent PDF download result. */
-export type PatentDownloadItem = {
+type PatentDownloadItem = {
   patent: string
   status: 'ok' | 'failed'
   /** status=ok 时的落盘路径。 */
@@ -148,7 +148,7 @@ export type EgoDownloadRequest = {
 export type RunEgo = (request: EgoDownloadRequest) => Promise<EgoDownloadResult>
 
 /** MANIFEST 条目（与 Sati 契约一致）。 */
-export type PatentManifestEntry = {
+type PatentManifestEntry = {
   patent: string
   status: 'ok' | 'failed'
   path?: string

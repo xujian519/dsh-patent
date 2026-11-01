@@ -49,14 +49,14 @@ const FORK_WRITE_TOOL = 'write'
 const FORK_EDIT_TOOL = 'edit'
 
 /** Why a source Session carries no usable confined layer. */
-export type SourceSessionAccessRefusal =
+type SourceSessionAccessRefusal =
   /** The deployment exposes no tool definition to replace. */
   | 'tool-unavailable'
   /** The replacement could not be registered in the Session's scope. */
   | 'register-refused'
 
 /** A confined tool whose registration a scope refused, with the error that scope raised. */
-export interface ForkToolRegistrationFailure {
+interface ForkToolRegistrationFailure {
   /** Name of the tool whose confined replacement could not register. */
   readonly tool: string
   /** Error the scope raised, preserved so the caller's own refusal can state it. */
@@ -90,7 +90,7 @@ export interface SourceSessionAccessInstallation {
 }
 
 /** The Session whose access this is, and everything the wrapper needs to judge one execution. */
-export interface SourceSessionAccess {
+interface SourceSessionAccess {
   /** Session whose tool executions are constrained, for messages and audit. */
   readonly sessionId: string
   /** That Session's own scope, which the replacements are registered into. */
@@ -450,7 +450,7 @@ export interface ForkToolPaths {
 }
 
 /** Everything one child's limit is installed from, once the host has resolved its own services. */
-export interface ForkEnforcementTarget {
+interface ForkEnforcementTarget {
   readonly childSessionId: string
   /** The child's own scoped context, which the guard and the verdict producer register into. */
   readonly childContext: Context

@@ -17,7 +17,7 @@ import { scanSvg } from './render-check-scan.ts'
 import { figureWordingWarnings } from './wording-rules.ts'
 
 /** One delivery finding; `check` is a stable identifier. */
-export type DeliveryFinding = {
+type DeliveryFinding = {
   /** Stable identifier, e.g. `figure-photo`. */
   check: string
   /** Model-facing one-sentence conclusion. */

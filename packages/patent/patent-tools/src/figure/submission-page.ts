@@ -61,7 +61,7 @@ type SvgGeometry = {
 }
 
 /** 落版页输入。 */
-export type SubmissionPageInput = {
+type SubmissionPageInput = {
   /** 图形 SVG 文本（Graphviz 输出或 vectorFigureSvg 输出）。 */
   drawingSvg: string
   /** 目标法域规格。 */
@@ -127,7 +127,7 @@ export type SubmissionLayout = {
 }
 
 /** 落版结果。 */
-export type SubmissionPageResult = {
+type SubmissionPageResult = {
   /** 落版后的附图页 SVG。 */
   svg: string
   /** 落版尺寸。 */

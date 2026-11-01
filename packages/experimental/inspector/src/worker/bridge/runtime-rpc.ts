@@ -51,7 +51,7 @@ interface ConsoleSubscription {
 }
 
 /** Error returned deliberately by the Client Runtime executor. */
-export class ClientRuntimeRemoteError extends Error {
+class ClientRuntimeRemoteError extends Error {
   constructor(readonly code: ClientRuntimeError['code'], message: string) {
     super(message)
   }

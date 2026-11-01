@@ -78,7 +78,7 @@ const OUTLINE_GEOMETRY_SLACK_MM = 1
 const OUTLINE_GEOMETRY_SLACK_RATIO = 0.01
 
 /** Inkscape 转换的部署级选项（宿主 Config → 渲染器）。 */
-export type InkscapeOutlineOptions = {
+type InkscapeOutlineOptions = {
   /** Inkscape 可执行路径覆盖（与 Config.inkscapeExecutable 同源）；缺省走 {@link findInkscape} 自动探测。 */
   executable?: string
   /** 单次转换超时（毫秒）；由宿主 Config.inkscapeRenderTimeoutMs 解析后注入。 */
@@ -94,7 +94,7 @@ export type InkscapeOutlineSpec = {
 }
 
 /** 转换错误码（与两个渲染器同形，工具层按同一张表映射）。 */
-export type InkscapeOutlineErrorCode = 'not_installed' | 'render_failed' | 'aborted'
+type InkscapeOutlineErrorCode = 'not_installed' | 'render_failed' | 'aborted'
 
 /** 转换结果：成功，或按码分类的失败。 */
 export type InkscapeOutlineOutcome =

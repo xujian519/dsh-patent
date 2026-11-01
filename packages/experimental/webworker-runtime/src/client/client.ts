@@ -23,7 +23,7 @@ import type {
 import { showTextViewer } from './text-viewer.ts'
 
 /** Boot payload of the tunnel bootstrap route. */
-export interface BootPayload {
+interface BootPayload {
   /** Structured index injection table, executed by the page interpreter. */
   injections: IndexInjection[]
 }

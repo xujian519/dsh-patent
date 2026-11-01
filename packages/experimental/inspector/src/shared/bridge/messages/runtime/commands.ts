@@ -30,7 +30,7 @@ export type ClientRuntimeExceptionDetails = RuntimeExceptionDetails<ClientRemote
 export type ClientCallArgument = RuntimeCallArgument<ClientRemoteObjectHandle>
 
 /** Evaluate source text in the Client global execution context. */
-export interface ClientRuntimeEvaluateCommand extends RuntimeEvaluateRequest {
+interface ClientRuntimeEvaluateCommand extends RuntimeEvaluateRequest {
   readonly op: 'evaluate'
 }
 
@@ -45,24 +45,24 @@ export interface ClientRuntimeCallFunctionCommand extends RuntimeCallFunctionReq
 }
 
 /** Await one retained Client promise. */
-export interface ClientRuntimeAwaitPromiseCommand extends RuntimeAwaitPromiseRequest<ClientRemoteObjectHandle> {
+interface ClientRuntimeAwaitPromiseCommand extends RuntimeAwaitPromiseRequest<ClientRemoteObjectHandle> {
   readonly op: 'await-promise'
 }
 
 /** Release one retained Client object. */
-export interface ClientRuntimeReleaseObjectCommand {
+interface ClientRuntimeReleaseObjectCommand {
   readonly op: 'release-object'
   readonly handle: ClientRemoteObjectHandle
 }
 
 /** Release every Client object retained under one DevTools object group. */
-export interface ClientRuntimeReleaseObjectGroupCommand {
+interface ClientRuntimeReleaseObjectGroupCommand {
   readonly op: 'release-object-group'
   readonly objectGroup: string
 }
 
 /** Read names visible in the Client global lexical scope. */
-export interface ClientRuntimeGlobalLexicalScopeNamesCommand {
+interface ClientRuntimeGlobalLexicalScopeNamesCommand {
   readonly op: 'global-lexical-scope-names'
 }
 

@@ -5,7 +5,7 @@
 import type { PipelineState } from '@deepseek-ai/dsh-patent-core'
 
 /** 按候选键读取状态文本的结果：命中、全部缺失或类型错误。 */
-export type StateTextRead =
+type StateTextRead =
   | { kind: 'text'; key: string; text: string }
   | { kind: 'missing'; reason: string }
   | { kind: 'error'; reason: string }

@@ -66,7 +66,7 @@ export interface RuntimeRemoteObjectDescriptor {
 }
 
 /** Backend-owned reference to a retained object in one realm session. */
-export interface RuntimeBackendObjectReference<Handle extends string> {
+interface RuntimeBackendObjectReference<Handle extends string> {
   readonly handle: Handle
 }
 

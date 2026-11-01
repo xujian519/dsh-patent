@@ -20,13 +20,13 @@ import type { ChemistryIndexEntry } from '../chemistry/index-store.ts'
 import { WARNINGS_SCHEMA } from './internal/tool-output.ts'
 
 /** 化学实体识别类型。 */
-export const CHEMICAL_KINDS = ['formula', 'structure', 'markush'] as const
+const CHEMICAL_KINDS = ['formula', 'structure', 'markush'] as const
 
 /** Chemical entity kind (formula / structure / Markush). */
-export type ChemicalKind = (typeof CHEMICAL_KINDS)[number]
+type ChemicalKind = (typeof CHEMICAL_KINDS)[number]
 
 /** Recognition mode (image / text / auto). */
-export type RecognizeChemicalStructureMode = 'image' | 'text' | 'auto'
+type RecognizeChemicalStructureMode = 'image' | 'text' | 'auto'
 
 /** Input for the recognize_chemical_structure tool. */
 export type RecognizeChemicalStructureInput = {

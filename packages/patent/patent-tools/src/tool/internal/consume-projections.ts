@@ -21,7 +21,7 @@ import { WorkflowError, getStateString, parseConsumeRef } from '@deepseek-ai/dsh
  * `state` 一并给出，是因为摘要可能已经由该阶段自己产出（oa-parse 就写
  * `office_action_summary`），重算既浪费也可能与阶段产出不一致。
  */
-export type ConsumeProjector = (text: string, state: PipelineState) => string
+type ConsumeProjector = (text: string, state: PipelineState) => string
 
 /** 要素原文在投影表里的截断长度：够认出特征，又不把整句权利要求搬两遍。 */
 const ELEMENT_TEXT_LIMIT = 40

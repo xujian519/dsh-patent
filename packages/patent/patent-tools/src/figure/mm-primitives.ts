@@ -11,7 +11,7 @@
 export type MmPoint = readonly [number, number]
 
 /** 毫米包围盒。 */
-export type MmBounds = {
+type MmBounds = {
   /** 最小 x。 */
   minX: number
   /** 最小 y。 */

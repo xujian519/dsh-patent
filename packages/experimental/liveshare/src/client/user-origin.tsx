@@ -29,7 +29,7 @@ interface ShareViewerPrincipal {
 }
 
 /** The durable author a shared message names: its subject and, when recorded, display name. */
-export interface ShareViewerAuthor {
+interface ShareViewerAuthor {
   readonly subjectId: string
   readonly displayName?: string
 }
@@ -71,7 +71,7 @@ export function shareViewerSubject(source: unknown): string | undefined {
 }
 
 /** Props of the shared-session origin entry above a user message. */
-export type SharedSessionOriginProps =
+type SharedSessionOriginProps =
   PropsRuntime<'conversation.chat.user.before'>
   & PropsLocale<typeof NS>
   & MatchedShare<SlotMap['conversation.chat.user.before'], ShareViewerAuthor>

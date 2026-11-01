@@ -28,7 +28,7 @@ export const STRUCTURE_LINE_WIDTH_SERIES = [0.13, 0.18, 0.25, 0.35, 0.5, 0.7, 1,
 export type StructureHiddenLineStyle = 'solid' | 'dashed'
 
 /** 结构线稿线宽/线型参数（已由调用方校验，缺省表示不改写）。 */
-export type StructureLineStyleInput = {
+type StructureLineStyleInput = {
   /** 可见线线宽（毫米）；缺省保持 FreeCAD 输出的档位。 */
   lineWidthMm?: number
   /** 隐藏线线型；缺省 `solid` 保持 FreeCAD 输出的实线。 */
@@ -36,7 +36,7 @@ export type StructureLineStyleInput = {
 }
 
 /** 后处理结果。 */
-export type StructureLineStyleResult = {
+type StructureLineStyleResult = {
   /** 改写后的 SVG；无可改分组时原样返回。 */
   svg: string
   /** 提示（未找到分组、线宽层级倒置等）。 */

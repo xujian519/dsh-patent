@@ -5,7 +5,7 @@
  */
 
 /** One parsed argv: which flags were given, and what is left to act on. */
-export interface ParsedOptions {
+interface ParsedOptions {
   /** Every short letter and long name seen, without their dashes. */
   readonly flags: ReadonlySet<string>
   /** Values of flags that take one (`-n 5` and `--name=x` both land here). */

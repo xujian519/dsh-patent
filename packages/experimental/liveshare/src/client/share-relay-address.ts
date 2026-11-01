@@ -35,7 +35,7 @@ export type RelayPermission = 'idle' | 'checking' | 'ok' | 'blocked' | 'warn'
  * The identity facts saving an address needs: whether the owner holds a verified credential at the
  * address in force, and how to re-read that status once the host stored another address.
  */
-export interface RelaySaveIdentity {
+interface RelaySaveIdentity {
   /** Whether the host reported a verified identity for the address in force. */
   readonly verified: boolean
   /** Re-read the identity status for the address the save put in force. */
@@ -43,7 +43,7 @@ export interface RelaySaveIdentity {
 }
 
 /** Inputs the share dialog supplies to its Relay address state. */
-export interface ShareRelayAddressOptions {
+interface ShareRelayAddressOptions {
   /** Owner share management the dialog addresses. */
   readonly shares: OwnerShares
   /** Session whose publish permission the permission step checks. */
@@ -55,7 +55,7 @@ export interface ShareRelayAddressOptions {
 }
 
 /** Relay address state the dialog's first step and its two checks present. */
-export interface ShareRelayAddress {
+interface ShareRelayAddress {
   /** Address the owner is editing. */
   readonly draft: string
   /** Whether a save is in flight. */

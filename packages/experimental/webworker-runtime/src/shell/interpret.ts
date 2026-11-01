@@ -29,7 +29,7 @@ const NOT_FOUND_STATUS = 127
 const MAX_SUBSTITUTION_DEPTH = 16
 
 /** Everything one `bash -c` invocation needs. */
-export interface ShellRunOptions {
+interface ShellRunOptions {
   /** Working directory the line starts in. */
   cwd: string
   /** Environment the line starts with. */

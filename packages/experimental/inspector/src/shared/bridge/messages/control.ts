@@ -25,7 +25,7 @@ export interface InspectorWorkerBoot<Port> {
 }
 
 /** Host request to stop accepting traffic and close every Worker-owned resource. */
-export interface InspectorWorkerShutdown {
+interface InspectorWorkerShutdown {
   readonly type: 'shutdown'
 }
 
@@ -33,7 +33,7 @@ export interface InspectorWorkerShutdown {
 export type InspectorHostControl = InspectorWorkerShutdown
 
 /** Worker endpoint readiness. */
-export interface InspectorWorkerReady {
+interface InspectorWorkerReady {
   readonly type: 'ready'
   readonly host: string
   readonly port: number
@@ -41,13 +41,13 @@ export interface InspectorWorkerReady {
 }
 
 /** Worker startup or runtime failure. */
-export interface InspectorWorkerFailure {
+interface InspectorWorkerFailure {
   readonly type: 'failure'
   readonly message: string
 }
 
 /** Worker completed graceful shutdown. */
-export interface InspectorWorkerStopped {
+interface InspectorWorkerStopped {
   readonly type: 'stopped'
 }
 

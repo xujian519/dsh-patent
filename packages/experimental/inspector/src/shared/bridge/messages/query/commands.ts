@@ -3,7 +3,7 @@
 import type { CordisRuntimeTree } from '../../../cordis/model.ts'
 
 /** Read the latest committed Cordis runtime tree. */
-export interface CordisTreeGetQuery {
+interface CordisTreeGetQuery {
   readonly op: 'cordis-tree/get'
 }
 
@@ -11,7 +11,7 @@ export interface CordisTreeGetQuery {
 export type InspectorQuery = CordisTreeGetQuery
 
 /** Result of reading the latest committed Cordis runtime tree. */
-export interface CordisTreeGetResult {
+interface CordisTreeGetResult {
   readonly op: 'cordis-tree/get'
   readonly tree: CordisRuntimeTree
 }

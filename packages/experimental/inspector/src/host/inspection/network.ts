@@ -9,7 +9,7 @@ import { FETCH_TOPICS } from '../../shared/bridge/messages/network.ts'
 export const NETWORK_TOPICS: readonly string[] = FETCH_TOPICS
 
 /** Byte limits for request and response clone capture. */
-export interface FetchCaptureOptions {
+interface FetchCaptureOptions {
   readonly maxRequestBodyBytes: number
   readonly maxResponseBodyBytes: number
   readonly maxChunkBytes: number

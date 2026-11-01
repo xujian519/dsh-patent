@@ -96,7 +96,7 @@ export function readStoredTier(
 }
 
 /** Props for the endpoint tier control. */
-export interface ShareCapabilitiesPickerProps extends PropsLocale<typeof NS> {
+interface ShareCapabilitiesPickerProps extends PropsLocale<typeof NS> {
   /** Endpoints the mounted plugins currently offer; an empty list renders nothing. */
   readonly offered: readonly ViewerCapabilityGroup[]
   /** Tier the control acts on. */

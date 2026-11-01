@@ -7,7 +7,7 @@ import type { InspectorRealmSession } from '../../../inspection/realm.ts'
 import { cdpStringId, type CdpScriptId } from '../../ids.ts'
 
 /** One script and the realm source backend that owns its content. */
-export interface DebuggerScriptRoute {
+interface DebuggerScriptRoute {
   readonly realm: InspectorRealmSession
   readonly source: SourceBackend
   readonly script: RuntimeScript

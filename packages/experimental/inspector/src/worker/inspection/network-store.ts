@@ -9,13 +9,13 @@ import type { InspectorSourceDescriptor } from '../../shared/bridge/messages/obs
 import type { IngestedInspectorRecord, InspectorRecordConsumer } from '../bridge/hub.ts'
 
 /** Bounded retention policy for observed network requests. */
-export interface NetworkStoreOptions {
+interface NetworkStoreOptions {
   readonly maxRetainedRequests: number
   readonly maxJournalBytes: number
 }
 
 /** Captured body data returned without a CDP representation. */
-export interface CapturedNetworkBody {
+interface CapturedNetworkBody {
   readonly bytes: Uint8Array
   readonly truncated: boolean
   readonly captureError?: string

@@ -21,7 +21,7 @@
  */
 
 /** 附图色彩策略：grayscale=黑白线条（默认，指南 4.3 一般情形）；semantic=必要时彩色（色彩承载技术内容）。 */
-export type DotStyle = 'grayscale' | 'semantic'
+type DotStyle = 'grayscale' | 'semantic'
 
 /** Graphviz 布局引擎白名单。 */
 export type DotEngine = 'dot' | 'neato' | 'fdp' | 'circo' | 'twopi' | 'sfdp'
@@ -56,7 +56,7 @@ const NUMERAL_SERIES_STRIDE = 100
 export const DEFAULT_NUMERAL_STEP = 2
 
 /** DOT 构建错误码。 */
-export type DotBuildErrorCode =
+type DotBuildErrorCode =
   | 'empty_input'
   | 'unknown_id'
   | 'missing_edge_label'
@@ -82,7 +82,7 @@ export class DotBuildError extends Error {
 }
 
 /** 节点形状白名单（流程图用）。 */
-export type FlowchartShape = 'box' | 'ellipse' | 'diamond' | 'parallelogram' | 'cylinder'
+type FlowchartShape = 'box' | 'ellipse' | 'diamond' | 'parallelogram' | 'cylinder'
 
 /** 流程图步骤。next 项为字符串或 {id,label}（带边标签，diamond 分支必须）。 */
 export type FlowchartStep = {
@@ -97,7 +97,7 @@ export type FlowchartStep = {
 }
 
 /** 框图块类型。 */
-export type BlockKind = 'input' | 'output' | 'process' | 'storage' | 'decision' | 'default'
+type BlockKind = 'input' | 'output' | 'process' | 'storage' | 'decision' | 'default'
 
 /** 框图块。 */
 export type BlockDiagramBlock = {
@@ -130,7 +130,7 @@ export type HierarchyNode = {
 }
 
 /** 状态图状态类型：normal=圆角框；initial=实心小圆（无标号）；final=双圆框。 */
-export type StateNodeKind = 'normal' | 'initial' | 'final'
+type StateNodeKind = 'normal' | 'initial' | 'final'
 
 /** 状态图状态（软件/算法类专利附图的状态转移图）。 */
 export type StateNode = {
@@ -153,7 +153,7 @@ export type StateTransition = {
 }
 
 /** 参考标号映射输入：组件 id → 标号（字符串，如 "20"、"101"、"S101"）。 */
-export type NumeralMap = Readonly<Record<string, string>>
+type NumeralMap = Readonly<Record<string, string>>
 
 /** 三个构建器共享的标号分配参数（figureNumber/step/explicit）。 */
 type SharedNumeralOptions = {
@@ -172,7 +172,7 @@ function assignFor(ids: readonly string[], options: SharedNumeralOptions): Numer
 }
 
 /** 标号分配选项。 */
-export type AssignNumeralsOptions = {
+type AssignNumeralsOptions = {
   /** 图号（1 开始），决定系列起点：100 + 100*(N-1)。默认 1。 */
   figureNumber?: number
   /** 系列起点覆盖（显式数值优先于推导）。 */
@@ -275,7 +275,7 @@ export type DotPageBundle = {
 }
 
 /** resolvePageBundle 输入：字段显式允许 undefined（exactOptionalPropertyTypes 下调用方以 `??` 合成 per-call 与部署默认）。 */
-export type DotPageInput = {
+type DotPageInput = {
   pageSize?: DotPageSize | undefined
   orientation?: DotOrientation | undefined
   dpi?: number | undefined
@@ -454,7 +454,7 @@ export function buildDotHeader(
 }
 
 /** 流程图构建选项。 */
-export type BuildFlowchartOptions = {
+type BuildFlowchartOptions = {
   /** 图号（标号系列用）。 */
   figureNumber?: number
   /** 色彩策略，默认 grayscale。 */
@@ -537,7 +537,7 @@ export function buildFlowchartDOT(steps: readonly FlowchartStep[], options: Buil
 }
 
 /** 框图构建选项。 */
-export type BuildBlockDiagramOptions = {
+type BuildBlockDiagramOptions = {
   /** 图号（标号系列用）。 */
   figureNumber?: number
   /** 色彩策略，默认 grayscale。semantic 模式按块类型填充（色彩需承载技术内容）。 */
@@ -630,7 +630,7 @@ export function buildBlockDiagramDOT(
 }
 
 /** 层级图构建选项。 */
-export type BuildHierarchyOptions = {
+type BuildHierarchyOptions = {
   /** 图号（标号系列用）。 */
   figureNumber?: number
   /** 色彩策略，默认 grayscale。 */
@@ -698,7 +698,7 @@ export function buildComponentHierarchyDOT(
 }
 
 /** 状态图构建选项（与层级图同形）。 */
-export type BuildStateDiagramOptions = BuildHierarchyOptions
+type BuildStateDiagramOptions = BuildHierarchyOptions
 
 /**
  * 构建状态转移图 DOT（软件/算法类专利附图）。

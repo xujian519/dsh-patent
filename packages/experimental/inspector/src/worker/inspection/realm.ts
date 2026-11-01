@@ -22,7 +22,7 @@ export interface InspectorRealmDescriptor {
 }
 
 /** Execution-context ownership for one realm. */
-export type InspectorRealmContext =
+type InspectorRealmContext =
   | { readonly kind: 'native' }
   | {
     readonly kind: 'synthetic'

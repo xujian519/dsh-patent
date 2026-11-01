@@ -36,7 +36,7 @@ export type PatentPlanTaskAction = 'transition' | 'sync' | 'replan'
  * previous call reported, so an item stays closed instead of reopening each
  * call. Omitted `disposition`/`blocking` take the kind's asset default.
  */
-export type PatentPlanTaskIssue = DocketIssueDraft & {
+type PatentPlanTaskIssue = DocketIssueDraft & {
   /** Current close state (defaults to open). */
   status?: DocketIssue['status']
   /** Round that opened the item (defaults to the call's `round`). */

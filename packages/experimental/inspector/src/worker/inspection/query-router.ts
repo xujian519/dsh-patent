@@ -20,7 +20,7 @@ import { INSPECTOR_PROTOCOL_VERSION } from '../../shared/bridge/version.ts'
 import { executeInspectorQuery } from './cordis-query.ts'
 
 /** Carrier operations owned by one Worker query peer. */
-export interface InspectorQueryPeerTransport {
+interface InspectorQueryPeerTransport {
   /** Send one bounded Worker response. */
   send(frame: InspectorQueryResponseFrame): void
   /** Reject a malformed peer whose request cannot be correlated safely. */
@@ -93,7 +93,7 @@ export class InspectorQueryRouter {
 }
 
 /** Query protocol state associated with exactly one source carrier. */
-export class InspectorQueryPeer {
+class InspectorQueryPeer {
   private accepted: AcceptedGeneration | undefined
   private readonly inFlight = new Map<InspectorQueryRequestId, AcceptedGeneration>()
   private closed = false

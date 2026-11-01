@@ -38,7 +38,7 @@ export function runtimeBridgeCapability(origin: string): ClientRuntimeCapability
 }
 
 /** Client-side limits injected by the Host deployment. */
-export interface ClientRuntimeLimits {
+interface ClientRuntimeLimits {
   readonly maxObjectsPerSession: number
   readonly maxPropertiesPerResult: number
   readonly maxResponseBytes: number

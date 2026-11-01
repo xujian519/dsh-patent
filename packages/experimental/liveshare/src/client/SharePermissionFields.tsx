@@ -16,7 +16,7 @@ import type { ViewerSessionMode } from './viewer-capabilities.ts'
 import css from './ShareDialog.module.css'
 
 /** Values and callbacks one shared permission field renders. */
-export interface SharePermissionFieldsProps extends PropsLocale<typeof NS> {
+interface SharePermissionFieldsProps extends PropsLocale<typeof NS> {
   /** Session permission on hand; absent when the Host cannot place the stored tier. */
   readonly sessionMode: ViewerSessionMode | undefined
   /** Whether no supported session permission exists, stated instead of an empty control. */

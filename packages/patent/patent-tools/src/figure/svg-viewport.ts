@@ -25,7 +25,7 @@ const PT_PER_INCH = 72
 export const MM_PER_USER_UNIT = MM_PER_INCH / PX_PER_INCH
 
 /** `viewBox` 原点与尺寸（用户单位）。 */
-export type SvgViewBox = {
+type SvgViewBox = {
   /** viewBox 原点 X。 */
   readonly x: number
   /** viewBox 原点 Y。 */
@@ -39,7 +39,7 @@ export type SvgViewBox = {
 /**
  * 根元素的视口映射：`xMm = scaleX · (x - originX)`、`yMm = scaleY · (y - originY)`。
  */
-export type SvgViewport = {
+type SvgViewport = {
   /** 根元素声明的画布宽（毫米）；未声明或无法解析（如百分比）时 undefined。 */
   readonly widthMm?: number
   /** 根元素声明的画布高（毫米）；未声明或无法解析时 undefined。 */

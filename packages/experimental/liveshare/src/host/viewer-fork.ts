@@ -26,7 +26,7 @@ import {
 import { isRecord } from './wire-json.ts'
 
 /** Host services and orchestration one fork request reads. */
-export interface ViewerForkDeps {
+interface ViewerForkDeps {
   /** Host services the reader was built with. */
   readonly deps: ViewerReadDeps
   /** Lifecycle refusal answers and the enforcement records a child holds. */

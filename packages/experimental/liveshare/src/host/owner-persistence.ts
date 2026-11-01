@@ -19,7 +19,7 @@ import { isRecord } from './wire-json.ts'
 
 
 /** One share as the owner state file stores it. */
-export interface PersistedOwnerShare {
+interface PersistedOwnerShare {
   readonly shareId: string
   readonly sessionId: string
   readonly sessionTitle: string
@@ -55,7 +55,7 @@ export interface PersistedOwnerShare {
 }
 
 /** Owner state read from disk: the persisted Relay override, every restorable share, and every Relay row still owed. */
-export interface LoadedOwnerState {
+interface LoadedOwnerState {
   readonly relayUrl?: string
   readonly instanceId: string
   readonly shares: Map<string, OwnerShare>

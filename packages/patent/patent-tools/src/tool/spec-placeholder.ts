@@ -8,13 +8,13 @@ import { locateMatch } from '@deepseek-ai/dsh-patent-core'
 import type { SpecViolation } from './spec-types.ts'
 
 /** Markers the drafting templates leave in place of written content. */
-export const PLACEHOLDER_MARKERS = ['【撰写指引】', '待补充', 'TODO', 'TBD'] as const
+const PLACEHOLDER_MARKERS = ['【撰写指引】', '待补充', 'TODO', 'TBD'] as const
 
 /** The headings whose bodies the completeness checks inspect. */
 const SECTION_NAMES = ['技术领域', '背景技术', '发明内容', '附图说明', '具体实施方式'] as const
 
 /** One recognized section and the body under its heading. */
-export type SpecSectionBody = {
+type SpecSectionBody = {
   /** Section name as printed in the heading. */
   name: string
   /** 1-based line of the heading. */

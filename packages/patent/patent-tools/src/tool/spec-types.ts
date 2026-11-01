@@ -116,7 +116,7 @@ export type ValidateSpecificationOutput = {
 export type NumericRange = { min: number; max: number; unit: string }
 
 /** One recognized figure component as read by the consistency checker. */
-export type FigureComponentRef = {
+type FigureComponentRef = {
   /** Reference mark from the figure (Arabic numerals only). */
   refNumber: string
 }

@@ -31,7 +31,7 @@ export interface ForkToolExecution {
 }
 
 /** Host services the guard needs; none of them is a guess the guard could make itself. */
-export interface ForkToolGuardPorts {
+interface ForkToolGuardPorts {
   /** Child session one execution belongs to, or undefined when it cannot be attributed. */
   readonly childOf: (execution: ForkToolExecution) => string | undefined
   /** Whether that child's execution limit is installed on this host. */
@@ -56,7 +56,7 @@ export interface ForkToolGuardPorts {
 }
 
 /** Ceiling decision for one tool name, and the paths its arguments name. */
-export interface ForkToolGuardRequest {
+interface ForkToolGuardRequest {
   /** Child the execution belongs to. */
   readonly childSessionId: string
   /** Tool name. */
@@ -90,7 +90,7 @@ export interface ForkToolGuardRequest {
  * @param ports Host filesystem and enforcement services.
  * @returns Allowed, or the reason to refuse.
  */
-export function decideForkToolUse(
+function decideForkToolUse(
   ceiling: ForkCeiling | undefined,
   request: ForkToolGuardRequest,
   ports: Pick<ForkToolGuardPorts, 'authorizeReadPath' | 'toolIsTrusted'>,
@@ -170,7 +170,7 @@ export function forkToolGuard(
 }
 
 /** Host services one child-scoped guard installation needs. */
-export interface ChildEnforcementPorts<Context> {
+interface ChildEnforcementPorts<Context> {
   /** The child's own scoped context, or undefined when this host cannot reach it. */
   readonly contextOf: (childSessionId: string) => Context | undefined
   /**

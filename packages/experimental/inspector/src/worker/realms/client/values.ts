@@ -22,7 +22,7 @@ import type {
 } from '../../../shared/cdp/index.ts'
 
 /** Maps a Client-local script key into its realm-wide Runtime identity. */
-export type ClientScriptKeyMapper = (scriptKey: RuntimeScriptKey) => RuntimeScriptKey
+type ClientScriptKeyMapper = (scriptKey: RuntimeScriptKey) => RuntimeScriptKey
 
 /**
  * Convert one Client completion and all nested objects.
@@ -125,7 +125,7 @@ export function clientConsoleEvent(
  * @param value - Client wire RemoteObject.
  * @returns A realm-neutral Runtime value.
  */
-export function clientRemoteObject(
+function clientRemoteObject(
   value: ClientRuntimeRemoteObject,
 ): RuntimeRemoteObject<RuntimeBackendObjectHandle> {
   return {

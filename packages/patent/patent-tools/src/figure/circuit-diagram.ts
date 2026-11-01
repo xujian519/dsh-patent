@@ -54,7 +54,7 @@ export type CircuitComponent = {
 }
 
 /** 元件间连线：正交走线，端口取在元件符号边界。 */
-export type CircuitConnection = {
+type CircuitConnection = {
   /** 起点元件 id。 */
   from: string
   /** 终点元件 id。 */

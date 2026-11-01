@@ -23,7 +23,7 @@ import { VectorFigureError, fmt } from './vector-figure.ts'
 import type { VectorFigureSpec } from './vector-figure.ts'
 
 /** 一条数据序列。 */
-export type PlotSeries = {
+type PlotSeries = {
   /** 序列名（写入图例，简短）。 */
   name?: string
   /** 数据点 [x, y]（有限数，至少 1 个）。 */

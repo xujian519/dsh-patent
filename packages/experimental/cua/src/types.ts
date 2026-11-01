@@ -47,7 +47,10 @@ export type CuaCapabilities = z.output<typeof CapabilitiesResult>
 export type CuaAppInfo = Pick<Extract<CuaFoundAppInfo, { isRunning: true }>, 'id' | 'displayName' | 'isRunning' | 'pid'>
 /** An installed application match; running matches include a process identifier. */
 export type CuaFoundAppInfo = z.output<typeof FoundAppsResult>[number]
-/** Window bounds in global macOS points. Local operations use an origin of [0,0]. */
+/**
+ * Window bounds in global macOS points. Local operations use an origin of [0,0].
+ * Public convenience alias on `@deepseek-ai/dsh-cua/api` (via `export type *` from this module).
+ */
 export type CuaBounds = CuaWindowInfo['bounds']
 /** Observed window metadata; identifiers are valid only while the window exists, and null Space membership is unknown. */
 export type CuaWindowInfo = z.output<typeof WindowsResult>[number]
@@ -65,9 +68,15 @@ export interface CuaCoordinateOptions {
 }
 /** Restoration dispatch; foregroundChanged compares the front app and top window before and after the request. */
 export type CuaShowResult = z.output<typeof ShowResult>
-/** Modifiers attached to a window-directed pointer gesture. */
+/**
+ * Modifiers attached to a window-directed pointer gesture.
+ * Public convenience alias on `@deepseek-ai/dsh-cua/api`.
+ */
 export type CuaPointerModifier = NonNullable<CuaParameters<'click'>['modifiers']>[number]
-/** Buttons supported by window-directed clicks and drags. */
+/**
+ * Buttons supported by window-directed clicks and drags.
+ * Public convenience alias on `@deepseek-ai/dsh-cua/api`.
+ */
 export type CuaMouseButton = NonNullable<CuaParameters<'click'>['mouseButton']>
 /**
  * Left clicks support one or two presses; right and middle clicks support one.

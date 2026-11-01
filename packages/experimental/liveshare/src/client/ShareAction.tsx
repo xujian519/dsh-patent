@@ -14,7 +14,7 @@ import type { OwnerShares } from './owner-shares.ts'
 import css from './ShareAction.module.css'
 
 /** Business face the header action receives: the owner's share-management Remote. */
-export interface LiveshareShareActionInjected {
+interface LiveshareShareActionInjected {
   /** Owner share management, addressed through the generated `liveshareShares` namespace. */
   readonly shares: OwnerShares
 }

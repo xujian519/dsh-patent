@@ -155,19 +155,19 @@ export const STRUCTURE_TEMPLATE_FILENAME = '.freecad-structure-template.svg'
 export const STRUCTURE_TRANSIENT_DIRNAME = '.freecad-transient'
 
 /** 件号字高（用户单位/毫米；与片段几何同帧，随 scale 一并缩放到画布尺寸）。 */
-export const STRUCTURE_NUMERAL_FONT_SIZE = 6
+const STRUCTURE_NUMERAL_FONT_SIZE = 6
 
 /** 引线长度（件号相对锚点的外向偏移，用户单位/毫米）。 */
-export const STRUCTURE_LEADER_OFFSET = 10
+const STRUCTURE_LEADER_OFFSET = 10
 
 /** 画布内边距（片段包围盒外扩，容纳引线件号与描边，用户单位/毫米）。 */
-export const STRUCTURE_CANVAS_PADDING = 6
+const STRUCTURE_CANVAS_PADDING = 6
 
 /** 引线/件号描边宽度（片段几何沿用 TechDraw 的 0.7，引线略细以区分）。 */
-export const STRUCTURE_STROKE_WIDTH = 0.5
+const STRUCTURE_STROKE_WIDTH = 0.5
 
 /** 密集投影采样点/边（用于求紧致投影包围盒中心 C；覆盖圆弧极值）。 */
-export const STRUCTURE_EDGE_SAMPLES = 32
+const STRUCTURE_EDGE_SAMPLES = 32
 
 /**
  * 件号归属核对的锚点容差（毫米）。

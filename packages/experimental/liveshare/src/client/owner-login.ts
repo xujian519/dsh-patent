@@ -70,7 +70,7 @@ export interface OwnerLoginHost {
  * The flow reads \`closed\`, navigates \`location.href\`, calls \`close\`, and posts the acknowledgement, so
  * a page's \`open\` need not return the whole browser \`Window\`.
  */
-export interface OwnerLoginPopup {
+interface OwnerLoginPopup {
   /** Whether the sign-in page closed the window. */
   closed: boolean
   /** Address the flow navigates to the sign-in URL. */

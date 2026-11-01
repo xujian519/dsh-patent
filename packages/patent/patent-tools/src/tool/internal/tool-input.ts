@@ -8,7 +8,7 @@
 import { PatentToolError } from '../../error.ts'
 
 /** Field readers bound to one tool name. */
-export interface ToolInputReader {
+interface ToolInputReader {
   /**
    * Build a field-level input error.
    * @param message - the model-facing message naming the field and expectation.

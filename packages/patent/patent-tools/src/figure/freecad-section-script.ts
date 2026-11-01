@@ -41,7 +41,7 @@ import {
 export const SECTION_GEOMETRY_FILENAME = 'section-geometry.json'
 
 /** 构建剖切脚本的入参。 */
-export type SectionScriptParams = {
+type SectionScriptParams = {
   /** 模型文件绝对路径（STEP/IGES/BREP，由 Part.read 载入）。 */
   modelPath: string
   /** 视图帧（由 {@link resolveSectionFrame} 解析；脚本只校验单位长度并照用）。 */

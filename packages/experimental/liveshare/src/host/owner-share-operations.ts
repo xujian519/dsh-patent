@@ -144,7 +144,7 @@ function isRelayAddress(value: string): boolean {
 }
 
 /** Host state the twelve operations read and change. */
-export interface OwnerShareOperationDeps {
+interface OwnerShareOperationDeps {
   /** Shares this host publishes. */
   readonly ownerShares: Map<string, OwnerShare>
   /** Relay rows this host stopped but has not deleted. */

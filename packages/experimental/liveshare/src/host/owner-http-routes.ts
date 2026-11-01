@@ -23,7 +23,7 @@ import type { TunnelSupervision } from './tunnel-supervision.ts'
 import { isRecord, json, readJsonBody } from './wire-json.ts'
 
 /** One owner operation's captured Relay, revision, and host instance. */
-export interface OwnerOperation {
+interface OwnerOperation {
   /** Address in force when the operation was captured; absent while the owner has saved none. */
   readonly relay: string | undefined
   readonly relayRevision: number
@@ -31,7 +31,7 @@ export interface OwnerOperation {
 }
 
 /** Host state the owner sign-in routes read. */
-export interface OwnerHttpRouteDeps {
+interface OwnerHttpRouteDeps {
   /** Host Connection service the routes are registered on. */
   readonly connection: Context['connection']
   /** Worker registration, credential state, and Relay probes. */

@@ -21,13 +21,13 @@ import {
 import type { OwnerShares } from './owner-shares.ts'
 
 /** One sign-in attempt's state, or nothing while no attempt was started. */
-export interface OwnerLoginAttempt {
+interface OwnerLoginAttempt {
   readonly phase: OwnerLoginPhase
   readonly failure?: OwnerLoginFailure
 }
 
 /** Inputs the share dialog supplies to its owner identity state. */
-export interface OwnerIdentityLoginOptions {
+interface OwnerIdentityLoginOptions {
   /** Owner share management the dialog addresses. */
   readonly shares: OwnerShares
   /** Address in force, as the host named it; the identity status is keyed on this address. */
@@ -39,7 +39,7 @@ export interface OwnerIdentityLoginOptions {
 }
 
 /** Owner identity and sign-in state the dialog's address row and status line present. */
-export interface OwnerIdentityLogin {
+interface OwnerIdentityLogin {
   /** The status the host reported for the address in force. */
   readonly status: OwnerIdentityStatus
   /** The one attempt this dialog started, or nothing while none was started. */

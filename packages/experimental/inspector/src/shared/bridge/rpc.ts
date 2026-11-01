@@ -15,7 +15,7 @@ import { isInspectorQueryResponseEnvelope, parseInspectorQueryResponseFrame } fr
 import type { InspectorQueryRequestFrame, InspectorQueryRequestId } from './messages/query/frames.ts'
 
 /** Active carrier write used by the shared query owner. */
-export interface InspectorQuerySender {
+interface InspectorQuerySender {
   /**
    * Send one validated query request frame.
    * @param frame - Request belonging to the active source generation.
@@ -43,7 +43,7 @@ interface QueryGeneration {
 }
 
 /** Failure deliberately returned by the Worker query handler. */
-export class InspectorQueryRemoteError extends Error {
+class InspectorQueryRemoteError extends Error {
   constructor(readonly code: InspectorQueryError['code'], message: string) {
     super(message)
   }

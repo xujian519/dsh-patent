@@ -37,7 +37,7 @@ import {
 } from './internal/workflow-helpers.ts'
 
 /** One stage's output as supplied by the host agent. */
-export type PatentWorkflowStageOutput = {
+type PatentWorkflowStageOutput = {
   /** Stage id matching manifest.stages[].id. */
   stageId: string
   /** The stage's analysis text produced by the host agent. */

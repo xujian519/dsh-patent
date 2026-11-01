@@ -10,10 +10,10 @@
 import { isRecord } from './wire-json.ts'
 
 /** Tier that admits one shared tool. */
-export type SharedToolTier = 'view' | 'write'
+type SharedToolTier = 'view' | 'write'
 
 /** Paths one tool call names, as an enforcement guard reads them. */
-export interface SharedToolPaths {
+interface SharedToolPaths {
   /**
    * Every path the call names, empty when it names none, or undefined when they cannot be established.
    *
@@ -26,7 +26,7 @@ export interface SharedToolPaths {
 }
 
 /** One tool call's declared paths and the rewrite that hands the tool their canonical form. */
-export interface SharedToolCall {
+interface SharedToolCall {
   /** Paths this call names, in the order {@link SharedToolCall.rewrite} consumes them. */
   readonly paths: readonly string[]
   /**
@@ -38,7 +38,7 @@ export interface SharedToolCall {
 }
 
 /** One confined edit call's validated arguments. */
-export interface SharedEditArguments {
+interface SharedEditArguments {
   /** Path the call names, non-empty. */
   readonly filePath: string
   /** Literal text to replace, non-empty. */

@@ -30,10 +30,10 @@ export type SubprocessSpawner = Pick<SubprocessRuntime, 'spawn'>
 const MAX_OUTPUT_BYTES = 100_000
 
 /** SIGTERM → SIGKILL 宽限（探测与渲染共用；与 patent-data subprocess-runner 一致）。 */
-export const SPAWN_GRACE_MS = 3_000
+const SPAWN_GRACE_MS = 3_000
 
 /** 可执行文件探测参数：三个渲染器只在候选表、PATH 文件名与环境变量名上不同。 */
-export type ExecutableLookup = {
+type ExecutableLookup = {
   /** 显式覆盖路径（Config.<x>Executable）；提供时不存在则视为未找到，不回落自动探测。 */
   readonly override?: string
   /** 环境变量名（如 `DSH_GRAPHVIZ_DOT`）。 */
@@ -91,7 +91,7 @@ export function stdinStdio(data: string): SubprocessSpawnSpec['stdio'] {
 }
 
 /** 探测结果：退出事实与合并输出文本。 */
-export type VersionProbeResult = {
+type VersionProbeResult = {
   /** 子进程退出事实。 */
   readonly outcome: SubprocessOutcome
   /** stdout 与 stderr 的合并文本（版本号从中提取）。 */

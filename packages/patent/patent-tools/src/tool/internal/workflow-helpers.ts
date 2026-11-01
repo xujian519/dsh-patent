@@ -126,7 +126,7 @@ export async function atomicWriteFile(file: string, content: string): Promise<vo
 }
 
 /** Resolved persistence destination for one workflow run. */
-export interface WorkflowRunPersistTarget {
+interface WorkflowRunPersistTarget {
   /** Directory the run JSON and Mermaid diagram land in. */
   runsDir: string
   /** Filesystem-safe run key (<caseKey>__<manifestId>). */
@@ -178,7 +178,7 @@ export async function writeRunArtifacts(
 }
 
 /** Options for executing a manifest via runWorkflow with optional persistence. */
-export interface RunWorkflowWithPersistOptions {
+interface RunWorkflowWithPersistOptions {
   /** Stage-handler registry (default: the global registry). */
   handlers: StageHandlerRegistry
   /** Atom registry resolving atom.outputSchema[0] (default: the global registry). */
@@ -198,7 +198,7 @@ export interface RunWorkflowWithPersistOptions {
 }
 
 /** Result of a persisted workflow run (the persist target feeds the artifact writes). */
-export type PersistedWorkflowRun = {
+type PersistedWorkflowRun = {
   result: WorkflowRunResult
   /** Resolved persistence target; undefined when caseId is absent. */
   persistTarget: WorkflowRunPersistTarget | undefined
@@ -239,7 +239,7 @@ export async function runWorkflowWithPersist(
 }
 
 /** Options for assembling the tail text of a workflow-run result. */
-export interface RenderWorkflowResultTextOptions {
+interface RenderWorkflowResultTextOptions {
   /** Tool label prefixing the summary line. */
   toolName: string
   /** The run result whose summary/completion drive the text. */
@@ -293,7 +293,7 @@ export interface SpecificationRunOptions {
 }
 
 /** Options mapping a tool's input into the workflow context the atoms read. */
-export interface BuildWorkflowRunContextOptions extends SpecificationRunOptions {
+interface BuildWorkflowRunContextOptions extends SpecificationRunOptions {
   /** Case identity (may contain a {caseId} placeholder). */
   caseId?: string
   /** Initial material consumed by the extract atoms. */
@@ -389,7 +389,7 @@ export interface WorkflowProviderDeps {
 }
 
 /** Context the workflow provider reads (case identity, propagated to atoms). */
-export interface WorkflowProviderContext {
+interface WorkflowProviderContext {
   /** Case identity propagated to atoms that persist or merge by case. */
   caseId?: string
 }

@@ -32,7 +32,7 @@ import type { RelayAuthority } from './relay-authority.ts'
 import type { OwnerShare } from './owner-types.ts'
 
 /** Where one source-access attempt came from; named in its diagnostic line. */
-export type WriteAccessTrigger = 'publish' | 'restore' | 'mode' | 'reader' | 'prompt'
+type WriteAccessTrigger = 'publish' | 'restore' | 'mode' | 'reader' | 'prompt'
 
 /** Why one source-access installation did not happen: the guard that refused, as a stable code. */
 type WriteAccessRefusal =
@@ -51,7 +51,7 @@ type WriteAccessRefusal =
   | 'share-inactive'
 
 /** What one source-access attempt did. */
-export type WriteAccessOutcome =
+type WriteAccessOutcome =
   /** This attempt installed the layer. */
   | { readonly kind: 'installed'; readonly installation: SourceSessionAccessInstallation }
   /** A usable layer was already recorded, by this attempt's caller or another share's. */
@@ -122,7 +122,7 @@ function forkToolPaths(execution: ForkToolExecution): ForkToolPaths {
 }
 
 /** Host state the source Session's access layer reads. */
-export interface SourceAccessDeps {
+interface SourceAccessDeps {
   /** Host context carrying the optional Agent, filesystem, tool, and sandbox services. */
   readonly ctx: Context
   /** Shares this host publishes. */

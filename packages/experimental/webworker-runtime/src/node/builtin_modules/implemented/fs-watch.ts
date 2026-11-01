@@ -13,14 +13,14 @@ type WatchStats = VfsStats | VfsBigIntStats
 type StatListener = (current: WatchStats, previous: WatchStats) => void
 
 /** Options shared by the callback and promise watch faces. */
-export interface WatchOptions {
+interface WatchOptions {
   persistent?: boolean
   recursive?: boolean
   encoding?: BufferEncoding | 'buffer'
   signal?: AbortSignal
 }
 /** Poll-style watch options. */
-export interface WatchFileOptions {
+interface WatchFileOptions {
   persistent?: boolean
   interval?: number
   bigint?: boolean

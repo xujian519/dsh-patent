@@ -19,10 +19,10 @@ import { PatentToolError } from '../../error.ts'
 import type { SectionSourceError } from '../../figure/section-source.ts'
 
 /** 附图工具名（`generate_patent_figure` 兼管 Graphviz 与直绘两条通路及其文字转路径）。 */
-export type FigureToolName = 'generate_patent_figure' | 'generate_structure_figure'
+type FigureToolName = 'generate_patent_figure' | 'generate_structure_figure'
 
 /** 两类渲染结果共有的判定形态：成功，或按码分类的失败。 */
-export type RenderOutcome =
+type RenderOutcome =
   | { readonly ok: true }
   | { readonly ok: false; readonly code: 'not_installed' | 'render_failed' | 'aborted'; readonly error: string }
 

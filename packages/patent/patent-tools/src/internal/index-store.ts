@@ -15,14 +15,14 @@ import { dirname } from 'node:path'
 import { atomicWriteJson } from '@deepseek-ai/dsh-patent-core'
 
 /** 索引加载结果：条目列表 + 非致命异常提示。 */
-export type IndexStoreLoadResult<TEntry> = {
+type IndexStoreLoadResult<TEntry> = {
   entries: TEntry[]
   /** 非致命异常提示（文件损坏/版本不兼容/无效条目被忽略），无则省略。 */
   warning?: string
 }
 
 /** 索引存储实例：load 缺失/损坏返回空索引，upsert 按 entryKey 覆盖 + compare 排序。 */
-export type IndexStore<TEntry> = {
+type IndexStore<TEntry> = {
   /** 读取索引：文件缺失 → 空；损坏/版本不兼容 → 空 + warning（不抛出）。 */
   load(filePath: string): Promise<IndexStoreLoadResult<TEntry>>
   /** 整体写回索引（调用方负责保证目录可写；不串行化，批量重建场景用）。 */
@@ -32,7 +32,7 @@ export type IndexStore<TEntry> = {
 }
 
 /** 索引存储工厂参数。 */
-export type IndexStoreOptions<TEntry> = {
+type IndexStoreOptions<TEntry> = {
   /** 索引文件版本（结构不兼容时升版，旧文件按空索引处理）。 */
   version: number
   /** 条目结构校验器：非法条目在 load 时被忽略。 */

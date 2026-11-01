@@ -48,7 +48,7 @@ export type ClaimChartTargetInput = {
 }
 
 /** Scoring facts the chart cannot produce (see InfringementScoringFacts). */
-export type ClaimChartRiskInput = {
+type ClaimChartRiskInput = {
   /** 各抗辩的成立可能性；缺省按"无抗辩"处理（不因缺少抗辩分析而降低风险）。 */
   defenses?: DefenseViability[]
   /** 补救风险（0–1），由调用方按案件金额量程归一。 */

@@ -13,7 +13,7 @@ import type { PatentType, TechDomain } from './draft-claims.ts'
 import { WARNINGS_SCHEMA } from './internal/tool-output.ts'
 
 /** Minimal figure-analysis shape the drafting layer reads (Sati figure/types.ts). */
-export type FigureAnalysisResult = {
+type FigureAnalysisResult = {
   figureDescription: string
   electrical?: { components: Array<{ ref: string; name: string; value?: string }> }
 }

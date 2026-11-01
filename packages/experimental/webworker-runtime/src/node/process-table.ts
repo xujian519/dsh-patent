@@ -12,7 +12,7 @@
 import type { RunningProcess } from '../shell/process/host.ts'
 
 /** One running command, as the table tracks it. */
-export interface WorkerProcessEntry {
+interface WorkerProcessEntry {
   /** Identifier handed out to the host tree; unique for the worker's lifetime. */
   readonly pid: number
   /** The first signal delivered, which decides how the process reports its death. */

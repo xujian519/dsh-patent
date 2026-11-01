@@ -9,7 +9,7 @@ import { exactKeys, exactObject, wireId } from '../validation.ts'
 export const CORDIS_RUNTIME_TREE_SCHEMA_VERSION = 0 as const
 
 /** Consumer-visible identity of one inspected Cordis runtime. */
-type CordisRuntimeSourceId = InspectorId<'CordisRuntimeSourceId'>
+export type CordisRuntimeSourceId = InspectorId<'CordisRuntimeSourceId'>
 
 /** Execution environment represented by one consumer-visible Cordis runtime. */
 export type CordisRuntimeSourceKind = 'host' | 'client'

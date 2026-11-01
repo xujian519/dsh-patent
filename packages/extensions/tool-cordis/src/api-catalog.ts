@@ -6670,6 +6670,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface CordisRuntimeSource {\n    readonly sourceId: CordisRuntimeSourceId;\n    readonly kind: CordisRuntimeSourceKind;\n    readonly label: string;\n}',
   },
   {
+    name: 'CordisRuntimeSourceId',
+    declaration: 'export type CordisRuntimeSourceId = InspectorId<\'CordisRuntimeSourceId\'>;',
+  },
+  {
     name: 'CordisRuntimeSourceKind',
     declaration: 'export type CordisRuntimeSourceKind = \'host\' | \'client\';',
   },
@@ -7420,6 +7424,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'InspectOptions',
     declaration: 'export interface InspectOptions {\n    readonly registry?: Registry;\n}',
+  },
+  {
+    name: 'InspectorId',
+    declaration: 'export type InspectorId<Role extends string> = Branded<Role>;',
   },
   {
     name: 'InspectorJsonObject',

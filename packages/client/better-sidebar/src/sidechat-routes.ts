@@ -44,7 +44,7 @@ import {
 import { requireString, SidebarError } from './wire.ts'
 
 /** The five Side Chat routes of the sidebar API (wire method names). */
-export interface SidechatRoutes {
+interface SidechatRoutes {
   /** Create a side thread child seeded with the parent's log up to now.
    *  `question` is optional: empty creates an EMPTY thread (Codex-style
    *  immediate create); the first `sidechat.prompt` then carries the

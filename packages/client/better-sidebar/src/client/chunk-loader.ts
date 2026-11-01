@@ -101,7 +101,7 @@ const CHUNK_REVALIDATE_TIMEOUT_MS = 5_000
  * {@link setChunkModuleSystem}. The rc.7-era `window.__DSH_MODULES__` global
  * remains as a fallback so older hosts and the test harness keep working.
  */
-export interface ChunkModuleSystem {
+interface ChunkModuleSystem {
   import(specifier: string): Promise<unknown>
 }
 
@@ -151,7 +151,7 @@ function chunkRegistry(): ChunkRegistry {
 }
 
 /** Script-load hook; tests replace it with a stub (the default needs a real DOM + network). */
-export type ChunkScriptLoader = (src: string) => Promise<void>
+type ChunkScriptLoader = (src: string) => Promise<void>
 
 const defaultScriptLoader: ChunkScriptLoader = src => new Promise((resolve, reject) => {
   const el = document.createElement('script')

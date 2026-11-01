@@ -15,7 +15,7 @@ import { t } from './locales.ts'
 import css from './sidebar.module.css'
 
 /** One rendered diff line. */
-export interface DiffLine {
+interface DiffLine {
   kind: 'ctx' | 'del' | 'add' | 'meta'
   /** The line content without its diff marker ('' for the no-newline marker). */
   text: string
@@ -26,7 +26,7 @@ export interface DiffLine {
 }
 
 /** One parsed hunk. */
-export interface DiffHunk {
+interface DiffHunk {
   /** The old-side start line (`-a[,b]`). */
   oldStart: number
   /** The new-side start line (`+c[,d]`). */
@@ -37,7 +37,7 @@ export interface DiffHunk {
 }
 
 /** One parsed file section of a unified diff. */
-export interface DiffFile {
+interface DiffFile {
   /** The `---` path verbatim ('/dev/null' for a new file). */
   oldPath: string
   /** The `+++` path verbatim ('/dev/null' for a deleted file). */
@@ -48,7 +48,7 @@ export interface DiffFile {
 }
 
 /** The parsed unified diff. */
-export interface ParsedDiff {
+interface ParsedDiff {
   files: DiffFile[]
 }
 
@@ -197,7 +197,7 @@ function defaultExpandedFiles(files: DiffFile[]): Set<number> {
   return expanded
 }
 
-export interface DiffViewProps {
+interface DiffViewProps {
   /** Unified diff text (`git.diff` or `git.commit-diff` payloads). */
   diff: string
   /** Untracked-file content: when present, renders as a full-file addition instead of parsing. */

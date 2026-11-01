@@ -54,7 +54,7 @@ export interface SidebarLeaf {
 }
 
 /** A recursive split between child panes (fractional sizes summing to 1). */
-export interface SidebarSplit {
+interface SidebarSplit {
   kind: 'split'
   id: string
   dir: 'row' | 'col'
@@ -126,7 +126,7 @@ export const PANEL_MIN = 280
 /** Panel width ceiling in px where no viewport is available (unit tests). */
 export const PANEL_MAX = 640
 /** Panel width a fresh session starts with when no preference applies. */
-export const PANEL_DEFAULT = 400
+const PANEL_DEFAULT = 400
 /** Tab title width cap in px before the tab strip ellipsizes a tab. */
 export const TAB_MAX_WIDTH = 160
 /** Bottom panel geometry contract (mirrors the width contract; the upper
@@ -143,9 +143,9 @@ export const FLOAT_MIN_H = 200
  *  (390×780 ≈ 1:2). The creation path additionally caps the size to the
  *  viewport (minus a 24px margin), so a short viewport gets a shorter —
  *  not overflowing — window instead of an exact ratio. */
-export const FLOAT_DEFAULT_W = 390
+const FLOAT_DEFAULT_W = 390
 /** Height in px a fresh free window starts with (the 780 half of the 390×780 default). */
-export const FLOAT_DEFAULT_H = 780
+const FLOAT_DEFAULT_H = 780
 
 let nextIdCounter = 0
 /** Unique pane/tab id within one state instance. */
@@ -206,7 +206,7 @@ function maxCounterId(parsed: unknown): number {
 }
 
 /** The default tab a fresh session seeds. */
-export type DefaultSeed = 'editor-home' | 'none'
+type DefaultSeed = 'editor-home' | 'none'
 
 /** A fresh default state: one seeded tab in one pane, open per the caller's
  * preference. `width` is the caller's preferred panel width (default
@@ -278,7 +278,7 @@ export function treeOf(state: SidebarState, id: string): 'splits' | 'bottomSplit
  * @param visit - in-place mutator applied to the matching leaf's clone.
  * @returns the new tree; untouched subtrees keep their references.
  */
-export function mapLeaf(node: SplitNode, paneId: string, visit: (leaf: SidebarLeaf) => void): SplitNode {
+function mapLeaf(node: SplitNode, paneId: string, visit: (leaf: SidebarLeaf) => void): SplitNode {
   if (node.kind === 'leaf') {
     if (node.id === paneId) {
       const copy: SidebarLeaf = { ...node, tabs: [...node.tabs] }
@@ -401,7 +401,7 @@ export function floatWithTab(state: SidebarState, tabId: string): FloatWindow | 
  * @param floatId - the window id to locate.
  * @returns the window, or undefined when the id is unknown.
  */
-export function floatById(state: SidebarState, floatId: string): FloatWindow | undefined {
+function floatById(state: SidebarState, floatId: string): FloatWindow | undefined {
   return state.floats.find(float => float.id === floatId)
 }
 
@@ -412,7 +412,7 @@ export function floatById(state: SidebarState, floatId: string): FloatWindow | u
  * @param dir - split direction ('row' places the fresh leaf right, 'col' below).
  * @returns the new tree; an absent paneId leaves every leaf unchanged.
  */
-export function splitLeafAt(node: SplitNode, paneId: string, dir: 'row' | 'col'): SplitNode {
+function splitLeafAt(node: SplitNode, paneId: string, dir: 'row' | 'col'): SplitNode {
   const fresh: SidebarLeaf = { kind: 'leaf', id: uid('pane'), tabs: [], active: null }
   return mapLeaf(node, paneId, (leaf) => {
     const target: SidebarLeaf = { ...leaf }
@@ -1030,7 +1030,7 @@ function viewportH(): number {
  * @param h - requested height in px.
  * @returns the clamped geometry, rounded to whole px.
  */
-export function clampFloatGeometry(x: number, y: number, w: number, h: number): Pick<FloatWindow, 'x' | 'y' | 'w' | 'h'> {
+function clampFloatGeometry(x: number, y: number, w: number, h: number): Pick<FloatWindow, 'x' | 'y' | 'w' | 'h'> {
   const vw = viewportW()
   const vh = viewportH()
   const width = Math.round(Math.min(Math.max(w, FLOAT_MIN_W), Math.max(FLOAT_MIN_W, vw)))
@@ -1186,7 +1186,7 @@ export function closeFloatByTab(state: SidebarState, tabId: string): SidebarStat
 }
 
 /** Prefix marking a tab id as an agent-owned terminal (suffix is the uuid). */
-export const AGENT_TAB_PREFIX = 'agent:'
+const AGENT_TAB_PREFIX = 'agent:'
 
 /**
  * Whether a tab id refers to an agent-owned terminal.
@@ -1211,7 +1211,7 @@ export function agentUuidOf(tabId: string): string {
  * @param uuid - the agent terminal uuid.
  * @returns the `agent:<uuid>` tab id.
  */
-export function agentTabId(uuid: string): string {
+function agentTabId(uuid: string): string {
   return `${AGENT_TAB_PREFIX}${uuid}`
 }
 

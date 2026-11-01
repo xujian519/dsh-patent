@@ -6,7 +6,7 @@
 import { PANEL_MIN } from './state.ts'
 
 /** Inputs of the layout-push computation: drawer/panel state and the sizes they claim. */
-export interface LayoutPushInput {
+interface LayoutPushInput {
   narrow: boolean
   panelOpen: boolean
   bottomOpen: boolean
@@ -17,7 +17,7 @@ export interface LayoutPushInput {
 }
 
 /** The width and height the sidebar pushes onto the app content, in px. */
-export interface LayoutPushSize {
+interface LayoutPushSize {
   width: number
   height: number
 }

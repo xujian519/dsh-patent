@@ -17,10 +17,10 @@ import { parseLoopbackAllowlist } from '../loopback-allowlist.ts'
 export { parseLoopbackAllowlist }
 
 /** Why a navigation attempt was refused. */
-export type BrowserBlockReason = 'scheme' | 'loopback'
+type BrowserBlockReason = 'scheme' | 'loopback'
 
 /** Result of normalizing one address-bar input. */
-export type BrowserNavigateResult =
+type BrowserNavigateResult =
   | { kind: 'ok'; url: string }
   | { kind: 'blocked'; reason: BrowserBlockReason }
   | { kind: 'invalid' }
@@ -37,7 +37,7 @@ export interface BrowserProbeResult {
 }
 
 /** Embeddability verdict of one probe. */
-export type Embeddability = 'embeddable' | 'blocked' | 'unknown'
+type Embeddability = 'embeddable' | 'blocked' | 'unknown'
 
 /**
  * Decide whether a site can render inside the sidebar iframe. The signals

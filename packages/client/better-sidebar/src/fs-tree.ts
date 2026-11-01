@@ -13,7 +13,7 @@ import { errorMessage } from '@deepseek-ai/dsh-value'
 import { SidebarError } from './wire.ts'
 
 /** One explorer row. */
-export interface SidebarFsEntry {
+interface SidebarFsEntry {
   name: string
   path: string
   isDir: boolean
@@ -25,7 +25,7 @@ export interface SidebarFsEntry {
 }
 
 /** One listed level. */
-export interface SidebarFsListing {
+interface SidebarFsListing {
   path: string
   entries: SidebarFsEntry[]
   truncated: boolean

@@ -32,19 +32,19 @@
  */
 
 /** One decoded route reference. */
-export interface HtmlRouteRef {
+interface HtmlRouteRef {
   sessionId: string
   /** Absolute file path (leading slash; Windows drives keep their colon). */
   path: string
 }
 
 /** Decode outcome: the reference, or a client-error description. */
-export type HtmlDecodeResult =
+type HtmlDecodeResult =
   | { ok: true; ref: HtmlRouteRef }
   | { ok: false; status: 400 | 404; message: string }
 
 /** The route prefix both encoders/decoders agree on. */
-export const HTML_ROUTE_PREFIX = '/sidebar/html/'
+const HTML_ROUTE_PREFIX = '/sidebar/html/'
 
 /**
  * Build the route URL for one absolute file path (client + tests).

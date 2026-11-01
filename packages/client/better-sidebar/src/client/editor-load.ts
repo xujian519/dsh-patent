@@ -16,7 +16,7 @@ import { assertNever } from '@deepseek-ai/dsh-util-values'
 import type { FileViewerDescriptor } from './service.ts'
 
 /** One host fs.read result (mirror of the wire; `head` present when binary). */
-export interface FsReadOutcome {
+interface FsReadOutcome {
   binary: boolean
   content: string
   truncated: boolean

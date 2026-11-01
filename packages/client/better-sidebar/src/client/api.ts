@@ -38,10 +38,10 @@ export interface FsEntry {
 }
 
 /** Text read result. */
-export interface FsTextResult { kind: 'text'; content: string; truncated: boolean }
+interface FsTextResult { kind: 'text'; content: string; truncated: boolean }
 /** Binary read result (no content; images load through the media route).
  *  `head` carries the first bytes (base64) for viewer detect sniffing. */
-export interface FsBinaryResult { kind: 'binary'; size: number; truncated: boolean; head: string }
+interface FsBinaryResult { kind: 'binary'; size: number; truncated: boolean; head: string }
 
 /**
  * One jobs.output response: the output the MODEL has read so far for the
@@ -59,7 +59,7 @@ export interface JobOutputResult {
 }
 
 /** The `subagents.live` response: running child id → latest activity. */
-export type SubagentLiveResult = { live: Record<string, LastActivity> }
+type SubagentLiveResult = { live: Record<string, LastActivity> }
 
 /** Terminal dependency status (mirror of the host's depsStatus; issue #140). */
 export type TerminalDepsStatus =

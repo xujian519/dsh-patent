@@ -281,7 +281,7 @@ export class PtyManager {
  * never executes on the ubuntu CI runners, so it is only testable through
  * these injection points.
  */
-export interface ShellResolutionOptions {
+interface ShellResolutionOptions {
   /** Platform override (defaults to `process.platform`). */
   platform?: NodeJS.Platform
   /** Environment override; the resolver only reads SHELL, DSH_SIDEBAR_SHELL, PATH, ProgramW6432, ProgramFiles, LOCALAPPDATA. */

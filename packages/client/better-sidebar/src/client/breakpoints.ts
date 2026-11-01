@@ -25,7 +25,7 @@ export function isNarrowWidth(width: number): boolean {
 }
 
 /** The live viewport dimensions in px (0 outside a window). */
-export interface ViewportSize {
+interface ViewportSize {
   width: number
   height: number
 }

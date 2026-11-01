@@ -10,20 +10,20 @@
  */
 
 /** One fenced mermaid diagram lifted out of the markdown source. */
-export interface MermaidBlock {
+interface MermaidBlock {
   kind: 'mermaid'
   /** The raw diagram source between the fences (info string stripped). */
   code: string
 }
 
 /** A span of plain markdown source (may itself contain non-mermaid fences). */
-export interface MarkdownBlock {
+interface MarkdownBlock {
   kind: 'markdown'
   text: string
 }
 
 /** One split result: markdown source or a lifted mermaid diagram. */
-export type MdBlock = MarkdownBlock | MermaidBlock
+type MdBlock = MarkdownBlock | MermaidBlock
 
 /** Props of the chunk-resident `MermaidMarkdown` component (shared contract). */
 export interface MermaidMarkdownProps {

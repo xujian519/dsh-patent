@@ -52,7 +52,7 @@ export const DSH_NODE_PTY_RANGE = '1.2.0-beta.15'
 export const PTY_DEPS_MISSING = 'pty-deps-missing'
 
 /** A require-compatible loader, injectable for tests. */
-export type NodePtyRequire = (id: string) => unknown
+type NodePtyRequire = (id: string) => unknown
 
 const require = createRequire(import.meta.url)
 
@@ -175,7 +175,7 @@ export function findPluginRoot(fromFile: string = fileURLToPath(import.meta.url)
 }
 
 /** Options for {@link buildRepairCommand}. */
-export interface RepairCommandOptions {
+interface RepairCommandOptions {
   /** The plugin package root (where scripts/install.sh / install.ps1 live). */
   pluginRoot: string | null
   /** The detected profile directory (null → the standard `web` profile). */
@@ -227,7 +227,7 @@ function describeCause(cause: unknown): string {
 }
 
 /** Structured status served by the `/sidebar/api/terminal.deps` endpoint. */
-export type NodePtyDepsStatus =
+type NodePtyDepsStatus =
   | { ok: true }
   | {
     ok: false

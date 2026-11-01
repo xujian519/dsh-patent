@@ -14,10 +14,10 @@ import { parentOf, requireAbsolute } from './fs-tree.ts'
 import { SidebarError } from './wire.ts'
 
 /** The two external open actions the route accepts. */
-export type OpenExternalAction = 'reveal' | 'url'
+type OpenExternalAction = 'reveal' | 'url'
 
 /** One platform opener invocation (argv array — never a shell string). */
-export interface ExternalCommand {
+interface ExternalCommand {
   command: string
   args: string[]
 }

@@ -41,7 +41,7 @@ const OPENABLE_SCHEMES = new Set(['http:', 'https:'])
 export const TERMINAL_URL_REGEX = /\bhttps?:\/\/[^\s"'<>\[\]{}|\\^`]+/gi
 
 /** A URL match in a terminal line: the text and its 0-based start offset. */
-export interface TerminalUrlMatch {
+interface TerminalUrlMatch {
   /** 0-based start index of the URL within the line string. */
   start: number
   /** The matched URL text. */
@@ -119,7 +119,7 @@ export function findTerminalUrlsInLine(line: string): TerminalUrlMatch[] {
  * compatible with xterm's `IBufferRange` so the caller can pass it
  * straight through without importing xterm types here.
  */
-export interface TerminalLinkRange {
+interface TerminalLinkRange {
   start: { x: number; y: number }
   end: { x: number; y: number }
 }
@@ -129,7 +129,7 @@ export interface TerminalLinkRange {
  * (the link provider in `TerminalView`) attaches the `activate`
  * callback, which closes over the modifier gate and `openTerminalUrl`.
  */
-export interface TerminalLinkDescriptor {
+interface TerminalLinkDescriptor {
   range: TerminalLinkRange
   text: string
 }

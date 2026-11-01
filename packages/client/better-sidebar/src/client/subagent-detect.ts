@@ -120,7 +120,7 @@ export function detectNewDirectSubagent(
 }
 
 /** Descendant totals of one session through an uninterrupted subagent-origin chain. */
-export interface SubagentDescendantTotals {
+interface SubagentDescendantTotals {
   count: number
   runningCount: number
 }

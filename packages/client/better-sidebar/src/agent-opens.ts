@@ -31,7 +31,7 @@ import type { Context } from './context-types.ts'
 import type { SidebarPrefs } from './prefs-shared.ts'
 
 /** What the model asked to open. */
-export type AgentOpenKind = 'file' | 'folder' | 'url'
+type AgentOpenKind = 'file' | 'folder' | 'url'
 
 /** One pending/broadcast open request (the wire face over the push socket). */
 export interface AgentOpenRequest {

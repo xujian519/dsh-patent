@@ -78,7 +78,7 @@ import type {
 import css from './SideCardSection.module.css'
 
 /** Injected business face: the shared store (prefs cache) + the sidebar service (registries). */
-export interface SideCardSectionInjected {
+interface SideCardSectionInjected {
   store: SidebarStore
   service: BetterSidebarService
 }

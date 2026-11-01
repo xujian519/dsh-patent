@@ -26,12 +26,12 @@ export const ALLOWED_SIGNALS = ['SIGINT', 'SIGTERM', 'SIGKILL', 'SIGHUP', 'SIGTS
 export type AgentTerminalSignal = (typeof ALLOWED_SIGNALS)[number]
 
 /** Default read page size (lines) when the caller omits `count`. */
-export const DEFAULT_READ_COUNT = 500
+const DEFAULT_READ_COUNT = 500
 
 /** Smallest pty dimension the registry accepts (mirrors the tool contract). */
-export const TERMINAL_DIM_MIN = 2
+const TERMINAL_DIM_MIN = 2
 /** Largest pty dimension the registry accepts (mirrors the tool contract). */
-export const TERMINAL_DIM_MAX = 1024
+const TERMINAL_DIM_MAX = 1024
 
 /**
  * Clamp one cols×rows pair into the supported pty range (flooring decimals).
@@ -125,7 +125,7 @@ export interface AgentTerminalHandle {
 }
 
 /** Read result shape (mirrors the official tool-pty terminal_read contract). */
-export interface AgentTerminalReadResult {
+interface AgentTerminalReadResult {
   /** The slice of transcript text for the requested page. */
   text: string
   /** Total lines in the retained transcript (the page may be a subset). */
@@ -137,7 +137,7 @@ export interface AgentTerminalReadResult {
 }
 
 /** Outcome of {@link AgentPtyRegistry.waitFor}. */
-export type AgentTerminalWaitResult =
+type AgentTerminalWaitResult =
   | {
     /** The needle was found in the transcript. */
     kind: 'found'

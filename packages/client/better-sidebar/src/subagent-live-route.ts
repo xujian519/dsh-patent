@@ -38,7 +38,7 @@ export interface SidebarSubagentLiveRoutes {
  * `subagents.history({ maxMessages: 12 })` window. Keeps stale tool calls
  * out of the preview and bounds the backward scan per child.
  */
-export const LIVE_WINDOW_MESSAGES = 12
+const LIVE_WINDOW_MESSAGES = 12
 
 /**
  * Build the live-preview routes bound to the plugin context.

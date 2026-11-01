@@ -21,7 +21,7 @@ import type { Context, SidebarHttpRequest, SidebarHttpResponse } from './context
 /** The chunk names the client may request (mirror of src/client/chunk-loader.ts). */
 export const CHUNK_NAMES = ['terminal', 'editor', 'mermaid'] as const
 /** One allowlisted lazy-chunk name servable from `/sidebar/bundle/`. */
-export type ChunkName = (typeof CHUNK_NAMES)[number]
+type ChunkName = (typeof CHUNK_NAMES)[number]
 
 /** Directory of this host-half module (lib/ — the chunk scripts live next to it). */
 const LIB_DIR = dirname(fileURLToPath(import.meta.url))

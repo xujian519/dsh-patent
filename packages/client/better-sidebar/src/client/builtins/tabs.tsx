@@ -54,7 +54,7 @@ interface TerminalViewProps {
 }
 
 /** How many UI-owned terminals may be open at once (agent-owned ones are uncapped). */
-export const TERMINAL_LIMIT = 3
+const TERMINAL_LIMIT = 3
 
 /** Optional per-registration builtin behavior (currently terminal title). */
 export interface BuiltinTabOptions {

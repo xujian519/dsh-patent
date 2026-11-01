@@ -43,7 +43,7 @@ export interface PinnedViewer {
 
 /** The home-session scope stored on a pinned virtual tab's meta, so
  *  TerminalView connects to the home session's PTY (not the viewer's). */
-export interface PinnedHomeScope {
+interface PinnedHomeScope {
   sessionId: string
   cwd: string | undefined
   /** The original tab id in the home session (TerminalView's `tab` param). */

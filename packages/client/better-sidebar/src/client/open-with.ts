@@ -60,7 +60,7 @@ export const OPEN_WITH_DEFAULTS: OpenWithConfig = {
 }
 
 /** The built-in open targets, in menu order. */
-export const OPEN_WITH_BUILTINS: readonly OpenWithTarget[] = [
+const OPEN_WITH_BUILTINS: readonly OpenWithTarget[] = [
   {
     id: 'explorer',
     nameKey: 'openWithExplorer',

@@ -130,7 +130,7 @@ export function orderJobs(rows: readonly TreeJob[]): TreeJob[] {
 }
 
 /** The sidebar's StateDot states for the five wire statuses. */
-export type JobDotState = 'ongoing' | 'warning' | 'done' | 'error'
+type JobDotState = 'ongoing' | 'warning' | 'done' | 'error'
 
 /**
  * Status marker semantics. `stopping` and `killed` share the attention

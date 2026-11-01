@@ -50,13 +50,13 @@ export interface SidebarHttpResponse {
 }
 
 /** The upgrade socket face (structural subset: the destroy the fences use). */
-export interface SidebarUpgradeSocket {
+interface SidebarUpgradeSocket {
   destroy(): void
 }
 
 /** The upgrade head bytes (Buffer at runtime; typed as bytes so no Node
  *  global leaks into the declaration graph). */
-export type SidebarUpgradeHead = Uint8Array
+type SidebarUpgradeHead = Uint8Array
 
 /** One named webserver route (mirror of the host-webserver WebRoute). */
 export interface SidebarWebRoute {
@@ -82,19 +82,19 @@ export interface SidebarWebStreamingRoute {
 }
 
 /** The webServer service face this plugin uses. */
-export interface SidebarWebServer {
+interface SidebarWebServer {
   register(route: SidebarWebRoute): () => void
   registerUpgrade(route: SidebarWebUpgradeRoute): () => void
   registerStream(route: SidebarWebStreamingRoute): () => void
 }
 
 /** A published session's header slice the sidebar reads (authoritative cwd). */
-export interface SidebarSessionHeader {
+interface SidebarSessionHeader {
   cwd?: string
 }
 
 /** The host session store face (`ctx.sessions.get(id)` returns the live session). */
-export interface SidebarSessionStore {
+interface SidebarSessionStore {
   get(id: string): {
     header: SidebarSessionHeader
     /**
@@ -112,12 +112,12 @@ export interface SidebarSessionStore {
  * accepts — LAN IP literals sampled when the server binds all interfaces,
  * plus explicit `--trusted-host` authorities.
  */
-export interface SidebarWebRuntime {
+interface SidebarWebRuntime {
   trustedHosts: readonly string[]
 }
 
 /** Registration options the sidebar passes to `ctx.slots.register` (subset of the real options). */
-export interface SidebarSlotRegisterOptions {
+interface SidebarSlotRegisterOptions {
   name: string
   key?: string
   id?: string
@@ -134,7 +134,7 @@ export interface SidebarSlotRegisterOptions {
 }
 
 /** The client slots service face (register returns the disposer). */
-export interface SidebarSlotsService {
+interface SidebarSlotsService {
   register(options: SidebarSlotRegisterOptions, component: unknown): () => void
   /**
    * Run a callback for each declaration lifetime of a slot (the runtime
@@ -230,13 +230,13 @@ export interface SidebarJobView {
 }
 
 /** The host jobs registry face the sidebar routes touch (structural mirror of `JobRegistry`). */
-export interface SidebarJobsService {
+interface SidebarJobsService {
   /** Request cancellation; throws for an unknown or foreign job. */
   kill(id: string, caller?: SidebarAgent, reason?: string): 'requested' | 'already-finished'
 }
 
 /** The host agent registry face (structural mirror of the runtime `ctx.agents`). */
-export interface SidebarAgentsService {
+interface SidebarAgentsService {
   /** The live agent registered under a session id, or undefined when not live. */
   get(id: string): SidebarAgent | undefined
   /**
@@ -292,7 +292,7 @@ export type SidebarSubagentDescendantEntry =
  *  service): resolves and mounts the preset composition a session recorded,
  *  so a resumed or forked session rebuilds the same tool/prompt world its
  *  history was produced under. */
-export interface SidebarAgentPresetsService {
+interface SidebarAgentPresetsService {
   /** Resolve a preset id; undefined resolves the deployment default. */
   resolve(presetId?: string): Promise<{ id: string }>
   /** Mount a preset's composition into an agent scope before publication. */
@@ -300,7 +300,7 @@ export interface SidebarAgentPresetsService {
 }
 
 /** The host session-title service face (mirror of the sessionTitle service). */
-export interface SidebarSessionTitleService {
+interface SidebarSessionTitleService {
   /** Rename one live session's title (pins it against auto-regeneration). */
   rename(session: unknown, title: string): { title: string; eventSeq: number }
 }
@@ -309,7 +309,7 @@ export interface SidebarSessionTitleService {
  *  service's `inspect`): detached inspection of one attached or persisted
  *  session, used to resolve a cold session's working directory and to
  *  compose the recorded preset when a Side Chat thread cold-resumes. */
-export interface SidebarSessionControllerService {
+interface SidebarSessionControllerService {
   inspect(sessionId: string, signal?: AbortSignal): Promise<{
     meta: { cwd?: string; agentPreset?: string }
     events: readonly SidebarSessionEvent[]
@@ -317,10 +317,10 @@ export interface SidebarSessionControllerService {
 }
 
 /** RPC result slot mirror (`RpcResult<T>` on the wire). */
-export type SidebarRpcResult<T> = { ok: true; value: T } | { ok: false; error: { code: string; message: string } }
+type SidebarRpcResult<T> = { ok: true; value: T } | { ok: false; error: { code: string; message: string } }
 
 /** Unary response mirror (`RpcResponse<T>` on the wire). */
-export interface SidebarRpcResponse<T> {
+interface SidebarRpcResponse<T> {
   rpcId: unknown
   result: SidebarRpcResult<T>
 }
@@ -329,7 +329,7 @@ export interface SidebarRpcResponse<T> {
  *  (subagent.history verifies subagent-catalog membership, which our custom
  *  side-thread children do not have — the generic session.history reads any
  *  durable log directly). */
-export interface SidebarSessionHistoryRpc {
+interface SidebarSessionHistoryRpc {
   history(
     payload: { sessionId: string; beforeSeq?: number; maxMessages?: number },
     signal?: AbortSignal,
@@ -337,7 +337,7 @@ export interface SidebarSessionHistoryRpc {
 }
 
 /** The wire face the Subagent activity summary needs (subset of `ctx.connection`). */
-export interface SidebarConnectionHandle {
+interface SidebarConnectionHandle {
   api: {
     sessions: SidebarSessionHistoryRpc
     subagents: {
@@ -364,7 +364,7 @@ export interface SidebarSessionList {
 }
 
 /** The client sessions service face (only the list feed is needed). */
-export interface SidebarSessionsService {
+interface SidebarSessionsService {
   list: {
     getSnapshot(): SidebarSessionList
     subscribe(fn: () => void): () => void
@@ -424,7 +424,7 @@ export interface SidebarSessionsService {
  * language, and the sidebar's zh/en dictionaries register into the service's
  * namespace registry under `betterSidebar`.
  */
-export interface SidebarLocaleService {
+interface SidebarLocaleService {
   /** Current immutable locale snapshot (uSES-safe; `active` is 'zh' | 'en' today). */
   getSnapshot(): { active: string }
   /** Subscribe to snapshot changes (locale switch or dictionary registration). */
@@ -434,7 +434,7 @@ export interface SidebarLocaleService {
 }
 
 /** The composer draft face the sidebar reaches through `ctx.conversation.input`. */
-export interface SidebarSessionInput {
+interface SidebarSessionInput {
   /** The live input store (draft read for append). */
   state: {
     getSnapshot(): { draft: string }
@@ -456,7 +456,7 @@ export interface SidebarConversation {
  * to the Host OS's default application, and every chat-side file open
  * (tool rows, produced-files, prose mentions) funnels through it.
  */
-export interface SidebarWorkspacesService {
+interface SidebarWorkspacesService {
   /** Open a filesystem path with the Host operating system's default application. */
   openPath(path: string): Promise<void>
 }
@@ -465,7 +465,7 @@ export interface SidebarWorkspacesService {
  * One profile entry's live Config form (mirror of @deepseek-ai/dsh-settings'
  * SettingsDescriptor — only the slices the sidebar reads).
  */
-export interface SidebarSettingsDescriptor {
+interface SidebarSettingsDescriptor {
   /** Profile entry id (the settings namespace). */
   ns: string
   /** The entry's projected Config value (the form shape, e.g. `{ prefs: … }`). */
@@ -480,7 +480,7 @@ export interface SidebarSettingsDescriptor {
  * keyed by the entry's profile id; the sidebar's own "Side card" preferences
  * are the volatile `prefs` field of its Config.
  */
-export interface SidebarSettingsService {
+interface SidebarSettingsService {
   /** Read every active entry's form (redacted: secrets never ride). */
   describe(options?: { redactSecrets?: boolean }): SidebarSettingsDescriptor[]
   /**
@@ -492,7 +492,7 @@ export interface SidebarSettingsService {
 
 /** One profile plugin entry row as the configuration editor addresses it
  *  (mirror of the Loader Entry slice + ConfigEditor.entries()). */
-export interface SidebarConfigEditorEntry {
+interface SidebarConfigEditorEntry {
   /** The Loader fiber running the entry (identity with the plugin's `ctx.fiber`). */
   fiber?: unknown
   /** Entry options; `id` is the profile patch id (the settings namespace). */
@@ -504,7 +504,7 @@ export interface SidebarConfigEditorEntry {
  * ConfigEditor — only the row listing the sidebar resolves its own entry id
  * through; the plugin never edits another entry).
  */
-export interface SidebarConfigEditorService {
+interface SidebarConfigEditorService {
   /** Addressable profile rows with unique patch ids. */
   entries(): SidebarConfigEditorEntry[]
 }
@@ -514,7 +514,7 @@ export interface SidebarConfigEditorService {
  * The host half registers model-facing tools here; the registry attaches the
  * returned disposer to the contributing fiber so unloading unregisters them.
  */
-export interface SidebarToolsService {
+interface SidebarToolsService {
   /** Register one tool definition (raw JSON-Schema or defineTool-sugar form). */
   register(tool: unknown): () => void
 }
@@ -524,7 +524,7 @@ export interface SidebarToolsService {
  * Agent). Only the slices the terminal tools touch are restated: the live
  * session identity and its header cwd, both readonly.
  */
-export interface SidebarAgent {
+interface SidebarAgent {
   /** The live session identity shared with the session log. */
   readonly id: string
   /** The live session this agent drives. */
@@ -539,7 +539,7 @@ export interface SidebarAgent {
  * cordis `Context` below (see the file header for why intersection is used
  * instead of module augmentation).
  */
-export interface SidebarContextShape {
+interface SidebarContextShape {
   /** The webServer service face this plugin uses. */
   webServer: SidebarWebServer
   /** The session store (host `.get`) and the client list feed (`.list`) faces. */

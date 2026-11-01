@@ -12,7 +12,7 @@
  * scheduled task reads that ref, so replacing the task on every event is
  * cheap (one ref write + one rAF check).
  */
-export interface FrameBatcher {
+interface FrameBatcher {
   /** Schedule (or replace) the per-frame task. Safe to call on every event. */
   schedule(task: () => void): void
   /** Cancel any pending frame and run the scheduled task synchronously

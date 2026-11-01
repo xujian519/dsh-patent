@@ -17,13 +17,13 @@ import { join, relative, sep } from 'node:path'
 
 /** One search: the relative paths of the matching entries (dirs included so
  *  the client can hint where matches live) plus the truncation flag. */
-export interface FsSearchResult {
+interface FsSearchResult {
   matches: string[]
   truncated: boolean
 }
 
 /** Search budgets (both injectable for tests). */
-export interface FsSearchOptions {
+interface FsSearchOptions {
   /** Row cap of the result list (default 200). */
   maxMatches?: number
   /** Total entries visited before the walk gives up (default 100_000). */

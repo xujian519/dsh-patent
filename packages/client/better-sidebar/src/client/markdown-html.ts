@@ -22,19 +22,19 @@
 import { CLOSE_FENCE_RE, OPEN_FENCE_RE, fenceInfo } from './mermaid-blocks.ts'
 
 /** A run of raw HTML lines lifted out of the markdown stream. */
-export interface HtmlSegment {
+interface HtmlSegment {
   kind: 'html'
   text: string
 }
 
 /** A run of markdown source (may contain non-mermaid fences, inline HTML…). */
-export interface MarkdownHtmlSegment {
+interface MarkdownHtmlSegment {
   kind: 'markdown'
   text: string
 }
 
 /** One segment of the split document: markdown source or a lifted HTML run. */
-export type MdHtmlSegment = MarkdownHtmlSegment | HtmlSegment
+type MdHtmlSegment = MarkdownHtmlSegment | HtmlSegment
 
 /** The doc-wide analysis the preview consumes (all pure, unit-tested here). */
 export interface AnalyzedMarkdownHtml {
@@ -57,7 +57,7 @@ export interface AnalyzedMarkdownHtml {
  * HTML run. `<summary>` is CommonMark-inline but intentionally included: it is
  * the idiomatic first child of a `<details>` run in GitHub-flavored READMEs.
  */
-export const HTML_BLOCK_TAGS: ReadonlySet<string> = new Set([
+const HTML_BLOCK_TAGS: ReadonlySet<string> = new Set([
   'address', 'article', 'aside', 'base', 'basefont', 'blockquote', 'body',
   'caption', 'center', 'col', 'colgroup', 'dd', 'details', 'dialog', 'dir',
   'div', 'dl', 'dt', 'fieldset', 'figcaption', 'figure', 'footer', 'form',
@@ -143,7 +143,7 @@ export type HtmlPart =
   | { kind: 'close'; tag: string }
 
 /** The run's structure relative to the surrounding document nesting. */
-export interface HtmlSegmentShape {
+interface HtmlSegmentShape {
   parts: HtmlPart[]
 }
 

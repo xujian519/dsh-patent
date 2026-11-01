@@ -20,13 +20,13 @@ import { MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
 
 /** The flat copy-button pair the plugin threads through its own props
  *  (e.g. MermaidMarkdownProps.codeLabels — the chunk contract stays put). */
-export interface MarkdownCopyLabels {
+interface MarkdownCopyLabels {
   copyLabel: string
   copiedLabel: string
 }
 
 /** The dual-generation chrome labels object (see module doc). */
-export interface MarkdownChromeLabels extends MarkdownCopyLabels {
+interface MarkdownChromeLabels extends MarkdownCopyLabels {
   /** 0.1.2-alpha.1+ nested reads. */
   code: MarkdownCopyLabels
   /** 0.1.2-alpha.1+ sr-only footnotes heading. */
@@ -34,7 +34,7 @@ export interface MarkdownChromeLabels extends MarkdownCopyLabels {
 }
 
 /** Build the dual-shape chrome labels from a flat copy-button pair. */
-export function markdownChromeLabels(labels: MarkdownCopyLabels): MarkdownChromeLabels {
+function markdownChromeLabels(labels: MarkdownCopyLabels): MarkdownChromeLabels {
   return {
     copyLabel: labels.copyLabel,
     copiedLabel: labels.copiedLabel,

@@ -24,7 +24,7 @@ import { relativeTo } from './paths.ts'
 export const SELECTION_LIMIT = 500
 
 /** The source line span a selection maps to (1-based, inclusive). */
-export interface SelectionLines {
+interface SelectionLines {
   start: number
   end: number
 }

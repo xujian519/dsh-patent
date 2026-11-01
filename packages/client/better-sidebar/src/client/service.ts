@@ -51,7 +51,7 @@ export type { SidebarPrefs } from '../prefs-shared.ts'
 export type SidebarSettingToggleType = 'switch' | 'text' | 'number' | 'select'
 
 /** One option of a `type: 'select'` setting row. */
-export interface SidebarSettingSelectOption {
+interface SidebarSettingSelectOption {
   /** The value written to the setting key when this option is picked
    *  (JSON-serializable: string / number / boolean). */
   value: string | number | boolean

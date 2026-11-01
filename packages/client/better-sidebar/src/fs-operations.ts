@@ -20,7 +20,7 @@ import { ensureWorkspacePath, ensureWorkspaceWritePath } from './path-security.t
 import { SidebarError } from './wire.ts'
 
 /** Inputs of one upload: the session scope plus the request body stream. */
-export interface WorkspaceUploadInput {
+interface WorkspaceUploadInput {
   /** The session workspace root; target and directory must stay inside it. */
   cwd: string
   /** Absolute upload directory chosen by the client (inside `cwd`). */

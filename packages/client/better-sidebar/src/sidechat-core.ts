@@ -29,7 +29,7 @@ export const SIDE_LABEL_PREFIX = 'Side: '
 export const SIDE_NEW_THREAD_TITLE = 'Side: New thread'
 
 /** Maximum code points kept in a durable thread label (matches subagent labels). */
-export const LABEL_MAX_CHARS = 48
+const LABEL_MAX_CHARS = 48
 
 /** The boundary message's opening line — the transcript mapping drops user
  *  rows starting with it (same first line as dsh-sidechain's boundary, so
@@ -94,7 +94,7 @@ export interface SidechatLogEvent {
 }
 
 /** The result of cutting a parent log into a side-thread inheritance. */
-export interface SidechatInheritance {
+interface SidechatInheritance {
   /** The child seed: contiguous from seq 0, ends outside any open turn. */
   seed: SeedEvent[]
   /**
@@ -330,7 +330,7 @@ export function buildOpenTurnSnapshot(events: readonly SidechatLogEvent[]): stri
 }
 
 /** One side-thread row in the client's thread list. */
-export interface SideThreadRow {
+interface SideThreadRow {
   id: string
   /** The durable thread title ('Side: …'). */
   title: string
@@ -438,7 +438,7 @@ export interface SidechatThreadInfo {
  * @param entries - the thread's history entries, oldest first.
  * @returns the events after the last `session/end-seed`, or all events when no marker exists.
  */
-export function threadOwnEvents(entries: readonly SidebarHistoryEntry[]): SidechatLogEvent[] {
+function threadOwnEvents(entries: readonly SidebarHistoryEntry[]): SidechatLogEvent[] {
   const events = entries.map(entry => entry.event)
   for (let index = events.length - 1; index >= 0; index--) {
     if (events[index]?.type === 'session/end-seed') return events.slice(index + 1)

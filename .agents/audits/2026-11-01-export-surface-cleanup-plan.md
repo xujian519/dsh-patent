@@ -83,4 +83,6 @@ pnpm run verify-client-ui-i18n   # 若触及 locale 导出
 - 2026-11-01：`verify-export-jsdoc` 绿；修 liveshare `LIVESHARE_VIEWER_GLOBAL` JSDoc 与 import 顺序。
 - 2026-11-01：长尾 demote 清零后 typecheck 暴露深路径/脚本引用，已恢复：`runCli`、`runSelectedSubprocessRunner`、Cordis `name`（headless/web-app）、`PrefsSchema`、`optionalStringArray`、`ConversationSession*Props`、`readDesktopCorePackageSet`、`welcomeWindowOptions`、`TypertWorkerError`/`decoratorPlugin`、`detailPath`。
 - 终态重扫：零引用 **75**；非入口 file-local **136**（publicStar **124** + 有意保留深引用 **12**）；`demoteLeft` **0**（扫描里 12 项为恢复后仍无 src 导入的测试/脚本出口）。
-- 验收：`pnpm run typecheck` 5/5 通过；`verify-export-jsdoc` 通过。未提交；关 #651/#645 待用户授权提交与评论。
+- 2026-11-01：master 的 #677 删除 `better-sidebar` 包，该包的 demote 层随之作废（PR #671 关闭）。
+- 2026-11-01：生成 Cordis API catalog 与 client slot 契约要求公开的类型保持导出（`AgentPresetCompositionRow`、`CompositionRowEnablement`、`CordisRuntimeSourceId`、`ApiSessionAgentError`、三个 slot owner props 等）；上面的终态计数早于这些恢复，不再代表当前导出面。
+- 验收：`pnpm run typecheck` 5/5 通过；`verify-export-jsdoc` 通过。

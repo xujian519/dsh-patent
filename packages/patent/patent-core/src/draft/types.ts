@@ -106,7 +106,8 @@ export interface SpecDraft {
   abstractFigure?: string
   /**
    * 说明书五部分；每部分 ≥1 个非空块，表格块仅允许出现在 embodiment。
-   * 附图说明部分的列表项即附图条目（每项渲染成一条「图N为……」），其条数必须等于 figureFiles 项数。
+   * 附图说明部分的列表项即附图条目（每项渲染成一条「图N为……」），列表项只写图名与描述文字，
+   * 不含图号与句末标点；其条数必须等于 figureFiles 项数。
    */
   sections: Record<SpecPartId, DraftBlock[]>
 }

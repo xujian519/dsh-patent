@@ -34,7 +34,7 @@ export type DraftSpecificationInput = {
   beneficial_effects?: string
   /** Background / prior-art description (optional). */
   background?: string
-  /** Drawing descriptions (optional, e.g. "图1为本发明实施例的整体结构示意图"). */
+  /** Drawing descriptions (optional, body only, e.g. "整体结构示意图"; no figure number prefix or terminal punctuation). */
   drawing_descriptions?: string[]
   /** Figure-analysis results (optional): auto-generate drawing descriptions when absent. */
   figure_analysis?: FigureAnalysisResult[]
@@ -132,16 +132,21 @@ function buildContent(input: DraftSpecificationInput): SpecificationSection {
   return { name: '发明内容', content: parts.join('\n'), placeholder: !(problem && solution && effects) }
 }
 
+/** 附图说明描述允许自带的图号前缀：`图1为`、`图 2是`、`附图3：`。 */
+const FIGURE_PREFIX = /^\s*(?:图|附图)\s*(?:\d+|[一二三四五六七八九十百]+)\s*(?:为|是|：|:)?\s*/
+
+/** 去掉描述自带的图号前缀；图号统一由 buildDrawings 按图序生成。 */
+function stripFigurePrefix(text: string): string {
+  return text.replace(FIGURE_PREFIX, '')
+}
+
 function buildDrawings(
   descriptions: string[] | undefined,
   hasDrawings: boolean | undefined,
   patentType: PatentType,
 ): SpecificationSection | undefined {
   if (descriptions && descriptions.length > 0) {
-    const content = descriptions.map((d, i) => {
-      const trimmed = d.trim()
-      return /^(?:图|附图)\s*(?:\d+|[一二三四五六七八九十]+)/.test(trimmed) ? trimmed : `图${i + 1}为${trimmed}`
-    }).join('\n')
+    const content = descriptions.map((d, i) => `图${i + 1}为${stripFigurePrefix(d.trim())}`).join('\n')
     return { name: '附图说明', content, placeholder: false }
   }
   if (hasDrawings === true || patentType === 'utility_model') {
@@ -207,7 +212,7 @@ function enrichFigureDescription(figure: FigureAnalysisResult): string {
   const hasAllRefs = electrical.components.every(component => base.includes(component.ref))
   if (hasAllRefs) return base
   const details = electrical.components.map(component => `${component.ref}-${component.name}${component.value ? `（${component.value}）` : ''}`).join('；')
-  return base.length > 0 ? `${base}\n图中：${details}；` : `图1为电路原理图；图中：${details}；`
+  return base.length > 0 ? `${base}\n图中：${details}；` : `电路原理图；图中：${details}；`
 }
 
 /**
@@ -330,7 +335,7 @@ export function createDraftSpecificationTool(): ToolDefinition {
       technical_solution: { type: 'string', description: '技术方案描述（可选）' },
       beneficial_effects: { type: 'string', description: '有益效果（可选）' },
       background: { type: 'string', description: '背景技术/现有技术描述（可选）' },
-      drawing_descriptions: { type: 'array', items: { type: 'string' }, description: '附图说明（可选，如 "图1为本发明实施例的整体结构示意图"）' },
+      drawing_descriptions: { type: 'array', items: { type: 'string' }, description: '附图说明（可选，每项只写图名与描述文字，不含图号与句末标点，如 "整体结构示意图"）' },
       figure_analysis: { type: 'array', items: { type: 'json' }, description: '附图智能分析结果（可选，未提供 drawing_descriptions 时自动生成附图说明）' },
       embodiments: { type: 'array', items: { type: 'string' }, description: '具体实施方式（可选，可多个实施例）' },
       has_drawings: { type: 'boolean', description: '是否有附图（实用新型必须有附图）' },

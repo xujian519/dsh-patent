@@ -1,6 +1,12 @@
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
     'team-message': { readonly kind: 'team-message'; readonly senderName: string }
+    /** Fixture mirror of the host `agent-message` source (subagent continuation). */
+    'agent-message': {
+      readonly kind: 'agent-message'
+      readonly form: 'relay'
+      readonly senderSessionId: import('@deepseek-ai/dsh-session/types').SessionId
+    }
   }
 }
 

@@ -20,6 +20,9 @@ import { readProgramResult, type ProgramBootData, type ProgramMethods, type Host
 
 const messageOf = (error: unknown): string => error instanceof Error ? error.message : String(error)
 
+/** Time allowed for a managed process to report its exit status after its control pipe closes. */
+const CONTROL_CLOSE_EXIT_SETTLE_MS = 100
+
 interface Evaluation {
   settled: boolean
   data: ProgramBootData
@@ -311,7 +314,14 @@ export class ProgramWorker {
       if (kind === 'protocol') this.fail('protocol', error.message)
       else {
         if (kind === 'io') this.controlFailure = error.message
-        setImmediate(() => { if (!this.closed && this.exitOutcome === undefined) handle.terminate() })
+        setImmediate(() => {
+          if (this.closed || this.exitOutcome !== undefined) return
+          // A sandbox runner can close the program's control pipe before the managed wrapper reports
+          // its exit status; signalling at once would turn a normal exit into SIGTERM.
+          const settle = setTimeout(() => { handle.terminate() }, CONTROL_CLOSE_EXIT_SETTLE_MS)
+          const exited = (): void => { clearTimeout(settle) }
+          handle.done.then(exited, exited)
+        })
       }
     })
     void handle.done.then(async (outcome) => {

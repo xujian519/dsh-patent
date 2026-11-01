@@ -52,7 +52,7 @@ export function installViewerInputFixture(): ViewerInputFixture {
   let page: AssembledViewerPage | undefined
   const context = (): ClientSessionsContext => {
     if (page === undefined) throw new Error('viewer input probe: application has not booted')
-    return page.context() as ClientSessionsContext
+    return page.context()
   }
   return {
     async mount(container, target) {

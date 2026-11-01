@@ -1,6 +1,0 @@
-{
-  "meta": {
-    "title": "Barra lateral de trabalho",
-    "description": "Adiciona uma barra lateral direita no estilo VSCode com explorador, editor, terminal, git e navegador, isolada por sessão."
-  }
-}

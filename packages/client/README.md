@@ -99,7 +99,6 @@ The kernel packages boot and serve the page; the UI feature packages present it.
 | [`ui-directory-picker-browse/`](ui-directory-picker-browse/README.md) | In-app directory browsing surface for the workspace directory flow | — |
 | [`ui-directory-picker-native/`](ui-directory-picker-native/README.md) | Native directory-picker surface driving the local Desktop or Host OS chooser | — |
 | [`ui-file-drag/`](ui-file-drag/README.md) | Application-scoped file transfers and localized drag failure feedback | — |
-| [`better-sidebar/`](better-sidebar/README.md) | Presents the per-session workspace right sidebar: explorer, editor, terminal, git, side chat, subagent, and browser tabs | `ctx.betterSidebar` (client) |
 | [`ui-open-in-app/`](ui-open-in-app/README.md) | Session-header split button opening the workspace directory in an installed application, and the document preview's default-application controls for one file | — |
 | [`ui-patent-teams/`](ui-patent-teams/README.md) | Restores the PatentTeams monitor to the Web UI: one durable team card and the fixed Teams conversation view | — |
 

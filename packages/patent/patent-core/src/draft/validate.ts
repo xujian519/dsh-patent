@@ -64,6 +64,11 @@ const ABSTRACT_FIGURE_NUMBER = /^[1-9]\d*$/
 /** 表名禁止的行首形态：`表1`、`表 2`。 */
 const TABLE_NUMBER_PREFIX = /^\s*表\s*\d/
 
+/** 附图说明列表项禁止的行首形态：`图1为`、`图 2是`、`附图3：`。 */
+const DRAWING_ITEM_FIGURE_PREFIX = /^\s*(?:图|附图)\s*(?:\d+|[一二三四五六七八九十百]+)/
+
+/** 附图说明列表项禁止的句末标点：`。`、`；`、`;`。 */
+const DRAWING_ITEM_TERMINAL_PUNCTUATION = /[。；;]\s*$/
 
 function available(parts: readonly string[]): string {
   return parts.join('、')
@@ -296,9 +301,38 @@ function validateSpecSections(value: unknown, violations: string[]): Record<Spec
         }
       })
     }
+    if (partId === 'drawingDescriptions' && reportDrawingDescriptionItems(blocks, `sections.${partId}`, violations)) {
+      valid = false
+    }
     sections[partId] = blocks
   }
   return valid ? sections as Record<SpecPartId, DraftBlock[]> : undefined
+}
+
+/**
+ * 附图说明的列表项只承载描述文字：图号（「图N为」）与句末标点由渲染器生成。
+ * 列表项自带其中任何一项都会在成文时重复，因此在校验边界直接拒绝。
+ * @param blocks - 附图说明部分的块序列。
+ * @param path - 违规消息中的位置前缀。
+ * @param violations - 违规收集器。
+ * @returns 是否发现违规。
+ */
+function reportDrawingDescriptionItems(blocks: readonly DraftBlock[], path: string, violations: string[]): boolean {
+  let found = false
+  blocks.forEach((block, blockIndex) => {
+    if (block.kind !== 'list') return
+    block.items.forEach((item, itemIndex) => {
+      const authored: string[] = []
+      if (DRAWING_ITEM_FIGURE_PREFIX.test(item)) authored.push('图号')
+      if (DRAWING_ITEM_TERMINAL_PUNCTUATION.test(item)) authored.push('句末标点')
+      if (authored.length === 0) return
+      found = true
+      violations.push(
+        `${path}[${blockIndex}].items[${itemIndex}] 自带${authored.join('和')}：请只写图名与描述文字，图号（「图N为」）与句末标点由渲染器生成`,
+      )
+    })
+  })
+  return found
 }
 
 /**
@@ -340,7 +374,7 @@ export function validateSpecDraft(input: unknown): SpecDraft {
     const entries = figureEntryCount(sections.drawingDescriptions)
     if (entries !== figureFiles.length) {
       violations.push(
-        `附图说明条目数与 figureFiles 项数不一致：附图说明 ${entries} 条，figureFiles ${figureFiles.length} 项（每幅附图恰一条列表项，渲染为「图N为……」）`,
+        `附图说明条目数与 figureFiles 项数不一致：附图说明 ${entries} 条，figureFiles ${figureFiles.length} 项（每幅附图恰一条列表项，渲染为「图N为……」；列表项只写图名与描述文字，不含图号与句末标点）`,
       )
     }
   }

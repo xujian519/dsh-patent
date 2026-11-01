@@ -3,23 +3,23 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/patent/patent-core/README.md
 /:
-  en: 25fa274ba9d76ea4
-  zh: a4ce105b4adea450
+  en: 31ccdb1de36083ab
+  zh: cc570213ee0919e7
 /deepseek-ai-dsh-patent-core:
   en: 40a881446449f10b
   zh: d9595659c5bbaf76
 /deepseek-ai-dsh-patent-core/summary:
-  en: b561ee4ec8e936d9
-  zh: ee97dd2a2cbd9a9c
+  en: 72ebc12e1dc41f04
+  zh: c4c995d44c0cb094
 /deepseek-ai-dsh-patent-core/package-surface:
   en: d816c3a872d6b94c
   zh: 50fd24ef77bd2bf4
 /deepseek-ai-dsh-patent-core/table-of-contents:
-  en: 8a1dd28fb80340a4
-  zh: 01c1325f7fdf2824
+  en: 0756279c510f59e9
+  zh: 4028056b357fefa0
 /deepseek-ai-dsh-patent-core/atoms-engines:
-  en: 69b9e31e7707a423
-  zh: 7e22b0c6e5524646
+  en: 732719a7a697d9b8
+  zh: 1149c2aacb05770a
 /deepseek-ai-dsh-patent-core/modelport:
   en: 04e3db5218f7c555
   zh: 48c97f5cc1150b90
@@ -46,7 +46,10 @@
   zh: 2e5db2b98a2ce494
 /deepseek-ai-dsh-patent-core/claim-formal-lint:
   en: 8654c16180b1412b
-  zh: abeb21b57ac796e9
+  zh: c87e5f5e888444d7
+/deepseek-ai-dsh-patent-core/quote-anchoring:
+  en: ef09a77f8484e9c0
+  zh: 7b0286fffb2759b9
 /deepseek-ai-dsh-patent-core/numeric-range-novelty-check:
   en: e55f0d2fc25e958b
   zh: 330d9aa5d1ae3622

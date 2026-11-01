@@ -277,7 +277,7 @@ describe('P0 acceptance through validateSpecification', () => {
     const out = validateSpecification({ text: FOUR_PARTS, patent_type: 'invention' })
     expect(out.violations.find(v => v.rule === 'sections')).toBeUndefined()
     expect(out.passed).toBe(true)
-    expect(out.not_assessed.map(item => item.id)).toContain('enablement')
+    expect(out.not_assessed.map(item => item.id)).not.toContain('enablement')
     expect(out.not_assessed.map(item => item.id)).not.toContain('figure-analysis')
   })
 

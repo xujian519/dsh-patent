@@ -33,7 +33,7 @@ kind: "package-reference"
 
 `builtinPatentManifests` 是八个内置 manifest 的数据目录：patent_novelty_v1、patent_disclosure_v1、patent_inventiveness_v1、patent_patentability_v1、patent_oa_response_v1、patent_invalidation_v1、patent_reexamination_v1、patent_infringement_v1。无效宣告与复审两个 manifest 共用同一个阶段构建器，差异只在确定性阶段的接线：无效宣告用无效理由表与 `invalidity` 图表模式，复审用复审理由表（多一项专利法第 2 条第 3 款的实用新型客体缺陷理由，专利权类型单独输出）与 `reexamination` 图表模式，后者也让两种案件落盘的对照表互不覆盖。
 
-这些 manifest 共声明 30 个不同原子。`registerBuiltinAtoms()`（由 `PatentWorkflow` 构造函数与 dsh-patent-tools 调用）提供其中 24 个核心原子；依赖 patent-tools 的 slop 引擎、说明书校验器与规则资产的六个原子（`eligibility`、`spec-check`、`slop-gate`、`draft-specification`、`response-check`、`legal-gaps`）由 `@deepseek-ai/dsh-patent-tools` 在其插件 effect 中注册。仅挂载本包时，声明了这六个原子的 manifest 会在执行任何阶段之前被未知原子检查拒绝；请挂载 dsh-patent-tools，或经 `options.atoms` 与 `options.handlers` 注入对应契约与 handler。
+这些 manifest 共声明 36 个不同原子。`registerBuiltinAtoms()`（由 `PatentWorkflow` 构造函数与 dsh-patent-tools 调用）提供其中 28 个核心原子；依赖 patent-tools 的 slop 引擎、说明书校验器、附图分析与规则资产的八个原子（`draft-specification`、`eligibility`、`figure-analysis`、`legal-gaps`、`response-check`、`slop-gate`、`spec-check`、`tighten`）由 `@deepseek-ai/dsh-patent-tools` 在其插件 effect 中注册。仅挂载本包时，声明了这八个原子的 manifest 会在执行任何阶段之前被未知原子检查拒绝；请挂载 dsh-patent-tools，或经 `options.atoms` 与 `options.handlers` 注入对应契约与 handler。
 
 ### runPlantask(agent, caseId, planSteps, options?)
 

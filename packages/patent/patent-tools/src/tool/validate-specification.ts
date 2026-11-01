@@ -124,6 +124,8 @@ export function validateSpecification(input: ValidateSpecificationInput): Valida
       title: input.title,
       abstract: input.abstract,
       claims: input.claims,
+      enablement_report: input.enablement_report,
+      claim_breadth_report: input.claim_breadth_report,
     }),
   }
 }
@@ -136,10 +138,9 @@ export function validateSpecification(input: ValidateSpecificationInput): Valida
  * @returns the not-assessed items.
  */
 function notAssessedItems(input: ValidateSpecificationInput, hasDrawings: boolean): SpecNotAssessed[] {
-  const items: SpecNotAssessed[] = [
-    { id: 'enablement', label: '充分公开（A26.3）', reason: '能否实现需要所属领域技术人员作技术判断' },
-    { id: 'claim-support-breadth', label: '权利要求概括范围（A26.4）', reason: '概括是否超出实施例支持需要实体判断' },
-  ]
+  // A26.3 与 A26.4 概括范围分别由 enablement-report、claim-breadth 原子判定，
+  // 确定性规则不再把它们列为未评估。
+  const items: SpecNotAssessed[] = []
   if (input.title !== undefined && input.title.trim().length > 0) {
     items.push({ id: 'title-name-place', label: '发明名称中的人名、地名', reason: '名称是否属于非技术词语需要语义判断' })
   }

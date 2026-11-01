@@ -85,7 +85,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     const disclosure = manifestOf('patent_disclosure_v1').stages.map(stage => stage.id)
     expect(disclosure).not.toContain('dispute-framing')
     expect(disclosure).not.toContain('dispute-framing-refine')
-    expect(disclosure).toHaveLength(23)
+    expect(disclosure).toHaveLength(25)
   })
 
   it('修正阶段排在已锁定的时间基准或程序理由之后，且阶段数在默认预算内', () => {
@@ -100,7 +100,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     }
     const expectedCounts: Record<string, number> = {
       patent_novelty_v1: 14,
-      patent_disclosure_v1: 23,
+      patent_disclosure_v1: 25,
       patent_inventiveness_v1: 16,
       patent_patentability_v1: 16,
       patent_oa_response_v1: 15,
@@ -110,11 +110,11 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     }
     for (const manifest of builtinPatentManifests) {
       expect(manifest.stages.length, manifest.id).toBe(expectedCounts[manifest.id])
-      expect(manifest.stages.length, manifest.id).toBeLessThanOrEqual(24)
+      expect(manifest.stages.length, manifest.id).toBeLessThanOrEqual(25)
     }
   })
 
-  it('默认预算（24/12）下全部内置 manifest 通过，模型阶段数不因确定性定位增加', () => {
+  it('默认预算（25/12）下全部内置 manifest 通过，模型阶段数不因确定性定位增加', () => {
     registerBuiltinAtoms()
     // patent-tools 的确定性原子在预算统计里只需契约（usesModel 标记），此处注册同名 stub。
     for (const name of ['draft-specification', 'eligibility', 'figure-analysis', 'legal-gaps', 'response-check', 'slop-gate', 'spec-check']) {
@@ -131,7 +131,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     })
     const expectedLlmStages: Record<string, number> = {
       patent_novelty_v1: 4,
-      patent_disclosure_v1: 10,
+      patent_disclosure_v1: 12,
       patent_inventiveness_v1: 7,
       patent_patentability_v1: 5,
       patent_oa_response_v1: 5,
@@ -143,7 +143,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
       expect(countWorkflowLlmStages(manifest, globalAtomRegistry), manifest.id)
         .toBe(expectedLlmStages[manifest.id])
       expect(() => {
-        validateWorkflowBudget(manifest, { maxStages: 24, maxLlmStages: 12 }, globalAtomRegistry)
+        validateWorkflowBudget(manifest, { maxStages: 25, maxLlmStages: 12 }, globalAtomRegistry)
       }, manifest.id).not.toThrow()
     }
   })

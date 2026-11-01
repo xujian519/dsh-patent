@@ -35,6 +35,32 @@ describe('SpecCheckHandler', () => {
     expect(Array.isArray(out.spec_not_assessed)).toBe(true)
   })
 
+  it('spec mode reads an upstream enablement report as an evaluated input and ignores degraded markers', async () => {
+    const report = '充分公开实体判定（A26.3）：通过'
+    const out = await run({ mode: 'spec', text: VALID_SPEC, enablement_report: report })
+    expect(String(out.spec_check_report)).toContain(`enablement_report ${report.length} 字`)
+
+    const degradedOut = await run({
+      mode: 'spec',
+      text: VALID_SPEC,
+      enablement_report: '[WORKFLOW_DEGRADED] 未配置模型客户端',
+    })
+    expect(String(degradedOut.spec_check_report)).not.toContain('enablement_report ')
+  })
+
+  it('spec mode records an upstream claim-breadth report and ignores degraded markers', async () => {
+    const report = '权利要求概括范围判定（A26.4）：通过'
+    const out = await run({ mode: 'spec', text: VALID_SPEC, claim_breadth_report: report })
+    expect(String(out.spec_check_report)).toContain(`claim_breadth_report ${report.length} 字`)
+
+    const degradedOut = await run({
+      mode: 'spec',
+      text: VALID_SPEC,
+      claim_breadth_report: '[WORKFLOW_DEGRADED] 未配置模型客户端',
+    })
+    expect(String(degradedOut.spec_check_report)).not.toContain('claim_breadth_report ')
+  })
+
   it('spec mode reads title, abstract, patent type, drawings and figure analysis', async () => {
     const out = await run({
       mode: 'spec',

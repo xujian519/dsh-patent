@@ -361,7 +361,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `structure.long-functions` | 186 |
 | `structure.large-files` | 89 |
 | `structure.patent-large-files` | 10 |
-| `lint.v8-ignore` | 1312 |
+| `lint.v8-ignore` | 1313 |
 | `lint.ts-expect-error` | 193 |
 | `packages.patent-directories` | 16 |
 <!-- tech-debt-counters:end -->
@@ -382,7 +382,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-tools/src/figure/section-diagram.ts` | 接受 | 918 | 纯几何绘制：146 行主绘制 + 小工具，与 `leader-line` 同类 |
 | `packages/patent/patent-tools/src/figure/leader-line.ts` | 接受 | 908 | 纯几何：稳定在 906→908，无状态、无 I/O |
 | `packages/patent/patent-tools/src/tool/patent-workflow-run.ts` | 接受 | 858 | 单一工具入口同时承载 manifest 与领域图两条执行路径，输入 schema、恢复/审批接线与解析器共享同一输出契约；文件内无 >150 行函数，拆分会把 schema 与分派分离而不减少分支 |
-| `packages/patent/patent-workflow/src/workflow/manifests.ts` | 接受 | 859 | 内置 manifest 目录：每个阶段是一行数据（id/策略/描述/参数），答复链 15 阶段把文件从 782 推到 852、投影消耗说明再推 3 行，后续阶段字段再增 4 行；切分只是把数据挪到别处，不降复杂度 |
+| `packages/patent/patent-workflow/src/workflow/manifests.ts` | 接受 | 871 | 内置 manifest 目录：每个阶段是一行数据（id/策略/描述/参数），答复链 15 阶段把文件从 782 推到 852、投影消耗说明再推 3 行，披露链的充分公开与概括范围阶段再推 12 行；切分只是把数据挪到别处，不降复杂度 |
 | `packages/patent/patent-core/src/atoms/handlers/builtin/evidence-check.ts` | 接受 | 842 | 单个 atom handler 的五阶段，最大函数 123 行，仅超阈值 5% |
 | `packages/patent/patent-tools/src/figure/dot-builder.ts` | 接受 | 839 | 单一 DOT 词汇表：五个 builder 各 <60 行，共享头部/标号/转义契约 |
 | `packages/patent/patent-core/src/ipc/ipc-classifier.ts` | 接受 | 807 | 数据表为主：`IPC_DOMAINS` 409 行 + 明细表 260 行，分类函数 <30 行 |
@@ -406,6 +406,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-02 A26.4 概括范围判定**:`lint.v8-ignore` 由 1312 升至 **1313**;A1 锚点件的 `matchRange` 对两个平行下标的取值守卫补一处带理由的豁免(`indexOf` 命中保证下标落在数组内),其余新增分支由用例覆盖。`structure.long-functions` 与 `structure.large-files` 不变;`manifests.ts` 因披露链新增 `claim_breadth` 阶段由 859 升至 **871**,接受上限同步重定。
 - **2026-10-28 文档工作室覆盖率豁免退休**:`lint.v8-ignore` 由 1270 升至 **1272**;`ui-document-studio` 撤回最后 4 条 coverage `exclude`(StudioView / document-deliverables / file-reads / client/index),包内 9 个源文件补齐到逐文件 100%;补齐过程中不可达的编译器收窄与防御守卫改为带理由的豁免,其中计入本计数的两处——`document-deliverables.ts` 的折叠索引守卫(提前 `continue`,其后的合并路径仍计入统计)与 `client/index.ts` 的重试窗口「会话已离开」守卫(离开会话必经 catalog 订阅触发 `stopRetry`);`StudioView.tsx` 的两处捕获组收窄不计入该计数,该行统计的路径 spec 只收 `src` 下的 `.ts`。其余新增分支由用例覆盖。
 - **2026-10-27 CI 门槛清理**:`lint.v8-ignore` 由 1271 降至 **1270**;`figure-set-consistency.ts` 的 `matchAll` 偏移取值被 lint 判为不必要空值合并,去掉 `?? 0` 后原「`RegExpStringIterator` 必带 `index`」的豁免随之删除,该函数本就由用例覆盖;其余计数不变。
 - **2026-10-26 附图跨图一致性与图文比对**:`lint.v8-ignore` 由 1267 升至 **1271**;新增 `check_patent_figure_consistency` 与 `compare_patent_figure_analysis` 两个确定性工具,`matchAll` 匹配对象总带 `index`、标号索引与首次图号同时建立、正则捕获组必选这三类不可达分支补带理由的豁免;其余新增分支由用例覆盖。

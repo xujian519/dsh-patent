@@ -148,6 +148,97 @@ describe('enablement-report 原子', () => {
     expect((out.enablement_records as unknown[]).length).toBe(2)
   })
 
+  it('无特征部标记时去掉前序分句，附图标记去重后进入提示词', async () => {
+    const captured: { prompt?: string } = {}
+    const out = await handler.execute({
+      state: {
+        specification: SPEC,
+        claims_draft: '一种检测装置，包括壳体，所述壳体内设有弹簧。',
+        figure_analysis: [
+          null,
+          { components: '未提供' },
+          { components: [null, { refNumber: '' }, { refNumber: '10' }, { refNumber: '10' }] },
+        ],
+      },
+      provider: providerFor(CLEAN_RECORDS, captured),
+    })
+    expect(out.enablement_passed).toBe(true)
+    expect((out.enablement_records as unknown[]).length).toBe(2)
+    expect(captured.prompt).toContain('【附图标记】')
+    expect(captured.prompt).toContain('10')
+  })
+
+  it('无前序分句时保留全文；只有从属权利要求时降级', async () => {
+    const captured: { prompt?: string } = {}
+    const out = await handler.execute({
+      state: { specification: '阀体包括壳体。壳体包括阀座。', claims_draft: '1. 阀体，包括壳体。' },
+      provider: providerFor(JSON.stringify({
+        records: [
+          { feature_id: 'C1F1', quote: '阀体包括壳体', embodiment_id: '实施例1', parameter_or_effect: '铸钢', enabled: true },
+          { feature_id: 'C1F2', quote: '壳体包括阀座', embodiment_id: '实施例1', parameter_or_effect: '不锈钢', enabled: true },
+        ],
+      }), captured),
+    })
+    expect(out.enablement_passed).toBe(true)
+    expect(captured.prompt).toContain('阀体')
+
+    const dependentOnly = await handler.execute({
+      state: { specification: SPEC, claims_draft: '2. 根据权利要求1所述的装置，其特征在于，所述弹簧为螺旋弹簧。' },
+      provider: providerFor(CLEAN_RECORDS),
+    })
+    expect(String(dependentOnly._error)).toContain('无法从 state.claims_draft 派生')
+  })
+
+  it('records 缺 parameter_or_effect 时降级', async () => {
+    const out = await handler.execute({
+      state: { specification: SPEC, claims_draft: CLAIMS },
+      provider: providerFor(JSON.stringify({
+        records: [
+          { feature_id: 'C1F1', quote: '检测装置包括壳体', embodiment_id: '实施例1', parameter_or_effect: '', enabled: true },
+        ],
+      })),
+    })
+    expect(String(out._error)).toContain('parameter_or_effect')
+  })
+
+  it('records 各字段缺失或类型不符时逐项降级', async () => {
+    const cases = [
+      { record: { quote: '检测装置包括壳体', embodiment_id: '实施例1', parameter_or_effect: '壁厚', enabled: true }, message: 'feature_id' },
+      { record: { feature_id: 'C1F1', quote: 1, embodiment_id: '实施例1', parameter_or_effect: '壁厚', enabled: true }, message: 'quote 不是字符串' },
+      { record: { feature_id: 'C1F1', quote: '检测装置包括壳体', parameter_or_effect: '壁厚', enabled: true }, message: 'embodiment_id' },
+      { record: { feature_id: 'C1F1', quote: '检测装置包括壳体', embodiment_id: '实施例1', parameter_or_effect: '壁厚', enabled: 'true' }, message: 'enabled 不是布尔值' },
+    ]
+    for (const { record, message } of cases) {
+      const out = await handler.execute({
+        state: { specification: SPEC, claims_draft: CLAIMS },
+        provider: providerFor(JSON.stringify({ records: [record] })),
+      })
+      expect(String(out._error)).toContain(message)
+    }
+  })
+
+  it('模型给出空摘录时判未通过，原因记为摘录为空', async () => {
+    const out = await handler.execute({
+      state: { specification: SPEC, claims_draft: CLAIMS },
+      provider: providerFor(JSON.stringify({
+        records: [
+          { feature_id: 'C1F1', quote: '', embodiment_id: '实施例1', parameter_or_effect: '壁厚', enabled: true },
+          { feature_id: 'C1F2', quote: '壳体内设有弹簧', embodiment_id: '实施例1', parameter_or_effect: '刚度', enabled: true },
+        ],
+      })),
+    })
+    expect(out.enablement_passed).toBe(false)
+    expect(out.enablement_report).toContain('摘录为空')
+  })
+
+  it('空权利要求无法派生特征时降级', async () => {
+    const out = await handler.execute({
+      state: { specification: SPEC, claims_draft: '1. 。' },
+      provider: providerFor(CLEAN_RECORDS),
+    })
+    expect(String(out._error)).toContain('无法从 state.claims_draft 派生')
+  })
+
   it('领域分叉：软件按模块与输入输出，化学按制备例与效果例', async () => {
     const software: { prompt?: string } = {}
     await handler.execute({

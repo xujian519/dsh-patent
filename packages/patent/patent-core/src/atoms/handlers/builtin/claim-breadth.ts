@@ -18,23 +18,12 @@
 import { type AnchorRange, type AnchorReason, locateQuote } from '../../../anchor/index.ts'
 import { deriveClaimRefs } from '../../../claim-chart/runtime/claim-refs.ts'
 import { splitClaimSegments } from '../../../claim-chart/runtime/element-validator.ts'
+import { parseOptionalJsonStringArray, readJsonString } from '../../../llm-json.ts'
 import { dataBlock } from '../../../prompt-hygiene.ts'
-import {
-  parseJsonRecordArray,
-  parseOptionalJsonStringArray,
-  readJsonString,
-} from '../../../llm-json.ts'
 import { type Atom } from '../../atom.ts'
-import {
-  type PipelineState,
-  type StageExecuteInput,
-  type StageHandler,
-  getStateArray,
-  getStateString,
-} from '../../handler.ts'
-import { readAtomTunables } from '../../tunables.ts'
-import { callLlm, degraded, parseLlmJson, requireLlm } from './llm.ts'
-import { readStateText } from './state-keys.ts'
+import { type PipelineState, type StageExecuteInput, type StageHandler } from '../../handler.ts'
+import { degraded, requireLlm } from './llm.ts'
+import { readQuoteStageContext, requestRecords, sourceBlocks } from './quote-stage.ts'
 
 /** A26.4 概括范围的缺陷类型；`none` 表示该上位概括未发现缺陷。 */
 export type ClaimBreadthDefect =
@@ -367,35 +356,15 @@ export class ClaimBreadthHandler implements StageHandler {
    * @returns 完整的 `ClaimBreadthResult`，或降级片段。
    */
   async execute(input: StageExecuteInput): Promise<PipelineState> {
-    const { state, provider, signal } = input
-    const tuned = readAtomTunables(state, { temperature: 0.1, promptLimit: 12000 })
-    if (!tuned.ok) return degraded('claim-breadth', tuned.reason)
-    const { temperature, promptLimit, promptLimitConfigured } = tuned.tunables
-    const claimsLimit = promptLimitConfigured ? promptLimit : 3000
-    const pfeLimit = promptLimitConfigured ? promptLimit : 2000
+    const read = readQuoteStageContext(input.state, 'claim-breadth', { temperature: 0.1, promptLimit: 12000 })
+    if (!read.ok) return read.state
+    const { temperature, promptLimit, claimsLimit, pfeLimit, specification, claims, pfe, domain } = read.context
 
-    const specification = readStateText(state, 'specification')
-    if (specification === undefined) {
-      return degraded('claim-breadth', '输入为空（state.specification 缺失）')
-    }
-    const claims = readStateText(state, 'claims_draft')
-    if (claims === undefined) {
-      return degraded('claim-breadth', '输入为空（state.claims_draft 缺失）')
-    }
     const knownClaimNumbers = claimNumbers(claims)
     const independentNumbers = independentClaimNumbers(claims)
 
-    const missingLlm = requireLlm(provider, 'claim-breadth')
+    const missingLlm = requireLlm(input.provider, 'claim-breadth')
     if (missingLlm) return missingLlm
-
-    const pfeTriples = getStateArray(state, 'pfe_triples')
-    const pfeFeatures = getStateArray(state, 'features')
-    const pfe = pfeTriples.length > 0
-      ? JSON.stringify(pfeTriples)
-      : pfeFeatures.length > 0
-        ? JSON.stringify(pfeFeatures)
-        : getStateString(state, 'merge_result')
-    const domain = getStateString(state, 'tech_domain')
 
     const prompt = [
       '你是专利审查员，负责判断权利要求是否符合专利法第26条第4款（概括范围得到说明书支持）。',
@@ -412,45 +381,29 @@ export class ClaimBreadthHandler implements StageHandler {
       '',
       '【独立权利要求项号】',
       dataBlock(independentNumbers.map(number => `C${String(number)}`).join('、')),
-      pfe.trim().length > 0 ? `【PFIE 参考特征（仅供定位，判定以权利要求与说明书为准）】\n${dataBlock(pfe.slice(0, pfeLimit))}` : '',
-      '',
-      '【权利要求草稿】',
-      dataBlock(claims.slice(0, claimsLimit)),
-      '',
-      '【说明书】',
-      dataBlock(specification.slice(0, promptLimit)),
-      '',
+      ...sourceBlocks({
+        pfe,
+        pfeLimit,
+        pfeHeading: 'PFIE 参考特征（仅供定位，判定以权利要求与说明书为准）',
+        claims,
+        claimsLimit,
+        specification,
+        promptLimit,
+      }),
       '请严格输出 JSON：records 为逐条记录数组（claim_no、generalization、quote、parallel_lower_levels、all_parallel_same_effect、defect、reason），notes 为整体判定说明。',
     ].filter(line => line !== '').join('\n')
 
-    const res = await callLlm(
-      provider,
+    const parsed = await requestRecords(
+      input.provider,
       'claim-breadth',
       prompt,
-      { schema: CLAIM_BREADTH_SCHEMA, temperature },
-      signal,
+      CLAIM_BREADTH_SCHEMA,
+      temperature,
+      input.signal,
+      (record, index) => readModelRecord(record, index, knownClaimNumbers),
     )
-    if (!res.ok) return res.error
-    return parseLlmJson(
-      res.raw,
-      (parsed) => {
-        const parsedRecords = parseJsonRecordArray(parsed['records'], 'records')
-        if (!parsedRecords.ok) return degraded('claim-breadth', parsedRecords.reason)
-        const modelRecords: ModelRecord[] = []
-        for (const [index, record] of parsedRecords.values.entries()) {
-          const read = readModelRecord(record, index, knownClaimNumbers)
-          if (typeof read === 'string') return degraded('claim-breadth', read)
-          modelRecords.push(read)
-        }
-        const notesValue = parsed['notes']
-        if (notesValue !== undefined && typeof notesValue !== 'string') {
-          return degraded('claim-breadth', 'notes 不是字符串')
-        }
-        const notes = typeof notesValue === 'string' ? notesValue.trim() : ''
-        const built = buildClaimBreadthResult(modelRecords, specification, independentNumbers, notes)
-        return built.ok ? built.result : degraded('claim-breadth', built.reason)
-      },
-      () => degraded('claim-breadth', '模型输出不是 JSON 对象'),
-    )
+    if (!parsed.ok) return parsed.state
+    const built = buildClaimBreadthResult(parsed.records, specification, independentNumbers, parsed.notes)
+    return built.ok ? built.result : degraded('claim-breadth', built.reason)
   }
 }

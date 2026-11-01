@@ -14,19 +14,18 @@
 
 import { type AnchorRange, type AnchorReason, locateQuote } from '../../../anchor/index.ts'
 import { splitClaimSegments } from '../../../claim-chart/runtime/element-validator.ts'
+import { readJsonString } from '../../../llm-json.ts'
 import { dataBlock } from '../../../prompt-hygiene.ts'
-import { parseJsonRecordArray, readJsonString } from '../../../llm-json.ts'
 import { type Atom } from '../../atom.ts'
 import {
   type PipelineState,
   type StageExecuteInput,
   type StageHandler,
   getStateArray,
-  getStateString,
 } from '../../handler.ts'
-import { readAtomTunables } from '../../tunables.ts'
-import { callLlm, degraded, parseLlmJson, requireLlm } from './llm.ts'
-import { isRecord, readStateText } from './state-keys.ts'
+import { degraded, requireLlm } from './llm.ts'
+import { readQuoteStageContext, requestRecords, sourceBlocks } from './quote-stage.ts'
+import { isRecord } from './state-keys.ts'
 
 /** 一个独立权利要求技术特征；由程序从权利要求原文派生，模型不得增删。 */
 type EnablementFeature = {
@@ -379,38 +378,19 @@ export class EnablementReportHandler implements StageHandler {
    * @returns 完整的 `EnablementResult`，或降级片段。
    */
   async execute(input: StageExecuteInput): Promise<PipelineState> {
-    const { state, provider, signal } = input
-    const tuned = readAtomTunables(state, { temperature: 0.1, promptLimit: 12000 })
-    if (!tuned.ok) return degraded('enablement-report', tuned.reason)
-    const { temperature, promptLimit, promptLimitConfigured } = tuned.tunables
-    const claimsLimit = promptLimitConfigured ? promptLimit : 3000
-    const pfeLimit = promptLimitConfigured ? promptLimit : 2000
+    const read = readQuoteStageContext(input.state, 'enablement-report', { temperature: 0.1, promptLimit: 12000 })
+    if (!read.ok) return read.state
+    const { temperature, promptLimit, claimsLimit, pfeLimit, specification, claims, pfe, domain } = read.context
 
-    const specification = readStateText(state, 'specification')
-    if (specification === undefined) {
-      return degraded('enablement-report', '输入为空（state.specification 缺失）')
-    }
-    const claims = readStateText(state, 'claims_draft')
-    if (claims === undefined) {
-      return degraded('enablement-report', '输入为空（state.claims_draft 缺失）')
-    }
     const features = deriveFeatures(claims)
     if (features.length === 0) {
       return degraded('enablement-report', '无法从 state.claims_draft 派生独立权利要求特征')
     }
 
-    const missing = requireLlm(provider, 'enablement-report')
+    const missing = requireLlm(input.provider, 'enablement-report')
     if (missing) return missing
 
-    const pfeTriples = getStateArray(state, 'pfe_triples')
-    const pfeFeatures = getStateArray(state, 'features')
-    const pfe = pfeTriples.length > 0
-      ? JSON.stringify(pfeTriples)
-      : pfeFeatures.length > 0
-        ? JSON.stringify(pfeFeatures)
-        : getStateString(state, 'merge_result')
-    const figureRefs = collectFigureRefs(state)
-    const domain = getStateString(state, 'tech_domain')
+    const figureRefs = collectFigureRefs(input.state)
     const featureLines = features.map(feature => `${feature.id} ${feature.text}`).join('\n')
 
     const prompt = [
@@ -427,45 +407,29 @@ export class EnablementReportHandler implements StageHandler {
       '【独立权利要求特征】',
       dataBlock(featureLines),
       figureRefs.length > 0 ? `【附图标记】\n${dataBlock(figureRefs.join('、'))}` : '',
-      pfe.trim().length > 0 ? `【PFIE 参考特征（仅供定位，判定以权利要求特征为准）】\n${dataBlock(pfe.slice(0, pfeLimit))}` : '',
-      '',
-      '【权利要求草稿】',
-      dataBlock(claims.slice(0, claimsLimit)),
-      '',
-      '【说明书】',
-      dataBlock(specification.slice(0, promptLimit)),
-      '',
+      ...sourceBlocks({
+        pfe,
+        pfeLimit,
+        pfeHeading: 'PFIE 参考特征（仅供定位，判定以权利要求特征为准）',
+        claims,
+        claimsLimit,
+        specification,
+        promptLimit,
+      }),
       '请严格输出 JSON：records 为逐特征记录数组（feature_id、quote、embodiment_id、parameter_or_effect、enabled），notes 为判定说明。',
     ].filter(line => line !== '').join('\n')
 
-    const res = await callLlm(
-      provider,
+    const parsed = await requestRecords(
+      input.provider,
       'enablement-report',
       prompt,
-      { schema: ENABLEMENT_SCHEMA, temperature },
-      signal,
+      ENABLEMENT_SCHEMA,
+      temperature,
+      input.signal,
+      readModelRecord,
     )
-    if (!res.ok) return res.error
-    return parseLlmJson(
-      res.raw,
-      (parsed) => {
-        const parsedRecords = parseJsonRecordArray(parsed['records'], 'records')
-        if (!parsedRecords.ok) return degraded('enablement-report', parsedRecords.reason)
-        const modelRecords: ModelRecord[] = []
-        for (const [index, record] of parsedRecords.values.entries()) {
-          const read = readModelRecord(record, index)
-          if (typeof read === 'string') return degraded('enablement-report', read)
-          modelRecords.push(read)
-        }
-        const notesValue = parsed['notes']
-        if (notesValue !== undefined && typeof notesValue !== 'string') {
-          return degraded('enablement-report', 'notes 不是字符串')
-        }
-        const notes = typeof notesValue === 'string' ? notesValue.trim() : ''
-        const built = buildEnablementResult(features, modelRecords, specification, notes)
-        return built.ok ? built.result : degraded('enablement-report', built.reason)
-      },
-      () => degraded('enablement-report', '模型输出不是 JSON 对象'),
-    )
+    if (!parsed.ok) return parsed.state
+    const built = buildEnablementResult(features, parsed.records, specification, parsed.notes)
+    return built.ok ? built.result : degraded('enablement-report', built.reason)
   }
 }

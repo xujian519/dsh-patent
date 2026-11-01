@@ -32,7 +32,7 @@ function validSpecDraft(): SpecDraft {
         { kind: 'paragraph', text: '本发明提供一种示例装置。' },
         { kind: 'list', items: ['示例效果一', '示例效果二'] },
       ],
-      drawingDescriptions: [{ kind: 'list', items: ['图 1 为整体结构示意图。', '图 2 为剖视示意图。'] }],
+      drawingDescriptions: [{ kind: 'list', items: ['整体结构示意图', '剖视示意图'] }],
       embodiment: [
         { kind: 'paragraph', text: '下面结合附图说明。' },
         {
@@ -209,6 +209,38 @@ describe('validateSpecDraft', () => {
       drawingDescriptions: [{ kind: 'list', items: ['整体结构示意图', '剖视示意图', '局部放大示意图'] }],
     }
     expectSpecViolation(withSpecDraft({ sections: tooMany }), '附图说明 3 条', 'figureFiles 2 项')
+  })
+
+  it('附图说明列表项自带图号或句末标点时拒绝', () => {
+    const authored = {
+      ...validSpecDraft().sections,
+      drawingDescriptions: [{ kind: 'list', items: ['图1为本发明实施例的整体结构示意图；', '剖视示意图。'] }],
+    }
+    expectSpecViolation(
+      withSpecDraft({ sections: authored }),
+      'sections.drawingDescriptions[0].items[0] 自带图号和句末标点',
+      '图号（「图N为」）与句末标点由渲染器生成',
+    )
+    expectSpecViolation(withSpecDraft({ sections: authored }), 'sections.drawingDescriptions[0].items[1] 自带句末标点')
+  })
+
+  it('附图说明列表项只带图号时拒绝', () => {
+    const sections = {
+      ...validSpecDraft().sections,
+      drawingDescriptions: [{ kind: 'list', items: ['图 1 整体结构示意图', '剖视示意图'] }],
+    }
+    expectSpecViolation(withSpecDraft({ sections }), 'sections.drawingDescriptions[0].items[0] 自带图号')
+  })
+
+  it('附图说明的段落块可以携带图号', () => {
+    const sections = {
+      ...validSpecDraft().sections,
+      drawingDescriptions: [
+        { kind: 'paragraph', text: '图1为整体结构示意图。' },
+        { kind: 'list', items: ['整体结构示意图', '剖视示意图'] },
+      ],
+    }
+    expect(() => validateSpecDraft(withSpecDraft({ sections }))).not.toThrow()
   })
 
   it('附图说明的段落与表格块不计入附图条目', () => {

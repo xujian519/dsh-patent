@@ -4,7 +4,7 @@
  * 输出是 `id -> innerHTML` 映射，直接交给 injectSections：模型不再接触标题
  * （h2/h3 由本模块按 SPEC_PART_HEADINGS 生成）、权项编号（自动连续）、表题
  * （自动编号）与占位符。附图说明的「图 N 为……」由列表项序号生成，模型只提供
- * 描述文字。
+ * 描述文字（不含图号与句末标点）。
  * @module @deepseek-ai/dsh-patent-document/document/draftConverter/specDraft
  */
 

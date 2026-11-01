@@ -610,9 +610,11 @@ describe('workflow retry validation', () => {
     expect(ids.at(-1)).toBe('review_gate')
     expect(patentDisclosureManifest.stages.find(s => s.id === 'review_gate')?.atom).toBe('approval-gate')
     expect(patentDisclosureManifest.stages.find(s => s.id === 'draft_claims')?.atom).toBe('draft-claims')
-    // 概括范围在说明书成文后、形式检查前判定，报告可供 spec-check 记录。
-    expect(ids.indexOf('draft_claims') < ids.indexOf('claim_breadth')).toBe(true)
-    expect(ids.indexOf('claim_breadth') < ids.indexOf('spec_check')).toBe(true)
+    // 实体判定都在形式检查之后、反套话门之前：形式检查先跑，失败可被 slop_clean 回退覆盖。
+    expect(ids.indexOf('draft_claims') < ids.indexOf('spec_check')).toBe(true)
+    expect(ids.indexOf('spec_check') < ids.indexOf('enablement_report')).toBe(true)
+    expect(ids.indexOf('enablement_report') < ids.indexOf('claim_breadth')).toBe(true)
+    expect(ids.indexOf('claim_breadth') < ids.indexOf('slop_clean')).toBe(true)
     expect(patentDisclosureManifest.stages.find(s => s.id === 'claim_breadth')?.atom).toBe('claim-breadth')
     expect(ids.indexOf('generate_keywords') < ids.indexOf('search')).toBe(true)
     // 时间基准在检索前确定；公开日过滤紧跟检索，新颖性读过滤后的 prior_art。

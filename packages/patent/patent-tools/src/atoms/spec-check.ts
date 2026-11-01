@@ -10,7 +10,7 @@
  * - `mode: 'claims'`：只跑 `checkClaimViolations`（A26.4 特征覆盖 + A31.1 单一性 +
  *   权项-实施例覆盖），避免把说明书形式规则套到权利要求文本上。
  *
- * 上游 `enablement_report` 与 `claim_breadth_report` 只作为评估输入记录：A26.3/A26.4
+ * 已存在的 `enablement_report` 与 `claim_breadth_report` 只作为评估输入记录：A26.3/A26.4
  * 的实体判定分别由 `enablement-report`、`claim-breadth` 原子作出，确定性规则不重判。
  *
  * 输入键可由阶段参数覆盖：`text_key`、`claims_key`、`title_key`、`abstract_key`、
@@ -189,7 +189,7 @@ export class SpecCheckHandler implements StageHandler {
       ...(abstractFigureNumber !== undefined ? { abstract_figure_number: abstractFigureNumber } : {}),
       ...(claimUnits !== undefined ? { claim_units: claimUnits } : {}),
       ...(coverageEntries !== undefined ? { coverage_entries: coverageEntries } : {}),
-      // 上游 enablement-report 原子的报告只作为评估输入记录；降级标记不是报告。
+      // 已存在的 enablement-report 报告只作为评估输入记录；降级标记不是报告。
       ...(enablementReport.length > 0 && !enablementReport.startsWith('[WORKFLOW_DEGRADED]')
         ? { enablement_report: enablementReport }
         : {}),

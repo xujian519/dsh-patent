@@ -13,7 +13,7 @@ description: "validate_specification 返回分项判定与 not_assessed，标题
 
 默认的 `patent_disclosure_v1` 与 `patent_patentability_v1` 工作流现在会阻断：模板占位（`【撰写指引】`、`待补充`、`TODO`、`TBD`）、空章节、引用权利要求（`如权利要求1所述`）、商业宣传语、内部流程标记、实用新型无附图、图号缺号或重复、正文引用附图说明中不存在的图、附图说明条目无图名。无附图发明按四部分通过。
 
-`spec-check` 现在从工作流状态读取 `title`、`abstract`、`patent_type`、`has_drawings`、`figure_analysis`、`drawing_count`、`abstract_figure_number`，并写出 `spec_form_check_passed`、`spec_claims_check_passed`、`spec_figure_check_passed`、`spec_prohibitions_check_passed` 与 `spec_not_assessed`。`legal-gaps` 把 `spec-form` 与 `claim-support` 映射到这些分项，不再把形式检查通过当作 A26.3 充分公开：只有 `enablement_report` 与 `enablement_passed` 判定同时存在，`enablement` 才可能通过。同样，`claim-support-breadth` 不再列入 `not_assessed`，`legal-gaps` 读取新 `claim-breadth` 原子产出的 `claim_breadth_report` 与 `claim_breadth_passed`（warn 级，A26.4 判定未通过会出现在报告里，但不阻断交付）。`patent_disclosure_v1` 在 `draft_specification` 与 `spec_check` 之间新增 `claim_breadth` 阶段，`validate_specification` 接受 `claim_breadth_report` 作为评估输入。
+`spec-check` 现在从工作流状态读取 `title`、`abstract`、`patent_type`、`has_drawings`、`figure_analysis`、`drawing_count`、`abstract_figure_number`，并写出 `spec_form_check_passed`、`spec_claims_check_passed`、`spec_figure_check_passed`、`spec_prohibitions_check_passed` 与 `spec_not_assessed`。`legal-gaps` 把 `spec-form` 与 `claim-support` 映射到这些分项，不再把形式检查通过当作 A26.3 充分公开：只有 `enablement_report` 与 `enablement_passed` 判定同时存在，`enablement` 才可能通过。同样，`claim-support-breadth` 不再列入 `not_assessed`，`legal-gaps` 读取新 `claim-breadth` 原子产出的 `claim_breadth_report` 与 `claim_breadth_passed`（warn 级，A26.4 判定未通过会出现在报告里，但不阻断交付）。`patent_disclosure_v1` 在 `spec_check` 之后新增 `enablement_report` 与 `claim_breadth` 阶段，`validate_specification` 接受 `claim_breadth_report` 作为评估输入。
 
 发明名称 26–40 字由 error 改为 warning；超过 40 字仍为 error。
 

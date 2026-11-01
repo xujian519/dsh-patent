@@ -365,18 +365,6 @@ export function hasFigureNumberSuffix(text: string): boolean {
 }
 
 /**
- * 提取摘要中指定的摘要附图号（「摘要附图为图3」「摘要附图：图三」等形式）。
- * @param abstract - 摘要文本。
- * @returns 图号；未指定或无法解析时 undefined。
- */
-export function extractAbstractDrawingNumber(abstract: string): number | undefined {
-  const match = new RegExp(`摘要附图[^0-9一二三四五六七八九十百]{0,8}?(${FIGURE_NUMBER_SOURCE})`).exec(abstract)
-  if (match === null) return undefined
-  // oxlint-disable-next-line typescript/no-non-null-assertion -- the pattern always captures the number group.
-  return parseFigureNumber(match[1]!)
-}
-
-/**
  * 本申请已有的图号集合：优先取附图分析结果中的图号，其次从附图说明章节的「图N」提取。
  * @param text - 说明书全文。
  * @param figureAnalysis - 附图分析结果（可选）。

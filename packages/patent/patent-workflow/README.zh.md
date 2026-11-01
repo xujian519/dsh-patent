@@ -23,7 +23,7 @@ kind: "package-reference"
 <a id="service"></a>
 ## 服务
 
-`PatentWorkflow` 服务暴露管线入口，并从本包根导出再导出纯管线 API（workflow、workflow-dag、workflow-store、flexible-plan、flexible-plan-store、plantask、worker-contract、checker-verdict、docket-issue）。`CheckerVerdict` 是 checker 层 worker 的结构化复核结论 schema（`pass`/`needs_revision`/`blocked` + 逐问题严重度）；`parseCheckerVerdict` 在该模型 JSON 边界做校验。
+`PatentWorkflow` 服务暴露管线入口，并从本包根导出再导出纯管线 API（workflow、workflow-dag、workflow-store、flexible-plan、flexible-plan-store、plantask、worker-contract、docket-issue）。
 
 ### runWorkflow(manifest, ctx, executor?, options?, agent?)
 
@@ -53,6 +53,8 @@ kind: "package-reference"
 `DocketIssue` 是案卷里一条问题的机读记录：`id`、`summary`、`kind`、`disposition`、`status`、`blocking`、`round_opened`，外加可选的 `anchor`（权项、段落或文件路径）。`kind` 是六个取值的封闭词表（机检形式、可修改克服的实质缺陷、证据缺口、范围与策略取舍、无修改依据的不可克服缺陷、噪声）。本包随 `assets/issue-dispositions.json` 发布 kind → 默认值表；`loadIssueDispositions()` 在载入时校验（每个 kind 恰好一行、取值在词表内、判据非空），不通过则抛 `IssueDispositionError`。`resolveDocketIssue(draft, round, dispositions)` 用该 kind 的行补全缺省的 `disposition`/`blocking`，状态置 `open` 并写入 `round_opened`；条目自带的取值优先于行默认值。
 
 `blocking` 设为三档，是因为二档会让每次问人都停摆：`none` 不拦派工，`blocking` 拦住派工直到该条闭合，`terminal` 让本轮只能收在终态。随包默认值按「闭合它实际要付什么代价」定：可修改克服的实质缺陷是 `none`（下一轮派工正是它的闭合手段），证据缺口是 `blocking`，无修改依据的缺陷是 `terminal`。
+
+`patent_plan_task` 是这些条目的生产入口：transition 可以带 `issues` 草案与开启它们的 `round`，工具按随包处置表逐条补全，把解析后的条目交给状态机守卫，并在结果里回显。跨调用携带既有条目时把 `status` 与 `round_opened` 一并传回，已闭合的条目不会在下次调用中重新打开。
 
 不变量由两个纯谓词表达：`openBlockingIssues`（未闭合且不为 `none`）与 `openTerminalIssues`（未闭合且为 `terminal`）。plantask 状态机在迁移守卫上执行它们——存在未闭合阻塞条目时拒绝进入 `executing`，存在未闭合终态条目时拒绝进入 `replanning`——而 `finished` 没有出边，故已终态的计划不能再派工。状态机从 `PlanTaskTransitionContext.issues` 读该案卷的条目；省略表示该案卷未登记条目，守卫不据此拒绝。`roundCapReached(rounds, maxRounds)` 是第三个谓词，守着「配置」一节所述的轮次上限。
 
@@ -90,7 +92,6 @@ Independent; the pipeline registers no prompt, tool schema, or result of its own
 - **存储经 `ctx.get('storage')` 可选** — 文件产物（workflow-run 与 flexible-plan 存储）使用调用方提供的 `JsonFileStore` 后端；服务不接线 storage-domain 接缝，ctx.storage 集成延期。
 - **运行记录只校验、不带版本号** — `JsonFileWorkflowRunStore` 对字段不符合 `WorkflowRunResult` 的记录（含阶段、中断、证据账本、回退留痕等嵌套字段）抛带文件路径的 `StoredRecordError`；`listRuns` 只列文件名、不解析内容。格式没有版本字段，不兼容的旧形状按非法记录拒绝，不做迁移。`JsonFileFlexiblePlanStore` 同样拒绝 `caseId` 与文件名不一致的计划。
 - **无答案者时审批 fail-closed** — 无审批服务挂载（或未组合答案者）时，`runPlantask` 拒绝计划转至 replanning 而非自动放行。
-- **案卷条目的产出未接线** — schema、处置资产与不变量谓词都随包发布，但还没有任何面把复核结论的问题清单变成案卷条目、或把它们交给某次迁移，因此省略 `issues` 的调用方得不到基于条目的拒绝。
 - **轮次计数器按进程** — `maxRounds` 计在服务里而非会话日志里：重启即清零，计划收到 `finished` 也清零该登记。
 
 ### 开发备注

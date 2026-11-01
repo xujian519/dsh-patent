@@ -8,7 +8,7 @@ Status: implemented
 
 Mady 是一个 Go 单体仓库（`github.com/xujian519/mady`，1689 个 `.go` 文件，`domains/` 下 33 个子包），自述为证据驱动的专利案件工作台。它的领域层与本仓专利域大面积重叠：确定性规则引擎、期限算术、claim chart 与 pin-cite 校验、IPC 审查标准、交底书分析管线、文档模板与审批门禁两侧都有。因此"Mady 的哪些能力可以引入 `@deepseek-ai/dsh-patent-*`"无法靠罗列目录回答，回答它消耗了一轮跨仓侦察——覆盖两个代码库、它们的 git 历史，以及资产的逐字节比对。
 
-本仓已记录过若干"从 Mady 取"的决策：[阶段指导与 checker 判定 note](2026-09-03-patent-stage-guidance-and-checker-verdict.zh.md)引入了法律框架与 `CheckerVerdict` 词表并否决了 trigger-keyword 模板路由，[Mady 规则资产合并边界 note](2026-09-21-mady-rule-asset-merge-boundary.zh.md)确定了 313 条上游规则中哪些可转换、哪些不可。两者都没有记录 Mady 侧这些能力本身来自哪里，而这恰恰是决定该问题的那个事实。
+本仓已记录过若干"从 Mady 取"的决策：[阶段指导与 checker 判定 note](2026-09-03-patent-stage-guidance-and-checker-verdict.zh.md)引入了法律框架并否决了 trigger-keyword 模板路由（它不随包交付复核结论解析器，因为 checker 层只产出散文），[Mady 规则资产合并边界 note](2026-09-21-mady-rule-asset-merge-boundary.zh.md)确定了 313 条上游规则中哪些可转换、哪些不可。两者都没有记录 Mady 侧这些能力本身来自哪里，而这恰恰是决定该问题的那个事实。
 
 ## Decision
 

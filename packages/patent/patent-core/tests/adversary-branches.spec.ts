@@ -15,26 +15,12 @@ import {
   parseAdversaryOutput,
   renderAdversaryReport,
   reviewFinalDraft,
-  RuleEngine,
   type AdversaryDispute,
   type AdversaryOfficeAction,
-  type RuleCheckResult,
   type StageProvider,
 } from '@deepseek-ai/dsh-patent-core'
 
 const officeAction = (value: unknown): AdversaryOfficeAction => value as AdversaryOfficeAction
-
-function failure(ruleId: string, severity: 'critical' | 'major' | 'minor'): RuleCheckResult {
-  return {
-    ruleId,
-    ruleName: ruleId,
-    passed: false,
-    level: 0,
-    severity,
-    message: `${ruleId} 失败`,
-    fixSuggestion: '修复建议',
-  }
-}
 
 describe('assessEvidenceIndependent branches', () => {
   it('treats absent structured fields as empty', () => {
@@ -257,19 +243,5 @@ describe('adversary-model handler branches', () => {
       provider,
     })
     expect(result.adversary_report).toContain('模型不可用')
-  })
-})
-
-describe('risk ranking branches', () => {
-  it('orders equal-risk items by severity and handles an id without a statute', () => {
-    const engine = new RuleEngine()
-    const ranked = engine.rankResults([
-      failure('rule-A22.2-minor', 'minor'),
-      failure('rule-unknown-major', 'major'),
-      failure('no-statute', 'minor'),
-    ], { 'rule-unknown-major': 'unknown' })
-    // A22.2/minor and the default-weight/major item both score 20; the heavier severity sorts first.
-    expect(ranked.map(item => item.id)).toEqual(['rule-unknown-major', 'rule-A22.2-minor', 'no-statute'])
-    expect(ranked[2]?.statute).toBe('')
   })
 })

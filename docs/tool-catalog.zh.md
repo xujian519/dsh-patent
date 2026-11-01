@@ -6188,7 +6188,7 @@ Usage notes:
 
 ### `patent_plan_task`
 
-专利任务的人工在环计划状态机。transition：白名单校验的状态迁移（planning → awaiting_approval → executing → awaiting_feedback → replanning → finished）。sync：把计划步骤转为带 blockedBy 依赖的有序任务。replan：对已完成步骤做哈希比对，支持增量续跑。非法迁移与缺失语义前置条件均失败关闭（executing 需要 tasks，replanning 需要 feedback）。无状态：每次调用传入当前状态。
+专利任务的人工在环计划状态机。transition：白名单校验的状态迁移（planning → awaiting_approval → executing → awaiting_feedback → replanning → finished）。sync：把计划步骤转为带 blockedBy 依赖的有序任务。replan：对已完成步骤做哈希比对，支持增量续跑。非法迁移与缺失语义前置条件均失败关闭（executing 需要 tasks 且无未闭合的阻塞案卷条目，replanning 需要 feedback、无未闭合的终态案卷条目且规划轮次未达 maxRounds）。随 transition 传入的案卷条目按随包的 kind → 处置表解析，省略的 disposition/blocking 取该类别默认值。无状态：每次调用传入当前状态与案卷。
 
 ```json
 {
@@ -6237,6 +6237,87 @@ Usage notes:
     "feedback": {
       "type": "string",
       "description": "Feedback driving replanning (transition to replanning, required)."
+    },
+    "issues": {
+      "type": "array",
+      "description": "Case-docket entries read by the transition guards; omitted disposition/blocking take the kind default.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable id within the case."
+          },
+          "summary": {
+            "type": "string",
+            "description": "One-line defect or pending decision."
+          },
+          "kind": {
+            "type": "string",
+            "description": "Issue kind, which selects the default disposition and blocking grade.",
+            "enum": [
+              "machine_format",
+              "substantive",
+              "evidence_gap",
+              "scope_strategy",
+              "insufficient_disclosure",
+              "noise"
+            ]
+          },
+          "disposition": {
+            "type": "string",
+            "description": "How the item closes (default from the kind).",
+            "enum": [
+              "application_fix",
+              "ask_human",
+              "ignore"
+            ]
+          },
+          "blocking": {
+            "type": "string",
+            "description": "Impact on dispatch and rounds (default from the kind).",
+            "enum": [
+              "none",
+              "blocking",
+              "terminal"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Current close state (default open).",
+            "enum": [
+              "open",
+              "closed"
+            ]
+          },
+          "round_opened": {
+            "type": "number",
+            "description": "Round that opened the item (default round)."
+          },
+          "anchor": {
+            "type": "string",
+            "description": "Optional locator: claim, paragraph, or file path."
+          }
+        },
+        "required": [
+          "id",
+          "summary",
+          "kind"
+        ]
+      }
+    },
+    "round": {
+      "type": "number",
+      "description": "Planning round opening the issues (required with issues, 1-based)."
+    },
+    "rounds": {
+      "type": "number",
+      "description": "Completed planning rounds; with maxRounds it bounds replanning."
+    },
+    "maxRounds": {
+      "type": "number",
+      "description": "Allowed planning rounds; with rounds it bounds replanning."
     }
   },
   "required": [

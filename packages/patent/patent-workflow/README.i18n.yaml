@@ -15,8 +15,8 @@
   en: f07f90ed00e76f5c
   zh: c28faf93dbce08cc
 /deepseek-ai-dsh-patent-workflow/service:
-  en: 0e0d886c391fdbf9
-  zh: a4a636144c9dfcb2
+  en: 1d38956b05afe9e2
+  zh: 4d30f4afb48ff0bc
 /deepseek-ai-dsh-patent-workflow/service/runworkflow-manifest-ctx-executor-options-agent:
   en: 7198182fd9947850
   zh: e976a3f826dc319d
@@ -30,8 +30,8 @@
   en: 5b91ff0aef64cb8b
   zh: b6b590e41ede72fe
 /deepseek-ai-dsh-patent-workflow/case-docket-issues:
-  en: 98723de6b01429f9
-  zh: 685f4abe5f92005d
+  en: c17e2c2294269b90
+  zh: 75425f3e2fd24a31
 /deepseek-ai-dsh-patent-workflow/approval-wiring:
   en: 7229f5a3c71f85b6
   zh: 443203dcdf140442
@@ -45,8 +45,8 @@
   en: f5e39b2fe9f05b72
   zh: 6f74c1f7b6319753
 /deepseek-ai-dsh-patent-workflow/known-limitations-and-deferred-work:
-  en: 4dc3a1f2f40f99d1
-  zh: 82d41938c93e6558
+  en: cea772bd61d8a6d8
+  zh: 0dae5b3bffb98b99
 /deepseek-ai-dsh-patent-workflow/known-limitations-and-deferred-work/dev-note:
   en: 0a1253c6f7b5e8b9
   zh: 9f56528562c7c914

@@ -3,7 +3,6 @@ import { extractNumericFindings } from '@deepseek-ai/dsh-patent-core'
 import { checkClaimSet, extractClaimFeatures } from '../src/tool/spec-claim-coverage.ts'
 import {
   checkFigureMarkConsistency,
-  extractAbstractDrawingNumber,
   extractClaimMarks,
   knownFigureNumbers,
 } from '../src/tool/spec-figure-marks.ts'
@@ -463,11 +462,7 @@ describe('abstract and claim coverage edge cases', () => {
     expect(v?.suggestion).toContain('核对附图说明')
   })
 
-  it('extracts the abstract figure number and reconciles it with the analyzed figures', () => {
-    expect(extractAbstractDrawingNumber('摘要附图为图3。关键词：检测。')).toBe(3)
-    expect(extractAbstractDrawingNumber('摘要附图采用图12表示整体结构')).toBe(12)
-    expect(extractAbstractDrawingNumber('摘要附图为图三')).toBe(3)
-    expect(extractAbstractDrawingNumber('本摘要未指定摘要附图')).toBeUndefined()
+  it('reconciles the designated abstract figure with the analyzed figures', () => {
     const figures = [
       { figureNumber: 2, usable: true, components: [{ refNumber: '100' }] },
     ]

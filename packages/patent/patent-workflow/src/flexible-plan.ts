@@ -178,25 +178,6 @@ export function inferTechnicalField(
 }
 
 /**
- * 判断 IPC 分类是否属于电学（H 部）。
- * @param classification - IPC 分类结果。
- * @returns 是否属于电学（H 部）。
- */
-export function isElectricalIpc(classification: IpcClassification): boolean {
-  return classification.section.toUpperCase() === 'H'
-}
-
-/**
- * 判断案件输入是否被识别为电学领域（H 部）。
- * @param inputText - 案件输入文本。
- * @returns 是否被识别为电学领域。
- */
-export function isElectricalCase(inputText: string): boolean {
-  if (!inputText.trim()) return false
-  return isElectricalIpc(classifyIpcTop(inputText))
-}
-
-/**
  * 追加阶段：新阶段置 pending；计划无当前阶段时指向新阶段。
  * @param state - 当前计划状态（须为 active）。
  * @param stage - 待追加的阶段。

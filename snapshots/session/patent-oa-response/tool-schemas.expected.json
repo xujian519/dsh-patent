@@ -2961,7 +2961,7 @@
     },
     {
       "name": "patent_plan_task",
-      "description": "Human-in-the-loop plan state machine for patent tasks. transition: whitelist-checked state changes (planning → awaiting_approval → executing → awaiting_feedback → replanning → finished). sync: turn plan steps into ordered tasks with blockedBy deps. replan: hash-compare completed steps for incremental resume. Fail-closed on illegal transitions and missing semantic preconditions (executing needs tasks, replanning needs feedback). Stateless: pass the current state on every call.",
+      "description": "Human-in-the-loop plan state machine for patent tasks. transition: whitelist-checked state changes (planning → awaiting_approval → executing → awaiting_feedback → replanning → finished). sync: turn plan steps into ordered tasks with blockedBy deps. replan: hash-compare completed steps for incremental resume. Fail-closed on illegal transitions and missing semantic preconditions (executing needs tasks and no open blocking docket issue, replanning needs feedback, no open terminal docket issue, and a planning round below maxRounds). Docket entries passed with a transition are resolved against the shipped kind → disposition table, so an omitted disposition/blocking takes the kind default. Stateless: pass the current state and docket on every call.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -3008,6 +3008,87 @@
           "feedback": {
             "type": "string",
             "description": "Feedback driving replanning (transition to replanning, required)."
+          },
+          "issues": {
+            "type": "array",
+            "description": "Case-docket entries read by the transition guards; omitted disposition/blocking take the kind default.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Stable id within the case."
+                },
+                "summary": {
+                  "type": "string",
+                  "description": "One-line defect or pending decision."
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "Issue kind, which selects the default disposition and blocking grade.",
+                  "enum": [
+                    "machine_format",
+                    "substantive",
+                    "evidence_gap",
+                    "scope_strategy",
+                    "insufficient_disclosure",
+                    "noise"
+                  ]
+                },
+                "disposition": {
+                  "type": "string",
+                  "description": "How the item closes (default from the kind).",
+                  "enum": [
+                    "application_fix",
+                    "ask_human",
+                    "ignore"
+                  ]
+                },
+                "blocking": {
+                  "type": "string",
+                  "description": "Impact on dispatch and rounds (default from the kind).",
+                  "enum": [
+                    "none",
+                    "blocking",
+                    "terminal"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Current close state (default open).",
+                  "enum": [
+                    "open",
+                    "closed"
+                  ]
+                },
+                "round_opened": {
+                  "type": "number",
+                  "description": "Round that opened the item (default round)."
+                },
+                "anchor": {
+                  "type": "string",
+                  "description": "Optional locator: claim, paragraph, or file path."
+                }
+              },
+              "required": [
+                "id",
+                "summary",
+                "kind"
+              ]
+            }
+          },
+          "round": {
+            "type": "number",
+            "description": "Planning round opening the issues (required with issues, 1-based)."
+          },
+          "rounds": {
+            "type": "number",
+            "description": "Completed planning rounds; with maxRounds it bounds replanning."
+          },
+          "maxRounds": {
+            "type": "number",
+            "description": "Allowed planning rounds; with rounds it bounds replanning."
           }
         },
         "required": [

@@ -54,7 +54,7 @@ kind: "package-reference"
 | `flexible_plan` | 工作流 | `@deepseek-ai/dsh-patent-workflow` flexible-plan |
 | `patent_workflow` | 工作流 | `@deepseek-ai/dsh-patent-workflow` 收口 |
 | `patent_workflow_run` | 工作流 | `@deepseek-ai/dsh-patent-workflow` + ModelPort |
-| `patent_plan_task` | 工作流 | `@deepseek-ai/dsh-patent-workflow` plantask 状态机 |
+| `patent_plan_task` | 工作流 | `@deepseek-ai/dsh-patent-workflow` plantask 状态机；`transition` 接受案卷条目（`issues` + 规划轮次 `round`），用随包处置表补全默认值、回显解析后的条目并交给阻塞/终态/轮次上限守卫 |
 | `patent_worker_validate` | 质量 | `@deepseek-ai/dsh-patent-workflow` worker 契约 |
 | `knowledge_note_save` | 知识 | Config.noteDir 下的文件写入器（默认 `<cwd>/99-知识库`） |
 | `workbench_link_patent_case` | 工作流 | 个人工作台 loopback HTTP API：幂等案件桥接（patent_* 字典种子化；根任务 + L1–L5 阶段子任务，`source='patent'`；`_matter-log.md` 状态投影；不写案件目录、不改根任务状态） |

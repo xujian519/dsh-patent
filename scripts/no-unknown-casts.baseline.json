@@ -2037,9 +2037,6 @@
   "packages/patent/patent-tools/tests/workbench-link-patent-case.spec.ts": {
     "d022f3c83ccd16c130388e4cfb5b50bddd40f3ebfe42ee6371a8a21c4cbaad8d": 1
   },
-  "packages/patent/patent-workflow/src/checker-verdict.ts": {
-    "4d4d978716f1972ea7e6679a9909b11791d1955893726363e880e15314867ab0": 1
-  },
   "packages/patent/patent-workflow/tests/flexible-plan.spec.ts": {
     "a0792e186bd4ba8c33af069089170a23f5869f2c1f929f7d89dc2b8b1e4d50e5": 1
   },

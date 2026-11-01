@@ -204,6 +204,20 @@ describe('Node runtime host failures', () => {
     })
   })
 
+  it('reports a delayed exit status instead of signalling a closing managed process', async () => {
+    const h = await setup()
+    h.spawn.mockImplementation(() => {
+      queueMicrotask(() => {
+        h.control.push(null)
+        setTimeout(() => { h.direct.resolve({ exitCode: 7, signal: null }) }, 0)
+      })
+      return h.handle
+    })
+    expect((await h.start(request, NO_INITIAL_FRAME)).error).toEqual({
+      kind: 'worker-exit', message: 'Node process exited (7, signal null)',
+    })
+  })
+
   it('reports startup transport loss when the direct process outcome rejects', async () => {
     const h = await setup()
     h.spawn.mockImplementation(() => {

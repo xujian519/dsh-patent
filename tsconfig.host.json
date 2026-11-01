@@ -635,6 +635,5 @@
     { "path": "./packages/self-evolve/self-evolve-basic" },
     { "path": "./packages/self-evolve/self-evolve-benchmark" },
     { "path": "./packages/self-evolve/tool-self-evolve" },
-    { "path": "./packages/client/better-sidebar/tsconfig.host.json" }
   ]
 }

@@ -30,10 +30,9 @@ afterEach(() => {
 
 async function bench(start: () => Promise<TestClient>) {
   const client = await start()
-  // The fork's client aggregate also loads the host session face (its
-  // better-sidebar surfaces), so which Context augmentation names
-  // `ctx.sessions` depends on module load order; the bench pins the client
-  // face the assembled roster actually provides.
+  // The fork's client aggregate also loads the host session face, so which
+  // Context augmentation names `ctx.sessions` depends on module load order;
+  // the bench pins the client face the assembled roster actually provides.
   return { client, sessions: client.ctx.sessions as unknown as ClientSessions }
 }
 

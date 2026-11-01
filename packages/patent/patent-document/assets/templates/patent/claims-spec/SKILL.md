@@ -35,7 +35,7 @@ template:
 ## 工作流
 
 1. 读 `references/conventions.md`。
-2. **用 `render_patent_document` 渲染**（`template: claims-spec`），把内容作为**受控草案 `draft`** 传入（结构化 JSON：著录项 `meta`（案卷号 `caseNumber`、发明名称、申请人、发明人、代理人、撰写日期）、不带项号的 `claims`、多段 `abstract`、按图序排列的 `figureFiles`、摘要附图号 `abstractFigure`（1 起，缺省第 1 幅）、按五部分组织的 `sections` 块序列——附图说明部分恰每幅附图一条列表项，条数须等于 `figureFiles` 项数；块只有 paragraph/list/table 三种）。`权利要求书`/`说明书` 等分区标题留在模板里，权项编号、图号（「图N为……」）与表题（「表 N · 名称」）由渲染器从结构自动生成，模型不撰写 HTML。抬头编号行与页脚的案卷号取 `meta.caseNumber`。表格只允许放在具体实施方式。
+2. **用 `render_patent_document` 渲染**（`template: claims-spec`），把内容作为**受控草案 `draft`** 传入（结构化 JSON：著录项 `meta`（案卷号 `caseNumber`、发明名称、申请人、发明人、代理人、撰写日期）、不带项号的 `claims`、多段 `abstract`、按图序排列的 `figureFiles`、摘要附图号 `abstractFigure`（1 起，缺省第 1 幅）、按五部分组织的 `sections` 块序列——附图说明部分恰每幅附图一条列表项，条数须等于 `figureFiles` 项数，列表项**只写图名与描述文字**，不要写「图N为」前缀，也不要写句末「；/。」（两者都由渲染器生成）；块只有 paragraph/list/table 三种）。`权利要求书`/`说明书` 等分区标题留在模板里，权项编号、图号（「图N为……」）与表题（「表 N · 名称」）由渲染器从结构自动生成，模型不撰写 HTML。抬头编号行与页脚的案卷号取 `meta.caseNumber`。表格只允许放在具体实施方式。
    **不要手工复制 `assets/template.html` 另存再填**：模板的样式、品牌注入点与槽位 `id` 都由渲染引擎解释，手工复制再填会丢掉这些处理（含可选的段落编号声明）。
    渲染后再编辑产物以补模板没有的槽位（状态框、额外的信息行）是安全的。
 3. 填充：案件信息（`meta`）→ 权利要求书（`claims`）→ 说明书五部分（`sections`，顺序固定：技术领域 → 背景技术 → 发明内容 → 附图说明 → 具体实施方式）→ 摘要（`abstract`/`abstractFigure`）→ 落款/页脚随 `meta.date` 自动注入。

@@ -63,15 +63,11 @@ const SAFE_HOST_DEPENDENCY_EXPORTS = {
     'parseTunnelWorkerCommand', 'parseTunnelWorkerEvent', 'rawText', 'sendFrame', 'unsupportedFrameRefusal',
     'viewerRequestFields', 'identityFromKey', 'identityKeyOf',
   ],
-  '@deepseek-ai/dsh-llm': ['callConfigEquals', 'createUserMessage'],
+  '@deepseek-ai/dsh-llm': ['callConfigEquals'],
   '@deepseek-ai/dsh-session': ['SessionId'],
-  '@deepseek-ai/dsh-session/types': ['SessionLogOffset'],
   '@deepseek-ai/dsh-session-format': ['sessionFormatLogFilename'],
-  // Builds a durable descriptor from caller-owned values; the release moved it off the `/client` face.
-  '@deepseek-ai/dsh-subagent': ['snapshotSubagentDescriptor'],
   '@deepseek-ai/dsh-storage-domain': ['defineDomain'],
   '@deepseek-ai/dsh-timeout': ['MAX_TIMER_DELAY_MS'],
-  '@deepseek-ai/dsh-tools': ['defineTool'],
   '@deepseek-ai/dsh-value': ['assertResolvedConfig', 'errorMessage', 'isAbortError', 'isPlainObject', 'isRecord', 'toError'],
   '@deepseek-ai/schemastery': ['default'],
 } as const satisfies HostDependencyExports
@@ -94,7 +90,6 @@ const PEER_REQUIRED_HOST_EXPORTS = {
   // appendPluginRecord writes through the Session class's private log; pluginRecordOf is stateless.
   '@deepseek-ai/dsh-session': ['SESSION_FORMAT_VERSION', 'appendPluginRecord', 'pluginRecordOf'],
   '@deepseek-ai/dsh-session-persistence': ['SessionPersistenceNotFoundError'],
-  '@deepseek-ai/dsh-settings': ['SettingsConflictError'],
   // Readers recognize a deadline's TimeoutReason only by `instanceof` against their own copy.
   '@deepseek-ai/dsh-timeout': ['deadline'],
 } as const satisfies HostDependencyExports

@@ -29,10 +29,10 @@ it('preserves unlisted child status through metadata updates and main view ackno
     } satisfies SessionFollowFrame)
   })
   const client = await start()
-  // The fork's client aggregate also loads the host session face (its
-  // better-sidebar surfaces), so which Context augmentation names
-  // `ctx.sessions` depends on module load order; pin the client face the
-  // assembled roster actually provides, as the sessions bench does.
+  // The fork's client aggregate also loads the host session face, so which
+  // Context augmentation names `ctx.sessions` depends on module load order;
+  // pin the client face the assembled roster actually provides, as the
+  // sessions bench does.
   const sessions = client.ctx.sessions as unknown as ClientSessions
   const ui = client.ctx.uiSession
   await sessions.refresh()

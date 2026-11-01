@@ -353,22 +353,22 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 - **外置自媒体 bundle 的漂移与缺口(1 条,复核 #328 指针)**:`~/.dsh/local-bundles/patent-media/cordis.patch.yml` 最后修改 09-23,早于 10-09 的上游同步。**7 个 `standard` 顶层行整行缺失**;仍挂 `@deepseek-ai/dsh-tool-ralph`(experimental,`:289-293`)而仓内两个 preset 都已撤下该行;`backgroundMode` 族字段与仓内三个 preset **方向相反**(bundle 有、仓内无),**不是单侧落后而是无人对齐**;4 个图像技能无任何可执行出口(preset 未挂图像生成工具,正文无具体命令/脚本/API 名);仍缺广告法/专利标识标注的合规载体(`patent-media-compliance` 自述只约束小红书账号);3 份 `.bak` 残留在活跃技能目录。**已收口(2026-10-12,仓外清理,仓内零代码改动)**:7 个缺失顶层行已补齐(`time-context`/`tool-schedule`/`command-goal`/`tool-plugin-market`/`present`/`tool-plugin-manager`/`openviking`),行集与 `standard` 逐行一致(剩余差异只有 `preset-*` 声明行与两个 `disabled` provider 行,均为有意差异,顶层 23 行);`tool-ralph` 已撤下(同日前一轮);`tool-web` 由 `fetch: false` 改为 `true` 并补写理由,人设里「fetch 默认关闭,`web_fetch` 需另行配置 provider」那句错误陈述同步改写为「`web_search` 与 `web_fetch` 均可用」;3 份 `.bak` 已删(bundle 内零残留);`patent-media-compliance` 新增「法规层」小节——《广告法》第九条第(三)项与第十二条、《专利法》第十七条 +《专利标识标注办法》(局令第 63 号)第五/六/七条,含《广告绝对化用语执法指南》(2023)的例外情形与「专利申请,尚未授权」法定字样,并写明法规义务不分平台。**就地更正本条的一处判断**:`backgroundMode` 族字段**不是**「方向相反、无人对齐」——该字段已在 v0.2.1-alpha.1 由 `@deepseek-ai/dsh-tool-subagent` 移除(`docs/upgrade-guide/v0.2.1-alpha.1/subagent-activations/guide.md:18` 明确要求从 `cordis.yml`、配置文件补丁与覆盖文件中删除),故仓内三个 preset 不带它是**正确**的、bundle 带它是**废弃字段残留**,已删 4 处(`continuable` ×2、`one-shot` ×2)。Problem 4 的「零命中」证据同时更正:原 `grep "广告法|专利标识|…|绝对化"` 未转义 `|`(BRE),实为整串字面量匹配,属假阴性——正确转义后「绝对化」在 4 处命中(含 `patent-media-compliance:55` 原有的宣传用语自查项),真实缺口是「有朴素检查项、无法规依据与专利标识标注规则」。**行集差异的落点(2026-10-12,同批)**:bundle 内新增 `README.md`,逐项记下相对 `standard` 的 3 项有意差异(preset 声明行 id、两个 `disabled: true` 的 `tool-subagent` provider 行)、可复现的 id 对比命令、字段级基线(`backgroundMode` 配置键与 `tool-ralph` 两侧零命中、`fetch` 取值一致)与历次撤换理由表,并写明权威源是仓内 `standard`、仓内门禁扫不到 `~/.dsh/` 故落后自检必须手工跑。图像链可执行出口(Problem 3)由 2026-10-10 单独处置,不在本次范围。
 - **机制靠注释维持(2 条)**:①`doc-template/src/vars.ts:24-25` 的 `EXTRACTION_PATTERN` 与 `document-deliver/src/checks.ts:90-92` 的 `PLACEHOLDER_PATTERNS[0]` 是同一正则的两份字面量,对齐只在注释里(**#314 的修法是复制而非共享,#327 那次同理**),任何一侧单独改动都会静默复现 #314;②`patent.patch.yml:80` 对模型下硬纪律「不要用通用 `send_message`……(**实测**直接报「active teammate … not found」)」,与 `standard.patch.yml` 侧**逐字相同**、两处都标「实测」而**没有一处记录该实测**——需先核实 `@deepseek-ai/dsh-experimental-tool-agent-team` 是否真的某条装配路径可达(`docs/tool-catalog.md:45` 明写 base 组合保持其 disabled)。
 - **受控草稿的代码异味(1 条,本轮新增)**:表题编号两条通道各写一份字面量,而两处模块注释都断言「**两通道表题不可能分叉**」——HTML 侧 `patent-document/.../draftConverter/blocks.ts:33` 与 docx 侧 `patent-filing/.../filing/fromDraft.ts:30` 各自产出 `表 N · 名称`,计数器类型也各定义一份;对照同族的附图说明编号**是**共享的(两侧都取 `patent-core` 的 `numberedFigureDescriptions`)。同族另有两处重复:`patent-filing/src/filing/engine.ts:237-243` 的 `obj()` 与已导出的 `patent-core/src/llm-json.ts:45` `asJsonRecord` 同义;`patent-document/src/document/templateResolver.ts:53-54` 用 `JSON.parse(raw) as TemplateManifest` 把磁盘 JSON 裸断言(字段全可选,错误退化为「未知模板 …(可用: 无)」)。
-- **台账计数已改为可机检(1 条,已收口)**:本条原先是「四个计数过期」的记录——09-27 节的 173/67、`v8 ignore` 1204、`@ts-expect-error` 129、`packages/patent/` 包数 15 全部不再成立。这四个计数是本仓判断结构债与抑制标记「恶化还是收敛」的唯一量化面,却由人手写,过期了无人发现。现在下表每一行都由 `pnpm run verify-tech-debt-counters` 复算并比对:数值不一致、多出一行、少一行都失败;该门禁挂在 `test:docs`(`doc-quick`),因而在 CI 的 `node-checks` 里执行。结构债两项调用 `scripts/report-structure.ts` 的同一函数(`pnpm run report:structure` 打印的就是它),两个标记计数经 `git ls-files` 只读 tracked 文件后逐行统计(与 `git grep -h … | wc -l` 同值:`v8 ignore` 当前为 1351 行 / 475 文件),门禁自身的两个源文件不计入标记计数:这两个文件里的字面量正是被统计的标记文本本身,不是抑制点。原命令 `grep -rn … packages apps scripts --include=*.ts` 会命中本机 `apps/desktop/.desktop-build/**` 构建残留里的 `node_modules`(实测虚高到 256),记载的 `v8 ignore = 1391` 也无法复现(实测 1135,计入 `src` 下 `.tsx` 为 1357)。09-27 节的数字保留为当日实测,不再代表当前。同一聚合还执行 preset 配置、preset 工具引用、preset 差异、preset 模式基线、专利团队名册与专利文书输出六个只读门禁；`verify-v3-event-vocabulary` 需要显式 `--source-ref`，保留为随版本升级手动执行的审计项。
+- **台账计数已改为可机检(1 条,已收口)**:本条原先是「四个计数过期」的记录——09-27 节的 173/67、`v8 ignore` 1204、`@ts-expect-error` 129、`packages/patent/` 包数 15 全部不再成立。这四个计数是本仓判断结构债与抑制标记「恶化还是收敛」的唯一量化面,却由人手写,过期了无人发现。现在下表每一行都由 `pnpm run verify-tech-debt-counters` 复算并比对:数值不一致、多出一行、少一行都失败;该门禁挂在 `test:docs`(`doc-quick`),因而在 CI 的 `node-checks` 里执行。结构债两项调用 `scripts/report-structure.ts` 的同一函数(`pnpm run report:structure` 打印的就是它),两个标记计数经 `git ls-files` 只读 tracked 文件后逐行统计(与 `git grep -h … | wc -l` 同值:`v8 ignore` 当前为 1312 行),门禁自身的两个源文件不计入标记计数:这两个文件里的字面量正是被统计的标记文本本身,不是抑制点。原命令 `grep -rn … packages apps scripts --include=*.ts` 会命中本机 `apps/desktop/.desktop-build/**` 构建残留里的 `node_modules`(实测虚高到 256),记载的 `v8 ignore = 1391` 也无法复现(实测 1135,计入 `src` 下 `.tsx` 为 1357)。09-27 节的数字保留为当日实测,不再代表当前。同一聚合还执行 preset 配置、preset 工具引用、preset 差异、preset 模式基线、专利团队名册与专利文书输出六个只读门禁；`verify-v3-event-vocabulary` 需要显式 `--source-ref`，保留为随版本升级手动执行的审计项。
 
 <!-- tech-debt-counters:start -->
 | 计数 | 值 |
 | --- | --- |
-| `structure.long-functions` | 209 |
-| `structure.large-files` | 94 |
-| `structure.patent-large-files` | 9 |
-| `lint.v8-ignore` | 1351 |
+| `structure.long-functions` | 186 |
+| `structure.large-files` | 89 |
+| `structure.patent-large-files` | 10 |
+| `lint.v8-ignore` | 1312 |
 | `lint.ts-expect-error` | 193 |
 | `packages.patent-directories` | 16 |
 <!-- tech-debt-counters:end -->
 
 ### 专利域 >800 行文件裁定（2026-11-01 复测）
 
-`packages/patent` 当前有 9 个 >800 行源文件，全部保留为「接受」；另有 3 个拆分目标已降到 800 行。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，全仓 >800 行文件为 94 个（2026-11-01 #647 删除 better-sidebar 未用 locale 后 locales.ts 降至 800 行以下）。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
+`packages/patent` 当前有 10 个 >800 行源文件，全部保留为「接受」；另有 3 个拆分目标已降到 800 行。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，本轮附图说明校验把 `validate.ts` 再推过 800 行后升至 10 个，全仓 >800 行文件为 89 个（2026-11-01 移除 better-sidebar 包与未用 locale 后结构债回落，再加本轮 `validate.ts`）。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
 
 拆分落点：`generate-patent-figure.ts` 拆出 `figure-panels.ts`（多面板路径）、`figure-delivery.ts`（落版/复核/转路径/导出）与 `figure-run.ts`（共享运行参数与标号）；`evidence/engine.ts` 拆出 `signals.ts`、`judgment.ts`、`public-use.ts`、`conditions.ts` 与 `proof-standard.ts`；`generate-structure-figure.ts` 拆出 `structure-types.ts`、`structure-model.ts` 与 `structure-render.ts`。
 
@@ -386,6 +386,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-core/src/atoms/handlers/builtin/evidence-check.ts` | 接受 | 842 | 单个 atom handler 的五阶段，最大函数 123 行，仅超阈值 5% |
 | `packages/patent/patent-tools/src/figure/dot-builder.ts` | 接受 | 839 | 单一 DOT 词汇表：五个 builder 各 <60 行，共享头部/标号/转义契约 |
 | `packages/patent/patent-core/src/ipc/ipc-classifier.ts` | 接受 | 807 | 数据表为主：`IPC_DOMAINS` 409 行 + 明细表 260 行，分类函数 <30 行 |
+| `packages/patent/patent-core/src/draft/validate.ts` | 接受 | 811 | 受控草案校验入口：按部分聚合违规；本轮附图说明列表项禁图号/句末标点把文件从 776 推到 811，最大新增函数 <40 行，拆分会把 SpecDraft 窄化与违规聚合拆散 |
 | `packages/patent/patent-tools/src/tool/generate-patent-figure.ts` | 拆分 | 800 | 多面板路径与交付链已分拆；入口保留 schema 与单图编排 |
 | `packages/patent/patent-core/src/evidence/engine.ts` | 拆分 | 800 | 三性、类型特定、使用公开、证明标准已分模块；类只保留编排 |
 | `packages/patent/patent-tools/src/tool/generate-structure-figure.ts` | 拆分 | 800 | 类型、模型 I/O、渲染收尾已分模块；入口保留 schema 与工具装配 |

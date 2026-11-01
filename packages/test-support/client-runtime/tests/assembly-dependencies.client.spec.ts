@@ -29,9 +29,9 @@ describe('bundle dependency closures', () => {
     const entry = [...client.ctx.loader.entries()].find(row => row.options.name === SESSIONS)
     expect(entry?.fiber?.state).toBe(FiberState.ACTIVE)
     expect(client.ctx.get('fileUpload')).toBeDefined()
-    // The fork's client aggregate also loads the host session face (its
-    // better-sidebar surfaces), so which Context augmentation names
-    // `ctx.sessions` depends on module load order; pin the client face here.
+    // The fork's client aggregate also loads the host session face, so which
+    // Context augmentation names `ctx.sessions` depends on module load order;
+    // pin the client face here.
     const sessions = client.ctx.sessions as unknown as ClientSessions
     await vi.waitFor(() => {
       expect(sessions.list.getSnapshot().phase).toBe('ready')

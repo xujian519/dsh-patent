@@ -5,7 +5,7 @@ import type { DesktopUpdateCoordinator } from './update-coordinator.ts'
 import type { DesktopUpdateState } from './ipc.ts'
 
 /** Validated polling delays; maxBackoffMs caps the final randomized delay. */
-export interface DesktopUpdateScheduleConfig {
+interface DesktopUpdateScheduleConfig {
   readonly intervalMs: number
   readonly maxBackoffMs: number
   readonly jitter: number

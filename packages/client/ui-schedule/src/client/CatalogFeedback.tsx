@@ -5,7 +5,7 @@ import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import css from './TaskManagerPage.module.css'
 
 /** Props of the catalog states: query state, shown content, and the retry action. */
-export type CatalogFeedbackProps = PropsLocale<'schedule.manager'> & {
+type CatalogFeedbackProps = PropsLocale<'schedule.manager'> & {
   /** Catalog query state; loading and a failed read each render their own state. */
   readonly status: 'loading' | 'ready' | 'error'
   /**

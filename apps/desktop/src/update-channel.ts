@@ -1,7 +1,7 @@
 /** Resolve the update channel sealed into the installed application manifest. */
 
 /** Installer-owned channel, independent of release version and upload environment. */
-export type DesktopUpdateChannel = 'nightly' | 'latest'
+type DesktopUpdateChannel = 'nightly' | 'latest'
 
 /**
  * Read the packaged channel; older manifests retain their existing nightly behavior.

@@ -124,7 +124,7 @@ async function exitsWithin(exit: Promise<void>, milliseconds: number): Promise<b
 }
 
 /** Browser authentication URL reported by the running Web application. */
-export interface DesktopHostReady {
+interface DesktopHostReady {
   readonly url: string
   readonly injections?: readonly unknown[] | undefined
 }

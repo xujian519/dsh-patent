@@ -41,13 +41,13 @@ export function createSessionScheduleSource(
 }
 
 /** Selector hook the renderer binds from a slot's `hooks.catalog` observable. */
-export type SessionScheduleCatalogHook = SnapshotSelectorHook<CatalogSnapshot<ScheduleCatalogEntry>>
+type SessionScheduleCatalogHook = SnapshotSelectorHook<CatalogSnapshot<ScheduleCatalogEntry>>
 
 /** Shared Host catalog observable an ambient surface injects through its slot. */
 export type SessionScheduleCatalogObservable = HostObservable<CatalogSnapshot<ScheduleCatalogEntry>>
 
 /** One Session's active scheduled tasks as projected from the shared Host catalog. */
-export interface SessionScheduleFacts {
+interface SessionScheduleFacts {
   /** Whether the settled catalog holds at least one active task for the Session. */
   readonly hasActive: boolean
   /** Active tasks of the Session in catalog order; empty unless the read settled. */

@@ -4,7 +4,7 @@ import type { WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controlle
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 
 /** Navigation state shown beside the retained task's original Session id. */
-export type SessionLinkState = 'available' | 'loading' | 'archived' | 'unavailable'
+type SessionLinkState = 'available' | 'loading' | 'archived' | 'unavailable'
 
 /**
  * Check Host-list membership and archive state without activating or restoring anything.
@@ -27,7 +27,7 @@ export function sessionLinkState(id: SessionId, sessions: SessionListState, work
 }
 
 /** Label one linked Session shows, and whether a Session title produced it. */
-export interface SessionLabel {
+interface SessionLabel {
   /** Session title from the current catalog, otherwise the Session id. */
   readonly text: string
   /** Whether a catalog title produced {@link SessionLabel.text}; false when the id is shown instead. */

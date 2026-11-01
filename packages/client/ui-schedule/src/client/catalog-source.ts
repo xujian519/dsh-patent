@@ -43,7 +43,7 @@ export interface CatalogSnapshot<Item extends { readonly id: ScheduleId } = Sche
 }
 
 /** Remote operations and invalidations scoped by the registering entry. */
-export interface CatalogDependencies<Item extends { readonly id: ScheduleId } = ScheduleRecord> {
+interface CatalogDependencies<Item extends { readonly id: ScheduleId } = ScheduleRecord> {
   readonly list: () => Promise<RemoteResult<Item[]>>
   readonly remove: (id: ScheduleId) => Promise<RemoteResult<ScheduleDeleteResult>>
   readonly subscribeChanged: (listener: () => void) => () => void

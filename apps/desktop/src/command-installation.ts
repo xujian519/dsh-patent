@@ -9,7 +9,7 @@ import { promisify } from 'node:util'
 import { withFileLock, writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 
 /** Fixed installation locations supplied by the Desktop shell. */
-export interface FileCommandInstallation {
+interface FileCommandInstallation {
   readonly destination: string
   readonly launcher: string
   readonly linkHelper: string
@@ -31,7 +31,7 @@ interface Receipt {
 }
 
 /** State displayed before a command-management operation. */
-export interface CommandInspection {
+interface CommandInspection {
   readonly fingerprint: string
   readonly destination: string
   readonly launcher: string

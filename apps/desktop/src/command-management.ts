@@ -23,7 +23,7 @@ interface CommandState {
 }
 
 /** Data required to render one command-management decision. */
-export interface CommandPresentation {
+interface CommandPresentation {
   readonly managed: boolean
   readonly available: boolean
   readonly destination: string
@@ -33,7 +33,7 @@ export interface CommandPresentation {
 }
 
 /** Shell-owned access to installed resources, locale and native dialogs. */
-export interface CommandManagerOptions {
+interface CommandManagerOptions {
   readonly resources: string
   readonly isPackaged: boolean
   readonly isInstalledLocation: () => boolean

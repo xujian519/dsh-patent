@@ -4,7 +4,7 @@ import { valid } from 'semver'
 import { platformClientHeaders, type AccountClientMetadata } from '@deepseek-ai/dsh-deepseek-account'
 
 /** Installed release identity; no field is supplied by a renderer. */
-export interface DesktopPolicyIdentity {
+interface DesktopPolicyIdentity {
   readonly platform: 'win32' | 'darwin'
   readonly bundledDshVersion: string
   readonly arch: 'x64' | 'arm64'
@@ -12,7 +12,7 @@ export interface DesktopPolicyIdentity {
 }
 
 /** Validated deployment choices; test authentication is explicitly enabled, never inferred from a redirect. */
-export interface DesktopPolicyConfig {
+interface DesktopPolicyConfig {
   readonly origin: string
   readonly allowedPageOrigins: readonly string[]
   readonly allowedAuthOrigins: readonly string[]

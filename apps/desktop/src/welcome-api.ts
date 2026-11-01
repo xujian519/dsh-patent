@@ -60,7 +60,7 @@ export type WelcomeApi = DesktopLocale & WelcomeOperations & {
 }
 
 /** Authentication facts supplied at cold start or after a completed sign-out. */
-export interface WelcomeAuthentication {
+interface WelcomeAuthentication {
   readonly loggedIn: boolean
   readonly hasApiKey: boolean
 }

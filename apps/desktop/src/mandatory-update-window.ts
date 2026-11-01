@@ -9,7 +9,7 @@ import type { DesktopUpdateOverlay, DesktopUpdateOverlays } from './update-overl
 import { DesktopUpdateAttention } from './update-attention.ts'
 
 /** A renderer action never carries a URL or authorizes a different version. */
-export type MandatoryUpdateAction = 'refresh' | 'download' | 'install' | 'later' | 'page' | 'copy'
+type MandatoryUpdateAction = 'refresh' | 'download' | 'install' | 'later' | 'page' | 'copy'
 
 /** Combined view rendered as text by the shell-owned page. */
 export interface MandatoryUpdateView {
@@ -31,7 +31,7 @@ export interface MandatoryUpdateApi {
 }
 
 /** Main-process operations owned by the policy client, updater, and application lifecycle. */
-export interface MandatoryUpdateWindowOptions {
+interface MandatoryUpdateWindowOptions {
   readonly preload: string
   readonly overlays: Pick<DesktopUpdateOverlays, 'create'>
   readonly locale: DesktopLocale

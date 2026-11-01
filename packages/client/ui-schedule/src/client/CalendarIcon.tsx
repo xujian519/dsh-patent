@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react'
 
 /** Inputs of the calendar glyph, matching the product icon set's props. */
-export interface CalendarIconProps {
+interface CalendarIconProps {
   /** Extra class for layout placement; color rides currentColor. */
   readonly className?: string | undefined
 }

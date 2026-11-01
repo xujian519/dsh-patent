@@ -6,7 +6,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 /** Resolved shell preferences; absent fields use the defaults without rewriting existing files. */
-export interface DesktopSettings {
+interface DesktopSettings {
   readonly updates: {
     readonly allowTestAuthPopupWindow: boolean
   }

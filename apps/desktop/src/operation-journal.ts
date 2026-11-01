@@ -3,7 +3,7 @@ import { mkdir, open, rename, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 /** Budgets include serialized JSON and its line delimiter. */
-export interface OperationJournalLimits {
+interface OperationJournalLimits {
   readonly segmentBytes: number
   readonly recordBytes: number
   readonly queuedBytes: number

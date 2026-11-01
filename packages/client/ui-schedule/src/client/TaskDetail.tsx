@@ -36,7 +36,7 @@ import type { TaskMenuEntry } from './TaskMenu.tsx'
 import css from './TaskManagerPage.module.css'
 
 /** The two views of one task's detail: its rule, or its saved delivery records. */
-export type TaskDetailTab = 'rule' | 'records'
+type TaskDetailTab = 'rule' | 'records'
 
 /** Locale seat of the task manager namespace, as this component receives it. */
 type RuleTranslate = PropsLocale<'schedule.manager'>['t']
@@ -179,7 +179,7 @@ export interface TaskDetailInjected extends DeliveryHistoryInjected, TaskTimingI
 }
 
 /** One task's detail, as the Tasks page and the task tab both compose it. */
-export type TaskDetailProps = TaskDetailInjected
+type TaskDetailProps = TaskDetailInjected
   & PropsLocale<'schedule.manager'>
   & Pick<PropsRuntime<'main'>, 'useSessions' | 'useWorkspaces'>
   & {
@@ -218,7 +218,7 @@ export type TaskDetailProps = TaskDetailInjected
   }
 
 /** One task detail's editing state, as its Tasks page or task tab owns it. */
-export interface TaskDetailController {
+interface TaskDetailController {
   /** Catalog row the shown id resolves to, or undefined when the read has no such row. */
   readonly record: ScheduleCatalogEntry | undefined
   /** Task to show: the catalog row, or the draft a pending or failed mutation retained. */

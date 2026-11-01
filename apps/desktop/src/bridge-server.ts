@@ -15,7 +15,7 @@ import {
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 
 /** Incoming JSON-RPC request from the backend. */
-export interface JsonRpcRequest {
+interface JsonRpcRequest {
   jsonrpc: '2.0'
   id?: number
   method: string
@@ -23,7 +23,7 @@ export interface JsonRpcRequest {
 }
 
 /** Outgoing JSON-RPC response to the backend. */
-export interface JsonRpcResponse {
+interface JsonRpcResponse {
   jsonrpc: '2.0'
   id: number
   result?: unknown
@@ -42,14 +42,14 @@ interface JsonRpcNotification {
 }
 
 /** One registered menu item as it travels over the wire. */
-export interface WireMenuItem {
+interface WireMenuItem {
   id: string
   label: string
   accelerator?: string
 }
 
 /** Base tray entries supplied by the shell owner (main.ts). */
-export interface TrayBaseActions {
+interface TrayBaseActions {
   /** Restore and focus the main window. */
   onShow: () => void
   /** Begin an explicit quit. */

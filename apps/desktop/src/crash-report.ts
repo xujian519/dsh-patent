@@ -14,10 +14,10 @@ import { inspect } from 'node:util'
 export type CrashReportSource = 'host' | 'web-boot' | 'renderer' | 'main'
 
 /** Whether the backend had reached ready when the failure surfaced. */
-export type CrashReportPhase = 'startup' | 'running'
+type CrashReportPhase = 'startup' | 'running'
 
 /** Facts about the running application recorded in every report header. */
-export interface CrashReportApp {
+interface CrashReportApp {
   readonly name: string
   readonly version: string
   readonly platform: string
@@ -43,7 +43,7 @@ export interface CrashReportInput {
 }
 
 /** File name prefix every report shares. */
-export const CRASH_REPORT_PREFIX = 'crash-'
+const CRASH_REPORT_PREFIX = 'crash-'
 
 /** The exact generated file name syntax; pruning touches only files that match it. */
 const CRASH_REPORT_NAME = /^crash-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-(?:host|web-boot|renderer|main)\.log$/u
@@ -52,7 +52,7 @@ const CRASH_REPORT_NAME = /^crash-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-(?:
 export const CRASH_REPORTS_RETAINED = 10
 
 /** Retained bytes of renderer error-level console output. */
-export const RENDERER_CONSOLE_MAX_BYTES = 64 * 1024
+const RENDERER_CONSOLE_MAX_BYTES = 64 * 1024
 
 /** Upper bound of the rendered error section; a Host exit error already carries a 64 KiB stderr tail in its message. */
 export const ERROR_SECTION_MAX_CHARS = 256 * 1024

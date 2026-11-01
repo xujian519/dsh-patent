@@ -17,13 +17,13 @@ const SHELL_SESSION_KEYS = new Set(['PWD', 'OLDPWD', 'SHLVL', '_', ...Object.key
 const LAUNCHER_OWNED_PREFIXES = ['DSH_', 'ELECTRON_'] as const
 
 /** Validated login-shell read settings. */
-export interface DesktopLoginShellConfig {
+interface DesktopLoginShellConfig {
   /** Deadline for each candidate shell, in milliseconds. */
   readonly timeoutMs: number
 }
 
 /** One candidate shell that did not produce an environment. */
-export interface DesktopLoginShellFailure {
+interface DesktopLoginShellFailure {
   readonly shell: string
   /**
    * `exit <code>`, terminating signal name, spawn error, `timeout`, `aborted`, or `unparsed`
@@ -33,14 +33,14 @@ export interface DesktopLoginShellFailure {
 }
 
 /** Environment for the Host and the candidate failures that preceded it. */
-export interface DesktopLoginShellResult {
+interface DesktopLoginShellResult {
   /** `base` merged with the first successful shell's variables, or `base` itself when none succeeded. */
   readonly environment: NodeJS.ProcessEnv
   readonly failures: readonly DesktopLoginShellFailure[]
 }
 
 /** Inputs of {@link readDesktopLoginShellEnvironment} that callers other than tests leave unset. */
-export interface DesktopLoginShellReadOptions {
+interface DesktopLoginShellReadOptions {
   /** Operating system running Desktop; defaults to `process.platform`. */
   readonly platform?: NodeJS.Platform
   /** Candidates in trial order; defaults to {@link loginShellCandidates}. */

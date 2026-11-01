@@ -44,10 +44,10 @@ export type CronDescriptionKey =
   | 'cron.time.hoursAt'
 
 /** Namespace-independent translator for the cron description. */
-export type CronDescriptionTranslator = Translate<CronDescriptionKey>
+type CronDescriptionTranslator = Translate<CronDescriptionKey>
 
 /** One parsed cron field: its matched values, its Vixie star flag, and its coverage. */
-export interface CronField {
+interface CronField {
   /** Unique ascending matched values; Sunday 7 is folded onto 0. */
   readonly values: readonly number[]
   /**
@@ -63,7 +63,7 @@ export interface CronField {
 }
 
 /** One parsed five-field cron expression in evaluation order. */
-export interface ParsedCron {
+interface ParsedCron {
   /** Unique ascending matched minutes. */
   readonly minutes: CronField
   /** Unique ascending matched hours. */

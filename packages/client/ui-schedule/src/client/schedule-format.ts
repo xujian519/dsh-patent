@@ -10,7 +10,7 @@ type UnitKey = `unit.${TimeUnit}.${'one' | 'other'}`
 type WeekdayKey = `frequency.weekday.${1 | 2 | 3 | 4 | 5 | 6 | 7}`
 
 /** Dictionary keys required to display exact reminder frequencies. */
-export type FrequencyKey =
+type FrequencyKey =
   | 'time.locale'
   | 'time.utcPrefix'
   | 'frequency.once'
@@ -31,7 +31,7 @@ export type FrequencyKey =
 export type FrequencyTranslator = Translate<FrequencyKey>
 
 /** Dictionary keys required to localize a zone and mark the host's zone. */
-export type ZoneLabelKey = 'time.locale' | 'time.utcPrefix' | 'rule.zone.system'
+type ZoneLabelKey = 'time.locale' | 'time.utcPrefix' | 'rule.zone.system'
 type ZoneLocaleKey = Extract<ZoneLabelKey, 'time.locale' | 'time.utcPrefix'>
 
 /** Universal fallback when a runtime cannot enumerate its ICU time-zone data. */
@@ -46,7 +46,7 @@ export interface FrequencyZone {
 }
 
 /** Dictionary keys required to display relative reminder targets. */
-export type RelativeTimeKey = UnitKey | 'relative.now' | 'relative.future' | 'relative.overdue'
+type RelativeTimeKey = UnitKey | 'relative.now' | 'relative.future' | 'relative.overdue'
 
 const SECOND_MS = 1_000
 const SECOND_UNIT = { unit: 'second', seconds: 1 } as const

@@ -95,7 +95,7 @@ function isoOf(view: Pick<MonthView, 'year' | 'month'>, day: number): string {
 }
 
 /** Inputs of the date picker. */
-export interface DatePickerProps {
+interface DatePickerProps {
   /** Whether the panel is showing. */
   readonly open: boolean
   /** The row's trigger button, which anchors the panel. */

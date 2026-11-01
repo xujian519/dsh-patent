@@ -8,7 +8,7 @@ export type ClearEndedOutcome =
   | { readonly cleared: false }
 
 /** Remote removal and the authoritative readback that follows it. */
-export interface ClearEndedDependencies {
+interface ClearEndedDependencies {
   /** Ask the Host to remove every ended task; it answers how many rows it removed. */
   readonly removeInactive: () => Promise<RemoteResult<ScheduleDeleteInactiveResult>>
   /**

@@ -4,7 +4,7 @@ import type { OperationReportLimits } from './operation-report.ts'
 import type { OperationJournalStatus } from './operation-journal.ts'
 
 /** Facts passed to the isolated collector after the basic report is saved. */
-export interface OperationReportJobInput {
+interface OperationReportJobInput {
   readonly reportPath: string
   readonly directory: string
   readonly limits: OperationReportLimits
@@ -12,7 +12,7 @@ export interface OperationReportJobInput {
 }
 
 /** Collection and cooperative shutdown share one total budget. */
-export interface OperationReportJobOptions {
+interface OperationReportJobOptions {
   /** Deadline for requesting forced termination, including Worker startup. */
   readonly timeoutMs: number
   /** Reserved part of timeoutMs for cancellation and resource cleanup. */

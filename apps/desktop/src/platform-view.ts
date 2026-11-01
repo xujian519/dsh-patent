@@ -10,7 +10,7 @@ import { PLATFORM_IPC, type PlatformLocale } from './platform-ipc.ts'
 export { PLATFORM_IPC } from './platform-ipc.ts'
 
 /** Bounds in desktop content coordinates, supplied by the owned application renderer. */
-export interface PlatformBounds { x: number; y: number; width: number; height: number }
+interface PlatformBounds { x: number; y: number; width: number; height: number }
 
 /**
  * Decode the renderer rectangle before allocating a native view.

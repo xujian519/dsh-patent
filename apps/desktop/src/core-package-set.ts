@@ -29,7 +29,7 @@ export interface DesktopCorePackageRecord {
 }
 
 /** Complete union of the first-party package closures rooted at dsh and its private Desktop Host. */
-export interface DesktopCorePackageSet {
+interface DesktopCorePackageSet {
   readonly schemaVersion: 1
   readonly packages: readonly DesktopCorePackageRecord[]
 }
@@ -106,7 +106,7 @@ export function readDesktopCorePackageSet(projectDir: string, expectedReleaseVer
 }
 
 /** Return the project-relative `file:` spec for one local core tarball. */
-export function desktopCorePackageSpec(record: DesktopCorePackageRecord): string {
+function desktopCorePackageSpec(record: DesktopCorePackageRecord): string {
   return `file:./${DESKTOP_PACKAGES_DIR}/${record.file}`
 }
 

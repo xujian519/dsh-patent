@@ -10,7 +10,7 @@ import css from './PickerPopover.module.css'
 const MEASURE_STYLE: CSSProperties = { visibility: 'hidden', left: 0, top: 0 }
 
 /** Inputs of the picker shell. */
-export interface PickerPopoverProps {
+interface PickerPopoverProps {
   /** Whether the panel is mounted. */
   readonly open: boolean
   /** The row's trigger button, which anchors the panel and counts as inside for dismissal. */

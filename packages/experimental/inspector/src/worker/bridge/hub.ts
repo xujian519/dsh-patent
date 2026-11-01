@@ -63,7 +63,7 @@ export type InspectorSourceEvent =
   }
 
 /** Read-only diagnostic for `DSHInspector.getSources`. */
-export interface InspectorSourceView {
+interface InspectorSourceView {
   readonly sourceId: string
   readonly generation: string
   readonly kind: InspectorSourceKind

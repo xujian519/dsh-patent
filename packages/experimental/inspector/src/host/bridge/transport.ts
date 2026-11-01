@@ -15,7 +15,7 @@ import { HostBridgeRpc } from './rpc.ts'
 import { dispatchBridgeFrame } from './dispatcher.ts'
 
 /** Buffer limits for one source publisher. */
-export interface HostSourceOptions {
+interface HostSourceOptions {
   readonly label: string
   readonly topics: readonly string[]
   readonly maxQueuedRecords: number

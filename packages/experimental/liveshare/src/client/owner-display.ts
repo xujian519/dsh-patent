@@ -15,7 +15,7 @@ import type { OwnerShares } from './owner-shares.ts'
 import { readOwnerIdentity } from './owner-identity.ts'
 
 /** Display facts one verified owner identity carries. */
-export interface OwnerDisplay {
+interface OwnerDisplay {
   /** Subject the owner identity belongs to. */
   readonly subjectId?: string
   /** Verified display name; absent when the identity published none. */

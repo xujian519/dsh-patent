@@ -13,7 +13,7 @@ import { rejectRuntimeBridgeCommand } from '../cdp/runtime.ts'
 import { rejectSourcesBridgeCommand } from '../cdp/sources.ts'
 
 /** Operations invoked for source-lifecycle frames addressed to the Host. */
-export interface HostBridgeFrameHandlers {
+interface HostBridgeFrameHandlers {
   accepted(frame: SourceAcceptedFrame): void
   acknowledged(frame: SourceAppendAcknowledgedFrame): void
   resnapshot(frame: SourceResnapshotFrame): void

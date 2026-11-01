@@ -27,7 +27,7 @@ export type ViewerEndpointClass =
   | 'owner-only'
 
 /** The classes the share-viewer policy decides; the Host derives its decided-action set from them. */
-export type ReaderEndpointClass = Extract<ViewerEndpointClass, `reader-${string}`>
+type ReaderEndpointClass = Extract<ViewerEndpointClass, `reader-${string}`>
 
 /**
  * Every Remote endpoint this Client build can name, with the access condition that reaches it.

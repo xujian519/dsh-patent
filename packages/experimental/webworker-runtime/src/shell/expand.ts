@@ -73,7 +73,7 @@ function arithmetic(expression: ArithmeticExpression, state: ShellState): number
  * @param fs - the filesystem to match against.
  * @returns sorted matches, or an empty array when nothing matches.
  */
-export async function expandGlob(pattern: string, cwd: string, fs: ShellFileSystem): Promise<string[]> {
+async function expandGlob(pattern: string, cwd: string, fs: ShellFileSystem): Promise<string[]> {
   const absolute = pattern.startsWith('/')
   const segments = pattern.split('/').filter(segment => segment !== '')
   // A glob walks paths that may not exist or may not be directories; both

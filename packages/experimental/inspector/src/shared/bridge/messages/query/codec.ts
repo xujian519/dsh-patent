@@ -13,7 +13,7 @@ import type {
 import type { InspectorSourceGeneration, InspectorSourceId } from '../../ids.ts'
 
 /** Correlation fields recoverable before a query body is accepted. */
-export interface InspectorQueryFrameIdentity {
+interface InspectorQueryFrameIdentity {
   readonly sourceId: InspectorSourceId
   readonly generation: InspectorSourceGeneration
   readonly requestId: InspectorQueryRequestId

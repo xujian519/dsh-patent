@@ -16,7 +16,7 @@ export type CordisTreeSourceConnection =
   | { readonly state: 'disconnected'; readonly reason: string }
 
 /** One source generation and its latest routed Cordis snapshot. */
-export interface CordisTreeSource {
+interface CordisTreeSource {
   readonly sourceId: string
   readonly kind: CordisRuntimeSourceKind
   readonly label: string

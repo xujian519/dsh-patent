@@ -45,7 +45,7 @@ const encoder = new TextEncoder()
  * @param reason - Thrown value.
  * @returns One line per nested failure, indented by depth.
  */
-export function describeFailure(reason: unknown): string {
+function describeFailure(reason: unknown): string {
   const seen = new Set<unknown>()
   const lines: string[] = []
   const walk = (value: unknown, depth: number): void => {

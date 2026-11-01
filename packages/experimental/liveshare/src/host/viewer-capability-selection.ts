@@ -33,7 +33,7 @@ interface ChosenEndpoints {
  * endpoint that plugin does not offer under the kind it was submitted with. The last two carry what
  * they refused, so a refusal names the offending plugin or endpoint instead of only that one is.
  */
-export type ViewerCapabilityRefusal =
+type ViewerCapabilityRefusal =
   | { readonly code: 'invalid-capabilities' }
   | { readonly code: 'unknown-plugin'; readonly plugin: string }
   | {
@@ -44,7 +44,7 @@ export type ViewerCapabilityRefusal =
   }
 
 /** The accepted selection, or the refusal that replaces it. */
-export type ViewerCapabilitySelection =
+type ViewerCapabilitySelection =
   | {
     readonly ok: true
     /**

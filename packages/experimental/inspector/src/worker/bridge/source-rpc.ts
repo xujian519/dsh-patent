@@ -28,7 +28,7 @@ interface PendingSourceRequest {
 }
 
 /** Deliberate error returned by the Client source catalog. */
-export class ClientSourceRemoteError extends Error {
+class ClientSourceRemoteError extends Error {
   constructor(readonly code: ClientSourceError['code'], message: string) {
     super(message)
   }

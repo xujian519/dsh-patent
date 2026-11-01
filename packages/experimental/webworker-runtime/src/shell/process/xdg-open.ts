@@ -7,7 +7,7 @@ import { resolve } from '../../module-system/posix-path.ts'
 import type { VirtualExecutable, VirtualExecutableExit } from './virtual-executables.ts'
 
 /** Page-side display of one text file. */
-export type TextViewer = (path: string, text: string) => void
+type TextViewer = (path: string, text: string) => void
 
 let viewer: TextViewer | undefined
 

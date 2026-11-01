@@ -27,7 +27,7 @@ interface StoredObject {
 export type ClientObjectAllocation = symbol
 
 /** Serialization choices inherited by child RemoteObjects. */
-export interface ClientRuntimeObjectOptions {
+interface ClientRuntimeObjectOptions {
   readonly group?: string
   readonly generatePreview?: boolean
   readonly returnByValue?: boolean

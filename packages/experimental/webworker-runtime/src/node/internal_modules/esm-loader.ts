@@ -8,13 +8,13 @@ import { notAvailableError } from '../notImplementedFail.ts'
 import { LoadCache } from './module-map.ts'
 
 /** One module request in Node's v2 loader signature. */
-export interface ModuleRequest {
+interface ModuleRequest {
   readonly specifier: string
   readonly attributes?: Readonly<Record<string, string>>
 }
 
 /** Worker module-loader operations a cascaded loader delegates to, in Node's v1 argument order. */
-export interface CascadedLoaderSource {
+interface CascadedLoaderSource {
   import(specifier: string, parentURL?: string): Promise<unknown>
   resolveSync(specifier: string, parentURL?: string): { readonly url: string; readonly format: string }
 }

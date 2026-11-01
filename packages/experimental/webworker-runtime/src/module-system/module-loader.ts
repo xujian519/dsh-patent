@@ -49,7 +49,7 @@ export type Resolution =
   | { readonly kind: 'file'; readonly path: string }
 
 /** Node-loader-compatible resolution returned through the Cordis internal seam. */
-export interface WorkerInternalResolution {
+interface WorkerInternalResolution {
   readonly format: 'builtin' | 'commonjs' | 'json'
   /** File URL for VFS modules; the original bare specifier for builtins. */
   readonly url: string
@@ -60,7 +60,7 @@ interface ModuleRecord {
 }
 
 /** Resolution helpers carried by a Worker-backed CommonJS require. */
-export interface WorkerRequireResolve {
+interface WorkerRequireResolve {
   /**
    * Resolve one specifier without evaluating its module.
    * @param specifier - Module request relative to the require base.

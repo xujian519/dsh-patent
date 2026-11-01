@@ -42,7 +42,7 @@ export type {
 } from '../shared/cordis/snapshot.ts'
 
 /** Configuration consumed by the Host implementation after package-entry validation. */
-export interface HostPluginConfig extends Omit<InspectorOptions, 'clientOrigins'> {
+interface HostPluginConfig extends Omit<InspectorOptions, 'clientOrigins'> {
   /** Browser origins allowed to open the Client ingest WebSocket. */
   clientOrigins?: string[]
 }

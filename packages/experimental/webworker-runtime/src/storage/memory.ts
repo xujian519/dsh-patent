@@ -187,7 +187,7 @@ function resize(bytes: Uint8Array, length: number): Uint8Array {
 }
 
 /** Construction inputs for {@link MemoryVfs}. */
-export interface MemoryVfsOptions {
+interface MemoryVfsOptions {
   /** Durable write-behind observer; absent leaves the filesystem ephemeral. */
   readonly sink?: VfsMutationSink
 }

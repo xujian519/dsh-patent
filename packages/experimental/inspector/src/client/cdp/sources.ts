@@ -25,7 +25,7 @@ export function sourcesBridgeCapability(available: boolean): ClientSourcesCapabi
 }
 
 /** One lazily loaded browser script exposed by a Client source catalog. */
-export interface ClientSourceAsset {
+interface ClientSourceAsset {
   readonly scriptKey: RuntimeScriptKey
   readonly url: string
   readonly hash: string

@@ -30,7 +30,7 @@ export interface CreatedShareInfo {
 }
 
 /** Inputs the dialog supplies to its create form. */
-export interface ShareCreateFormOptions {
+interface ShareCreateFormOptions {
   /** Owner share management the create action calls. */
   readonly shares: OwnerShares
   /** Session the share exposes. */
@@ -60,7 +60,7 @@ export interface ShareCreateFormOptions {
 }
 
 /** Create-form state and the one create action the dialog's footer runs. */
-export interface ShareCreateFormState {
+interface ShareCreateFormState {
   /** Whether the create request is in flight. */
   readonly busy: boolean
   /** Session permission the share this dialog creates carries. */
@@ -185,7 +185,7 @@ export function useShareCreateForm({
 }
 
 /** Props for the create form fields the dialog renders before the share exists. */
-export interface ShareCreateFormProps extends PropsLocale<typeof NS> {
+interface ShareCreateFormProps extends PropsLocale<typeof NS> {
   /** The form's values and setters, as `useShareCreateForm` owns them. */
   readonly form: ShareCreateFormState
   /** Whether a prerequisite (an owner sign-in) still makes every field unavailable. */

@@ -15,7 +15,7 @@ export function consoleBridgeCapability(): ClientConsoleCapability {
 }
 
 /** Receives one Console event whose object handles belong to the given session. */
-export type ClientConsoleSink = (
+type ClientConsoleSink = (
   sessionId: ClientRuntimeSessionId,
   event: RuntimeConsoleBackendEvent<ClientRemoteObjectHandle>,
 ) => void

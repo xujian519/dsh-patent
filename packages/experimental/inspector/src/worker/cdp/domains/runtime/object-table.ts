@@ -39,13 +39,13 @@ export type RuntimeObjectObserver = (
 ) => RuntimeObjectPresentation | undefined
 
 /** CDP Runtime payload derived from one realm completion. */
-export interface CdpRuntimeCompletion {
+interface CdpRuntimeCompletion {
   readonly result: Readonly<Record<string, unknown>>
   readonly exceptionDetails?: Readonly<Record<string, unknown>>
 }
 
 /** CDP Runtime payload derived from one realm's property descriptors. */
-export interface CdpGetPropertiesResult {
+interface CdpGetPropertiesResult {
   readonly result: readonly Readonly<Record<string, unknown>>[]
   readonly internalProperties?: readonly Readonly<Record<string, unknown>>[]
   readonly privateProperties?: readonly Readonly<Record<string, unknown>>[]
@@ -53,7 +53,7 @@ export interface CdpGetPropertiesResult {
 }
 
 /** One CDP notification projected from a realm Console event. */
-export interface CdpRuntimeEvent {
+interface CdpRuntimeEvent {
   readonly method: 'Runtime.consoleAPICalled' | 'Runtime.exceptionThrown'
   readonly params: Readonly<Record<string, unknown>>
 }

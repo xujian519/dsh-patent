@@ -111,7 +111,7 @@ export class RealmObjectRegistry {
 }
 
 /** Mutable object set assembled before one snapshot becomes visible. */
-export class RealmObjectGeneration {
+class RealmObjectGeneration {
   private readonly retained = new Map<InspectorObjectHandle, object>()
   private committed = false
 

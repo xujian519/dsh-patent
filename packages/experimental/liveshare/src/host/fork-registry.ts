@@ -42,7 +42,7 @@ export interface ForkRecord {
 }
 
 /** Why one child session may not run a prompt. */
-export type ForkPromptRefusal =
+type ForkPromptRefusal =
   | 'fork-unknown-child'
   | 'fork-viewer-mismatch'
   | 'fork-source-revoked'
@@ -56,7 +56,7 @@ export type ForkPromptDecision =
   | { readonly ok: false; readonly code: ForkPromptRefusal; readonly message: string }
 
 /** One logical fork request this host already served, so a retry resolves to its child. */
-export interface ForkOperation {
+interface ForkOperation {
   /** Identity of the logical request: trusted viewer, share, source, and the caller's operation id. */
   readonly key: string
   /** Child this request produced; empty while the request is only reserved. */

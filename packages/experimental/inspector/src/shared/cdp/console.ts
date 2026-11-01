@@ -25,7 +25,7 @@ export type RuntimeConsoleType =
   | 'timeEnd'
 
 /** One Console event associated with a single inspected realm. */
-export interface RuntimeConsoleEvent<Handle extends string> {
+interface RuntimeConsoleEvent<Handle extends string> {
   readonly type: RuntimeConsoleType
   readonly arguments: readonly RuntimeRemoteObject<Handle>[]
   readonly timestamp: number
@@ -34,7 +34,7 @@ export interface RuntimeConsoleEvent<Handle extends string> {
 }
 
 /** One uncaught exception observed in an inspected realm. */
-export interface RuntimeExceptionEvent<Handle extends string> {
+interface RuntimeExceptionEvent<Handle extends string> {
   readonly timestamp: number
   readonly contextId?: number
   readonly details: RuntimeExceptionDetails<Handle>

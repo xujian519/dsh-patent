@@ -18,7 +18,7 @@ import type {
 } from '../../shared/bridge/messages/observation.ts'
 
 /** Operations invoked for each Worker-to-Client frame family. */
-export interface ClientBridgeFrameHandlers {
+interface ClientBridgeFrameHandlers {
   accepted(frame: SourceAcceptedFrame): void
   acknowledged(frame: SourceAppendAcknowledgedFrame): void
   resnapshot(frame: SourceResnapshotFrame): void

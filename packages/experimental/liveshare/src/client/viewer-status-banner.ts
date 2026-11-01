@@ -67,7 +67,7 @@ const STATUS_STEPS: Readonly<Record<Exclude<ViewerStatus, 'ready'>, StatusStep>>
 }
 
 /** One page's statement, rebuilt in place so it never stacks duplicates. */
-export interface ViewerStatusBanner {
+interface ViewerStatusBanner {
   /**
    * State the one state the page is in, with the ways out that state offers.
    * @param status - State the page holds.

@@ -25,20 +25,20 @@ export interface ShellStartFrame {
 }
 
 /** Output produced by the command, forwarded as it is written. */
-export interface ShellOutputFrame {
+interface ShellOutputFrame {
   t: 'shell-out'
   stream: 'stdout' | 'stderr'
   text: string
 }
 
 /** The command settled; the process worker closes itself right after. */
-export interface ShellExitFrame {
+interface ShellExitFrame {
   t: 'shell-exit'
   code: number
 }
 
 /** A signal the command is asked to honor (the terminate ladder's first rung). */
-export interface ShellSignalFrame {
+interface ShellSignalFrame {
   t: 'shell-signal'
 }
 
@@ -46,7 +46,7 @@ export interface ShellSignalFrame {
 export type FilesystemOperation = 'stat' | 'list' | 'readText' | 'writeText' | 'mkdir' | 'remove' | 'rename'
 
 /** One filesystem call, awaiting its reply by `id`. */
-export interface FilesystemCallFrame {
+interface FilesystemCallFrame {
   t: 'fs-call'
   id: number
   op: FilesystemOperation
@@ -58,7 +58,7 @@ export interface FilesystemCallFrame {
  * utilities branch on it (`ENOENT` prints "No such file or directory"), and an
  * Error instance does not survive structured cloning with its class.
  */
-export interface FilesystemReplyFrame {
+interface FilesystemReplyFrame {
   t: 'fs-reply'
   id: number
   value?: unknown

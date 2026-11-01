@@ -17,7 +17,7 @@ import { HostInspectorRealm } from './realms/host/index.ts'
 import { InspectorSourceRegistry, type SourceConnection } from './bridge/hub.ts'
 
 /** Live Worker runtime. */
-export interface InspectorWorkerRuntime {
+interface InspectorWorkerRuntime {
   readonly endpoint: InspectorEndpointInfo
   close(): Promise<void>
 }

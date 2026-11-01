@@ -20,7 +20,7 @@ import { SharePermissionFields } from './SharePermissionFields.tsx'
 import css from './ShareDialog.module.css'
 
 /** Inputs the dialog supplies to its stored-share edit state. */
-export interface UseShareEditOptions {
+interface UseShareEditOptions {
   /** Owner share management the edit state reads and saves through. */
   readonly shares: OwnerShares
   /** Session whose share this dialog edits. */
@@ -32,7 +32,7 @@ export interface UseShareEditOptions {
 }
 
 /** Stored-share values, the owner's unsaved picks, and the one save they share. */
-export interface ShareEditState {
+interface ShareEditState {
   /** Confirmed ACL scope of the share on hand, as the host reported it. */
   readonly access: ReturnType<typeof readAccess>
   /** Plugin endpoints the mounted plugins currently offer; none hides the endpoint control. */
@@ -400,7 +400,7 @@ export function useShareEdit({
 }
 
 /** Props for the stored share's permission section. */
-export interface ShareEditPanelProps extends PropsLocale<typeof NS> {
+interface ShareEditPanelProps extends PropsLocale<typeof NS> {
   /** Whether a share exists to edit; the section renders nothing before one does. */
   readonly visible: boolean
   /** Stored values, owner picks, and the one save they share. */

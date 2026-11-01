@@ -91,7 +91,7 @@ export function requestedAddressSession(envelope: unknown): string | undefined {
 }
 
 /** Host services one dispatched viewer request reads. */
-export interface ViewerDispatchDeps {
+interface ViewerDispatchDeps {
   /** Host services the reader was built with. */
   readonly deps: ViewerReadDeps
   /** Lifecycle state, refusal answers, and the resources a request opens. */

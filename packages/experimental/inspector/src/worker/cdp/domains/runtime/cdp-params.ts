@@ -18,7 +18,7 @@ export interface CdpExecutionContextSelector {
 }
 
 /** Validated Runtime.evaluate parameters and their routing selector. */
-export interface ParsedEvaluate extends CdpExecutionContextSelector {
+interface ParsedEvaluate extends CdpExecutionContextSelector {
   readonly request: RuntimeEvaluateRequest
 }
 
@@ -30,7 +30,7 @@ export type CdpCallArgument =
   | { readonly kind: 'undefined' }
 
 /** Validated Runtime.callFunctionOn parameters before object-id routing. */
-export interface ParsedCallFunction extends CdpExecutionContextSelector {
+interface ParsedCallFunction extends CdpExecutionContextSelector {
   readonly objectId?: string
   readonly arguments: readonly CdpCallArgument[]
   readonly request: Omit<RuntimeCallFunctionRequest<RuntimeBackendObjectHandle>, 'receiver' | 'arguments'>

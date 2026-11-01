@@ -24,7 +24,7 @@ export interface CordisDomNode {
 }
 
 /** Immutable document revision shared by the consumers of one backend. */
-export interface CordisDomDocument {
+interface CordisDomDocument {
   readonly revision: number
   readonly root: CordisDomNode
   readonly byBackendId: ReadonlyMap<CdpBackendNodeId, CordisDomNode>

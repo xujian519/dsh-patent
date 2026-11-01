@@ -21,7 +21,7 @@ import type { IngestedInspectorRecord, InspectorRecordConsumer } from '../bridge
 export type CordisTreeSourceSnapshot = SharedCordisTreeSourceSnapshot<InspectorSourceDescriptor>
 
 /** Routed Host and Client snapshots retained by the Worker. */
-export type CordisInspectionTree = SharedCordisInspectionTree<InspectorSourceDescriptor>
+type CordisInspectionTree = SharedCordisInspectionTree<InspectorSourceDescriptor>
 
 export type { CordisTreeSourceConnection } from '../../shared/cordis/projector.ts'
 
@@ -31,12 +31,12 @@ export interface CordisTreeObjectRoute extends CordisTreeSourceSnapshot {
 }
 
 /** Store mutation consumed by presentation adapters. */
-export type CordisTreeStoreEvent =
+type CordisTreeStoreEvent =
   | { readonly type: 'snapshot-changed'; readonly source: InspectorSourceDescriptor }
   | { readonly type: 'source-disconnected'; readonly source: InspectorSourceDescriptor }
 
 /** Independent bounds for live tree size and retained disconnected snapshots. */
-export interface CordisTreeStoreOptions {
+interface CordisTreeStoreOptions {
   readonly maxNodes: number
   readonly maxDisconnectedTrees: number
 }

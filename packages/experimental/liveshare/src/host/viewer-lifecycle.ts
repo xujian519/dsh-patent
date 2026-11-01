@@ -43,7 +43,7 @@ const STREAM_SWEEP_INTERVAL_MS = 30_000
  * @param share - Share state as the owner host holds it, when it holds one.
  * @returns The refusal, or undefined while the share may serve.
  */
-export function shareLifecycleRefusal(share: ForkShareState | undefined): ViewerAnswer | undefined {
+function shareLifecycleRefusal(share: ForkShareState | undefined): ViewerAnswer | undefined {
   if (share === undefined) return undefined
   if (share.stopped) {
     return { status: 403, body: { error: 'share-stopped', message: 'this share is stopped' } }
@@ -82,7 +82,7 @@ interface ReaderPeer {
   readonly peer: PeerScope
 }
 /** One viewer call this reader is serving, tracked so a grant that ends can abort it. */
-export interface ViewerCall {
+interface ViewerCall {
   readonly shareId: string
   readonly actor: ShareRpcActor
   readonly controller: AbortController
@@ -91,7 +91,7 @@ export interface ViewerCall {
 }
 
 /** A stream opening reserved before the owner gateway answers. */
-export interface OpeningReservation {
+interface OpeningReservation {
   readonly shareId: string
   readonly actor: ShareRpcActor
   readonly controller: AbortController

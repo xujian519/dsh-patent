@@ -23,7 +23,7 @@ import type { ViewerReadService } from './viewer-read.ts'
 import { isRecord, json } from './wire-json.ts'
 
 /** What one authoritative Relay read of a share produced. */
-export interface RelayAuthorityRead {
+interface RelayAuthorityRead {
   readonly ok: boolean
   readonly accessState?: ShareAccessStateFrame
 }
@@ -50,7 +50,7 @@ export function requesterStillAdmitted(
 }
 
 /** Host state one Relay authority read and the frames it adopts read. */
-export interface RelayAuthorityDeps {
+interface RelayAuthorityDeps {
   /** Shares this host publishes, which a frame and a read both update or verify. */
   readonly ownerShares: Map<string, OwnerShare>
   /** Whether the host has been disposed. */
@@ -137,7 +137,7 @@ function sameStringSet(left: readonly string[], right: readonly string[]): boole
  * @param next - The frame it just adopted.
  * @returns True when someone the previous frame admitted may no longer be admitted.
  */
-export function admissionNarrowed(previous: ShareAccessStateFrame, next: ShareAccessStateFrame): boolean {
+function admissionNarrowed(previous: ShareAccessStateFrame, next: ShareAccessStateFrame): boolean {
   const wasOpen = previous.allowedSubjectIds.length === 0 && previous.accessMode === 'open'
   const isOpen = next.allowedSubjectIds.length === 0 && next.accessMode === 'open'
   if (wasOpen && !isOpen) return true

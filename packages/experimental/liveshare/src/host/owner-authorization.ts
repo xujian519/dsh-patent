@@ -25,7 +25,7 @@ export type OwnerAuthorizationRefusal =
   | 'instance-changed'
 
 /** One transaction the host began and is waiting to complete. */
-export interface OwnerAuthorizationTransaction {
+interface OwnerAuthorizationTransaction {
   /**
    * Single-use identifier the Relay echoes back through the browser.
    *
@@ -47,14 +47,14 @@ export interface OwnerAuthorizationTransaction {
 }
 
 /** What one completed transaction hands the redemption step. */
-export interface CompletedOwnerAuthorization {
+interface CompletedOwnerAuthorization {
   readonly relay: string
   readonly instanceKey: string
   readonly verifier: string
 }
 
 /** Outcome of completing a transaction: the verifier and its bindings, or a stable refusal. */
-export type OwnerAuthorizationOutcome =
+type OwnerAuthorizationOutcome =
   | { readonly ok: true; readonly completed: CompletedOwnerAuthorization }
   | { readonly ok: false; readonly code: OwnerAuthorizationRefusal }
 

@@ -17,7 +17,7 @@
  * means the address in force cannot verify identities at all, and `unknown` means the host reported
  * nothing the client can read.
  */
-export type OwnerIdentityState =
+type OwnerIdentityState =
   | 'verified' | 'expired' | 'unverified' | 'relay-changed' | 'relay-unsupported' | 'unknown'
 
 /** Owner identity and credential facts the dialog presents. */

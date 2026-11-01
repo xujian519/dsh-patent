@@ -8,12 +8,13 @@
  * @module @deepseek-ai/dsh-experimental-liveshare/src/viewer-channel
  */
 
+import { isRecord } from '@deepseek-ai/dsh-value'
+
 /**
  * Page global the Relay's carrier installs on a viewer page. The carrier writes the same name in
  * `@deepseek-ai/dsh-experimental-liveshare-protocol`; it is restated here because a client bundle may
  * not import that package's values.
  */
-import { isRecord } from '@deepseek-ai/dsh-value'
 export const LIVESHARE_VIEWER_GLOBAL = '__DSH_LIVESHARE_VIEWER__'
 
 /** One unary Host RPC the viewer asks the owner to perform. */
@@ -26,7 +27,7 @@ export interface ViewerCallRequest {
 }
 
 /** Open one Host stream the viewer consumes through repeated polls. */
-export interface ViewerStreamOpenRequest {
+interface ViewerStreamOpenRequest {
   readonly op: 'stream-open'
   /** Viewer-minted stream identity, unique within one share. */
   readonly id: number
@@ -37,13 +38,13 @@ export interface ViewerStreamOpenRequest {
 }
 
 /** One poll for the next value of an open stream. */
-export interface ViewerStreamNextRequest {
+interface ViewerStreamNextRequest {
   readonly op: 'stream-next'
   readonly id: number
 }
 
 /** Release one open stream when its consumer stops. */
-export interface ViewerStreamCancelRequest {
+interface ViewerStreamCancelRequest {
   readonly op: 'stream-cancel'
   readonly id: number
 }
@@ -52,7 +53,7 @@ export interface ViewerStreamCancelRequest {
  * Read one resource of the owner's served page: the rendered index, a shell asset, or a client
  * plugin bundle. The Relay serves the decoded answer as that path's response.
  */
-export interface ViewerAssetRequest {
+interface ViewerAssetRequest {
   readonly op: 'asset'
   /** Page-relative path and query without a leading slash: `''`, `index.html`, `assets/...`, or `plugins/...`. */
   readonly path: string

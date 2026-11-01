@@ -45,7 +45,7 @@ import { parseImageManifest, type ImageManifest } from './image-manifest.ts'
 export { DEFAULT_ROOT } from './image-layout.ts'
 
 /** Port reported to the tree when the caller names none; the bind is fake either way. */
-export const DEFAULT_PORT = 3080
+const DEFAULT_PORT = 3080
 
 // Every literal `require`/`resolve` of an image package below must appear in
 // the packer's IMAGE_ENTRY_SEEDS: no image file references these requests, so
@@ -67,7 +67,7 @@ export interface LogExporter {
 }
 
 /** Minimal view of the Cordis context the entry itself touches. */
-export interface HostContext {
+interface HostContext {
   logger: { exporter(exporter: LogExporter): unknown }
   get(service: string): unknown
   provide(name: string, value: unknown): void
@@ -303,7 +303,7 @@ export function createWorkerHost(options: WorkerHostOptions): WorkerHost {
 }
 
 /** The cordis message renderer this sink formats through. */
-export interface LogRenderer {
+interface LogRenderer {
   format(exporter: LogExporter, message: LogMessage): string
 }
 

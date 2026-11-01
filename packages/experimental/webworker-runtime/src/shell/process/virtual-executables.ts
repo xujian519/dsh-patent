@@ -13,7 +13,7 @@ export interface VirtualExecutableExit {
 }
 
 /** Invocation delegated to the normal Worker command runner after preparation. */
-export interface VirtualExecutableDelegate {
+interface VirtualExecutableDelegate {
   readonly kind: 'delegate'
   readonly argv: readonly string[]
   readonly filesystem: ShellFileSystem
@@ -21,10 +21,10 @@ export interface VirtualExecutableDelegate {
 }
 
 /** Result of preparing an asynchronous virtual executable invocation. */
-export type VirtualExecutablePreparation = VirtualExecutableExit | VirtualExecutableDelegate
+type VirtualExecutablePreparation = VirtualExecutableExit | VirtualExecutableDelegate
 
 /** Result available to the synchronous child-process face. */
-export type VirtualExecutableSyncResult = VirtualExecutableExit | { readonly kind: 'asynchronous' }
+type VirtualExecutableSyncResult = VirtualExecutableExit | { readonly kind: 'asynchronous' }
 
 /** One executable implemented by the Worker instead of an operating-system binary. */
 export interface VirtualExecutable {

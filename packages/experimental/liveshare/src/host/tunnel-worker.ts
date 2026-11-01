@@ -33,7 +33,7 @@ export type TunnelWorkerInput = TunnelWorkerCommand extends infer Command
   : never
 
 /** Runtime options for one owner-side worker. */
-export interface TunnelWorkerOptions {
+interface TunnelWorkerOptions {
   readonly command: TunnelProcessCommand
 }
 

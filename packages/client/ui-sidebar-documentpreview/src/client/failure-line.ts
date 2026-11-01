@@ -7,13 +7,7 @@
  */
 import type { RemoteFailure } from '@deepseek-ai/dsh-api-remotes/client'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-locale/client'
-
-/** Render a byte count the way a person reads one. */
-function humanBytes(bytes: number): string {
-  if (bytes >= 1024 * 1024) return `${Math.round(bytes / (1024 * 1024))} MB`
-  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`
-  return `${bytes} B`
-}
+import { fileSizeText } from '@deepseek-ai/dsh-client-ui-primitives'
 
 /**
  * Say what went wrong, in terms of the file rather than of the transport.
@@ -25,7 +19,7 @@ export function failureLine(t: TranslateNS<'sidebarDocumentPreview'>, failure: R
   switch (failure.code) {
     case 'workspace-file/not-found': return t('error.notFound')
     case 'workspace-file/too-large':
-      return t('error.tooLarge', { limit: humanBytes(failure.details.limit) })
+      return t('error.tooLarge', { limit: fileSizeText(failure.details.limit) })
     case 'workspace-file/not-text': return t('error.notText')
     case 'workspace-file/not-regular-file': return t('error.notRegularFile')
     // Carrier and unclassified host failures reach the reader as themselves:

@@ -5,6 +5,7 @@ import { dirname, isAbsolute, join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** Cordis plugin identity. */
 export const name = 'tool-workspace-dependencies'
@@ -62,10 +63,6 @@ const PLATFORMS = ['win32', 'darwin', 'linux']
 
 function isVersion(value: unknown): value is string {
   return typeof value === 'string' && VERSION.test(value)
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function isDistributionMap(value: unknown): value is Readonly<Record<string, string>> {

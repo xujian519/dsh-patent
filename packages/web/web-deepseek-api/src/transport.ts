@@ -13,6 +13,8 @@ import { credentialRef, type CredentialRef } from '@deepseek-ai/dsh-credentials'
 import type {} from '@deepseek-ai/dsh-deepseek-account'
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
 import { WebError } from '@deepseek-ai/dsh-web'
+import { isRecord } from '@deepseek-ai/dsh-value'
+export { isRecord }
 
 const ACCOUNT_PROVIDER = 'deepseek-account'
 const USER_AGENT = 'deepseek-harness/0.0.1'
@@ -133,14 +135,6 @@ export async function deepSeekWebCredentialReady(
  */
 export function hasDeepSeekWebCredential(auth: DeepSeekWebAuth): boolean {
   return (auth.apiKey?.length ?? 0) > 0 || auth.resolveApiKey !== undefined || auth.resolveAccountToken !== undefined
-}
-
-/** Narrow a remote JSON object.
- * @param value - Untrusted JSON.
- * @returns Whether readable object fields exist.
- */
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /** Report malformed upstream JSON without embedding response content.

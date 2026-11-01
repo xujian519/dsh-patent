@@ -17,6 +17,8 @@ import {
   type MediaRequest,
   type MediaTask,
 } from './types.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
+export { isRecord }
 
 /** Minimal fetch surface cloud providers need; tests inject a stub. */
 export type CloudFetchLike = (url: string, init?: RequestInit) => Promise<Response>
@@ -125,15 +127,6 @@ export function parseJson(text: string): unknown {
   } catch {
     return undefined
   }
-}
-
-/**
- * Narrow a parsed JSON value to an object.
- * @param value - parsed JSON value.
- * @returns whether the value is a non-array object.
- */
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /**

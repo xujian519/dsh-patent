@@ -7,15 +7,9 @@
  */
 
 import type { PipelineState } from '../../handler.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
-/**
- * Whether a value is a non-array object whose fields can be read.
- * @param value - candidate value.
- * @returns true for plain records.
- */
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
+export { isRecord }
 
 /**
  * Whether a value is a non-empty string.

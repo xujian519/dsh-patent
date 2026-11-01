@@ -1,6 +1,7 @@
 /** IPC frames between the owner host plugin and its one tunnel worker, plus the Relay wire frames. */
 
 import type { Branded } from '@deepseek-ai/dsh-brand'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 export * from './viewer-states.ts'
 
@@ -603,8 +604,4 @@ export function parseShareAccessState(value: unknown): ShareAccessStateFrame | u
 
 function isSubjectIds(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(id => typeof id === 'string' && id !== '')
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

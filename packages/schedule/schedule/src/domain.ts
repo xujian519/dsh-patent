@@ -43,6 +43,7 @@ import type {
   ScheduleRecord,
   ScheduleView,
 } from './types.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** Durable Schedule protocol version implemented by this package. */
 export const SCHEDULE_CHANGE_VERSION = 1 as const
@@ -145,10 +146,6 @@ export function ScheduleId(value: string): ScheduleIdType {
 }
 
 /** Whether an unknown value is a non-array object. */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 /** Require exactly the named durable object keys. */
 function hasExactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
   const allowed = new Set(expected)

@@ -78,10 +78,11 @@ export function isPresentedData(value: unknown): value is { turn: number; callId
 
 /**
  * Trailing path segment, the part that identifies the file at a glance.
+ * Kept local so the Host face does not import the Client-only ui-primitives
+ * package; the Client copy lives as `pathBasename` there.
  * @param path - Slash- or backslash-separated path.
  * @returns The final segment, or the whole string when separator-free.
  */
 export function basename(path: string): string {
-  const at = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'))
-  return at === -1 ? path : path.slice(at + 1)
+  return path.slice(Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1)
 }

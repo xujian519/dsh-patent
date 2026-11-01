@@ -359,7 +359,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | 计数 | 值 |
 | --- | --- |
 | `structure.long-functions` | 209 |
-| `structure.large-files` | 95 |
+| `structure.large-files` | 94 |
 | `structure.patent-large-files` | 9 |
 | `lint.v8-ignore` | 1351 |
 | `lint.ts-expect-error` | 193 |
@@ -368,7 +368,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 ### 专利域 >800 行文件裁定（2026-11-01 复测）
 
-`packages/patent` 当前有 9 个 >800 行源文件，全部保留为「接受」；另有 3 个拆分目标已降到 800 行。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，全仓 >800 行文件为 95 个。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
+`packages/patent` 当前有 9 个 >800 行源文件，全部保留为「接受」；另有 3 个拆分目标已降到 800 行。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，全仓 >800 行文件为 94 个（2026-11-01 #647 删除 better-sidebar 未用 locale 后 locales.ts 降至 800 行以下）。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
 
 拆分落点：`generate-patent-figure.ts` 拆出 `figure-panels.ts`（多面板路径）、`figure-delivery.ts`（落版/复核/转路径/导出）与 `figure-run.ts`（共享运行参数与标号）；`evidence/engine.ts` 拆出 `signals.ts`、`judgment.ts`、`public-use.ts`、`conditions.ts` 与 `proof-standard.ts`；`generate-structure-figure.ts` 拆出 `structure-types.ts`、`structure-model.ts` 与 `structure-render.ts`。
 
@@ -502,7 +502,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | 函数 | 份数 | 分布(部分) |
 |---|---|---|
 | `assertPositiveInteger`/`assertPositiveFinite` | **已收敛**(2026-08-30 下沉 `@deepseek-ai/dsh-value`;2026-09-12 收敛回升后的副本:`session-title/index.ts`——同包 `normalize.ts` 早已 import 权威版本——与 `sandbox-local/index.ts`,后者的 `sandbox-local: ` 前缀由 label 承载) | 保留 2 个语义特例:subagent-acp 的 `assertPositiveFinite`(钉 `MAX_TIMER_DELAY_MS` 上限,timer 域契约)、session-query-sqlite 的包装(抛 `SessionQueryError`,配置错误聚合契约);2026-09-14 补记第三个变体——`dsh-subagent` 公开导出的三参 `assertPositiveFinite(prefix, name, value)`(前缀分离、抛 `Error`),被 `subagent-claude-code`/`subagent-codex`/`subagent-dsh-sdk` 消费,可机械收敛(把前缀合进 label),但改的是公开导出与三个消费者的抛错类型,单独立批 |
-| `isRecord` | **已收敛**(2026-08-30 下沉 `@deepseek-ai/dsh-value`;sdk/client 公开导出改为再导出;mcp-client 的 JsonValue 谓词由调用点显式收窄替代) | 0 剩余(2026-09-12 收敛回升后的 5 处:`subprocess-local/runner-protocol.ts`、`client/file-upload`、`core/session/surface.ts`、`goal/fold.ts`、`workflow/tool-ralph`;`file-upload` 按 client 依赖政策记 `devDependencies`。2026-09-14 再收 1 处:`client/ui-tool/toolviews/ask-question-row.tsx`——与权威版逐字同形,09-12 批次漏记,同按 client 政策记 `devDependencies` 并补 tsconfig reference) |
+| `isRecord` | **已收敛**(2026-08-30 下沉 `@deepseek-ai/dsh-value`;sdk/client 公开导出改为再导出;mcp-client 的 JsonValue 谓词由调用点显式收窄替代) | 0 生产剩余(`packages/*/*/src` 于 2026-11-01 经 #647 再收敛)。保留 2 处构建/载体特例:① `experimental/liveshare-protocol` 的 `viewer-carrier.ts` 内联 `const isRecord`(载体脚本禁止模块绑定);② `typert/generator` 的 `tsdown-plugin.ts` 本地 `function isRecord`(Host bundle 在兄弟包 `lib/` 产出前加载该插件,不可依赖 `dsh-value/lib`) |
 | `asRecord` | **已收敛**(2026-09-12 下沉 `@deepseek-ai/dsh-value`,形态为 `isRecord(value) ? value : null`;原 4 处本地副本——`ui-chat`、`ui-trajectory`、`patent-core`、`patent-rule`——全部收敛,`patent-rule` 的公开导出改为再导出) | 0 剩余(2026-09-14 再收 1 处:`client/ui-chat/chat/ContextBody.tsx`——同包 `conversation-nodes/event-projection.ts` 早已 import 权威版,同包自相矛盾消除) |
 | `deepEqualJson` | **已收敛**(权威实现自始只有 `@deepseek-ai/dsh-util-values` 一份;2026-09-14 删除唯一本地副本 `core/session/surface.ts` 的 `isDeepEqualJson`。原注释称「替代 `node:util` 的 `isDeepStrictEqual` 以保持本模块浏览器安全」已过期:该模块早已 import 同层 `dsh-value`,且 `dsh-util-values` 零 `node:` 导入、本就是 `core/session` 的依赖。`.agents/notes/rejected/simplification/2026-07-26-dependency-swaps-rejected-by-nih-audit.md` 否决的是引入 `fast-deep-equal` 这类**外部**包,与本轮改指仓内包不冲突) | 0 剩余(收敛时一并修正权威实现的键存在判定:`key in right` 会命中继承的 prototype accessor,使 `JSON.parse('{"__proto__":{}}')` 与 `{"other":1}` 被判相等;改为 `Object.hasOwn(right, key)`,回归用例 `packages/util/values/tests/values.spec.ts`) |
 | `toError` | **已收敛**(2026-08-30 下沉 `@deepseek-ai/dsh-value`,采用 skill 的 hostile-proxy 加固形式;2026-09-12 收敛回升后的 5 处:`test-support/client-runtime` 的 `toError`+`messageOf`,以及 inspector 四处 `renderError(error): Error`——`shared/bridge/rpc.ts`、`worker/bridge/{source,runtime}-rpc.ts`、`worker/inspection/query-router.ts`) | 保留 2 个不同契约:`api/gateway/client/remote-events` 的 `(reason, message, cause)` 三参变体;`test-support/remote-mock` 的 `toError`——该模块的成文不变量是「不得运行时导入其它 harness 包」(`src/index.ts` 模块文档),收敛即违约 |

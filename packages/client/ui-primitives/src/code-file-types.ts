@@ -1,3 +1,5 @@
+import { pathBasename } from './path-basename.ts'
+
 /** Code and configuration categories with embedded full-color glyphs. */
 export const CODE_FILE_TYPES = [
   'angular',
@@ -288,10 +290,6 @@ const LINK_CODE_EXTENSIONS = new Set([
   'dart',
 ])
 
-function basename(path: string): string {
-  return path.slice(Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1)
-}
-
 /**
  * Test whether a resolved file type uses the full-color code-icon set.
  * @param type - Resolved file-type string.
@@ -331,7 +329,7 @@ export function classifyCodeFileType(
     if (name.endsWith(suffix)) return type
   }
   if (extension === 'dart' && context !== undefined) {
-    const pubspec = Object.entries(context.files).find(([path]) => basename(path).toLowerCase() === 'pubspec.yaml')?.[1]
+    const pubspec = Object.entries(context.files).find(([path]) => pathBasename(path).toLowerCase() === 'pubspec.yaml')?.[1]
     if (pubspec?.includes('flutter:') === true) return 'flutter'
   }
   return EXTENSION_TYPES[extension] ?? null

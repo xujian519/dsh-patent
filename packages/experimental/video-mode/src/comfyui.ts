@@ -26,6 +26,7 @@ import {
   type MediaTask,
   type MediaTaskRecord,
 } from './types.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** Registered provider id of the local ComfyUI backend. */
 export const COMFYUI_PROVIDER_ID = 'comfyui'
@@ -812,10 +813,6 @@ function promptIdOf(taskId: string): string {
 }
 
 /** Narrow a parsed JSON value to an object. */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 /** Read the history status of one prompt. */
 function queueState(queue: unknown, promptId: string): 'running' | 'queued' | undefined {
   if (!isRecord(queue)) return undefined

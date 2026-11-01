@@ -19,6 +19,15 @@ import type { WorkspaceEmitResult } from './workspace.ts'
 import type { TypertFace } from './model.ts'
 import type { WorkspaceWorkerRequest, WorkspaceWorkerResponse } from './worker.ts'
 
+/**
+ * Local record guard for this build-time plugin.
+ * Host bundle loads the compiled plugin before sibling package `lib/` artifacts
+ * exist, so it must not import `@deepseek-ai/dsh-value`.
+ */
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 /** The subset of the rolldown plugin contract used here (structural; avoids a rolldown type dependency). */
 interface TypertPlugin {
   name: string
@@ -263,10 +272,6 @@ function parseRemoteArtifact(value: unknown): WorkspaceEmitResult['remote'] {
     || typeof value.dts !== 'string'
     || typeof value.dtsMap !== 'string') return undefined
   return { js: value.js, dts: value.dts, dtsMap: value.dtsMap }
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function packageRoot(start: string, workspace: string): string | undefined {

@@ -13,6 +13,7 @@ import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives
 import type { PresentedFile } from '@deepseek-ai/dsh-tool-present/types'
 import { isChangesEvent } from '../changes.ts'
 import { basename, isPresentedData, isPresentedFile } from '../presented.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** A declared file with its authorized open coordinates. */
 export interface PresentedPath extends PresentedFile {
@@ -124,10 +125,6 @@ function mutationResultPath(argumentPath: string, meta: unknown): string | null 
 }
 
 /** Narrow parsed JSON to an argument object. */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 /**
  * Files produced by one Turn data value.
  *

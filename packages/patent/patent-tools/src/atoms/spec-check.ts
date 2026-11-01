@@ -37,13 +37,10 @@ import type {
   SpecFamily,
   ValidateSpecificationInput,
 } from '../tool/spec-types.ts'
-import { firstStateString, resolveTechDomain } from './state-values.ts'
+import { firstStateString, resolvePatentType, resolveTechDomain } from './state-values.ts'
 
 /** Families whose errors make the specification's form check fail. */
 const FORM_FAMILIES: readonly SpecFamily[] = ['structure', 'title', 'abstract', 'description', 'prohibitions', 'figures']
-
-/** Patent types the checker accepts from the state. */
-const PATENT_TYPES = ['invention', 'utility_model'] as const
 
 /** 检查模式：说明书规则集或权利要求规则集。 */
 export type SpecCheckMode = 'spec' | 'claims'
@@ -109,16 +106,6 @@ function optionalArray(state: PipelineState, key: string, fallback: string): unk
 function resolveMode(state: PipelineState): SpecCheckMode | undefined {
   const mode = getStateString(state, 'mode', 'spec')
   return mode === 'spec' || mode === 'claims' ? mode : undefined
-}
-
-/**
- * 解析专利类型。
- * @param state - 阶段执行态（阶段参数已合入）。
- * @returns 合法专利类型；未声明或未知值返回 undefined。
- */
-function resolvePatentType(state: PipelineState): 'invention' | 'utility_model' | undefined {
-  const value = getStateString(state, 'patent_type')
-  return PATENT_TYPES.find(type => type === value)
 }
 
 /**

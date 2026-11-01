@@ -13,6 +13,7 @@
  * `@deepseek-ai/dsh-experimental-liveshare-protocol`; it is restated here because a client bundle may
  * not import that package's values.
  */
+import { isRecord } from '@deepseek-ai/dsh-value'
 export const LIVESHARE_VIEWER_GLOBAL = '__DSH_LIVESHARE_VIEWER__'
 
 /** One unary Host RPC the viewer asks the owner to perform. */
@@ -165,8 +166,4 @@ export function viewerRequestTarget(envelope: unknown): Record<string, unknown> 
   const payload = isRecord(envelope.payload) ? envelope.payload : envelope
   const args = isRecord(payload.args) ? payload.args : undefined
   return args !== undefined && isRecord(args.request) ? args.request : payload
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

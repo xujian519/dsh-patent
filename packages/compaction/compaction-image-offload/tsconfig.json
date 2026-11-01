@@ -27,6 +27,9 @@
       "path": "../../core/agent"
     },
     {
+      "path": "../../util/value"
+    },
+    {
       "path": "../../util/values"
     }
   ]

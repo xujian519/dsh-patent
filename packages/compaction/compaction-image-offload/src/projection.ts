@@ -4,6 +4,7 @@ import type { Message } from '@deepseek-ai/dsh-llm'
 import type { SessionSeq } from '@deepseek-ai/dsh-session/types'
 import type { SessionMessageProjection } from '@deepseek-ai/dsh-session/surface'
 import { offloadMessageImages } from './project-message.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** Exact input-image occurrences selected by one durable offload decision. */
 export interface ImageOffloadTarget {
@@ -27,10 +28,6 @@ declare module '@deepseek-ai/dsh-session/types' {
 }
 
 /** Whether a durable value is a JSON object. */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 /** Whether a durable occurrence index or sequence is canonical. */
 function isIndex(value: unknown): value is SessionSeq {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 && !Object.is(value, -0)

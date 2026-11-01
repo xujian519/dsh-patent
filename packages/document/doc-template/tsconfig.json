@@ -8,6 +8,7 @@
     "src"
   ],
   "references": [
+    { "path": "../../util/value" },
     {
       "path": "../doc-style"
     },

@@ -24,6 +24,7 @@ import {
   type ToneSection,
   type VoiceSection,
 } from './types.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** Formality values accepted for a declared tone, including "not declared". */
 const TONE_FORMALITIES = ['', ...FORMALITY_LEVELS] as const
@@ -36,10 +37,6 @@ const TONE_PERSPECTIVES = ['', ...PERSPECTIVES] as const
  * @param value - the parsed value.
  * @returns true when the value can be read as a string-keyed mapping.
  */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 /**
  * Read one value that must be a string.
  * @param value - the raw value.

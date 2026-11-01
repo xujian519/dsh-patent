@@ -3,6 +3,10 @@
  * @module @deepseek-ai/dsh-experimental-liveshare/src/host/wire-json
  */
 
+import { isRecord } from '@deepseek-ai/dsh-value'
+
+export { isRecord }
+
 /**
  * Answer one JSON payload with the content type the owner routes use.
  * @param value - Payload to serialize.
@@ -14,15 +18,6 @@ export function json(value: unknown, status: number): Response {
     status,
     headers: { 'content-type': 'application/json; charset=utf-8' },
   })
-}
-
-/**
- * Whether one value is a plain record, the only object shape wire payloads may take.
- * @param value - Value read from a wire payload.
- * @returns Whether the value is a non-array object.
- */
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /**

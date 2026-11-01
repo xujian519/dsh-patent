@@ -5,6 +5,7 @@ import {
   classifyCodeFileType, isCodeFileType, type CodeFileType, type FileTypeProjectContext,
 } from './code-file-types.ts'
 import type { IconProps } from './icons/props.ts'
+import { pathBasename } from './path-basename.ts'
 import css from './FileTypeIcon.module.css'
 
 /** File categories with distinct 28px glyphs. */
@@ -109,10 +110,6 @@ const NAME_TYPES: Readonly<Record<string, ClassifiedFileType>> = {
   readme: 'markdown',
 }
 
-function basename(path: string): string {
-  return path.slice(Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1)
-}
-
 /**
  * Extract the final suffix from a file path without changing its case.
  * A leading dot starts a suffix, while a missing or trailing dot returns an empty string.
@@ -120,7 +117,7 @@ function basename(path: string): string {
  * @returns The characters after the basename's final dot.
  */
 export function fileExtension(path: string): string {
-  const name = basename(path)
+  const name = pathBasename(path)
   const dot = name.lastIndexOf('.')
   return dot < 0 ? '' : name.slice(dot + 1)
 }
@@ -137,7 +134,7 @@ export function classifyFileType(
   path: string,
   context?: FileTypeProjectContext,
 ): ClassifiedFileType {
-  const name = basename(path).toLowerCase()
+  const name = pathBasename(path).toLowerCase()
   const extension = fileExtension(name).toLowerCase()
   return classifyCodeFileType(name, extension, context)
     ?? NAME_TYPES[name]

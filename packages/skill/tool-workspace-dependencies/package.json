@@ -43,6 +43,7 @@
     "@deepseek-ai/dsh-system-prompt": "workspace:*"
   },
   "dependencies": {
+    "@deepseek-ai/dsh-value": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~"
   }
 }

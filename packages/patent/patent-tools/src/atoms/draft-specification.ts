@@ -9,19 +9,17 @@
 import {
   degraded,
   getStateArray,
-  getStateString,
   type Atom,
   type PipelineState,
   type StageExecuteInput,
   type StageHandler,
 } from '@deepseek-ai/dsh-patent-core'
-import type { PatentType } from '../tool/draft-claims.ts'
 import {
   draftSpecification,
   renderDraftSpecification,
   type DraftSpecificationInput,
 } from '../tool/draft-specification.ts'
-import { firstStateString, resolveTechDomain } from './state-values.ts'
+import { firstStateString, resolvePatentType, resolveTechDomain } from './state-values.ts'
 
 /** draft-specification 原子：从工作流状态生成五部分说明书草案。 */
 export const draftSpecificationAtom: Atom = {
@@ -48,8 +46,6 @@ export const draftSpecificationAtom: Atom = {
   // title/patent_type 是调用方输入：同名键不能声明为输出，否则阶段回退清理会先删掉输入。
   outputSchema: ['specification', 'abstract', 'draft_specification_warnings', 'draft_title', 'draft_patent_type', 'complete', 'missing_inputs'],
 }
-
-const PATENT_TYPES: readonly PatentType[] = ['invention', 'utility_model']
 
 /**
  * 读取字符串数组，丢弃非字符串与空项。
@@ -85,16 +81,6 @@ function resolveTitle(state: PipelineState): string {
   return candidate.length > 0 && candidate.length <= 25 ? candidate : '技术方案'
 }
 
-/**
- * 解析专利类型参数。
- * @param state - 阶段执行态。
- * @returns 合法专利类型；未声明或未知值返回 undefined。
- */
-function resolvePatentType(state: PipelineState): PatentType | undefined {
-  const value = getStateString(state, 'patent_type')
-  return PATENT_TYPES.find(type => type === value)
-}
-
 /** draft-specification 执行器：组装说明书草案并写入 `specification`。 */
 export class DraftSpecificationHandler implements StageHandler {
   readonly name = 'draft-specification'
@@ -105,7 +91,6 @@ export class DraftSpecificationHandler implements StageHandler {
    * @param input - 阶段执行输入（state 携带技术方案与可选分析结果）。
    * @returns 下一管线状态：说明书草案文本与撰写警告。
    */
-  // oxlint-disable-next-line typescript/require-await -- StageHandler contract requires async execute
   async execute(input: StageExecuteInput): Promise<PipelineState> {
     const { state } = input
     const solution = firstStateString(state, ['source_text', 'text', 'input'])

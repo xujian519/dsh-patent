@@ -20,6 +20,7 @@
  */
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ScheduleId } from '@deepseek-ai/dsh-schedule/client'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** The Sidebar fields that identify one task tab page across a reload. */
 export interface TaskTabPage {
@@ -62,10 +63,6 @@ export type TaskTabLiveIds = (sessionId: SessionId) => readonly string[] | undef
  * @param value - parsed storage value.
  * @returns `true` for a plain record.
  */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 /**
  * Narrow one stored value to a task tab entry.
  * @param value - one member of a stored Session document.

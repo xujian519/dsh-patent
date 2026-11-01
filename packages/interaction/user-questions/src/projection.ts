@@ -8,6 +8,7 @@ import type {} from '@deepseek-ai/dsh-tool-executor-ptc/types'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock, ToolSchema } from '@deepseek-ai/dsh-llm'
 import type { AskUserQuestionAnswerItem, AskUserQuestionItem, AskUserQuestionOption, PendingUserQuestion, SettledUserQuestion, UserQuestionProjectionView } from './types.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /**
  * The pure fold state: whether the request header in effect declares the
@@ -113,10 +114,6 @@ const answerBatchSchema = z.object({ answers: z.array(answerSchema) }).loose()
 const emptyView: UserQuestionProjectionView = { active: [], settled: [] }
 
 const initialFold: UserQuestionFold = { timed: false, questions: emptyView }
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 
 /**
  * Whether one logged tool schema is the timed `ask_user_question` tool's.

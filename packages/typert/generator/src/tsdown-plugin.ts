@@ -18,6 +18,7 @@ import { findWorkspaceRoot, hasTypertExport, WorkspaceTypertGenerator } from './
 import type { WorkspaceEmitResult } from './workspace.ts'
 import type { TypertFace } from './model.ts'
 import type { WorkspaceWorkerRequest, WorkspaceWorkerResponse } from './worker.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** The subset of the rolldown plugin contract used here (structural; avoids a rolldown type dependency). */
 interface TypertPlugin {
@@ -263,10 +264,6 @@ function parseRemoteArtifact(value: unknown): WorkspaceEmitResult['remote'] {
     || typeof value.dts !== 'string'
     || typeof value.dtsMap !== 'string') return undefined
   return { js: value.js, dts: value.dts, dtsMap: value.dtsMap }
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function packageRoot(start: string, workspace: string): string | undefined {

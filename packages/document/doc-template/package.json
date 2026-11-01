@@ -32,6 +32,7 @@
   "dependencies": {
     "@deepseek-ai/dsh-doc-style": "workspace:*",
     "@deepseek-ai/dsh-docx-kit": "workspace:*",
+    "@deepseek-ai/dsh-value": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~",
     "marked": "^16.4.2",
     "yaml": "^2.9.0"

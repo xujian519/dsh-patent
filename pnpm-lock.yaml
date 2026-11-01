@@ -1980,6 +1980,9 @@ importers:
       '@deepseek-ai/dsh-typert-registry':
         specifier: workspace:*
         version: link:../../typert/registry
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
 
   packages/api/remotes:
     dependencies:
@@ -6301,6 +6304,9 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../util/values
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       '@testing-library/react':
         specifier: ^16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -7844,6 +7850,9 @@ importers:
       '@deepseek-ai/dsh-user-questions':
         specifier: workspace:*
         version: link:../../interaction/user-questions
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       clsx:
         specifier: ^2.0.0
         version: 2.1.1
@@ -8211,6 +8220,9 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../util/values
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -9263,6 +9275,9 @@ importers:
 
   packages/document/doc-style:
     dependencies:
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
@@ -9279,6 +9294,9 @@ importers:
       '@deepseek-ai/dsh-docx-kit':
         specifier: workspace:*
         version: link:../docx-kit
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -9544,6 +9562,9 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../util/values
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -11555,6 +11576,9 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../util/values
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       ws:
         specifier: ^8.18.3
         version: 8.21.3
@@ -11781,6 +11805,9 @@ importers:
       '@deepseek-ai/dsh-brand':
         specifier: workspace:*
         version: link:../../util/brand
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -12669,6 +12696,9 @@ importers:
 
   packages/experimental/video-mode:
     dependencies:
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -14209,6 +14239,9 @@ importers:
 
   packages/interaction/user-questions:
     dependencies:
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -17263,6 +17296,9 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../util/values
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -17872,6 +17908,9 @@ importers:
 
   packages/skill/tool-workspace-dependencies:
     dependencies:
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -19483,6 +19522,9 @@ importers:
 
   packages/typert/generator:
     dependencies:
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       '@jridgewell/gen-mapping':
         specifier: ^0.3.13
         version: 0.3.13
@@ -19861,6 +19903,9 @@ importers:
 
   packages/web/web-deepseek-api:
     dependencies:
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery

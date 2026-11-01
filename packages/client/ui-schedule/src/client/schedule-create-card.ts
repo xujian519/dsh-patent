@@ -10,6 +10,7 @@
 import type { ScheduleId, ScheduleRecord } from '@deepseek-ai/dsh-schedule/client'
 import type { ToolCallViewProps } from '@deepseek-ai/dsh-client-ui-tool/client'
 import { taskName } from './schedule-format.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** One Tool call block as the card receives it: a running call or a settled result. */
 type ToolBlock = ToolCallViewProps['block']
@@ -39,10 +40,6 @@ function parseJson(text: string): unknown {
 }
 
 /** Whether one wire value is a plain JSON object rather than an array or scalar. */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 /** First physical line of one task instruction, without surrounding whitespace. */
 function firstLine(text: string): string {
   const newline = text.search(/\r?\n/)

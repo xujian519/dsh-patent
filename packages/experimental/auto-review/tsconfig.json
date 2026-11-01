@@ -42,6 +42,9 @@
       "path": "../../interaction/user-approval"
     },
     {
+      "path": "../../util/value"
+    },
+    {
       "path": "../../util/values"
     },
     {

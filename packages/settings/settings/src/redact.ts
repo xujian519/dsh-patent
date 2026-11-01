@@ -8,6 +8,7 @@
  */
 
 import type z from '@deepseek-ai/schemastery'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /**
  * Minimal structural view of a live schemastery node. Only the relations the
@@ -44,10 +45,6 @@ export interface RedactedValue {
 }
 
 /** Whether a value is a plain data object the walker may recurse into. */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 /** Assign an own data property: a `__proto__` key assigned with `=` invokes the prototype setter instead of creating one. */
 function setDataProperty(target: Record<string, unknown>, key: string, value: unknown): void {
   Object.defineProperty(target, key, { value, writable: true, enumerable: true, configurable: true })

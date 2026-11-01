@@ -25,6 +25,7 @@ import {
   type VarType,
 } from './types.ts'
 import { createVarSchema } from './vars.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** Fence opening a front-matter block. */
 const FRONTMATTER_FENCE = '---\n'
@@ -61,10 +62,6 @@ export function splitFrontmatter(raw: string): FrontmatterSplit {
  * @param value - the parsed value.
  * @returns true when the value can be read as a string-keyed mapping.
  */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 /**
  * Read one front-matter field that must be a non-blank string.
  * @param value - the raw value.

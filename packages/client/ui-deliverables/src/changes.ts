@@ -1,6 +1,7 @@
 /** Validate workspace-change records that cross the Host routes and address their summary, comparison, and native-open actions. */
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { WorkspaceChangedFile, WorkspaceChangesSummary, WorkspaceDiffHunk, WorkspaceFileDiff } from '@deepseek-ai/dsh-workspace-changes/types'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** Authenticated GET route serving one announced change summary while its Session lives. */
 export const CHANGED_FILES_PATH = '/api/changes.summary'
@@ -38,10 +39,6 @@ export interface ChangesReviewCoordinates {
   seq: number
   /** The summarized turn, carried for the tab title. */
   turn: number
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /**

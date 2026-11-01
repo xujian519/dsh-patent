@@ -6,6 +6,7 @@
 
 import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
 import type { RemoteAccessFrame, RemoteAccessGrant, RemoteAccessResource } from '../types.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** Actions allowed per resource identity, for one declared resource kind. */
 type KindGrants = ReadonlyMap<string, ReadonlySet<string>>
@@ -55,10 +56,6 @@ function isGrant(value: unknown): value is RemoteAccessGrant {
 function isResource(value: unknown): value is RemoteAccessResource {
   if (!isRecord(value) || typeof value['kind'] !== 'string') return false
   return value['kind'] === 'global' || typeof value['id'] === 'string'
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /**

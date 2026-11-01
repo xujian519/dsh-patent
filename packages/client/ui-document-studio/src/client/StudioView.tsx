@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import { fileSizeText, pathBasename } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type { DocumentDeliverable } from './document-deliverables.ts'
@@ -62,13 +63,6 @@ type ScanState =
   | { readonly state: 'done'; readonly paths: readonly string[] }
   | { readonly state: 'failed'; readonly paths: readonly string[]; readonly message: string }
 
-/** Render a byte count the way a person reads one. */
-function humanBytes(bytes: number): string {
-  if (bytes >= 1024 * 1024) return `${Math.round(bytes / (1024 * 1024))} MB`
-  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`
-  return `${bytes} B`
-}
-
 /** Stable empty list so the selector never allocates per snapshot. */
 const EMPTY_PRODUCED: readonly DocumentDeliverable[] = []
 
@@ -83,11 +77,6 @@ export function isHtmlPath(path: string): boolean {
 /** Whether a produced path renders as plain text in the preview pane. */
 export function isTextPreviewable(path: string): boolean {
   return isHtmlPath(path) || /\.(md|txt|json|ya?ml|csv|log)$/i.test(path)
-}
-
-function basename(path: string): string {
-  const index = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'))
-  return index === -1 ? path : path.slice(index + 1)
 }
 
 /** The failure message one read reports, localized by the Host's wire code. */
@@ -171,10 +160,10 @@ interface FileRow {
  * @returns one row per produced file, in the same order.
  */
 function fileRows(produced: readonly DocumentDeliverable[]): readonly FileRow[] {
-  const rows: FileRow[] = produced.map(file => ({ file, label: basename(file.path) }))
+  const rows: FileRow[] = produced.map(file => ({ file, label: pathBasename(file.path) }))
   const byName = new Map<string, FileRow[]>()
   for (const row of rows) {
-    const name = basename(row.file.path)
+    const name = pathBasename(row.file.path)
     const group = byName.get(name)
     if (group === undefined) byName.set(name, [row])
     else group.push(row)
@@ -224,7 +213,6 @@ function printHtmlDocument(content: string): boolean {
   win.document.open()
   // document.write is the only way to print a complete standalone HTML
   // document from a popup window.
-  // oxlint-disable-next-line typescript/no-deprecated
   win.document.write(content)
   win.document.close()
   win.focus()
@@ -493,7 +481,7 @@ export function StudioView({
     [produced, selectedPath],
   )
   const rows = useMemo(() => fileRows(produced), [produced])
-  const selectedName = selected === null ? '' : basename(selected.path)
+  const selectedName = selected === null ? '' : pathBasename(selected.path)
   const previewable = selectedPath !== null && isTextPreviewable(selectedPath)
   const sections = useMemo(
     () => selectedPath !== null && isHtmlPath(selectedPath) && content !== null
@@ -553,7 +541,7 @@ export function StudioView({
           setPrintOutcome({
             path: target.path,
             kind: 'failed',
-            message: t('studio.print.tooLarge', { limit: humanBytes(full.limitBytes) }),
+            message: t('studio.print.tooLarge', { limit: fileSizeText(full.limitBytes) }),
           })
           return
         }
@@ -572,7 +560,7 @@ export function StudioView({
     if (window.desktop?.printHtmlToPdf !== undefined) {
       const result = await window.desktop.printHtmlToPdf({
         html,
-        suggestedName: basename(target.path),
+        suggestedName: pathBasename(target.path),
       })
       if (result.error !== undefined) {
         setPrintOutcome({ path: target.path, kind: 'failed', message: result.error })

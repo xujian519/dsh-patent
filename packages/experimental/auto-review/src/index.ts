@@ -34,6 +34,7 @@ import {
   type ToolExecution,
 } from '@deepseek-ai/dsh-tools'
 import { deniedDisplayReason } from './locales.ts'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** Structured error name persisted for every final reviewer denial. */
 const AUTO_REVIEW_DENIED_ERROR_NAME = 'AutoReviewDeniedError'
@@ -170,10 +171,6 @@ function sameJson(left: unknown, right: unknown): boolean {
 }
 
 /** Whether one logged JSON value is an object record rather than null or an array. */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
-
 /** Validate the schema fields that must be present in a logged pending action. */
 function loggedSchema(
   value: { readonly description?: unknown; readonly parameters?: unknown },
@@ -403,7 +400,6 @@ function snapshotAutoReview(
   // and PTC starts carry the authorizations and duplicate identities this call is
   // compared against, and the direct parent's initial prompt sets the delegated
   // scope. No projection or paged reader exposes those records yet.
-  // oxlint-disable-next-line typescript/no-deprecated -- Reviewer needs the whole action history; no projection or paged reader exists yet.
   const events = session.snapshotEvents()
   const nodes = [...session.surface.nodes]
   const header = session.requestHeader()

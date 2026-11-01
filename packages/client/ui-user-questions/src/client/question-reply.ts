@@ -6,6 +6,7 @@ import { isAppendSurfaceEvent } from '@deepseek-ai/dsh-session/surface'
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
 import type {} from '@deepseek-ai/dsh-user-questions/types'
 import type {} from '@deepseek-ai/dsh-tool-executor-ptc/types'
+import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** One asked question as echoed in the reply payload. */
 export interface QuestionReplyQuestion {
@@ -42,10 +43,6 @@ declare module '@deepseek-ai/dsh-client-ui-chat/client' {
 
 interface QuestionReplyState extends QuestionReplyData {
   readonly seq: number
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /**

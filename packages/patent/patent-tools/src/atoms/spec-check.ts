@@ -37,13 +37,10 @@ import type {
   SpecFamily,
   ValidateSpecificationInput,
 } from '../tool/spec-types.ts'
-import { firstStateString, resolveTechDomain } from './state-values.ts'
+import { firstStateString, resolvePatentType, resolveTechDomain } from './state-values.ts'
 
 /** Families whose errors make the specification's form check fail. */
 const FORM_FAMILIES: readonly SpecFamily[] = ['structure', 'title', 'abstract', 'description', 'prohibitions', 'figures']
-
-/** Patent types the checker accepts from the state. */
-const PATENT_TYPES = ['invention', 'utility_model'] as const
 
 /** 检查模式：说明书规则集或权利要求规则集。 */
 export type SpecCheckMode = 'spec' | 'claims'
@@ -112,16 +109,6 @@ function resolveMode(state: PipelineState): SpecCheckMode | undefined {
 }
 
 /**
- * 解析专利类型。
- * @param state - 阶段执行态（阶段参数已合入）。
- * @returns 合法专利类型；未声明或未知值返回 undefined。
- */
-function resolvePatentType(state: PipelineState): 'invention' | 'utility_model' | undefined {
-  const value = getStateString(state, 'patent_type')
-  return PATENT_TYPES.find(type => type === value)
-}
-
-/**
  * 读取可选数值键（正整数）。
  * @param state - 阶段执行态。
  * @param key - 状态键。
@@ -142,7 +129,6 @@ export class SpecCheckHandler implements StageHandler {
    * @param input - 阶段执行输入（state 中已合入阶段参数）。
    * @returns 下一管线状态：报告、通过标记、得分与违规项。
    */
-  // oxlint-disable-next-line typescript/require-await -- StageHandler contract requires async execute
   async execute(input: StageExecuteInput): Promise<PipelineState> {
     const { state } = input
     const mode = resolveMode(state)

@@ -24,9 +24,9 @@ describe('failureLine', () => {
   })
 
   it('states the byte cap the way a person reads one', () => {
-    expect(failureLine(t, failure('workspace-file/too-large', { limit: 512 }))).toBe('error.tooLarge(limit=512 B)')
-    expect(failureLine(t, failure('workspace-file/too-large', { limit: 4096 }))).toBe('error.tooLarge(limit=4 KB)')
-    expect(failureLine(t, failure('workspace-file/too-large', { limit: 3 * 1024 * 1024 }))).toBe('error.tooLarge(limit=3 MB)')
+    expect(failureLine(t, failure('workspace-file/too-large', { limit: 512 }))).toBe('error.tooLarge(limit=512B)')
+    expect(failureLine(t, failure('workspace-file/too-large', { limit: 4096 }))).toBe('error.tooLarge(limit=4.0KB)')
+    expect(failureLine(t, failure('workspace-file/too-large', { limit: 3 * 1024 * 1024 }))).toBe('error.tooLarge(limit=3.0MB)')
   })
 
   it('passes any other failure through in its own words', () => {

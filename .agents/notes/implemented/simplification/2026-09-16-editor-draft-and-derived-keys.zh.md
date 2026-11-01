@@ -53,5 +53,5 @@ Status: implemented
 
 ## Related
 
-- [better-sidebar](../../../../packages/client/better-sidebar/README.zh.md) —— 拥有编辑器、文件树及其宿主工具栏契约的包。
+- [本 fork 移除 better-sidebar](../architecture/2026-11-01-fork-removes-better-sidebar.zh.md) —— 原先拥有编辑器草稿与文件树工具栏契约的包；本笔记里的草稿/键规则在该 UI 现存落点上仍然适用。
 - [ui-chat](../../../../packages/client/ui-chat/README.zh.md) —— 拥有这些排序键所服务的文本记录顺序的 target。

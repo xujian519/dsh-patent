@@ -14,6 +14,12 @@ Status: implemented
 
 仍插入该模块名的外部读者会在加载失败；升级指南 `docs/upgrade-guide/v0.2.2-alpha.2/remove-better-sidebar/` 写明迁移。
 
+## Alternatives considered
+
+- **在桌面 overlay 里保持 disabled** —— 仍要为从不挂载的面支付 catalog、依赖、TypeScript 与测试成本。
+- **只收缩导出面（`cleanup/export-surface-651`）** —— 缩小公开面，但完整包树与门禁负载仍在；不符合「本 fork 不交付该工作台」。
+- **换成更薄的 fork 自有工作台** —— 当前专利组合不需要 explorer/editor/terminal 工具；产品右侧栏已由 `ui-sidebar-right` 承担。
+
 ## 后果
 
 - 无 `ctx.betterSidebar` 服务、无该包的 `/sidebar/*` 主机路由、无工作台工具（`sidebar_open`、可选 `terminal_*`）。

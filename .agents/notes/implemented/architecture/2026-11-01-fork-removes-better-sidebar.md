@@ -14,6 +14,12 @@ Delete `packages/client/better-sidebar` from this fork. Drop the desktop overlay
 
 External readers who still insert the module get a load failure; the upgrade guide `docs/upgrade-guide/v0.2.2-alpha.2/remove-better-sidebar/` states the migration.
 
+## Alternatives considered
+
+- **Keep the package disabled in desktop overlays** — still pays catalog, dependency, TypeScript, and test cost for a surface this fork never mounts.
+- **Demote exports only (`cleanup/export-surface-651`)** — shrinks the public face but leaves the full package tree and gate load; does not match "this fork does not ship the workbench."
+- **Replace with a thinner fork-owned workbench** — no current patent composition needs explorer/editor/terminal tools; `ui-sidebar-right` already owns the product right Sidebar.
+
 ## Consequences
 
 - No `ctx.betterSidebar` service, no `/sidebar/*` host routes, no workbench tools (`sidebar_open`, opt-in `terminal_*`) from that package.

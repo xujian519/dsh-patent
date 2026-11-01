@@ -180,13 +180,13 @@ describe('patent_plan_task', () => {
       tool.execute({ action: 'transition', currentState: 'planning', to: 'awaiting_approval', issues: [issue] }, exec),
     ).rejects.toThrow('issues 需要 round')
     await expect(
-      tool.execute({ action: 'transition', currentState: 'planning', to: 'awaiting_approval', issues: [issue], round: 0 }),
+      tool.execute({ action: 'transition', currentState: 'planning', to: 'awaiting_approval', issues: [issue], round: 0 }, exec),
     ).rejects.toThrow('issues 必须是正整数')
     await expect(
       tool.execute({
         action: 'transition', currentState: 'planning', to: 'awaiting_approval',
         issues: [{ ...issue, round_opened: 1.5 }], round: 1,
-      }),
+      }, exec),
     ).rejects.toThrow('issues[].round_opened 必须是正整数')
   })
 

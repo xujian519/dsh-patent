@@ -1,10 +1,10 @@
 /** Iframe navigation provider with bounded application-known history. */
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { IframePresentation } from '../view/IframePresentation.ts'
-import { emptyBrowserFrame, type BrowserFrame, type BrowserFrameState, type BrowserLoadError, type BrowserSandboxControl } from './BrowserFrame.ts'
-import type { BrowserPageOptions } from './BrowserPage.ts'
+import type { IframePagePresentation } from '../contract/BrowserPresentation.ts'
+import { emptyBrowserFrame, type BrowserFrame, type BrowserFrameState, type BrowserLoadError, type BrowserSandboxControl } from '../contract/BrowserFrame.ts'
+import type { BrowserPageOptions } from '../contract/BrowserPage.ts'
 import { BrowserNavigation } from './BrowserNavigation.ts'
-import type { BrowserTarget } from './url.ts'
+import type { BrowserTarget } from '../contract/url.ts'
 
 /** Owns iframe navigation; the view reports loads without reading cross-origin content. */
 export class IframeImpl implements BrowserFrame {
@@ -17,7 +17,7 @@ export class IframeImpl implements BrowserFrame {
   private disposal: Promise<void> | undefined
 
   /** @param options - initial checkpoint and persistence writer. @param presentation - iframe DOM adapter. */
-  constructor(private readonly options: BrowserPageOptions, private readonly presentation: IframePresentation) {
+  constructor(private readonly options: BrowserPageOptions, private readonly presentation: IframePagePresentation) {
     this.navigation = new BrowserNavigation(options.initial)
     this.store = createSnapshotStore({ ...emptyBrowserFrame(), sandboxEnabled: this.sandboxed })
   }

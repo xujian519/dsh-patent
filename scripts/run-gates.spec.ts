@@ -530,6 +530,17 @@ describe('gate graph validation', () => {
     },
   )
 
+  it.each(['ci-primary', 'ci-static', 'check-all'] as const)(
+    'enforces client domain layering in %s',
+    (mode) => {
+      const gate = withPnpmEntrypoint(() => gatesForMode(mode)
+        .find(subject => subject.id === 'client-domain-graph'))
+
+      expect(gate?.args).toContain('verify-client-domain-graph')
+      expect(gate?.allowFailure).not.toBe(true)
+    },
+  )
+
   it.each(['ci-primary', 'ci-static', 'check-all', 'hygiene'] as const)(
     'keeps application entrypoint enforcement in %s',
     (mode) => {

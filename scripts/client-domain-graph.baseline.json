@@ -1,0 +1,100 @@
+{
+  "entries": [
+    {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/image/ImageBody.tsx",
+      "imported": "../zoom/store.ts",
+      "count": 1,
+      "reason": "The shared zoom viewport is a leaf consumed by the image and PDF domains; extraction target is ui-primitives or a dedicated package."
+    },
+    {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/image/ImageBody.tsx",
+      "imported": "../zoom/types.ts",
+      "count": 1,
+      "reason": "The shared zoom viewport is a leaf consumed by the image and PDF domains; extraction target is ui-primitives or a dedicated package."
+    },
+    {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/image/ImageBody.tsx",
+      "imported": "../zoom/ZoomViewport.tsx",
+      "count": 1,
+      "reason": "The shared zoom viewport is a leaf consumed by the image and PDF domains; extraction target is ui-primitives or a dedicated package."
+    },
+    {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/image/index.ts",
+      "imported": "../zoom/store.ts",
+      "count": 1,
+      "reason": "The shared zoom viewport is a leaf consumed by the image and PDF domains; extraction target is ui-primitives or a dedicated package."
+    },
+    {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/image/locales.ts",
+      "imported": "../zoom/locales.ts",
+      "count": 1,
+      "reason": "The shared zoom viewport is a leaf consumed by the image and PDF domains; extraction target is ui-primitives or a dedicated package."
+    },
+    {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/office/index.ts",
+      "imported": "../pdf/index.ts",
+      "count": 1,
+      "reason": "The Office preview embeds the PDF body to reuse its paged renderer; sharing that surface needs a cross-package component seam."
+    },
+    {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/office/index.ts",
+      "imported": "../pdf/LazyPdfBody.tsx",
+      "count": 1,
+      "reason": "The Office preview embeds the PDF body to reuse its paged renderer; sharing that surface needs a cross-package component seam."
+    },
+    {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/pdf/index.ts",
+      "imported": "../zoom/ZoomViewport.tsx",
+      "count": 1,
+      "reason": "The shared zoom viewport is a leaf consumed by the image and PDF domains; extraction target is ui-primitives or a dedicated package."
+    },
+    {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/pdf/locales.ts",
+      "imported": "../zoom/locales.ts",
+      "count": 1,
+      "reason": "The shared zoom viewport is a leaf consumed by the image and PDF domains; extraction target is ui-primitives or a dedicated package."
+    },
+    {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/pdf/pdf.tsx",
+      "imported": "../zoom/types.ts",
+      "count": 1,
+      "reason": "The shared zoom viewport is a leaf consumed by the image and PDF domains; extraction target is ui-primitives or a dedicated package."
+    },
+    {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/pdf/pdf.tsx",
+      "imported": "../zoom/ZoomViewport.tsx",
+      "count": 1,
+      "reason": "The shared zoom viewport is a leaf consumed by the image and PDF domains; extraction target is ui-primitives or a dedicated package."
+    },
+    {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/pdf/store.ts",
+      "imported": "../zoom/types.ts",
+      "count": 1,
+      "reason": "The shared zoom viewport is a leaf consumed by the image and PDF domains; extraction target is ui-primitives or a dedicated package."
+    },
+    {
+      "file": "packages/client/ui-workspace/src/client/session-actions/ArchiveSession.tsx",
+      "imported": "../rows/Rows.module.css",
+      "count": 1,
+      "reason": "Session actions and workspace rows share menu and dialog styles; move the shared rules to a top-level module when the workspace browser splits."
+    },
+    {
+      "file": "packages/client/ui-workspace/src/client/session-actions/ArchiveSession.tsx",
+      "imported": "../rows/WorkspaceBrowser.module.css",
+      "count": 1,
+      "reason": "Session actions and workspace rows share menu and dialog styles; move the shared rules to a top-level module when the workspace browser splits."
+    },
+    {
+      "file": "packages/client/ui-workspace/src/client/session-actions/PinSession.tsx",
+      "imported": "../rows/Rows.module.css",
+      "count": 1,
+      "reason": "Session actions and workspace rows share menu and dialog styles; move the shared rules to a top-level module when the workspace browser splits."
+    },
+    {
+      "file": "packages/client/ui-workspace/src/client/session-actions/RenameSession.tsx",
+      "imported": "../rows/WorkspaceBrowser.module.css",
+      "count": 1,
+      "reason": "Session actions and workspace rows share menu and dialog styles; move the shared rules to a top-level module when the workspace browser splits."
+    }
+  ]
+}

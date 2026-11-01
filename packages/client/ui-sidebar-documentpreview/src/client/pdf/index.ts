@@ -1,8 +1,8 @@
 /** Builtin PDF registration through document metadata and the keyed body slot. */
 import type { Context } from '@deepseek-ai/cordis'
-import { retainDocumentTabs } from '../document/tab-lifetime.ts'
+import { retainDocumentTabs } from '../contract/tab-lifetime.ts'
 import type {} from '../index.ts'
-import type { DocumentPreviewDefinition } from '../document/registry.ts'
+import type { DocumentPreviewDefinition } from '../contract/registry.ts'
 import type { PdfBodyInjected } from './pdf.tsx'
 import { LazyPdfBody } from './LazyPdfBody.tsx'
 import type { BoundActions } from '@deepseek-ai/dsh-client-store'

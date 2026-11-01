@@ -1,16 +1,9 @@
 /** Iframe DOM and revision-tagged load observations. */
-import type { BrowserTarget } from '../browser/url.ts'
-import type { BrowserPresentation } from './BrowserPresentation.ts'
+import type { BrowserPresentation, IframeDocument, IframePagePresentation } from '../contract/BrowserPresentation.ts'
 import css from './Browser.module.css'
 
 /** Fixed iframe policy; top navigation and downloads are not granted directly. */
 export const WEB_BROWSER_SANDBOX = 'allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox'
-
-interface IframeDocument {
-  readonly target: BrowserTarget
-  readonly revision: number
-  readonly sandboxed: boolean
-}
 
 /** Reports only what an iframe can observe without inspecting cross-origin content. */
 export interface IframePresentationEvents {
@@ -20,7 +13,7 @@ export interface IframePresentationEvents {
 }
 
 /** Owns the iframe element; navigation and history remain in IframeImpl. */
-export class IframePresentation implements BrowserPresentation {
+export class IframePresentation implements BrowserPresentation, IframePagePresentation {
   private host: HTMLElement | undefined
   private element: HTMLIFrameElement | undefined
   private document: IframeDocument | undefined

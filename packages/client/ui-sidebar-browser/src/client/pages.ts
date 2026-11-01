@@ -1,5 +1,5 @@
 /** Assemble iframe navigation and presentation without platform branches in consumers. */
-import type { BrowserPage, BrowserPageOptions } from './browser/BrowserPage.ts'
+import type { BrowserPage, BrowserPageOptions } from './contract/BrowserPage.ts'
 import { IframeImpl } from './browser/IframeImpl.ts'
 import { IframePresentation } from './view/IframePresentation.ts'
 

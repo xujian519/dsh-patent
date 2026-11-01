@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { fileMediaUrl, pathPartsOf } from '@deepseek-ai/dsh-util-workspace-path'
-import type { DocumentPreviewProps } from '../document/contract.ts'
+import type { DocumentPreviewProps } from '../contract/document.ts'
 import { LoadingIndicator } from '../LoadingIndicator.tsx'
 import css from './VideoBody.module.css'
 

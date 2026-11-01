@@ -1,7 +1,7 @@
 /** Video metadata, keyed slot, dictionary, and disposal registration. */
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DocumentPreviewRegistry } from '../src/client/document/registry.ts'
+import { DocumentPreviewRegistry } from '../src/client/contract/registry.ts'
 import { VideoBody } from '../src/client/video/VideoBody.tsx'
 import { apply, VIDEO_BODY_ID, VIDEO_EXTENSIONS, videoBodyDefinition } from '../src/client/video/index.ts'
 import { en, ja, zh, es, fr, de, ru, pt } from '../src/client/video/locales.ts'

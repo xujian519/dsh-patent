@@ -12,6 +12,7 @@
     "src/present-open.ts"
   ],
   "references": [
+    { "path": "../../util/value" },
     {
       "path": "../../../vendor/cordis"
     },

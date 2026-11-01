@@ -47,6 +47,7 @@
     "src/client/share-navigation.ts"
   ],
   "references": [
+    { "path": "../../util/value" },
     {
       "path": "../../../vendor/cordis"
     },

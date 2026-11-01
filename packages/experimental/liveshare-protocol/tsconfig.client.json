@@ -9,5 +9,8 @@
     "src/viewer-carrier.ts",
     "src/viewer-states.ts",
     "src/identity/types.ts"
+  ],
+  "references": [
+    { "path": "../../util/value" }
   ]
 }

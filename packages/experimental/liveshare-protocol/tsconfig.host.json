@@ -16,6 +16,7 @@
     "src/identity/types.ts"
   ],
   "references": [
+    { "path": "../../util/value" },
     {
       "path": "../../util/brand"
     }

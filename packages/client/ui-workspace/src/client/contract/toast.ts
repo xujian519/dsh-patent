@@ -42,7 +42,7 @@ export type ArchiveToastEntryProps =
 export type WorkspaceToastProps = FactoryComponentPropsOf<'workspace.toast.content'>
 
 /** Owner operations available to every keyed Workspace notice. */
-interface WorkspaceToastOwnerProps {
+export interface WorkspaceToastOwnerProps {
   /** Dismiss the displayed notice. */
   dismissToast: () => void
 }

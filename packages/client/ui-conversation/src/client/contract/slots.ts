@@ -385,7 +385,7 @@ export interface ConversationHeaderCornerOwnerProps {
 }
 
 /** The leading seat exposes global navigation independently of a Session. */
-interface ConversationHeaderLeadingOwnerProps {
+export interface ConversationHeaderLeadingOwnerProps {
   /** Marker field: the occupant receives no owner-specific values. */
   children?: never
 }

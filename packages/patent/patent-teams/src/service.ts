@@ -580,7 +580,7 @@ declare module '@deepseek-ai/cordis' {
 }
 
 /** One member row of the status payload. */
-interface PatentTeamsStatusMember {
+export interface PatentTeamsStatusMember {
   name: string
   role: string
   provider: string
@@ -593,7 +593,7 @@ interface PatentTeamsStatusMember {
 }
 
 /** One task row of the status payload. */
-interface PatentTeamsStatusTask {
+export interface PatentTeamsStatusTask {
   id: string
   subject: string
   status: string
@@ -614,7 +614,7 @@ interface PatentTeamsStatusTask {
 }
 
 /** One captain-inbox preview row. */
-interface PatentTeamsStatusMessage {
+export interface PatentTeamsStatusMessage {
   from: string
   content: string
   ts: number
@@ -649,7 +649,7 @@ export interface PatentTeamsStatus {
 }
 
 /** One archived-team summary row. */
-interface PatentTeamsArchiveSummary {
+export interface PatentTeamsArchiveSummary {
   team_id: string
   team_name: string
   created_at: number
@@ -659,7 +659,7 @@ interface PatentTeamsArchiveSummary {
 }
 
 /** One archived team's detail record (members and tasks as archived). */
-interface PatentTeamsArchiveDetail {
+export interface PatentTeamsArchiveDetail {
   team_id: string
   team_name: string
   created_at: number

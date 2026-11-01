@@ -114,7 +114,7 @@ export interface SessionRowScheduleOwnerProps {
 }
 
 /** Owner share of the trailing icon list; rendering does not bind the Session. */
-interface SessionRowTrailingOwnerProps {
+export interface SessionRowTrailingOwnerProps {
   /** Session this row shows. */
   readonly sessionId: SessionId
 }

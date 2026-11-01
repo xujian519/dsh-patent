@@ -19,7 +19,7 @@ export type { CollectedOutput, DshEnvironment, DshEnvironmentKey, SubprocessOutp
  * rejected produced no process output, so its stderr reader serves the
  * `spawn failed: …` note as the whole stream.
  */
-interface ShellObservedStreams {
+export interface ShellObservedStreams {
   /** Offset reader over captured stdout. */
   stdout: SubprocessOutputReader
   /** Offset reader over captured stderr (the spawn-failure note after a rejected spawn). */

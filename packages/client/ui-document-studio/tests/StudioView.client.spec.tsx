@@ -705,7 +705,7 @@ describe('StudioView', () => {
   })
 
   it('reports the Host cap in a readable size when a complete read refuses the file', async () => {
-    const caps: Array<[number, string]> = [[512, '512 B'], [2048, '2 KB'], [5 * 1024 * 1024, '5 MB']]
+    const caps: Array<[number, string]> = [[512, '512B'], [2048, '2.0KB'], [5 * 1024 * 1024, '5.0MB']]
     for (const [limitBytes, size] of caps) {
       cleanup()
       const readFileTextComplete = vi.fn((): Promise<CompleteReadText> =>

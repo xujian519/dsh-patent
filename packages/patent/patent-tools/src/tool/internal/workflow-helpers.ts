@@ -119,7 +119,7 @@ function caseKeyOf(caseId: string): string {
  * @param file - the destination path.
  * @param content - the complete UTF-8 content.
  */
-async function atomicWriteFile(file: string, content: string): Promise<void> {
+export async function atomicWriteFile(file: string, content: string): Promise<void> {
   const tmp = `${file}.tmp-${process.pid}-${Math.random().toString(36).slice(2)}`
   await writeFile(tmp, content, 'utf8')
   await rename(tmp, file)

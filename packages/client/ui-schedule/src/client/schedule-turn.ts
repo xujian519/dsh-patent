@@ -20,7 +20,7 @@ import { scheduleCreateCardModel } from './schedule-create-card.ts'
 export const SCHEDULE_CREATE_TOOL = 'schedule_create'
 
 /** One settled `schedule_create` result the card renders. */
-export type ScheduleCreatedTask = ToolResultNode
+type ScheduleCreatedTask = ToolResultNode
 
 /** Immutable created-task facts published against one Turn. */
 export interface ScheduleTurnData {

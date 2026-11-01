@@ -7,7 +7,7 @@ import { scheduleCreateCardModel } from './schedule-create-card.ts'
 import css from './ScheduleCreateCard.module.css'
 
 /** Task navigation the card receives from its Turn-tail registration. */
-export interface ScheduleCreateCardInjected {
+interface ScheduleCreateCardInjected {
   /**
    * Show one created task's detail in the right Sidebar.
    * @param id - Task created by this call.

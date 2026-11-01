@@ -16,13 +16,13 @@ import { scheduleTaskParams } from './definition.ts'
 import type { TaskTabBindings, TaskTabPage, TaskTabTarget } from './task-tab-bindings.ts'
 
 /** The layout and navigation fields one task tab carries. */
-export interface TaskTabSource extends TaskTabPage {
+interface TaskTabSource extends TaskTabPage {
   /** Navigation the tab's last open carried; a restored record carries no parameters. */
   readonly navigation: { readonly params: SidebarRightNavigationParams; readonly revision: number }
 }
 
 /** The task one task tab resolves, and where it came from. */
-export interface TaskTabTargetResolution {
+interface TaskTabTargetResolution {
   /** Whether the current layout still carries the opener's navigation parameters. */
   readonly navigated: boolean
   /** Task the navigation named, or undefined when it carried another type's parameters. */

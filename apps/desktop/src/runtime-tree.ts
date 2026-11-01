@@ -12,7 +12,7 @@ import { parseDesktopRelease, type DesktopRelease } from './release.ts'
 export const DESKTOP_RUNTIME_FILE = 'desktop-runtime.json'
 
 /** Host-owned package available to external plugins through a directory link. */
-export interface DesktopSharedPackage {
+interface DesktopSharedPackage {
   readonly name: string
   readonly version: string
   readonly path: string

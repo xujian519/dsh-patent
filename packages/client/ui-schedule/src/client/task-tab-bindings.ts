@@ -56,7 +56,7 @@ const PREFIX = 'dsh.schedule.task-tab.v1.'
  * not adopted as well as for one whose adopted layout holds no tabs, and pruning
  * against that answer would drop entries a restored tab still resolves through.
  */
-export type TaskTabLiveIds = (sessionId: SessionId) => readonly string[] | undefined
+type TaskTabLiveIds = (sessionId: SessionId) => readonly string[] | undefined
 
 /**
  * Whether a parsed storage value is a record rather than an array or a scalar.

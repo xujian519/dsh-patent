@@ -6,7 +6,7 @@
  * profile's local tarballs, and the backend boots every installed plugin, so
  * the limit covers both on a slow disk while still bounding a stuck start.
  */
-export const DESKTOP_STARTUP_TIMEOUT_MS = 180_000
+const DESKTOP_STARTUP_TIMEOUT_MS = 180_000
 
 /**
  * Reject when one startup stage outlives the deadline.

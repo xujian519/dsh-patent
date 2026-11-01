@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { desktopAccountBackend, type DesktopAccountBackend } from './account-backend.ts'
 
 /** Metadata needed before the native entry or workspace becomes visible. */
-export interface WelcomeState {
+interface WelcomeState {
   readonly loggedIn: boolean
   readonly hasApiKey: boolean
   readonly writable: boolean

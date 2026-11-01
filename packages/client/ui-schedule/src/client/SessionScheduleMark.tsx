@@ -21,7 +21,7 @@ import { NS } from './locales.ts'
 import css from './SessionScheduleMark.module.css'
 
 /** Injected share of the Session-row clock mark: the shared Host task catalog. */
-export interface SessionScheduleMarkInjected {
+interface SessionScheduleMarkInjected {
   /** One catalog shared by every row; the renderer binds it to the `useCatalog` selector hook. */
   readonly hooks: { readonly catalog: SessionScheduleCatalogObservable }
 }

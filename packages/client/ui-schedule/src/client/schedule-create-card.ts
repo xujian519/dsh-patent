@@ -19,7 +19,7 @@ type ToolBlock = ToolCallViewProps['block']
 type SettledToolBlock = Extract<ToolBlock, { kind: 'tool-result' }>
 
 /** Derived presentation of one `schedule_create` call. */
-export interface ScheduleCreateCardModel {
+interface ScheduleCreateCardModel {
   /** Created task narrowed from the settled result, or undefined when the result carries none. */
   readonly task: ScheduleRecord | undefined
   /** Single-line task title from the result, the call arguments, or the wire tool name. */

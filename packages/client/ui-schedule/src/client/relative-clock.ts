@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
  * period keeps it correct to its own granularity without re-rendering a mounted
  * page on every frame.
  */
-export const RELATIVE_CLOCK_PERIOD_MS = 30_000
+const RELATIVE_CLOCK_PERIOD_MS = 30_000
 
 /**
  * Current epoch milliseconds, re-sampled on a fixed period.

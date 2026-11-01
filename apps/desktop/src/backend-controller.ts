@@ -15,7 +15,7 @@ function errorState(failure: unknown): DesktopBackendState {
 }
 
 /** Child lifecycle owned by the desktop backend controller. */
-export interface DesktopBackendHost {
+interface DesktopBackendHost {
   /** @returns Readiness after the child accepts application requests. */
   start(): Promise<unknown>
   /** @returns Completion of child exit. */

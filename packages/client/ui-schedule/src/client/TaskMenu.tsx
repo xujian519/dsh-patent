@@ -16,7 +16,7 @@ import {
 import css from './TaskMenu.module.css'
 
 /** Selectable row of a {@link TaskMenu}. */
-export interface TaskMenuItem {
+interface TaskMenuItem {
   /** Identifier `onSelect` receives when the row is activated. */
   id: string
   /** Visible row label. */
@@ -30,13 +30,13 @@ export interface TaskMenuItem {
 }
 
 /** Hairline between item groups (not selectable). */
-export interface TaskMenuSeparator {
+interface TaskMenuSeparator {
   type: 'separator'
   id: string
 }
 
 /** Non-interactive heading row above a group of items. */
-export interface TaskMenuLabel {
+interface TaskMenuLabel {
   type: 'label'
   id: string
   text: string
@@ -46,7 +46,7 @@ export interface TaskMenuLabel {
 export type TaskMenuEntry = TaskMenuItem | TaskMenuSeparator | TaskMenuLabel
 
 /** Inputs of {@link TaskMenu}. */
-export interface TaskMenuProps {
+interface TaskMenuProps {
   /** Whether the list is showing (owner-controlled). */
   open: boolean
   /** The trigger element, rendered in place. */

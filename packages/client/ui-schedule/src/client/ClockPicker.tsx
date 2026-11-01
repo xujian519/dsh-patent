@@ -71,7 +71,7 @@ interface ClockCursor {
 }
 
 /** Inputs of the clock picker. */
-export interface ClockPickerProps {
+interface ClockPickerProps {
   /** Whether the panel is showing. */
   readonly open: boolean
   /** The row's trigger button, which anchors the panel. */

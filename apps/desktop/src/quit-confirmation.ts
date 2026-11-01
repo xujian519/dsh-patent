@@ -5,7 +5,7 @@ import type { DesktopQuitInspection } from './host-process.ts'
 import type { DesktopLocale, DesktopMessages } from './locale.ts'
 
 /** Locale key of the explanation shown before quitting, or none when quitting interrupts nothing. */
-export type DesktopQuitPrompt = Extract<keyof DesktopMessages, 'quitActiveTasks' | 'quitScheduledTasks' | 'quitActiveAndScheduledTasks'> | undefined
+type DesktopQuitPrompt = Extract<keyof DesktopMessages, 'quitActiveTasks' | 'quitScheduledTasks' | 'quitActiveAndScheduledTasks'> | undefined
 
 /**
  * Choose the confirmation copy for one inspection result.
@@ -21,7 +21,7 @@ export function resolveDesktopQuitPrompt(inspection: DesktopQuitInspection | 'un
 }
 
 /** Main-process collaborators of the confirmation. */
-export interface DesktopQuitConfirmationOptions {
+interface DesktopQuitConfirmationOptions {
   readonly locale: () => DesktopLocale
   /** Start one Host inspection; undefined while no Host is ready, when nothing can be running and the quit proceeds. */
   readonly inspect: () => Promise<DesktopQuitInspection> | undefined

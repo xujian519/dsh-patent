@@ -19,10 +19,10 @@ import { NS } from './locales.ts'
 import css from './SessionScheduleMark.module.css'
 
 /** Most task rows one hover card shows before it reports the omitted remainder. */
-export const SESSION_HOVER_TASK_LIMIT = 2
+const SESSION_HOVER_TASK_LIMIT = 2
 
 /** Injected share of the Session-row hover-card task section: the shared Host task catalog. */
-export interface SessionScheduleHoverInjected {
+interface SessionScheduleHoverInjected {
   /** One catalog shared by every row; the renderer binds it to the `useCatalog` selector hook. */
   readonly hooks: { readonly catalog: SessionScheduleCatalogObservable }
 }

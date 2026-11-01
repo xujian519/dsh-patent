@@ -12,7 +12,7 @@ export interface OperationHistoryReadLimits {
 }
 
 /** Collection facts; incomplete history must not be interpreted as absence of plugin changes. */
-export interface OperationHistoryReadResult {
+interface OperationHistoryReadResult {
   readonly records: readonly PluginOperationRecord[]
   readonly bytesRead: number
   /** Distinct files from which at least one byte was read. */

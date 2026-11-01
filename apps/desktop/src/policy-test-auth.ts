@@ -10,7 +10,7 @@ const LOGIN_LOADING_PAGE = 'renderer/policy-login-loading.html'
 const LOGIN_LOADING_FILE = 'policy-login-loading.html'
 
 /** Navigation completion is not proof of authentication or a valid update policy. */
-export type DesktopPolicyLoginResult = 'returned' | 'cancelled' | 'failed'
+type DesktopPolicyLoginResult = 'returned' | 'cancelled' | 'failed'
 
 /** Owns the login window and its nonpersistent Session; no product window shares its cookies or privileges. */
 export class DesktopPolicyTestAuth {

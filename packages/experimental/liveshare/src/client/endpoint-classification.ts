@@ -33,8 +33,14 @@ type UnknownClassifiedEndpoint = Exclude<keyof typeof VIEWER_ENDPOINT_CLASSES, R
 /** Fails the Client face unless `T` is `never`. */
 type AssertNever<T extends never> = T
 
-/** Compile-time proof that every generated endpoint has a class. */
+/**
+ * Compile-time proof that every generated endpoint has a class.
+ * Intentionally unreferenced at runtime: the export exists so TypeScript checks the assertion.
+ */
 export type NoUnclassifiedEndpoint = AssertNever<UnclassifiedEndpoint>
 
-/** Compile-time proof that the table has no endpoint this Client build cannot name. */
+/**
+ * Compile-time proof that the table has no endpoint this Client build cannot name.
+ * Intentionally unreferenced at runtime: the export exists so TypeScript checks the assertion.
+ */
 export type NoUnknownClassifiedEndpoint = AssertNever<UnknownClassifiedEndpoint>

@@ -36,7 +36,7 @@ const SUBTREE_INPUT = {
 } as const
 
 /** Exact Client closure symbols exposed by the evaluator and guard. */
-export const CLIENT_BUILTIN_INSPECTION: readonly JsonValue[] = [
+const CLIENT_BUILTIN_INSPECTION: readonly JsonValue[] = [
   {
     name: 'ctx',
     description: 'Restricted Cordis Context. Prefer ctx.get(name) with an undefined check; use inject only for hard dependencies.',

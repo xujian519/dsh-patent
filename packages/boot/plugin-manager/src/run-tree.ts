@@ -15,7 +15,7 @@ export interface RunTree {
 }
 
 /** Injectable process operations, so every platform's probing is testable on any host. */
-export interface RunTreeInternals {
+interface RunTreeInternals {
   /** Host platform override for target decisions. */
   platform?: NodeJS.Platform
   /** Liveness probe override, defaulting to `process.kill(target, 0)`. */

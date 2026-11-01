@@ -4,7 +4,7 @@ import { changesSummaryUrl, isChangesSummary, type ChangesSummary } from '../cha
 import { HostReadStore } from './host-read-store.ts'
 
 /** A summary, `'missing'` once the Host no longer serves it, or `'loading'` while the request runs. */
-export type ChangesSummaryState = ChangesSummary | 'missing' | 'loading'
+type ChangesSummaryState = ChangesSummary | 'missing' | 'loading'
 
 /** One browser plugin's summary reads; a summary or a missing answer is kept until the connection is replaced. */
 export class ChangesSummaryStore extends HostReadStore<ChangesSummaryState> {

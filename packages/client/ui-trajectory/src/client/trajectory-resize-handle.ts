@@ -61,7 +61,7 @@ export interface DetailsResizeHandlers {
 }
 
 /** The widths the split renders with, and the handlers that resize them. */
-export interface DetailsResizeHandle {
+interface DetailsResizeHandle {
   /** Inspector width in pixels, or null while it follows the split default. */
   detailsWidth: number | null
   /** Tool-request offset in pixels, or null while the split default applies. */

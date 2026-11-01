@@ -23,7 +23,7 @@ import { detectImage, encodedAlphaIsCompatible, probeImage } from './image.ts'
 import { requireSharp } from './sharp.ts'
 
 /** Transform version included in every cache and upload-index identity. */
-export const REQUEST_IMAGE_TRANSFORM_VERSION = 'request-image-v6'
+const REQUEST_IMAGE_TRANSFORM_VERSION = 'request-image-v6'
 
 interface EncodedRequestImage {
   data: Uint8Array

@@ -7,7 +7,7 @@ import { InspectorObjectValue, type InspectorObjectEntry } from './object-value.
 import css from './inspector.module.css'
 
 /** Original value and Session-local reference navigation. */
-export type InspectorObjectTreeProps = PropsLocale<'session-inspector'> & {
+type InspectorObjectTreeProps = PropsLocale<'session-inspector'> & {
   readonly value: unknown
   readonly objects: InspectorObjects
   readonly navigate: (reference: InspectorObjectReference) => void

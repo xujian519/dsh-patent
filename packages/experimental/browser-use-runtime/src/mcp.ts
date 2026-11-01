@@ -14,7 +14,7 @@ import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-working-directory'
 
 /** Browser launch settings shared by the MCP integrations. */
-export interface BrowserMcpLaunchConfig {
+interface BrowserMcpLaunchConfig {
   /** Launch a new isolated Chromium browser for each live Session. */
   mode: 'launch'
   /** Whether Chromium runs without a visible window; defaults to true. */
@@ -26,7 +26,7 @@ export interface BrowserMcpLaunchConfig {
 }
 
 /** Attachment to an externally owned Chromium browser. */
-export interface BrowserMcpAttachConfig {
+interface BrowserMcpAttachConfig {
   /** Exclusively attach one live Session to the configured browser. */
   mode: 'attach'
   /** HTTP(S) debugging URL or WS(S) browser debugging endpoint. */
@@ -71,7 +71,7 @@ export function validateBrowserMcpConfig(config: BrowserMcpConfig): void {
 }
 
 /** Provider-owned connection options for one live Session. */
-export interface SessionMcpOptions {
+interface SessionMcpOptions {
   /** Provider identity and MCP tool namespace. */
   name: string
   /** Whether another live Session must wait for the attached browser to be released. */

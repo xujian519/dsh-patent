@@ -8,7 +8,7 @@ import type {
 import type { GoalActivationSnapshot } from './slots.ts'
 
 /** Live inputs for one Session's goal activation source. */
-export interface GoalActivationDeps {
+interface GoalActivationDeps {
   /** Durable projection used to derive the current active goal ref. */
   readonly projection: HostObservable<GoalProjection | null | undefined>
   /** Session snapshot; running flips trigger a fresh authoritative read. */

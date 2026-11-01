@@ -22,7 +22,7 @@ import { existsSync } from 'node:fs'
 const WORKSPACE_TSCONFIG = 'tsconfig.base.json'
 
 /** Why the anchors could not be derived, or the anchors themselves. */
-export interface SourceLaunchAnchors {
+interface SourceLaunchAnchors {
   /** Absolute path to the tsx ESM hook, importable from any working directory. */
   tsxImport: string
   /** Absolute path to the tsconfig whose `paths` the harness sources resolve through. */
@@ -30,7 +30,7 @@ export interface SourceLaunchAnchors {
 }
 
 /** Caller-supplied anchors that replace the ones this module would resolve. */
-export interface SourceLaunchOverrides {
+interface SourceLaunchOverrides {
   /**
    * Absolute path to the tsx ESM hook. Supply it when tsx is not installed in
    * the harness workspace, or when the entry sits outside it (`--tsx-import`).

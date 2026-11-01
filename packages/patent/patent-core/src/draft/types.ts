@@ -168,7 +168,7 @@ export interface TemplateRowsSlot {
 }
 
 /** 按法条组织的理由节槽位：草案值为 {@link DraftGroundItem} 序列，节标题与四段式小标题由渲染器生成。 */
-export interface TemplateGroundsSlot {
+interface TemplateGroundsSlot {
   /** 是否必填。 */
   required?: boolean
   /** 槽位类别。 */

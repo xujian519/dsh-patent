@@ -292,7 +292,7 @@ export interface SharedSnapshotClaim {
 }
 
 /** One committed snapshot file and its complete content. */
-export interface NamedSnapshotContent {
+interface NamedSnapshotContent {
   /** Diagnostic path of the committed file. */
   path: string
   /** Complete committed file content. */
@@ -487,7 +487,7 @@ export function normalizedToolSchemas(rawLog: string, ctx: NormalizeContext): un
 }
 
 /** The structured contents of a tool-schema sidecar. */
-export interface ToolSchemasSnapshot {
+interface ToolSchemasSnapshot {
   /** The complete tool schemas from the pinned request header. */
   initial: unknown[]
   /** Complete tool schemas from subsequent changed-header snapshots. */
@@ -617,7 +617,7 @@ export function headerChangeCount(rawLog: string): number {
 }
 
 /** A literal replacement from a fresh replay-run volatile to its existing fixture value. */
-export interface FixtureReplacement {
+interface FixtureReplacement {
   /** The fresh replay run's volatile value. */
   from: string
   /** The existing fixture value retained during write-back. */

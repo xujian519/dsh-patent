@@ -8,16 +8,16 @@
 import type { PatentTeamsCardTask } from './teams-model.ts'
 
 /** Fixed node geometry: compact nodes with room for curved dependency edges. */
-export const DAG_NODE_WIDTH = 140
+const DAG_NODE_WIDTH = 140
 /** Node height in canvas units. */
-export const DAG_NODE_HEIGHT = 52
+const DAG_NODE_HEIGHT = 52
 /** Minimum horizontal gap between dependency columns. */
-export const DAG_COLUMN_GAP = 36
+const DAG_COLUMN_GAP = 36
 /** Minimum vertical gap between sibling rows. */
-export const DAG_ROW_GAP = 14
+const DAG_ROW_GAP = 14
 
 /** One laid-out DAG node: the task plus its top-left canvas position. */
-export interface DagNodePosition {
+interface DagNodePosition {
   readonly task: PatentTeamsCardTask
   readonly depth: number
   readonly x: number
@@ -25,14 +25,14 @@ export interface DagNodePosition {
 }
 
 /** One dependency edge routed between two nodes (SVG path in canvas coordinates). */
-export interface DagEdgePath {
+interface DagEdgePath {
   readonly from: string
   readonly to: string
   readonly path: string
 }
 
 /** Complete canvas geometry of one team's task DAG. */
-export interface TeamsDagLayout {
+interface TeamsDagLayout {
   readonly width: number
   readonly height: number
   readonly nodes: readonly DagNodePosition[]
@@ -129,7 +129,7 @@ export function layoutTeamsDag(tasks: readonly PatentTeamsCardTask[]): TeamsDagL
 }
 
 /** Transitive dependency closure of one task: upstream, downstream, and both. */
-export interface DagDependencyChain {
+interface DagDependencyChain {
   readonly upstream: ReadonlySet<string>
   readonly downstream: ReadonlySet<string>
   readonly all: ReadonlySet<string>
@@ -176,7 +176,7 @@ export function dagDependencyChain(
 }
 
 /** Task counts behind the segmented progress bar. */
-export interface TeamsTaskSegments {
+interface TeamsTaskSegments {
   /** Tasks whose latest status is `completed`. */
   readonly done: number
   /** Tasks claimed or in progress right now. */
@@ -201,7 +201,7 @@ export function taskSegments(tasks: readonly PatentTeamsCardTask[]): TeamsTaskSe
 }
 
 /** The task a member is working on now and the last one it completed. */
-export interface MemberTaskBinding {
+interface MemberTaskBinding {
   readonly current?: PatentTeamsCardTask
   readonly last?: PatentTeamsCardTask
 }

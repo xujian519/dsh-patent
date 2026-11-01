@@ -17,7 +17,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 /** Identity of the OpenViking library a state file belongs to. */
-export interface StateIdentity {
+interface StateIdentity {
   readonly endpoint: string
   readonly account: string
   readonly user: string
@@ -25,7 +25,7 @@ export interface StateIdentity {
 }
 
 /** Per-session bookkeeping: sent message seqs and commit progress. */
-export interface SessionBookkeeping {
+interface SessionBookkeeping {
   /** Message seqs already appended to the server (at-least-once dedupe key). */
   sentSeqs: number[]
   /** User turns appended but not yet committed. */
@@ -35,14 +35,14 @@ export interface SessionBookkeeping {
 }
 
 /** On-disk state. */
-export interface StateSnapshot {
+interface StateSnapshot {
   readonly version: 1
   readonly identity: string
   readonly sessions: Record<string, SessionBookkeeping>
 }
 
 /** How a state file refused to load. */
-export type StateLoadIssue = 'identity-mismatch' | 'corrupt'
+type StateLoadIssue = 'identity-mismatch' | 'corrupt'
 
 /** Imprint of the identity used to detect library changes.
  * @param identity - the library identity to imprint.

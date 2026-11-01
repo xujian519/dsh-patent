@@ -13,7 +13,7 @@ const BASE = 'https://api.openalex.org/works'
 const DEFAULT_MAILTO = 'sati@users.noreply.github.com'
 
 /** 创建 OpenAlex 连接器的选项（polite pool 邮箱等）。 */
-export interface CreateOpenAlexConnectorOptions extends ConnectorHttpOptions {
+interface CreateOpenAlexConnectorOptions extends ConnectorHttpOptions {
   /** polite pool 标识邮箱；默认回退 OPENALEX_MAILTO 环境变量。 */
   mailto?: string
 }

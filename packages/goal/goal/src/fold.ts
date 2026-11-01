@@ -38,7 +38,7 @@ export interface GoalFoldState {
  * Build an empty replay accumulator.
  * @returns mutable state with no current goal or prior ref.
  */
-export function emptyGoalFoldState(): GoalFoldState {
+function emptyGoalFoldState(): GoalFoldState {
   return {
     goal: undefined,
     roundsStarted: 0,
@@ -264,7 +264,7 @@ export function goalChangeRef(change: GoalChangeMeta): GoalRef {
  * @param state - preceding durable goal projection.
  * @param change - decoded full snapshot or clear tombstone.
  */
-export function applyGoalChange(state: GoalFoldState, change: GoalChangeMeta): void {
+function applyGoalChange(state: GoalFoldState, change: GoalChangeMeta): void {
   const ref = goalChangeRef(change)
   if (change.operation === 'clear') {
     const current = state.goal

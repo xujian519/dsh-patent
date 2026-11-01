@@ -15,7 +15,7 @@ export interface TrajectoryTimeRange {
 }
 
 /** One ledger record projected into the active timeline domain. */
-export interface TrajectoryTimelineSpan extends TrajectoryTimeRange {
+interface TrajectoryTimelineSpan extends TrajectoryTimeRange {
   index: number
   isError: boolean
   kind: TrajectoryCellKind
@@ -24,13 +24,13 @@ export interface TrajectoryTimelineSpan extends TrajectoryTimeRange {
 }
 
 /** One turn boundary in the active timeline domain. */
-export interface TrajectoryTimelineTurnBoundary {
+interface TrajectoryTimelineTurnBoundary {
   turn: number
   time: number
 }
 
 /** Full-domain model used by the overview. */
-export interface TrajectoryTimelineModel extends TrajectoryTimeRange {
+interface TrajectoryTimelineModel extends TrajectoryTimeRange {
   spans: readonly TrajectoryTimelineSpan[]
   turnBoundaries: readonly TrajectoryTimelineTurnBoundary[]
 }

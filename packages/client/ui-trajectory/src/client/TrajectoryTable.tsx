@@ -79,7 +79,7 @@ interface OlderLoadAnchor {
 }
 
 /** Props for the trajectory ledger. */
-export interface TrajectoryTableProps {
+interface TrajectoryTableProps {
   /** Observe the selected result while the Result tab is open. */
   watchToolResult?: WatchToolResult | undefined
   /** Wrapping control shared by all JSON inspectors. */

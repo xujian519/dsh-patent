@@ -8,7 +8,7 @@ import type { NS } from './locales.ts'
 type Translate = PropsLocale<typeof NS>['t']
 
 /** Facts the checkout row shows. */
-export interface CheckoutLabel {
+interface CheckoutLabel {
   /** Branch name, the abbreviated commit while HEAD is detached, or null when HEAD has no commit. */
   readonly name: string | null
   /** Whether HEAD is detached. */

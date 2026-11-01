@@ -5,7 +5,7 @@ import type {
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
 
 /** One assistant step's derivable latency facts; null marks an unrecorded part. */
-export interface StepReading {
+interface StepReading {
   /** step/start → first token delta, in ms. */
   ttftMs: number | null
   /** First token delta → final message, in ms. */

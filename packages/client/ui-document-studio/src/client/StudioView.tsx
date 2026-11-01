@@ -97,7 +97,7 @@ function readFailureText(failure: ReadFailure, t: StudioViewProps['t']): string 
 }
 
 /** One section a delivered HTML file declares, for the reference draft. */
-export interface DocumentSection {
+interface DocumentSection {
   readonly id: string
   readonly heading: string
 }
@@ -176,7 +176,7 @@ function fileRows(produced: readonly DocumentDeliverable[]): readonly FileRow[] 
 }
 
 /** Outcome of one desktop print-to-PDF request (mirror of the preload bridge). */
-export interface DesktopPrintResult {
+interface DesktopPrintResult {
   /** Saved file path on success. */
   path?: string
   /** The user dismissed the save dialog. */
@@ -186,7 +186,7 @@ export interface DesktopPrintResult {
 }
 
 /** The desktop shell's `window.desktop` surface, when running under Electron. */
-export interface DesktopPrintBridge {
+interface DesktopPrintBridge {
   printHtmlToPdf(payload: { html: string; suggestedName?: string }): Promise<DesktopPrintResult>
 }
 

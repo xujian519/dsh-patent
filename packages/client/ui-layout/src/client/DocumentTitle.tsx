@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 
 /** Props for the browser title projection. */
-export type DocumentTitleProps = Pick<PropsRuntime<'root'>, 'useSessions' | 'usePanelInfo'> & {
+type DocumentTitleProps = Pick<PropsRuntime<'root'>, 'useSessions' | 'usePanelInfo'> & {
   /** Build-configured or localized product title. */
   productTitle: string
 }

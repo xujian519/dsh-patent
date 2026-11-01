@@ -71,7 +71,7 @@ export type TypeNodeInput = WithoutId<TypeNodeModel>
  * package analyzer for: the two facts that attribute and resolve a file, the export name a
  * cross-face re-export needs, and the link it records.
  */
-export interface TypeGraphDeps {
+interface TypeGraphDeps {
   /** Absolute workspace root that source locations are relative to. */
   readonly root: string
   /** The face whose program this graph models. */

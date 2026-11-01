@@ -115,7 +115,7 @@ export interface NormalizeOptions {
 }
 
 /** Comparison controls for complete primary and child Session logs. */
-export interface SessionSnapshotComparisonOptions extends Omit<NormalizeOptions, 'identityMode'> {
+interface SessionSnapshotComparisonOptions extends Omit<NormalizeOptions, 'identityMode'> {
   /** Inputs are captured native writer output, rather than source-versus-migrated-artifact comparisons. */
   nativeWriterOutput?: true
 }

@@ -19,7 +19,7 @@ const IMAGE_MEDIA_TYPES: readonly ImageMediaType[] = [
 const CANONICAL_BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
 
 /** Content-admission failure category used by the protocol handler. */
-export type AcpContentFailureKind = 'invalid' | 'internal'
+type AcpContentFailureKind = 'invalid' | 'internal'
 
 /** Error with a stable ACP request-failure category and no raw binary payload. */
 export class AcpContentError extends Error {

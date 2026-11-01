@@ -50,7 +50,7 @@ export interface PositionedBlock {
 }
 
 /** One {@link IncrementalMarkdownParser.update} result. */
-export interface IncrementalBlocks {
+interface IncrementalBlocks {
   /** Blocks that can no longer change; grows monotonically per generation. */
   readonly frozen: readonly PositionedBlock[]
   /** The re-parsed unstable tail (at most {@link UNSTABLE_TAIL_BLOCKS} blocks plus growth). */

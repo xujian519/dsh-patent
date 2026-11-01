@@ -13,7 +13,7 @@ import { WebError } from '@deepseek-ai/dsh-web'
 export const WEB_FETCH_MAX_URL_LENGTH = 2048
 
 /** The body kinds this provider decodes. */
-export type FetchableKind = 'html' | 'text'
+type FetchableKind = 'html' | 'text'
 
 /**
  * Parse a request URL and enforce network-independent transport restrictions:

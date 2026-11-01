@@ -21,7 +21,7 @@ export type OpCore<B> = (input: unknown, context: OpContext<B>) => unknown
 export type OpTable<B> = Readonly<Record<string, OpCore<B>>>
 
 /** Looks up the engine behavior for one mods API call; `undefined` means none is served. */
-export type OpResolver<B> = (op: string) => OpCore<B> | undefined
+type OpResolver<B> = (op: string) => OpCore<B> | undefined
 
 /**
  * Thrown by an engine behavior to answer a mods API call with `{ deny }`, so
@@ -44,7 +44,7 @@ export interface OpContext<B> {
 }
 
 /** Engine construction options. */
-export interface ModsEngineOptions<B> {
+interface ModsEngineOptions<B> {
   /**
    * Engine behaviors for mods API calls. The engine answers `state.*`,
    * `clock.now`, and `clock.sleep` itself when the resolver serves none.
@@ -68,7 +68,7 @@ export interface ModsEngineOptions<B> {
 }
 
 /** Options for raising one engine event. */
-export interface RaiseOptions<B, E = unknown> {
+interface RaiseOptions<B, E = unknown> {
   readonly binding: B
   readonly signal?: AbortSignal
   /** Checks the input a hook passes to `next`; a throw skips that hook and continues with the input it received. */

@@ -45,10 +45,10 @@ export const SK = 2
 /** Exactly `min`. */
 export const GOOGLE = 3
 /** Three runs joined by `.eyJ` and `.`. */
-export const JWT = 4
+const JWT = 4
 
 /** One recognized format. */
-export interface CredentialFormat {
+interface CredentialFormat {
   /** ASCII literal the candidate begins with; no literal occurs inside another. */
   readonly literal: string
   readonly kind: typeof KEY_BLOCK | typeof ADDRESS | typeof PREFIXED

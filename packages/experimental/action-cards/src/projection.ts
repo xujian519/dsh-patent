@@ -8,10 +8,10 @@ import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 export const PROPOSE_ACTION = 'propose_action'
 
 /** Kind-defined JSON object of a proposal or decision. */
-export const fieldsSchema = z.record(z.string(), z.json())
+const fieldsSchema = z.record(z.string(), z.json())
 
 /** Arguments of a `propose_action` call; blank titles and briefs create no card. */
-export const argumentsSchema = z.object({
+const argumentsSchema = z.object({
   action: z.string().min(1),
   title: z.string().trim().min(1),
   brief: z.string().trim().min(1),
@@ -28,7 +28,7 @@ const proposalSchema = z.object({
 }).strict()
 
 /** Recorded decision of one card. */
-export const decisionSchema = z.object({
+const decisionSchema = z.object({
   callId: z.string().min(1).transform(ToolCallId),
   action: z.string().min(1),
   phase: z.string().min(1),
@@ -58,7 +58,7 @@ const stateSchema = z.object({
 export type ActionCardState = z.infer<typeof stateSchema>
 
 /** Type of {@link actionCardProjection}: the fold plus its Client view wire. */
-export type ActionCardProjectionDefinition = Omit<ProjectionDefinition<'actionCards', ActionCardState>, 'wire'> & {
+type ActionCardProjectionDefinition = Omit<ProjectionDefinition<'actionCards', ActionCardState>, 'wire'> & {
   readonly wire: NonNullable<ProjectionDefinition<'actionCards', ActionCardState>['wire']>
 }
 

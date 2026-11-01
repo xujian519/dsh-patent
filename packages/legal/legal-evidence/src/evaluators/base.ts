@@ -20,7 +20,7 @@ export interface LegalEvidenceEvaluator {
 }
 
 /** 单个维度的评估函数。 */
-export type LegalEvidenceAssessor = (input: LegalEvidenceInput) => LegalEvidenceDimensionJudgment
+type LegalEvidenceAssessor = (input: LegalEvidenceInput) => LegalEvidenceDimensionJudgment
 
 /**
  * 组装一个证据判定器。

@@ -98,7 +98,7 @@ export interface CurrentTokenStdioFileDescriptors {
 }
 
 /** Restricted-token process creation inputs owned by the Windows ACL sandbox. */
-export interface RestrictedProcessSpawnOptions extends ProcessSpawnOptions {
+interface RestrictedProcessSpawnOptions extends ProcessSpawnOptions {
   /** Restricted primary token supplied by sandbox policy. */
   token: NativePtr
   /** Optional control pipe inherited at the same descriptor in the payload. */

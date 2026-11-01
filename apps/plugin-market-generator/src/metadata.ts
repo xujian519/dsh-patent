@@ -29,7 +29,7 @@ export interface Display {
 }
 
 /** How icons are emitted and where diagnostics go. */
-export interface DisplayOptions {
+interface DisplayOptions {
   /** Largest icon, in bytes, embedded as a data URL; larger icons are returned as files. */
   readonly inlineBytes: number
   /** Receives diagnostics about invalid manifest fields, locale files, and icons that are not used. */

@@ -86,7 +86,7 @@ export function logSpillFailure(logger: { error(message: string, ...detail: unkn
 }
 
 /** Inputs a managed native process needs before its output streams are bound. */
-export interface ManagedProcessBinding {
+interface ManagedProcessBinding {
   /** Directory receiving spill files. */
   spillDir: string
   /** Receives a spill open or write failure. */

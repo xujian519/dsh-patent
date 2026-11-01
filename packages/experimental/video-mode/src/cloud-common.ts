@@ -139,7 +139,7 @@ export function messageOf(error: unknown): string {
 }
 
 /** Fields one video download needs. */
-export interface DownloadVideoOptions {
+interface DownloadVideoOptions {
   /** Provider name used in failure messages. */
   readonly label: string
   /** Output duration recorded on the artifact. */

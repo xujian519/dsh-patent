@@ -375,7 +375,7 @@ export class JsonlSessionHandle implements SessionHandle {
 }
 
 /** One created-but-unmaterialized session tracked in this process only. */
-export interface PendingSession {
+interface PendingSession {
   readonly header: SessionHeader
   readonly revision: SessionPersistenceRevision
   /** Exact fork-inherited prefix length supplied at create. */

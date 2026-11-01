@@ -15,7 +15,7 @@ export type CompositionRowEnablement = boolean | 'conditional'
  * decision. Throwing refuses the answer: the row is reported `'conditional'`
  * rather than guessed.
  */
-export type DisabledExpressionEvaluator = (expression: string) => unknown
+type DisabledExpressionEvaluator = (expression: string) => unknown
 
 /** One plugin row a preset composition names. */
 export interface AgentPresetCompositionRow {

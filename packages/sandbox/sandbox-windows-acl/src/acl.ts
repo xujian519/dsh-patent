@@ -166,7 +166,7 @@ function readCurrentSecurity(
  * @param lowLabelSidPtr - the Low integrity SID (S-1-16-4096) the label names.
  * @returns the ACL carrying the single inheritable label ACE.
  */
-export function buildLowLabelAcl(api: Win32Bindings, lowLabelSidPtr: NativePtr): NativePtr {
+function buildLowLabelAcl(api: Win32Bindings, lowLabelSidPtr: NativePtr): NativePtr {
   const sidLength = api.getLengthSid(lowLabelSidPtr)
   if (sidLength === 0) throwLastError(api, 'GetLengthSid', 'Low mandatory label SID')
   const aclLength = abi.ACL_HEADER_SIZE + abi.MANDATORY_ACE_OVERHEAD + sidLength

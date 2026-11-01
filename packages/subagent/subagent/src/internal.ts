@@ -12,7 +12,7 @@ import type SubagentRuntime from './index.ts'
 import type { SubagentDelivery } from './control-types.ts'
 
 /** Process-stable identity carried only by the standard adjacent-Agent messaging tool. */
-export const adjacentAgentSendMessageTool = Symbol.for('dsh.subagent.adjacentAgentSendMessageTool')
+const adjacentAgentSendMessageTool = Symbol.for('dsh.subagent.adjacentAgentSendMessageTool')
 
 /**
  * Mark the standard adjacent-Agent messaging tool without changing its model-visible schema.

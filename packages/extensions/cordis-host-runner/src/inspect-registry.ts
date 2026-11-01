@@ -14,7 +14,7 @@ import type {
 } from './types.ts'
 
 /** Context supplied to a Host inspect query. */
-export interface HostCordisInspectQueryContext {
+interface HostCordisInspectQueryContext {
   /** Tool-call cancellation. */
   signal: AbortSignal
   /** Agent whose scoped runtime is being inspected. */

@@ -7,7 +7,7 @@ import { createLazyRequire } from '@deepseek-ai/dsh-lazy-require'
 const requireKoffi = createLazyRequire<typeof import('koffi')['default']>('koffi', import.meta.url)
 
 /** Replace the current process image while preserving the supplied argv and environment. */
-export type LinuxExecve = (
+type LinuxExecve = (
   file: string,
   argv: string[],
   env: Record<string, string>,

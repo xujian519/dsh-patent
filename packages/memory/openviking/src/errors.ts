@@ -8,7 +8,7 @@
  */
 
 /** Error categories exposed to callers and diagnostics. */
-export type OpenVikingErrorCode =
+type OpenVikingErrorCode =
   | 'UNAVAILABLE'
   | 'TIMEOUT'
   | 'INVALID_JSON'

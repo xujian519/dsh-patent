@@ -3,7 +3,7 @@
 import type { LiteralArgvOptions } from './linux-scope.ts'
 
 /** Host observations behind each decision; the runtime supplies the real checks and tests script them. */
-export interface LinuxScopeObservations {
+interface LinuxScopeObservations {
   /** Run the deep transient-scope probe: literal-argv options when a scope can start, otherwise undefined. */
   probe(): LiteralArgvOptions | undefined
   /** Identify the process listening on the user manager's private socket, or undefined when none listens. */
@@ -15,7 +15,7 @@ export interface LinuxScopeObservations {
 }
 
 /** Event that made the selector probe: the first selection or one that invalidated the previous verdict. */
-export type LinuxProbeTrigger = 'first' | 'scope-not-started' | 'new-listener' | 'launcher-changed'
+type LinuxProbeTrigger = 'first' | 'scope-not-started' | 'new-listener' | 'launcher-changed'
 
 /** One containment decision and the branch that produced it. */
 export type LinuxScopeDecision =

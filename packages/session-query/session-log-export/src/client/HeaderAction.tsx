@@ -13,7 +13,7 @@ import type { SessionMarkdownCopyState } from './copy-controller.ts'
 import css from './HeaderAction.module.css'
 
 /** Markdown copy state and action bound into the Session Header contribution. */
-export interface SessionMarkdownCopyHeaderInjected {
+interface SessionMarkdownCopyHeaderInjected {
   hooks: { sessionMarkdownCopy: ObservableSnapshot<SessionMarkdownCopyState> }
   /**
    * Copy one complete Session transcript to the clipboard.

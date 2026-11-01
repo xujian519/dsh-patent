@@ -145,7 +145,7 @@ function workspaceFromLegacyV1(row: LegacyWorkspaceRow, index: number, now: stri
  * home: the assistant turn card.
  * @param workspaces The canvas workspaces to migrate in place.
  * @returns True when any workspace was rewritten. */
-export function foldLegacyToolCards(workspaces: Workspace[]): boolean {
+function foldLegacyToolCards(workspaces: Workspace[]): boolean {
   let changed = false
   for (const workspace of workspaces) {
     for (const thread of workspace.threads) {

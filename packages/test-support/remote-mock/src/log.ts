@@ -58,7 +58,7 @@ export interface MockLog {
 }
 
 /** Mutable call entry the dispatcher settles. */
-export interface CallRecord extends LoggedCall {
+interface CallRecord extends LoggedCall {
   state: LoggedCall['state']
   result: unknown
 }

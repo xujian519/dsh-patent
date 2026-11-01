@@ -7,7 +7,7 @@
  */
 
 /** Platforms the catalog declares entries for; any other host resolves as empty. */
-export type OpenInAppPlatform = 'darwin' | 'win32' | 'linux'
+type OpenInAppPlatform = 'darwin' | 'win32' | 'linux'
 
 /** Launch-args token carrying the workspace directory (`--cd={path}`). */
 export const PATH_TOKEN = '{path}'

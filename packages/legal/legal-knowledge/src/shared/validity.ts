@@ -42,7 +42,7 @@ export function resolveValidity(input: ValidityInput, asOf: string): LegalRegula
 }
 
 /** 检索选项中的时间效力字段。 */
-export type ValidityFilterOptions = {
+type ValidityFilterOptions = {
   /** Point-in-time validity (YYYY-MM-DD); defaults to today. */
   asOf?: string | undefined
   /** Whether to return records whose validity is unverified; defaults true. */

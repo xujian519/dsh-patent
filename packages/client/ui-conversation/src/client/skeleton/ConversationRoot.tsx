@@ -6,7 +6,7 @@ import type { ConversationSlotProps } from '../contract/slots.ts'
 import { ConversationMainPanel } from './ConversationMainPanel.tsx'
 
 /** Full props composed from the slot contract. */
-export type ConversationRootProps = ConversationSlotProps
+type ConversationRootProps = ConversationSlotProps
 
 export function ConversationRoot(props: ConversationRootProps) {
   return <ConversationMainPanel {...props} />

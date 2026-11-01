@@ -99,7 +99,7 @@ export interface LocalTarget {
 }
 
 /** Result of probing a path: null when it does not exist. */
-export interface PathInfo {
+interface PathInfo {
   version: FsVersion
   mode: number
   type: 'file' | 'directory' | 'other'
@@ -107,7 +107,7 @@ export interface PathInfo {
 }
 
 /** Result of probing a path without following the final symlink component. */
-export interface PathLinkInfo {
+interface PathLinkInfo {
   version: FsVersion
   mode: number
   type: 'file' | 'directory' | 'symlink' | 'other'
@@ -115,7 +115,7 @@ export interface PathLinkInfo {
 }
 
 /** One local directory child with a resolved target and cheap metadata. */
-export interface LocalDirEntry {
+interface LocalDirEntry {
   name: string
   type: 'file' | 'directory' | 'other'
   target: LocalTarget
@@ -679,7 +679,7 @@ export async function writeFileAtomic(
 // --- Editing ---
 
 /** Line ending style detected before LF normalization. */
-export type LineEndings = 'LF' | 'CRLF'
+type LineEndings = 'LF' | 'CRLF'
 
 /**
  * Collapse CRLF to LF — the canonical in-memory form every edit/diff basis

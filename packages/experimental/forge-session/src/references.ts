@@ -4,7 +4,7 @@ import parse from 'shell-quote/parse.js'
 import quote from 'shell-quote/quote.js'
 
 /** One PR explicitly selected by a supported GitHub CLI invocation. */
-export interface GhReference {
+interface GhReference {
   /** Canonical URL when the command supplies its host, otherwise null. */
   readonly url: string | null
   /** Read-only command for an unqualified repository in the first simple command, otherwise null. */

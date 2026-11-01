@@ -96,7 +96,7 @@ export interface AgentPresetStage {
  * it waits for a Session to appear, nothing changed (busy, already composed, or no stage),
  * or the attempt was refused by the Host or by the started-Session lock.
  */
-export type AgentPresetApplyOutcome =
+type AgentPresetApplyOutcome =
   | { readonly kind: 'applied' | 'staged' | 'unchanged' }
   | { readonly kind: 'refused'; readonly reason: string }
 

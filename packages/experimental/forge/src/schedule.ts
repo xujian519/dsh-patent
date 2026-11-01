@@ -3,7 +3,7 @@
 import type { ChangeRequestSnapshot, ForgeFailure } from './types.ts'
 
 /** Resolved intervals that pace polling. */
-export interface PollIntervals {
+interface PollIntervals {
   /** Delay while checks run or mergeability is unknown. */
   readonly activeIntervalMs: number
   /** Delay for a closed request or an open request whose checks have settled. */

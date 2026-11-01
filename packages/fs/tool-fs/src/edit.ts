@@ -44,7 +44,7 @@ interface EditToolArgs {
  * @param args - the schema-validated raw tool arguments.
  * @returns the camelCased input with `replace_all` defaulted to false.
  */
-export function parseEditArgs(args: { file_path: string; old_string: string; new_string: string; replace_all?: boolean }): EditInput {
+function parseEditArgs(args: { file_path: string; old_string: string; new_string: string; replace_all?: boolean }): EditInput {
   if (args.file_path.trim().length === 0) throw new Error('file_path must be a non-empty string')
   if (args.old_string.length === 0) throw new Error('old_string must be a non-empty string')
   if (args.old_string === args.new_string) throw new Error('old_string and new_string must differ')
@@ -62,7 +62,7 @@ export function parseEditArgs(args: { file_path: string; old_string: string; new
  * @param replaceAll - selects the all-occurrences wording over the single-replacement one.
  * @returns the confirmation sentence the model sees as the tool result.
  */
-export function formatEditOutput(displayPath: string, replaceAll: boolean): string {
+function formatEditOutput(displayPath: string, replaceAll: boolean): string {
   return replaceAll
     ? `The file ${displayPath} has been updated. All occurrences were successfully replaced.`
     : `The file ${displayPath} has been updated successfully.`

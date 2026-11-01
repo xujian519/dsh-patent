@@ -21,7 +21,7 @@ export function columnText(value: unknown): string {
 }
 
 /** 带时间效力列的检索记录。 */
-export type DatedRowRecord = {
+type DatedRowRecord = {
   /** 公布日（YYYY-MM-DD）。 */
   publishDate?: string | undefined
   /** 失效日（YYYY-MM-DD）。 */
@@ -33,7 +33,7 @@ export type DatedRowRecord = {
 }
 
 /** 条号与条文列，法规、司法解释与指导性案例均有。 */
-export type ArticleRowColumns = {
+type ArticleRowColumns = {
   /** 施行日（YYYY-MM-DD）。 */
   effectiveDate: string
   /** 条号。 */

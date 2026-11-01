@@ -13,13 +13,13 @@
 import { findMatchingCloseTag } from './htmlScan.ts'
 
 /** 声明「本节内逐段编号」的属性名；属性值同时给出编号形态。 */
-export const PARAGRAPH_NUMBERING_ATTRIBUTE = 'data-paragraph-numbering'
+const PARAGRAPH_NUMBERING_ATTRIBUTE = 'data-paragraph-numbering'
 
 /**
  * 编号形态：值形如 `[0001]`。数字段之前的文本为前缀，之后的文本为后缀，数字段长度即
  * 补零宽度，序号在各自声明区内从 1 起。
  */
-export interface NumberExemplar {
+interface NumberExemplar {
   /** 数字段之前的字面前缀（`[0001]` 为 `[`）。 */
   prefix: string
   /** 数字段之后的字面后缀（`[0001]` 为 `]`）。 */

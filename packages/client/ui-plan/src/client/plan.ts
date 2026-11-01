@@ -16,7 +16,7 @@ export interface SubmittedPlan extends PlanDocument {
 }
 
 /** A saved sidebar resource names one invocation in one Session. */
-export interface PlanAddress {
+interface PlanAddress {
   readonly session: SessionAddress
   readonly callId: ToolCallId
 }

@@ -17,7 +17,7 @@ interface Block {
  * @param value - provider field.
  * @returns the validated string.
  */
-export function string(value: unknown): string {
+function string(value: unknown): string {
   if (typeof value !== 'string') throw new LlmError('DeepSeek Messages expected a string field', 'MALFORMED_RESPONSE')
   return value
 }

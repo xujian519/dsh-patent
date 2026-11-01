@@ -8,7 +8,7 @@ import type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
 import type {} from '@deepseek-ai/dsh-api-workspace-files/remote'
 
 /** One item of a supervised stream; `accept` marks the delivering generation as healthy. */
-export interface SupervisedStreamItem<Item> {
+interface SupervisedStreamItem<Item> {
   /** The decoded frame. */
   readonly value: Item
   /** Reset the reconnect backoff: this generation is delivering. */
@@ -35,7 +35,7 @@ export interface SupervisedStreamOptions<Item> {
 }
 
 /** The `workspaceFiles` namespace methods this package calls, as the generated Remote declares them. */
-export type WorkspaceFilesNamespace = Pick<ClientRemote['workspaceFiles'], 'stat' | 'changes'>
+type WorkspaceFilesNamespace = Pick<ClientRemote['workspaceFiles'], 'stat' | 'changes'>
 
 /** The Client Remote as this package sees it. */
 export interface WorkspaceFilesRemote {

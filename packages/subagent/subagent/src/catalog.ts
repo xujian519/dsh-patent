@@ -25,7 +25,7 @@ type KnownCatalogMode =
   | { readonly mode: 'continuable'; readonly label: string }
 
 /** Parent catalog v0 records local modes, v1 adds unknown children, and v2 records external executions. */
-export type SubagentCatalogEvent =
+type SubagentCatalogEvent =
   & {
     readonly childId: SessionId
     readonly childCreatedAt: number

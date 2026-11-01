@@ -32,7 +32,7 @@ import {
 } from './workspace.ts'
 
 /** One planned task entry of a campaign run. */
-export interface CampaignPlanEntry {
+interface CampaignPlanEntry {
   taskId: string
   repo: string
   baseCommit: string
@@ -106,7 +106,7 @@ export interface CampaignOptions {
 }
 
 /** Summary of one campaign run. */
-export interface CampaignRunResult {
+interface CampaignRunResult {
   planned: number
   armRuns: number
   passed: number

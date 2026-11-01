@@ -12,7 +12,7 @@ export const zh = {
 } satisfies Record<string, string>
 
 /** The secretMask namespace key union. */
-export type SecretMaskKey = keyof typeof zh
+type SecretMaskKey = keyof typeof zh
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {

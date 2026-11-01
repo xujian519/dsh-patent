@@ -27,7 +27,7 @@ export interface RuntimeProcessOptions {
 }
 
 /** Node argv plus internal profile patches required by one resolved dsh entry. */
-export interface DshNodeLaunch {
+interface DshNodeLaunch {
   /** Arguments before the profile selector. */
   nodeArgs: string[]
   /** Internal patches applied below caller-supplied patches. */

@@ -61,11 +61,11 @@ export type ResolvedConfig = Omit<Required<Config>, 'shellDialect' | 'shellPath'
 }
 
 /** Bash dialect default executable. */
-export const DEFAULT_BASH_SHELL = '/bin/bash'
+const DEFAULT_BASH_SHELL = '/bin/bash'
 /** Bash dialect default arguments (interactive, profile-free). */
-export const DEFAULT_BASH_ARGS = ['--noprofile', '--norc', '-i']
+const DEFAULT_BASH_ARGS = ['--noprofile', '--norc', '-i']
 /** Pwsh dialect default arguments (interactive host, profile-free). */
-export const DEFAULT_PWSH_ARGS = ['-NoLogo', '-NoProfile']
+const DEFAULT_PWSH_ARGS = ['-NoLogo', '-NoProfile']
 
 /**
  * Resolve the effective per-dialect shell specification. Defaulting is this

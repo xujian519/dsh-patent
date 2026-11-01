@@ -6,7 +6,7 @@ import type { InspectorRow, InspectorTableHierarchy } from './table-model.ts'
 export const INSPECTOR_ROW_HEIGHT = 30
 
 /** One data row in the virtual scroll layout. */
-export type InspectorTableItem = {
+type InspectorTableItem = {
   readonly key: string
   readonly rowIndex: number
   readonly size: number
@@ -14,7 +14,7 @@ export type InspectorTableItem = {
 }
 
 /** Last committed scroll geometry, measured before a source update. */
-export interface InspectorViewport {
+interface InspectorViewport {
   readonly offset: number
   readonly height: number
 }

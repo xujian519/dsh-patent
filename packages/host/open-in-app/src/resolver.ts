@@ -26,7 +26,7 @@ import {
 } from './catalog.ts'
 
 /** Where this host holds one resolved application's icon pixels. */
-export type OpenInAppIconSource =
+type OpenInAppIconSource =
   | { readonly kind: 'app-bundle'; readonly path: string }
   | { readonly kind: 'executable'; readonly path: string }
 
@@ -53,7 +53,7 @@ export type OpenInAppLauncher = (
 ) => Promise<void>
 
 /** How one launch attempt ended; `missing` marks a stale resolution (ENOENT). */
-export type OpenInAppLaunchOutcome = 'launched' | 'missing' | 'failed'
+type OpenInAppLaunchOutcome = 'launched' | 'missing' | 'failed'
 
 /**
  * Launch one application adapter detached from this process: the child gets a
@@ -182,7 +182,7 @@ export async function output(
  * @param path - candidate path.
  * @returns true when the path exists and is a directory.
  */
-export async function isDirectory(path: string): Promise<boolean> {
+async function isDirectory(path: string): Promise<boolean> {
   try {
     return (await stat(path)).isDirectory()
   } catch {
@@ -196,7 +196,7 @@ export async function isDirectory(path: string): Promise<boolean> {
  * @param path - candidate path.
  * @returns true when the path exists and is a regular file.
  */
-export async function isFile(path: string): Promise<boolean> {
+async function isFile(path: string): Promise<boolean> {
   try {
     return (await stat(path)).isFile()
   } catch {
@@ -213,7 +213,7 @@ export async function isFile(path: string): Promise<boolean> {
  * @param internals - completed platform facts.
  * @returns the expanded candidate, or null when a variable is unset.
  */
-export function expandCandidate(template: string, internals: ResolvedInternals): string | null {
+function expandCandidate(template: string, internals: ResolvedInternals): string | null {
   const unset: string[] = []
   const expanded = template.replace(/\$\{([^}]+)\}/g, (token, name: string) => {
     const value = internals.env[name]
@@ -243,7 +243,7 @@ interface WindowsInstallRecord {
 }
 
 /** Lazily built Windows registry facts shared by one resolution pass. */
-export interface WindowsRegistryView {
+interface WindowsRegistryView {
   /** Lower-cased registered executable name to its `App Paths` default value. */
   readonly appPaths: ReadonlyMap<string, string>
   readonly installRecords: readonly WindowsInstallRecord[]
@@ -298,7 +298,7 @@ export function parseRegistryDump(dump: string): ReadonlyMap<string, ReadonlyMap
  * @param internals - completed platform facts.
  * @returns the parsed view.
  */
-export async function readWindowsRegistryView(
+async function readWindowsRegistryView(
   timeoutMs: number, internals: ResolvedInternals,
 ): Promise<WindowsRegistryView> {
   const appPaths = new Map<string, string>()
@@ -367,7 +367,7 @@ async function recordLauncher(
 }
 
 /** Fields of one parsed XDG desktop entry the resolver and icon route read. */
-export interface DesktopEntry {
+interface DesktopEntry {
   readonly exec?: string
   readonly tryExec?: string
   readonly icon?: string

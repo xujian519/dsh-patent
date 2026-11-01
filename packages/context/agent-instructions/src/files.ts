@@ -45,7 +45,7 @@ interface DiscoveredInstructionFile extends InstructionFile {
 }
 
 /** Provider metadata for a probed scope candidate before its content is read. */
-export interface ProbedInstructionFile extends InstructionFile {
+interface ProbedInstructionFile extends InstructionFile {
   target: FsTarget
   version: FsVersion
   size?: number
@@ -109,7 +109,7 @@ interface LoadOptions extends DiscoverOptions {
 }
 
 /** Rendered baseline plus the successfully read and byte-budget-retained files. */
-export interface RenderedInstructionSet {
+interface RenderedInstructionSet {
   rendered: RenderedAgentInstructions
   /** Successfully read candidates before content deduplication and byte budgeting. */
   observed: LoadedInstructionFile[]
@@ -123,7 +123,7 @@ export interface RenderedInstructionSet {
   included: LoadedInstructionFile[]
 }
 /** Tri-state scope probe that distinguishes confirmed absence from provider failure. */
-export type ScopeInstructionProbe =
+type ScopeInstructionProbe =
   | { kind: 'present'; file: ProbedInstructionFile }
   | { kind: 'absent' }
   | { kind: 'unavailable' }
@@ -464,7 +464,7 @@ async function readDiscoveredInstructionFiles(
  * @param files - loaded files in discovery order.
  * @returns the retained files in the same order.
  */
-export function dedupInstructionFilesByCandidateGroup(files: LoadedInstructionFile[]): LoadedInstructionFile[] {
+function dedupInstructionFilesByCandidateGroup(files: LoadedInstructionFile[]): LoadedInstructionFile[] {
   const keptDigestsByGroup = new Map<string, Set<string>>()
   const kept: LoadedInstructionFile[] = []
   for (const file of files) {

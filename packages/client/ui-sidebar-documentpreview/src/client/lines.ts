@@ -14,7 +14,7 @@ export function linesOf(page: TextPage): string[] {
 }
 
 /** Loaded source page with its 1-based start position. */
-export type LoadedPage = DocumentTextPage
+type LoadedPage = DocumentTextPage
 
 /**
  * Order loaded pages by source position.

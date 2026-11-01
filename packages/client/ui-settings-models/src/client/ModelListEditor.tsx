@@ -50,7 +50,7 @@ function numberOf(model: ModelDraft, key: string): number | undefined {
 }
 
 /** What an interrogation needs, taken from the live form. */
-export interface ProbeTarget {
+interface ProbeTarget {
   /** Settings namespace whose adapter family answers. */
   settingsNs: string
   /**
@@ -68,7 +68,7 @@ export interface ProbeTarget {
 }
 
 /** Props of {@link ModelListEditor}. */
-export interface ModelListEditorProps {
+interface ModelListEditorProps {
   /** The rows as currently drafted. */
   models: readonly ModelDraft[]
   /** Installed provider whose catalog supplies defaults without endpoint I/O. */

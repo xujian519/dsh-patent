@@ -24,7 +24,7 @@ export interface PlanItemLike {
  * information. The row renders `activeExtra` in its own non-shrinking span
  * beside the truncatable text.
  */
-export interface PlanSummary {
+interface PlanSummary {
   done: number
   total: number
   /** First `in_progress` content, or null when that first item is unusable. */

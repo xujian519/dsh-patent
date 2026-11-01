@@ -6,7 +6,7 @@
  */
 
 /** A `web_search_result` item inside a `web_search_tool_result` block. */
-export interface WebSearchResultItem {
+interface WebSearchResultItem {
   type: string
   url: string
   title?: string | null
@@ -21,7 +21,7 @@ export interface WebSearchToolResultBlock {
 }
 
 /** One citation location inside a `text` block (the snippet source). */
-export interface CitationLocation {
+interface CitationLocation {
   type?: string
   url?: string | null
   cited_text?: string | null

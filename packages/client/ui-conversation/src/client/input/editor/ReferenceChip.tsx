@@ -11,7 +11,7 @@ import css from './ReferenceChip.module.css'
 import referenceCss from './composer-editor.module.css'
 
 /** Display inputs of one chip (the node's cached owner projections). */
-export interface ReferenceChipProps {
+interface ReferenceChipProps {
   readonly label: string
   /** Domain glyph; absent renders the trigger marker instead of an icon. */
   readonly appearance?: ReferenceIconKind | undefined

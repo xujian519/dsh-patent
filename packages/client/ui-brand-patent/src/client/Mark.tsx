@@ -46,7 +46,7 @@ export const MARK_VIEWBOX = { width: 64, height: 64 } as const
 const DEFAULT_ACCENT = 'var(--dsw-alias-state-business-primary)'
 
 /** Presentation props accepted by {@link PatentMark}. */
-export interface PatentMarkProps extends IconProps {
+interface PatentMarkProps extends IconProps {
   /**
    * Stroke weight override. Callers below 32 px pass the heavier weight so the
    * tips stay readable, matching the `mark-small` asset's 8-unit stroke.

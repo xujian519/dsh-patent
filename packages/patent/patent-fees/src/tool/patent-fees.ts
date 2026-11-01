@@ -73,7 +73,7 @@ export type PendingFeeValue = {
 }
 
 /** What the reduction request resolved to, with an unrecorded ratio left out. */
-export type ReductionValue = {
+type ReductionValue = {
   kind: ReductionKind
   filed: boolean
   reductionPercent?: string

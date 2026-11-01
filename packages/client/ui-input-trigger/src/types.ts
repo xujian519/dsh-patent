@@ -43,7 +43,7 @@ export type PickVia = 'menu' | 'space' | 'enter'
 export type PickAction = 'pick' | 'drill'
 
 /** Leading glyph token of one menu candidate, mapped to its reference SVG by the menu view. */
-export type InputTriggerCandidateIcon = 'file' | 'folder' | 'session'
+type InputTriggerCandidateIcon = 'file' | 'folder' | 'session'
 
 /** One menu candidate. Pure display data — zero behavior declaration. */
 export interface InputTriggerCandidate {

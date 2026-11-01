@@ -3,7 +3,7 @@ import type { ToolResultNode } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { ToolCallBlock } from './tool-call-model.ts'
 
 /** A parsed, in-window Tool call whose arguments are a JSON object. */
-export interface ParsedToolCall {
+interface ParsedToolCall {
   name: string
   args: Record<string, unknown>
 }

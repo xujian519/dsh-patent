@@ -3,10 +3,10 @@
 import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
 
 /** The date-template share of the conversation dictionary the clock consumes. */
-export type ClockTranslate = Translate<'clock.md' | 'clock.ymd'>
+type ClockTranslate = Translate<'clock.md' | 'clock.ymd'>
 
 /** The elapsed-duration share of the conversation dictionary. */
-export type RunDurationTranslate =
+type RunDurationTranslate =
   Translate<'duration.secondUnit' | 'duration.minuteUnit' | 'duration.hourUnit'>
 
 /** Refresh interval for whole-second live run clocks. */
@@ -39,7 +39,7 @@ export function msUntilNextLocalMidnight(ms: number): number {
 }
 
 /** One numeric value or localized unit in an elapsed-time label. */
-export interface RunDurationPart {
+interface RunDurationPart {
   readonly text: string
   readonly numeric: boolean
 }

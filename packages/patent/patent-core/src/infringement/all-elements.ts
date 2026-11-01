@@ -28,13 +28,13 @@
 import type { ChartRowMatch, ClaimElementRef, Mapping } from '../claim-chart/protocol/types.ts'
 
 /** 单条权利要求的全面覆盖结论。 */
-export type ClaimCoverageOutcome = 'literal' | 'construction-dependent' | 'equivalence-required' | 'not-covered'
+type ClaimCoverageOutcome = 'literal' | 'construction-dependent' | 'equivalence-required' | 'not-covered'
 
 /** 全面覆盖的判定结果；`undetermined` 表示要素表为空，没有可判定的要素。 */
 export type AllElementsOutcome = ClaimCoverageOutcome | 'undetermined'
 
 /** 单条权利要求的全面覆盖判定。 */
-export type ClaimCoverage = {
+type ClaimCoverage = {
   claimNo: number
   /** 该权项的要素总数。 */
   elementCount: number

@@ -14,7 +14,7 @@ import type { Api, AssistantMessage, ToolCall, Usage as PiUsage } from '@earendi
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 
 /** Per-block half of the pi-ai replay envelope, one entry per content block. */
-export type PiAiReplayBlock =
+type PiAiReplayBlock =
   | { type: 'text'; textSignature?: string }
   | { type: 'reasoning'; thinkingSignature?: string; redacted?: boolean }
   | { type: 'tool-call'; thoughtSignature?: string; namespace?: string }

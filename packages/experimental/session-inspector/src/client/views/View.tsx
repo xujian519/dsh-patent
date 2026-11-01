@@ -11,7 +11,7 @@ import { InspectorChatRevealer } from './chat-node/reveal.ts'
 import css from './inspector.module.css'
 
 /** Local Inspector presentations; these are not separate Conversation View registrations. */
-export type InspectorPresentation = 'chat-node' | 'session-log'
+type InspectorPresentation = 'chat-node' | 'session-log'
 
 /** Both sources remain lazy: only the selected table subscribes. */
 export interface SessionInspectorInjected {

@@ -61,7 +61,7 @@ import type { TeamActivity } from './team-activity.ts'
 import type { TeamMember, TeamState, TeamTask } from './types.ts'
 
 /** Scheduler configuration: where team state lives on disk. */
-export interface SchedulerConfig {
+interface SchedulerConfig {
   readonly stateDir: string
   /** Waiter registry woken on every member status edge this scheduler mirrors. */
   readonly activity: TeamActivity

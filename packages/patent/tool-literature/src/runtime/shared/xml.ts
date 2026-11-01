@@ -48,7 +48,7 @@ export function xmlAttr(xml: string, tag: string, attr: string): string | undefi
 }
 
 /** One self-closing element: attribute map + raw text. */
-export interface SelfClosing {
+interface SelfClosing {
   attrs: Record<string, string>
   raw: string
 }

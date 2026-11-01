@@ -4,7 +4,7 @@ import type { WorkflowAgentEndInfo, WorkflowAgentInfo } from '@deepseek-ai/dsh-w
 import type { ChildResult, ChildStartRequest, WorkerInit } from './types.ts'
 
 /** The host-allocated reference to one published child. */
-export interface StartedWorkflowChild {
+interface StartedWorkflowChild {
   /** Per-run callback identifier, allocated by the host. */
   callId: number
   /** The subagent provider's published child identity. */
@@ -12,7 +12,7 @@ export interface StartedWorkflowChild {
 }
 
 /** A callback addressing one child owned by this workflow run. */
-export interface WorkflowChildRequest {
+interface WorkflowChildRequest {
   /** Host-allocated callback identifier. */
   callId: number
 }

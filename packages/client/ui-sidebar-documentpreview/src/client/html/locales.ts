@@ -7,7 +7,7 @@ export const zh = {
 } satisfies Record<string, string>
 
 /** HTML renderer dictionary keys. */
-export type HtmlPreviewKey = keyof typeof zh
+type HtmlPreviewKey = keyof typeof zh
 
 /** English dictionary with the same keys as the Chinese dictionary. */
 export const en = {

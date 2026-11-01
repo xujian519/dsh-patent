@@ -18,7 +18,7 @@ export interface WebviewElement extends HTMLElement {
 }
 
 /** Physical attachment notifications; hiding a retained Sidebar body emits neither. */
-export interface ElectronPresentationEvents {
+interface ElectronPresentationEvents {
   readonly mounted: () => void
   readonly unmounted: () => void
 }

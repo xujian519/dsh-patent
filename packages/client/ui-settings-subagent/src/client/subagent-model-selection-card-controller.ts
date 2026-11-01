@@ -9,7 +9,7 @@ import type { SettingsFormScope, SettingsFormShell } from '@deepseek-ai/dsh-clie
 export const SUBAGENT_MODEL_SELECTION_NS = 'subagent-model-selection-settings'
 
 /** One exact provider/model route stored as user authorization. */
-export interface AllowedSubagentModel {
+interface AllowedSubagentModel {
   provider: string
   model: string
 }
@@ -73,7 +73,7 @@ export interface SubagentModelSelectionCardFace {
  * @param route - Provider/model route to identify.
  * @returns Opaque key for lookup within the card.
  */
-export function subagentModelKey(route: AllowedSubagentModel): string {
+function subagentModelKey(route: AllowedSubagentModel): string {
   return `${route.provider}\0${route.model}`
 }
 

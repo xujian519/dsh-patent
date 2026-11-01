@@ -115,7 +115,7 @@ export function validateDeepSeekModels(value: unknown): DeepSeekModelsValidation
 }
 
 /** Props of {@link DeepSeekModelsEditor}. */
-export interface DeepSeekModelsEditorProps {
+interface DeepSeekModelsEditorProps {
   /** Effective rows: inherited until the parent materializes an override. */
   models: readonly DeepSeekModelDraft[]
   /** Whether the user layer currently owns the whole array. */

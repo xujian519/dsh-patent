@@ -142,7 +142,7 @@ export interface TeamState {
  * @param rootId - root Session identity.
  * @returns empty Team state.
  */
-export function emptyTeamState(rootId: SessionId): TeamProjectionState {
+function emptyTeamState(rootId: SessionId): TeamProjectionState {
   return {
     id: toTeamId(rootId),
     members: [],
@@ -183,7 +183,7 @@ type TeamSessionEvent = SessionEvent<TeamEventType>
  * @param event - candidate Session event.
  * @returns whether the event has a Team-owned type.
  */
-export function isTeamEvent(event: SessionEvent): event is TeamSessionEvent {
+function isTeamEvent(event: SessionEvent): event is TeamSessionEvent {
   return event.type === 'team/member'
     || event.type === 'team/task'
     || event.type === 'team/message/queued'

@@ -38,7 +38,7 @@ export interface MeterSurfaceNode {
 }
 
 /** One validated surface transition that has not mutated the priced surface yet. */
-export interface SurfaceTokenPlan<Node = MeterSurfaceNode> {
+interface SurfaceTokenPlan<Node = MeterSurfaceNode> {
   /** Heuristic price of the event's own message; 0 when it derives none. */
   readonly tokens: number
   /** Signed change in the surface total: `tokens` minus anything shadowed. */

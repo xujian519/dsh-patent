@@ -21,7 +21,7 @@ export const TONE_LABEL: Record<ChangeRequestTone, ForgePanelKey> = {
 }
 
 /** Combined check outcome shown on a collapsed card. */
-export type CiSummary =
+type CiSummary =
   | { readonly kind: 'none' }
   | { readonly kind: 'running' }
   | { readonly kind: 'passed' }
@@ -29,7 +29,7 @@ export type CiSummary =
   | { readonly kind: 'failed'; readonly count: number }
 
 /** Checks grouped by outcome; `other` holds neutral, skipped, and cancelled checks. */
-export interface CheckCounts {
+interface CheckCounts {
   readonly failed: number
   readonly running: number
   readonly passed: number
@@ -43,10 +43,10 @@ const SETTLED: Record<Exclude<ChecksRollup, 'failure'>, Exclude<CiSummary['kind'
 }
 
 /** The most urgent fact of an open change request that the collapsed card names. */
-export type ChangeRequestFlag = 'changesRequested' | 'conflicting' | 'draft'
+type ChangeRequestFlag = 'changesRequested' | 'conflicting' | 'draft'
 
 /** The facts of a change request that decide its tone. */
-export type ToneFacts = Pick<ChangeRequestSnapshot, 'state' | 'draft' | 'checksRollup' | 'reviewDecision' | 'mergeability'>
+type ToneFacts = Pick<ChangeRequestSnapshot, 'state' | 'draft' | 'checksRollup' | 'reviewDecision' | 'mergeability'>
 
 /**
  * Pick the glyph tone of a change request: an open draft is always `draft`;

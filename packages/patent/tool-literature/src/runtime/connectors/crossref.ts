@@ -12,7 +12,7 @@ const BASE = 'https://api.crossref.org/works'
 const MAILTO = 'mailto=sati@users.noreply.github.com'
 
 /** 创建 Crossref 连接器的选项。 */
-export type CreateCrossrefConnectorOptions = ConnectorHttpOptions
+type CreateCrossrefConnectorOptions = ConnectorHttpOptions
 
 interface Author {
   given?: string

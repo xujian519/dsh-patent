@@ -6,7 +6,7 @@ import type { ChangeRequestRef, ForgeRepository } from '@deepseek-ai/dsh-experim
 const SEGMENT = /^[A-Za-z0-9_.-]+$/
 
 /** Host, owner, and repository name addressed by a URL. */
-export interface GitHubLocation {
+interface GitHubLocation {
   /** Lowercase host name. */
   readonly host: string
   /** Owner as the URL spells it. */

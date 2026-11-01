@@ -17,7 +17,7 @@ import type {
 import { z } from 'zod'
 
 /** Wire validation for pending agent input reconstructed from durable inbox splices. */
-export const inboxProjectionSchema = z.object({
+const inboxProjectionSchema = z.object({
   'next-turn': z.array(z.custom<UserMessage>()).readonly(),
   'next-step': z.array(z.custom<UserMessage>()).readonly(),
 }).readonly()

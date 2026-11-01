@@ -24,7 +24,7 @@ import { parseTestPatchFiles } from './patch.ts'
 const SIGKILL_GRACE_MS = 10_000
 
 /** Result of one spawned command. */
-export interface ExecResult {
+interface ExecResult {
   exitCode: number
   seconds: number
   /** True when the timeout fired (the process group was killed). */
@@ -93,7 +93,7 @@ async function exec(
 }
 
 /** Result of one captured-command run (stdout held in memory). */
-export interface CapturedResult {
+interface CapturedResult {
   exitCode: number
   output: string
   spawnError: string | null
@@ -155,7 +155,7 @@ export interface PreparedWorkspace {
 }
 
 /** Options for {@link prepareTaskWorkspace}. */
-export interface PrepareTaskOptions {
+interface PrepareTaskOptions {
   workDir: string
   task: EvalTask
   row: SwebenchRow
@@ -279,7 +279,7 @@ export async function prepareTaskWorkspace(options: PrepareTaskOptions): Promise
 }
 
 /** Options for {@link runAgent}. */
-export interface AgentRunOptions {
+interface AgentRunOptions {
   workspace: PreparedWorkspace
   arm: CampaignArm
   taskText: string
@@ -356,7 +356,7 @@ export async function collectPrediction(
 }
 
 /** One arm's final verdict. */
-export interface Verdict {
+interface Verdict {
   passed: boolean
   detail: string
   /**

@@ -4,7 +4,7 @@ import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
 import type { OfficeFileBytes } from './cache.ts'
 
 /** One requested source revision and its settled preview. */
-export interface OfficeView {
+interface OfficeView {
   readonly revision: number
   readonly file?: OfficeFileBytes
   readonly failure?: { readonly code: string; readonly message: string }

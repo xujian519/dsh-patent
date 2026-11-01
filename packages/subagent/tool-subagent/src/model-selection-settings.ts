@@ -23,7 +23,7 @@ declare module '@deepseek-ai/cordis' {
 }
 
 /** Stored user preference; the shipped composition defaults it off. */
-export interface SubagentModelSelectionSettings {
+interface SubagentModelSelectionSettings {
   /** Whether new top-level Sessions receive model selection. */
   enabled: boolean
   /** Exact child LLM routes offered to new top-level Sessions. */
@@ -31,7 +31,7 @@ export interface SubagentModelSelectionSettings {
 }
 
 /** Optional deployment base for the preference. */
-export interface Config {
+interface Config {
   /** Initial enabled state inherited when the user document does not override it. */
   enabled: Volatile<boolean>
   /** Initial route list inherited when the user document does not override it. */
@@ -39,7 +39,7 @@ export interface Config {
 }
 
 /** Host settings owner that records Session authorization before the first model request. */
-export class SubagentModelSelectionConfig extends Service {
+class SubagentModelSelectionConfig extends Service {
   static inject = ['sessionProjections', 'sessions']
 
   static Config = z.object({

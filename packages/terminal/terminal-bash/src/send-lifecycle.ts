@@ -3,7 +3,7 @@
 /**
  * The send whose slot ownership this owner tracks, as far as it needs to see it.
  */
-export interface SlotOperation {
+interface SlotOperation {
   /** Whether the send already settled, so its slot may be released. */
   readonly settled: boolean
   /** Request cancellation of the send; returns false once it settled. */
@@ -11,7 +11,7 @@ export interface SlotOperation {
 }
 
 /** Deadline and cancellation options for admitting a send. */
-export interface AdmitOptions {
+interface AdmitOptions {
   /** Caller cancellation for this send. */
   signal?: AbortSignal
   /** Absolute bound on this send's wait. */

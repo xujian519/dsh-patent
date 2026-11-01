@@ -15,7 +15,7 @@ import { sanitizeKey, stateRootOf, teamLockKey, withTeamLock } from './team-lock
 import type { TeamMember, TeamState, TeamTask } from './types.ts'
 
 /** A caller's role in a team, re-derived from fresh state. */
-export type ParticipantIdentity =
+type ParticipantIdentity =
   | { kind: 'captain'; name: typeof CAPTAIN_KEY }
   | { kind: 'member'; name: string; sessionId: string }
 
@@ -118,7 +118,7 @@ export function memberOpenTask(team: TeamState, memberName: string, exceptTaskId
 }
 
 /** The workspace, state root, and team one caller reaches through a single lookup. */
-export interface LocatedTeam {
+interface LocatedTeam {
   workspace: string
   stateRoot: string
   team: TeamState

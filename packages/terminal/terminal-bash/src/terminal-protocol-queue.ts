@@ -6,7 +6,7 @@ import { createLazyRequire } from '@deepseek-ai/dsh-lazy-require'
 const requireHeadless = createLazyRequire<typeof import('@xterm/headless')>('@xterm/headless', import.meta.url)
 
 /** Write generations sampled before an awaited provider inspection. */
-export interface ProtocolGeneration {
+interface ProtocolGeneration {
   /** Emulator-input write chain, replaced when a new batch is queued. */
   readonly emulator: Promise<void>
   /** Provider reply write chain, replaced when a new reply is queued. */

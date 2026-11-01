@@ -1,42 +1,42 @@
 /** Locale-owned sandbox approval text; audit inputs remain verbatim. */
 
 /** English escalation messages. */
-export const en = {
+const en = {
   escalation: (mode: string, justification: string): string => `Allow this operation with ${mode} permissions: ${justification}`,
 }
 
 /** Chinese escalation messages. */
-export const zh = {
+const zh = {
   escalation: (mode: string, justification: string): string => `允许本次操作使用 ${mode} 权限：${justification}`,
 } satisfies typeof en
 
 /** Japanese escalation messages. */
-export const ja = {
+const ja = {
   escalation: (mode: string, justification: string): string => `${mode} 権限でこの操作を許可します：${justification}`,
 } satisfies typeof en
 
 /** Spanish dictionary, checked against the English keys. */
-export const es = {
+const es = {
   escalation: (mode: string, justification: string): string => `Permitir esta operación con permisos ${mode}: ${justification}`,
 } satisfies typeof en
 
 /** French dictionary, checked against the English keys. */
-export const fr = {
+const fr = {
   escalation: (mode: string, justification: string): string => `Autoriser cette opération avec les permissions ${mode} : ${justification}`,
 } satisfies typeof en
 
 /** German dictionary, checked against the English keys. */
-export const de = {
+const de = {
   escalation: (mode: string, justification: string): string => `Diesen Vorgang mit ${mode}-Berechtigungen zulassen: ${justification}`,
 } satisfies typeof en
 
 /** Russian dictionary, checked against the English keys. */
-export const ru = {
+const ru = {
   escalation: (mode: string, justification: string): string => `Разрешить эту операцию с правами ${mode}: ${justification}`,
 } satisfies typeof en
 
 /** Portuguese dictionary, checked against the English keys. */
-export const pt = {
+const pt = {
   escalation: (mode: string, justification: string): string => `Permitir esta operação com permissões ${mode}: ${justification}`,
 } satisfies typeof en
 

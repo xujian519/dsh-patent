@@ -10,7 +10,7 @@ import type { NoticeSource } from './source.ts'
 const UNDO_HOLD_MS = 6000
 
 /** Full props of the `shell.overlay` entry. */
-export type ActionToastProps = PropsLocale<typeof NS> & InjectFace<Omit<NoticeSource, 'report'>>
+type ActionToastProps = PropsLocale<typeof NS> & InjectFace<Omit<NoticeSource, 'report'>>
 
 /**
  * Render the current notice: a success notice with its undo action, or a failure warning.

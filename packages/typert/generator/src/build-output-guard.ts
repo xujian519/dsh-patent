@@ -23,7 +23,7 @@ export interface BuildOutputLoad {
 }
 
 /** One import of a build output from a program file outside build outputs. */
-export interface BuildOutputImporter {
+interface BuildOutputImporter {
   /** Absolute path of the importing file. */
   readonly file: string
   /** Import specifier as written. */

@@ -16,7 +16,7 @@ export interface FileCardLabels {
 }
 
 /** Upload display state resolved by the owner. */
-export type FileCardState = 'uploading' | 'ready' | 'error'
+type FileCardState = 'uploading' | 'ready' | 'error'
 
 /** One pending file card: type glyph, name, size or upload status, remove, retry. */
 export function FileCard({

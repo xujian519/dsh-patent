@@ -169,7 +169,7 @@ export interface JsonlPhysicalIdentity {
 }
 
 /** Exact bytes of one stable file revision together with the stat identity that proved it stable. */
-export interface StablePhysicalFile {
+interface StablePhysicalFile {
   readonly bytes: Buffer
   readonly identity: JsonlPhysicalIdentity
 }

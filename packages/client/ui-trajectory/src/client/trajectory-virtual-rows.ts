@@ -14,7 +14,7 @@ export interface VirtualizableTrajectoryRecord {
 }
 
 /** One logical record retained inside a measurable virtual row. */
-export interface TrajectoryVirtualRowEntry<T extends VirtualizableTrajectoryRecord> {
+interface TrajectoryVirtualRowEntry<T extends VirtualizableTrajectoryRecord> {
   logicalIndex: number
   record: T
 }

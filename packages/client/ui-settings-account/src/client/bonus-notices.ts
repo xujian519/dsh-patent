@@ -34,7 +34,7 @@ export interface BonusNotice {
 }
 
 /** Deployment-varying acknowledgement retry timings. */
-export interface BonusNoticeTiming {
+interface BonusNoticeTiming {
   /** Delay before the first acknowledgement retry, doubled per further failure. */
   readonly ackRetryDelayMs: number
   /** Ceiling for the acknowledgement retry backoff. */
@@ -42,7 +42,7 @@ export interface BonusNoticeTiming {
 }
 
 /** Collaborators and timings of one bonus notice lifecycle. */
-export interface BonusNoticeControllerOptions extends BonusNoticeTiming {
+interface BonusNoticeControllerOptions extends BonusNoticeTiming {
   /** Read the signed-in account's unnotified bonus. @returns the batch, or null when no account is signed in. */
   read: () => Promise<AccountBonusBatch | null>
   /**
@@ -57,7 +57,7 @@ export interface BonusNoticeControllerOptions extends BonusNoticeTiming {
 }
 
 /** Commands the account plugin issues to the bonus notice lifecycle. */
-export interface BonusNoticeController {
+interface BonusNoticeController {
   /**
    * Start the signed-in lifecycle and read. Re-entry during a live lifecycle keeps
    * the card and its acknowledgement retries and reads again, so a credential

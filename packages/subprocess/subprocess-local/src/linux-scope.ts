@@ -631,7 +631,7 @@ function signalChildGroup(child: ReturnType<typeof spawn>, signal: 'SIGTERM' | '
 }
 
 /** Linux PTY invocation and owner for the exact one-shot scope/bootstrap. */
-export interface LinuxTerminalScopeLaunch {
+interface LinuxTerminalScopeLaunch {
   command: string
   args: string[]
   cwd: string

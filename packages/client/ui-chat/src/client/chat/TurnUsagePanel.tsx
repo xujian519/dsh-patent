@@ -9,7 +9,7 @@ import { MEASURE_STYLE, useStatDialog } from './stat-dialog.ts'
 import css from './TurnUsagePanel.module.css'
 import dialogCss from './stat-dialog.module.css'
 
-export interface TurnUsagePanelProps {
+interface TurnUsagePanelProps {
   usage: TurnTokenUsage
   /** The owning view's locale seat, passed down as a plain prop. */
   t: ChatViewSlotProps['t']

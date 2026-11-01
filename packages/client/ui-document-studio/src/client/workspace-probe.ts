@@ -15,7 +15,7 @@ import type {
 } from '@deepseek-ai/dsh-api-workspace-files/types'
 
 /** Extensions the document workline delivers; the probe reports only these. */
-export const DELIVERABLE_EXTENSIONS = ['.md', '.html', '.htm', '.pdf', '.docx', '.pptx'] as const
+const DELIVERABLE_EXTENSIONS = ['.md', '.html', '.htm', '.pdf', '.docx', '.pptx'] as const
 
 /**
  * Directories the empty-state probe never descends into: package caches and
@@ -72,7 +72,7 @@ export interface KnownPath {
 }
 
 /** The workspace facts the studio reads, with paths resolved against the Session workspace. */
-export interface WorkspaceProbe {
+interface WorkspaceProbe {
   /**
    * Read the current freshness token of each path.
    * @param paths - produced-file paths as the deliverables reported them.

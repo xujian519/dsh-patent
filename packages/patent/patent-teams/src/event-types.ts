@@ -28,7 +28,7 @@ export interface PatentTeamsTeamCreatedData {
 }
 
 /** Records one member after its continuable subagent is spawned. */
-export interface PatentTeamsMemberAddedData {
+interface PatentTeamsMemberAddedData {
   readonly teamId: PatentTeamsTeamId
   /** The member's durable child session id. */
   readonly memberId: SessionId
@@ -37,7 +37,7 @@ export interface PatentTeamsMemberAddedData {
 }
 
 /** Marks one member removed. */
-export interface PatentTeamsMemberRemovedData {
+interface PatentTeamsMemberRemovedData {
   readonly teamId: PatentTeamsTeamId
   /** The member's durable child session id. */
   readonly memberId: SessionId
@@ -56,7 +56,7 @@ export interface PatentTeamsTaskCreatedData {
 }
 
 /** Records one task status/assignee/output transition. */
-export interface PatentTeamsTaskUpdatedData {
+interface PatentTeamsTaskUpdatedData {
   readonly teamId: PatentTeamsTeamId
   readonly taskId: PatentTeamsTaskId
   readonly status: string
@@ -67,7 +67,7 @@ export interface PatentTeamsTaskUpdatedData {
 }
 
 /** Records a contract-validation verdict on a completed task. */
-export interface PatentTeamsTaskValidatedData {
+interface PatentTeamsTaskValidatedData {
   readonly teamId: PatentTeamsTeamId
   readonly taskId: PatentTeamsTaskId
   readonly worker: string
@@ -77,7 +77,7 @@ export interface PatentTeamsTaskValidatedData {
 }
 
 /** Records a completion rejected by the composite quality gate. */
-export interface PatentTeamsTaskGatedData {
+interface PatentTeamsTaskGatedData {
   readonly teamId: PatentTeamsTeamId
   readonly taskId: PatentTeamsTaskId
   readonly score: number
@@ -86,7 +86,7 @@ export interface PatentTeamsTaskGatedData {
 }
 
 /** Closes one team record: the team was deleted. */
-export interface PatentTeamsTeamDeletedData {
+interface PatentTeamsTeamDeletedData {
   readonly teamId: PatentTeamsTeamId
 }
 

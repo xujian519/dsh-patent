@@ -10,10 +10,10 @@ import type { NS } from './locales.ts'
 import css from './PermissionPanel.module.css'
 
 /** Renderer-bound permission observation and localized controls. */
-export type PermissionProps = InjectFace<PermissionFace> & PropsLocale<typeof NS>
+type PermissionProps = InjectFace<PermissionFace> & PropsLocale<typeof NS>
 
 /** Permission guidance only navigates to the existing bundle details. */
-export type PermissionSetupProps = PermissionProps
+type PermissionSetupProps = PermissionProps
   & Pick<PropsRuntime<'plugins.bundle.activation'>, 'onDismiss' | 'onOpenDetails'>
 
 type DefaultPresetProps = PermissionProps & InjectFace<{

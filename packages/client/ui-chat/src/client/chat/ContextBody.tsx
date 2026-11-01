@@ -238,7 +238,7 @@ function instructionAction(
  * @returns The instructions context body, or the opaque body when the change
  * list is unreadable.
  */
-export function InstructionsBody({ content, source, t }: {
+function InstructionsBody({ content, source, t }: {
   content: ContextMessageNode['content']
   source: unknown
   t: Translate
@@ -303,7 +303,7 @@ function catalogEntries(source: unknown): CatalogEntry[] | null {
  * @returns The catalog context body, or the opaque body when the entry list is
  * unreadable.
  */
-export function CatalogBody({ content, source, t }: {
+function CatalogBody({ content, source, t }: {
   content: ContextMessageNode['content']
   source: unknown
   t: Translate
@@ -379,7 +379,7 @@ function snapshotSections(source: unknown): SnapshotSection[] | null {
  * @param props - Durable content, its source, and the locale seat.
  * @returns The snapshot context body, or the opaque body when unreadable.
  */
-export function SnapshotBody({ content, source, t }: {
+function SnapshotBody({ content, source, t }: {
   content: ContextMessageNode['content']
   source: unknown
   t: Translate
@@ -428,7 +428,7 @@ export function NoticeBody({ content, t }: {
  * @param props - Durable content, its source, and the locale seat.
  * @returns The relay context body.
  */
-export function RelayBody({ content, source, t }: {
+function RelayBody({ content, source, t }: {
   content: ContextMessageNode['content']
   source: unknown
   t: Translate
@@ -494,7 +494,7 @@ function recalledSessions(source: unknown): RecalledSession[] | null {
  * @param props - Durable content, its source, and the locale seat.
  * @returns The recall context body, or the opaque body when unreadable.
  */
-export function RecallBody({ content, source, t }: {
+function RecallBody({ content, source, t }: {
   content: ContextMessageNode['content']
   source: unknown
   t: Translate

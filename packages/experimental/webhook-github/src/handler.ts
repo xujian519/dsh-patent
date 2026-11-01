@@ -15,7 +15,7 @@ import { readBoundedUtf8Body, WebhookHttpError } from './body.ts'
 import type { GitHubJsonObject } from './types.ts'
 
 /** Handler values validated once at plugin load. */
-export interface GitHubWebhookHandlerConfig {
+interface GitHubWebhookHandlerConfig {
   readonly source: string
   readonly secretEnv: CredentialRef
   readonly maxBodyBytes: number

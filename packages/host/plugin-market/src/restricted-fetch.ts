@@ -10,7 +10,7 @@
 import { lookup } from 'node:dns/promises'
 
 /** Closed failure vocabulary for restricted fetches. */
-export type RestrictedFetchErrorCode =
+type RestrictedFetchErrorCode =
   | 'unsupported-url'
   | 'blocked-host'
   | 'too-many-redirects'
@@ -41,11 +41,11 @@ export interface RestrictedFetchOptions {
 }
 
 /** Default bounds for catalog requests. */
-export const DEFAULT_MAX_BYTES = 2 * 1024 * 1024
+const DEFAULT_MAX_BYTES = 2 * 1024 * 1024
 /** Default request timeout. */
-export const DEFAULT_TIMEOUT_MS = 10_000
+const DEFAULT_TIMEOUT_MS = 10_000
 /** Default redirect cap. */
-export const DEFAULT_MAX_REDIRECTS = 3
+const DEFAULT_MAX_REDIRECTS = 3
 
 /**
  * An IPv4 dotted-quad parsed to its numeric form, or undefined when malformed.
@@ -126,7 +126,7 @@ export function isBlockedHostname(host: string): boolean {
  * @param host - the hostname to resolve.
  * @returns every candidate address.
  */
-export async function resolveHostname(host: string): Promise<readonly string[]> {
+async function resolveHostname(host: string): Promise<readonly string[]> {
   const addresses = await lookup(host, { all: true })
   return addresses.map(entry => entry.address)
 }

@@ -10,7 +10,7 @@ import { FLAT_SESSION_ORDER_KEY } from './stores.ts'
 import { owningGroupKey, sessionMemberIds, type SessionRowState, UNGROUPED_KEY } from './tree.ts'
 
 /** What `pinSessionOrder` reconciles a pinned Session's accounts against. */
-export interface PinOrderSource {
+interface PinOrderSource {
   members: Readonly<Record<string, readonly SessionId[]>>
   summaries: SessionListState['byId']
   rowState: Pick<SessionRowState, 'pinnedSessionIds' | 'archivedSessionIds'>

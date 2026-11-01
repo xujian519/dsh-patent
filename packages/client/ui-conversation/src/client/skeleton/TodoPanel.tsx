@@ -13,7 +13,7 @@ import {
 import { NS } from '../locales.ts'
 import css from './TodoPanel.module.css'
 
-export interface TodoPanelProps {
+interface TodoPanelProps {
   /** The session's current plan (empty renders nothing) — selected by the dock adapter. */
   todos: readonly TodoItem[]
   /** The dock entry's locale seat, passed down as a plain prop. */

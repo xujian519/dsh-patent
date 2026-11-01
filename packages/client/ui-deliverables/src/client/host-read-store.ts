@@ -7,7 +7,7 @@
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 
 /** What one store makes of its reads. */
-export interface HostReadPolicy<T> {
+interface HostReadPolicy<T> {
   /** The state published while a request runs. */
   loading: T
   /** The state a transport failure publishes. */

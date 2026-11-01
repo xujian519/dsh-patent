@@ -50,7 +50,7 @@ const imageLimitsSchema = z.object({
  * @param event - next committed Session event.
  * @returns the original or advanced metadata value.
  */
-export function applySessionListMetadata(
+function applySessionListMetadata(
   state: SessionListMetadata,
   event: SessionEvent,
 ): SessionListMetadata {
@@ -69,7 +69,7 @@ export function applySessionListMetadata(
  * @param maximum - maximum number of Unicode code points.
  * @returns the source text or its longest allowed prefix.
  */
-export function truncateUnicodeCodePoints(value: string, maximum: number): string {
+function truncateUnicodeCodePoints(value: string, maximum: number): string {
   let count = 0
   let end = 0
   for (const codePoint of value) {

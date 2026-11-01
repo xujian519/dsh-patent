@@ -228,7 +228,7 @@ export async function publishImmutableObject(
 }
 
 /** Digest and byte count produced while streaming one immutable object to disk. */
-export interface StreamedImmutableObject {
+interface StreamedImmutableObject {
   readonly sha256: string
   readonly bytes: number
 }

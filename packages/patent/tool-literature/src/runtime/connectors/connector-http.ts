@@ -24,7 +24,7 @@ export interface ConnectorHttpOptions extends LiteratureBudgetOptions {
 }
 
 /** 连接器工厂需要的客户端与其请求选项。 */
-export interface ConnectorHttp {
+interface ConnectorHttp {
   client: LiteratureHttpClient
   http: LiteratureFetchOptions
 }

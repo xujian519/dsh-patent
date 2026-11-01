@@ -13,7 +13,7 @@ import type { TokenSurfaceNode } from './types.ts'
 type FileAttachmentRef = Extract<ContentBlock, { type: 'file' }>['attachment']
 
 /** One surface priced for a request route: public nodes plus their total. */
-export interface PricedSurface {
+interface PricedSurface {
   /** Positional nodes carrying both the route price and the fixed-heuristic price. */
   readonly nodes: TokenSurfaceNode[]
   /** Sum of the route prices across the surface. */

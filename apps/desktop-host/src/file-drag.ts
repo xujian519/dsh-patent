@@ -9,7 +9,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { parseFileAddress } from '@deepseek-ai/dsh-util-workspace-path'
 
 /** Private Host-to-main answer; never exposed to renderer JavaScript. */
-export interface LocalDragResource {
+interface LocalDragResource {
   readonly path: string
   readonly sha256: string
   readonly size: number

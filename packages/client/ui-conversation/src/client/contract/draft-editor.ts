@@ -35,7 +35,7 @@ export interface DraftQuote {
  * closure) is not persisted; the input rebuilds it from the token through the
  * trigger pipeline when the draft is restored.
  */
-export interface DraftCommand {
+interface DraftCommand {
   /** Claim token with its argument separator, e.g. `/goal `; the draft text starts with the token without the separator. */
   readonly token: string
 }

@@ -38,7 +38,7 @@ interface ViewportElements {
 }
 
 /** Reading policy that fold batches consult and report tail landings to. */
-export interface FoldReader {
+interface FoldReader {
   /** Follow intent at batch start selects the tail landing; tail landings commit it. */
   readonly follow: ScrollFollow
   /** @param landing - the actual geometry after a batch landed at the tail. */

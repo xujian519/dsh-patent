@@ -10,7 +10,7 @@ import { entryFor } from '../history.ts'
 import type { SessionProjectionChange, SessionEventEntry } from '../types.ts'
 
 /** Raw history notifications buffered before an opening cut is known. */
-export type EventItem =
+type EventItem =
   | { readonly type: 'event'; readonly session: Session; readonly event: SessionEvent }
   | { readonly type: 'created'; readonly session: Session; readonly end: number }
 

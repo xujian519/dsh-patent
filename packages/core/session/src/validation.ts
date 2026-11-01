@@ -20,7 +20,7 @@ import { validateSessionEventData, validateSurfaceMetadata } from './surface.ts'
  * @returns the same record, deeply frozen as a {@link SessionHeader}.
  * @throws when the record is not plain JSON, carries an unknown field, or violates a field contract.
  */
-export function validateSessionHeader(id: SessionId, input: unknown): SessionHeader {
+function validateSessionHeader(id: SessionId, input: unknown): SessionHeader {
   if (input === null || typeof input !== 'object' || Array.isArray(input)) {
     throw new Error('session header is not a plain JSON record')
   }

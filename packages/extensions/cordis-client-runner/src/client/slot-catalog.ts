@@ -15,7 +15,7 @@
 
 /* jscpd:ignore-start -- generated catalog; structure follows the source definitions. */
 /** One option a register call passes for a given slot cardinality. */
-export interface ClientSlotOption {
+interface ClientSlotOption {
   /** Option name as written in the register options object. */
   name: string
   /** Whether the cardinality requires it. */

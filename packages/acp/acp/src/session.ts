@@ -38,12 +38,12 @@ interface AcpSessionBuildOptions {
 }
 
 /** Fresh ACP session construction inputs. */
-export interface CreateAcpSessionOptions extends AcpSessionBuildOptions {
+interface CreateAcpSessionOptions extends AcpSessionBuildOptions {
   sessionId: SessionId
 }
 
 /** Persisted ACP session construction inputs. */
-export interface ResumeAcpSessionOptions extends AcpSessionBuildOptions {
+interface ResumeAcpSessionOptions extends AcpSessionBuildOptions {
   sessionId: SessionId
 }
 

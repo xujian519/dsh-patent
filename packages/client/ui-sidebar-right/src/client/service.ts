@@ -52,7 +52,7 @@ import { SidebarTabInventory } from './tab-inventory.ts'
 export type SurfaceActions = BoundActions<ReturnType<typeof createSidebarRightStore>>
 
 /** One session's store instance as the slot runtime minted it: its actions and its observable snapshot. */
-export interface SidebarRightSurfaceStore {
+interface SidebarRightSurfaceStore {
   readonly actions: SurfaceActions
   getSnapshot(): SidebarRightState
   subscribe(listener: () => void): () => void
@@ -126,7 +126,7 @@ export function createSidebarRightController(tabs: SidebarRightTabRegistry, pin:
 }
 
 /** What the controller needs from the page around it: the viewport rule and focus continuity. */
-export interface SidebarRightHost {
+interface SidebarRightHost {
   /**
    * Whether the viewport is narrow enough that an expanded panel is presented fullscreen.
    * @returns the rule's verdict for the frame width the seats last rendered at.

@@ -45,7 +45,7 @@ export type ChartSourcePolicy = {
 }
 
 /** 解析允许根的结果。 */
-export type ChartSourcePolicyResult =
+type ChartSourcePolicyResult =
   | { ok: true; policy: ChartSourcePolicy }
   | { ok: false; reason: string }
 

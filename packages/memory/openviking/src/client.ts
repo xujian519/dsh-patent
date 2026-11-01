@@ -65,7 +65,7 @@ export interface TreeNode {
 }
 
 /** Observer queue summary as reported by the server. */
-export interface QueueStatus {
+interface QueueStatus {
   readonly name: string
   readonly is_healthy: boolean
   readonly has_errors: boolean
@@ -73,13 +73,13 @@ export interface QueueStatus {
 }
 
 /** Memory-library statistics for the startup map. */
-export interface MemoryStats {
+interface MemoryStats {
   readonly total_memories: number
   readonly by_category: Record<string, number>
 }
 
 /** Resolved config handed to the client; credentials are applied verbatim. */
-export interface RequestOptions {
+interface RequestOptions {
   readonly body?: unknown
   readonly query?: Record<string, string | number | boolean | undefined>
   readonly signal?: AbortSignal | undefined

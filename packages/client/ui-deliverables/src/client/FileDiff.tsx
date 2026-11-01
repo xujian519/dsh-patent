@@ -14,7 +14,7 @@ import css from './FileDiff.module.css'
 export const MAX_RENDERED_LINES = 5000
 
 /** One drawn line of a hunk with its line numbers on each side. */
-export interface DiffRow {
+interface DiffRow {
   kind: 'add' | 'del' | 'context'
   old: number | undefined
   new: number | undefined
@@ -22,7 +22,7 @@ export interface DiffRow {
 }
 
 /** One side-by-side row: the old side, the new side, or both. */
-export interface SplitRow {
+interface SplitRow {
   left?: { no: number; text: string; kind: 'del' | 'context' }
   right?: { no: number; text: string; kind: 'add' | 'context' }
 }

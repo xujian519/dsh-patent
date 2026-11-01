@@ -6,7 +6,7 @@ import type { SubagentLimitsCardFace, SubagentLimitsCardState } from './subagent
 import css from './SubagentLimitsFields.module.css'
 
 /** Plain state and edit callbacks supplied by the owning card. */
-export type SubagentLimitsFieldsProps = PropsLocale<'settings.subagent'>
+type SubagentLimitsFieldsProps = PropsLocale<'settings.subagent'>
   & Pick<SubagentLimitsCardFace, 'edit' | 'resetField'>
   & { state: SubagentLimitsCardState }
 

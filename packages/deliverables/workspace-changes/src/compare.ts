@@ -6,7 +6,7 @@ import type { WorkspaceDiffHunk } from './types.ts'
 const CONTEXT_LINES = 3
 
 /** Hunks, whether the timeout degraded them, and the changed-line totals they carry. */
-export interface Comparison {
+interface Comparison {
   hunks: WorkspaceDiffHunk[]
   coarse: boolean
   added: number

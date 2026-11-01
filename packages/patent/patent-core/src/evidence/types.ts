@@ -57,10 +57,10 @@ export type AssessmentType =
   | 'conditional'
 
 /** 日期可靠度。 */
-export type DateReliability = 'high' | 'medium' | 'low'
+type DateReliability = 'high' | 'medium' | 'low'
 
 /** 日期来源类型。 */
-export type DateSourceType =
+type DateSourceType =
   | 'exact_page_date'
   | 'http_header'
   | 'wayback_machine'

@@ -30,7 +30,7 @@ export interface ModelSelectionPolicy {
  * @param route - Exact provider/model route.
  * @returns Opaque key for equality checks.
  */
-export function modelRouteKey(route: AllowedModelRoute): string {
+function modelRouteKey(route: AllowedModelRoute): string {
   return `${route.provider}\0${route.model}`
 }
 

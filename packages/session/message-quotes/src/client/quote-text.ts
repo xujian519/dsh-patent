@@ -10,7 +10,7 @@ export function quoteTextOf(text: string): string {
 }
 
 /** One blockquote span in original UTF-16 text, excluding its trailing line break. */
-export interface MessageQuoteRange {
+interface MessageQuoteRange {
   readonly start: number
   readonly end: number
 }

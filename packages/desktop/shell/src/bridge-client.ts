@@ -7,7 +7,7 @@
 import { createConnection, type Socket } from 'node:net'
 
 /** Outgoing JSON-RPC request. */
-export interface JsonRpcRequest {
+interface JsonRpcRequest {
   jsonrpc: '2.0'
   id: number
   method: string
@@ -15,7 +15,7 @@ export interface JsonRpcRequest {
 }
 
 /** Incoming JSON-RPC response. */
-export interface JsonRpcResponse {
+interface JsonRpcResponse {
   jsonrpc: '2.0'
   id: number
   result?: unknown
@@ -46,7 +46,7 @@ export class BridgeRpcError extends Error {
 }
 
 /** Lifecycle callbacks for the bridge client. */
-export interface BridgeClientOptions {
+interface BridgeClientOptions {
   /** Local socket path (Unix) or pipe name (Windows). */
   path: string
   /** A server-pushed notification arrived. */

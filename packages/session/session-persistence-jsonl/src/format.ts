@@ -319,7 +319,7 @@ export function eventLines(events: readonly SessionEvent[]): string {
  * @param event - current event to encode.
  * @returns one physical JSON record.
  */
-export function eventLine(event: SessionEvent): string {
+function eventLine(event: SessionEvent): string {
   return JSON.stringify(sessionFormatCatalog.encodeCurrentEvent(event as unknown as SessionFormatEvent))
 }
 

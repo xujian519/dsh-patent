@@ -35,7 +35,7 @@ const GRACE_FRAMES = 2
 const MOTION_EVENTS = ['transitionstart', 'transitionend', 'animationstart', 'animationend'] as const
 
 /** How the shell installs the one window drag watcher. */
-export interface WindowDragRecallOptions {
+interface WindowDragRecallOptions {
   /** Document whose marked rows are watched. */
   readonly document: Document
   /**

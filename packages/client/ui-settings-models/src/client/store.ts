@@ -346,7 +346,7 @@ export function providerUsable(row: ProviderRow): boolean {
 }
 
 /** First-run onboarding readiness derived only from the shared Models join. */
-export type OnboardingReadiness =
+type OnboardingReadiness =
   | { kind: 'loading' }
   | { kind: 'adapter-absent' }
   | { kind: 'provider-ready' }

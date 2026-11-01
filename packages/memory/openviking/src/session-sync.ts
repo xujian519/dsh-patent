@@ -30,7 +30,7 @@ export function openvikingSessionIdOf(dshSessionId: string): string {
 }
 
 /** Config slice the session sync consumes. */
-export interface SessionSyncConfig {
+interface SessionSyncConfig {
   readonly autoCommit: AutoCommitConfig
   readonly stateFile: string
 }

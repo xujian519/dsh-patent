@@ -281,7 +281,7 @@ export interface PiImageRequestContext {
 }
 
 /** Per-route budgets from which each request image's target is derived. */
-export interface PiImageRequestBudget {
+interface PiImageRequestBudget {
   /** Total-pixel budget; larger sources are downscaled proportionally. */
   maxPixels: number
   /** Encoded-byte target for one request image. */

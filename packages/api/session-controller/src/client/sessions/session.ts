@@ -50,12 +50,12 @@ function projectionsBaseline(value: SessionProjectionBaseline): ProjectionsBasel
 }
 
 /** Minimum message count for ordinary history windows. */
-export const PAGE_MESSAGES = 50
+const PAGE_MESSAGES = 50
 
 const HISTORY_PAGE_OPTIONS = { maxMessages: 500, turnWindow: { minMessages: PAGE_MESSAGES, minTurns: 2 } }
 
 /** Minimum messages per page while a turn jump loops backwards. */
-export const JUMP_PAGE_MESSAGES = 200
+const JUMP_PAGE_MESSAGES = 200
 
 const JUMP_PAGE_OPTIONS = {
   ...HISTORY_PAGE_OPTIONS,

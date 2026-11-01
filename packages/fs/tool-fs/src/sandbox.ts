@@ -18,13 +18,13 @@ import type { SandboxPolicyService } from '@deepseek-ai/dsh-sandbox-policy'
 import { FsError } from '@deepseek-ai/dsh-fs'
 
 /** The two escalation arguments a mutating tool may carry (advertised only under a confining backend). */
-export interface FsEscalationArgs {
+interface FsEscalationArgs {
   sandbox_permissions?: string
   justification?: string
 }
 
 /** The schema fields for the escalation arguments, spread into a tool's `parameters` when a confining backend is mounted. */
-export interface EscalationSchemaFields {
+interface EscalationSchemaFields {
   sandbox_permissions: { type: 'string'; enum: string[]; description: string }
   justification: { type: 'string'; description: string }
 }

@@ -21,7 +21,7 @@ export type TaskStatus =
 export const TERMINAL_TASK_STATUSES: readonly TaskStatus[] = ['completed', 'failed', 'cancelled']
 
 /** Stable failure codes for model-visible PatentTeams operations. */
-export type PatentTeamsErrorCode =
+type PatentTeamsErrorCode =
   | 'STALE_ATTEMPT'
   | 'ALREADY_CLAIMED'
   | 'OWNERSHIP_MISMATCH'
@@ -123,7 +123,7 @@ export interface TaskGateFeedback {
 }
 
 /** Member lifecycle status. */
-export type MemberStatus = 'idle' | 'working' | 'removed'
+type MemberStatus = 'idle' | 'working' | 'removed'
 
 /** One team member: a continuable subagent plus its team-side record. */
 export interface TeamMember {
@@ -167,7 +167,7 @@ export interface TeamMessage {
  * and the sender's durable subagent session id — the transcript renders the
  * sending session from that record rather than from the message text.
  */
-export interface PatentTeamsReportSource {
+interface PatentTeamsReportSource {
   readonly kind: 'patent-teams-report'
   readonly form: 'relay'
   /** Sending member's team display name. */

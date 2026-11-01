@@ -12,7 +12,7 @@ import type {} from '@deepseek-ai/dsh-host-webserver'
 import { OpenVikingClient } from './client.ts'
 
 /** Status payload the route serves. */
-export interface OpenVikingStatus {
+interface OpenVikingStatus {
   readonly endpoint: string
   readonly healthy: boolean
   readonly version?: string | undefined

@@ -24,7 +24,7 @@ export const FTS_HIGHLIGHT_END = '\uFDD1'
 export const SQLITE_MAX_PAGE_LIMIT = Number.MAX_SAFE_INTEGER - 1
 
 /** Portable host-parameter ceiling shared by predicate and statement builders. */
-export const SQLITE_PORTABLE_VARIABLE_LIMIT = 32_766
+const SQLITE_PORTABLE_VARIABLE_LIMIT = 32_766
 
 /** Supported outer-predicate budget that keeps SQLite FTS5 MATCH usable. */
 export const SQLITE_FTS5_OUTER_PREDICATE_LIMIT = 14
@@ -56,7 +56,7 @@ export function assertFts5OuterPredicateCount(count: number): void {
 }
 
 /** Limit defaults needed to normalize a search request. */
-export interface QueryLimits {
+interface QueryLimits {
   /** Page size used when the request omits one. */
   defaultLimit: number
   /** Largest accepted page size. */
@@ -82,7 +82,7 @@ export interface NormalizedEventRequest {
 }
 
 /** Parameterized SQL predicate fragment. */
-export interface SqlWhere {
+interface SqlWhere {
   /** SQL without the leading `WHERE`. */
   sql: string
   /** Bindings in placeholder order. */

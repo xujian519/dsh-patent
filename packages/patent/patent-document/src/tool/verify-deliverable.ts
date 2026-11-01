@@ -31,7 +31,7 @@ export interface DeliverableArtifactInput {
  * evidence it. The instructing party's own wording goes in `requirement` (not a
  * paraphrase), so the rendered checklist can be read against what was asked.
  */
-export interface DeliverableRequirementInput {
+interface DeliverableRequirementInput {
   /** The requirement in the instructing party's words (user instruction or case-file requirement). */
   requirement: string
   /** Files that evidence it; empty means no evidence was recorded for the requirement. */
@@ -51,7 +51,7 @@ export interface VerifyDeliverableInput {
 }
 
 /** One file as the manifest records it. */
-export interface DeliverableFileRecord {
+interface DeliverableFileRecord {
   /** Role of the artifact, or `附图`／`渲染件` for the auxiliary files. */
   role: string
   /** Path this record was taken from. */
@@ -63,7 +63,7 @@ export interface DeliverableFileRecord {
 }
 
 /** One delivery defect. */
-export interface DeliverableViolation {
+interface DeliverableViolation {
   rule: string
   severity: 'error'
   message: string
@@ -71,7 +71,7 @@ export interface DeliverableViolation {
 }
 
 /** One requirement's row in the rendered checklist. */
-export interface DeliverableRequirementResult {
+interface DeliverableRequirementResult {
   /** The requirement as given. */
   requirement: string
   /** Evidence files, as given. */

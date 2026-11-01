@@ -19,7 +19,7 @@ export interface StreamSnapshot<S> {
 export type PanelSnapshot = StreamSnapshot<ForgePanelState | null>
 
 /** One open Host stream. */
-export interface HostStream<F> extends AsyncIterable<F> {
+interface HostStream<F> extends AsyncIterable<F> {
   /** Close the stream. */
   dispose: () => void
 }
@@ -28,7 +28,7 @@ export interface HostStream<F> extends AsyncIterable<F> {
 export type PanelStream = HostStream<ForgePanelState>
 
 /** Stream opener and connection-reset subscription of a source. */
-export interface StreamSourceDeps<F> {
+interface StreamSourceDeps<F> {
   /**
    * Open the Host stream.
    * @param signal - aborts the stream.
@@ -44,10 +44,10 @@ export interface StreamSourceDeps<F> {
 }
 
 /** Stream opener and connection-reset subscription of one Session's panel source. */
-export type PanelSourceDeps = StreamSourceDeps<ForgePanelState>
+type PanelSourceDeps = StreamSourceDeps<ForgePanelState>
 
 /** A value built from a Host stream that runs only while a surface subscribes. */
-export interface StreamSource<S> {
+interface StreamSource<S> {
   /** Snapshot observable; the renderer binds it as a selector hook. */
   readonly observable: HostObservable<StreamSnapshot<S>>
   /** Open the stream again after it ended; a no-op while it runs or nobody subscribes. */

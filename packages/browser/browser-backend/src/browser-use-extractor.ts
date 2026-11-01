@@ -11,7 +11,7 @@
 import { lastMarkerValue, runScriptCommand } from './run-script.ts'
 
 /** Marker line prefix emitted by the extraction script. */
-export const BU_EXTRACT_MARKER = 'BU_EXTRACT:'
+const BU_EXTRACT_MARKER = 'BU_EXTRACT:'
 
 /** One settled browser-use script run (injectable for tests). */
 export type ScriptRun = (script: string, options: {

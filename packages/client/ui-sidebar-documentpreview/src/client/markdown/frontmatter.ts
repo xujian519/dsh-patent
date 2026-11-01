@@ -1,7 +1,7 @@
 /** Leading YAML frontmatter split from a Markdown document before Markdown parsing. */
 
 /** Frontmatter source between its delimiters and the Markdown body after the closing delimiter. */
-export interface FrontmatterSplit {
+interface FrontmatterSplit {
   source: string
   body: string
 }

@@ -16,13 +16,13 @@ import type { SessionEvent } from '@deepseek-ai/dsh-session'
 export const MAX_STRING_BYTES = 8 * 1024
 
 /** Default cap on one projected event's serialized bytes, newline included; the terminal `final` is exempt. */
-export const MAX_EVENT_BYTES = 32 * 1024
+const MAX_EVENT_BYTES = 32 * 1024
 
 /** Bytes every newline-delimited writer appends after one serialized event. */
 const LINE_TERMINATOR_BYTES = 1
 
 /** The stdout sink a projection writes newline-delimited events to. */
-export interface JsonSink {
+interface JsonSink {
   /** Write one chunk of the event stream. */
   write(chunk: string): unknown
 }
@@ -36,7 +36,7 @@ export interface JsonProjectionOptions {
 }
 
 /** The live handle of one `--json` projection. */
-export interface JsonProjection {
+interface JsonProjection {
   /** Write the answer and durable turn reason; omission reports no terminal turn. */
   finish(text: string, reason?: SessionEvent<'turn/end'>['data']['reason']): void
   /** Stop observing the Session. */

@@ -1,7 +1,7 @@
 /** Address parsing for the Sidebar browser's HTTP(S) allowlist. */
 
 /** Maximum accepted address length; this bounds persisted navigation state. */
-export const MAX_BROWSER_URL_LENGTH = 16 * 1024
+const MAX_BROWSER_URL_LENGTH = 16 * 1024
 
 /** A normalized Browser navigation target. */
 export type BrowserTarget =

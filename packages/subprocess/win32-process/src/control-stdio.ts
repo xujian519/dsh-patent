@@ -3,7 +3,7 @@
 import type { NativePtr, Win32ProcessBindings } from './ffi.ts'
 
 /** Native stdio handles plus the single additional descriptor selected by the launcher. */
-export interface InheritedControlStdio {
+interface InheritedControlStdio {
   stdin: NativePtr
   stdout: NativePtr
   stderr: NativePtr

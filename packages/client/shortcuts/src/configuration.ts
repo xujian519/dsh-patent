@@ -18,7 +18,7 @@ export interface ShortcutDefinition {
 /** Validation failures select localized copy in the UI. */
 export type BindingIssue = 'reserved' | 'unsupported-browser' | 'modifier-required' | 'unsupported-key'
 /** A conflicting row keeps its requested binding visible but cannot execute it. */
-export interface EffectiveShortcut {
+interface EffectiveShortcut {
   readonly id: ShortcutCommandId
   readonly binding: NormalizedBinding | null
   readonly modified: boolean

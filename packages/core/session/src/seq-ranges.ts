@@ -4,7 +4,7 @@ import { SessionSeq } from './types.ts'
 import type { SessionSeq as SessionSeqType } from './types.ts'
 
 /** A stored source sequence or inclusive consecutive range. */
-export type EncodedSeq = number | [number, number]
+type EncodedSeq = number | [number, number]
 
 function isStrictlyIncreasing(values: readonly SessionSeqType[]): boolean {
   return values.every((value, index) => index === 0 || value > (values[index - 1] as SessionSeqType))

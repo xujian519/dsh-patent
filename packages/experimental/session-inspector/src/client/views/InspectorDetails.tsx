@@ -5,7 +5,7 @@ import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import css from './inspector.module.css'
 
 /** Raw text and owner callbacks for one Inspector's detail panel. */
-export type InspectorDetailsProps = PropsLocale<'session-inspector'> & {
+type InspectorDetailsProps = PropsLocale<'session-inspector'> & {
   readonly text: string
   readonly failed?: boolean
   readonly children?: ReactNode

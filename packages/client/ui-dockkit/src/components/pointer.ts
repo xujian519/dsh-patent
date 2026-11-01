@@ -9,7 +9,7 @@
 import { useEffect, useRef } from 'react'
 
 /** The three window listeners one gesture installs. */
-export interface PointerFollowers {
+interface PointerFollowers {
   readonly move: (event: PointerEvent) => void
   readonly up: (event: PointerEvent) => void
   readonly cancel: () => void
@@ -20,7 +20,7 @@ export interface PointerFollowers {
  * @param element - the element the gesture started on.
  * @param pointerId - the pointer to capture.
  */
-export function capturePointer(element: HTMLElement, pointerId: number): void {
+function capturePointer(element: HTMLElement, pointerId: number): void {
   if (typeof element.setPointerCapture !== 'function') return
   element.setPointerCapture(pointerId)
 }
@@ -60,7 +60,7 @@ export function followPointer(element: HTMLElement, pointerId: number, followers
 }
 
 /** What one gesture does while it lasts and when it settles. */
-export interface GestureFollowers {
+interface GestureFollowers {
   readonly move: (event: PointerEvent) => void
   /** The release. The gesture has already ended, and its preview reset, when this runs. */
   readonly up: (event: PointerEvent) => void
@@ -72,7 +72,7 @@ export interface GestureFollowers {
  * @param pointerId - the pressing pointer.
  * @param followers - what the gesture does.
  */
-export type BeginGesture = (element: HTMLElement, pointerId: number, followers: GestureFollowers) => void
+type BeginGesture = (element: HTMLElement, pointerId: number, followers: GestureFollowers) => void
 
 /**
  * One pointer gesture at a time for a component. A gesture ends on release, on

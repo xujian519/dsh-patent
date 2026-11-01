@@ -131,7 +131,7 @@ export function emptyAssistantBlock(blockType: string): AssistantBlock {
 }
 
 /** Display-safe failure fields retained by Chat projections. */
-export interface DisplayFailure {
+interface DisplayFailure {
   readonly code?: string
   readonly message: string
   readonly diagnostic?: string

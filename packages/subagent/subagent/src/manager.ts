@@ -127,7 +127,7 @@ function failureMessage(error: unknown): string {
 }
 
 /** Own subagent requests and the resources of every live activation. */
-export class SubagentManager {
+class SubagentManager {
   /** Child session id → its live Activation. Process-local, never durable. */
   private readonly resident = new Map<SessionId, Activation>()
   /** Root identities retain their pool across child settlement without retaining dead roots. */

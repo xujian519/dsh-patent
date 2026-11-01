@@ -29,7 +29,7 @@ function originalDocLabel(doc: Record<string, unknown>): string | undefined {
 }
 
 /** 引用真实性校验结果。 */
-export type CitationCheckResult = {
+type CitationCheckResult = {
   /** 是否全部引用接地（无法校验时恒 true 放行）。 */
   grounded: boolean
   /** 未在检索命中中接地的引用标识。 */

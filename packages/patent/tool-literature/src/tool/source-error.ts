@@ -8,7 +8,7 @@
 import type { Connector } from '../protocol/types.ts'
 
 /** The connector fields the guidance needs. */
-export type SourceIdentity = Pick<Connector, 'id' | 'name'>
+type SourceIdentity = Pick<Connector, 'id' | 'name'>
 
 /** Messages carrying these status codes (or the words "rate limit") mean throttling. */
 const RATE_LIMIT_PATTERN = /\b(429|503|408)\b/

@@ -13,7 +13,7 @@ export const PRESENT_HOST_PATH = '/api/present.host'
  * Browser-relative form of {@link PRESENT_OPEN_PATH}; see
  * .agents/notes/implemented/architecture/2026-09-14-web-document-relative-app-routes.md.
  */
-export const PRESENT_OPEN_ROUTE = PRESENT_OPEN_PATH.slice(1)
+const PRESENT_OPEN_ROUTE = PRESENT_OPEN_PATH.slice(1)
 
 /** Browser-relative form of {@link PRESENT_HOST_PATH}. */
 export const PRESENT_HOST_ROUTE = PRESENT_HOST_PATH.slice(1)

@@ -5,7 +5,7 @@ import type { ModelCatalog, ModelSelection, ModelProviderGroup } from '@deepseek
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 
 /** Observable lifecycle of the shared model catalog. */
-export interface ModelCatalogState {
+interface ModelCatalogState {
   value: ModelCatalog | null
   status: 'idle' | 'loading' | 'ready' | 'error'
   error: string | null

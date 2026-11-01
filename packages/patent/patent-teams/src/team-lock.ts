@@ -141,14 +141,14 @@ function sleep(ms: number): Promise<void> {
 }
 
 /** Filesystem primitives used by {@link replaceFileAtomicOrDirect}; injectable for tests. */
-export interface AtomicReplacePrimitives {
+interface AtomicReplacePrimitives {
   rename: (from: string, to: string) => Promise<void>
   writeFile: (file: string, content: string) => Promise<void>
   remove: (file: string) => Promise<void>
 }
 
 /** Tuning knobs for {@link replaceFileAtomicOrDirect} (defaults match production). */
-export interface AtomicReplaceOptions {
+interface AtomicReplaceOptions {
   /** Rename attempts before the direct-write fallback (default 3). */
   retries?: number
   /** Delay between rename attempts in ms (default 50). */

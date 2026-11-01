@@ -44,7 +44,7 @@ const audioClipSchema = z.object({
 }).strict()
 
 /** The complete EDL schema. */
-export const edlSchema = z.object({
+const edlSchema = z.object({
   version: z.literal(1),
   canvas: z.object({
     width: z.number().int().min(64).max(7680),

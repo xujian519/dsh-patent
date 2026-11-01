@@ -5,7 +5,7 @@ import type { Config } from './config.ts'
 import { validateInput } from './input.ts'
 
 /** Verified files and validated inference settings sent by the Host. */
-export interface InferenceConfig extends Config {
+interface InferenceConfig extends Config {
   readonly model: string
   readonly tokens: string
   readonly vad: string

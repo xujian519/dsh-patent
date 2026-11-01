@@ -23,7 +23,7 @@ type RequestBoundaryStyle = CSSProperties & {
 }
 
 /** Props for one ledger row. */
-export interface TrajectoryRowProps {
+interface TrajectoryRowProps {
   /** Display record this row renders, including the fold summary that stands in for one. */
   record: TableRecord
   /** Logical position in the rendered record list, which ARIA row indexes are offset from. */

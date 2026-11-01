@@ -60,7 +60,7 @@ export const zh = {
 } as const
 
 /** Dictionary keys accepted by this plugin's translator. */
-export type SessionInspectorKey = keyof typeof zh
+type SessionInspectorKey = keyof typeof zh
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {

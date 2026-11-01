@@ -27,7 +27,7 @@ export interface AutoReviewDenial {
 type ToolTitleKey = Extract<LocaleKeysOf<'conversation'>, `tool.title.${string}` | 'ask.rowTitle' | 'todo.rowTitle'>
 
 /** Locale key per generic row variant. */
-export const VARIANT_TITLE_KEYS = {
+const VARIANT_TITLE_KEYS = {
   search: 'tool.title.search', read: 'tool.title.read', bash: 'tool.title.bash',
   write: 'tool.title.write', edit: 'tool.title.edit', code: 'tool.title.code',
   others: 'tool.title.generic',
@@ -135,12 +135,12 @@ export function classifyTool(toolName: string): ToolRowVariant {
  * @param toolName - wire tool name.
  * @returns the localized title key.
  */
-export function toolTitleKey(toolName: string): ToolTitleKey {
+function toolTitleKey(toolName: string): ToolTitleKey {
   return TOOL_TITLE_KEYS[toolName] ?? VARIANT_TITLE_KEYS[classifyTool(toolName)]
 }
 
 /** Everything ToolRow needs, derived once from the frozen slice. */
-export interface ToolRowModel {
+interface ToolRowModel {
   variant: ToolRowVariant
   titleKey: ToolTitleKey
   /** Generic rows retain the wire tool name; available arguments append their summary. */

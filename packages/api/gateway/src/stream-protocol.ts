@@ -72,13 +72,13 @@ export type RemoteEventDownlinkFrame =
   | RemoteEventCancellationFrame
 
 /** JSON request fields plus the Host cancellation lifetime removed for transport. */
-export interface ProjectedRemoteEventRequest {
+interface ProjectedRemoteEventRequest {
   readonly request: Readonly<Record<string, unknown>>
   readonly signal?: AbortSignal
 }
 
 /** Error fields retained when a Client listener rejects a Host waterfall. */
-export interface RemoteEventRejection {
+interface RemoteEventRejection {
   readonly name: string
   readonly message: string
   readonly code?: string

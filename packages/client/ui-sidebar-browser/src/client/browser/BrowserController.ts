@@ -10,7 +10,7 @@ import type { BrowserStore } from '../contract/store.ts'
 import { parseBrowserAddress, type BrowserAddressFailure } from '../contract/url.ts'
 
 /** Construction inputs for one tab occurrence. */
-export interface BrowserControllerOptions {
+interface BrowserControllerOptions {
   readonly tabId: TabId
   readonly signal: AbortSignal
   readonly applicationOrigin: string

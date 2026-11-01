@@ -15,7 +15,7 @@ import { EvidenceEngine } from './engine.ts'
 const EVIDENCE_RULES_FILE = 'evidence-rules.yaml'
 
 /** 证据规则加载结果：引擎 + 命中资产源 + 累积警告。 */
-export type EvidenceRulesLoadResult = {
+type EvidenceRulesLoadResult = {
   engine: EvidenceEngine
   source: string | null
   warnings: string[]

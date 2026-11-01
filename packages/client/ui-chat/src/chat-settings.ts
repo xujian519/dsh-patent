@@ -56,7 +56,7 @@ const TRANSCRIPT_VIEW_SETTING_VALUES = [
 export const DEFAULT_TRANSCRIPT_VIEW_MODE: TranscriptViewMode = 'detailed'
 
 /** Performance and usage detail levels accepted by user settings. */
-export const PERFORMANCE_USAGE_MODES = ['compact', 'detailed'] as const
+const PERFORMANCE_USAGE_MODES = ['compact', 'detailed'] as const
 
 /** Performance and usage presentation. */
 export type PerformanceUsageMode = typeof PERFORMANCE_USAGE_MODES[number]

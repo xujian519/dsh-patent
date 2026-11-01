@@ -22,7 +22,7 @@ import type { CordisDynamicPort, CordisInventoryRow } from './dynamic-port.ts'
 import type { CordisDynamicPluginId } from './events.ts'
 
 /** What the panel reads: the rows, and whether the first read has happened. */
-export interface CordisInventorySnapshot {
+interface CordisInventorySnapshot {
   readonly rows: readonly CordisInventoryRow[]
   /** Plugins explicitly removed through this page, retained for historical cards. */
   readonly removed: ReadonlySet<CordisDynamicPluginId>

@@ -49,7 +49,7 @@ const DECORATOR_SYNTAX = /^\s*@[A-Za-z_$][\w$]*/m
 const TSC_OWNED_DIAGNOSTICS = { checkDiagnostics: false } as const
 
 /** Generation scope selected by a tsdown build phase. */
-export interface TypertPluginOptions {
+interface TypertPluginOptions {
   /** Package mode emits only the package being bundled; workspace mode emits every explicit contributor once. */
   readonly mode?: 'package' | 'workspace'
   /** Independent TypeScript program faces included in this phase. */

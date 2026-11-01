@@ -8,7 +8,7 @@ export const zh = {
 } satisfies Record<string, string>
 
 /** Video renderer dictionary keys. */
-export type VideoPreviewKey = keyof typeof zh
+type VideoPreviewKey = keyof typeof zh
 
 /** English dictionary with the same keys as the Chinese dictionary. */
 export const en = {

@@ -11,7 +11,7 @@ export const zh = {
 } satisfies Record<string, string>
 
 /** Image renderer dictionary keys. */
-export type ImagePreviewKey = keyof typeof zh
+type ImagePreviewKey = keyof typeof zh
 
 /** English dictionary with the same keys as the Chinese dictionary. */
 export const en = {

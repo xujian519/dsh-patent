@@ -23,19 +23,19 @@ const CLAUDE_EVENTS = [
 export type ClaudeCodeHookConfig = Record<string, MatcherGroup[]>
 
 /** A skipped non-command hook, surfaced so the bridge can warn about it. */
-export interface SkippedHook {
+interface SkippedHook {
   event: string
   type: string
 }
 
 /** The outcome of parsing one config file: the runnable groups + what was skipped. */
-export interface ParsedClaudeConfig {
+interface ParsedClaudeConfig {
   config: ClaudeCodeHookConfig
   skipped: SkippedHook[]
 }
 
 /** Substitution variables applied to each `command` string at parse time. */
-export interface SubstitutionVars {
+interface SubstitutionVars {
   /** Replaces `${CLAUDE_PLUGIN_ROOT}` — the plugin's root dir. */
   pluginRoot?: string
   /** Replaces `${CLAUDE_PROJECT_DIR}` — the project root. */

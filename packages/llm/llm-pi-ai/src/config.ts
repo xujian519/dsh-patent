@@ -44,7 +44,7 @@ import type {
 import { buildProvider, supportedProtocols } from './provider.ts'
 
 /** Default maximum idle interval while an adapter stream read is outstanding. */
-export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 300_000
+const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 300_000
 
 /**
  * Default request-level bound on base64-encoded image payload. Every image in
@@ -62,10 +62,10 @@ export const DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET = 2048 * 2048
 export const DEFAULT_REQUEST_IMAGE_MAX_BYTES = 1024 * 1024
 
 /** Context capacity assumed for a model neither configuration nor the catalog sizes. */
-export const DEFAULT_CONTEXT_WINDOW = 1_000_000
+const DEFAULT_CONTEXT_WINDOW = 1_000_000
 
 /** Output capability assumed for a model neither configuration nor the catalog sizes. */
-export const DEFAULT_MAX_TOKENS = 128_000
+const DEFAULT_MAX_TOKENS = 128_000
 
 /**
  * Modalities assumed for a model neither configuration nor the catalog
@@ -77,7 +77,7 @@ export const DEFAULT_MAX_TOKENS = 128_000
  * rejects mid-turn, after the message is durable, leaving the session
  * repeating a request that cannot succeed.
  */
-export const DEFAULT_INPUT: readonly PiAiModality[] = ['text']
+const DEFAULT_INPUT: readonly PiAiModality[] = ['text']
 
 export type {
   PiAiCompatProfile,

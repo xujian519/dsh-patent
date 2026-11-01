@@ -62,7 +62,7 @@ export interface SelectedRequest {
 }
 
 /** Props for the trajectory record inspector. */
-export interface RecordInspectorProps {
+interface RecordInspectorProps {
   /** Observe the selected result while the Result tab is open. */
   watchToolResult?: WatchToolResult | undefined
   /** Trajectory locale seat. */

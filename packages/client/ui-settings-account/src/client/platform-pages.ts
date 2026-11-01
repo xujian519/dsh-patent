@@ -17,7 +17,7 @@ export interface PlatformPageClaim {
 }
 
 /** Why one request stopped being the live page. */
-export type PlatformPageExit =
+type PlatformPageExit =
   /** The viewer returned with the host's own back action. */
   | 'returned'
   /** A newer request took the page over. */

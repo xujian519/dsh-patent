@@ -5,7 +5,7 @@ import { IconSearchOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { NS } from './locales.ts'
 import css from './TrajectoryToolbar.module.css'
 
-export interface TrajectoryToolbarProps {
+interface TrajectoryToolbarProps {
   /** Whether timeline blocks use recorded durations instead of equal widths. */
   actualDuration: boolean
   /** Select recorded-duration or equal-width blocks. */

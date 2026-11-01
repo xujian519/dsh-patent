@@ -60,7 +60,7 @@ export const accessZh = {
 } satisfies Record<string, string>
 
 /** Current-session popup-gate key union. */
-export type PermissionAccessKey = keyof typeof accessZh
+type PermissionAccessKey = keyof typeof accessZh
 
 /** English dictionary for the current-session popup gate. */
 export const accessEn = {

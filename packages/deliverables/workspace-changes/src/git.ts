@@ -17,7 +17,7 @@ const TERMINATE_GRACE_MS = 2_000
 const STDERR_TAIL_BYTES = 16 * 1024
 
 /** Settled git command facts; a nonzero exit is a result, not an exception. */
-export interface GitRunResult {
+interface GitRunResult {
   exitCode: number | null
   stdout: string
   stderr: string
@@ -26,7 +26,7 @@ export interface GitRunResult {
 }
 
 /** Per-command spawn facts. */
-export interface GitRunOptions {
+interface GitRunOptions {
   cwd: string
   env?: Readonly<Record<string, string>> | undefined
   stdin?: string | undefined
@@ -36,7 +36,7 @@ export interface GitRunOptions {
 }
 
 /** Bounds every git command runs under. */
-export interface GitLimits {
+interface GitLimits {
   /** Milliseconds before a command is terminated. */
   timeoutMs: number
   /** In-memory stdout cap in bytes. */
@@ -178,7 +178,7 @@ export async function snapshotTree(git: GitRunner, workspace: GitWorkspace, sign
 }
 
 /** A blob one snapshot tree holds at a path. */
-export interface TreeBlob {
+interface TreeBlob {
   oid: string
   /** Object size in bytes. */
   size: number

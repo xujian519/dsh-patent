@@ -10,7 +10,7 @@ import type { ReactNode } from 'react'
 import type { LexicalEditor, NodeKey } from 'lexical'
 
 /** Portal-loop props. */
-export interface DecoratorPortalsProps {
+interface DecoratorPortalsProps {
   /** The bound editor; null (no-session) renders nothing. */
   readonly editor: LexicalEditor | null
 }

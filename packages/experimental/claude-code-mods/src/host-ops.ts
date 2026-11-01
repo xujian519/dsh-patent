@@ -54,7 +54,7 @@ export const STORE_MAX_BYTES = 4 * 1024 * 1024
 const PROCESS_OUTPUT_MAX_BYTES = 1024 * 1024
 
 /** Largest response body `$.http.fetch` returns. */
-export const HTTP_MAX_BYTES = 4 * 1024 * 1024
+const HTTP_MAX_BYTES = 4 * 1024 * 1024
 
 /**
  * Full name the model sees for a mod-registered tool: Claude Code's MCP-style spelling.
@@ -62,7 +62,7 @@ export const HTTP_MAX_BYTES = 4 * 1024 * 1024
  * @param tool - the name the mod registered.
  * @returns `mcp__<plugin>__<tool>`.
  */
-export function modToolName(plugin: string, tool: string): string {
+function modToolName(plugin: string, tool: string): string {
   return `mcp__${plugin}__${tool}`
 }
 
@@ -77,7 +77,7 @@ const storeDomainSpec = defineDomain({
 })
 
 /** Options the host op table is built from. */
-export interface HostOpsOptions {
+interface HostOpsOptions {
   readonly ctx: Context
   readonly aliases: ToolNameAliases
   /** Default `$.process.run` timeout in milliseconds. */

@@ -13,10 +13,10 @@ import type {
 } from './index.ts'
 
 /** Listener lifecycle behavior understood only by the standalone CLI. */
-export const CONNECTION_REFUSED_BEHAVIOR = 'connection_refused'
+const CONNECTION_REFUSED_BEHAVIOR = 'connection_refused'
 
 /** Parsed CLI configuration, including a pre-listen unavailable interval. */
-export interface MockLlmCliConfig {
+interface MockLlmCliConfig {
   /** Server options after removing the lifecycle-only `connection_refused` entry. */
   readonly server: MockLlmServerOptions
   /** Delay before binding the model port; an integer from zero through the Node timer maximum. */
@@ -26,7 +26,7 @@ export interface MockLlmCliConfig {
 }
 
 /** Result of parsing `dsh-llm-mock-server` arguments. */
-export type MockLlmCliParseResult =
+type MockLlmCliParseResult =
   | { readonly kind: 'help' }
   | { readonly kind: 'run'; readonly config: MockLlmCliConfig }
 

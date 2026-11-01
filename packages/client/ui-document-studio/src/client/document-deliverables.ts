@@ -22,10 +22,10 @@ import type {
 export const DOCUMENT_DELIVER_TOOL = 'document_deliver'
 
 /** Check statuses a `document_deliver` result records. */
-export const DOCUMENT_CHECK_STATUSES = ['checked', 'unchecked', 'unreadable'] as const
+const DOCUMENT_CHECK_STATUSES = ['checked', 'unchecked', 'unreadable'] as const
 
 /** One machine-derived finding, as the registration recorded it. */
-export interface DocumentCheckFinding {
+interface DocumentCheckFinding {
   /** The check that produced the finding. */
   readonly check: string
   /** `block` refused delivery; `warn` reported it and registered anyway. */
@@ -37,7 +37,7 @@ export interface DocumentCheckFinding {
 }
 
 /** One delivered file's deterministic check outcome, as the registration recorded it. */
-export interface DocumentCheckReport {
+interface DocumentCheckReport {
   /** `checked` ran over the whole file, `unchecked` has no reader, `unreadable` could not be read. */
   readonly status: (typeof DOCUMENT_CHECK_STATUSES)[number]
   /** Why the checks did not run, or ran over incomplete text; absent when they ran over the whole file. */

@@ -6,7 +6,7 @@ import css from './Browser.module.css'
 export const WEB_BROWSER_SANDBOX = 'allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox'
 
 /** Reports only what an iframe can observe without inspecting cross-origin content. */
-export interface IframePresentationEvents {
+interface IframePresentationEvents {
   readonly loaded: (revision: number) => void
   readonly failed: (revision: number) => void
   readonly remounted: () => void

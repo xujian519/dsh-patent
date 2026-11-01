@@ -26,7 +26,7 @@ import { LlmError } from '@deepseek-ai/dsh-llm'
  * reader — a configuration UI, or a second adapter family serving the same
  * provider name — that this plugin owns the format inside the record.
  */
-export const RECORD_SCOPE = 'llm-pi-ai'
+const RECORD_SCOPE = 'llm-pi-ai'
 
 /**
  * The record address for one pi-ai provider id.

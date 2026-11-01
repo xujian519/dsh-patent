@@ -49,14 +49,14 @@ export interface LiteratureFetchOptions {
 }
 
 /** 文献 HTTP 响应（ok、状态码、body）。 */
-export interface LiteratureResponse {
+interface LiteratureResponse {
   ok: boolean
   status: number
   body: string
 }
 
 /** 非 2xx 终态响应（重试耗尽后）；`status` + 截断 body 供调用方诊断。 */
-export class LiteratureHttpError extends Error {
+class LiteratureHttpError extends Error {
   constructor(
     readonly status: number,
     message: string,

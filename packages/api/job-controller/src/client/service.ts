@@ -16,7 +16,7 @@ import type { JobKillRequest, JobKillValue, JobFollowFrame, JobFollowRequest, Jo
 import type { ClientJobsModel, JobsSource } from './model.ts'
 
 /** The generated `job` namespace face the stream runners drive. */
-export interface JobRemote {
+interface JobRemote {
   /**
    * Open one roster generation.
    * @param request - the session whose visible set to mirror.
@@ -40,7 +40,7 @@ export interface JobRemote {
 }
 
 /** Remote faces the runners drive: the Gateway stream factory and the `job` namespace. */
-export interface JobsRemote {
+interface JobsRemote {
   readonly $stream: ClientRemote['$stream']
   readonly job: JobRemote
 }

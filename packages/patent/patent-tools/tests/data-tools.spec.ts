@@ -729,7 +729,7 @@ describe('patent_metadata through the CNIPR channel', () => {
     })
     const value = await tool.execute({ patent, returnAbstract: false }, { signal } as never) as { data: { abstractText: string } }
     expect(value.data.abstractText).toBe('')
-    const rendered = text({ content: tool.output.render({ patent, returnAbstract: false }, value as never) })
+    const rendered = text({ content: tool.output.render({ patent, returnAbstract: false }, value) })
     expect(rendered).toContain('**assignees**: N/A')
     expect(rendered).not.toContain(cnpirHit.abstract)
   })

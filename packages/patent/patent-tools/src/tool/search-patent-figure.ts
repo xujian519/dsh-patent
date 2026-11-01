@@ -26,7 +26,7 @@ export type SearchPatentFigureInput = {
 }
 
 /** One analyzed-figure search result. */
-export type SearchPatentFigureResultItem = {
+type SearchPatentFigureResultItem = {
   figureNumber: number
   figureType: FigureType
   /** 附图图片路径（工作区相对路径）。 */
@@ -93,7 +93,7 @@ export function tokenizeFigureText(text: string): string[] {
  * @param entry - 附图索引条目。
  * @returns 可检索的图档文本。
  */
-export function buildFigureDocumentText(entry: FigureIndexEntry): string {
+function buildFigureDocumentText(entry: FigureIndexEntry): string {
   const analysis = entry.analysis
   const parts = [
     `图${analysis.figureNumber}`,

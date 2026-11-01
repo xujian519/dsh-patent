@@ -15,24 +15,24 @@
 import { runeSlice } from '@deepseek-ai/dsh-patent-core'
 
 /** Rule groups the anti-slop phrase cleanup can act on. */
-export type SlopGroup =
+type SlopGroup =
   | 'filler' | 'qualifier' | 'passive' | 'meta' | 'advisory' | 'search' | 'intimacy' | 'subjectless'
 
 /** One phrase-cleanup change (original → replacement, with its rule group). */
-export type SlopChange = { original: string; replacement: string; group: string }
+type SlopChange = { original: string; replacement: string; group: string }
 
 /** Structure-issue category detected by the anti-slop engine. */
-export type StructureIssueType =
+type StructureIssueType =
   | 'empty_three_step' | 'fake_comparison' | 'binary_turn' | 'reason_pile' | 'passive_voice' | 'oa_formula'
 
 /** One detected structure issue with its location, text, and fix suggestion. */
-export type StructureIssue = { type: StructureIssueType; line: number; text: string; suggestion: string }
+type StructureIssue = { type: StructureIssueType; line: number; text: string; suggestion: string }
 
 /** 反套话评分门通过线（43 分制及格线；SlopScore.passed 的唯一判定来源）。 */
 export const SLOP_PASS_LINE = 35
 
 /** Five-dimension 43-point anti-slop score. */
-export type SlopScore = {
+type SlopScore = {
   directness: number
   evidence: number
   rhythm: number
@@ -43,7 +43,7 @@ export type SlopScore = {
 }
 
 /** One anti-slop checklist question with its pass state and detail. */
-export type ChecklistItem = { question: string; passed: boolean; detail: string }
+type ChecklistItem = { question: string; passed: boolean; detail: string }
 
 /** Full anti-slop analysis (cleaned text, changes, issues, score, checklist). */
 export type SlopAnalysis = {
@@ -323,7 +323,7 @@ function scoreConcision(text: string, charBudget: number | undefined): number {
 }
 
 /** 打分选项：声明篇幅预算后，concision 按预算归一而不是按段数。 */
-export type SlopScoreOptions = {
+type SlopScoreOptions = {
   /** 文书篇幅预算（可见字符）；缺省为 undefined，走撰写链路的段数口径。 */
   charBudget?: number
 }

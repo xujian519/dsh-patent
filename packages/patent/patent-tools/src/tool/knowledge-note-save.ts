@@ -61,9 +61,9 @@ export type KnowledgeNoteSaveDeps = {
 }
 
 /** 内容/标题上限（防单条笔记撑爆检索与上下文）。 */
-export const MAX_TITLE_CHARS = 200
+const MAX_TITLE_CHARS = 200
 /** 笔记正文字符上限。 */
-export const MAX_CONTENT_CHARS = 20_000
+const MAX_CONTENT_CHARS = 20_000
 
 /**
  * 笔记 id：sha1(project|title|content) 前 16 位（幂等键）。

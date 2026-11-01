@@ -36,7 +36,7 @@ import type { SectionFigureJson, SectionSourceJson } from './vector-figure-build
 export const SECTION_SOURCE_SIZE_TOLERANCE = 1e-3
 
 /** 缺省图面比例（1:1，图面毫米即模型毫米）。 */
-export const DEFAULT_SECTION_SOURCE_SCALE = 1
+const DEFAULT_SECTION_SOURCE_SCALE = 1
 
 /** 剖切来源错误码：输入非法、模型文件不存在、FreeCAD 缺失、剖切失败、剖面线失败、调用方取消。 */
 export type SectionSourceErrorCode =

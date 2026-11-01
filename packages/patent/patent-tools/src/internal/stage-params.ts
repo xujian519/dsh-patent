@@ -12,7 +12,7 @@
 import type { PipelineState } from '@deepseek-ai/dsh-patent-core'
 
 /** 篇幅预算的读取结果：已声明、未声明或取值非法。 */
-export type BudgetRead = { kind: 'ok'; value?: number } | { kind: 'invalid' }
+type BudgetRead = { kind: 'ok'; value?: number } | { kind: 'invalid' }
 
 /**
  * 读取阶段参数 `char_budget`。

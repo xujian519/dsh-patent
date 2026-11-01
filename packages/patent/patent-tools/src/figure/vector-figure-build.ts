@@ -18,7 +18,7 @@ import { APPEARANCE_VIEW_NAMES, buildAppearanceViewSheet } from './appearance-vi
 import type { AppearanceViewName } from './appearance-view-sheet.ts'
 
 /** 直接绘制 SVG 的图型（不经 Graphviz）。 */
-export const VECTOR_FIGURE_TYPES = ['circuit', 'plot', 'cross_section', 'sequence_diagram', 'appearance_view'] as const
+const VECTOR_FIGURE_TYPES = ['circuit', 'plot', 'cross_section', 'sequence_diagram', 'appearance_view'] as const
 
 /** 矢量图型名。 */
 export type VectorFigureType = (typeof VECTOR_FIGURE_TYPES)[number]
@@ -191,7 +191,7 @@ export type VectorFigureJsonInput = {
 }
 
 /** 矢量图构建结果：规格 + 随结果返回的检查提示。 */
-export type VectorFigureBuild = {
+type VectorFigureBuild = {
   /** 图形规格（交给 vectorFigureSvg 封装）。 */
   spec: VectorFigureSpec
   /** 图型自身的检查提示（外观设计缺视图、比例不一致等）。 */

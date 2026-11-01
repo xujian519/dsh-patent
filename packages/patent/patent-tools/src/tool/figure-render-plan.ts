@@ -48,7 +48,7 @@ export async function annotateRenderedSvg(
 }
 
 /** 单图 DOT 构建参数（主路径与面板路径共用）。 */
-export type FigureDotParams = {
+type FigureDotParams = {
   figureNumber: number
   numeralsForBuilder: Record<string, string>
   numeralStep?: number | undefined

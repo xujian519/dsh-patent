@@ -13,7 +13,7 @@ import { relative, resolve } from 'node:path'
 import { PatentToolError } from '../../error.ts'
 
 /** 读入的 SVG 输入。 */
-export type SvgInput = {
+type SvgInput = {
   /** 绝对路径：被读文件可能不在工作区内，绝对路径是定位它的唯一口径。 */
   readonly absolutePath: string
   /** 工作区相对路径（结果回显用）。 */

@@ -46,7 +46,7 @@ export function figureNumbersIn(text: string): number[] {
 }
 
 /** One drawing-description entry. */
-export type DrawingEntry = {
+type DrawingEntry = {
   /** Parsed figure number. */
   number: number
   /** Text after the figure number, with leading connectors removed. */

@@ -16,7 +16,7 @@ export const COMMERCIAL_ADVERTISING_TERMS = [
 ] as const
 
 /** Internal-process markers that must not reach a filed specification. */
-export const INTERNAL_LEAKAGE_TERMS = ['内部复核稿', 'AI 辅助生成', 'AI辅助生成', 'HITL', '内部使用'] as const
+const INTERNAL_LEAKAGE_TERMS = ['内部复核稿', 'AI 辅助生成', 'AI辅助生成', 'HITL', '内部使用'] as const
 
 /** A description citing a claim by number, which 细则第二十条第三款 forbids. */
 const CLAIM_CITATION_RE = /(?:如|根据|按照|依据)\s*权利要求\s*[\d一二三四五六七八九十百或至、,\s]+\s*所述/

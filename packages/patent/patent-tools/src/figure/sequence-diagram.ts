@@ -19,7 +19,7 @@ import { VectorFigureError, escapeXmlAttribute, fmt } from './vector-figure.ts'
 import type { VectorFigureSpec } from './vector-figure.ts'
 
 /** 生命线上的参与者（模块/角色）。 */
-export type SequenceParticipant = {
+type SequenceParticipant = {
   id: string
   /** 参与者在图面上的名字（简短中文或全大写缩写）。 */
   label: string

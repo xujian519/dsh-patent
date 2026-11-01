@@ -33,7 +33,7 @@ export const TARGET_OFFICES = ['cnipa', 'pct', 'uspto'] as const
 export type TargetOffice = (typeof TARGET_OFFICES)[number]
 
 /** 幅面尺寸（毫米，宽×高）。 */
-export type PaperSizeMm = {
+type PaperSizeMm = {
   /** 宽（毫米）。 */
   widthMm: number
   /** 高（毫米）。 */
@@ -41,7 +41,7 @@ export type PaperSizeMm = {
 }
 
 /** 页边距（毫米，四边分别给出）。 */
-export type PageMarginsMm = {
+type PageMarginsMm = {
   /** 上边距（毫米）。 */
   topMm: number
   /** 左边距（毫米）。 */
@@ -53,16 +53,16 @@ export type PageMarginsMm = {
 }
 
 /** 图号写法：中国「图1」、PCT「Fig. 1」、USPTO「FIG. 1」。 */
-export type CaptionStyle = 'figure-number' | 'fig' | 'fig-upper'
+type CaptionStyle = 'figure-number' | 'fig' | 'fig-upper'
 
 /** 色彩策略：monochrome=不得着色（PCT/USPTO 实用申请）；color-if-necessary=必要时可提交彩色（中国 2023 版起）。 */
-export type ColorPolicy = 'monochrome' | 'color-if-necessary'
+type ColorPolicy = 'monochrome' | 'color-if-necessary'
 
 /**
  * 附图页码写法：figure-pages=中国「附图应当用阿拉伯数字顺序编写页码」，写作「第2页 共5页」（单页「第2页」）；
  * sheet-of=PCT/USPTO 的「1/3」。
  */
-export type SheetNumbering = 'figure-pages' | 'sheet-of'
+type SheetNumbering = 'figure-pages' | 'sheet-of'
 
 /** 一个法域的附图提交规格（只读：调用方不得就地修改档案常数）。 */
 export type OfficeProfile = {

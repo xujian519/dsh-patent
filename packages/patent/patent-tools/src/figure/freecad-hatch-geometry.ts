@@ -39,13 +39,13 @@ import { SECTION_COORD_DECIMALS, pointInPolygon } from './freecad-section-geomet
 export const HATCH_PATTERN_NAME = 'DSH'
 
 /** 本模块生成的 `.pat` 的线族 delta：取 1 使 `patScale` 直接等于毫米间距（实测）。 */
-export const HATCH_PAT_DELTA = 1
+const HATCH_PAT_DELTA = 1
 
 /** 取向核对容差（度）：验收要求与请求角的偏差小于 0.5°。 */
 export const HATCH_ANGLE_TOLERANCE_DEG = 0.5
 
 /** 间距核对容差（毫米）：实测 patScale 与间距逐值相等，这里只留浮点噪声的余量。 */
-export const HATCH_SPACING_TOLERANCE_MM = 1e-4
+const HATCH_SPACING_TOLERANCE_MM = 1e-4
 
 /**
  * 线段中点核对的长度下限（毫米）。
@@ -104,7 +104,7 @@ export type HatchPattern = {
 }
 
 /** 剖面线段（视图帧毫米）。 */
-export type HatchSegment = {
+type HatchSegment = {
   /** 起点。 */
   from: readonly [number, number]
   /** 终点。 */
@@ -130,7 +130,7 @@ export type HatchGeometryPayload = {
 }
 
 /** 剖面线几何错误码：请求非法、产物结构非法、空剖面线、取向/间距不符、线段不在材料内。 */
-export type HatchGeometryErrorCode =
+type HatchGeometryErrorCode =
   | 'invalid_input'
   | 'invalid_payload'
   | 'empty_hatch'

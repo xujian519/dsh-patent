@@ -19,7 +19,7 @@ import type { OfficeProfile } from './office-profile.ts'
 import type { SubmissionPageMetrics } from './submission-page.ts'
 
 /** 核算输入。 */
-export type DrawingComplianceInput = {
+type DrawingComplianceInput = {
   /** 目标法域规格。 */
   profile: OfficeProfile
   /** 本次生成使用的色彩策略。 */

@@ -67,7 +67,7 @@ export type LawSearchOutput = {
 }
 
 /** Options accepted by an injected normative-corpus search. */
-export type LawSearchPortOptions = {
+type LawSearchPortOptions = {
   limit?: number
   level?: string
   asOf?: string

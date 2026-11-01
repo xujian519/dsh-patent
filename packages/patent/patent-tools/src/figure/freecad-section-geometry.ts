@@ -24,7 +24,7 @@
 import { fmtNumber, isFiniteNumber } from './freecad-artifact-numbers.ts'
 
 /** 面积核对容差（相对值）：离散多边形面积与 OCCT 面面积的允许相对偏差。 */
-export const SECTION_AREA_TOLERANCE = 1e-3
+const SECTION_AREA_TOLERANCE = 1e-3
 
 /**
  * 圆弧边的采样角度步长（度）。
@@ -92,7 +92,7 @@ export type SectionRing = {
 }
 
 /** 一个材料区域：外环 + 其直接包含的孔环。 */
-export type SectionRegion = {
+type SectionRegion = {
   /** 外环在 {@link SectionGeometry.rings} 中的下标。 */
   outer: number
   /** 该外环直接包含的孔环下标（按环序）。 */
@@ -102,7 +102,7 @@ export type SectionRegion = {
 }
 
 /** 模型信息：来源、实体数与包围盒（毫米，用于核对模型单位是否与图面毫米一致）。 */
-export type SectionModel = {
+type SectionModel = {
   /** 模型文件路径。 */
   path: string
   /** 实体数。 */
@@ -134,7 +134,7 @@ export type SectionGeometryPayload = {
 }
 
 /** 剖切几何错误码：输入非法、脚本产物结构非法、面积核对不通过。 */
-export type SectionGeometryErrorCode = 'invalid_input' | 'invalid_payload' | 'area_mismatch'
+type SectionGeometryErrorCode = 'invalid_input' | 'invalid_payload' | 'area_mismatch'
 
 /** 剖切几何错误（渲染器映射为 `geometry_failed`，工具层映射为 `invalid_tool_input`）。 */
 export class SectionGeometryError extends Error {

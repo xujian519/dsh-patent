@@ -35,13 +35,13 @@ import { formatMm } from './mm-primitives.ts'
 import type { SvgAnnotateReference } from './svg-annotate.ts'
 
 /** 引线标号选项。 */
-export type LeaderLineOptions = {
+type LeaderLineOptions = {
   /** 输入大小上限（字节），默认 {@link DEFAULT_SVG_MAX_BYTES}。 */
   maxBytes?: number
 }
 
 /** 引线标注结果：新 SVG 文本 + 警告（未命中参考、退化内嵌的节点）。 */
-export type LeaderLineResult = {
+type LeaderLineResult = {
   svg: string
   warnings: string[]
 }

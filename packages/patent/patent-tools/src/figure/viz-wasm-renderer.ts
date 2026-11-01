@@ -28,10 +28,10 @@ export type VizInstance = {
 }
 
 /** 引擎加载器（默认动态 import('@viz-js/viz')；测试可注入失败/替身加载器）。 */
-export type VizLoader = () => Promise<VizInstance>
+type VizLoader = () => Promise<VizInstance>
 
 /** WASM 渲染器依赖。 */
-export type VizWasmRendererDeps = {
+type VizWasmRendererDeps = {
   /** 引擎加载器，缺省用默认动态加载（进程内缓存实例）。 */
   loadViz?: VizLoader
 }

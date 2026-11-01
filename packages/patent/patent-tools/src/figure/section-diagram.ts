@@ -30,7 +30,7 @@ import { boundsOfPoints, formatMm as fmt, type MmPoint } from './mm-primitives.t
 import { escapeXmlAttribute, VectorFigureError, type VectorFigureSpec } from './vector-figure.ts'
 
 /** 剖面线参数：45° 细实线；相邻零件方向相反或间距不等以区分（GB/T 4457.5 实践）。 */
-export type HatchSpec = {
+type HatchSpec = {
   /** 与水平线夹角（度），默认 45。 */
   angleDeg?: number
   /** 剖面线间距（毫米），默认 3。 */
@@ -40,7 +40,7 @@ export type HatchSpec = {
 }
 
 /** 线段（毫米，视图帧坐标：x 向右、y 向下）。 */
-export type SectionSegment = {
+type SectionSegment = {
   /** 起点。 */
   readonly from: readonly [number, number]
   /** 终点。 */
@@ -48,7 +48,7 @@ export type SectionSegment = {
 }
 
 /** 被剖切的零件：闭合轮廓 + 剖面线；`hatch: 'none'` 表示该轮廓不打剖面线。 */
-export type SectionPart = {
+type SectionPart = {
   /**
    * 零件名（写入图面，简短）：数字落在该轮廓包围盒右上角之外，自轮廓重心引一条细实线
    * 到数字外框 —— 剖面线与沿中线的中心线因此都不穿过数字（《专利审查指南》第一部分
@@ -89,7 +89,7 @@ export type SectionPart = {
  * 引线只画到数字外框边，因此数字不会被线条贯穿；落点由调用方给出，故一个零件由
  * 多个轮廓拼成时也只画一处标号（零件本体轮廓的 `label` 会画在每个轮廓的重心上）。
  */
-export type SectionLabel = {
+type SectionLabel = {
   /** 标号文本（写入图面的阿拉伯数字）。 */
   text: string
   /** 数字视觉中心落点（毫米）。 */
@@ -99,7 +99,7 @@ export type SectionLabel = {
 }
 
 /** 中心线（细点划线）：轴类零件的轴线，不是被剖切的实体。 */
-export type SectionCenterline = {
+type SectionCenterline = {
   /** 中心线起点（毫米）。 */
   from: readonly [number, number]
   /** 中心线终点（毫米）。 */
@@ -143,7 +143,7 @@ export type CuttingMark = {
 }
 
 /** 剖视图输入。 */
-export type SectionDiagramInput = {
+type SectionDiagramInput = {
   /** 外轮廓（毫米，自动闭合）；缺省或空数组表示只画零件。 */
   outline?: readonly (readonly [number, number])[]
   /** 被剖切零件（至少一个）。 */

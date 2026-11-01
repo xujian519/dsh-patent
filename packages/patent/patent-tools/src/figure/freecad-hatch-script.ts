@@ -30,7 +30,7 @@ export const HATCH_GEOMETRY_FILENAME = 'section-hatch.json'
 export const HATCH_PAT_FILENAME = 'section-hatch.pat'
 
 /** 构建剖面线脚本的入参。 */
-export type HatchScriptParams = {
+type HatchScriptParams = {
   /** 已解析的剖面线请求（含 `.pat` 文本与 patScale）。 */
   pattern: HatchPattern
   /** 材料区域（视图帧毫米）。 */

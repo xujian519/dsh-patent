@@ -25,7 +25,7 @@ import { renderWithVizWasm } from './viz-wasm-renderer.ts'
 export type FigureRendererMode = 'wasm' | 'cli'
 
 /** 选择器依赖（仅 cli 与 png/pdf 回退路径需要）。 */
-export type FigureRendererSelectorDeps = {
+type FigureRendererSelectorDeps = {
   /** Cordis subprocess 服务；未挂载时 cli 路径返回 not_installed。 */
   subprocess?: SubprocessRuntime
   /** dot 可执行路径覆盖（与 Config.graphvizExecutable 同源）。 */

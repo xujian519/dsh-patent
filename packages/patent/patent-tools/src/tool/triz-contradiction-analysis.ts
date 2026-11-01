@@ -40,7 +40,7 @@ export type TrizContradictionAnalysisDeps = {
 }
 
 /** 一条矛盾的工具输出形状（JSON 值，字段与内核类型同构）。 */
-export type TrizContradictionJson = {
+type TrizContradictionJson = {
   id: string
   improving: { number: number; name: string }
   worsening: { number: number; name: string }
@@ -52,20 +52,20 @@ export type TrizContradictionJson = {
 }
 
 /** 一条参数缺口的工具输出形状。 */
-export type TrizParameterGapJson = {
+type TrizParameterGapJson = {
   parameter: { number: number; name: string }
   missing: string[]
   detail: string
 }
 
 /** 一条未采纳项的工具输出形状。 */
-export type TrizUnmappedJson = {
+type TrizUnmappedJson = {
   statement: string
   reason: string
 }
 
 /** Output of the triz_contradiction_analysis tool. */
-export type TrizContradictionAnalysisOutput = {
+type TrizContradictionAnalysisOutput = {
   contradictions: TrizContradictionJson[]
   parameter_gaps: TrizParameterGapJson[]
   unmapped: TrizUnmappedJson[]

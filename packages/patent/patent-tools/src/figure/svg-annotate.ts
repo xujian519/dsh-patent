@@ -11,7 +11,7 @@
  */
 
 /** SVG 标注错误码。 */
-export type SvgAnnotateErrorCode = 'unsafe_svg' | 'invalid_svg' | 'too_large' | 'invalid_reference'
+type SvgAnnotateErrorCode = 'unsafe_svg' | 'invalid_svg' | 'too_large' | 'invalid_reference'
 
 /** SVG 标注错误。 */
 export class SvgAnnotateError extends Error {
@@ -34,7 +34,7 @@ export type SvgAnnotateReference = {
 }
 
 /** 标注结果：新 SVG 文本 + 未命中警告。 */
-export type SvgAnnotateResult = {
+type SvgAnnotateResult = {
   svg: string
   /** 未在任何文本元素中匹配到的参考 label（按传入顺序）。 */
   warnings: string[]

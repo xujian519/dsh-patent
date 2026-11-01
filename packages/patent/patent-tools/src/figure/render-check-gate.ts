@@ -14,7 +14,7 @@ import { blockingFindings, checkFigureRendering } from './render-check.ts'
 import { SvgAnnotateError } from './svg-annotate.ts'
 
 /** 门禁参数：交付文件、净距档位、是否阻断与报告归属。 */
-export type RenderCheckGateArgs = {
+type RenderCheckGateArgs = {
   /** 已写入的交付 SVG 路径。 */
   path: string
   /** 追加警告的去处（调用方的 warnings 数组）。 */

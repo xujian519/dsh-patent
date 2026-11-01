@@ -211,10 +211,10 @@ function resolveFreeCadCommand(options: FreeCadRenderOptions): FreeCadCommandRes
 }
 
 /** FreeCAD 脚本执行阶段的错误码（可执行文件已解析之后的失败）。 */
-export type FreeCadScriptErrorCode = 'render_failed' | 'aborted'
+type FreeCadScriptErrorCode = 'render_failed' | 'aborted'
 
 /** 一次 FreeCAD 脚本执行请求（结构投影与剖切几何共用同一段执行逻辑）。 */
-export type FreeCadScriptRequest = {
+type FreeCadScriptRequest = {
   /** 链路名，出现在诊断消息里（如 `FreeCAD 结构投影`）。 */
   tool: string
   /** 输出目录绝对路径（渲染器负责创建）。 */
@@ -363,7 +363,7 @@ export type SectionGeometrySpec = {
 }
 
 /** 剖切几何错误码（与结构投影同形，产物不同故 `render_failed` 记作 `geometry_failed`）。 */
-export type SectionRenderErrorCode = 'not_installed' | 'geometry_failed' | 'aborted'
+type SectionRenderErrorCode = 'not_installed' | 'geometry_failed' | 'aborted'
 
 /** 剖切几何结果：成功时的几何或分类错误。 */
 export type SectionGeometryOutcome =
@@ -436,7 +436,7 @@ export type SectionHatchSpec = {
 }
 
 /** 剖面线错误码（与剖切几何同形，产物不同故 `render_failed` 记作 `hatch_failed`）。 */
-export type SectionHatchErrorCode = 'not_installed' | 'hatch_failed' | 'aborted'
+type SectionHatchErrorCode = 'not_installed' | 'hatch_failed' | 'aborted'
 
 /** 剖面线结果：成功时的线段或分类错误。 */
 export type SectionHatchOutcome =

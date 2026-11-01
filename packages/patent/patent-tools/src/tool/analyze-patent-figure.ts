@@ -79,10 +79,10 @@ export { FIGURE_COMPONENT_KINDS }
 export type { FigureComponentKind }
 
 /** 组件连接关系类型。 */
-export const FIGURE_CONNECTION_KINDS = ['electrical', 'mechanical', 'data_flow', 'unknown'] as const
+const FIGURE_CONNECTION_KINDS = ['electrical', 'mechanical', 'data_flow', 'unknown'] as const
 
 /** Connection kind (electrical / mechanical / data_flow / unknown). */
-export type FigureConnectionKind = (typeof FIGURE_CONNECTION_KINDS)[number]
+type FigureConnectionKind = (typeof FIGURE_CONNECTION_KINDS)[number]
 
 /** 附图中的技术组件（对应附图标记号）。 */
 export type FigureComponent = {

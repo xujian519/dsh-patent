@@ -53,7 +53,7 @@ export type VectorFigureSpec = {
 export const DEFAULT_VECTOR_BODY_MAX_BYTES = 2_000_000
 
 /** 线宽默认值（毫米）：GB/T 4457.4 线宽系列的 0.35，用作粗实线轮廓。 */
-export const DEFAULT_VECTOR_STROKE_MM = 0.35
+const DEFAULT_VECTOR_STROKE_MM = 0.35
 
 /**
  * 坐标数值格式化：保留至多 3 位小数并去掉尾随零。

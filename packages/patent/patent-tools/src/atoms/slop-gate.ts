@@ -34,7 +34,7 @@ import { readCharBudget } from '../internal/stage-params.ts'
 export const SLOP_GATE_PASS_THRESHOLD = SLOP_PASS_LINE
 
 /** 缺省受理文本键（撰写链路的权利要求草稿）。 */
-export const DEFAULT_SLOP_TEXT_KEYS: readonly string[] = ['claims_draft']
+const DEFAULT_SLOP_TEXT_KEYS: readonly string[] = ['claims_draft']
 
 /**
  * 解析阶段参数 `text_keys`。

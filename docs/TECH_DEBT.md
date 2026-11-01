@@ -359,7 +359,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | 计数 | 值 |
 | --- | --- |
 | `structure.long-functions` | 209 |
-| `structure.large-files` | 95 |
+| `structure.large-files` | 94 |
 | `structure.patent-large-files` | 9 |
 | `lint.v8-ignore` | 1351 |
 | `lint.ts-expect-error` | 193 |
@@ -368,7 +368,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 ### 专利域 >800 行文件裁定（2026-11-01 复测）
 
-`packages/patent` 当前有 9 个 >800 行源文件，全部保留为「接受」；另有 3 个拆分目标已降到 800 行。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，全仓 >800 行文件为 95 个。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
+`packages/patent` 当前有 9 个 >800 行源文件，全部保留为「接受」；另有 3 个拆分目标已降到 800 行。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，全仓 >800 行文件为 94 个（2026-11-01 #647 删除 better-sidebar 未用 locale 后 locales.ts 降至 800 行以下）。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
 
 拆分落点：`generate-patent-figure.ts` 拆出 `figure-panels.ts`（多面板路径）、`figure-delivery.ts`（落版/复核/转路径/导出）与 `figure-run.ts`（共享运行参数与标号）；`evidence/engine.ts` 拆出 `signals.ts`、`judgment.ts`、`public-use.ts`、`conditions.ts` 与 `proof-standard.ts`；`generate-structure-figure.ts` 拆出 `structure-types.ts`、`structure-model.ts` 与 `structure-render.ts`。
 

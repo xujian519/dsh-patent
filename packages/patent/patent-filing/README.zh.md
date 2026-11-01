@@ -82,7 +82,7 @@ Schemastery 配置，全部字段可选。
 
 #### What the model sees
 
-一个名为 `build_patent_filing` 的注册工具，必填 `draft` 对象（共享的 `SpecDraft`：`meta`、不带项号的 `claims`、`abstract`、`figureFiles`、`abstractFigure`（哪幅附图进「摘要附图」节，缺省 1），以及按五部分组织的 `paragraph`/`list`/`table` 块（附图说明部分每幅附图一条列表项））与 `outputName`，可选 `caseId` 与 `outputDir`。结果渲染为 Markdown 散文：成品路径、反解出的体例、各节段落与图片数、段落编号总数与其核对过的源稿编号、附图张数，以及截断的模板指纹。schema 本身见[工具目录](../../../docs/tool-catalog.zh.md#deepseek-aidsh-patent-filing)。
+一个名为 `build_patent_filing` 的注册工具，必填 `draft` 对象（共享的 `SpecDraft`：`meta`、不带项号的 `claims`、`abstract`、`figureFiles`、`abstractFigure`（哪幅附图进「摘要附图」节，缺省 1），以及按五部分组织的 `paragraph`/`list`/`table` 块（附图说明部分每幅附图一条列表项，每项只写图名与描述文字，不含图号前缀与句末标点））与 `outputName`，可选 `caseId` 与 `outputDir`。结果渲染为 Markdown 散文：成品路径、反解出的体例、各节段落与图片数、段落编号总数与其核对过的源稿编号、附图张数，以及截断的模板指纹。schema 本身见[工具目录](../../../docs/tool-catalog.zh.md#deepseek-aidsh-patent-filing)。
 
 #### Token effect
 

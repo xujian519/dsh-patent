@@ -359,8 +359,8 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | 计数 | 值 |
 | --- | --- |
 | `structure.long-functions` | 186 |
-| `structure.large-files` | 88 |
-| `structure.patent-large-files` | 9 |
+| `structure.large-files` | 89 |
+| `structure.patent-large-files` | 10 |
 | `lint.v8-ignore` | 1312 |
 | `lint.ts-expect-error` | 193 |
 | `packages.patent-directories` | 16 |
@@ -368,7 +368,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 ### 专利域 >800 行文件裁定（2026-11-01 复测）
 
-`packages/patent` 当前有 9 个 >800 行源文件，全部保留为「接受」；另有 3 个拆分目标已降到 800 行。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，全仓 >800 行文件为 88 个（2026-11-01 移除 better-sidebar 包与未用 locale 后结构债回落）。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
+`packages/patent` 当前有 10 个 >800 行源文件，全部保留为「接受」；另有 3 个拆分目标已降到 800 行。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，本轮附图说明校验把 `validate.ts` 再推过 800 行后升至 10 个，全仓 >800 行文件为 89 个（2026-11-01 移除 better-sidebar 包与未用 locale 后结构债回落，再加本轮 `validate.ts`）。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
 
 拆分落点：`generate-patent-figure.ts` 拆出 `figure-panels.ts`（多面板路径）、`figure-delivery.ts`（落版/复核/转路径/导出）与 `figure-run.ts`（共享运行参数与标号）；`evidence/engine.ts` 拆出 `signals.ts`、`judgment.ts`、`public-use.ts`、`conditions.ts` 与 `proof-standard.ts`；`generate-structure-figure.ts` 拆出 `structure-types.ts`、`structure-model.ts` 与 `structure-render.ts`。
 
@@ -386,6 +386,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-core/src/atoms/handlers/builtin/evidence-check.ts` | 接受 | 842 | 单个 atom handler 的五阶段，最大函数 123 行，仅超阈值 5% |
 | `packages/patent/patent-tools/src/figure/dot-builder.ts` | 接受 | 839 | 单一 DOT 词汇表：五个 builder 各 <60 行，共享头部/标号/转义契约 |
 | `packages/patent/patent-core/src/ipc/ipc-classifier.ts` | 接受 | 807 | 数据表为主：`IPC_DOMAINS` 409 行 + 明细表 260 行，分类函数 <30 行 |
+| `packages/patent/patent-core/src/draft/validate.ts` | 接受 | 811 | 受控草案校验入口：按部分聚合违规；本轮附图说明列表项禁图号/句末标点把文件从 776 推到 811，最大新增函数 <40 行，拆分会把 SpecDraft 窄化与违规聚合拆散 |
 | `packages/patent/patent-tools/src/tool/generate-patent-figure.ts` | 拆分 | 800 | 多面板路径与交付链已分拆；入口保留 schema 与单图编排 |
 | `packages/patent/patent-core/src/evidence/engine.ts` | 拆分 | 800 | 三性、类型特定、使用公开、证明标准已分模块；类只保留编排 |
 | `packages/patent/patent-tools/src/tool/generate-structure-figure.ts` | 拆分 | 800 | 类型、模型 I/O、渲染收尾已分模块；入口保留 schema 与工具装配 |

@@ -12,7 +12,7 @@ import type { DraftBlock } from './types.ts'
 export interface NumberedFigureDescription {
   /** 图号序号（从 1 起，跨该部分全部列表块连续）。 */
   index: number
-  /** 模型提供的描述文字（原样）。 */
+  /** 模型提供的描述文字（只含图名与内容，不含图号与句末标点）。 */
   text: string
   /** 是否为该部分最后一个列表项（决定句末用句号还是分号）。 */
   last: boolean

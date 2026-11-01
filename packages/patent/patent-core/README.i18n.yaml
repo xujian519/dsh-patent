@@ -3,14 +3,14 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/patent/patent-core/README.md
 /:
-  en: e12c84ebcfb1cfb7
-  zh: bcad767ee48c702d
+  en: 31ccdb1de36083ab
+  zh: cc570213ee0919e7
 /deepseek-ai-dsh-patent-core:
   en: 40a881446449f10b
   zh: d9595659c5bbaf76
 /deepseek-ai-dsh-patent-core/summary:
-  en: 9a38fb4e482deca9
-  zh: 2d4c451bea6e7f32
+  en: 72ebc12e1dc41f04
+  zh: c4c995d44c0cb094
 /deepseek-ai-dsh-patent-core/package-surface:
   en: d816c3a872d6b94c
   zh: 50fd24ef77bd2bf4
@@ -18,8 +18,8 @@
   en: 0756279c510f59e9
   zh: 4028056b357fefa0
 /deepseek-ai-dsh-patent-core/atoms-engines:
-  en: 388653ace63f023d
-  zh: 938ddf7e58fcb02a
+  en: 732719a7a697d9b8
+  zh: 1149c2aacb05770a
 /deepseek-ai-dsh-patent-core/modelport:
   en: 04e3db5218f7c555
   zh: 48c97f5cc1150b90

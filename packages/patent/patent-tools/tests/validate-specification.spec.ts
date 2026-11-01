@@ -484,15 +484,28 @@ describe('abstract and claim coverage edge cases', () => {
     const ids = out.not_assessed.map(item => item.id)
     expect(ids).toContain('abstract-drawing-designation')
     expect(ids).toContain('drawing-legibility')
-    // A26.3 由 enablement-report 原子判定，确定性规则不再列为未评估。
+    // A26.3 与 A26.4 概括范围分别由 enablement-report、claim-breadth 原子判定，
+    // 确定性规则不再列为未评估。
     expect(ids).not.toContain('enablement')
+    expect(ids).not.toContain('claim-support-breadth')
   })
 
-  it('records an upstream enablement report as an evaluated input', () => {
+  it('records upstream enablement and claim-breadth reports as evaluated inputs', () => {
     const report = '充分公开实体判定（A26.3）：通过'
-    const out = validateSpecification({ text: VALID_SPEC, enablement_report: report })
-    const evaluated = out.evaluated.find(item => item.field === 'enablement_report')
-    expect(evaluated).toMatchObject({ field: 'enablement_report', chars: report.length })
+    const breadth = '权利要求概括范围判定（A26.4）：通过'
+    const out = validateSpecification({
+      text: VALID_SPEC,
+      enablement_report: report,
+      claim_breadth_report: breadth,
+    })
+    expect(out.evaluated.find(item => item.field === 'enablement_report')).toMatchObject({
+      field: 'enablement_report',
+      chars: report.length,
+    })
+    expect(out.evaluated.find(item => item.field === 'claim_breadth_report')).toMatchObject({
+      field: 'claim_breadth_report',
+      chars: breadth.length,
+    })
   })
 
   it('warns at 50% claim coverage and passes when fully covered', () => {

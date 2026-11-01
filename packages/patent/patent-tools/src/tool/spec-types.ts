@@ -60,6 +60,12 @@ export type ValidateSpecificationInput = {
    * later run can compare which upstream verdict this check was paired with.
    */
   enablement_report?: string
+  /**
+   * Upstream `claim-breadth` atom output (optional). The deterministic rules do
+   * not re-judge A26.4 breadth; the report is recorded as an evaluated input so
+   * a later run can compare which upstream verdict this check was paired with.
+   */
+  claim_breadth_report?: string
 }
 
 /** One claim of the application, split into its preamble and characterizing part. */

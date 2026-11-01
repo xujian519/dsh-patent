@@ -155,6 +155,7 @@ export const ATOM_PARAM_DESCRIPTION = [
   'legal-gaps (params.profile: novelty|disclosure|inventiveness|patentability|oa-response|invalidation|reexamination|infringement).',
   'adversary-model (params: none; reads office_action, claims, response_plan, response_plan_summary and calls the model), adversary-review (params: none; deterministic re-check of draft_tightened (falls back to draft), reference_documents or office_action.citations, claims, office_action; writes adversary_review_passed for legal-gaps).',
   'enablement-report (params: none; reads specification, claims_draft and tech_domain, then calls the model to quote embodiments for each independent-claim feature and re-checks the quotes against the specification).',
+  'claim-breadth (params: none; reads specification, claims_draft and tech_domain, then calls the model for one record per upper-level generalization and re-checks each quote against the specification).',
 ].join(' ')
 
 /** Stage JSON schema shared by create's stages list and add's single stage. */

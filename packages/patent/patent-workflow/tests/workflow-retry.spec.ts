@@ -581,7 +581,7 @@ describe('workflow retry validation', () => {
   it('patentDisclosureManifest: structure and retry declarations are valid', () => {
     expect(() => { validateWorkflowManifest(patentDisclosureManifest) }).not.toThrow()
     expect(patentDisclosureManifest.id).toBe('patent_disclosure_v1')
-    expect(patentDisclosureManifest.stages).toHaveLength(24)
+    expect(patentDisclosureManifest.stages).toHaveLength(25)
     const consistency = patentDisclosureManifest.stages.find(s => s.id === 'consistency')!
     expect(consistency.retry?.rewindTo).toBe('extract_problem')
     expect(consistency.retry!.whenOutputMatches).toMatch(/不一致\|矛盾\|缺少\|孤立/)
@@ -590,7 +590,7 @@ describe('workflow retry validation', () => {
     expect(consistency.atom).toBe('pfe-consistency')
     const atoms = patentDisclosureManifest.stages.filter(s => s.atom !== undefined).map(s => s.atom)
     expect([...new Set(atoms)].sort()).toEqual([
-      'approval-gate', 'citation-check', 'draft-claims', 'draft-specification', 'eligibility', 'enablement-report', 'extract', 'figure-analysis', 'groundedness', 'keywords',
+      'approval-gate', 'citation-check', 'claim-breadth', 'draft-claims', 'draft-specification', 'eligibility', 'enablement-report', 'extract', 'figure-analysis', 'groundedness', 'keywords',
       'legal-gaps', 'merge', 'novelty', 'pfe-consistency', 'prior-art-filter', 'search', 'slop-gate',
       'spec-check', 'time-baseline',
     ])
@@ -610,6 +610,10 @@ describe('workflow retry validation', () => {
     expect(ids.at(-1)).toBe('review_gate')
     expect(patentDisclosureManifest.stages.find(s => s.id === 'review_gate')?.atom).toBe('approval-gate')
     expect(patentDisclosureManifest.stages.find(s => s.id === 'draft_claims')?.atom).toBe('draft-claims')
+    // 概括范围在说明书成文后、形式检查前判定，报告可供 spec-check 记录。
+    expect(ids.indexOf('draft_claims') < ids.indexOf('claim_breadth')).toBe(true)
+    expect(ids.indexOf('claim_breadth') < ids.indexOf('spec_check')).toBe(true)
+    expect(patentDisclosureManifest.stages.find(s => s.id === 'claim_breadth')?.atom).toBe('claim-breadth')
     expect(ids.indexOf('generate_keywords') < ids.indexOf('search')).toBe(true)
     // 时间基准在检索前确定；公开日过滤紧跟检索，新颖性读过滤后的 prior_art。
     expect(ids.indexOf('generate_keywords') < ids.indexOf('time_baseline')).toBe(true)

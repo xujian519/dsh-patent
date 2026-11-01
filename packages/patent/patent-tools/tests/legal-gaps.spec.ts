@@ -424,6 +424,55 @@ describe('legal-gaps 原子', () => {
     })
   })
 
+  it('披露清单：概括范围报告存在但判定缺失时记未评估，不静默判通过', async () => {
+    const items = await itemsOf({
+      profile: 'disclosure',
+      claim_breadth_report: '权利要求概括范围判定（A26.4）：通过',
+    })
+    expect(items.find(item => item.id === 'claim-support-breadth')).toMatchObject({
+      status: 'not-assessed',
+      severity: 'warn',
+    })
+    expect(items.find(item => item.id === 'claim-support-breadth')?.evidence).toContain(
+      '缺少 state.claim_breadth_passed 的布尔判定',
+    )
+  })
+
+  it('披露清单：概括范围未通过为 warn 级，不翻转 legal_gaps_passed', async () => {
+    const out = await new LegalGapsHandler().execute({
+      state: {
+        profile: 'disclosure',
+        claim_breadth_report: '权利要求概括范围判定（A26.4）：未通过',
+        claim_breadth_passed: false,
+      },
+    })
+    expect(out['legal_gaps_passed']).toBe(true)
+    const items = out['legal_gaps_items'] as LegalGapItem[]
+    expect(items.find(item => item.id === 'claim-support-breadth')).toMatchObject({
+      status: 'failed',
+      severity: 'warn',
+      provision: '专利法第26条第4款',
+    })
+    expect(items.find(item => item.id === 'claim-support-breadth')?.evidence).toBe(
+      'state.claim_breadth_passed = false',
+    )
+  })
+
+  it('披露清单：概括范围判定通过后不再列为未评估，也不进入反哺清单', async () => {
+    const out = await new LegalGapsHandler().execute({
+      state: {
+        profile: 'disclosure',
+        claim_breadth_report: '权利要求概括范围判定（A26.4）：通过',
+        claim_breadth_passed: true,
+      },
+    })
+    expect(out['legal_gaps_unassessed']).not.toContain('claim-support-breadth')
+    const items = out['legal_gaps_items'] as LegalGapItem[]
+    expect(items.find(item => item.id === 'claim-support-breadth')?.status).toBe('passed')
+    const targets = out['revision_targets'] as Array<{ checkId: string }>
+    expect(targets.map(target => target.checkId)).not.toContain('claim-support-breadth')
+  })
+
   it('创造性清单：技术问题校验失败形成阻断项，结论阶段产出覆盖 A22.3', async () => {
     const out = await new LegalGapsHandler().execute({
       state: {
@@ -465,7 +514,7 @@ describe('legal-gaps 原子', () => {
     expect(items.find(item => item.id === 'eligibility')?.status).toBe('passed')
     expect(items.find(item => item.id === 'claim-support')?.status).toBe('passed')
     expect(items.find(item => item.id === 'enablement')?.status).toBe('passed')
-    // 概括范围始终需要实体判断，不因其他检查通过而变成 passed。
+    // 缺 claim-breadth 报告时概括范围保持未评估，不因其他检查通过而变成 passed。
     expect(items.find(item => item.id === 'claim-support-breadth')?.status).toBe('not-assessed')
   })
 

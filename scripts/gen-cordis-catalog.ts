@@ -168,7 +168,6 @@ export const SERVICE_PAGE: Record<string, string> = {
   workspaceChanges: 'deliverables.md',
   terminalController: 'workspace.md',
   directoryPickerController: 'workspace.md',
-  betterSidebar: 'web-client.md',
 }
 
 /**
@@ -1157,11 +1156,6 @@ export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   AddMemberArgs: 'service-local member-admission arguments are owned by packages/patent/patent-teams/src/member-runtime.ts',
   AddMemberResult: 'service-local member-admission result is owned by packages/patent/patent-teams/src/member-runtime.ts',
   RemoveMemberResult: 'service-local member-removal result is owned by packages/patent/patent-teams/src/member-runtime.ts',
-  TabDescriptor: 'sidebar tab type contract is owned by packages/client/better-sidebar/src/client/service.ts',
-  FileViewerDescriptor: 'sidebar file-viewer contract is owned by packages/client/better-sidebar/src/client/service.ts',
-  OpenTabSeed: 'sidebar open-tab seed contract is owned by packages/client/better-sidebar/src/client/service.ts',
-  SessionScope: 'sidebar session-scope pointer is owned by packages/client/better-sidebar/src/client/api.ts',
-  SidebarSnapshot: 'sidebar snapshot payload is owned by packages/client/better-sidebar/src/client/state.ts',
   PluginMarketSource: 'catalog source record is owned by packages/host/plugin-market/README.md',
   CatalogQuery: 'catalog query contract is owned by packages/host/plugin-market/README.md',
   CatalogPage: 'catalog page contract is owned by packages/host/plugin-market/README.md',

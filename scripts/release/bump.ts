@@ -61,8 +61,7 @@ interface PrivateDshVersion {
 /**
  * A file that carries the dsh family version outside a package manifest.
  * The bump rewrites it in the same commit as the manifests it mirrors, so the
- * copies cannot stay stale for a test to catch ([lockstep test in
- * packages/client/better-sidebar/tests/service.spec.ts]).
+ * copies cannot stay stale for a test to catch.
  */
 interface VersionMirror {
   /** Repository-relative path of the file carrying a mirrored version. */
@@ -73,21 +72,10 @@ interface VersionMirror {
 
 /**
  * The dsh family's version mirrors, one entry per mirrored file.
- *
- * The side panel reports the plugin version this package ships; the reported
- * constant is a second copy of the package version that consumers read, so
- * only the manifest should move without it.
+ * Empty after this fork removed `@deepseek-ai/dsh-better-sidebar` (the prior
+ * `SIDEBAR_SERVICE_VERSION` mirror). Absent paths still skip without failing.
  */
-const VERSION_MIRRORS: readonly VersionMirror[] = [
-  {
-    path: 'packages/client/better-sidebar/src/client/service.ts',
-    rewrite(line, version) {
-      const before = /^(\s*export const SIDEBAR_SERVICE_VERSION = )(['"])[^'"]*\2(\s*)$/u.exec(line)
-      if (before === null) return undefined
-      return `${before[1]}${before[2]}${version}${before[2]}${before[3]}`
-    },
-  },
-]
+const VERSION_MIRRORS: readonly VersionMirror[] = []
 
 /**
  * Read the mirror files whose content `version` would change.

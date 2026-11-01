@@ -135,7 +135,6 @@ External packages installed for runtime use or embedded in distributed Host or b
 | [`picomatch`](https://github.com/micromatch/picomatch) | MIT |
 | [`react`](https://github.com/facebook/react) | MIT |
 | [`react-dom`](https://github.com/facebook/react) | MIT |
-| [`react-icons`](https://github.com:react-icons/react-icons) | MIT |
 | [`readable-stream`](https://github.com/nodejs/readable-stream) | MIT |
 | [`resolve.exports`](https://github.com/lukeed/resolve.exports) | MIT |
 | [`semver`](https://github.com/npm/node-semver) | ISC |
@@ -212,30 +211,9 @@ External packages **directly declared** for development, tests, types, or toolin
 | Package | License |
 | --- | --- |
 | [`@braintree/sanitize-url`](https://github.com/braintree/sanitize-url) | MIT |
-| [`@codemirror/commands`](https://code.haverbeke.berlin/codemirror/commands) | MIT |
-| [`@codemirror/lang-cpp`](https://github.com/codemirror/lang-cpp) | MIT |
-| [`@codemirror/lang-css`](https://github.com/codemirror/lang-css) | MIT |
-| [`@codemirror/lang-go`](https://github.com/codemirror/lang-go) | MIT |
-| [`@codemirror/lang-html`](https://code.haverbeke.berlin/codemirror/lang-html) | MIT |
-| [`@codemirror/lang-java`](https://github.com/codemirror/lang-java) | MIT |
-| [`@codemirror/lang-javascript`](https://github.com/codemirror/lang-javascript) | MIT |
-| [`@codemirror/lang-json`](https://github.com/codemirror/lang-json) | MIT |
-| [`@codemirror/lang-markdown`](https://code.haverbeke.berlin/codemirror/lang-markdown) | MIT |
-| [`@codemirror/lang-php`](https://github.com/codemirror/lang-php) | MIT |
-| [`@codemirror/lang-python`](https://github.com/codemirror/lang-python) | MIT |
-| [`@codemirror/lang-rust`](https://github.com/codemirror/lang-rust) | MIT |
-| [`@codemirror/lang-sql`](https://github.com/codemirror/lang-sql) | MIT |
-| [`@codemirror/lang-vue`](https://github.com/codemirror/lang-vue) | MIT |
-| [`@codemirror/lang-xml`](https://github.com/codemirror/lang-xml) | MIT |
-| [`@codemirror/lang-yaml`](https://github.com/codemirror/lang-yaml) | MIT |
-| [`@codemirror/language`](https://code.haverbeke.berlin/codemirror/language) | MIT |
-| [`@codemirror/legacy-modes`](https://code.haverbeke.berlin/codemirror/legacy-modes) | MIT |
-| [`@codemirror/state`](https://code.haverbeke.berlin/codemirror/state) | MIT |
-| [`@codemirror/view`](https://code.haverbeke.berlin/codemirror/view) | MIT |
 | [`@electron/get`](https://github.com/electron/get) | MIT |
 | [`@electron/notarize`](https://github.com/electron/notarize) | MIT |
 | [`@lexical/headless`](https://github.com/facebook/lexical) | MIT |
-| [`@lezer/highlight`](https://code.haverbeke.berlin/lezer/highlight) | MIT |
 | [`@modelcontextprotocol/node`](https://github.com/modelcontextprotocol/typescript-sdk) | MIT |
 | [`@modelcontextprotocol/server`](https://github.com/modelcontextprotocol/typescript-sdk) | MIT |
 | [`@modelcontextprotocol/server-everything`](https://github.com/modelcontextprotocol/servers) | MIT / Apache-2.0 |
@@ -301,7 +279,6 @@ External packages **directly declared** for development, tests, types, or toolin
 | [`tencentcloud-sdk-nodejs-teo`](https://github.com/tencentcloud/tencentcloud-sdk-nodejs) | Apache-2.0 |
 | [`tsdown`](https://github.com/rolldown/tsdown) | MIT |
 | [`typescript-language-server`](https://github.com/typescript-language-server/typescript-language-server) | Apache-2.0 |
-| [`uuid`](https://github.com/uuidjs/uuid) | MIT |
 | [`vite`](https://github.com/vitejs/vite) | MIT |
 | [`vite-tsconfig-paths`](https://github.com/aleclarson/vite-tsconfig-paths) | MIT |
 | [`vitepress`](https://github.com/vuejs/vitepress) | MIT |

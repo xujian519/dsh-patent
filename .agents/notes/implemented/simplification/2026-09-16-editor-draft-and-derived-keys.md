@@ -53,5 +53,5 @@ The editor's draft is now invisible to React between keystrokes, so a render cau
 
 ## Related
 
-- [better-sidebar](../../../../packages/client/better-sidebar/README.md) — the package that owns the editor, the file tree, and their host toolbar contract.
+- [This fork removes better-sidebar](../architecture/2026-11-01-fork-removes-better-sidebar.md) — the former owner of the editor draft and file-tree toolbar contract; the draft/key rules in this note still apply wherever that UI lives.
 - [ui-chat](../../../../packages/client/ui-chat/README.md) — the target that owns the transcript ordering these sort keys feed.

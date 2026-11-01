@@ -599,114 +599,6 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
-    key: 'betterSidebar',
-    summary: 'The registry service published as `ctx.betterSidebar`.',
-    description: 'The registry service published as `ctx.betterSidebar`.',
-    methods: [
-      {
-        signature: 'registerTab(descriptor: TabDescriptor): () => void',
-        description: 'Register a tab type for the + menu and `openTab`. Throws when the descriptor id is already registered.',
-        parameters: [{ name: 'descriptor', description: 'The tab type\'s display, enablement, and creation contract.' }],
-        returns: 'The disposer, which unregisters the type (no-op if replaced) and notifies subscribers.',
-      },
-      {
-        signature: 'registerFileViewer(descriptor: FileViewerDescriptor): () => void',
-        description: 'Register a file viewer consulted by `matchFileViewer`. Throws when the descriptor id is already registered.',
-        parameters: [{ name: 'descriptor', description: 'The viewer\'s match contract (priority, detect, exts) and open callback.' }],
-        returns: 'The disposer, which unregisters the viewer (no-op if replaced) and notifies subscribers.',
-      },
-      {
-        signature: 'getTabs(): readonly TabDescriptor[]',
-        description: 'Currently registered tab types (insertion-order snapshot).',
-        parameters: [],
-        returns: 'The tab type descriptors.',
-      },
-      {
-        signature: 'getFileViewers(): readonly FileViewerDescriptor[]',
-        description: 'Currently registered file viewers (insertion-order snapshot).',
-        parameters: [],
-        returns: 'The file viewer descriptors.',
-      },
-      {
-        signature: 'getTab(id: string): TabDescriptor | undefined',
-        description: 'Find a tab descriptor by id (undefined if not registered).',
-        parameters: [{ name: 'id', description: 'The tab descriptor id to look up.' }],
-        returns: 'The descriptor, or undefined when the id is not registered.',
-      },
-      {
-        signature: 'isTabEnabled(id: string): boolean',
-        description: 'Whether a tab type is enabled in the side card prefs. An absent `tabsEnabled[id]` entry means enabled — only an explicit `false` disables the type (hidden from the + menu, `openTab` refuses, and derived flows gate on it).',
-        parameters: [{ name: 'id', description: 'The tab descriptor id to check.' }],
-        returns: 'Whether the tab type is enabled.',
-      },
-      {
-        signature: 'isViewerEnabled(id: string): boolean',
-        description: 'Whether a file viewer is enabled (absent `viewersEnabled[id]` = enabled).',
-        parameters: [{ name: 'id', description: 'The file viewer descriptor id to check.' }],
-        returns: 'Whether the viewer is enabled.',
-      },
-      {
-        signature: 'matchFileViewer(path: string, head?: Uint8Array): FileViewerDescriptor | undefined',
-        description: 'Find a file viewer for a path (priority desc; detect first, then exts). Disabled viewers are skipped, so files fall through to the next match.',
-        parameters: [{ name: 'path', description: 'The file path to match (extension extracted from the last dot).' }, { name: 'head', description: 'Leading file bytes for content-based `detect` matches; detection is skipped when absent.' }],
-        returns: 'The best matching enabled viewer descriptor, or undefined when none matches.',
-      },
-      {
-        signature: 'openTab(seed: OpenTabSeed, scope?: SessionScope): void',
-        description: 'Open a tab (used by external tabs and the + menu). `title` overrides the descriptor\'s title when given (the editor tab shows the file name); when the descriptor provides `createTab` it mints the tab itself and `title`/`path`/`id` are ignored. `url` lands the tab with its `path` pre-set to the URL (the browser tab\'s navigation seed; the caller usually pairs it with a hostname `title`). A disabled tab type is a no-op.\n\n`scope` (v0.12.0+) targets a specific session: when given, the open lands in THAT session\'s sidebar state (loading it if it has none yet) without switching the UI\'s active session; when absent the open lands in the currently active session (the pre-0.12 behavior).\n\nA CONTENT open (a `path` or `url` seed) must land in sight: when the panel hosting the landing pane is collapsed, it is expanded automatically (the right panel by default, the bottom panel when the active pane lives there; on narrow viewports the merged drawer opens). Type-only opens (the + menu, agent-terminal auto-tabs) never expand — the panel behavior is their caller\'s business.\n\nNote: `available` gates the + menu\'s disabled state only — it does NOT refuse `openTab` (only the settings disable switch does).',
-        parameters: [{ name: 'seed', description: 'Which tab to open and its content seed (title/path/diff/url/meta overrides).' }, { name: 'scope', description: 'The session whose sidebar receives the open; defaults to the active session.' }],
-      },
-      {
-        signature: 'closeTab(tabId: string, scope?: SessionScope): void',
-        description: 'Close a tab by id (fires descriptor.onClose). An unknown tab id is a strict no-op (no state churn, no callbacks). `scope` (v0.12.0+) rides to the callback (its optional cwd included); absent, the callback gets `{ sessionId }` of the active session.',
-        parameters: [{ name: 'tabId', description: 'The open tab instance id to close.' }, { name: 'scope', description: 'The session whose sidebar closes the tab; defaults to the active session.' }],
-      },
-      {
-        signature: 'subscribe(listener: () => void): () => void',
-        description: 'Subscribe to registry changes (register/dispose).',
-        parameters: [{ name: 'listener', description: 'Invoked after every registry mutation.' }],
-        returns: 'The disposer that removes the listener.',
-      },
-      {
-        signature: 'readonly version: string',
-        description: 'The plugin version this service instance was built from (\'0.12.0\').',
-        parameters: [],
-      },
-      {
-        signature: 'readonly features: readonly string[]',
-        description: 'Monotonic capability list (v0.12.0+): \'badge\' | \'tabLifecycle\' | \'updateTab\' | \'openFile\' | \'targetedOpen\' | \'stateSubscription\' | \'tabMeta\' | \'pluginSettings\'. Features are never removed — consumers gate new API usage on membership.',
-        parameters: [],
-      },
-      {
-        signature: 'getSnapshot(): SidebarSnapshot',
-        description: 'The current sidebar snapshot: the active session id, its state (panel geometry, open tabs, expansions), and the side card prefs (v0.12.0+). `state`/`sessionId` are undefined until a session becomes active.',
-        parameters: [],
-        returns: 'The current snapshot (active session id, its sidebar state, and the side card prefs).',
-      },
-      {
-        signature: 'subscribeState(listener: () => void): () => void',
-        description: 'Subscribe to snapshot changes (session switch, state changes, prefs changes). Returns the disposer.',
-        parameters: [{ name: 'listener', description: 'Invoked after every snapshot change.' }],
-        returns: 'The disposer that removes the listener.',
-      },
-      {
-        signature: 'updateTab(tabId: string, patch: { title?: string; path?: string; meta?: unknown }): void',
-        description: 'Update an open tab\'s display fields (title / path / meta); a missing tab id is a no-op.',
-        parameters: [{ name: 'tabId', description: 'The open tab instance id to update.' }, { name: 'patch', description: 'The display fields to overwrite; absent fields keep their value.' }],
-      },
-      {
-        signature: 'activateTab(tabId: string, scope?: SessionScope): void',
-        description: 'Activate an open tab (the tab-bar activation path; fires descriptor.onActivate). An unknown tab id is a strict no-op. `scope` (v0.12.0+) rides to the callback like `closeTab`\'s.',
-        parameters: [{ name: 'tabId', description: 'The open tab instance id to activate.' }, { name: 'scope', description: 'The session whose sidebar activates the tab; defaults to the active session.' }],
-      },
-      {
-        signature: 'openFile(scope: SessionScope, path: string, title?: string): void',
-        description: 'Open a file in the sidebar editor of `scope`\'s session (title defaults to the file name).',
-        parameters: [{ name: 'scope', description: 'The session whose sidebar opens the file.' }, { name: 'path', description: 'The file path to open as the editor tab\'s content seed.' }, { name: 'title', description: 'The tab title; defaults to the file name.' }],
-      },
-    ],
-  },
-  {
     key: 'browserUse',
     summary: 'Owns one optional provider registration in the shared browser-use service.',
     description: 'Owns one optional provider registration in the shared browser-use service.',
@@ -6390,10 +6282,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type BenchmarkId = Branded<\'BenchmarkId\'>;',
   },
   {
-    name: 'BetterSidebarService',
-    declaration: 'export interface BetterSidebarService {\n    registerTab(descriptor: TabDescriptor): () => void;\n    registerFileViewer(descriptor: FileViewerDescriptor): () => void;\n    getTabs(): readonly TabDescriptor[];\n    getFileViewers(): readonly FileViewerDescriptor[];\n    getTab(id: string): TabDescriptor | undefined;\n    isTabEnabled(id: string): boolean;\n    isViewerEnabled(id: string): boolean;\n    matchFileViewer(path: string, head?: Uint8Array): FileViewerDescriptor | undefined;\n    openTab(seed: OpenTabSeed, scope?: SessionScope): void;\n    closeTab(tabId: string, scope?: SessionScope): void;\n    subscribe(listener: () => void): () => void;\n    readonly version: string;\n    readonly features: readonly string[];\n    getSnapshot(): SidebarSnapshot;\n    subscribeState(listener: () => void): () => void;\n    updateTab(tabId: string, patch: {\n        title?: string;\n        path?: string;\n        meta?: unknown;\n    }): void;\n    activateTab(tabId: string, scope?: SessionScope): void;\n    openFile(scope: SessionScope, path: string, title?: string): void;\n}',
-  },
-  {
     name: 'BindingOrigin',
     declaration: 'export type BindingOrigin = \'created\' | \'referenced\' | \'discovered\' | \'tracked\';',
   },
@@ -6716,10 +6604,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ContentBlockType',
     declaration: 'export type ContentBlockType = keyof ContentBlockMap;',
-  },
-  {
-    name: 'Context',
-    declaration: 'export type Context = CordisContext & SidebarContextShape;',
   },
   {
     name: 'ContextPressureProjection',
@@ -7074,14 +6958,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface EditGoalRequest {\n    readonly objective?: string;\n    readonly maxGoalRounds?: number;\n}',
   },
   {
-    name: 'EditorToolbarControls',
-    declaration: 'export interface EditorToolbarControls {\n    setMode(mode: \'preview\' | \'edit\'): void;\n    save(): void;\n}',
-  },
-  {
-    name: 'EditorToolbarState',
-    declaration: 'export interface EditorToolbarState {\n    modes: boolean;\n    mode: \'preview\' | \'edit\';\n    dirty: boolean;\n    editable: boolean;\n    saveState: \'idle\' | \'saving\' | \'saved\' | \'failed\';\n}',
-  },
-  {
     name: 'EgoAvailability',
     declaration: 'export type EgoAvailability = {\n    ok: true;\n} | {\n    ok: false;\n    code: \'unavailable\' | \'setup_required\';\n    reason: string;\n};',
   },
@@ -7218,10 +7094,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface FileDiff {\n    path: string;\n    oldText: string | null;\n    newText: string;\n}',
   },
   {
-    name: 'FileFetchStrategy',
-    declaration: 'export type FileFetchStrategy = \'none\' | \'fsRead\' | \'mediaUrl\' | \'custom\' | \'binary-download\';',
-  },
-  {
     name: 'FileLocation',
     declaration: 'export interface FileLocation {\n    path: string;\n    line?: number;\n}',
   },
@@ -7238,24 +7110,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface FileUploadValue {\n    readonly receiptId: FileUploadReceiptId;\n    readonly file: FileAttachmentRef;\n}',
   },
   {
-    name: 'FileViewerDescriptor',
-    declaration: 'export interface FileViewerDescriptor {\n    id: string;\n    title?: string | (() => string);\n    icon?: ReactNode | ((size: number) => ReactNode);\n    exts: readonly string[];\n    priority?: number;\n    fetchStrategy: FileFetchStrategy;\n    detect?: (path: string, head: Uint8Array) => boolean;\n    load?: (path: string, scope: SessionScope, signal?: AbortSignal) => Promise<unknown>;\n    settings?: SidebarSettingsDeclaration;\n    component: (props: FileViewerProps) => ReactNode;\n}',
-  },
-  {
-    name: 'FileViewerProps',
-    declaration: 'export interface FileViewerProps {\n    ctx: Context;\n    store: SidebarStore;\n    scope: SessionScope;\n    path: string;\n    title: string;\n    viewerId: string;\n    content?: string | undefined;\n    truncated?: boolean | undefined;\n    mediaUrl?: string | undefined;\n    customData?: unknown;\n    toolbar?: \'self\' | \'host\';\n    onToolbarState?: (state: EditorToolbarState) => void;\n    onToolbarControls?: (controls: EditorToolbarControls | null) => void;\n}',
-  },
-  {
     name: 'FinishReason',
     declaration: 'export type FinishReason = FinishReasonMap[keyof FinishReasonMap];',
   },
   {
     name: 'FinishReasonMap',
     declaration: 'export interface FinishReasonMap {\n    \'stop\': {\n        kind: \'stop\';\n    };\n    \'tool-calls\': {\n        kind: \'tool-calls\';\n    };\n    \'max-tokens\': {\n        kind: \'max-tokens\';\n    };\n    \'aborted\': {\n        kind: \'aborted\';\n        failure: LlmFailure;\n    };\n    \'error\': {\n        kind: \'error\';\n        failure: LlmFailure;\n    };\n}',
-  },
-  {
-    name: 'FloatWindow',
-    declaration: 'export interface FloatWindow {\n    id: string;\n    tab: SidebarTab;\n    x: number;\n    y: number;\n    w: number;\n    h: number;\n}',
   },
   {
     name: 'ForgeActionFailure',
@@ -8372,10 +8232,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'OpenDialogOptions',
     declaration: 'export interface OpenDialogOptions {\n    title?: string;\n    defaultPath?: string;\n    properties?: (\'openFile\' | \'openDirectory\' | \'multiSelections\')[];\n}',
-  },
-  {
-    name: 'OpenTabSeed',
-    declaration: 'export interface OpenTabSeed {\n    type: string;\n    title?: string | undefined;\n    path?: string | undefined;\n    diff?: SidebarTab[\'diff\'] | undefined;\n    id?: string | undefined;\n    url?: string | undefined;\n    meta?: unknown;\n}',
   },
   {
     name: 'OptimizeLoopOptions',
@@ -9798,10 +9654,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SessionResultRange {\n    from?: number;\n    to?: number;\n}',
   },
   {
-    name: 'SessionScope',
-    declaration: 'export interface SessionScope {\n    sessionId: string;\n    cwd?: string | undefined;\n    repoRoot?: string | undefined;\n}',
-  },
-  {
     name: 'SessionSearchCursor',
     declaration: 'export type SessionSearchCursor = Branded<\'SessionSearchCursor\'>;',
   },
@@ -10086,242 +9938,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ShellSandboxInfo {\n    mode: SandboxMode;\n    denied: boolean;\n    enforcement?: SandboxEnforcement;\n    runnerFailed?: boolean;\n}',
   },
   {
-    name: 'SidebarAgent',
-    declaration: 'export interface SidebarAgent {\n    readonly id: string;\n    readonly session: {\n        readonly header: {\n            readonly cwd?: string;\n        };\n    };\n}',
-  },
-  {
-    name: 'SidebarAgentPresetsService',
-    declaration: 'export interface SidebarAgentPresetsService {\n    resolve(presetId?: string): Promise<{\n        id: string;\n    }>;\n    mount(agentCtx: unknown, presetId: string): Promise<void>;\n}',
-  },
-  {
-    name: 'SidebarAgentsService',
-    declaration: 'export interface SidebarAgentsService {\n    get(id: string): SidebarAgent | undefined;\n    create?(options: unknown): Promise<{\n        agent: SidebarAgent;\n        dispose(): Promise<void>;\n    }>;\n    resume?(options: unknown): Promise<{\n        agent: SidebarAgent;\n        dispose(): Promise<void>;\n    }>;\n}',
-  },
-  {
-    name: 'SidebarConfigEditorEntry',
-    declaration: 'export interface SidebarConfigEditorEntry {\n    fiber?: unknown;\n    options: {\n        id?: string;\n    };\n}',
-  },
-  {
-    name: 'SidebarConfigEditorService',
-    declaration: 'export interface SidebarConfigEditorService {\n    entries(): SidebarConfigEditorEntry[];\n}',
-  },
-  {
-    name: 'SidebarConnectionHandle',
-    declaration: 'export interface SidebarConnectionHandle {\n    api: {\n        sessions: SidebarSessionHistoryRpc;\n        subagents: {\n            history(payload: SidebarSubagentAddress & {\n                beforeSeq?: number;\n                maxMessages?: number;\n            }, signal?: AbortSignal): Promise<SidebarRpcResponse<{\n                events: SidebarHistoryEntry[];\n                hasMore: boolean;\n            }>>;\n        };\n    };\n}',
-  },
-  {
-    name: 'SidebarContextShape',
-    declaration: 'export interface SidebarContextShape {\n    webServer: SidebarWebServer;\n    sessions: SidebarSessionStore & SidebarSessionsService;\n    connection: SidebarConnectionHandle;\n    webRuntime: SidebarWebRuntime;\n    slots: SidebarSlotsService;\n    workspaces: SidebarWorkspacesService;\n    settings: SidebarSettingsService;\n    configEditor: SidebarConfigEditorService;\n    tools: SidebarToolsService;\n    locale: SidebarLocaleService;\n    modules: {\n        import(specifier: string): Promise<unknown>;\n    };\n    jobs: SidebarJobsService;\n    agents: SidebarAgentsService;\n    subagents: SidebarSubagentsService;\n    agentPresets: SidebarAgentPresetsService;\n    sessionTitle: SidebarSessionTitleService;\n    sessionController: SidebarSessionControllerService;\n    conversation: SidebarConversation;\n    betterSidebar: BetterSidebarService;\n    on(event: \'settings/document-updated\', listener: (ns: string, revision: number) => void): () => void;\n    on(event: string, listener: (session: unknown, event: SidebarSessionEvent) => void): () => void;\n}',
-  },
-  {
-    name: 'SidebarConversation',
-    declaration: 'export interface SidebarConversation {\n    input: {\n        for(actx: Context): SidebarSessionInput;\n    };\n}',
-  },
-  {
-    name: 'SidebarDiffRef',
-    declaration: 'export type SidebarDiffRef = {\n    kind: \'worktree\';\n    path: string;\n    staged: boolean;\n    untracked?: boolean | undefined;\n    worktree?: string | undefined;\n    repoRoot?: string | undefined;\n} | {\n    kind: \'commit\';\n    hash: string;\n    hashFull: string;\n    subject: string;\n    worktree?: string | undefined;\n    repoRoot?: string | undefined;\n};',
-  },
-  {
-    name: 'SidebarHistoryEntry',
-    declaration: 'export interface SidebarHistoryEntry {\n    event: SidebarSessionEvent;\n    view?: unknown;\n}',
-  },
-  {
-    name: 'SidebarHttpRequest',
-    declaration: 'export interface SidebarHttpRequest {\n    url?: string;\n    method?: string;\n    headers: Record<string, string | string[] | undefined>;\n    [Symbol.asyncIterator](): AsyncIterator<string | Uint8Array>;\n}',
-  },
-  {
-    name: 'SidebarHttpResponse',
-    declaration: 'export interface SidebarHttpResponse {\n    statusCode: number;\n    writeHead(status: number, headers?: Record<string, string>): void;\n    end(body?: string | Uint8Array): void;\n}',
-  },
-  {
-    name: 'SidebarJobsService',
-    declaration: 'export interface SidebarJobsService {\n    kill(id: string, caller?: SidebarAgent, reason?: string): \'requested\' | \'already-finished\';\n}',
-  },
-  {
-    name: 'SidebarJobStatus',
-    declaration: 'export type SidebarJobStatus = \'running\' | \'stopping\' | \'completed\' | \'killed\' | \'failed\';',
-  },
-  {
-    name: 'SidebarJobView',
-    declaration: 'export interface SidebarJobView {\n    id: string;\n    kind: string;\n    label: string;\n    status: SidebarJobStatus;\n    detail?: string;\n    startedAt: number;\n    finishedAt?: number;\n}',
-  },
-  {
-    name: 'SidebarLeaf',
-    declaration: 'export interface SidebarLeaf {\n    kind: \'leaf\';\n    id: string;\n    tabs: SidebarTab[];\n    active: string | null;\n}',
-  },
-  {
-    name: 'SidebarLocaleService',
-    declaration: 'export interface SidebarLocaleService {\n    getSnapshot(): {\n        active: string;\n    };\n    subscribe(fn: () => void): () => void;\n    register(ns: string, locale: string, dict: Record<string, string>): () => void;\n}',
-  },
-  {
-    name: 'SidebarPrefs',
-    declaration: 'export interface SidebarPrefs {\n    openByDefault: boolean;\n    defaultWidthPercent: number;\n    autoOpenSubagent: boolean;\n    autoOpenJobs: boolean;\n    agentTerminalTools: boolean;\n    agentOpenTools: boolean;\n    terminalFontFamily: string;\n    terminalFontSize: number;\n    bottomPanelAutoTerminal: boolean;\n    interceptOpenPath: boolean;\n    editorExplorer: boolean;\n    terminalShell: string;\n    terminalShellArgs: string;\n    titleBarScheme: TitleBarScheme;\n    titleBarPresetId: string;\n    customCss: string;\n    titleBarCompat: boolean;\n    titleBarStripPx: number;\n    htmlViewerNoSandbox: boolean;\n    htmlViewerDefaultUnsafe: boolean;\n    browserNoSandbox: boolean;\n    browserInterceptLinks: boolean;\n    browserInterceptHttp: boolean;\n    browserInterceptHttps: boolean;\n    browserAllowedLoopback: string;\n    tabsEnabled: Record<string, boolean>;\n    viewersEnabled: Record<string, boolean>;\n    pluginSettings: Record<string, Record<string, unknown>>;\n}',
-  },
-  {
-    name: 'SidebarRpcResponse',
-    declaration: 'export interface SidebarRpcResponse<T> {\n    rpcId: unknown;\n    result: SidebarRpcResult<T>;\n}',
-  },
-  {
-    name: 'SidebarRpcResult',
-    declaration: 'export type SidebarRpcResult<T> = {\n    ok: true;\n    value: T;\n} | {\n    ok: false;\n    error: {\n        code: string;\n        message: string;\n    };\n};',
-  },
-  {
-    name: 'SidebarSessionControllerService',
-    declaration: 'export interface SidebarSessionControllerService {\n    inspect(sessionId: string, signal?: AbortSignal): Promise<{\n        meta: {\n            cwd?: string;\n            agentPreset?: string;\n        };\n        events: readonly SidebarSessionEvent[];\n    }>;\n}',
-  },
-  {
-    name: 'SidebarSessionEvent',
-    declaration: 'export interface SidebarSessionEvent {\n    type: string;\n    seq: number;\n    time: number;\n    data: Record<string, unknown>;\n}',
-  },
-  {
-    name: 'SidebarSessionHeader',
-    declaration: 'export interface SidebarSessionHeader {\n    cwd?: string;\n}',
-  },
-  {
-    name: 'SidebarSessionHistoryRpc',
-    declaration: 'export interface SidebarSessionHistoryRpc {\n    history(payload: {\n        sessionId: string;\n        beforeSeq?: number;\n        maxMessages?: number;\n    }, signal?: AbortSignal): Promise<SidebarRpcResponse<{\n        events: SidebarHistoryEntry[];\n        hasMore: boolean;\n    }>>;\n}',
-  },
-  {
-    name: 'SidebarSessionInput',
-    declaration: 'export interface SidebarSessionInput {\n    state: {\n        getSnapshot(): {\n            draft: string;\n        };\n    };\n    setDraft(text: string): void;\n}',
-  },
-  {
-    name: 'SidebarSessionList',
-    declaration: 'export interface SidebarSessionList {\n    current: string | undefined;\n    byId: Record<string, SidebarSessionSummary>;\n    subagentsByParent?: Readonly<Record<string, SidebarSubagentCatalog>>;\n    jobsBySession?: Readonly<Record<string, readonly SidebarJobView[]>>;\n}',
-  },
-  {
-    name: 'SidebarSessionsService',
-    declaration: 'export interface SidebarSessionsService {\n    list: {\n        getSnapshot(): SidebarSessionList;\n        subscribe(fn: () => void): () => void;\n    };\n    open?(id: string): void;\n    fork?(opts: {\n        sessionId: string;\n        atSeq?: number;\n        increaseTitle?: boolean;\n    }): Promise<string>;\n    binding?(id: string): {\n        session: {\n            rename(title: string): Promise<unknown>;\n        };\n    } | undefined;\n    scope(id: string): Context | undefined;\n    openSubagent?(address: SidebarSubagentAddress): void;\n    subagentAddress?(id: string): SidebarSubagentAddress | undefined;\n    setSubagentCatalogOpen?(parentSessionId: string, open: boolean): void;\n    refreshSubagents?(parentSessionId: string): Promise<void>;\n}',
-  },
-  {
-    name: 'SidebarSessionStore',
-    declaration: 'export interface SidebarSessionStore {\n    get(id: string): {\n        header: SidebarSessionHeader;\n        events?: readonly SidebarSessionEvent[];\n    } | undefined;\n}',
-  },
-  {
-    name: 'SidebarSessionSummary',
-    declaration: 'export interface SidebarSessionSummary {\n    id: string;\n    cwd?: string;\n    displayTitle: string;\n    origin?: \'subagent\';\n    parentId?: string;\n    running?: boolean;\n}',
-  },
-  {
-    name: 'SidebarSessionTitleService',
-    declaration: 'export interface SidebarSessionTitleService {\n    rename(session: unknown, title: string): {\n        title: string;\n        eventSeq: number;\n    };\n}',
-  },
-  {
-    name: 'SidebarSettingsDeclaration',
-    declaration: 'export interface SidebarSettingsDeclaration {\n    toggles?: readonly SidebarSettingToggle[];\n    pluginToggles?: readonly SidebarSettingToggle[];\n    render?: (props: SidebarSettingsRenderProps) => ReactNode;\n}',
-  },
-  {
-    name: 'SidebarSettingsDescriptor',
-    declaration: 'export interface SidebarSettingsDescriptor {\n    ns: string;\n    value?: unknown;\n    revision: number;\n}',
-  },
-  {
-    name: 'SidebarSettingSelectOption',
-    declaration: 'export interface SidebarSettingSelectOption {\n    value: string | number | boolean;\n    title: string | (() => string);\n    desc?: string | (() => string);\n    icon?: ReactNode | ((size: number) => ReactNode);\n}',
-  },
-  {
-    name: 'SidebarSettingsRenderProps',
-    declaration: 'export interface SidebarSettingsRenderProps {\n    store: SidebarStore;\n    service: BetterSidebarService;\n    prefs: SidebarPrefs;\n    pluginSettings: Record<string, unknown>;\n    updatePluginSetting: (key: string, value: unknown) => void;\n    close(): void;\n}',
-  },
-  {
-    name: 'SidebarSettingsService',
-    declaration: 'export interface SidebarSettingsService {\n    describe(options?: {\n        redactSecrets?: boolean;\n    }): SidebarSettingsDescriptor[];\n    update(ns: string, patch: object, expectedRevision?: number): Promise<void>;\n}',
-  },
-  {
-    name: 'SidebarSettingToggle',
-    declaration: 'export interface SidebarSettingToggle {\n    key: string;\n    title: string | (() => string);\n    desc?: string | (() => string);\n    type?: SidebarSettingToggleType;\n    min?: number;\n    max?: number;\n    placeholder?: string;\n    unit?: string;\n    options?: readonly SidebarSettingSelectOption[];\n    multi?: boolean;\n}',
-  },
-  {
-    name: 'SidebarSettingToggleType',
-    declaration: 'export type SidebarSettingToggleType = \'switch\' | \'text\' | \'number\' | \'select\';',
-  },
-  {
-    name: 'SidebarSlotRegisterOptions',
-    declaration: 'export interface SidebarSlotRegisterOptions {\n    name: string;\n    key?: string;\n    id?: string;\n    order?: number;\n    label?: string | (() => string);\n    select?: (owner: unknown) => unknown;\n    priority?: number;\n    locale?: string;\n    registrant?: string;\n    inject?: (...args: never[]) => Record<string, unknown>;\n    children?: Record<string, unknown>;\n}',
-  },
-  {
-    name: 'SidebarSlotsService',
-    declaration: 'export interface SidebarSlotsService {\n    register(options: SidebarSlotRegisterOptions, component: unknown): () => void;\n    inject(key: string, callback: () => () => void): () => void;\n}',
-  },
-  {
-    name: 'SidebarSnapshot',
-    declaration: 'export interface SidebarSnapshot {\n    sessionId: string | undefined;\n    state: SidebarState | undefined;\n    prefs: SidebarPrefs;\n}',
-  },
-  {
-    name: 'SidebarSplit',
-    declaration: 'export interface SidebarSplit {\n    kind: \'split\';\n    id: string;\n    dir: \'row\' | \'col\';\n    sizes: number[];\n    children: SplitNode[];\n}',
-  },
-  {
-    name: 'SidebarState',
-    declaration: 'export interface SidebarState {\n    panelOpen: boolean;\n    width: number;\n    activePane: string | null;\n    nextTerminal: number;\n    nextBrowser: number;\n    expanded: string[];\n    revealed: string[];\n    splits: SplitNode;\n    bottomOpen: boolean;\n    bottomHeight: number;\n    bottomOpenedOnce: boolean;\n    bottomSplits: SplitNode;\n    floats: FloatWindow[];\n}',
-  },
-  {
-    name: 'SidebarStore',
-    declaration: 'export class SidebarStore {\n    setSuspended(suspended: boolean): void;\n    getSuspended(): boolean;\n    setPrefs(prefs: SidebarPrefs): void;\n    getPrefs(): SidebarPrefs;\n    setSession(sessionId: string | undefined): void;\n    subscribe(listener: () => void): () => void;\n    getSnapshot(): SidebarSnapshot;\n    update(mutator: (draft: SidebarState) => void): void;\n    tabOpen(sessionId: string, tabId: string): boolean;\n    getSessionStates(): ReadonlyMap<string, SidebarState>;\n    reduce(reducer: (state: SidebarState) => SidebarState): void;\n    reduceFor(sessionId: string, reducer: (state: SidebarState) => SidebarState): void;\n}',
-  },
-  {
-    name: 'SidebarSubagentAddress',
-    declaration: 'export interface SidebarSubagentAddress {\n    parentSessionId: string;\n    childSessionId: string;\n    mode: \'one-shot\' | \'continuable\';\n}',
-  },
-  {
-    name: 'SidebarSubagentCatalog',
-    declaration: 'export interface SidebarSubagentCatalog {\n    entries: Array<SidebarSubagentChildEntry | SidebarSubagentDiagnosticEntry>;\n    parentAvailable: boolean;\n    state: \'loading\' | \'ready\' | \'error\';\n    error: {\n        code?: string;\n        message?: string;\n    } | null;\n}',
-  },
-  {
-    name: 'SidebarSubagentChildEntry',
-    declaration: 'export interface SidebarSubagentChildEntry {\n    kind: \'child\';\n    id: string;\n    activity: \'running\' | \'inactive\';\n    hasChildren: boolean;\n    mode: \'one-shot\' | \'continuable\';\n    label?: string;\n}',
-  },
-  {
-    name: 'SidebarSubagentDescendantEntry',
-    declaration: 'export type SidebarSubagentDescendantEntry = {\n    kind: \'child\';\n    id: string;\n    activity: \'running\' | \'inactive\';\n    hasChildren: boolean;\n    mode: \'one-shot\' | \'continuable\';\n    label?: string;\n    parentId: string;\n    depth: number;\n} | {\n    kind: \'diagnostic\';\n    id: string;\n    reason: \'corrupt\' | \'unsupported\' | \'unavailable\';\n    parentId: string;\n    depth: number;\n};',
-  },
-  {
-    name: 'SidebarSubagentDiagnosticEntry',
-    declaration: 'export interface SidebarSubagentDiagnosticEntry {\n    kind: \'diagnostic\';\n    id: string;\n    reason: \'corrupt\' | \'unsupported\' | \'unavailable\';\n}',
-  },
-  {
-    name: 'SidebarSubagentsService',
-    declaration: 'export interface SidebarSubagentsService {\n    listDescendants(rootSessionId: string, signal?: AbortSignal): Promise<SidebarSubagentDescendantEntry[]>;\n}',
-  },
-  {
-    name: 'SidebarTab',
-    declaration: 'export interface SidebarTab {\n    id: string;\n    type: TabType;\n    title: string;\n    path?: string;\n    diff?: SidebarDiffRef;\n    meta?: unknown;\n    pin?: {\n        scope: \'workspace\' | \'global\';\n        homeCwd?: string | undefined;\n    };\n}',
-  },
-  {
-    name: 'SidebarToolsService',
-    declaration: 'export interface SidebarToolsService {\n    register(tool: unknown): () => void;\n}',
-  },
-  {
-    name: 'SidebarUpgradeHead',
-    declaration: 'export type SidebarUpgradeHead = Uint8Array;',
-  },
-  {
-    name: 'SidebarUpgradeSocket',
-    declaration: 'export interface SidebarUpgradeSocket {\n    destroy(): void;\n}',
-  },
-  {
-    name: 'SidebarWebRoute',
-    declaration: 'export interface SidebarWebRoute {\n    kind: \'exact\' | \'prefix\';\n    path: string;\n    handler: (req: SidebarHttpRequest, res: SidebarHttpResponse) => void | Promise<void>;\n}',
-  },
-  {
-    name: 'SidebarWebRuntime',
-    declaration: 'export interface SidebarWebRuntime {\n    trustedHosts: readonly string[];\n}',
-  },
-  {
-    name: 'SidebarWebServer',
-    declaration: 'export interface SidebarWebServer {\n    register(route: SidebarWebRoute): () => void;\n    registerUpgrade(route: SidebarWebUpgradeRoute): () => void;\n    registerStream(route: SidebarWebStreamingRoute): () => void;\n}',
-  },
-  {
-    name: 'SidebarWebStreamingRoute',
-    declaration: 'export interface SidebarWebStreamingRoute {\n    kind: \'exact\' | \'prefix\';\n    path: string;\n    handler: (req: SidebarHttpRequest) => Response | Promise<Response>;\n}',
-  },
-  {
-    name: 'SidebarWebUpgradeRoute',
-    declaration: 'export interface SidebarWebUpgradeRoute {\n    path: string;\n    handler: (req: SidebarHttpRequest, socket: SidebarUpgradeSocket, head: SidebarUpgradeHead) => void | Promise<void>;\n}',
-  },
-  {
-    name: 'SidebarWorkspacesService',
-    declaration: 'export interface SidebarWorkspacesService {\n    openPath(path: string): Promise<void>;\n}',
-  },
-  {
     name: 'SignInAttemptId',
     declaration: 'export type SignInAttemptId = Branded<\'SignInAttemptId\'>;',
   },
@@ -10492,10 +10108,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SpillSource',
     declaration: 'export type SpillSource = {\n    kind: \'tool\';\n    toolName: string;\n    callId: ToolCallId;\n    label: string;\n} | {\n    kind: \'session-reference\';\n    sessionId: SessionId;\n    label: string;\n};',
-  },
-  {
-    name: 'SplitNode',
-    declaration: 'export type SplitNode = SidebarLeaf | SidebarSplit;',
   },
   {
     name: 'SshStreamEndpoint',
@@ -10750,24 +10362,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type SystemPromptUpdate = \'in-history\';',
   },
   {
-    name: 'TabComponentProps',
-    declaration: 'export interface TabComponentProps {\n    ctx: Context;\n    store: SidebarStore;\n    scope: SessionScope;\n    tab: SidebarTab;\n    visible: boolean;\n    expanded?: string[];\n    revealed?: string[];\n    onToggleDir?: (path: string) => void;\n    onReferenceFile?: (path: string) => void;\n    onOpenFile?: (path: string) => void;\n    onOpenDiff?: (tab: SidebarTab) => void;\n    onSubagentJump?: (childSessionId: string) => void;\n}',
-  },
-  {
-    name: 'TabDescriptor',
-    declaration: 'export interface TabDescriptor {\n    id: string;\n    title: string | (() => string);\n    icon?: ReactNode | ((size: number) => ReactNode);\n    order?: number;\n    hidden?: boolean;\n    available?: (ctx: Context, scope: SessionScope, state: SidebarState) => boolean;\n    single?: boolean;\n    dedupeKey?: (tab: SidebarTab) => string | undefined;\n    createTab?: (state: SidebarState) => {\n        tab: SidebarTab;\n        patch?: Partial<SidebarState>;\n    } | null;\n    urlTarget?: (url: URL) => boolean;\n    settings?: SidebarSettingsDeclaration;\n    badge?: (ctx: Context, scope: SessionScope, state: SidebarState) => string | number | null | undefined;\n    onOpen?: (tab: SidebarTab, scope: SessionScope) => void;\n    onActivate?: (tab: SidebarTab, scope: SessionScope) => void;\n    onClose?: (tab: SidebarTab, scope: SessionScope) => void;\n    component: (props: TabComponentProps) => ReactNode;\n}',
-  },
-  {
     name: 'TableKeyOf',
     declaration: 'export type TableKeyOf<S extends DomainSpec, N extends keyof S[\'tables\']> = S[\'tables\'][N] extends DomainTableSpec<infer K> ? K : never;',
   },
   {
     name: 'TableValueOf',
     declaration: 'export type TableValueOf<S extends DomainSpec, N extends keyof S[\'tables\']> = S[\'tables\'][N] extends DomainTableSpec<string, infer V> ? V : never;',
-  },
-  {
-    name: 'TabType',
-    declaration: 'export type TabType = string;',
   },
   {
     name: 'TeamId',
@@ -10920,10 +10520,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TimeOutOfRangeError',
     declaration: 'export interface TimeOutOfRangeError {\n    readonly code: \'time_out_of_range\';\n    readonly message: string;\n}',
-  },
-  {
-    name: 'TitleBarScheme',
-    declaration: 'export type TitleBarScheme = typeof TITLE_BAR_SCHEMES[number];',
   },
   {
     name: 'ToastOptions',

@@ -1,6 +1,0 @@
-{
-  "meta": {
-    "title": "Espace de travail latéral",
-    "description": "Ajoute une barre latérale droite de type VSCode avec explorateur, éditeur, terminal, git et navigateur, isolée par session."
-  }
-}

@@ -42,7 +42,6 @@ function relative(file: string): string {
  * gate; only the missing languages are waived until the translations land.
  */
 const PENDING_LOCALE_PACKAGES: ReadonlySet<string> = new Set([
-  'packages/client/better-sidebar',
   'packages/client/ui-document-studio',
   'packages/client/ui-patent-teams',
   'packages/client/ui-plugin-catalog',

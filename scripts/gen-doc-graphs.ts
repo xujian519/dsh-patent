@@ -969,13 +969,6 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Composes the __DSH_BOOT__ entry graph from an incremental dsh.client scan, serves plugin bundles, and notifies rebuilt/graph-changed subscribers.',
   },
   {
-    key: 'betterSidebar',
-    pkg: 'better-sidebar',
-    title: 'Sidebar tab and file-viewer registry',
-    mode: 'seam',
-    note: 'Service Definition published as ctx.betterSidebar: client plugins register sidebar tab types and file viewers; the better-sidebar panel is the provider host that renders registered types per session.',
-  },
-  {
     key: 'workflowEngine',
     pkg: 'workflow',
     title: 'Workflow script engine',

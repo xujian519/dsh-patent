@@ -58,7 +58,7 @@ type RetainedPage<T> = Pick<RetainedItems<T>, 'items' | 'truncated' | 'seen'>
  * returns; the two are structurally identical, so the projected value still reads
  * back as a {@link SearchResultView}.
  */
-export type SearchMeta =
+type SearchMeta =
   | { shape: 'matches'; files: MetaFileMatches[]; truncated: boolean; total: number }
   | { shape: 'paths'; paths: string[]; truncated: boolean; total: number }
 

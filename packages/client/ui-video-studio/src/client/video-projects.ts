@@ -13,13 +13,13 @@ import type {
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
 
 /** The production tool whose settled results name a project file. */
-export const VIDEO_PROJECT_TOOL = 'video_project'
+const VIDEO_PROJECT_TOOL = 'video_project'
 
 /** The media tool whose settlement changes the ledger or the task journal. */
-export const VIDEO_MEDIA_TOOL = 'media'
+const VIDEO_MEDIA_TOOL = 'media'
 
 /** One project the Session has opened, with the result seq that first named it. */
-export interface VideoProjectEntry {
+interface VideoProjectEntry {
   /** Absolute project file path as the Host resolved it. */
   readonly path: string
   /** Result event seq that first named this project. */

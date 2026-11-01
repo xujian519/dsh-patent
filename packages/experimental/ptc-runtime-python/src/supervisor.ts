@@ -45,7 +45,7 @@ export interface LiveRun {
 /**
  * Everything one supervised run reads from the runtime that owns it.
  */
-export interface ChildRunDeps {
+interface ChildRunDeps {
   /** The absolute interpreter path the plugin resolved and probed at load. */
   readonly pythonBin: string
   /** The gates' resolved values: every cap this run enforces. */

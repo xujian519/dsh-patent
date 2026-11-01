@@ -14,7 +14,7 @@
 
 /* jscpd:ignore-start -- generated API catalog; structure follows the source definitions. */
 /** One named parameter in a Service method or Event listener. */
-export interface ApiParameter {
+interface ApiParameter {
   /** Parameter name from the exact signature. */
   name: string
   /** Source-owned parameter contract. */
@@ -22,7 +22,7 @@ export interface ApiParameter {
 }
 
 /** One public service member and its source-owned contract. */
-export interface ServiceApiMethod {
+interface ServiceApiMethod {
   /** Public method signature with its body stripped. */
   signature: string
   /** Method purpose and behavior. */
@@ -36,7 +36,7 @@ export interface ServiceApiMethod {
 }
 
 /** One harness `ctx.<key>` service and its public methods. */
-export interface ServiceApiEntry {
+interface ServiceApiEntry {
   /** The `ctx.<key>` name, e.g. `tools`. */
   key: string
   /** First sentence of the service class JSDoc. */
@@ -48,7 +48,7 @@ export interface ServiceApiEntry {
 }
 
 /** One harness event: its dispatch mode, exact signature, and listener contract. */
-export interface EventApiEntry {
+interface EventApiEntry {
   /** The scoped event name, e.g. `agent/status`. */
   name: string
   /** The dispatch mode from the declaration's `@mode` tag. */
@@ -64,7 +64,7 @@ export interface EventApiEntry {
 }
 
 /** One inherited (cordis core + loader/hmr/timer) `ctx` member group with its summary. */
-export interface InheritedApiEntry {
+interface InheritedApiEntry {
   /** The `ctx` member name(s), e.g. `ctx.on / ctx.once`. */
   name: string
   /** One-line summary of what the member does. */
@@ -72,7 +72,7 @@ export interface InheritedApiEntry {
 }
 
 /** One named type declaration referenced by a Service or Event signature. */
-export interface TypeApiEntry {
+interface TypeApiEntry {
   /** The exported type/interface name, e.g. `ShellRunResult`. */
   name: string
   /** The full declaration text, comments stripped. */

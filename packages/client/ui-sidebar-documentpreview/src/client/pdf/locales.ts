@@ -15,7 +15,7 @@ export const zh = {
 } satisfies Record<string, string>
 
 /** PDF translation keys shared by both dictionaries. */
-export type PdfLocaleKey = keyof typeof zh
+type PdfLocaleKey = keyof typeof zh
 
 /** English PDF-renderer dictionary. */
 export const en = {

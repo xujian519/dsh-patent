@@ -24,7 +24,7 @@ import type { TrajectoryTranslate } from './locales.ts'
 import { COMPACTION_INTERRUPTED_ERROR } from './copy-codes.ts'
 
 /** One Message or Step group inside a turn. */
-export interface TrajectoryGroupModel {
+interface TrajectoryGroupModel {
   title: string
   description?: string
   cells: readonly TrajectoryCellProps[]
@@ -37,7 +37,7 @@ export interface TrajectoryTurnModel {
 }
 
 /** Snapshot slice the trajectory view folds. */
-export interface TrajectoryLayoutInput {
+interface TrajectoryLayoutInput {
   systemPrompts?: TrajectorySnapshot['systemPrompts']
   nodes: TrajectorySnapshot['eventNodes']
   eventLocations?: ReadonlyMap<number, ConversationLocation>

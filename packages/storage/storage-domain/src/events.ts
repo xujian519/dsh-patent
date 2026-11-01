@@ -8,7 +8,7 @@
  */
 
 /** Shared location fields of one durable domain change. */
-export interface DomainChangedBase {
+interface DomainChangedBase {
   /** Owning domain name. */
   readonly domain: string
   /** Table name; `''` for a global-singleton write. */
@@ -18,14 +18,14 @@ export interface DomainChangedBase {
 }
 
 /** A record (or the global singleton) was inserted or overwritten. */
-export interface DomainChangedPut extends DomainChangedBase {
+interface DomainChangedPut extends DomainChangedBase {
   readonly operation: 'put'
   /** The new snapshot. */
   readonly value: unknown
 }
 
 /** A record was deleted; tombstones carry no value. */
-export interface DomainChangedDeleted extends DomainChangedBase {
+interface DomainChangedDeleted extends DomainChangedBase {
   readonly operation: 'deleted'
   readonly value?: never
 }

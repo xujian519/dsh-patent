@@ -8,17 +8,17 @@ import { entryListProblem } from './definition.ts'
  * boolean, or `'conditional'` when a `!!js` disabled expression could not be
  * evaluated outside a mount.
  */
-export type CompositionRowEnablement = boolean | 'conditional'
+type CompositionRowEnablement = boolean | 'conditional'
 
 /**
  * Evaluate one `!!js` disabled expression the way the Loader would at a mount
  * decision. Throwing refuses the answer: the row is reported `'conditional'`
  * rather than guessed.
  */
-export type DisabledExpressionEvaluator = (expression: string) => unknown
+type DisabledExpressionEvaluator = (expression: string) => unknown
 
 /** One plugin row a preset composition names. */
-export interface AgentPresetCompositionRow {
+interface AgentPresetCompositionRow {
   /**
    * Entry id relative to the preset's Loader tree, or the declared id before
    * activation; null when an unmounted row declares none.

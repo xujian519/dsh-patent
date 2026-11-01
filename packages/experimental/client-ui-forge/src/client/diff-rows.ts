@@ -26,7 +26,7 @@ export interface SplitRow {
 }
 
 /** A run of drawn rows, or unchanged lines drawn as one row that expands them. */
-export type DiffSegment =
+type DiffSegment =
   | { readonly kind: 'rows'; readonly rows: readonly DiffRow[] }
   /**
    * `index` is the hunk the lines precede, or the hunk count for the lines after the last hunk;

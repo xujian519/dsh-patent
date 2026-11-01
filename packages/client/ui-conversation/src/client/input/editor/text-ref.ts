@@ -9,7 +9,7 @@ import { scanTextRefs } from '../decorations.ts'
 import css from './composer-editor.module.css'
 
 /** JSON form of one text-ref node. */
-export type SerializedTextRefNode = SerializedTextNode
+type SerializedTextRefNode = SerializedTextNode
 
 /** One matched plain-text reference as a styled, fully editable text node. */
 export class TextRefNode extends TextNode {

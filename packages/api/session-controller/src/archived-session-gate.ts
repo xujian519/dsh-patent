@@ -40,7 +40,7 @@ export const ArchivedSessionGate: Plugin.Object<void> = {
  * @param agent - the Agent proposing a step.
  * @returns whether an archived Session owns the step.
  */
-export function underArchivedSession(ctx: Context, agent: Agent): boolean {
+function underArchivedSession(ctx: Context, agent: Agent): boolean {
   const archived = ctx.workspaceRegistry.archivedSessionIds
   let header = agent.session.header
   const visited = new Set<SessionId>()

@@ -36,7 +36,7 @@ const SECTION_NUMBER_RE = new RegExp(`^([ \\t]*)(${CN_SECTION_NUMERAL})、`)
 const SUBSECTION_NUMBER_RE = /^([ \t]*)(\d+)(?=\.\d)/
 
 /** 被折叠的一个块。 */
-export interface FoldedSection {
+interface FoldedSection {
   /** 块绑定的槽位 id。 */
   id: string
   /** 块的标题文本（去标签后的可见文本）；块内没有标题时退化为槽位 id。 */
@@ -44,7 +44,7 @@ export interface FoldedSection {
 }
 
 /** 折叠结果。 */
-export interface SectionFoldResult {
+interface SectionFoldResult {
   /** 折叠后的 HTML。 */
   html: string
   /** 被移除的块，按文档顺序。 */

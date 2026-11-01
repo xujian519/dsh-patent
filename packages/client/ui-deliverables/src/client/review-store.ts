@@ -8,7 +8,7 @@ import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-sto
 import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
 
 /** One review tab's choices. */
-export interface ReviewTabState {
+interface ReviewTabState {
   /** Original index of the shown file in the summary's files array. */
   index: number
   /** Whether deletions and additions are drawn in two columns; new tabs start enabled. */
@@ -20,7 +20,7 @@ export interface ReviewTabState {
 }
 
 /** Every review tab's choices, keyed by tab id. */
-export interface ReviewState {
+interface ReviewState {
   byTab: Record<TabId, ReviewTabState>
 }
 

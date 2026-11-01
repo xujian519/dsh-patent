@@ -16,7 +16,7 @@ export interface PdfSession {
 }
 
 /** Page geometry expressed in CSS pixels. */
-export interface PdfPageSize {
+interface PdfPageSize {
   readonly width: number
   readonly height: number
 }

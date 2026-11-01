@@ -11,7 +11,7 @@ import { catalogProviderPageSchema, catalogSourceManifestSchema } from './catalo
 import { restrictedFetchJson, type RestrictedFetchOptions } from './restricted-fetch.ts'
 
 /** The catalog endpoint path appended to a source's transport base URL. */
-export const CATALOG_PATH = '/v1/plugins'
+const CATALOG_PATH = '/v1/plugins'
 
 /**
  * Fetch and validate a catalog source manifest. The returned id is

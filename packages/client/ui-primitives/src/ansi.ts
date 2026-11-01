@@ -21,7 +21,7 @@ interface AnsiChunk {
 }
 
 /** One run of terminal text; `style` is undefined for text that carries no SGR state. */
-export interface AnsiSpan {
+interface AnsiSpan {
   /** The run's plain text, free of escape sequences and newlines. */
   text: string
   /** Resolved inline style, or undefined when the run needs no wrapper. */

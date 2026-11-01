@@ -4,7 +4,7 @@ import type { SessionEvent, SessionHeader, SessionId , SessionLogOffset } from '
 import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
 
 /** One persisted Session's detached header and complete committed event log. */
-export interface PersistedSessionView {
+interface PersistedSessionView {
   /** Exact fork-inherited event count paired with `header`. */
   readonly inheritedEventCount: SessionLogOffset
   readonly header: SessionHeader

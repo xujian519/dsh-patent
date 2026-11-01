@@ -174,7 +174,7 @@ function buildRestrictingSids(sids: readonly NativePtr[]): Buffer {
 }
 
 /** The well-known SID packed into every restricted token's restricting list. */
-export interface RestrictingSidSet {
+interface RestrictingSidSet {
   world: NativePtr
 }
 

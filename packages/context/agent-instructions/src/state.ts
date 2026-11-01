@@ -56,7 +56,7 @@ declare module '@deepseek-ai/dsh-llm' {
 }
 
 /** Per-scope metadata cache; instruction prose is deliberately not retained. */
-export interface InstructionVersionState {
+interface InstructionVersionState {
   path: string
   version: FsVersion
   digest: string
@@ -71,14 +71,14 @@ export interface InstructionVersionState {
 export type InstructionVersionCache = WeakMap<Session, Map<string, InstructionVersionState>>
 
 /** A metadata-cache transition associated with one rendered instruction change. */
-export interface InstructionVersionUpdate {
+interface InstructionVersionUpdate {
   change: AgentInstructionChange
   /** A duplicate-removal notice can retain metadata for its still-present file. */
   state?: InstructionVersionState
 }
 
 /** Rendered reconciliation plus its metadata-cache transitions. */
-export interface ReconciledInstructionContext {
+interface ReconciledInstructionContext {
   context: UserMessage
   versionUpdates: InstructionVersionUpdate[]
 }
@@ -204,7 +204,7 @@ function versionStatesFor(session: Session, cache: InstructionVersionCache): Map
  * @param renderedChanges - transitions retained by the renderer.
  * @returns updates represented by an exact retained transition.
  */
-export function retainedInstructionVersionUpdates(
+function retainedInstructionVersionUpdates(
   updates: readonly InstructionVersionUpdate[],
   renderedChanges: readonly AgentInstructionChange[],
 ): InstructionVersionUpdate[] {

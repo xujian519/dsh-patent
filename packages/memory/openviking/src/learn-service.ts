@@ -13,7 +13,7 @@ import { OpenVikingClient, type SearchItem } from './client.ts'
 import { OpenVikingError } from './errors.ts'
 
 /** One deliberate learning request. */
-export interface LearnRequest {
+interface LearnRequest {
   readonly lesson: string
   /** `skill` | `target` | omitted semantics. */
   readonly capability?: string | undefined
@@ -26,7 +26,7 @@ export interface LearnRequest {
 }
 
 /** Outcome of one capture. */
-export interface LearnResult {
+interface LearnResult {
   readonly result: 'stored' | 'merged' | 'no-match' | 'failed'
   readonly uri?: string
   readonly detail: string

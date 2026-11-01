@@ -9,7 +9,7 @@ import type { TranslationFormInjected } from './preferences-form.ts'
 import css from './Translation.module.css'
 
 /** Settings snapshots and explicit refresh callback supplied by the Host mirror. */
-export interface TranslationSettingsInjected extends TranslationFormInjected {
+interface TranslationSettingsInjected extends TranslationFormInjected {
   hooks: TranslationFormInjected['hooks'] & { availableProviders: HostObservable<readonly TranslationProvider[]> }
   /** Refresh native route eligibility without sending reasoning or starting inference. */
   refreshProviders: () => void

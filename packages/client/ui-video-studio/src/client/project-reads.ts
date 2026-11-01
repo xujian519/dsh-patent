@@ -16,10 +16,10 @@ export const TASKS_FILE = 'tasks.json'
 export const LEDGER_FILE = 'budget.json'
 
 /** Shot states the Host stores. */
-export const SHOT_STATUSES = ['draft', 'ready', 'generating', 'failed'] as const
+const SHOT_STATUSES = ['draft', 'ready', 'generating', 'failed'] as const
 
 /** In-flight task states the journal keeps. */
-export const PENDING_STATUSES = ['queued', 'submitted', 'running'] as const
+const PENDING_STATUSES = ['queued', 'submitted', 'running'] as const
 
 /** One shot as the studio displays it. */
 export interface StudioShot {
@@ -36,7 +36,7 @@ export interface StudioShot {
 }
 
 /** One recorded render. */
-export interface StudioRender {
+interface StudioRender {
   readonly id: string
   readonly path: string
   readonly durationSec?: number
@@ -45,7 +45,7 @@ export interface StudioRender {
 }
 
 /** One journaled generation that has not settled. */
-export interface StudioTask {
+interface StudioTask {
   readonly id: string
   readonly provider: string
   readonly model: string
@@ -131,7 +131,7 @@ export interface StudioRemote {
 }
 
 /** The two files the Host keeps beside `project.json`. */
-export interface StoreFiles {
+interface StoreFiles {
   readonly ledger: string
   readonly tasks: string
 }
@@ -236,7 +236,7 @@ function renderOf(value: unknown): StudioRender {
 }
 
 /** The validated fields of one project document the studio displays. */
-export interface ParsedProject {
+interface ParsedProject {
   readonly id: string
   readonly title: string
   readonly aspect: string

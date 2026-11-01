@@ -47,7 +47,7 @@ export interface ActionCardDescriptor<N extends Extract<keyof LocaleNamespaceMap
 }
 
 /** Frame-supplied body props before the kind's translator is bound. */
-export type ActionCardFrameProps = Omit<ActionCardBodyProps<never>, 't'>
+type ActionCardFrameProps = Omit<ActionCardBodyProps<never>, 't'>
 
 /** A registered body with its namespace type erased. */
 export interface RegisteredBody {

@@ -54,7 +54,7 @@ export interface PerplexitySearchProviderOptions {
  * @param result - one entry of the response's `search_results[]`.
  * @returns the normalized source; blank fields are omitted rather than set empty.
  */
-export function mapPerplexityResult(result: PerplexitySearchResult): WebSearchSource {
+function mapPerplexityResult(result: PerplexitySearchResult): WebSearchSource {
   return {
     url: result.url,
     ...result.title != null && result.title.length > 0 ? { title: result.title } : {},

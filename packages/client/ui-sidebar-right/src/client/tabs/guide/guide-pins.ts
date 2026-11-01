@@ -17,7 +17,7 @@ export function guideEntryId(entry: Pick<SidebarRightGuideBox, 'kind' | 'id'>): 
 }
 
 /** Unpinned guide card ids and their only mutation. */
-export interface GuidePins {
+interface GuidePins {
   /** Unpinned `kind:id` card ids; ids of cards that are not registered stay listed. */
   readonly unpinned: ObservableSnapshot<readonly string[]>
   /**

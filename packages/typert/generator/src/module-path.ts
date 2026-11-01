@@ -13,7 +13,7 @@ import type { TypertFace } from './model.ts'
 import type { ModuleIdentity, ReferenceSite } from './types.ts'
 
 /** One `import` binding of a local name; `name` is absent for a namespace import. */
-export interface ImportBinding {
+interface ImportBinding {
   readonly specifier: string
   readonly name?: string
 }

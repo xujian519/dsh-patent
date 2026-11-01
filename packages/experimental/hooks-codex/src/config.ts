@@ -15,13 +15,13 @@ export const CODEX_EVENTS = ['PreToolUse', 'PostToolUse', 'SessionStart', 'UserP
 export type CodexHookConfig = Record<string, MatcherGroup[]>
 
 /** A skipped non-command (or async) hook, surfaced so the bridge can warn. */
-export interface SkippedHook {
+interface SkippedHook {
   event: string
   reason: string
 }
 
 /** The outcome of parsing one Codex config file. */
-export interface ParsedCodexConfig {
+interface ParsedCodexConfig {
   config: CodexHookConfig
   skipped: SkippedHook[]
 }

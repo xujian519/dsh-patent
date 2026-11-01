@@ -7,12 +7,12 @@ import css from './MessageImage.module.css'
 export type { MessageImageLabels } from '@deepseek-ai/dsh-client-ui-conversation/client'
 
 /** Loads a Gateway-authorized durable image URL and may expose a cached URL synchronously. */
-export type ImageLoader = ((attachment: ImageAttachmentRef) => Promise<string>) & {
+type ImageLoader = ((attachment: ImageAttachmentRef) => Promise<string>) & {
   peek?: (attachment: ImageAttachmentRef) => string | undefined
 }
 
 /** One gallery entry: a durable admitted reference, or a submission echo's local preview. */
-export type MessageImageSpec =
+type MessageImageSpec =
   | {
     readonly attachment: ImageAttachmentRef
     /** Presentation-only name for the thumbnail and lightbox; loading uses the original reference. */

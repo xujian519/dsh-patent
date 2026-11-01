@@ -8,14 +8,14 @@ import type { SessionEvent, SessionSeq } from '@deepseek-ai/dsh-session'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 
 /** The calling agent plus the immutable event cut and open-turn start seq used for authority checks. */
-export interface GoalToolExecution {
+interface GoalToolExecution {
   readonly agent: Agent
   readonly events: readonly SessionEvent[]
   readonly openTurnStartSeq: SessionSeq
 }
 
 /** Hard authority granted to one state-changing call. */
-export type GoalToolAuthority =
+type GoalToolAuthority =
   | { readonly kind: 'direct-human' }
   | { readonly kind: 'goal-round'; readonly goal: GoalView }
 

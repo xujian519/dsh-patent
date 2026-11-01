@@ -11,7 +11,7 @@ import { readColdSessionLog, type ColdSessionLog } from './cold-read.ts'
 import { assertSessionHeadersCompatible } from './sources.ts'
 
 /** Borrowed source visible only during one synchronous batch projection. */
-export interface LogicalSessionSource {
+interface LogicalSessionSource {
   /** Header selected with `events`; callers must clone retained output. */
   readonly header: SessionHeader
   /** Raw events selected with `header`; valid only for the projection call. */
@@ -26,13 +26,13 @@ export interface LogicalSessionSource {
  * neither the header nor an event may be mutated. Callers clone every value
  * they return.
  */
-export interface BorrowedSession extends LogicalSessionSource {
+interface BorrowedSession extends LogicalSessionSource {
   /** Exact fork-inherited event count paired with {@link header}. */
   readonly inheritedEventCount: SessionLogOffset
 }
 
 /** One source-projection result in a batch logical-corpus observation. */
-export type LogicalProjectionResult<Value> =
+type LogicalProjectionResult<Value> =
   | { sessionId: SessionId; status: 'fulfilled'; value: Value }
   | { sessionId: SessionId; status: 'rejected'; reason: unknown }
 

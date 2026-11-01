@@ -19,7 +19,7 @@ const CONFIDENCE_SATURATION_K = 3
 /** 大类精注入置信度门槛：detailConfidence >= 该值（≈ 大类命中 ≥2 词）才精注入，否则回退部级。 */
 export const IPC_DETAIL_MIN_CONFIDENCE = 0.7
 /** 每个 IPC 分类附带的最大创造性审查要点条数（控制模型 token 成本）。 */
-export const IPC_NOVELTY_HINT_MAX = 3
+const IPC_NOVELTY_HINT_MAX = 3
 
 /** IPC 部（A-H）的领域元数据：部号、名称、关键词与审查要点。 */
 export type IpcDomainMeta = {

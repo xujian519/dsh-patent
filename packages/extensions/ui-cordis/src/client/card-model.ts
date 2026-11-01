@@ -11,7 +11,7 @@ type Block = StartedToolCallViewProps['block']
 export type CordisToolState = 'running' | 'ok' | 'error' | 'stopped'
 
 /** Frozen `cordis_define` presentation data. */
-export interface CordisDefineCard {
+interface CordisDefineCard {
   readonly pluginId: CordisDynamicPluginId | null
   readonly packageId: CordisDynamicPackageId | null
   readonly name: string | null
@@ -24,7 +24,7 @@ export interface CordisDefineCard {
 }
 
 /** Frozen `cordis_run` presentation data. */
-export interface CordisRunCard {
+interface CordisRunCard {
   readonly pluginId: CordisDynamicPluginId | null
   readonly packageId: CordisDynamicPackageId | null
   readonly pluginRunId: CordisDynamicPluginRunId | null
@@ -36,7 +36,7 @@ export interface CordisRunCard {
 }
 
 /** Frozen `cordis_stop` or `cordis_undefine` presentation data. */
-export interface CordisActionCard {
+interface CordisActionCard {
   readonly pluginId: CordisDynamicPluginId | null
   readonly output: string | null
   readonly errorSummary: string | null

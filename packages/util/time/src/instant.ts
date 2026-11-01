@@ -84,17 +84,17 @@ export type TimeZoneRejection =
   | 'not_canonical_shape'
 
 /** Discriminated result of parsing one RFC 3339 instant string. */
-export type InstantResult =
+type InstantResult =
   | { readonly kind: 'accepted'; readonly epoch: number }
   | { readonly kind: 'rejected'; readonly reason: InstantRejection }
 
 /** Discriminated result of parsing one local calendar selector. */
-export type LocalCalendarResult =
+type LocalCalendarResult =
   | { readonly kind: 'accepted'; readonly time: LocalCalendarTime }
   | { readonly kind: 'rejected'; readonly reason: LocalCalendarRejection }
 
 /** Discriminated result of resolving one raw IANA zone selector. */
-export type TimeZoneResult =
+type TimeZoneResult =
   | { readonly kind: 'accepted'; readonly timeZone: string }
   | {
     readonly kind: 'rejected'

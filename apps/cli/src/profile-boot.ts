@@ -283,7 +283,7 @@ async function composeProfile(
 }
 
 /** An application-owned profile and its independent installation fallback. */
-export interface ResolvedProfileRuntime {
+interface ResolvedProfileRuntime {
   /** Profile already loaded from the application's own directory. */
   profile: Profile
   /** Absolute package.json path of the application's dsh installation. */

@@ -51,7 +51,7 @@ export interface SessionLogOptions {
  * @param options - Session-specific limits supplied by the owning composition.
  * @returns the resolved collector request limit.
  */
-export function resolveSessionLogLimits(options: Pick<SessionLogOptions, 'maxRequestBytes' | 'processor'>): number {
+function resolveSessionLogLimits(options: Pick<SessionLogOptions, 'maxRequestBytes' | 'processor'>): number {
   const limit = options.maxRequestBytes ?? SESSION_LOG_MAX_REQUEST_BYTES
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > SESSION_LOG_MAX_REQUEST_BYTES) {
     throw new Error(`session log maxRequestBytes must be an integer between 1 and ${SESSION_LOG_MAX_REQUEST_BYTES}`)

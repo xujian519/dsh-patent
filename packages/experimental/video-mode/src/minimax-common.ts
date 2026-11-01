@@ -26,7 +26,7 @@ export { failureCodeFor, isRecord, messageOf, parseJson, rejectionMessage } from
 export type MiniMaxFetchLike = CloudFetchLike
 
 /** Settings subset that names a MiniMax credential. */
-export type MiniMaxCredentialSettings = CloudCredentialSettings
+type MiniMaxCredentialSettings = CloudCredentialSettings
 
 /** Resolves one credential reference through the host service. */
 export type MiniMaxKeyResolver = CloudKeyResolver

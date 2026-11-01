@@ -16,7 +16,7 @@ export interface QuoteNodeLabels {
 const EMPTY_LABELS: QuoteNodeLabels = { remove: '' }
 
 /** JSON form used only by Lexical's editor-state APIs, not browser persistence. */
-export type SerializedQuoteNode = Spread<{
+type SerializedQuoteNode = Spread<{
   text: string
 }, SerializedLexicalNode>
 

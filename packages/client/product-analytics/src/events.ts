@@ -69,7 +69,7 @@ export type EntryAnalyticsRegion = 'sidebar' | 'conversation' | 'rightbar'
 export type AnalyticsPreset = 'creator' | 'ptc' | 'minimal' | 'standard'
 
 /** Public page names independent of internal onboarding state names. */
-export type OnboardingPage = 'onboarding_welcome' | 'onboarding_recharge' | 'onboarding_use_case' | 'onboarding_process'
+type OnboardingPage = 'onboarding_welcome' | 'onboarding_recharge' | 'onboarding_use_case' | 'onboarding_process'
 
 /** Correlated event name and attributes for the authenticated analytics RPC. */
 export type ProductEvent = {

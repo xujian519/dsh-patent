@@ -26,7 +26,7 @@ export interface ReadWindow {
 }
 
 /** One line returned from a text file. */
-export interface FileTextLine {
+interface FileTextLine {
   /** 1-based line number in the file. */
   number: number
   /** Line text without its trailing newline. */
@@ -34,7 +34,7 @@ export interface FileTextLine {
 }
 
 /** The windowed result {@link buildWindow} produces from a file's decoded text. */
-export interface WindowResult {
+interface WindowResult {
   /** Returned lines, already numbered. */
   lines: FileTextLine[]
   /** Exact total line count in the file. */
@@ -189,7 +189,7 @@ export { readLangHintForPath as langFromPath } from '@deepseek-ai/dsh-util-code-
  * reproduces the read card on replay when the raw structured output is no longer
  * on the wire. The producing tool owns and narrows this opaque shape.
  */
-export interface FsReadMeta {
+interface FsReadMeta {
   /** The read file's model-facing path. */
   path: string
   /** The 1-based first line the window requested, kept even when `lines` is empty. */

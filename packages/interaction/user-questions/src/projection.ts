@@ -15,7 +15,7 @@ import { isRecord } from '@deepseek-ai/dsh-value'
  * timed `ask_user_question` schema, and the question view that schema's
  * calls build. Calls made under the blocking legacy schema never enter it.
  */
-export interface UserQuestionFold {
+interface UserQuestionFold {
   readonly timed: boolean
   readonly questions: UserQuestionProjectionView
 }
@@ -26,7 +26,7 @@ export interface UserQuestionProjectionState extends UserQuestionFold {
 }
 
 /** Tool whose calls this projection tracks. */
-export const ASK_USER_QUESTION_TOOL = 'ask_user_question'
+const ASK_USER_QUESTION_TOOL = 'ask_user_question'
 
 /**
  * Model-facing parameter only the timed `ask_user_question` schema declares.

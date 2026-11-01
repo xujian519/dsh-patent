@@ -8,7 +8,7 @@ export const VERSION_LIST_FIELDS = ['versions', 'time', 'dist-tags'] as const
 export const VERSION_FIELDS = ['name', 'version', 'engines', 'peerDependencies', 'deprecated', 'dsh'] as const
 
 /** One published version newer than the installed one, before its own manifest is read. */
-export interface PublishedVersion {
+interface PublishedVersion {
   readonly version: string
   readonly publishedAt?: string
   readonly tags: readonly string[]
@@ -16,7 +16,7 @@ export interface PublishedVersion {
 }
 
 /** What one version's manifest says about replacing an installed bundle. */
-export interface VersionFacts {
+interface VersionFacts {
   /** The fields `evaluatePluginCompatibility` reads. */
   readonly manifest: { name: string; version: string; engines?: unknown; peerDependencies?: unknown }
   readonly bundle: boolean

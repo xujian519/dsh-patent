@@ -27,7 +27,7 @@ export function record(value: SessionFormatJsonValue | undefined, label: string)
  * @param optional - additional admitted names.
  * @param label - diagnostic subject.
  */
-export function keys(value: SessionFormatJsonObject, required: readonly string[], optional: readonly string[], label: string): void {
+function keys(value: SessionFormatJsonObject, required: readonly string[], optional: readonly string[], label: string): void {
   const missing = required.find(key => !Object.hasOwn(value, key))
   const unexpected = Object.keys(value).find(key => !required.includes(key) && !optional.includes(key))
   if (missing !== undefined) throw new SessionFormatError(label + ' lacks required field ' + missing)

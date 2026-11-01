@@ -51,7 +51,7 @@ export function formatSessionReferenceMention(reference: SessionReferenceInput):
 }
 
 /** Result of extracting canonical mentions from plain text. */
-export interface ParsedSessionReferenceText {
+interface ParsedSessionReferenceText {
   /** Text with opaque tokens replaced by readable `@label` spans. */
   text: string
   /** Structured references in first-appearance order, before service deduplication. */

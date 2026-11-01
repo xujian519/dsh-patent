@@ -31,7 +31,7 @@ export interface DetailLocation {
 }
 
 /** Limits of detail documents and their images. */
-export interface DetailLimits {
+interface DetailLimits {
   readonly maxDocumentBytes: number
   readonly maxImageBytes: number
   /** Lifetime of a read result, including a failure that a retry would repeat. */

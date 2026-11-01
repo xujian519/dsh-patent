@@ -105,7 +105,7 @@ export function formatDuration(ms: number, t: ChatViewSlotProps['t']): string {
  * minimum decimal precision that still rounds below 100; a full hit returns
  * 100, and no billed input returns null.
  */
-export function cacheHitPercent(usage: TokenUsageProjection): string | null {
+function cacheHitPercent(usage: TokenUsageProjection): string | null {
   const denominator = billedInputTokens(usage)
   return formatCacheHitPercent(usage.cacheReadTokens, denominator)
 }
@@ -115,7 +115,7 @@ export function cacheHitPercent(usage: TokenUsageProjection): string | null {
  * @param usage - the session's token-usage projection value.
  * @returns billed input tokens.
  */
-export function billedInputTokens(usage: TokenUsageProjection): number {
+function billedInputTokens(usage: TokenUsageProjection): number {
   return usage.uncachedInputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
 }
 

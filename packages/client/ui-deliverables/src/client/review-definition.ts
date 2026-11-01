@@ -12,7 +12,7 @@ import { parseChangesReviewAddress } from '../changes.ts'
 import type { NS } from './locales.ts'
 
 /** The tab kind this package owns. */
-export const CHANGES_REVIEW_KIND = 'changes-review'
+const CHANGES_REVIEW_KIND = 'changes-review'
 
 /** This implementation's identity in the tab system, and the key its body registers under. */
 export const CHANGES_REVIEW_ID = '@deepseek-ai/dsh-client-ui-deliverables'

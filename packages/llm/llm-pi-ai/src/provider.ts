@@ -116,7 +116,7 @@ function harnessApiKeyAuth(name: string): ApiKeyAuth {
 }
 
 /** The resolved route facts provider construction reads. */
-export interface ProviderSpec {
+interface ProviderSpec {
   /** Provider route key; also the `Models` collection key and each model's `provider`. */
   provider: string
   /** Display name for selectors and status labels. */

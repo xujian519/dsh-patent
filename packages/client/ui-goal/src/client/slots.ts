@@ -15,7 +15,7 @@ import type { GoalActivation, GoalId } from '@deepseek-ai/dsh-goal/client'
  * The one failure the strip reports without a wire call: the session projects
  * no goal, so no CAS ref exists to address a mutation to.
  */
-export interface GoalLocalFailure {
+interface GoalLocalFailure {
   readonly ok: false
   readonly error: { readonly code: 'no-current-goal'; readonly message: string }
 }
@@ -38,7 +38,7 @@ export interface GoalActivationSnapshot {
 }
 
 /** Registrant-private observable source bound by the slot renderer. */
-export interface GoalActivationInjected {
+interface GoalActivationInjected {
   readonly hooks: {
     readonly goalActivation: HostObservable<GoalActivationSnapshot>
   }

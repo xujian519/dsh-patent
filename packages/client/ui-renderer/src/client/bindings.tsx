@@ -106,7 +106,7 @@ function useAbsentSnapshot<S>(
  * A string second argument names a member: the Hook reads the source the
  * resolver returns for `(key, member)` without a selector.
  */
-export type KeyedSnapshotHook = (
+type KeyedSnapshotHook = (
   keyOrSelector: string | ((value: unknown) => unknown),
   memberOrSelectorOrEqual?: string | ((value: unknown) => unknown) | ((left: unknown, right: unknown) => boolean),
   equal?: (left: unknown, right: unknown) => boolean,

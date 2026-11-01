@@ -64,7 +64,7 @@ function isHttpUrl(value: string): boolean {
 }
 
 /** Props of {@link CustomProviderCard}. */
-export interface CustomProviderCardProps {
+interface CustomProviderCardProps {
   /** Route ids already declared, so the card refuses to shadow one. */
   taken: readonly string[]
   /** Wire protocols the adapter can serve, in the order it reports them. */

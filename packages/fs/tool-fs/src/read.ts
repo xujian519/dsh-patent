@@ -21,7 +21,7 @@ export const READ_LIMIT = 2000
 export const STREAM_MIN_SIZE = 10 * 1024 * 1024
 
 /** Resolved read-tool caps — plugin config after defaulting (see `Config` in index.ts). */
-export interface ReadToolCaps {
+interface ReadToolCaps {
   /** Default and maximum number of lines returned by one call. */
   limit: number
   /** Maximum characters returned for a single line. */
@@ -52,7 +52,7 @@ function parsePositiveInteger(value: number, name: string): number {
  * @param maxLimit - the configured line cap: both the default `limit` and the largest one accepted.
  * @returns the validated input with `offset` defaulted to 1 and `limit` to `maxLimit`.
  */
-export function parseReadArgs(args: { file_path: string; offset?: number; limit?: number }, maxLimit: number): ReadInput {
+function parseReadArgs(args: { file_path: string; offset?: number; limit?: number }, maxLimit: number): ReadInput {
   if (args.file_path.trim().length === 0) throw new Error('file_path must be a non-empty string')
   const offset = args.offset === undefined ? 1 : parsePositiveInteger(args.offset, 'offset')
   const limit = args.limit === undefined ? maxLimit : parsePositiveInteger(args.limit, 'limit')

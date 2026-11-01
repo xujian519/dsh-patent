@@ -26,7 +26,7 @@ const NO_STORE = { ...BASE_HEADERS, 'Cache-Control': 'private, no-store' }
 const VERSIONED = { ...BASE_HEADERS, 'Cache-Control': 'private, max-age=31536000, immutable' }
 
 /** A parsed `Range` header: absent, malformed (ignored), unsatisfiable, or one range. */
-export type RangeRequest =
+type RangeRequest =
   | { readonly kind: 'range'; readonly start: number; readonly end: number }
   | { readonly kind: 'invalid' }
   | { readonly kind: 'unsatisfiable'; readonly size: number }

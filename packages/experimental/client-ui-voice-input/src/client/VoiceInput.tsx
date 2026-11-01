@@ -16,7 +16,7 @@ import { Button, IconCloseOutlineRegular, IconStopFillRegular, IconMicrophoneOut
 import css from './VoiceInput.module.css'
 
 /** Host calls injected without exposing a Cordis Context to React. */
-export interface VoiceInputActions {
+interface VoiceInputActions {
   /** Open the voice bundle details without starting preparation. */
   openSettings: () => void
   /** @returns one microphone operation owned by the plugin lifecycle. */

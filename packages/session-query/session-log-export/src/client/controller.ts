@@ -6,7 +6,7 @@ import { errorMessage } from '@deepseek-ai/dsh-value'
 import { SESSION_LOG_EXPORT_ROUTE } from '../routes.ts'
 
 /** Download phases presented by the shared modal. */
-export type SessionLogDownloadStatus = 'downloading' | 'success' | 'error'
+type SessionLogDownloadStatus = 'downloading' | 'success' | 'error'
 
 /** One Session's current download-dialog state. */
 export interface SessionLogDownloadEntry {

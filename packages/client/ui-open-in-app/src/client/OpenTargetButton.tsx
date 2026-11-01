@@ -11,14 +11,14 @@ import type { NS } from './locales.ts'
 import css from './OpenTargetButton.module.css'
 
 /** Application metadata supplied by either the directory catalog or a file association query. */
-export interface OpenTargetApplication {
+interface OpenTargetApplication {
   readonly id: string
   readonly name: string
   readonly icon: string | null
 }
 
 /** Opening intent; default selection remains owned by the target's adapter. */
-export type OpenTargetOperation = { readonly kind: 'default' } | { readonly kind: 'application'; readonly id: string } | { readonly kind: 'reveal' }
+type OpenTargetOperation = { readonly kind: 'default' } | { readonly kind: 'application'; readonly id: string } | { readonly kind: 'reveal' }
 
 /** Seat a contribution sends one settled gesture to for app-wide announcement. */
 export interface OpenTargetReporter {
@@ -27,7 +27,7 @@ export interface OpenTargetReporter {
 }
 
 /** Inputs shared by both target adapters and the file empty-state action. */
-export interface OpenTargetButtonProps extends OpenTargetReporter {
+interface OpenTargetButtonProps extends OpenTargetReporter {
   readonly shortcut?: Pick<ShortcutCatalogEntry, 'keys' | 'aria'> | undefined
   readonly kind: 'file' | 'directory'
   readonly applications: readonly OpenTargetApplication[]

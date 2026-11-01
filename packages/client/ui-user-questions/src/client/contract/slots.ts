@@ -107,7 +107,7 @@ const unnamedQuestionPrefix = Array.from(globalThis.crypto.getRandomValues(new U
 let nextQuestionKey = 0
 
 /** Rejection codes a Client returns through the waterfall; the wire preserves `name` and `code`. */
-export type QuestionRejectionCode = 'ASK_ABORTED' | 'ASK_CANCELLED' | 'ASK_TIMED_OUT'
+type QuestionRejectionCode = 'ASK_ABORTED' | 'ASK_CANCELLED' | 'ASK_TIMED_OUT'
 
 const rejectionMessages: Record<QuestionRejectionCode, string> = {
   ASK_ABORTED: 'ask_user_question was aborted before the user answered',
@@ -124,7 +124,7 @@ function questionError(code: QuestionRejectionCode): Error {
 }
 
 /** One live Host waterfall attached to a card; it settles once and then detaches. */
-export interface QuestionWaterfallChannel {
+interface QuestionWaterfallChannel {
   /** Client-clock deadline in epoch milliseconds; absent for a blocking question. */
   readonly deadline: number | undefined
   /** Resolve the Host waterfall with the whole answer batch. */
@@ -142,13 +142,13 @@ export interface QuestionRpcChannel {
 }
 
 /** The composer seat a card occupies while it is visible. */
-export interface QuestionSeat {
+interface QuestionSeat {
   /** Withdraw the card from the pending-interaction registry without ending the request. */
   hide(): void
 }
 
 /** One waterfall request as the Remote Event listener awaits it. */
-export interface QuestionWaterfallRequest {
+interface QuestionWaterfallRequest {
   readonly channel: QuestionWaterfallChannel
   /** Outcome returned to the Host: the answer, or a wire-preserved rejection. */
   readonly result: Promise<QuestionAnswer>

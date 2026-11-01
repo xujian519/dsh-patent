@@ -9,7 +9,7 @@
 import type { TaskStatus, TeamTask } from './types.ts'
 
 /** The task fields every read-only projection exposes. */
-export interface TaskBaseView {
+interface TaskBaseView {
   id: string
   subject: string
   status: TaskStatus

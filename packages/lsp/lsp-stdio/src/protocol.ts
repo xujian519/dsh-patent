@@ -7,7 +7,7 @@
  */
 
 /** A zero-based UTF-16 position on the wire (the protocol's `Position`). */
-export interface WirePosition {
+interface WirePosition {
   readonly line: number
   readonly character: number
 }
@@ -32,13 +32,13 @@ export interface WireLocationLink {
 }
 
 /** A `MarkupContent` hover body (`markdown` or `plaintext`). */
-export interface WireMarkupContent {
+interface WireMarkupContent {
   readonly kind: 'markdown' | 'plaintext'
   readonly value: string
 }
 
 /** A `MarkedString` object form (`{ language, value }`); the string form is a bare `string`. */
-export interface WireMarkedStringObject {
+interface WireMarkedStringObject {
   readonly language: string
   readonly value: string
 }
@@ -56,7 +56,7 @@ export interface WireHover {
 export type WireTextDocumentSyncKind = 0 | 1 | 2
 
 /** The options form of `textDocumentSync` (`{ openClose, change }`). */
-export interface WireTextDocumentSyncOptions {
+interface WireTextDocumentSyncOptions {
   readonly openClose?: boolean
   readonly change?: WireTextDocumentSyncKind
 }

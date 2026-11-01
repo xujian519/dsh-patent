@@ -21,7 +21,7 @@ const RATE_LIMIT = { minIntervalMs: 3000 }
 const FIELDED = /^(ti|au|abs|co|jr|cat|rn|id|all):/i
 
 /** 创建 arXiv 连接器的选项（fetch/限速/预算注入）。 */
-export type CreateArxivConnectorOptions = ConnectorHttpOptions
+type CreateArxivConnectorOptions = ConnectorHttpOptions
 
 interface Entry {
   id: string

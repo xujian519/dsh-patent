@@ -15,7 +15,7 @@ import { escapeFtsPhrase, joinFtsOrTerms, sqliteHasFts5 } from './fts.ts'
 import { runFtsSearch } from './fts-search.ts'
 
 /** 选择一个后端的构造选项。 */
-export type SqliteSearchBackendOptions = {
+type SqliteSearchBackendOptions = {
   /** 已打开的只读数据库连接。 */
   db?: DatabaseSync
   /** 只读打开的数据库路径。 */

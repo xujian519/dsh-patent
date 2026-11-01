@@ -16,7 +16,7 @@ import type { PermissionCatalogDirectory } from './catalog.ts'
 import { displayPermissionPreset } from './presentation.ts'
 
 /** Permission's settings namespace on the host wire. */
-export const PERMISSION_SETTINGS_NS = 'permission'
+const PERMISSION_SETTINGS_NS = 'permission'
 
 /** One selectable new-session default. */
 export interface PermissionDefaultOption {

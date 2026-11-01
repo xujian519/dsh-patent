@@ -19,7 +19,7 @@ import type { GoalActionResult, GoalBarActions, GoalBarInjected } from './slots.
 import type { GoalKey } from './locales.ts'
 import css from './GoalBar.module.css'
 
-export interface GoalBarProps extends GoalBarActions {
+interface GoalBarProps extends GoalBarActions {
   /** Current goal snapshot; undefined = capability absent or loading, null = no goal set. */
   goal: GoalSnapshot | null | undefined
   /** Process-local continuation activation; absent while the live read is pending. */
@@ -174,7 +174,7 @@ export function GoalBar({ goal, activation, onEdit, onPause, onResume, onClear, 
 }
 
 /** Full props of the dock entry: InputZone owner share + injected verbs/activation hook + the locale seat. */
-export type GoalDockProps =
+type GoalDockProps =
   import('@deepseek-ai/dsh-client-ui-slots').PropsRuntime<'conversation.input.dock'>
   & InjectFace<GoalBarInjected>
   & PropsLocale<'goal'>

@@ -26,7 +26,7 @@ import css from './dockkit.module.css'
 const MENU_GAP = 4
 
 /** What the menu offers, where it anchors, and how it closes. */
-export interface TabMenuProps {
+interface TabMenuProps {
   readonly labels: DockLabels
   /** The control that opened the menu; the menu hangs below its left edge. */
   readonly anchor: HTMLElement

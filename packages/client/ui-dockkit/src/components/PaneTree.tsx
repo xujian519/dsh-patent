@@ -20,7 +20,7 @@ export interface SizePreview {
 }
 
 /** One subtree of the docked layout. */
-export interface PaneTreeProps {
+interface PaneTreeProps {
   readonly state: LayoutState
   readonly nodeId: NodeId
   readonly callbacks: PaneCallbacks

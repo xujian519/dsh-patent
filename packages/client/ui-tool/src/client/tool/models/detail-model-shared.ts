@@ -86,7 +86,7 @@ const FIELD_KEYS = {
  * @param t - Conversation translator.
  * @returns Localized known label or the original property name.
  */
-export function detailLabel(key: string, t: DetailTranslate): string {
+function detailLabel(key: string, t: DetailTranslate): string {
   const label = Object.hasOwn(FIELD_KEYS, key) ? FIELD_KEYS[key as keyof typeof FIELD_KEYS] : undefined
   return label === undefined ? key : t(label)
 }

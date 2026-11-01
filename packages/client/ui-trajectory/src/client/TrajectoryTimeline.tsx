@@ -135,7 +135,7 @@ function timelineTooltipLabel(
 }
 
 /** Props for the fixed full-domain overview above the trajectory ledger. */
-export interface TrajectoryTimelineProps {
+interface TrajectoryTimelineProps {
   t: TrajectoryTranslate
   turns: readonly TrajectoryTurnModel[]
   mode: TrajectoryTimelineMode

@@ -5,18 +5,18 @@ import type {
 import type { RowToastState, WorkspaceViewStoreHandle } from './slots.ts'
 
 /** Business key of one existing Workspace notice. */
-export type ToastKind = RowToastState['kind']
+type ToastKind = RowToastState['kind']
 /** Notice payload selected by the keyed registration. */
-export type ToastNotice<K extends ToastKind> = Extract<RowToastState, { kind: K }>
+type ToastNotice<K extends ToastKind> = Extract<RowToastState, { kind: K }>
 /** Plain display fields consumed by the shared Factory. */
-export interface ToastDisplay {
+interface ToastDisplay {
   text: string
   tone: 'plain' | 'warning' | 'success'
   holdMs?: number
   actions?: readonly { label: string; prefix?: string; onClick: () => void }[]
 }
 /** Per-display identity and dismissal; neither changes when localized content updates. */
-export interface ToastOccurrence extends ToastDisplay {
+interface ToastOccurrence extends ToastDisplay {
   seq: number
   onDone: () => void
 }
@@ -42,7 +42,7 @@ export type ArchiveToastEntryProps =
 export type WorkspaceToastProps = FactoryComponentPropsOf<'workspace.toast.content'>
 
 /** Owner operations available to every keyed Workspace notice. */
-export interface WorkspaceToastOwnerProps {
+interface WorkspaceToastOwnerProps {
   /** Dismiss the displayed notice. */
   dismissToast: () => void
 }

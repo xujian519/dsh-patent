@@ -16,7 +16,7 @@ import type { CommandClaim } from '../../contract/input.ts'
 import { CommandChip } from './CommandChip.tsx'
 
 /** JSON form of one command chip (Lexical node serialization contract). */
-export type SerializedCommandChipNode = Spread<{ text: string }, SerializedLexicalNode>
+type SerializedCommandChipNode = Spread<{ text: string }, SerializedLexicalNode>
 
 /** One claimed command as an atomic decorator node. */
 export class CommandChipNode extends DecoratorNode<JSX.Element> {

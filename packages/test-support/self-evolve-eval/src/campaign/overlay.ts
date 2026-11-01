@@ -11,7 +11,7 @@
  */
 
 /** Options for {@link renderEvolvedOverlay}. */
-export interface EvolvedOverlayOptions {
+interface EvolvedOverlayOptions {
   /**
    * Shell command the held-in workspace verifier runs in the agent workspace
    * after a proposal; e.g. `<venv>/bin/python -m compileall -q .`. Absolute

@@ -110,7 +110,7 @@ export function decodeXmlText(value: string): string {
 }
 
 /** An opening tag. */
-export interface XmlStartTag {
+interface XmlStartTag {
   /** Element name, namespace prefix included. */
   readonly kind: 'start'
   readonly name: string
@@ -121,14 +121,14 @@ export interface XmlStartTag {
 }
 
 /** A closing tag. */
-export interface XmlEndTag {
+interface XmlEndTag {
   /** Element name, namespace prefix included. */
   readonly kind: 'end'
   readonly name: string
 }
 
 /** Character data between tags, with entity references already resolved. */
-export interface XmlTextNode {
+interface XmlTextNode {
   readonly kind: 'text'
   /** Decoded character data. */
   readonly value: string
@@ -138,7 +138,7 @@ export interface XmlTextNode {
 export type XmlToken = XmlStartTag | XmlEndTag | XmlTextNode
 
 /** One scanned document. */
-export interface XmlScan {
+interface XmlScan {
   /** Tokens in document order. */
   readonly tokens: readonly XmlToken[]
   /** Whether the whole source parsed and every element it opened was closed. */

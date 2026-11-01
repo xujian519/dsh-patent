@@ -28,7 +28,7 @@ export type TeamsViewProps = ConvViewProps
   & TeamsViewInjected
 
 /** Business callbacks injected by the plugin's slot registration. */
-export interface TeamsViewInjected {
+interface TeamsViewInjected {
   /** Page the session history backwards by one window (the Session face's `loadOlder`). */
   readonly loadOlder: () => Promise<void>
 }

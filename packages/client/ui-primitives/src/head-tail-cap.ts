@@ -1,5 +1,5 @@
 /** The head/tail split metrics for a capped list. */
-export interface HeadTailCap {
+interface HeadTailCap {
   /** Rows beyond the cap (list length − maxLines); ≤ 0 means nothing is hidden. */
   hidden: number
   /** Whether the list is over the cap and not expanded, so it shows a head/tail slice. */

@@ -24,10 +24,10 @@ import type {
  * returns that event's result; for a mods API call it returns `{ value }` or
  * `{ deny }`, and `undefined` from either reads as "not answered".
  */
-export type StubHook = ($: ModsApi, e: never) => unknown
+type StubHook = ($: ModsApi, e: never) => unknown
 
 /** Test kit construction options. */
-export interface ModTestKitOptions {
+interface ModTestKitOptions {
   /** Mods to load, in chain order: definitions or the plugins `defineMod` made. */
   readonly mods?: readonly (ModDefinition | ModPlugin)[]
   /** `register` option values by plugin name, overlaid on each mod's own options. */
@@ -37,7 +37,7 @@ export interface ModTestKitOptions {
 }
 
 /** What `$.ui.mount` takes: the surface to draw and the props the host would pass. */
-export interface MountArgs {
+interface MountArgs {
   /** The plugin under test; accepted for source compatibility, every loaded mod's `ui.render` hooks run in chain order. */
   readonly plugin?: string
   /** The drawing surface's name (`terminal`, `desktop`); accepted for source compatibility. */
@@ -92,7 +92,7 @@ export interface TestKitRaisers {
 }
 
 /** The engine events the kit raises, with their inputs, so a typed stub reads `e` without a cast. */
-export interface KitEventInputs {
+interface KitEventInputs {
   'session.start': SessionStartInput
   'session.end': SessionEndInput
   'turn.start': TurnStartInput
@@ -104,7 +104,7 @@ export interface KitEventInputs {
 }
 
 /** The kit's `on`: registers a stub that answers one event beneath every mod; name a mods API call without the `$.`. */
-export interface KitOn {
+interface KitOn {
   /** A stub for one engine event, with the event's typed input. */
   <K extends keyof KitEventInputs>(event: K, stub: ($: ModsApi, e: KitEventInputs[K]) => unknown): void
   /** A stub for any event or mods API call. */

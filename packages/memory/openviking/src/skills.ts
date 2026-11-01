@@ -9,7 +9,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-skill'
 
 /** Skill body: model guidance for the OpenViking tool surface. */
-export const OPENVIKING_MEMORY_SKILL = {
+const OPENVIKING_MEMORY_SKILL = {
   name: 'openviking-memory',
   description: 'When to search, read, and write the OpenViking memory library.',
   whenToUse: 'Cross-session memory lookups, index checks, and deliberate lesson capture.',

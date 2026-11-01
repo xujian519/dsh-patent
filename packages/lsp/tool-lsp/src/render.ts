@@ -21,7 +21,7 @@ export const DEFAULT_MAX_LOCATIONS = 100
 export const DEFAULT_MAX_RESULT_CHARS = 16_000
 
 /** Validated `lsp` arguments after coordinate checks. */
-export interface LspToolInput {
+interface LspToolInput {
   readonly operation: LspOperation
   readonly filePath: string
   /** Zero-based UTF-16 position converted from the one-based model coordinates. */
@@ -29,7 +29,7 @@ export interface LspToolInput {
 }
 
 /** The raw, schema-typed argument shape. */
-export interface LspToolArgs {
+interface LspToolArgs {
   readonly operation: string
   readonly file_path: string
   readonly line: number

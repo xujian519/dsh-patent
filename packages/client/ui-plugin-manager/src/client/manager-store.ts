@@ -163,7 +163,7 @@ const REFRESH_SPINNER_MIN_MS = 400
  * @param resolved - the URL pnpm's own configuration names, null while the Host could not read it.
  * @returns the comparison key; a registry that does not parse compares as written.
  */
-export function registryKey(registry: Registry, resolved: string | null): string {
+function registryKey(registry: Registry, resolved: string | null): string {
   const url = registry ?? resolved
   if (url === null) return ''
   try {
@@ -202,7 +202,7 @@ export interface InstallInputError {
 }
 
 /** One pnpm run of an install, as the dialog's terminal draws it. */
-export interface InstallRun {
+interface InstallRun {
   readonly jobId: string
   /** The command line the Host ran, space-joined. */
   readonly command: string
@@ -322,7 +322,7 @@ export function asksMirror(install: InstallState): boolean {
 }
 
 /** A destructive action waiting for the user's confirmation: a package's uninstall. */
-export interface ConfirmState {
+interface ConfirmState {
   readonly action: 'uninstall'
   readonly packageName: string
 }

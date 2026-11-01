@@ -32,7 +32,7 @@ function argsAfter(draft: string, token: string): string {
 }
 
 /** The submit-plane slice of the published InputState. */
-export interface SubmitSnapshot {
+interface SubmitSnapshot {
   readonly phase: InputState['phase']
   readonly claim?: InputState['claim']
 }

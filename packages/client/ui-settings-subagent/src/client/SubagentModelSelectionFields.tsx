@@ -10,7 +10,7 @@ import type {
 import css from './SubagentModelSelectionFields.module.css'
 
 /** Plain model state and callbacks supplied by the owning Subagent card. */
-export type SubagentModelSelectionFieldsProps = PropsLocale<'settings.subagent'>
+type SubagentModelSelectionFieldsProps = PropsLocale<'settings.subagent'>
   & Pick<SubagentModelSelectionCardFace, 'toggleEnabled' | 'toggleModel' | 'retryCatalog'>
   & { state: SubagentModelSelectionCardState }
 

@@ -5,7 +5,7 @@ import type { JobListFrame, JobListRequest } from './types.ts'
 import { OutputWaiter, sleep } from './wake.ts'
 
 /** Cadence bound for one roster generation. */
-export interface RowsOptions {
+interface RowsOptions {
   /** Coalescing window after a lifecycle event before the next rows read, in milliseconds. */
   readonly flushMs: number
 }

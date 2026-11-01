@@ -12,7 +12,7 @@
 import type { PipelineState } from './handler.ts'
 
 /** Outcome of reading one numeric tunable. */
-export type TunableResult =
+type TunableResult =
   | {
     ok: true
     value: number
@@ -55,7 +55,7 @@ export const DEFAULT_CHART_SOURCE_MAX_BYTES = 1024 * 1024
 export const MAX_CHART_SOURCE_MAX_BYTES = 16 * 1024 * 1024
 
 /** Defaults a handler supplies for its tunable surface. */
-export type AtomTunableDefaults = {
+type AtomTunableDefaults = {
   temperature: number
   promptLimit: number
   maxRetries?: number
@@ -63,7 +63,7 @@ export type AtomTunableDefaults = {
 }
 
 /** Resolved tunables for one handler call. */
-export type AtomTunables = {
+type AtomTunables = {
   temperature: number
   promptLimit: number
   /** Whether the stage supplied `prompt_char_limit`; per-block defaults apply when false. */
@@ -75,7 +75,7 @@ export type AtomTunables = {
 }
 
 /** Outcome of resolving a handler's tunable surface. */
-export type AtomTunablesResult =
+type AtomTunablesResult =
   | { ok: true; tunables: AtomTunables }
   | { ok: false; reason: string }
 
@@ -175,7 +175,7 @@ export function readGroundednessThreshold(state: PipelineState, fallback: number
 }
 
 /** Outcome of reading the claim-chart source roots. */
-export type ChartSourceRootsResult =
+type ChartSourceRootsResult =
   | {
     ok: true
     /** `undefined` keeps the handler default (the working directory); `[]` allows no root. */

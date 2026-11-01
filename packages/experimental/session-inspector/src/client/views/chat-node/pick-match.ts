@@ -10,7 +10,7 @@ export interface InspectorPickTarget extends InspectorChatTarget {
 }
 
 /** A visible Chat box and its most specific available identity. */
-export interface InspectorElementMatch {
+interface InspectorElementMatch {
   readonly element: HTMLElement
   readonly target: InspectorPickTarget
 }

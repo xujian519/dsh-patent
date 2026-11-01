@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef } from 'react'
 export const POINTER_GRACE_MS = 200
 
 /** Cancelable delayed close for a pointer-dismissed popup. */
-export interface PointerGrace {
+interface PointerGrace {
   /** Schedule the close {@link POINTER_GRACE_MS} from now, replacing any pending one. */
   arm: () => void
   /** Abort a pending close (the pointer came back). */

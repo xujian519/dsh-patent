@@ -30,7 +30,7 @@ export interface EnvLookup {
  * `::1` and `[::1]` are both listed because the resolved string is also handed to undici, whose
  * matcher reads a bare `::1` as host `:` port `1` and therefore never bypasses it.
  */
-export const LOOPBACK_NO_PROXY: readonly string[] = ['localhost', '127.0.0.1', '::1', '[::1]']
+const LOOPBACK_NO_PROXY: readonly string[] = ['localhost', '127.0.0.1', '::1', '[::1]']
 
 /**
  * The environment names each policy field owns, lowercase first — undici reads the lowercase name
@@ -79,7 +79,7 @@ export interface ProxyPolicy {
 export const DIRECT_POLICY: ProxyPolicy = { noProxy: '', source: 'none' }
 
 /** Why one candidate proxy value was not used. Callers decide whether this warns or fails the load. */
-export interface ProxyDiagnostic {
+interface ProxyDiagnostic {
   /** `socks` for a SOCKS or PAC URL this package cannot route; `invalid` for anything unparseable. */
   readonly kind: 'socks' | 'invalid'
   /** The environment variable that supplied the rejected value. */
@@ -90,7 +90,7 @@ export interface ProxyDiagnostic {
 
 
 /** A resolved policy plus every candidate value that was rejected on the way to it. */
-export interface ProxyResolution {
+interface ProxyResolution {
   /** The policy to install. Never carries a rejected value. */
   readonly policy: ProxyPolicy
   /** Rejections, in the order the candidates were considered. Empty on a clean resolution. */

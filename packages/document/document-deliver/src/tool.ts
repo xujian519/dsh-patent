@@ -172,7 +172,7 @@ export interface DocumentDeliverDeps {
 }
 
 /** Read, tolerance, and report budgets one check run applies, resolved from the deployment's `Config`. */
-export type DeliverableCheckLimits = Pick<DocumentDeliverDeps, 'maxCheckBytes' | 'lengthTolerance' | 'maxFindingsPerCheck' | 'docxReadLimits'>
+type DeliverableCheckLimits = Pick<DocumentDeliverDeps, 'maxCheckBytes' | 'lengthTolerance' | 'maxFindingsPerCheck' | 'docxReadLimits'>
 
 /** The style a registration resolves to, or a fail-loud error naming the loaded set. */
 function resolveStyle(deps: DocumentDeliverDeps, spec: DocumentDeliverSpec): DocumentStyle {

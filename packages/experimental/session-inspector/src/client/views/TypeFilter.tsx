@@ -7,7 +7,7 @@ import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import css from './inspector.module.css'
 
 /** Current confirmed query and an asynchronous candidate source. */
-export type InspectorTypeFilterProps = PropsLocale<'session-inspector'> & {
+type InspectorTypeFilterProps = PropsLocale<'session-inspector'> & {
   readonly value: string
   readonly suggest: (query: string) => Promise<readonly string[]>
   readonly apply: (query: string) => void

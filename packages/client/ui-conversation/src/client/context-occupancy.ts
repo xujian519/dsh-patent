@@ -1,7 +1,7 @@
 import type { ContextPressureProjection } from '@deepseek-ai/dsh-token-meter/client'
 
 /** Context usage rendered by conversation and Chat status surfaces. */
-export interface ContextOccupancy {
+interface ContextOccupancy {
   percent: number
   usedTokens: number
   contextWindow: number

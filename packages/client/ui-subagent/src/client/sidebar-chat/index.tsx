@@ -18,10 +18,10 @@ import css from './SidebarChat.module.css'
 export const SUBAGENT_CHAT_ID = '@deepseek-ai/dsh-client-ui-subagent'
 
 /** Resource-address prefix for an embedded Session chat. */
-export const SUBAGENT_CHAT_ADDRESS = 'dsh-resource://subagentchat/session/'
+const SUBAGENT_CHAT_ADDRESS = 'dsh-resource://subagentchat/session/'
 
 /** Value retained by one live chat resource occurrence. */
-export interface SubagentChatResource {
+interface SubagentChatResource {
   readonly address: SubagentAddress
   readonly reference: SessionReference
 }
@@ -123,7 +123,7 @@ export function FixedChatConversationView(props: ConversationViewsProps) {
 }
 
 /** Props supplied to the child-Session Conversation host. */
-export type ConversationSlotPanelProps = PropsRuntime<'sidebar.chat.conversation'> & PropsRenderFactories
+type ConversationSlotPanelProps = PropsRuntime<'sidebar.chat.conversation'> & PropsRenderFactories
 
 /** Render the shared Conversation content for one explicitly provided child Session. */
 export function ConversationSlotPanel({

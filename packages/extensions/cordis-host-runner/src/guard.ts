@@ -829,7 +829,7 @@ function rejectGuard(reportFailure: (error: Error) => void, message: string): ne
  * @param plugin - the plugin the host half returned.
  * @returns the human-readable name used in run results and inspect output.
  */
-export function pluginName(plugin: Plugin): string {
+function pluginName(plugin: Plugin): string {
   const named = (plugin as { name?: unknown }).name
   if (typeof named === 'string' && named.length > 0) return named
   return '<anonymous>'

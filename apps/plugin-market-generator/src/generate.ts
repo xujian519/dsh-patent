@@ -10,7 +10,7 @@ import { dshRange, findBundlePackages, isBundle, isPrivate, readManifest, type M
 import type { Source } from './sources.ts'
 
 /** One generated version, in the field order of the format. */
-export interface GeneratedVersion {
+interface GeneratedVersion {
   readonly version: string
   readonly publishTimestamp: number
   readonly source: Readonly<Record<string, string>>
@@ -18,7 +18,7 @@ export interface GeneratedVersion {
 }
 
 /** One generated plugin, in the field order of the format. */
-export interface GeneratedEntry extends Display {
+interface GeneratedEntry extends Display {
   readonly name: string
   readonly versions: readonly GeneratedVersion[]
 }
@@ -42,7 +42,7 @@ export interface GenerateOptions {
 }
 
 /** A finished run: the index document, the icon files it refers to, and the sources that could not be read. */
-export interface GenerateResult {
+interface GenerateResult {
   readonly index: { readonly format: 1; readonly title: string; readonly description?: string; readonly plugins: readonly GeneratedEntry[] }
   /** Icon files by index-relative path; contents live under the cache. */
   readonly icons: ReadonlyMap<string, string>

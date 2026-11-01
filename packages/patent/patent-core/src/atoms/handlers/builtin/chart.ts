@@ -200,7 +200,7 @@ export function deriveOfficeActionTargets(officeActionJson: string): ChartTarget
  * @param priorArt - `prior_art` 状态值（检索命中数组）。
  * @returns 去重后的对比文件目标；非数组输入返回空数组。
  */
-export function derivePriorArtTargets(priorArt: unknown): ChartTarget[] {
+function derivePriorArtTargets(priorArt: unknown): ChartTarget[] {
   if (!Array.isArray(priorArt)) return []
   const targets: ChartTarget[] = []
   const seen = new Set<string>()

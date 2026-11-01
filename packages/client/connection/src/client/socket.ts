@@ -1,7 +1,7 @@
 /** Physical socket selection for browser, desktop, and authenticated Node connections. */
 
 /** Socket events consumed by the Gateway on browser and Node carriers. */
-export interface ConnectionWebSocketEventMap {
+interface ConnectionWebSocketEventMap {
   readonly open: object
   readonly error: object
   readonly close: object

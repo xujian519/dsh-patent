@@ -21,7 +21,7 @@ import { $isCommandChipNode } from './command-chip-node.tsx'
 export const ATOMIC_CHAR = '￼'
 
 /** One leaf (or gap) of the composer document in projection coordinates. */
-export interface ComposerSegment {
+interface ComposerSegment {
   /** text/linebreak carry a node; chip is atomic; gap is the newline between block elements. */
   readonly kind: 'text' | 'chip' | 'linebreak' | 'gap'
   /** The backing node; null only for gap. */

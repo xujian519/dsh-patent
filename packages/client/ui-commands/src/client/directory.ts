@@ -19,7 +19,7 @@ export type { CommandDescriptor } from '@deepseek-ai/dsh-commands/types'
 export type DirectoryStatus = 'cold' | 'pending' | 'ready' | 'failed'
 
 /** Injected pull (the service binds command.list off the root connection). */
-export type FetchCommands = (sessionId: SessionId) => Promise<readonly CommandDescriptor[]>
+type FetchCommands = (sessionId: SessionId) => Promise<readonly CommandDescriptor[]>
 
 /** One session key's cache cell. */
 class Entry {

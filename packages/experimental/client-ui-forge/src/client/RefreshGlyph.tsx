@@ -5,7 +5,7 @@ import { IconRefreshOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives
 import css from './RefreshGlyph.module.css'
 
 /** Props of the refresh glyph. */
-export interface RefreshGlyphProps {
+interface RefreshGlyphProps {
   /** Whether the refresh runs. */
   readonly busy: boolean
   /** Glyph size in pixels. */

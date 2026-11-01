@@ -22,7 +22,7 @@ import type { FsSandboxController } from './sandbox.ts'
  * @param args - the schema-validated raw tool arguments.
  * @returns the camelCased input; `content` passes through untouched.
  */
-export function parseWriteArgs(args: { file_path: string; content: string }): { filePath: string; content: string } {
+function parseWriteArgs(args: { file_path: string; content: string }): { filePath: string; content: string } {
   if (args.file_path.trim().length === 0) throw new Error('file_path must be a non-empty string')
   return { filePath: args.file_path, content: args.content }
 }
@@ -33,7 +33,7 @@ export function parseWriteArgs(args: { file_path: string; content: string }): { 
  * @param outcome - the write outcome; its `operation` selects the Created/Updated wording.
  * @returns the model-facing confirmation envelope (no file content is echoed back).
  */
-export function formatWriteOutput(displayPath: string, outcome: Pick<FsWriteOutcome, 'operation'>): string {
+function formatWriteOutput(displayPath: string, outcome: Pick<FsWriteOutcome, 'operation'>): string {
   const verb = outcome.operation === 'create' ? 'Created' : 'Updated'
   return `<path>${displayPath}</path>
 <type>file</type>

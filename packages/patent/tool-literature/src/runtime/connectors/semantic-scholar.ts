@@ -14,7 +14,7 @@ const FIELDS = 'title,abstract,url,year,venue,citationCount,externalIds,authors.
 const RATE_LIMIT = { minIntervalMs: 1000 }
 
 /** 创建 Semantic Scholar 连接器的选项（提额 key、限速、预算）。 */
-export interface CreateSemanticScholarConnectorOptions extends ConnectorHttpOptions {
+interface CreateSemanticScholarConnectorOptions extends ConnectorHttpOptions {
   /** 可选提额 key；默认回退 SEMANTIC_SCHOLAR_API_KEY 环境变量。 */
   apiKey?: string
 }

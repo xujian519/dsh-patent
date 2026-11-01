@@ -19,10 +19,10 @@ import { writeClipboard } from '@deepseek-ai/dsh-client-ui-primitives'
 import { SESSION_MARKDOWN_EXPORT_ROUTE } from '../routes.ts'
 
 /** Whether the latest copy attempt succeeded, prepared no transcript, or could not write. */
-export type SessionMarkdownCopyNoticeKind = 'success' | 'preparationFailed' | 'clipboardFailed'
+type SessionMarkdownCopyNoticeKind = 'success' | 'preparationFailed' | 'clipboardFailed'
 
 /** One settled copy notice; `seq` keys the toast so a repeat copy restarts it. */
-export interface SessionMarkdownCopyNotice {
+interface SessionMarkdownCopyNotice {
   readonly kind: SessionMarkdownCopyNoticeKind
   readonly seq: number
 }

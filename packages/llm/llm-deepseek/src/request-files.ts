@@ -6,7 +6,7 @@ import type { DeepSeekFileStore, DeepSeekFileConnection, DeepSeekFilePolicy } fr
 import type { DeepSeekFileId } from './file-id.ts'
 
 /** Position of an image occurrence in the request's conversation messages. */
-export interface ImageWireLocation {
+interface ImageWireLocation {
   message: number
   image: number
 }

@@ -17,7 +17,7 @@ export interface GhOutput {
 export type GhRunner = (args: readonly string[], signal: AbortSignal) => Promise<GhOutput>
 
 /** Resolved executable and limits for `gh`. */
-export interface GhConfig {
+interface GhConfig {
   /** Executable name or absolute host path. */
   readonly ghCommand: string
   /** Deadline in milliseconds for one invocation. */

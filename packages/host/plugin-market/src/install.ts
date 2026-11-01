@@ -18,16 +18,16 @@ import { restrictedFetchJson, type RestrictedFetchOptions } from './restricted-f
 export const LIFECYCLE_SCRIPTS = ['preinstall', 'install', 'postinstall', 'prepare'] as const
 
 /** npm package name (scoped or unscoped), matching the catalog schema's constraint. */
-export const PACKAGE_NAME_PATTERN = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/
+const PACKAGE_NAME_PATTERN = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/
 
 /** A parsed `name@version` reference. */
-export interface PackageRef {
+interface PackageRef {
   name: string
   version: string
 }
 
 /** The outcome of one package-manager invocation. */
-export interface PnpmResult {
+interface PnpmResult {
   /** Process exit status; non-zero means the invocation failed. */
   status: number
   /** Captured stderr tail for diagnostics. */
@@ -49,7 +49,7 @@ export interface InstallOptions {
 /** Default npm registry. */
 export const DEFAULT_REGISTRY = 'https://registry.npmjs.org'
 /** The receipts directory name under the profile. */
-export const RECEIPTS_DIR = '.dsh-plugin-market/receipts'
+const RECEIPTS_DIR = '.dsh-plugin-market/receipts'
 
 /**
  * Parse a `name@version` reference; scoped names keep their leading `@`.
@@ -154,7 +154,7 @@ export async function previewInstall(ref: string, options: InstallOptions = {}):
 }
 
 /** One profile manifest file captured before an install. */
-export interface ProfileSnapshot {
+interface ProfileSnapshot {
   files: Record<string, string>
 }
 

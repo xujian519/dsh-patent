@@ -73,7 +73,7 @@ export type SshStreamEndpoint = z.infer<typeof streamEndpointSchema>
 /** Prepared process and its independently authenticated stream endpoints. */
 export const preparedSchema = z.object({ id: processIdSchema, streams: z.partialRecord(z.enum(['stdin', 'stdout', 'stderr', 'control', 'terminal']), streamEndpointSchema) }).strict()
 /** Direct process exit facts. */
-export const outcomeSchema = z.object({ exitCode: z.number().int().nullable(), signal: z.string().nullable() }).strict()
+const outcomeSchema = z.object({ exitCode: z.number().int().nullable(), signal: z.string().nullable() }).strict()
 /** A bounded raw tail positioned in whole-stream byte coordinates. */
 export const outputSnapshotSchema = z.object({ tail: z.base64(), totalBytes: z.number().int().nonnegative() }).strict()
 /**

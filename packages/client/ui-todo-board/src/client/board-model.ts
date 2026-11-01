@@ -13,7 +13,7 @@ import type { TodoItem } from '@deepseek-ai/dsh-tool-todo/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 
 /** One board card: a todo line plus the session it came from. */
-export interface BoardCard {
+interface BoardCard {
   /** The todo's imperative content line, verbatim. */
   readonly content: string
   /** Optional model-authored category labels; empty when the todo is untagged. */
@@ -25,7 +25,7 @@ export interface BoardCard {
 }
 
 /** The three kanban columns, keyed by todo status. */
-export type BoardColumns = Readonly<Record<TodoItem['status'], readonly BoardCard[]>>
+type BoardColumns = Readonly<Record<TodoItem['status'], readonly BoardCard[]>>
 
 /** Column keys in render order. */
 export const BOARD_COLUMNS = ['pending', 'in_progress', 'completed'] as const

@@ -62,7 +62,7 @@ export interface DetailRequest {
 export type DetailFailureKind = 'too-large' | 'network' | 'denied' | 'git-unavailable' | 'invalid' | 'other'
 
 /** One detail read. */
-export type DetailState =
+type DetailState =
   | { readonly status: 'loading' }
   | { readonly status: 'ready'; readonly detail: PluginDetail }
   | { readonly status: 'error'; readonly failure: DetailFailureKind }

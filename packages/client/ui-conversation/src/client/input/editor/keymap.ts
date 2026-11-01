@@ -26,7 +26,7 @@ import type { ArbitrateKey, ArbitrateOutcome } from '../../contract/draft-editor
 import { $isQuoteNode } from './QuoteNode.tsx'
 
 /** The bar-supplied behavior behind each intercepted gesture. */
-export interface ComposerKeymapHandlers {
+interface ComposerKeymapHandlers {
   /** Keyboard arbitration while the menu is open ('pass' when no pipeline). */
   arbitrate(key: ArbitrateKey, composing: boolean): ArbitrateOutcome
   /** Space adjudication; true = a claim was applied — the keystroke is consumed. */

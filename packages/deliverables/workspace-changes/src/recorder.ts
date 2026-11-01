@@ -12,7 +12,7 @@ import { canonicalPath, compareDisplay, displayPathOf, durablePathOf, isInside, 
 import type { WorkspaceChangedFile, WorkspaceChangesSummary, WorkspaceFileDiff } from './types.ts'
 
 /** Facts shared by every recorder of one plugin instance. */
-export interface RecorderEnvironment {
+interface RecorderEnvironment {
   /** Resolves to the runner, or null when git is unavailable and no snapshot is taken. */
   git: Promise<GitRunner | null>
   /** Directory that receives each Session's temporary directory. */

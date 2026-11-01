@@ -3,7 +3,7 @@
 import type { InspectorRow } from './table-model.ts'
 
 /** Filtered row order and the distinction between matches and contextual ancestors. */
-export interface InspectorTypeMatches {
+interface InspectorTypeMatches {
   readonly rows: readonly InspectorRow[]
   readonly matches: ReadonlySet<string>
 }

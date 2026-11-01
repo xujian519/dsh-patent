@@ -56,7 +56,7 @@ interface WorkflowState {
  * @param phase - exact phase string, or null for an omitted field.
  * @returns the stable renderer key for that phase identity.
  */
-export function workflowPhaseKey(phase: string | null): string {
+function workflowPhaseKey(phase: string | null): string {
   return phase === null ? 'missing' : `value:${phase.length}:${phase}`
 }
 

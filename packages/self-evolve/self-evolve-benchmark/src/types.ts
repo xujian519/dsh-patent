@@ -203,7 +203,7 @@ export interface ApplyCandidateOptions {
 }
 
 /** Rollback seam: restore the agent state directory to a snapshot version. */
-export type RestoreSnapshot = (options: { version: number; signal: AbortSignal }) => Promise<void>
+type RestoreSnapshot = (options: { version: number; signal: AbortSignal }) => Promise<void>
 
 /** Engine core wiring; all seams are injected so tests run deterministically. */
 export interface BenchmarkEngineOptions {

@@ -18,7 +18,7 @@ import type {
 } from '../types.ts'
 
 /** Result families the tool can query. */
-export const LEGAL_KNOWLEDGE_SCOPES = [
+const LEGAL_KNOWLEDGE_SCOPES = [
   'case_law',
   'regulation',
   'judicial_interpretation',
@@ -26,13 +26,13 @@ export const LEGAL_KNOWLEDGE_SCOPES = [
 ] as const
 
 /** One query family. */
-export type LegalKnowledgeScope = (typeof LEGAL_KNOWLEDGE_SCOPES)[number]
+type LegalKnowledgeScope = (typeof LEGAL_KNOWLEDGE_SCOPES)[number]
 
 /** Any hit the tool may return. */
-export type LegalKnowledgeHit = CaseLawHit | LegalRegulationHit | JudicialInterpretationHit | GuidingCaseHit
+type LegalKnowledgeHit = CaseLawHit | LegalRegulationHit | JudicialInterpretationHit | GuidingCaseHit
 
 /** The slice of the service the tool consumes. */
-export type LegalKnowledgeQuery = {
+type LegalKnowledgeQuery = {
   caseLawSearch: (
     query: string,
     options?: { limit?: number; docType?: 'judgment' | 'guiding'; court?: string; caseType?: string },
@@ -68,7 +68,7 @@ export type LegalKnowledgeSearchOutput = {
 }
 
 /** Thrown when the tool input cannot be used as a query. */
-export class LegalKnowledgeSearchToolError extends Error {
+class LegalKnowledgeSearchToolError extends Error {
   /** Stable failure identifier. */
   readonly code: string
 
@@ -84,10 +84,10 @@ export class LegalKnowledgeSearchToolError extends Error {
 }
 
 /** Default result cap. */
-export const DEFAULT_LEGAL_KNOWLEDGE_LIMIT = 5
+const DEFAULT_LEGAL_KNOWLEDGE_LIMIT = 5
 
 /** Maximum result cap. */
-export const MAX_LEGAL_KNOWLEDGE_LIMIT = 20
+const MAX_LEGAL_KNOWLEDGE_LIMIT = 20
 
 const SCOPE_LABELS: Record<LegalKnowledgeScope, string> = {
   case_law: '案例',

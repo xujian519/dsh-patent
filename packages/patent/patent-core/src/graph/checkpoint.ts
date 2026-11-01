@@ -36,7 +36,7 @@ const CHECKPOINT_RECORD_KIND = 'checkpoint'
  * @param file - 记录文件路径。
  * @returns 通过校验的检查点。
  */
-export function parseGraphCheckpoint(raw: string, file: string): GraphCheckpoint {
+function parseGraphCheckpoint(raw: string, file: string): GraphCheckpoint {
   const record = parseStoredJsonRecord(raw, file, CHECKPOINT_RECORD_KIND)
   const invalid = (detail: string): StoredRecordError =>
     new StoredRecordError(file, CHECKPOINT_RECORD_KIND, detail)

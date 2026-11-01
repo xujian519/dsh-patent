@@ -42,7 +42,7 @@ export type EvidenceSpan = {
 }
 
 /** 创建证据的入参：EvidenceSpan 去掉 id（id 可缺省生成）。 */
-export type CreateSpanInput = Omit<EvidenceSpan, 'id'> & {
+type CreateSpanInput = Omit<EvidenceSpan, 'id'> & {
   id?: string
 }
 

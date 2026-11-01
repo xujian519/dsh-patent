@@ -5,7 +5,7 @@ export type { CuaApplicationGrant, CuaApplicationId } from './application-types.
 /** macOS privileges used by the native provider. */
 export type CuaSystemPermission = 'accessibility' | 'screenRecording'
 /** Observed process; neither the helper nor its parent is assumed to be the TCC owner. */
-export interface CuaPermissionProcess {
+interface CuaPermissionProcess {
   pid: number
   path?: string | undefined
   name?: string | undefined

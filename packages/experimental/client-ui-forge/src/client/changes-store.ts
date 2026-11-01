@@ -9,7 +9,7 @@ import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-sto
 import type { ForgeLocalScope } from '../types.ts'
 
 /** One changes tab's choices. */
-export interface ChangesTabState {
+interface ChangesTabState {
   /** Local changes shown; a change request view ignores it. */
   scope: ForgeLocalScope['kind']
   /** Whether deletions and additions show in two columns. */
@@ -21,7 +21,7 @@ export interface ChangesTabState {
 }
 
 /** Every changes tab's choices, keyed by tab id. */
-export interface ChangesState {
+interface ChangesState {
   byTab: Record<string, ChangesTabState>
 }
 

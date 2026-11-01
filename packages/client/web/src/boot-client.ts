@@ -13,7 +13,7 @@ import { STATE_LABELS } from './loader-status.ts'
 export type EntryStateLabel = (typeof STATE_LABELS)[keyof typeof STATE_LABELS] | 'loading' | 'failed'
 
 /** Inputs of {@link bootClient}. */
-export interface ClientBootOptions {
+interface ClientBootOptions {
   /** Fresh root Context that will own the plugin tree. */
   readonly ctx: Context
   /** Module system installed as `loader.internal`. */

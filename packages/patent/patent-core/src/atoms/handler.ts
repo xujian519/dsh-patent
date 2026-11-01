@@ -60,7 +60,7 @@ export function getStateArray(state: PipelineState, key: string): unknown[] {
 }
 
 /** collectStateText 选项：追加跳过键与空结果兜底。 */
-export type CollectStateTextOptions = {
+type CollectStateTextOptions = {
   /** 额外跳过键谓词（在 _ 前缀过滤之后执行）。 */
   skipKey?: (key: string) => boolean
   /** 无文本块时的兜底文本（缺省空字符串）。 */
@@ -202,7 +202,7 @@ export class StageHandlerRegistry {
 }
 
 /** StageHandler 注册表错误：用于注册校验失败（如缺少 name）。 */
-export class StageHandlerRegistryError extends Error {
+class StageHandlerRegistryError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'StageHandlerRegistryError'

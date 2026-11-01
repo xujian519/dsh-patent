@@ -5,7 +5,7 @@
  */
 
 /** Resolved widths for one frame. */
-export interface Columns { sidebar: number; center: number; rightbar: number }
+interface Columns { sidebar: number; center: number; rightbar: number }
 
 /** Center width protected while the normal right column is open. */
 export const CENTER_MIN = 400

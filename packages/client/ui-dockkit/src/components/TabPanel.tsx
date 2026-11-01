@@ -98,7 +98,7 @@ function DockHint({ zone, active, labels }: {
 }
 
 /** A pane and the live layout it reads its tabs from. */
-export interface TabPanelProps {
+interface TabPanelProps {
   readonly state: LayoutState
   readonly pane: PaneNode
   readonly callbacks: PaneCallbacks

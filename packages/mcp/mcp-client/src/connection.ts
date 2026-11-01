@@ -94,13 +94,13 @@ export function resolveReconnectPolicy(config: ReconnectConfig | undefined, path
 }
 
 /** Result from the initial connection attempt, for startup-await semantics. */
-export interface ConnectionOutcome {
+interface ConnectionOutcome {
   /** If the initial connection or tool sync failed, the error; otherwise absent. */
   error?: unknown
 }
 
 /** Handle for one plugin instance's supervised connection. */
-export interface ConnectionHandle extends ServerContext {
+interface ConnectionHandle extends ServerContext {
   /**
    * Settles when the first connection attempt completes (success or failure).
    * The supervisor enters its reconnect loop regardless; the caller decides

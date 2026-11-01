@@ -15,7 +15,7 @@ import { basename, dirname, isAbsolute, join } from 'node:path'
 import { hasExactKeys, isRecord } from '@deepseek-ai/dsh-value'
 
 /** Target state restored by the Linux bootstrap after systemd establishes the scope. */
-export interface LinuxLaunchRequest {
+interface LinuxLaunchRequest {
   cwd: string
   env: Record<string, string>
   control?: 'pipe'
@@ -31,7 +31,7 @@ export interface SerializedRunnerError {
 }
 
 /** A Linux pre-exec failure published beside its consumed request. */
-export type LinuxStartupError =
+type LinuxStartupError =
   { type: 'error'; error: SerializedRunnerError }
 
 /** The only parent-to-runner start message on Windows. */
@@ -43,7 +43,7 @@ export interface WindowsStartRequest {
 }
 
 /** The only parent-to-runner control message on Windows. */
-export interface WindowsTerminateRequest {
+interface WindowsTerminateRequest {
   type: 'terminate'
 }
 
@@ -87,7 +87,7 @@ function parseErrorResult(value: Record<string, unknown>): LinuxStartupError {
 }
 
 /** Stable code marking a scope exit whose launch request was never consumed. */
-export const LAUNCH_REQUEST_UNCONSUMED_CODE = 'DSH_LAUNCH_REQUEST_UNCONSUMED' as const
+const LAUNCH_REQUEST_UNCONSUMED_CODE = 'DSH_LAUNCH_REQUEST_UNCONSUMED' as const
 
 /**
  * Build the rejection for a scope exit that never consumed its launch request.

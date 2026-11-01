@@ -8,7 +8,7 @@ export const IMAGE_ENCODING_QUALITIES = [85, 75, 60] as const
 export const WEBP_ENCODING_EFFORT = 0
 
 /** One ladder output carrying its complete bytes and exact facts. */
-export interface EncodedImage {
+interface EncodedImage {
   data: Uint8Array
   mediaType: 'image/jpeg' | 'image/webp'
   width: number
@@ -38,12 +38,12 @@ export function encodingLadder(prepared: Sharp, hasAlpha: boolean): Array<() => 
 }
 
 /** One encoded candidate carrying its complete bytes. */
-export interface EncodedCandidate {
+interface EncodedCandidate {
   data: Uint8Array
 }
 
 /** Result of exhausting candidates at one raster size without a fitting output. */
-export interface ExhaustedEncoding<T extends EncodedCandidate> {
+interface ExhaustedEncoding<T extends EncodedCandidate> {
   smallest: T
 }
 

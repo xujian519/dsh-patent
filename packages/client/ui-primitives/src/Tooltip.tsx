@@ -17,7 +17,7 @@ export type { TooltipSide } from './tooltip-placement.ts'
  * Suppression channel for nested tooltips: a visible descendant tooltip
  * withdraws the enclosing tooltip while its bubble is shown.
  */
-export const TooltipSuppression = createContext<((suppressed: boolean) => void) | null>(null)
+const TooltipSuppression = createContext<((suppressed: boolean) => void) | null>(null)
 
 /** Props Tooltip injects into its anchor child; the child's own handlers are chained ahead of the tooltip's. */
 interface AnchorProps {

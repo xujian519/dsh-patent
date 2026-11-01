@@ -17,7 +17,7 @@ export interface AccountPlatformHostInjected {
 }
 
 /** Composed props of the shared Platform host. */
-export type AccountPlatformHostProps =
+type AccountPlatformHostProps =
   PropsRuntime<'shell.overlay'> & PropsLocale<'settings.account'> & InjectFace<AccountPlatformHostInjected>
 
 /**

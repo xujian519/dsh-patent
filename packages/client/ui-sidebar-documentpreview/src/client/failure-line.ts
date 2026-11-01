@@ -29,7 +29,7 @@ export function failureLine(t: TranslateNS<'sidebarDocumentPreview'>, failure: R
 }
 
 /** The action an empty preview offers beside its failure line. */
-export type EmptyFailureRecourse = 'open' | 'retry' | 'none'
+type EmptyFailureRecourse = 'open' | 'retry' | 'none'
 
 /**
  * Choose the empty state's action for one settled read failure.

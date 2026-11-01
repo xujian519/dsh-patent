@@ -7,7 +7,7 @@ export const FULL_ACCESS_PRESET = 'danger-full-access'
 export const AUTO_REVIEW_PRESET = 'auto'
 
 /** Locale dictionary key for a built-in permission preset label. */
-export type PermissionPresetLabelKey =
+type PermissionPresetLabelKey =
   | 'preset.readOnly'
   | 'preset.workspaceWrite'
   | 'preset.fullAccess'
@@ -29,7 +29,7 @@ const DEFAULT_PRESET_LABELS: Record<PermissionPresetLabelKey, string> = {
  * @param name - host-supplied preset label or key.
  * @returns the title-cased conventional key, or a non-kebab label unchanged.
  */
-export function displayPresetName(name: string): string {
+function displayPresetName(name: string): string {
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) return name
   return name.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }

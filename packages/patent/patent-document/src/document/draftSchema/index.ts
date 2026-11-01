@@ -244,7 +244,7 @@ export type { GenericTemplateId } from './generic.ts'
 import type { GenericTemplateId } from './generic.ts'
 
 /** 除 claims-spec 外全部接入受控草案的模板 id（表单 + 通用文档）。 */
-export type DraftTemplateId = FormTemplateId | GenericTemplateId
+type DraftTemplateId = FormTemplateId | GenericTemplateId
 
 /** 判断模板 id 是否已接入 TemplateDraft（表单或通用文档；类型守卫）。
  * @param id - 模板 id。

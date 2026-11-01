@@ -11,7 +11,7 @@ export const zh = {
 } satisfies Record<string, string>
 
 /** Excel preview dictionary keys. */
-export type ExcelPreviewKey = keyof typeof zh
+type ExcelPreviewKey = keyof typeof zh
 
 /** English Excel preview copy. */
 export const en = {

@@ -25,7 +25,7 @@ export interface ShortcutSaveResult {
   readonly conflicts?: readonly ShortcutCommandId[]
 }
 /** Storage adapter owns path/origin isolation and complete replacement on successful writes. */
-export interface ShortcutStorage {
+interface ShortcutStorage {
   read(): string | null | Promise<string | null>
   write(raw: string): void | Promise<void>
 }

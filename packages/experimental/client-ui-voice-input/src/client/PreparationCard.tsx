@@ -9,7 +9,7 @@ import { NS } from './locales.ts'
 import css from './VoiceInput.module.css'
 
 /** One recognizer's resource readiness and explicit preparation controls. */
-export type PreparationCardProps = Pick<InjectFace<VoiceInputInjected>, 'prepare' | 'cancelPreparation'>
+type PreparationCardProps = Pick<InjectFace<VoiceInputInjected>, 'prepare' | 'cancelPreparation'>
   & PropsLocale<typeof NS> & { readonly provider: SpeechProviderView; readonly connected: boolean }
 
 function preparationTone(state: SpeechPreparationState): StateDotState {

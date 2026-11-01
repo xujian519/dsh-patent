@@ -15,7 +15,7 @@ import rowCss from './FontSizeRow.module.css'
 import css from './FontFamilyRow.module.css'
 
 /** Injected business face: the row's font role and its write. */
-export interface FontFamilyRowInjected {
+interface FontFamilyRowInjected {
   /** Font role this row edits. */
   role: FontRole
   /** Change this role's font list (normalized by the theme service). */

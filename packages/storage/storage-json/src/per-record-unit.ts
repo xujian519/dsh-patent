@@ -190,7 +190,7 @@ async function readRecord(path: string, versions: readonly number[]): Promise<un
  * one document; deletions stage and sync their documents before cleanup.
  * Write ordering belongs to the caller (the domain layer's write chain).
  */
-export class PerRecordJsonUnit implements KvUnit {
+class PerRecordJsonUnit implements KvUnit {
   private closed = false
   /** Set when a failed batch could not restore its staged documents. */
   private unusable: StorageError | undefined

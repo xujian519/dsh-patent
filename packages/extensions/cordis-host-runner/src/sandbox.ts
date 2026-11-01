@@ -148,7 +148,7 @@ export function syntaxErrorContext(error: Error): string {
  * @param context - the {@link syntaxErrorContext} of the failure.
  * @returns the model-facing error message.
  */
-export function parseErrorMessage(half: 'code.host' | 'code.client', context: string): string {
+function parseErrorMessage(half: 'code.host' | 'code.client', context: string): string {
   // Scope the TypeScript heuristic to the OFFENDING line, not the whole code:
   // an ` as ` inside an ordinary description string must not turn a plain
   // syntax error into a misleading remove-annotations message.

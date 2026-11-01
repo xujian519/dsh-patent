@@ -18,7 +18,7 @@ import type { en } from './locales.ts'
 import styles from './ModelsSection.module.css'
 
 /** Props of {@link EditorFooter}. */
-export interface EditorFooterProps {
+interface EditorFooterProps {
   /** Localizer for the row's own labels. */
   t: (key: keyof typeof en) => string
   /** Whether a commit is in flight; holds Cancel and swaps the commit label. */

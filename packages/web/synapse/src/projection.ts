@@ -13,7 +13,7 @@ import type { ProjectedMessage, Thread, ToolProcessEntry, WorkspaceState } from 
 
 /** Projected message text cap: longer replies truncate with a marker pointing
  * at the detail view instead of silently cutting mid-sentence. */
-export const MAX_PROJECTION_LENGTH = 8_000
+const MAX_PROJECTION_LENGTH = 8_000
 /** Folded tool-process field cap: one call's arguments or result is card detail
  * and both can carry a whole file or document; the detail view keeps the full text. */
 export const MAX_PROCESS_FIELD_LENGTH = 1_000
@@ -43,7 +43,7 @@ export const TOPIC_COLORS = ['#0f766e', '#2563eb', '#be123c', '#7c3aed', '#b4530
 
 /** The runtime-context snapshot DSH injects as a user message is internal
  * agent state, never a human question; excluding it keeps one card per turn. */
-export const RUNTIME_CONTEXT_PREFIX = 'Current runtime context. This snapshot supersedes earlier runtime-context snapshots.'
+const RUNTIME_CONTEXT_PREFIX = 'Current runtime context. This snapshot supersedes earlier runtime-context snapshots.'
 
 /** Whether a text starts with DSH's pinned runtime-context snapshot.
  * @param text The candidate text.
@@ -112,7 +112,7 @@ export function projectableEvent(event: SessionEvent): { kind: ProjectedMessage[
 
 /** One full-fidelity detail-view message: the whole text, folded tool
  * process, and injected context preserved with its own kind. */
-export interface DetailMessage {
+interface DetailMessage {
   id: string
   kind: 'user' | 'assistant' | 'todo' | 'error' | 'context'
   text: string
@@ -124,7 +124,7 @@ export interface DetailMessage {
 }
 
 /** An assistant message that can host a folded tool process. */
-export interface ToolProcessHost {
+interface ToolProcessHost {
   readonly kind: string
   readonly turn?: number
   readonly step?: number
@@ -245,7 +245,7 @@ export function retainCanvasState(state: WorkspaceState): boolean {
 }
 
 /** Options for paging the detail-view history. */
-export interface ProjectHistoryOptions {
+interface ProjectHistoryOptions {
   /** Keep only messages whose sourceSeq is strictly below this (exclusive). */
   beforeSeq?: number
   /** Return the most recent `limit` messages after filtering. */

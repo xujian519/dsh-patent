@@ -20,7 +20,7 @@ import { hasUnsafeIntegerToken, validateChildFrame } from './protocol.ts'
 const UTF8_FATAL = new TextDecoder('utf-8', { fatal: true })
 
 /** The host's wiring for one run's fd-3 frame reader. */
-export interface FrameReaderOptions {
+interface FrameReaderOptions {
   /**
    * Enforced ceiling for one newline-delimited frame. Checked against the held
    * unframed bytes before any join, and against the first frame's measured
@@ -44,7 +44,7 @@ export interface FrameReaderOptions {
 }
 
 /** A reader over one run's fd-3 stream. */
-export interface FrameReader {
+interface FrameReader {
   /**
    * Accumulate one fd-3 chunk and emit every complete frame it holds.
    * @param chunk - raw bytes as the pipe delivered them, split at any offset.

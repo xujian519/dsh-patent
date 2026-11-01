@@ -18,7 +18,7 @@ const PANEL_GAP = 8
 export const MEASURE_STYLE: CSSProperties = { visibility: 'hidden', left: 0, top: 0 }
 
 /** Open state, refs, and clamped placement for one stat dialog. */
-export interface StatDialogSeat {
+interface StatDialogSeat {
   open: boolean
   setOpen: (open: boolean) => void
   rootRef: MutableRefObject<HTMLSpanElement | null>

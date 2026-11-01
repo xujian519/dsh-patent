@@ -8,7 +8,7 @@ import { ComposerContentEditable } from './ComposerContentEditable.tsx'
 import { DecoratorPortals } from './DecoratorPortals.tsx'
 
 /** Text-area values and the scrollport reference retained by InputBar. */
-export interface DraftEditorProps {
+interface DraftEditorProps {
   readonly classNames: Readonly<Record<string, string>>
   readonly editor: LexicalEditor | null
   readonly scrollRef: RefObject<HTMLDivElement>

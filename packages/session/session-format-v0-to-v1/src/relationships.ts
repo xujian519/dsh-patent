@@ -29,7 +29,7 @@ interface ToolLifecycle {
 }
 
 /** Relationship roles added by a later format while reusing the released validator. */
-export interface ReleasedRelationshipExtensions {
+interface ReleasedRelationshipExtensions {
   /** Event types that must occur inside the current open step. */
   readonly stepEvents?: ReadonlySet<string>
   /** Title-request model input was source-validated and preserved across sequence remapping. */

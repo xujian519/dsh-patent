@@ -8,7 +8,7 @@ import { NPMMIRROR_REGISTRY } from '@deepseek-ai/dsh-plugin-manager/registry'
 export type BundleDetailFailure = 'too-large' | 'network' | 'denied' | 'git-unavailable' | 'invalid' | 'other'
 
 /** One bundle detail read. */
-export type BundleDetailState =
+type BundleDetailState =
   | { readonly status: 'loading' }
   | { readonly status: 'ready'; readonly detail: BundleDetail }
   | { readonly status: 'error'; readonly failure: BundleDetailFailure }

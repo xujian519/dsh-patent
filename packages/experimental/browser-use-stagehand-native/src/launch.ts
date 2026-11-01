@@ -8,7 +8,7 @@ import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
 import type { NativeBrowserConfig } from './native.ts'
 
 /** Chromium process and profile owned independently of the Stagehand Worker. */
-export interface OwnedChromium {
+interface OwnedChromium {
   /** CDP endpoint reported by this exact process. */
   endpoint: string
   /** Kill the owned process tree, await child close, and remove its profile. */

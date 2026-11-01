@@ -5,7 +5,7 @@
  */
 
 /** HTML void 元素（无闭合标签），标签配平扫描时跳过。 */
-export const VOID_TAGS = new Set([
+const VOID_TAGS = new Set([
   'area',
   'base',
   'br',

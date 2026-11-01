@@ -72,7 +72,7 @@ export interface MemberRuntimeConfig {
 }
 
 /** Durable provider/model/reasoning snapshot for one member. */
-export interface MemberLlmSelection {
+interface MemberLlmSelection {
   /** Registered LLM provider route. */
   provider: string
   /** Provider-owned model id. */
@@ -82,7 +82,7 @@ export interface MemberLlmSelection {
 }
 
 /** Optional member-level route requested by the captain. */
-export interface MemberLlmSelectionRequest {
+interface MemberLlmSelectionRequest {
   /** Explicit LLM provider route; requires an explicit model. */
   provider?: string
   /** Explicit model id; otherwise the plugin default or captain model is used. */

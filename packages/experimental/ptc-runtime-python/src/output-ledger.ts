@@ -33,7 +33,7 @@ export const MAX_PENDING_CHUNKS = 1024
  * sequences. Carried on each {@link StrayBuffer} so a multibyte character split
  * across pipe `data` chunks is costed as one character.
  */
-export interface Utf8CostState { expected: number; width: number; lowerFirst: number; upperFirst: number }
+interface Utf8CostState { expected: number; width: number; lowerFirst: number; upperFirst: number }
 
 /**
  * Accrue the serialized JSON cost of raw pipe bytes `buf`, decoding UTF-8 the way
@@ -57,7 +57,7 @@ export interface Utf8CostState { expected: number; width: number; lowerFirst: nu
  * @param state - the pipe's carried UTF-8 sequence state, mutated in place.
  * @returns the serialized cost accrued by the bytes that resolved in this call.
  */
-export function accrueStrayCost(buf: Buffer, state: Utf8CostState): number {
+function accrueStrayCost(buf: Buffer, state: Utf8CostState): number {
   let cost = 0
   let index = 0
   while (index < buf.length) {

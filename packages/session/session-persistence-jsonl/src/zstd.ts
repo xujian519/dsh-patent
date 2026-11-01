@@ -31,7 +31,7 @@ export interface ZstdFrameRange {
 }
 
 /** Structural scan result for a concatenated Zstandard stream. */
-export interface ZstdFrameScan {
+interface ZstdFrameScan {
   /** Complete frames in file order. */
   frames: ZstdFrameRange[]
   /** Start of an incomplete final frame, when EOF interrupts one. */

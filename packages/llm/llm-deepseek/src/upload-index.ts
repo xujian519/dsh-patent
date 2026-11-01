@@ -31,7 +31,7 @@ interface StoredIndex {
 class InvalidUploadIndexError extends Error {}
 
 /** Candidate commit outcome when another process already published a reusable upload. */
-export interface UploadIndexCommit {
+interface UploadIndexCommit {
   record: DeepSeekUploadRecord
   accepted: boolean
 }

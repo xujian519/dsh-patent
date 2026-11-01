@@ -32,7 +32,7 @@ export function owningGroupKey(
 }
 
 /** Pending interaction kinds with dedicated Workspace-row presentation. */
-export type SessionPendingInteractionStatus = 'approval' | 'plan-review' | 'question'
+type SessionPendingInteractionStatus = 'approval' | 'plan-review' | 'question'
 type SessionStatuses = SessionStatusSnapshot
 
 function mainSessionId(list: SessionListState): SessionId | undefined {
@@ -103,13 +103,13 @@ export interface SearchResultNode {
 }
 
 /** Bounded merged search projection plus the refine-query hint bit. */
-export interface SearchResultSet {
+interface SearchResultSet {
   items: readonly SearchResultNode[]
   hasMore: boolean
 }
 
 /** Viewing state consumed by the derivation. */
-export interface TreeView {
+interface TreeView {
   expandedGroups: readonly string[]
   /** Browser-local order for Sessions without a backing Workspace account. */
   ungroupedOrder?: readonly string[]

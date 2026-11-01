@@ -26,7 +26,7 @@ import { estimateMessage } from './estimate.ts'
  * IMMEDIATELY following event replaces. Plain JSON — it is part of the
  * persisted unit state while armed.
  */
-export interface ShadowPriceClaim {
+interface ShadowPriceClaim {
   /** Declared inclusive first surface-node seq of the priced range. */
   start: SessionSeq
   /** Declared inclusive last surface-node seq of the priced range. */
@@ -36,7 +36,7 @@ export interface ShadowPriceClaim {
 }
 
 /** One event's effect on a running surface-token total. */
-export interface SurfaceTokensFold {
+interface SurfaceTokensFold {
   /** Signed change in the surface total; 0 for events off the surface. */
   readonly deltaTokens: number
   /** Claim to carry into the next event; undefined when none survives. */

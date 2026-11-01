@@ -10,7 +10,7 @@ import { formatMessageClock } from './message-chrome.ts'
 import { useCalendarDay } from './use-calendar-day.ts'
 import css from './MessageIconActions.module.css'
 
-export interface MessageIconActionsProps {
+interface MessageIconActionsProps {
   /** Plain text the copy action writes. */
   text: string
   /** Unix epoch ms for the clock label; omitted for transient messages. */

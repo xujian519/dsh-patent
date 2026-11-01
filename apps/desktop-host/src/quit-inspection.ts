@@ -6,7 +6,7 @@ import type {} from '@deepseek-ai/dsh-schedule'
 import { hasDesktopActiveTasks } from './update-tasks.ts'
 
 /** What quitting the Host now would affect. */
-export interface DesktopQuitInspection {
+interface DesktopQuitInspection {
   /** Work the shared update-restart check also counts: running agents, queued messages, live jobs. */
   readonly activeTasks: boolean
   /** A loaded session holds a scheduled reminder whose timer is armed in this process. */

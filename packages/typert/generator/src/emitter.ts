@@ -41,7 +41,7 @@ export interface ModelEmitResult {
 }
 
 /** Host-for-Client Remote contribution generated from the Host Program. */
-export interface RemoteModelEmitResult {
+interface RemoteModelEmitResult {
   readonly js: string
   readonly dts: string
   readonly dtsMap: string

@@ -17,7 +17,7 @@ export interface LinkOpeningRowInjected {
 }
 
 /** Full Settings-row props. */
-export type LinkOpeningRowProps =
+type LinkOpeningRowProps =
   PropsRuntime<'settings.general.item'>
   & PropsLocale<'chat'>
   & InjectFace<LinkOpeningRowInjected>

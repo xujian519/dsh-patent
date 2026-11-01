@@ -9,7 +9,7 @@
 import { spawn } from 'node:child_process'
 
 /** Per-stream collected-output cap and the abort window for one run. */
-export interface RunScriptOptions {
+interface RunScriptOptions {
   /** Whole-call timeout in ms. */
   readonly timeoutMs: number
   /** Caller cancellation. */
@@ -21,7 +21,7 @@ export interface RunScriptOptions {
 }
 
 /** One settled script run: exit status plus the collected streams. */
-export interface RunScriptResult {
+interface RunScriptResult {
   readonly exitCode: number | null
   readonly stdout: string
   readonly stderr: string

@@ -7,7 +7,7 @@ import { withFileLock, writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import type { SubprocessOutcome, SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 
 /** Architecture names used by the platform-specific native payload. */
-export type NativeArchitecture = 'arm64' | 'x64'
+type NativeArchitecture = 'arm64' | 'x64'
 
 /**
  * Validate the host before preparing a platform-specific executable.

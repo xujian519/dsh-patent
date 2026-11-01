@@ -18,7 +18,7 @@ import type {
 import type {} from '@deepseek-ai/dsh-patent-teams/src/event-types.ts'
 
 /** One folded team member (identity plus removal state). */
-export interface TeamsMemberState {
+interface TeamsMemberState {
   readonly memberId: string
   readonly name: string
   readonly role?: string
@@ -26,7 +26,7 @@ export interface TeamsMemberState {
 }
 
 /** One folded task (creation facts plus the latest transition evidence). */
-export interface TeamsTaskState {
+interface TeamsTaskState {
   readonly taskId: string
   readonly subject: string
   readonly dependencies: readonly string[]
@@ -52,7 +52,7 @@ export interface TeamsTeamState {
 }
 
 /** Kind of one capped recent-activity record kept for the Teams-tab feed. */
-export type TeamsActivityKind =
+type TeamsActivityKind =
   | 'task-created'
   | 'task-updated'
   | 'task-validated'
@@ -77,7 +77,7 @@ export interface TeamsActivityEntry {
 }
 
 /** Newest activity entries kept per team; older transitions age out. */
-export const TEAMS_ACTIVITY_LIMIT = 8
+const TEAMS_ACTIVITY_LIMIT = 8
 
 /**
  * Extract the owning team id from one event.
@@ -101,7 +101,7 @@ export function teamsEventTeamId(event: SessionEventLike): string | null {
 export type PatentTeamsCardStatus = 'active' | 'completed' | 'deleted'
 
 /** One member projected for both renderers. */
-export interface PatentTeamsCardMember {
+interface PatentTeamsCardMember {
   readonly memberId: string
   readonly name: string
   readonly role?: string

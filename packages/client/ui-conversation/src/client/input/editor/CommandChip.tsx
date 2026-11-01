@@ -9,7 +9,7 @@ import css from './ReferenceChip.module.css'
 import referenceCss from './composer-editor.module.css'
 
 /** Display inputs of the command chip. */
-export interface CommandChipProps {
+interface CommandChipProps {
   /** Claimed token without its argument separator, e.g. `/goal`. */
   readonly token: string
 }

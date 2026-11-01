@@ -26,7 +26,7 @@ export interface PublicJobSnapshot {
  * @param job - the job projection.
  * @returns the qualifier, or undefined when the job carries neither.
  */
-export function jobDetail(job: Pick<JobView, 'progress' | 'detail'>): string | undefined {
+function jobDetail(job: Pick<JobView, 'progress' | 'detail'>): string | undefined {
   return job.progress ?? job.detail
 }
 

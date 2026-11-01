@@ -27,7 +27,7 @@ import {
 import type { RunnerInvocation } from './runner-launch.ts'
 
 /** Test seams for runner launch and dynamic capability checks. */
-export interface WindowsJobInternals {
+interface WindowsJobInternals {
   spawn?: typeof spawn
   runnerInvocation?: RunnerInvocation
   resolveRunnerInvocation?: () => RunnerInvocation

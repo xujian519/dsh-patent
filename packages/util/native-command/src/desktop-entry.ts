@@ -3,7 +3,7 @@ import { readFile, stat } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
 
 /** Decoded application icon bytes suitable for an image response or data URL. */
-export interface DesktopIcon {
+interface DesktopIcon {
   readonly bytes: Buffer
   readonly contentType: 'image/png' | 'image/svg+xml'
 }

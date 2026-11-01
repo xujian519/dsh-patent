@@ -29,7 +29,7 @@ export interface SessionListChangeRequest {
 }
 
 /** What a Session row and its hover card show. */
-export interface SessionForgeFacts {
+interface SessionForgeFacts {
   /** The worktree the panel created for the Session, while the Session works in it. */
   readonly worktree: ForgeSessionWorktree | null
   /** Visible change requests, most urgent first; equally urgent ones keep their binding order. */

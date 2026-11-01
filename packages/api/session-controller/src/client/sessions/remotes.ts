@@ -15,7 +15,7 @@ import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import type { SessionRemote } from '../transport.ts'
 
 /** Narrow Commands namespace consumed by a Client Session. */
-export interface SessionCommandsRemote {
+interface SessionCommandsRemote {
   execute(
     agentId: SessionId,
     line: string,
@@ -25,7 +25,7 @@ export interface SessionCommandsRemote {
 }
 
 /** Narrow subagent namespace consumed by a Client Session and its manager. */
-export interface SessionSubagentsRemote {
+interface SessionSubagentsRemote {
   prompt(
     request: SubagentPromptRequest,
     signal?: AbortSignal,

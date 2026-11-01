@@ -48,10 +48,10 @@ export const DEFAULT_PRIOR_ART_PUBLICATION_DATE_KEY = 'publicationDate'
 export const DEFAULT_PRIOR_ART_A24_EXCEPTION_KEY = 'a24Exception'
 
 /** 状态中优先权日的默认键；值可以是单个日期字符串或日期字符串数组。 */
-export const DEFAULT_PRIORITY_DATE_KEY = 'priority_date'
+const DEFAULT_PRIORITY_DATE_KEY = 'priority_date'
 
 /** 检索条目中 A24 公开来源的默认字段名。 */
-export const DEFAULT_A24_DISCLOSURE_SOURCE_KEY = 'a24DisclosureSource'
+const DEFAULT_A24_DISCLOSURE_SOURCE_KEY = 'a24DisclosureSource'
 
 /**
  * A24 公开来源：申请人自己公开、他人从申请人处得知、他人未经同意的泄露，或未标注。
@@ -59,7 +59,7 @@ export const DEFAULT_A24_DISCLOSURE_SOURCE_KEY = 'a24DisclosureSource'
  * A24.1–A24.3 只适用于申请人一侧的首次公开，A24.4 只适用于他人未经同意的泄露；
  * 来源与情形不匹配或来源未知时不认定宽限期。
  */
-export type A24DisclosureSource =
+type A24DisclosureSource =
   | 'applicant'
   | 'derived-from-applicant'
   | 'unauthorized-disclosure'
@@ -74,12 +74,12 @@ const A24_ALLOWED_SOURCES: Record<A24Exception, readonly A24DisclosureSource[]> 
 }
 
 /** A24 宽限期基准：可判定的日期与来源，或不可判定的原因。 */
-export type GraceBaseline =
+type GraceBaseline =
   | { status: 'resolved'; date: string; basis: 'priority-date' | 'filing-date' }
   | { status: 'unverifiable'; reason: string }
 
 /** 单条 A24 标注的判定结果。 */
-export type GraceAssessment = {
+type GraceAssessment = {
   index: number
   label: string
   title: string

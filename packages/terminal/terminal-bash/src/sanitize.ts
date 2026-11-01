@@ -3,7 +3,7 @@
 import { Buffer } from 'node:buffer'
 
 /** OSC marker emitted by the controlled bash before each prompt. */
-export const PROMPT_MARKER_PREFIX = '133;D;'
+const PROMPT_MARKER_PREFIX = '133;D;'
 
 /** Exact printable prompt emitted after the private marker. */
 export const CONTROLLED_PROMPT = 'dsh> '

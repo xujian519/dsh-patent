@@ -16,7 +16,7 @@ const SECONDS_PER_HOUR = 3_600
 const SECONDS_PER_MINUTE = 60
 
 /** Whole parts of one non-negative span, in the units a reading is written in. */
-export interface DurationParts {
+interface DurationParts {
   /** Whole days. */
   readonly days: number
   /** Whole hours left after the days, from 0 through 23. */

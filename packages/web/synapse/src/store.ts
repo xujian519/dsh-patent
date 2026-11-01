@@ -59,7 +59,7 @@ async function writeState(path: string, state: WorkspaceState): Promise<void> {
 /** Longest allowed canvas title (session, thread, or workspace). */
 export const MAX_TITLE_LENGTH = 120
 /** Longest allowed manual canvas note. */
-export const MAX_NOTE_LENGTH = 4_000
+const MAX_NOTE_LENGTH = 4_000
 const LOCK_STALE_MS = 60_000
 // Deferred (event-projection) writes coalesce into one save per window, so a
 // burst of session events costs a single full-state write instead of one per

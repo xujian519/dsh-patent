@@ -16,16 +16,16 @@ export const CHANGES_OPEN_PATH = '/api/changes.open'
  * Browser-relative form of {@link CHANGED_FILES_PATH}; see
  * .agents/notes/implemented/architecture/2026-09-14-web-document-relative-app-routes.md.
  */
-export const CHANGED_FILES_ROUTE = CHANGED_FILES_PATH.slice(1)
+const CHANGED_FILES_ROUTE = CHANGED_FILES_PATH.slice(1)
 
 /** Browser-relative form of {@link CHANGES_DIFF_PATH}. */
-export const CHANGES_DIFF_ROUTE = CHANGES_DIFF_PATH.slice(1)
+const CHANGES_DIFF_ROUTE = CHANGES_DIFF_PATH.slice(1)
 
 /** Browser-relative form of {@link CHANGES_OPEN_PATH}. */
-export const CHANGES_OPEN_ROUTE = CHANGES_OPEN_PATH.slice(1)
+const CHANGES_OPEN_ROUTE = CHANGES_OPEN_PATH.slice(1)
 
 /** Resource-address prefix of a turn's review tab in the right Sidebar. */
-export const CHANGES_REVIEW_ADDRESS = 'dsh-resource://changes-review/session/'
+const CHANGES_REVIEW_ADDRESS = 'dsh-resource://changes-review/session/'
 
 /** The summary fields the route serves; the Host keeps the working directory and snapshot ids to itself. */
 export type ChangesSummary = Pick<WorkspaceChangesSummary, 'turn' | 'files' | 'total' | 'added' | 'deleted'>

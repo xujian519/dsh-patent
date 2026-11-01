@@ -14,7 +14,7 @@
  * `@path` file or folder token. Pure derivation — editing the text out of
  * match shape simply drops the range next scan.
  */
-export interface TextRefRange {
+interface TextRefRange {
   readonly start: number
   readonly end: number
   readonly trigger: '/' | '@'

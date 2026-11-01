@@ -7,7 +7,7 @@ export const FIXED_PANEL_ID = 'plugins'
 const NO_PANELS: readonly string[] = []
 
 /** Unpinned panel ids and their only mutation. */
-export interface PanelPins {
+interface PanelPins {
   /** Unpinned panel ids; ids of panels that are not registered stay listed. */
   readonly unpinned: ObservableSnapshot<readonly string[]>
   /**

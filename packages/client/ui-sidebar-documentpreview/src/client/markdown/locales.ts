@@ -7,7 +7,7 @@ export const zh = {
 } satisfies Record<string, string>
 
 /** Markdown namespace keys. */
-export type MarkdownPreviewKey = keyof typeof zh
+type MarkdownPreviewKey = keyof typeof zh
 
 /** English labels, paired with the Chinese key set. */
 export const en = {

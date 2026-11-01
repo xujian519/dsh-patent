@@ -36,7 +36,7 @@ export const FONT_ROLES = ['text', 'code', 'terminal'] as const
 export type FontRole = typeof FONT_ROLES[number]
 
 /** Settings field, body variable, and accepted integer px range of one role's font size. */
-export interface FontSizeSpec {
+interface FontSizeSpec {
   /** Settings field carrying the size. */
   field: string
   /** Body variable carrying the size in px. */

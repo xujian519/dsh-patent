@@ -22,7 +22,7 @@ import { teamLockKey, withTeamLock } from './team-lock.ts'
 import type { PatentTeamsMemberInbox, PatentTeamsStatus } from './service.ts'
 
 /** Dependencies the status projection reads from the owning service. */
-export interface StatusViewHost {
+interface StatusViewHost {
   /** Plugin context: agent registry, logger, and event services. */
   readonly ctx: Context
   /** State directory name under the captain's workspace. */

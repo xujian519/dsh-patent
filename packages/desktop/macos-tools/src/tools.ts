@@ -32,10 +32,10 @@ export interface MacosLimits {
 }
 
 /** The approval requester (`ctx.approval`), or `undefined` when none is composed. */
-export type MacosApprover = Pick<ApprovalService, 'request'>
+type MacosApprover = Pick<ApprovalService, 'request'>
 
 /** Factory inputs: the effectful seams, so tests substitute fakes. */
-export interface MacosToolDeps {
+interface MacosToolDeps {
   /** Runs one macOS system CLI. */
   readonly run: CliRunner
   /** Approval channel for host-effect actions, when composed. */

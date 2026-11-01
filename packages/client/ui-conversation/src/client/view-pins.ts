@@ -7,7 +7,7 @@ export const FIXED_VIEW_ID = 'chat'
 const NO_VIEWS: readonly string[] = []
 
 /** Unpinned View ids and their only mutation. */
-export interface ViewPins {
+interface ViewPins {
   /** Unpinned View ids; ids of Views that are not registered stay listed. */
   readonly unpinned: ObservableSnapshot<readonly string[]>
   /**

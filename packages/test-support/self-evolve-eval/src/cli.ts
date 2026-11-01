@@ -24,9 +24,9 @@ import { DEFAULT_SUBSET_SIZE, loadTaskManifest, selectSubsetWithReserve } from '
 import type { EvalResults } from './types.ts'
 
 /** Default artifact directory, relative to the repository root. */
-export const DEFAULT_EVAL_DIR = join('packages', 'self-evolve', 'evaluation')
+const DEFAULT_EVAL_DIR = join('packages', 'self-evolve', 'evaluation')
 /** Default decision record file inside the artifact directory. */
-export const DEFAULT_DECISION_PATH = join(DEFAULT_EVAL_DIR, 'eval-decision.json')
+const DEFAULT_DECISION_PATH = join(DEFAULT_EVAL_DIR, 'eval-decision.json')
 
 function usage(): void {
   console.log('self-evolve-eval: P1-10 evaluation scaffold')

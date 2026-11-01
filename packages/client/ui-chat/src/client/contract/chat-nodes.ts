@@ -68,7 +68,7 @@ export interface RetryChatData {
 }
 
 /** One provider/model route that contributed a billed request attempt. */
-export interface TurnTokenUsageRoute {
+interface TurnTokenUsageRoute {
   readonly provider: string
   readonly model: string
 }

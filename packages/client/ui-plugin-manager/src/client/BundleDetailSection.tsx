@@ -16,7 +16,7 @@ const FAILURE_KEYS = {
 } as const satisfies Record<BundleDetailFailure, string>
 
 /** What the section reads and calls; the page passes them from its injected face. */
-export interface BundleDetailSectionProps {
+interface BundleDetailSectionProps {
   readonly name: string
   readonly version: string | undefined
   /** Whether the bundle's files are unavailable, so the Host reads its offered version from the npm file CDNs. */

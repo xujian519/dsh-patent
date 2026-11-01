@@ -32,12 +32,12 @@ export const Config = z.object({
 })
 
 /** Plain account options accepted by {@link resolveAccountOptions}. */
-export type AccountOptions = Omit<ProtocolOptions, 'models'> & ModelListingOptions & {
+type AccountOptions = Omit<ProtocolOptions, 'models'> & ModelListingOptions & {
   modelOverrides?: Record<string, ModelOverride>
 }
 
 /** One validated configuration generation of the account route. */
-export interface ResolvedAccountOptions {
+interface ResolvedAccountOptions {
   /** Messages settings; request resolution replaces `models` with the resolved account catalog. */
   readonly protocol: ResolvedDeepSeekOptions
   /** Listing endpoint and cache timing. */

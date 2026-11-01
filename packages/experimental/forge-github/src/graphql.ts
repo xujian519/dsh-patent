@@ -136,7 +136,7 @@ const METHODS: readonly {
 ]
 
 /** One batched snapshot query and the change request behind each alias. */
-export interface SnapshotQuery {
+interface SnapshotQuery {
   /** GraphQL document with one aliased field per change request. */
   readonly document: string
   /** Change requests keyed by alias path `r<i>.p<j>`. */

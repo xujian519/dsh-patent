@@ -77,7 +77,7 @@ export type ModelsSectionProps = Partial<InjectFace<ModelsSectionInjected>> & Pr
 type ModelsSectionFace = InjectFace<ModelsSectionInjected>
 
 /** Provider identity shared by row actions and confirmation copy. */
-export interface ProviderIdentity {
+interface ProviderIdentity {
   /** Stable provider route id. */
   provider: string
   /** Human-facing provider name. */

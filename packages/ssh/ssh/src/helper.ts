@@ -36,7 +36,7 @@ async function services() {
 }
 
 /** The private helper's authenticated transport and process lifetime. */
-export interface HelperTransport {
+interface HelperTransport {
   /** Authenticated request bytes from OpenSSH. */
   input: Readable
   /** Responses carried only by OpenSSH exec stdout. */

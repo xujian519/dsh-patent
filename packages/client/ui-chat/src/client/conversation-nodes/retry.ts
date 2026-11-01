@@ -14,7 +14,7 @@ declare module '../contract/chat-nodes.ts' {
 }
 
 /** Accumulated retry attempts sharing one producer-owned RetryId. */
-export interface RetryState {
+interface RetryState {
   readonly turn: number
   readonly step: number
   readonly attempts: readonly ModelRetryNode[]

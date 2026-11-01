@@ -75,7 +75,7 @@ export async function recordPendingBuilds(dir: string, output: string): Promise<
  * @param output Captured output of the run.
  * @returns Exact keys in report order; wildcard patterns and git keys carrying a credential are excluded.
  */
-export function blockedBuildNames(output: string): string[] {
+function blockedBuildNames(output: string): string[] {
   const ignored = IGNORED_BUILDS.exec(output)?.[1]?.split(',') ?? []
   const git = GIT_DEP_PREPARE.exec(output)?.[1]
   return [...ignored, ...git === undefined ? [] : [git]]

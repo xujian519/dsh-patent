@@ -5,7 +5,7 @@ import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 export type RetainableBlock = Extract<ContentBlock, { type: 'text' | 'image' }>
 
 /** Retained ends and exact quantities excluded from their original sequence. */
-export interface RetainedContent {
+interface RetainedContent {
   head: RetainableBlock[]
   tail: RetainableBlock[]
   omittedBytes: number

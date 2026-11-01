@@ -58,7 +58,7 @@ interface PluginInvocation {
 }
 
 /** The resolved `dsh` invocation. Help, version, and errors exit inside {@link parseDshArgs}. */
-export type DshInvocation = ProfileInvocation | DumpConfigInvocation | DumpConfigSchemaInvocation | PluginInvocation
+type DshInvocation = ProfileInvocation | DumpConfigInvocation | DumpConfigSchemaInvocation | PluginInvocation
 
 /** Launcher flags for profile boot and configuration dumps. */
 interface BootOptions {
@@ -87,7 +87,7 @@ function selectProfile(value: string, previous?: string): string {
  * reason: the shell seeds that directory itself, so an ordinary CLI boot or
  * plugin command there races the shell's release installation.
  */
-export const ELECTRON_PROFILE_NAMES = ['desktop', 'desktop-runtime'] as const
+const ELECTRON_PROFILE_NAMES = ['desktop', 'desktop-runtime'] as const
 
 /**
  * Whether a profile name is an Electron-owned one.

@@ -13,7 +13,7 @@ import type { ToolsService } from './index.ts'
 import type { ResolvedToolSet, ToolDefinition, ToolExecutionInput, ToolExecutionMode, ToolExecution, ToolRunContext, ToolExecutionResult, ToolExecutionSuccess, ToolErrorInfo, ToolExecutionToken, PreToolDecision, PostToolDecision } from './contracts.ts'
 
 /** Executor-owned lookup and restrictions applied before extensible execution policy. */
-export interface ToolExecutionSource {
+interface ToolExecutionSource {
   /**
    * Override registry lookup for executor-owned capabilities; omitted uses the
    * retained registry's executable lookup, which applies the call's step admission.
@@ -24,7 +24,7 @@ export interface ToolExecutionSource {
 }
 
 /** Prepared invocation; immediate results carry their post-execute requirement. */
-export type ScheduledToolPreparation =
+type ScheduledToolPreparation =
   | { kind: 'dispatch'; exec: ToolRunContext }
   | ({ exec: ToolRunContext } & ScheduledToolDispatch)
 

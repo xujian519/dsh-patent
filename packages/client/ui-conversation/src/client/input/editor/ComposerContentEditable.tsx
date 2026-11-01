@@ -11,7 +11,7 @@ import type { HTMLAttributes, ReactNode } from 'react'
 import type { LexicalEditor } from 'lexical'
 
 /** Host props: the editor binding plus the div passthroughs the bar owns. */
-export interface ComposerContentEditableProps extends HTMLAttributes<HTMLDivElement> {
+interface ComposerContentEditableProps extends HTMLAttributes<HTMLDivElement> {
   /** The shell-owned editor; null renders the same div unbound and inert. */
   readonly editor: LexicalEditor | null
   /** Whether the user may edit (readOnly/disabled states fold in here). */

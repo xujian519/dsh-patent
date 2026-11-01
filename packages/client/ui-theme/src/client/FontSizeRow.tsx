@@ -16,7 +16,7 @@ import type { createFontRowStore } from './settings-store.ts'
 import css from './FontSizeRow.module.css'
 
 /** Injected business face: the row's font role and its write (t rides the standard locale seat). */
-export interface FontSizeRowInjected {
+interface FontSizeRowInjected {
   /** Font role this row edits. */
   role: FontRole
   /** Change this role's font size (integer px within its FONT_SIZE_SPECS range). */

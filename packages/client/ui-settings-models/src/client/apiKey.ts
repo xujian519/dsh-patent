@@ -29,7 +29,7 @@ const ENV_LINE = /^[A-Z][A-Z0-9_]*=[^=]/
  * causes apart would spend the field's one line on a distinction that changes
  * nothing about what to do.
  */
-export type ApiKeyFailureKey = 'keyBlank' | 'keyIllegalCharacters'
+type ApiKeyFailureKey = 'keyBlank' | 'keyIllegalCharacters'
 
 /** Whether a value is wrapped in one matching pair of quotes. */
 function isQuoted(value: string): boolean {

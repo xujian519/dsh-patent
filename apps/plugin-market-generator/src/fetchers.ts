@@ -24,7 +24,7 @@ export interface FetchLimits {
 }
 
 /** The registry document of one npm package; only the fields the generator reads are typed. */
-export interface Packument {
+interface Packument {
   readonly 'dist-tags'?: { readonly latest?: unknown }
   readonly time?: Readonly<Record<string, unknown>>
   readonly versions?: Readonly<Record<string, Manifest & { readonly dist?: { readonly tarball?: unknown; readonly integrity?: unknown } }>>
@@ -124,7 +124,7 @@ export async function npmTarball(
 export type GitTransports = readonly string[]
 
 /** The default branch commit and the tags of a remote repository. */
-export interface RemoteRefs {
+interface RemoteRefs {
   readonly head: string
   /** Commit of each tag by tag name; annotated tags are peeled. */
   readonly tags: ReadonlyMap<string, string>

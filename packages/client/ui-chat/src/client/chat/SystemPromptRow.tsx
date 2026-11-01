@@ -5,7 +5,7 @@ import { OpaqueBody } from './ContextBody.tsx'
 import css from './ContextInjectionRow.module.css'
 
 /** Props for one complete system prompt disclosure. */
-export interface SystemPromptRowProps {
+interface SystemPromptRowProps {
   /** Complete model-visible prompt text. */
   text: string
   /** True when the prompt replaced an earlier one from this position in the history. */
@@ -22,7 +22,7 @@ export interface SystemPromptRowProps {
  * @param props - Complete prompt text, whether it is an update, and the locale seat.
  * @returns The system-prompt disclosure row.
  */
-export function SystemPromptRow({ text, update = false, t }: SystemPromptRowProps) {
+function SystemPromptRow({ text, update = false, t }: SystemPromptRowProps) {
   const [open, setOpen] = useState(false)
   return (
     <DisclosureRow

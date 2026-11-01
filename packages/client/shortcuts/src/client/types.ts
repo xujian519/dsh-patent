@@ -3,7 +3,7 @@ import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import type { BindingIssue, NormalizedBinding, ShortcutConfigSnapshot, ShortcutEdit, ShortcutRevision, ShortcutSaveResult, ShortcutBinding, ShortcutCommandId, ShortcutPlatform, ShortcutProfile, ShortcutRuntime } from '../protocol.ts'
 
 /** Local input owner resolved before an application command. */
-export type ShortcutRegion = 'page' | 'editable' | 'terminal'
+type ShortcutRegion = 'page' | 'editable' | 'terminal'
 /** Synchronous DOM context; owners capture business targets in resolve(). */
 export interface ShortcutContext {
   readonly source?: 'keyboard' | 'menu' | 'iframe' | 'webview'
@@ -13,7 +13,7 @@ export interface ShortcutContext {
   readonly target: Element | null
 }
 /** A resolved action captures its target; failures remain the owner's responsibility. */
-export type ShortcutResolution = { status: 'handled'; run(): void }
+type ShortcutResolution = { status: 'handled'; run(): void }
   | { status: 'blocked'; reason: string }
   | { status: 'pass' }
 /** One command's labels, defaults, input ownership, and target resolver. */

@@ -13,7 +13,7 @@ import { builtinCommandName } from './resolution.ts'
 import type { BuiltinCommandName } from './resolution.ts'
 
 /** The menu's two sections. */
-export type MenuSection = 'add' | 'commands'
+type MenuSection = 'add' | 'commands'
 
 /** Row names per section, highest usage first; rows outside both lists close the Commands section in catalog order. */
 const SECTION_ROWS: Readonly<Record<MenuSection, readonly string[]>> = {

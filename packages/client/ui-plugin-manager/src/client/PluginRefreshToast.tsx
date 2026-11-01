@@ -11,7 +11,7 @@ export type PluginRefreshToastFace = Pick<PluginManagerFace, 'dismissNotice'> & 
 }
 
 /** Render inputs bound from the shared controller and plugin dictionary. */
-export type PluginRefreshToastProps = InjectFace<PluginRefreshToastFace> & PropsLocale<'pluginManager'>
+type PluginRefreshToastProps = InjectFace<PluginRefreshToastFace> & PropsLocale<'pluginManager'>
 
 /**
  * Display refresh failures even after navigation leaves the Plugins panel.

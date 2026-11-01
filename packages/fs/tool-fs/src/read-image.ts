@@ -82,7 +82,7 @@ const IMAGE_VALUE_SCHEMA = {
 } as const
 
 /** The structured outcome declared by the `read_image` output schema. */
-export interface ImageReadValue {
+interface ImageReadValue {
   /** Canonical absolute path in the filesystem provider's execution world. */
   path: string
   image: {
@@ -117,7 +117,7 @@ export function imageMediaTypeForPath(filePath: string): ImageMediaType | undefi
  * @param exec - the tool-execution context supplying the calling agent.
  * @param requestedPath - the raw, not-yet-resolved path rendered in refusal messages.
  */
-export async function assertImageCapableRoute(ctx: Context, exec: ToolExecution, requestedPath: string): Promise<void> {
+async function assertImageCapableRoute(ctx: Context, exec: ToolExecution, requestedPath: string): Promise<void> {
   const routed = exec.agent?.session.requestHeader()?.config
   const provider = routed?.provider ?? exec.agent?.options.provider
   const model = routed?.model ?? exec.agent?.options.model

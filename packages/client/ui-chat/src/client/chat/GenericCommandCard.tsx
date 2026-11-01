@@ -15,7 +15,7 @@ function stateOf(outcome: CommandRowOwnerProps['node']['outcome']): CommandRowSt
 }
 
 /** Card props: the owner payload plus the render site's locale seat (plain prop). */
-export interface GenericCommandCardProps extends CommandRowOwnerProps {
+interface GenericCommandCardProps extends CommandRowOwnerProps {
   t: ChatViewSlotProps['t']
   /** Command-specific running copy; absent uses the generic command label. */
   runningSummary?: string | undefined

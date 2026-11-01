@@ -29,7 +29,7 @@ import {
 } from '../stream-protocol.ts'
 
 /** Open the Gateway-internal forwarded-event stream on the selected carrier. */
-export type RemoteEventStreamOpener = (
+type RemoteEventStreamOpener = (
   endpoint: string,
   payload: unknown,
   signal: AbortSignal,

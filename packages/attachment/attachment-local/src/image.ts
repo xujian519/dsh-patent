@@ -100,7 +100,7 @@ export async function probeImage(data: Uint8Array): Promise<DetectedImage> {
 }
 
 /** Admission limits applied to a decoded raster's intrinsic dimensions. */
-export interface DecodedImageLimits {
+interface DecodedImageLimits {
   /** Decoded-pixel (width times height) admission limit. */
   maxPixels?: number
   /** Per-side admission limit applied to width and height independently. */

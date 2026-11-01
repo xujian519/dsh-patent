@@ -4,7 +4,7 @@ import type {
 import { ConversationDefinitionRegistry } from './definition-registry.ts'
 
 /** A registered Definition and its event-type-selected handler. */
-export interface ConversationEventRoute {
+interface ConversationEventRoute {
   readonly definition: ConversationNodeDefinition
   readonly match: ConversationMatchHandler
 }

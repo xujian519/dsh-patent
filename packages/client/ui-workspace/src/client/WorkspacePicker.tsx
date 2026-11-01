@@ -25,7 +25,7 @@ import css from './WorkspacePicker.module.css'
 const ADD_WORKSPACE = '::add-workspace'
 
 /** Core flow props: the owner supplies popover control and pick semantics. */
-export interface WorkspacePickFlowProps {
+interface WorkspacePickFlowProps {
   /** The standard locale seat, forwarded by whichever slot entry hosts the flow. */
   t: WorkspacePickerProps['t']
   /** Popover visibility (anchor button toggle state, owner-local). */

@@ -25,7 +25,7 @@ export interface DiffConfig extends GitConfig {
 }
 
 /** The commit the `branch` scope compares with and the name the panel shows for it. */
-export interface ForkPoint {
+interface ForkPoint {
   /** Full commit object name. */
   readonly commit: string
   /** Remote branch such as `origin/master`, the created worktree's base branch, or an abbreviated commit. */

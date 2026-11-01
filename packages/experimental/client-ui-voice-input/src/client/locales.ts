@@ -105,7 +105,7 @@ export const zh = {
 } as const
 
 /** Keys accepted by the voice input translator. */
-export type VoiceKey = keyof typeof zh
+type VoiceKey = keyof typeof zh
 
 /** English dictionary with the same complete key set. */
 export const en: Record<VoiceKey, string> = {

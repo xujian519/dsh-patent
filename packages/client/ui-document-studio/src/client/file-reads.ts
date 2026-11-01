@@ -53,7 +53,7 @@ export interface WorkspaceFilesRemote {
 }
 
 /** The produced-file reads the studio view calls, with paths resolved against the Session workspace. */
-export interface FileReads {
+interface FileReads {
   /**
    * Read the bounded head of one produced file.
    * @param path - produced-file path as the deliverables reported it.

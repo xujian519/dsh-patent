@@ -48,7 +48,7 @@ export type RemoteStreamFailureMapper = (error: unknown) => RemoteStreamFailure
 const MAX_MISSED_HEARTBEATS = 2
 
 /** Carrier options for {@link RemoteStreamMuxServer}. */
-export interface RemoteStreamMuxServerOptions {
+interface RemoteStreamMuxServerOptions {
   /** Interval between WebSocket Ping control frames. */
   readonly heartbeatIntervalMs: number
   /** Buffered uplink frame bytes one logical stream may hold before it fails. */

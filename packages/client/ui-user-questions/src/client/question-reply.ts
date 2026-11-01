@@ -9,14 +9,14 @@ import type {} from '@deepseek-ai/dsh-tool-executor-ptc/types'
 import { isRecord } from '@deepseek-ai/dsh-value'
 
 /** One asked question as echoed in the reply payload. */
-export interface QuestionReplyQuestion {
+interface QuestionReplyQuestion {
   readonly id: string
   readonly question: string
   readonly header?: string
 }
 
 /** One structured answer as echoed in the reply payload. */
-export interface QuestionReplyAnswer {
+interface QuestionReplyAnswer {
   readonly id: string
   readonly selected: readonly string[]
   readonly custom?: string

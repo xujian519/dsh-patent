@@ -63,7 +63,7 @@ interface GatewayBinding {
 /**
  * Facts the Remote/RPC analyzer reads from the analyzed face, and the graph it writes through.
  */
-export interface RemoteAnalyzerDeps {
+interface RemoteAnalyzerDeps {
   /** Checker of the face program, used to resolve every authored wire type. */
   readonly checker: ts.TypeChecker
   /** Face program whose type-meta declarations list the lookup and Context keys. */

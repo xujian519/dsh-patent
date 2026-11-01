@@ -1,5 +1,5 @@
 ---
-description: "纯 TypeScript 库（无 `ctx` 依赖），承载自 Sati 移植的专利域引擎：`StageProvider`/`StageHandler` atoms 及其 26 个内置 handler、`PatentModelPort` 适配器、双轨 checker、技术问题四检验、TRIZ 矛盾分析、证据账本与判定引擎、推理原语、claim-chart 引擎、权利要求撰写自检与权利要求形式自检、数值范围新颖性核验、程序文书解析、答复计划与复审准备段、侵权确定性内核（全面覆盖、等同一致性、风险分级）、Pregel 风格图引擎及其四个专利域子图、规则协议与文本工具、IPC 分类器与审查标准查表、专利交付工具的受控草案模型（SpecDraft/TemplateDraft）及校验器、以及持久化/路径助手。"
+description: "纯 TypeScript 库（无 `ctx` 依赖），承载自 Sati 移植的专利域引擎：`StageProvider`/`StageHandler` atoms 及其 26 个内置 handler、`PatentModelPort` 适配器、双轨 checker、技术问题四检验、TRIZ 矛盾分析、证据账本与判定引擎、推理原语、claim-chart 引擎、权利要求撰写自检与权利要求形式自检、说明书摘录锚点校验、数值范围新颖性核验、程序文书解析、答复计划与复审准备段、侵权确定性内核（全面覆盖、等同一致性、风险分级）、Pregel 风格图引擎及其四个专利域子图、规则协议与文本工具、IPC 分类器与审查标准查表、专利交付工具的受控草案模型（SpecDraft/TemplateDraft）及校验器、以及持久化/路径助手。"
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-纯 TypeScript 库（无 `ctx` 依赖），承载自 Sati 移植的专利域引擎：`StageProvider`/`StageHandler` atoms 及其 26 个内置 handler、`PatentModelPort` 适配器、双轨 checker、技术问题四检验、TRIZ 矛盾分析、证据账本与判定引擎、推理原语、claim-chart 引擎、权利要求撰写自检与权利要求形式自检、数值范围新颖性核验、程序文书解析、答复计划与复审准备段、侵权确定性内核（全面覆盖、等同一致性、风险分级）、Pregel 风格图引擎及其四个专利域子图、规则协议与文本工具、IPC 分类器与审查标准查表、专利交付工具的受控草案模型（SpecDraft/TemplateDraft）及校验器、以及持久化/路径助手。
+纯 TypeScript 库（无 `ctx` 依赖），承载自 Sati 移植的专利域引擎：`StageProvider`/`StageHandler` atoms 及其 26 个内置 handler、`PatentModelPort` 适配器、双轨 checker、技术问题四检验、TRIZ 矛盾分析、证据账本与判定引擎、推理原语、claim-chart 引擎、权利要求撰写自检与权利要求形式自检、说明书摘录锚点校验、数值范围新颖性核验、程序文书解析、答复计划与复审准备段、侵权确定性内核（全面覆盖、等同一致性、风险分级）、Pregel 风格图引擎及其四个专利域子图、规则协议与文本工具、IPC 分类器与审查标准查表、专利交付工具的受控草案模型（SpecDraft/TemplateDraft）及校验器、以及持久化/路径助手。
 
 <a id="package-surface"></a>
 ## 包入口与导出
@@ -29,6 +29,7 @@ kind: "package-reference"
 - [Claim-chart 运行时](#claim-chart-runtime)
 - [权项覆盖自检](#claim-coverage-checks)
 - [权利要求形式自检](#claim-formal-lint)
+- [摘录锚点校验](#quote-anchoring)
 - [数值范围新颖性核验](#numeric-range-novelty-check)
 - [程序文书解析](#notice-parsing)
 - [答复准备](#response-preparation)
@@ -105,6 +106,11 @@ Stage params 可调整这些 handler。缺省键保留各原子默认值；畸�
 ## 权利要求形式自检
 
 `lintClaimText` 校验一组权利要求应当满足的形式要件（《专利法实施细则》第二十二条、第二十三条、第二十四条、第二十五条；审查指南第二部分第二章 3.2.1、3.2.2、3.3.1、3.3.2 节），每条发现都带它据以判定的法条与指南条款。`parseClaimDocument` 以行首编号（`1.`、`2、`、`3．`）切分权项，其余任何非空行——标题、表格行、分隔线、权项之后的段落——都报为权利要求书之外的内容；只有位于权项开头的引用语才使其成为从属权利要求，因此独立权利要求内部的交叉引用仍是交叉引用。结构性规则是精确判定：编号连续、引用方向（从属权项只能引用在前的权项）、多项从属形式（只能以择一方式引用，且不得作为另一项多项从属权项的引用基础）、特征部分的存在、独立权利要求的两段式、每项结尾恰有一个句号，以及主题名称与被引用权项一致。`findAntecedentGaps` 报告「所述X」中 X 未在本项或所引用权项中出现的情形，并沿引用链传递遍历；术语边界按虚词启发式截断且封顶 8 字，组成部分均已出现的复合词（如「所述转子铁芯外圆」而「转子铁芯」已出现）降为 warning。用语规则——功能性或效果限定、方法特征、非技术内容、商业性用语、引用说明书或附图——是词表匹配，只用于提示复核，且只在特征部分生效，所以「一种用于…的装置」这类前序不会被读成功能性限定。本检查只陈述形式缺陷；说明书支持与可专利性不在其范围。
+
+<a id="quote-anchoring"></a>
+## 摘录锚点校验
+
+`locateQuote(quote, sourceText)` 判断模型给出的说明书摘录是否真的出现在说明书原文中，并回填原文坐标下的命中区间。逐字命中记为 `exact`；否则双方各自归一化：全角与常用 CJK 标点折为 ASCII，不含换行的连续空白折为一个空格，含换行的空白串折为一个段边界。标点折叠是逐字符处理，不改写数字与字母，所以全角 `２０` 不会匹配 ASCII `20`；`…` 折为三个句点，下标映射保证每个命中仍指回原文字符。归一化后先按段边界结构匹配（摘录不含换行时等价于逐段匹配），失败再把段边界折为固定空格重试，因此摘录可以跨段，也可以在原文换行处写空格。每个阶段取最早命中，且 exact 阶段先于归一化阶段。`range` 是 `sourceText` 上的左闭右开区间，不指向归一化文本，`sourceText.slice(range.start, range.end)` 取回的是包含被折叠换行的原文片段。`matched: false` 且 `reason: 'empty'` 表示摘录为空或纯空白，调用方必须按未通过处理；`reason: 'not-found'` 表示归一化后仍不出现。本函数只证明原文有这句话，不证明这句话支持它所引用的权项特征。
 
 <a id="numeric-range-novelty-check"></a>
 ## 数值范围新颖性核验

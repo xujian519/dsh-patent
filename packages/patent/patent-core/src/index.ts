@@ -5,7 +5,8 @@
  * utilities, the dual-track checker rule engine, the problem atomization
  * checks, the evidence closed-loop ledger/engine, the structured reasoning
  * primitives, the claim-chart engine, the claim-drafting self-checks (claim unity
- * and the claim-to-embodiment coverage matrix), the controlled draft model
+ * and the claim-to-embodiment coverage matrix), the quote-anchor verifier for
+ * model-authored specification excerpts, the controlled draft model
  * (SpecDraft/TemplateDraft) with its validators for the patent deliverable tools,
  * the IPC classifier/standards
  * lookup, and the persistence/path helpers.
@@ -242,6 +243,11 @@ export {
   parseClaimDocument,
   referencedTerms,
 } from './claim-lint/index.ts'
+
+// Quote anchoring: model-authored specification excerpts must occur in the
+// source; the result carries the hit interval in original-text coordinates.
+export { locateQuote } from './anchor/index.ts'
+export type { AnchorRange, AnchorReason, AnchorResult } from './anchor/index.ts'
 
 // Adversary model + review: opposing-examiner evaluation of plans and final drafts.
 // Runtime values re-export only through the barrel so the duplication gate does not

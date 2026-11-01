@@ -108,6 +108,7 @@ interface MessageSourceMap {
  * consumer's business and must not enter this union. It grows one value at a
  * time as producers gain the structured fields their form needs; an absent or
  * unknown value is the documented default, presented as opaque content.
+ * Public session-message vocabulary on the llm package entry (star-exported).
  */
 type ContextForm =
   /** Instructions read out of workspace files the model is expected to follow. */

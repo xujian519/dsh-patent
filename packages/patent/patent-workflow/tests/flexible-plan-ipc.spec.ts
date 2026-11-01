@@ -3,8 +3,6 @@ import {
   createFlexiblePlan,
   formatTechnicalField,
   inferTechnicalField,
-  isElectricalCase,
-  isElectricalIpc,
 } from '@deepseek-ai/dsh-patent-workflow'
 import type { IpcClassification } from '@deepseek-ai/dsh-patent-core'
 
@@ -42,18 +40,6 @@ describe('flexible-plan IPC technical-field inference', () => {
   it('inferTechnicalField: low confidence returns undefined', () => {
     const fakeClassifier = (): IpcClassification => ({ section: 'B', confidence: 0.5, matchedKeywords: [] })
     expect(inferTechnicalField('abc', fakeClassifier)).toBeUndefined()
-  })
-
-  it('isElectricalIpc: only section H is true', () => {
-    expect(isElectricalIpc({ section: 'H', confidence: 0.9, matchedKeywords: [] })).toBe(true)
-    expect(isElectricalIpc({ section: 'h', confidence: 0.9, matchedKeywords: [] })).toBe(true)
-    expect(isElectricalIpc({ section: 'G', confidence: 0.9, matchedKeywords: [] })).toBe(false)
-  })
-
-  it('isElectricalCase: electrical text true, non-electrical false', () => {
-    expect(isElectricalCase('本发明提供一种射频通信模块，包括天线、功率放大器和调制解调器。')).toBe(true)
-    expect(isElectricalCase('本发明涉及机械齿轮传动装置。')).toBe(false)
-    expect(isElectricalCase('')).toBe(false)
   })
 
   it('createFlexiblePlan: infers technicalField from inputText when not specified', () => {

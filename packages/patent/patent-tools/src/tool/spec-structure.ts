@@ -19,9 +19,6 @@ import {
 } from './spec-figure-marks.ts'
 import { SPEC_SECTION_HEADINGS } from './spec-style.ts'
 
-/** Parts every specification must carry; drawings are conditional. */
-export const BASE_SECTIONS = ['技术领域', '背景技术', '发明内容', '具体实施方式'] as const
-
 /**
  * Sections required for one application.
  * @param patentType - invention or utility model.

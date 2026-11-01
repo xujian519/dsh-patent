@@ -353,8 +353,6 @@ export {
   TERM_TECH_HINT,
   TERM_TECH_SOLUTION,
   TERM_USE_LIMIT,
-  SEVERITY_WEIGHTS,
-  STATUTE_WEIGHTS,
   aggregate,
   formatRuleResults,
   matchKeyword,

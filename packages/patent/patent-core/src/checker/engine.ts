@@ -12,13 +12,11 @@ import { assertNever } from '@deepseek-ai/dsh-util-values'
 import type {
   CheckRule,
   CheckType,
-  RankedRiskItem,
   RuleCheckResult,
   RuleEngineOptions,
-  Severity,
   Verdict,
 } from './types.ts'
-import { LevelMust, LevelQuality, LevelShould, SEVERITY_WEIGHTS, STATUTE_WEIGHTS } from './types.ts'
+import { LevelMust, LevelQuality, LevelShould } from './types.ts'
 import {
   NEGATION_WINDOW,
   claimDimensionPatterns,
@@ -293,51 +291,6 @@ function normalizeDomains(rawDomain: string | readonly string[] | undefined): st
   return typeof rawDomain === 'string' ? [rawDomain] : [...rawDomain]
 }
 
-/**
- * 将 adversary_confidence (0-1) 映射到 evidenceMultiplier [1,3]。
- * @param confidence - 对立审查员置信度（0-1）。
- * @returns 证据强度系数（1-3）。
- */
-function mapConfidenceToMultiplier(confidence: number): number {
-  const clamped = Math.max(0, Math.min(1, confidence))
-  return 1 + clamped * 2 // [1, 3]
-}
-
-/**
- * 从 ruleId 提取法条编号（如 "rule-A22.3-novelty" → "A22.3"）。
- * @param ruleId - 规则 id。
- * @returns 法条编号或空字符串。
- */
-function extractStatuteFromRuleId(ruleId: string): string {
-  const match = /A\d+(?:\.\d+)?/.exec(ruleId)
-  return match?.[0] ?? ''
-}
-
-/** 严重度排序值（用于 tie-breaker）。 */
-const SEVERITY_ORDER: Record<Severity, number> = {
-  'critical': 3,
-  'major': 2,
-  'minor': 1,
-}
-
-/**
- * 风险排序比较器（三级稳定排序）。
- * @param a - 排序项 a。
- * @param b - 排序项 b。
- * @returns 比较结果（负数表示 a 在前）。
- */
-function compareRiskItems(a: RankedRiskItem, b: RankedRiskItem): number {
-  // 1. 风险分数（降序）
-  if (a.riskScore !== b.riskScore) return b.riskScore - a.riskScore
-  // 2. 涉及权项数（降序）
-  if (a.claimCount !== b.claimCount) return b.claimCount - a.claimCount
-  // 3. 严重度（降序）
-  const severityDiff = SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity]
-  if (severityDiff !== 0) return severityDiff
-  // 4. 发现 id（升序）
-  return a.id.localeCompare(b.id)
-}
-
 /** 确定性规则引擎：注册、移除、查询规则，并按域过滤评估文本。 */
 export class RuleEngine {
   private readonly rulesById = new Map<string, CheckRule>()
@@ -414,52 +367,6 @@ export class RuleEngine {
       if (!entry.anyPassed) results.push(...entry.failures)
     }
     return results
-  }
-
-  /**
-   * 对检查结果按风险分数降序排列。
-   *
-   * 风险分数公式：riskScore = statuteWeight × evidenceMultiplier × severityWeight
-   * - statuteWeight：法条类型基础权重（上限 10）
-   * - evidenceMultiplier：证据强度系数，由 adversary_confidence 映射到 [1,3]（默认 2）
-   * - severityWeight：严重度权重（上限 3）
-   *
-   * tie-breaker（三级稳定排序）：
-   * 1. 涉及权项数（降序）
-   * 2. 严重度（降序：critical > major > minor）
-   * 3. 发现 id（升序）
-   *
-   * @param results - 规则评估失败结果列表。
-   * @param statuteMap - 规则 id 到法条编号的映射（可选；缺省时从 ruleId 提取）。
-   * @param claimCountMap - 规则 id 到涉及权项数的映射（可选；缺省为 1）。
-   * @param adversaryConfidence - 对立审查员置信度（0-1；映射到 evidenceMultiplier，缺省 0.5）。
-   * @returns 按风险分数降序排列的排序项数组。
-   */
-  rankResults(
-    results: readonly RuleCheckResult[],
-    statuteMap?: Record<string, string>,
-    claimCountMap?: Record<string, number>,
-    adversaryConfidence?: number,
-  ): RankedRiskItem[] {
-    const evidenceMultiplier = mapConfidenceToMultiplier(adversaryConfidence ?? 0.5)
-    const items: RankedRiskItem[] = []
-    for (const result of results) {
-      if (result.passed) continue
-      const statute = statuteMap?.[result.ruleId] ?? extractStatuteFromRuleId(result.ruleId)
-      const statuteWeight = STATUTE_WEIGHTS[statute] ?? 5 // 默认权重
-      const severityWeight = SEVERITY_WEIGHTS[result.severity]
-      const riskScore = statuteWeight * evidenceMultiplier * severityWeight
-      items.push({
-        id: result.ruleId,
-        statute,
-        riskScore: Math.round(riskScore),
-        claimCount: claimCountMap?.[result.ruleId] ?? 1,
-        severity: result.severity,
-        source: 'rule-engine',
-        detail: result.message,
-      })
-    }
-    return items.sort(compareRiskItems)
   }
 }
 

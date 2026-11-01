@@ -15,14 +15,13 @@
 export type {
   CheckRule,
   CheckType,
-  RankedRiskItem,
   RuleCheckResult,
   RuleEngineOptions,
   RuleLevel,
   Severity,
   Verdict,
 } from './types.ts'
-export { LevelMust, LevelQuality, LevelShould, SEVERITY_WEIGHTS, STATUTE_WEIGHTS } from './types.ts'
+export { LevelMust, LevelQuality, LevelShould } from './types.ts'
 
 export {
   RuleEngine,

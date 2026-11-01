@@ -11,7 +11,6 @@ import {
   declaresNoDrawings,
   drawingEntries,
   drawingSectionHasFigures,
-  extractAbstractDrawingNumber,
   figureNumbersIn,
   getDrawingSection,
   hasFigureNumberSuffix,
@@ -137,12 +136,6 @@ describe('figure sequence checks', () => {
   it('detects letter-suffixed figure numbers', () => {
     expect(hasFigureNumberSuffix('图1A为局部图。')).toBe(true)
     expect(hasFigureNumberSuffix('图1为整体图。')).toBe(false)
-  })
-
-  it('parses abstract figure numbers and ignores unparseable designations', () => {
-    expect(extractAbstractDrawingNumber('摘要附图为图3。')).toBe(3)
-    expect(extractAbstractDrawingNumber('摘要附图为图X。')).toBeUndefined()
-    expect(extractAbstractDrawingNumber('无摘要附图说明。')).toBeUndefined()
   })
 
   it('prefers analyzed figure numbers over the drawing section', () => {

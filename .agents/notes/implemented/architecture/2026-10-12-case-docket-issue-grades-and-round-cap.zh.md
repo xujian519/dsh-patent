@@ -18,18 +18,18 @@ Status: implemented
 - 不变量是三个纯谓词：`openBlockingIssues`（未闭合且不为 `none`）、`openTerminalIssues`（未闭合且为 `terminal`）与 `roundCapReached`。plantask 状态机在迁移守卫上执行它们：存在未闭合阻塞条目时拒绝进入 `executing`，存在未闭合终态条目或轮次已达上限时拒绝进入 `replanning`。被拒的迁移抛 `PlanTaskSemanticError` 并点名条目，与既有守卫一致。`finished` 本就没有出边，故「终态不能再派工」无需新增边。
 - 轮次上限是 `Config.maxRounds`，`z.natural()`，默认值由 `resolveWorkflowConfig` 落定一次。达上限后，拒绝反馈不再驱动 `replanning`：计划转至 `finished`，并置 `PlantaskRunResult.roundCapExhausted`。轮次按 `caseId` 计在服务里，计划收到 `finished` 时清零，故同一案卷可以从头再规划。
 - 状态机从 `PlanTaskTransitionContext.issues` 读该案卷的条目。省略表示该案卷未登记条目，守卫不据此拒绝——这正是既有调用方（都早于案卷出现）已经满足的契约。
-- `CheckerIssue` 与 `parseCheckerVerdict` 不变。它们继续描述 checker worker 的输出，与工作流自己对条目的记录各司其职。
+- 同级的 checker schema 已不再随包。`#655` 删除了 `checker-verdict.ts`（`CheckerIssue` 及其解析器）：checker 层只产出散文，因此本工作流自己的条目记录是唯一的条目 schema。
 
 ## 考虑过的替代方案
 
-- **把同一目录下的 `CheckerIssue` 扩成案卷的字段集。** 这样模型 JSON 边界上只有一个 schema。它输在两点。`checker-verdict.ts` 声明自己的 schema 是复核结论的移植，并把自己的角色定为「模型输出的机读复核结论，它对任务的影响由调用方裁决」——而 `status` 与 `round_opened` 是工作流写的，不是模型能知道的。合并后的字段集还会把两个事实各写两遍：`summary` 与 `description` 并列，`blocking` 与 `severity` 并列，而后者的三档与前者映射到同一个三分。
+- **把同一目录下的 `CheckerIssue` 扩成案卷的字段集。** 这样模型 JSON 边界上只有一个 schema。它输在两点。该 checker schema 自称复核结论的移植，并把自己的角色定为「模型输出的机读复核结论，它对任务的影响由调用方裁决」——而 `status` 与 `round_opened` 是工作流写的，不是模型能知道的。合并后的字段集还会把两个事实各写两遍：`summary` 与 `description` 并列，`blocking` 与 `severity` 并列，而后者的三档与前者映射到同一个三分。
 - **从会话日志里数轮次** —— 事件已经记录了每个状态，计数因此可持久、可跨重启。它输在同步读接口（`snapshotEvents`、`ownEvents`）已弃用且禁止新增调用，而本包不持有会话读路径，要拿到实时状态就得依赖 surface 存储。
 - **让状态机自己持有案卷**（在状态机上开 `openIssue` / `closeIssue`，守卫读自己的字段）。这样能彻底消掉「省略 `issues`」这一情形。它输在状态机实例停在服务私有的 `pending` 表里，由它持有的案卷任何产出方都够不着；而迁移上下文是每个状态机调用方本来就要传的入参。
 - **把耗尽事实记进 `patent/plantask` 事件。** 该事实改为落在 run 结果上。事件是已声明的持久化类型，改它要配一份确认记录；而耗尽是对调用方的一次运行结论，不是日志必须复现的状态。
 
 ## 后果
 
-- 基于条目的拒绝只在调用方给出 `issues` 时生效。本包还没有任何东西把复核的问题清单变成案卷条目，因此随包的 `runPlantask` 路径不传该字段，其拒绝也就未被真实路径走通。产出这些条目的面属于专利工具层，模型可见入参由那一层持有。
+- 基于条目的拒绝只在调用方给出 `issues` 时生效。产出面是专利工具层的 `patent_plan_task`——模型可见入参由那一层持有：它的 `transition` 入参带 `issues` 与规划轮次 `round`，用随包处置表补全默认值、回显解析后的条目并交给这些守卫。包内的 `runPlantask` 路径仍不传该字段，故它只走没有案卷的那条路径。
 - `maxRounds` 按进程计数，不入日志：重启即清零，会话记录里也不带这个计数。计划收到 `finished` 也会清零登记，故上限封的是一轮规划周期，而非一个案卷。
 - 案卷不持久化。目前没有任何持久记录承载条目清单，条目的历史长度取决于谁持有它。
 - 轮次耗尽不在会话日志里。`patent/plantask` 事件记录的是 `finished` 状态，读者把它与该案卷的轮次一比，也分不出这次终态是封顶还是别的原因。
@@ -41,3 +41,4 @@ Status: implemented
 - 单元，`packages/patent/patent-workflow/tests/docket-issue.spec.ts`（11 例）：随包资产恰好覆盖词表且取值在词表内、判据非空；默认值让可修改的缺陷不阻塞、让证据缺口阻塞；解析器拒绝缺数组、缺行、词表外的 kind、词表外的取值、空判据与重复行，并在报错里点名来源；`resolveDocketIssue` 补默认值、尊重条目的覆盖、带上锚点，并在处置表缺该类别时拒绝；三个谓词区分三档并忽略已闭合的条目；`roundCapReached` 在上限之下为假、在上限及其之上为真，含 `maxRounds: 0`。
 - 状态机，`packages/patent/patent-workflow/tests/plantask.spec.ts`：`blocking 禁止派工` —— 未闭合的阻塞条目与未闭合的终态条目都拒绝 `executing` 且消息里点名该条，而已闭合的、不阻塞的、以及完全没有案卷的三种情形都放行；`轮次上限封顶` —— 达上限的反馈被拒且消息带上限，未达上限的正常重规划，终态条目拒绝 `replanning`。
 - 服务，`packages/patent/patent-workflow/tests/service.spec.ts`：同一案卷的三次拒绝都落在 `replanning` 且无耗尽标记，第四次落在 `finished` 且 `roundCapExhausted: true`，此后该案卷可重新起一轮；`maxRounds: 0` 时首次拒绝即收在终态；上限为零不影响 `approve`。
+- 工具，`packages/patent/patent-tools/tests/patent-plan-task.spec.ts`：缺 `round` 或非正 `round` 被拒；草案经随包处置表补全并回显；未闭合的阻塞条目拒绝 `executing`，闭合后放行；终态条目或已达上限拒绝 `replanning`；迁移文案渲染解析后的条目。

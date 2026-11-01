@@ -99,36 +99,3 @@ export interface RuleEngineOptions {
   /** 域过滤（缺省或 "" = 全部；可传多个域，规则 domain 匹配任一即评估）。 */
   domain?: string | readonly string[]
 }
-
-/** 风险排序项（由 rankResults 输出）。 */
-export interface RankedRiskItem {
-  /** 发现 id（对应 ruleId）。 */
-  id: string
-  /** 法条编号（如 A22.3）。 */
-  statute: string
-  /** 整数风险分数（statuteWeight × evidenceMultiplier × severityWeight）。 */
-  riskScore: number
-  /** 涉及权项数。 */
-  claimCount: number
-  /** 严重度。 */
-  severity: Severity
-  /** 来源。 */
-  source: 'rule-engine' | 'adversary'
-  /** 问题描述。 */
-  detail: string
-}
-
-/** 法条类型基础权重（上限 10）。 */
-export const STATUTE_WEIGHTS: Record<string, number> = {
-  'A22.2': 10, // 新颖性
-  'A22.3': 8, // 创造性
-  'A26.4': 6, // 清楚性/支持
-  'A33': 6, // 修改超范围
-}
-
-/** 严重度权重（上限 3）。 */
-export const SEVERITY_WEIGHTS: Record<Severity, number> = {
-  'critical': 3,
-  'major': 2,
-  'minor': 1,
-}

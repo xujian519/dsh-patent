@@ -11,7 +11,7 @@ The Mady prompt-system comparison surfaced two landing gaps in the patent domain
 ## Decision
 
 - `WorkflowStage` gains an optional `guidance` field (validated non-empty). The generic chain-stage executor (`createChainStageExecutor` in dsh-patent-tools) splices it between the stage description and the input material. Guidance text lives in `manifests.ts` as typed data; there is no template registry and no trigger routing. Upcoming manifests (OA response, inventiveness, infringement) carry their Mady-derived legal frameworks in this field.
-- dsh-patent-workflow gains `CheckerVerdict` (`checker-verdict.ts`): `status`/`severity` vocabularies ported from Mady's `checker-verdict.json` (Apache-2.0) and aligned with the patent-core checker aggregate levels (`pass`/`needs_revision`/`blocked`). `parseCheckerVerdict` validates the model-JSON boundary (fence-tolerant parse, enum and field checks, `CheckerVerdictParseError`); whether a verdict degrades or blocks a task remains a caller decision. `CHECKER_VERDICT_REQUIRED_FIELDS` is the single source for the worker output contracts that will require these fields.
+- The checker-verdict parser is not shipped. `#655` deleted `checker-verdict.ts` (`CheckerVerdict`, `parseCheckerVerdict`, `CheckerVerdictParseError`, `CHECKER_VERDICT_REQUIRED_FIELDS`): the checker tier produces prose only, so the model-JSON parser had no production consumer. Whether a review outcome degrades or blocks a task stays the consuming gate's decision.
 
 ## Alternatives considered
 
@@ -26,8 +26,8 @@ The Mady prompt-system comparison surfaced two landing gaps in the patent domain
 - Manifest validation rejects an empty `guidance` like an empty `atom`; existing manifests are unchanged, so their prompts stay byte-identical until guidance is declared.
 - No `SessionEventMap` member changes and no session event carries the prompt text, so there is no `SESSION_FORMAT_VERSION` obligation; no recorded-session snapshot case currently exercises these manifests, so no re-recording was due (one becomes due if a case starts running them).
 - Shipped on these seams so far: stage guidance for the OA/inventiveness/infringement manifests (rejection-type table with strategy selection, three-step boundary conditions for missing prior art / software schemes / combinations, equivalence doctrines — prosecution-history estoppel, dedication, prior-art defense — plus the risk-level output requirement), MTU extraction guidance in the extract handler with `[待确认]` anti-hallucination markers (the groundedness scorer treats marked features as below threshold without source support), and claim-chart split requirements (minimal technical unit, method-step order vs. structure connection attention).
-- Remaining planned ports: checker worker output contracts requiring the verdict fields, specification self-check rules, and the LLM rewrite layer behind the slop gate.
+- Remaining planned ports: specification self-check rules, and the LLM rewrite layer behind the slop gate.
 
 ## Testing
 
-`vitest run` over patent-core, patent-tools, and patent-workflow is green. New cases pin the guidance validation branch, the executor's splice position (with and without guidance), every `parseCheckerVerdict` failure path plus the fence-tolerant happy path, the guidance content of the three manifests, and the handler prompt upgrades (MTU markers on feature extraction only, the `[待确认]` scoring rule, the chart split requirements).
+`vitest run` over patent-core, patent-tools, and patent-workflow is green. New cases pin the guidance validation branch, the executor's splice position (with and without guidance), the guidance content of the three manifests, and the handler prompt upgrades (MTU markers on feature extraction only, the `[待确认]` scoring rule, the chart split requirements). The parser cases were deleted with `checker-verdict.ts`.

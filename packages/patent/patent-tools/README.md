@@ -53,7 +53,7 @@ Function plugin porting the Sati patent-domain tool set into the DeepSeek Harnes
 | `flexible_plan` | workflow | `@deepseek-ai/dsh-patent-workflow` flexible-plan |
 | `patent_workflow` | workflow | `@deepseek-ai/dsh-patent-workflow` recap |
 | `patent_workflow_run` | workflow | `@deepseek-ai/dsh-patent-workflow` + ModelPort |
-| `patent_plan_task` | workflow | `@deepseek-ai/dsh-patent-workflow` plantask state machine |
+| `patent_plan_task` | workflow | `@deepseek-ai/dsh-patent-workflow` plantask state machine; `transition` accepts case-docket entries (`issues` + the planning `round`), resolves defaults from the shipped disposition table, echoes the resolved entries, and hands them to the blocking/terminal/round-cap guards |
 | `patent_worker_validate` | quality | `@deepseek-ai/dsh-patent-workflow` worker contract |
 | `knowledge_note_save` | knowledge | file writer under Config.noteDir (default `<cwd>/99-知识库`) |
 | `workbench_link_patent_case` | workflow | personal-workbench loopback HTTP API: idempotent case bridge (patent_* dictionary seeding, root + L1–L5 stage tasks with `source='patent'`, `_matter-log.md` status projection; never writes the case dir, never patches the root task status) |

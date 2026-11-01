@@ -22,7 +22,7 @@ Service Definition for the patent execution pipeline (`ctx.patentWorkflow`): the
 
 ## Service
 
-The `PatentWorkflow` service exposes the pipeline entry points and re-exports the pure pipeline API (workflow, workflow-dag, workflow-store, flexible-plan, flexible-plan-store, plantask, worker-contract, checker-verdict, docket-issue) from this package's root export. `CheckerVerdict` is the structured review-outcome schema for checker-tier workers (`pass`/`needs_revision`/`blocked` + per-issue severity); `parseCheckerVerdict` validates model JSON on that boundary.
+The `PatentWorkflow` service exposes the pipeline entry points and re-exports the pure pipeline API (workflow, workflow-dag, workflow-store, flexible-plan, flexible-plan-store, plantask, worker-contract, docket-issue) from this package's root export.
 
 ### runWorkflow(manifest, ctx, executor?, options?, agent?)
 
@@ -51,6 +51,8 @@ Wraps a patent model port so every call it serves appends one `patent/model-call
 `DocketIssue` is one case problem as a machine-readable record: `id`, `summary`, `kind`, `disposition`, `status`, `blocking`, `round_opened`, plus an optional `anchor` (claim, paragraph, or file path). `kind` is a closed vocabulary of six (machine format, amendable substantive defect, evidence gap, scope/strategy choice, defect no amendment can cure, noise). The package ships `assets/issue-dispositions.json`, the kind → default table; `loadIssueDispositions()` validates it on load (every kind present exactly once, in-vocabulary values, non-empty criteria) and throws `IssueDispositionError` otherwise. `resolveDocketIssue(draft, round, dispositions)` fills an omitted `disposition`/`blocking` from the kind's row, sets `status: 'open'`, and stamps `round_opened`; a value on the item overrides the row.
 
 `blocking` is three grades because a binary one stalls the pipeline on every question asked: `none` does not hold up dispatch, `blocking` holds it up until the item closes, and `terminal` lets the round end only in a terminal state. The shipped defaults follow what closing actually costs — an amendable substantive defect is `none`, since dispatching the next round is how it gets closed, while an evidence gap is `blocking` and a defect no amendment can cure is `terminal`.
+
+`patent_plan_task` is the production entry for these entries: a transition may carry `issues` drafts plus the `round` that opens them, the tool resolves each draft against the shipped table, passes the resolved entries to the state-machine guards, and returns them in its result. A caller carrying entries from an earlier call passes `status` and `round_opened` back, so a closed item stays closed instead of reopening on the next call.
 
 Two pure predicates express the invariants: `openBlockingIssues` (open and not `none`) and `openTerminalIssues` (open and `terminal`). The plantask machine runs them in its transition guards — entering `executing` is refused while a blocking item is open, entering `replanning` while a terminal item is open — and `finished` has no outgoing transition, so a finished plan cannot dispatch again. The machine reads the case's items from `PlanTaskTransitionContext.issues`; omitting them means the case has no registered items, and the guards do not refuse on that basis. `roundCapReached(rounds, maxRounds)` is the third predicate, guarding the round cap described under Configuration.
 
@@ -84,7 +86,6 @@ Independent; the pipeline registers no prompt, tool schema, or result of its own
 - **Storage optional via `ctx.get('storage')`** — file products (workflow-run and flexible-plan stores) use the caller-provided `JsonFileStore` backends; the service does not wire the storage-domain seam, so ctx.storage integration is deferred.
 - **Persisted run records are validated, not versioned** — `JsonFileWorkflowRunStore` rejects a record whose fields do not match `WorkflowRunResult` (including nested stage, interrupt, evidence-ledger, and revision fields) with a `StoredRecordError` naming the file; `listRuns` only lists file names and never parses. The format carries no version field, so an incompatible older shape is rejected as invalid rather than migrated. `JsonFileFlexiblePlanStore` likewise rejects a plan whose `caseId` differs from its file name.
 - **Approval fails closed without an answerer** — with no approval service mounted (or no answerer composed), `runPlantask` rejects the plan to replanning instead of auto-approving.
-- **Docket production is unwired** — the schema, the disposition asset, and the invariant predicates ship here, but no surface yet turns a review's issue list into docket items or supplies them to a transition, so a caller that omits `issues` gets no item-based refusal.
 - **The round counter is per process** — `maxRounds` is counted in the service, not in the session log: a restart clears it, and a plan that reaches `finished` clears its registration.
 
 ### Dev Note

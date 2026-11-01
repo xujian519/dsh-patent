@@ -173,6 +173,76 @@ describe('patent_plan_task', () => {
     await expect(tool.execute({ action: 'replan' }, exec)).rejects.toThrow('replan 需要 planSteps 非空')
     await expect(tool.execute({ action: 'sync' }, exec)).rejects.toThrow('sync 需要 planSteps 非空')
   })
+
+  it('requires a planning round for docket entries and rejects a non-positive one', async () => {
+    const issue = { id: 'i-1', summary: '对比文件缺公开日', kind: 'evidence_gap' as const }
+    await expect(
+      tool.execute({ action: 'transition', currentState: 'planning', to: 'awaiting_approval', issues: [issue] }, exec),
+    ).rejects.toThrow('issues 需要 round')
+    await expect(
+      tool.execute({ action: 'transition', currentState: 'planning', to: 'awaiting_approval', issues: [issue], round: 0 }, exec),
+    ).rejects.toThrow('issues 必须是正整数')
+    await expect(
+      tool.execute({
+        action: 'transition', currentState: 'planning', to: 'awaiting_approval',
+        issues: [{ ...issue, round_opened: 1.5 }], round: 1,
+      }, exec),
+    ).rejects.toThrow('issues[].round_opened 必须是正整数')
+  })
+
+  it('resolves docket defaults and echoes the resolved entries', async () => {
+    const value = (await tool.execute({
+      action: 'transition',
+      currentState: 'planning',
+      to: 'awaiting_approval',
+      issues: [{ id: 'i-1', summary: '对比文件缺公开日', kind: 'evidence_gap' }],
+      round: 2,
+    }, exec)) as PatentPlanTaskOutput
+    expect(value.ok).toBe(true)
+    expect(value.issues?.[0]).toMatchObject({
+      id: 'i-1', kind: 'evidence_gap', disposition: 'ask_human', blocking: 'blocking', status: 'open', round_opened: 2,
+    })
+  })
+
+  it('refuses dispatch while a blocking docket entry is open and allows it once closed', async () => {
+    const tasks = [{ id: 'task-1', description: 'a', hash: 'h', status: 'pending' as const }]
+    const issue = { id: 'i-1', summary: '对比文件缺公开日', kind: 'evidence_gap' as const }
+    await expect(tool.execute({
+      action: 'transition', currentState: 'awaiting_approval', to: 'executing', tasks, issues: [issue], round: 1,
+    }, exec)).rejects.toThrow('executing 前必须先闭合阻塞条目：i-1')
+    const closed = (await tool.execute({
+      action: 'transition', currentState: 'awaiting_approval', to: 'executing', tasks,
+      issues: [{ ...issue, status: 'closed' }], round: 1,
+    }, exec)) as PatentPlanTaskOutput
+    expect(closed.state).toBe('executing')
+  })
+
+  it('refuses replanning on a terminal entry or an exhausted round cap', async () => {
+    await expect(tool.execute({
+      action: 'transition', currentState: 'awaiting_feedback', to: 'replanning', feedback: '补充检索',
+      issues: [{ id: 'i-2', summary: '说明书未充分公开', kind: 'insufficient_disclosure' }], round: 1,
+    }, exec)).rejects.toThrow('本轮只能收在终态：i-2')
+    await expect(tool.execute({
+      action: 'transition', currentState: 'awaiting_feedback', to: 'replanning', feedback: '补充检索',
+      rounds: 2, maxRounds: 2,
+    }, exec)).rejects.toThrow('规划轮次已达上限 2')
+  })
+
+  it('renders resolved docket entries in the transition prose', () => {
+    const text = renderPlanTask({
+      ok: true,
+      action: 'transition',
+      from: 'planning',
+      state: 'awaiting_approval',
+      issues: [{
+        id: 'i-1', summary: '对比文件缺公开日', kind: 'evidence_gap', disposition: 'ask_human',
+        blocking: 'blocking', status: 'open', round_opened: 1,
+      }],
+    })
+    expect(text).toContain('planning → awaiting_approval')
+    expect(text).toContain('案卷条目 1 条')
+    expect(text).toContain('- i-1 evidence_gap/blocking/open: 对比文件缺公开日')
+  })
 })
 
 function text(result: { content: { type: string; text?: string }[] }): string {

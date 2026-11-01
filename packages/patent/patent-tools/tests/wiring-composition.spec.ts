@@ -25,6 +25,7 @@ import type { GeneratePatentFigureDeps } from '../src/tool/figure-input.ts'
 import type { GenerateStructureFigureDeps } from '../src/tool/generate-structure-figure.ts'
 import type { LawSearchDeps } from '../src/tool/law-search.ts'
 import type { PatentLegalStatusDeps } from '../src/tool/patent-legal-status.ts'
+import type { PatentMetadataDeps } from '../src/tool/patent-metadata.ts'
 import type { PatentSearchDeps } from '../src/tool/patent-search.ts'
 import type { FigureIndexEntry } from '../src/figure/index-store.ts'
 
@@ -36,6 +37,7 @@ import type { FigureIndexEntry } from '../src/figure/index-store.ts'
 
 const mock = vi.hoisted(() => ({
   search: [] as PatentSearchDeps[],
+  metadata: [] as PatentMetadataDeps[],
   legal: [] as PatentLegalStatusDeps[],
   law: [] as LawSearchDeps[],
   figures: [] as GeneratePatentFigureDeps[],
@@ -60,6 +62,17 @@ vi.mock('../src/tool/patent-legal-status.ts', async (importOriginal) => {
     createPatentLegalStatusTool: (deps: PatentLegalStatusDeps = {}) => {
       mock.legal.push(deps)
       return actual.createPatentLegalStatusTool(deps)
+    },
+  }
+})
+
+vi.mock('../src/tool/patent-metadata.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/tool/patent-metadata.ts')>()
+  return {
+    ...actual,
+    createPatentMetadataTool: (deps: PatentMetadataDeps = {}) => {
+      mock.metadata.push(deps)
+      return actual.createPatentMetadataTool(deps)
     },
   }
 })
@@ -177,7 +190,7 @@ function createKgDb(dir: string): void {
 /** 直达 registerPatentTools 的安装：绕过 schema 默认值，覆盖「Config 缺省」分支。 */
 async function mount(
   config: Config,
-  options: { subprocess?: boolean; knowledge?: boolean; webServerPort?: number } = {},
+  options: { subprocess?: boolean; knowledge?: boolean; webServerPort?: number; patentData?: boolean } = {},
 ): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
@@ -191,6 +204,14 @@ async function mount(
   // 宿主 webserver 服务不在本包的声明合并里：用非字面量键让 ctx.provide 走通用重载。
   const webServerKey: string = 'webServer'
   if (options.webServerPort !== undefined) ctx.provide(webServerKey, { port: options.webServerPort })
+  // patent-data 的插件声明 inject:['subprocess']，在只注入 tools 的消费方里晚一跳激活；
+  // 这里只放一个等价的通道工厂，用来证明组合点的查询闭包确实晚绑定到该服务。
+  const patentDataKey: string = 'patentData'
+  if (options.patentData === true) {
+    ctx.provide(patentDataKey, {
+      createCniprChannel: () => ({ search: async () => ({ total: 0, hits: [] }) }),
+    })
+  }
   await ctx.plugin({ name: 'patent-tools-wiring-test', inject: ['tools'], apply: (child) => { registerPatentTools(child, config) } })
   cleanups.push(() => { void ctx.fiber.dispose() })
   return ctx
@@ -220,8 +241,10 @@ describe('registerPatentTools 缺省配置', () => {
   it('Config 全缺省时回落到模块默认值，且未挂 subprocess 时所有渲染端口缺省', async () => {
     await mount({})
     const search = mock.search.at(-1)
+    const metadata = mock.metadata.at(-1)
     const legal = mock.legal.at(-1)
     expect(search?.cnipr?.()).toBeUndefined()
+    expect(metadata?.cnipr?.()).toBeUndefined()
     expect(legal?.cnipr?.()).toBeUndefined()
 
     const figure = mock.figures.at(-1)
@@ -251,6 +274,13 @@ describe('registerPatentTools 缺省配置', () => {
     await mount({})
     const law = mock.law.at(-1)
     expect(law).toEqual({})
+  })
+
+  it('patentData 挂载后三个数据工具的 CNIPR 查询闭包都晚绑定到该服务', async () => {
+    await mount({}, { patentData: true })
+    expect(mock.search.at(-1)?.cnipr?.()).toBeDefined()
+    expect(mock.metadata.at(-1)?.cnipr?.()).toBeDefined()
+    expect(mock.legal.at(-1)?.cnipr?.()).toBeDefined()
   })
 
   it('figureTextToPath 开启但缺 subprocess 时文字转路径 fail loud', async () => {

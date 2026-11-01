@@ -334,15 +334,18 @@ export function registerPatentTools(ctx: Context, config: Config): void {
   const knowledge = ctx.get('patentKnowledge')
 
   // Search / metadata / legal status: default to the nuo engine (no service needed).
-  // Search and legal status add the CNIPR channel as a second channel for what the nuo
-  // engine could not answer (a failed or zero-hit search, an unanswered legal status);
-  // the lookup is late-bound because patent-data declares inject:['subprocess']
-  // and therefore activates one dependency hop after this tools-only consumer. The channel
-  // is undefined while the deployment leaves patent-data's cniprEnabled off.
+  // All three add the CNIPR channel as a second channel for what the nuo engine could
+  // not answer (a failed or zero-hit search, a failed or not-found China publication
+  // number, an unanswered legal status); the lookup is late-bound because patent-data
+  // declares inject:['subprocess'] and therefore activates one dependency hop after this
+  // tools-only consumer. The channel is undefined while the deployment leaves
+  // patent-data's cniprEnabled off.
   ctx.tools.register(createPatentSearchTool({
     cnipr: () => ctx.get('patentData')?.createCniprChannel(),
   }))
-  ctx.tools.register(createPatentMetadataTool())
+  ctx.tools.register(createPatentMetadataTool({
+    cnipr: () => ctx.get('patentData')?.createCniprChannel(),
+  }))
   ctx.tools.register(createPatentLegalStatusTool({
     cnipr: () => ctx.get('patentData')?.createCniprChannel(),
   }))

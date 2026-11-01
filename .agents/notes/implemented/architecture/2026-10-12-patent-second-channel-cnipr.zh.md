@@ -1,4 +1,4 @@
-# Agent Note：中国专利全文与法律状态经第二个通道供给
+# Agent Note：中国专利全文、法律状态、检索与著录项经第二个通道供给
 
 Status: implemented
 
@@ -8,16 +8,18 @@ Status: implemented
 
 专利检索作业离开了受管工具。2026-08-14 → 2026-10-11 语料里，会话经临时脚本走 CNIPR 78 次、CNIPA 38 次，而随包工具在唯一通道上失败：2026-10-03 之后 `patent_search` 41.6%（52/125）、`patent_metadata` 62.1%（54/87），106 条失败里 89 条是本机代理下 Google Patents 的 HTTP 503。本条的记录此前已经定性：失败在通道层而不在工具里——工具内退避只有 1.6 秒、上游客量按分钟计，退避与调用间隔都吸收不了，限流窗口按小时计。旁路脚本是一条可用通道，但工具层不记录一条事实出自哪个通道；当其中一条通道是 shell 流水线时，本部署「同一关键事实至少两个独立通道互证」的纪律无法机械核验。
 
-登记的下一步因此是那条不依赖上游恢复的：把已验证的 CNIPR 通道接成专利数据接缝的 provider。CNIPR 发布什么决定了形态：它的检索收据给出公开(公告)号、该记录是申请公布还是授权公告、以及 `pic.cnipr.com/pdfcn/...` 全文直链，没有标题、申请人、日期或摘要；它的法律状态查询按申请号给出带日期的状态记录。因此 CNIPR 能供中国全文与中国法律状态，不能顶替一个返回著录项命中的关键词检索。
+登记的下一步因此是那条不依赖上游恢复的：把已验证的 CNIPR 通道接成专利数据接缝的 provider。CNIPR 发布什么决定了形态：它的检索结果行给出公开(公告)号、标题、申请人、公开日、摘要、该记录是申请公布还是授权公告，以及 `pic.cnipr.com/pdfcn/...` 全文直链；不给出发明人、分类、引证或申请日字段。它的法律状态查询按申请号给出带日期的状态记录。因此 CNIPR 能供中国关键词检索、中国公开(公告)号的著录项、中国全文与中国法律状态。
 
 ## 决定
 
-`@deepseek-ai/dsh-patent-data` 在 nuo 检索 provider 与 ego-browser 会话运行器之外新增 CNIPR 通道（`createCniprChannel()`、`cnipr-channel.ts`）。部署把 `Config.cniprEnabled` 留关（默认 `false`）时它返回空，消费方于是拿不到一个只会失败的对象。两条能力共用一个生成的脚本（`cnipr-script.ts`）、一个收据解析层（`cnipr-receipt.ts`）与一个按名复用的 ego 任务空间——后者是把 ego lite 的登录态与标签页跨调用带过去的东西。
+`@deepseek-ai/dsh-patent-data` 在 nuo 检索 provider 与 ego-browser 会话运行器之外新增 CNIPR 通道（`createCniprChannel()`、`cnipr-channel.ts`）。部署把 `Config.cniprEnabled` 留关（默认 `false`）时它返回空，消费方于是拿不到一个只会失败的对象。三条能力（全文直链、法律状态与关键词检索）共用一个生成的脚本（`cnipr-script.ts`）、一个收据解析层（`cnipr-receipt.ts`）与一个按名复用的 ego 任务空间——后者是把 ego lite 的登录态与标签页跨调用带过去的东西。
 
 通道按号码形态选择，每条结果点名服务它的通道：
 
 - `patent_pdf_download` 把中国公开(公告)号交给 CNIPR 取全文直链，其余号——以及 CNIPR 未能服务的号——交给 Google Patents 腿（ego-browser 取回响应体，再退到无浏览器抓取）。每条条目带 `channel`，报告据此写明原文出自哪个通道，而不必从 `pdfUrl` 反推。
 - `patent_legal_status` 把 nuo 结果缺失、失败或 `UNKNOWN` 的号经 CNIPR 重查一次；CNIPR 有记录的号成为 CNIPR 条目，其 `status` 取公告日最新的一条、`events` 取其全部记录。CNIPR 也没有记录的号保留引擎自己给出的原因。
+- `patent_search` 在 nuo 结果失败或零命中时经 CNIPR 再检索一次；带 Google 字段语法（`assignee:`、日期区间）的查询不咨询该通道，因为 CNIPR 只做关键词检索。服务成功的检索点名 CNIPR 并给出它发布的那些行；被咨询过但未能服务的通道写进 `warnings`。
+- `patent_metadata` 在 nuo 结果失败、抛错或查不到某条中国公开(公告)号（`CN218483312U`）时经 CNIPR 按号重查一次；只填 CNIPR 发布的字段（标题、申请人、公开日、摘要），其余留空，号码本身无效时也不重查——缺陷属于号码。服务成功的结果点名 CNIPR；被咨询过但未能服务的通道写进 `warnings`，调用仍然失败时这段告警接在失败文案后面。
 
 号码级失败（查不到该号、解析不出申请号）是条目结果。通道级失败（无 ego-browser、超期限、无收据、登录态失效）抛带分类码的 `CniprChannelError`，由调用方按码路由；消费工具把它写进 `warnings` 并把这些号交给另一条通道，而不是让整批失败。切换只对通道级失败生效：真的零命中仍是零命中——上游丢弃了那个能区分「真零命中」与「解析失败」的总数。
 
@@ -25,9 +27,9 @@ CNIPR 的页面脚本由本包持有。脚本生成时把参数内嵌：ego 的 
 
 ## 备选方案
 
-**把 CNIPR 做成 `patent_search` 的 provider。** 因收据而否决：CNIPR 检索不发布著录项字段，`patent_search` 会返回标题与摘要为空的行——这是对工具文档化契约的降级——补上这个缺口还需要只能靠真机验证的结果页字段抽取。检索一侧因此延后；`patent_pdf_download` 与 `patent_legal_status` 先取 CNIPR 已经具备的能力。
+**把 CNIPR 做成 `patent_search` 的唯一 provider。** 否决：它的行给出标题、申请人、公开日与摘要，但不给 URL、优先权日，也不支持 Google 字段语法，工具会静默丢掉自己文档化的字段；且本账号等级每页十条，更大的 `limit` 要翻到三页。它改为充当第二通道——只在引擎失败或零命中时被咨询，带字段语法的查询跳过。
 
-**把 CNIPR 通道做成中国号在 Google Patents 腿之后的回退。** 因旁路证据而否决：`patent_pdf_download` 在其取回修复后已经每次调用都成功（0/33），而中国 PDF 直链旁路仍跑了 41 次 / 12 会话，与工具通道的会话只重叠 1 个。模型只在失败之后才够得着的通道，替代不了它本来就更信的那条脚本。
+**把 CNIPR 下载通道做成中国号在 Google Patents 腿之后的回退。** 因旁路证据而否决：`patent_pdf_download` 在其取回修复后已经每次调用都成功（0/33），而中国 PDF 直链旁路仍跑了 41 次 / 12 会话，与工具通道的会话只重叠 1 个。模型只在失败之后才够得着的通道，替代不了它本来就更信的那条脚本。
 
 **由部署配置指向技能的脚本（`cniprScriptPath`），仓库不持有。** 本部署否决：零副本，但没人配置路径时通道等于不可用，收据契约背后没有类型与测试，而随包使用它的 preset 反过来要去用户技能目录里取脚本。包 README 写明随包工具用的是哪一份副本。
 
@@ -35,12 +37,12 @@ CNIPR 的页面脚本由本包持有。脚本生成时把参数内嵌：ego 的 
 
 ## 后果
 
-中国全文与中国法律状态现在经受管工具到达，且逐条点名通道，报告里的通道事实可回溯到调用记录。CNIPR 失败是可见的而不是静默的：`warnings` 点名被咨询过但未能服务的通道，部署也正是这样得知自己的 CNIPR 登录态过期了。
+中国全文、中国法律状态、中国关键词检索与中国公开(公告)号的著录项现在经受管工具到达，且逐条或逐次点名服务它的通道，报告里的通道事实可回溯到调用记录。CNIPR 失败是可见的而不是静默的：`warnings` 点名被咨询过但未能服务的通道，部署也正是这样得知自己的 CNIPR 登录态过期了。
 
-本部署因此为中国号依赖那份登录态。`cniprEnabled` 打开而会话失效时，中国号先走一次 CNIPR 再退回 Google Patents，并留下告警。所以打开该通道属于维护 ego lite 在 search.cnipr.com 登录态的部署——随包的专利 preset 就是这样的部署。
+本部署因此为中国号依赖那份登录态。`cniprEnabled` 打开而会话失效时，`patent_pdf_download` 与 `patent_legal_status` 先走一次 CNIPR 再退回 Google Patents，而 `patent_metadata` 与 `patent_search` 先走 Google Patents 腿再走 CNIPR；两种顺序的结果都点名服务它的通道，并告警那条被咨询过但未能服务的通道。所以打开该通道属于维护 ego lite 在 search.cnipr.com 登录态的部署——随包的专利 preset 就是这样的部署。
 
-通道的页面契约属于站点：搜索框、详情检索 POST、法律状态表单与 `pic.cnipr.com/pdfcn/...` 直链模式。站点一变，第一次调用就以 `page_state` 暴露，而不是静默返回空答案；收据要么解析得出，要么通道 fail-loud。站点声明不支持爬取，故通道按普通页面交互逐号取，从不批量、不并发。
+通道的页面契约属于站点：搜索框、详情检索 POST、法律状态表单与 `pic.cnipr.com/pdfcn/...` 直链模式。站点一变，第一次调用就以 `page_state` 暴露，而不是静默返回空答案；收据要么解析得出，要么通道 fail-loud。站点声明不支持爬取，故全文与法律状态按普通页面交互逐号取，关键词一侧翻站点自身的结果页；任何调用都不批量、不并发。
 
-`patent_pdf_download` 现在逐条报 `channel` 与 `warnings` 数组，`patent_legal_status` 同样，MANIFEST 记录产出该条目的通道（本改动之前写下的条目没有记录，续传时不带通道名）。模型可见 schema 变化，工具目录与专利会话的 schema 侧车随之移动。
+`patent_pdf_download` 现在逐条报 `channel` 与 `warnings` 数组，`patent_legal_status` 同样，`patent_search` 与 `patent_metadata` 报服务它的 `channel` 与 `warnings` 数组，MANIFEST 记录产出该条目的通道（本改动之前写下的条目没有记录，续传时不带通道名）。模型可见 schema 变化，工具目录与专利会话的 schema 侧车随之移动。
 
-会话下载中国专利或查中国法律状态时，通道会给 CNIPR 增加请求量。它的期限取会话的 `defaultTimeoutMs`，下载腿与 Google Patents 腿分摊整批预算（各半、下限取 ego 默认值），使 CNIPR 失败不至于吃掉整批预算。
+会话下载中国专利、查中国法律状态、查中国公开(公告)号著录项，或检索时引擎失败/零命中，通道都会给 CNIPR 增加请求量。它的期限取会话的 `defaultTimeoutMs`，下载腿与 Google Patents 腿分摊整批预算（各半、下限取 ego 默认值），使 CNIPR 失败不至于吃掉整批预算。

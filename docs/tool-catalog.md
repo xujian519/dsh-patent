@@ -6091,7 +6091,8 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 Usage notes:
   - Read-only; makes one network request per patent
-  - One call reads one channel, named in the result and in any failure, so a report cites the channel it actually used
+  - One call names the channel that served it and every failure names the channel it failed on, so a report cites the channel it actually used
+  - 中国公开(公告)号（如 CN218483312U）在 Google Patents 通道失败、抛错或查不到时，部署启用 CNIPR 通道会再按号检索一次；CNIPR 只发布标题、申请人、公开日与摘要，其余字段为空，被咨询过但未能服务的通道写在 warnings 里
   - A country code is required; a bare application number (202122978405) is rejected — prepend CN or use the publication number
   - A 'not found' result (patent does not exist) is returned as data with success:false — not an error
   - A transient upstream failure (HTTP 503, dropped connection) is retried twice; a failure that outlives the retries names the channel, the upstream error, and the attempts made

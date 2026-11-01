@@ -22,7 +22,7 @@ export type { ImageCapabilityDecision, ModelInfoQuery } from './figure/image-cap
 export { createPatentSearchTool, baseNumber, dedupeByFamily } from './tool/patent-search.ts'
 export type { PatentSearchInput, PatentSearchOutput, PatentSearchHitItem, PatentSearchDeps, CniprSearchLookup } from './tool/patent-search.ts'
 export { createPatentMetadataTool } from './tool/patent-metadata.ts'
-export type { PatentMetadataInput, PatentMetadataOutput, PatentMetadataDeps } from './tool/patent-metadata.ts'
+export type { PatentMetadataInput, PatentMetadataOutput, PatentMetadataDeps, CniprMetadataLookup } from './tool/patent-metadata.ts'
 export { createPatentLegalStatusTool } from './tool/patent-legal-status.ts'
 export type { PatentLegalStatusInput, PatentLegalStatusOutput, PatentLegalStatusItem, PatentLegalStatusDeps, CniprLegalStatusLookup } from './tool/patent-legal-status.ts'
 export { createPatentCaseSearchTool } from './tool/patent-case-search.ts'

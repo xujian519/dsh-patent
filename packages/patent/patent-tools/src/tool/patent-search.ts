@@ -12,7 +12,7 @@ import { CNIPR_SEARCH_MAX_HITS, cachedSearchPatents } from '@deepseek-ai/dsh-pat
 import type { CniprChannel, CniprSearchHit, CniprSearchResult } from '@deepseek-ai/dsh-patent-data'
 import { PatentToolError } from '../error.ts'
 import { retryBounded } from './internal/bounded-retry.ts'
-import { CNIPR_CHANNEL, GOOGLE_PATENTS_CHANNEL, renderUpstreamFailure } from './internal/upstream-channel.ts'
+import { CNIPR_CHANNEL, GOOGLE_PATENTS_CHANNEL, appendSecondChannel, renderUpstreamFailure } from './internal/upstream-channel.ts'
 import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
 
 /** Input for the patent_search tool. */
@@ -205,11 +205,6 @@ async function searchThroughCnipr(
   }
   if (result.hits.length === 0) return { served: false, warnings: [`${CNIPR_CHANNEL}也未命中`, ...truncation] }
   return { served: true, total: result.total, hits: result.hits.map(toCniprItem), warnings: truncation }
-}
-
-/** 把第二通道的告警接到失败文案后面：调用记录要能看出第二个通道也被问过。 */
-function appendSecondChannel(report: string, warnings: readonly string[]): string {
-  return warnings.length === 0 ? report : `${report}；${warnings.join('；')}`
 }
 
 const DESCRIPTION = [

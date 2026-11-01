@@ -36,6 +36,7 @@ dist-exe/
 /dist/
 apps/desktop/.desktop-build/
 python/sdk-runtime/src/deepseek_harness_runtime/runtime/
+python/sdk/.venv/
 python/**/__pycache__/
 python/**/.pytest_cache/
 packages/**/__pycache__/
@@ -50,6 +51,7 @@ apps/desktop/resources/
 .dsh-work/
 .build/
 .dsh-report/
+.dsh-research/
 .playwright-mcp/
 .orig
 .worktrees/
@@ -72,6 +74,8 @@ dsh-image-gen/
 # Local tool indexes
 .codegraph/
 .cursor/
+# FreeCAD workspace build outputs (regenerate with scripts/build.py and sheet.py)
+freecad-workspace/out/
 # Release pack output (dist/npm, dist/npm-vendor)
 dist/
 

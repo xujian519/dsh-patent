@@ -11,7 +11,7 @@ templates/   SVG 图框（含 freecad:editable 与 freecad:autofill 字段）
 parts/       零件族构建器（Python，调用 FreeCAD Part API）
 params/      参数表（JSON，每个变体一份）
 scripts/     build.py / verify.py / sheet.py / render_pdf.py / dim_rules.py / import2d.py / common/
-out/         生成物，按 <part>/<variant>/ 分层
+out/         生成物，按 <part>/<variant>/ 分层（未跟踪，由脚本重新生成）
 docs/        基线、命名规范、字段字典、API 片段、故障对策
 ```
 

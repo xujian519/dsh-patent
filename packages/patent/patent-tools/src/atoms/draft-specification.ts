@@ -91,6 +91,7 @@ export class DraftSpecificationHandler implements StageHandler {
    * @param input - 阶段执行输入（state 携带技术方案与可选分析结果）。
    * @returns 下一管线状态：说明书草案文本与撰写警告。
    */
+  // oxlint-disable-next-line typescript/require-await -- StageHandler contract requires async execute
   async execute(input: StageExecuteInput): Promise<PipelineState> {
     const { state } = input
     const solution = firstStateString(state, ['source_text', 'text', 'input'])

@@ -18,7 +18,15 @@ import { findWorkspaceRoot, hasTypertExport, WorkspaceTypertGenerator } from './
 import type { WorkspaceEmitResult } from './workspace.ts'
 import type { TypertFace } from './model.ts'
 import type { WorkspaceWorkerRequest, WorkspaceWorkerResponse } from './worker.ts'
-import { isRecord } from '@deepseek-ai/dsh-value'
+
+/**
+ * Local record guard for this build-time plugin.
+ * Host bundle loads the compiled plugin before sibling package `lib/` artifacts
+ * exist, so it must not import `@deepseek-ai/dsh-value`.
+ */
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
 
 /** The subset of the rolldown plugin contract used here (structural; avoids a rolldown type dependency). */
 interface TypertPlugin {

@@ -129,6 +129,7 @@ export class SpecCheckHandler implements StageHandler {
    * @param input - 阶段执行输入（state 中已合入阶段参数）。
    * @returns 下一管线状态：报告、通过标记、得分与违规项。
    */
+  // oxlint-disable-next-line typescript/require-await -- StageHandler contract requires async execute
   async execute(input: StageExecuteInput): Promise<PipelineState> {
     const { state } = input
     const mode = resolveMode(state)

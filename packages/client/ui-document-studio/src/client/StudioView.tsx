@@ -213,6 +213,7 @@ function printHtmlDocument(content: string): boolean {
   win.document.open()
   // document.write is the only way to print a complete standalone HTML
   // document from a popup window.
+  // oxlint-disable-next-line typescript/no-deprecated
   win.document.write(content)
   win.document.close()
   win.focus()

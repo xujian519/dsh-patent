@@ -703,6 +703,7 @@ export function attachLocale(service: { getSnapshot(): { active: string } } | un
  * attached, else the browser language.
  */
 function activeLocale(): string {
+  // oxlint-disable-next-line no-unnecessary-condition -- tsc keeps the chain necessary: the service attaches later
   return localeService?.getSnapshot().active
     ?? (typeof navigator !== 'undefined' ? navigator.language : '')
     ?? 'en'

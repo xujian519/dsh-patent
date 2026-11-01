@@ -3,7 +3,6 @@
 import type { InspectorJsonValue } from '../json.ts'
 import type { RuntimeScriptKey } from './ids.ts'
 import type { RuntimeStackTrace } from './errors.ts'
-import type { RuntimeCompletion } from './operations.ts'
 import type { RuntimeRemoteObject } from './remote-object.ts'
 
 /** One source location independent of a CDP ScriptId allocation policy. */
@@ -73,6 +72,3 @@ export type RuntimeDebuggerEvent<Handle extends string> =
     readonly breakpointId: string
     readonly location: RuntimeDebuggerLocation
   }
-
-/** Active debugger operation result containing a Runtime value. */
-export type RuntimeCallFrameEvaluation<Handle extends string> = RuntimeCompletion<Handle>

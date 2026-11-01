@@ -5,12 +5,6 @@
  * @module @deepseek-ai/dsh-web-search-perplexity/types
  */
 
-/** Request body sent to Perplexity's chat-completions endpoint. */
-export interface PerplexityRequest {
-  model: string
-  messages: { role: 'user'; content: string }[]
-}
-
 /** One structured search result (the preferred citation shape). */
 export interface PerplexitySearchResult {
   url: string

@@ -72,12 +72,3 @@ export function chatNode<Kind extends ChatNodeKind>(
     data,
   }
 }
-
-/**
- * Read a finite non-negative integer from a structurally narrowed payload.
- * @param value - untrusted payload field.
- * @returns valid coordinate, otherwise undefined.
- */
-export function coordinate(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined
-}

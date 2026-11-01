@@ -5,7 +5,7 @@ import type { InspectorId } from '../../shared/identity.ts'
 declare const cdpNumericIdBrand: unique symbol
 
 /** Number branded with one Chrome CDP identity role. */
-export type CdpNumericId<Role extends string> = number & { readonly [cdpNumericIdBrand]: Role }
+type CdpNumericId<Role extends string> = number & { readonly [cdpNumericIdBrand]: Role }
 
 /** Identity of one DevTools connection inside the Worker. */
 export type InspectorConnectionId = InspectorId<'InspectorConnectionId'>
@@ -15,12 +15,6 @@ export type CdpRemoteObjectId = InspectorId<'CdpRemoteObjectId'>
 
 /** Debugger script id scoped to one DevTools connection. */
 export type CdpScriptId = InspectorId<'CdpScriptId'>
-
-/** Debugger call-frame id scoped to one paused DevTools session. */
-export type CdpCallFrameId = InspectorId<'CdpCallFrameId'>
-
-/** Runtime execution-context id scoped to one DevTools target. */
-export type CdpExecutionContextId = CdpNumericId<'CdpExecutionContextId'>
 
 /** DOM frontend node id scoped to one DevTools document. */
 export type CdpNodeId = CdpNumericId<'CdpNodeId'>

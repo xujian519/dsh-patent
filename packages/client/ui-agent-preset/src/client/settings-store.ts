@@ -54,11 +54,8 @@ export function requiresCodingTools(preset: AgentPresetOption | undefined): bool
   return preset !== undefined && isBuiltInPreset(preset) && (preset.id === 'ptc' || preset.id === 'minimal')
 }
 
-/** One roster entry exactly as the host reports it. */
-export type RosterPreset = AgentPresetRoster['presets'][number]
-
 /** The roster, or the message to show in its place. */
-export type RosterRead = { ok: true; value: AgentPresetRoster } | { ok: false; error: string }
+type RosterRead = { ok: true; value: AgentPresetRoster } | { ok: false; error: string }
 
 const EMPTY_ROSTER: AgentPresetRoster = { presets: [] }
 
@@ -88,7 +85,7 @@ export async function readRoster(ctx: ClientContext): Promise<RosterRead> {
  * @param store - the surface's own snapshot store.
  * @returns the roster, or undefined when the caller should return.
  */
-export async function beginRosterRead<S extends { status: string; error: string | null }>(
+async function beginRosterRead<S extends { status: string; error: string | null }>(
   ctx: ClientContext,
   store: SnapshotStore<S>,
 ): Promise<AgentPresetRoster | undefined> {

@@ -40,13 +40,6 @@ export function parseSessionMode(input: unknown): ViewerSessionMode | undefined 
   return input === 'view' || input === 'write' ? input : undefined
 }
 
-/** Trusted viewer identity a Relay asserted for one request; never a browser-supplied value. */
-export interface ForkViewer {
-  readonly providerId: string
-  readonly tenantId: string
-  readonly subjectId: string
-}
-
 /** What the Relay knows about the share a fork request arrived through. */
 export interface ForkShareState {
   readonly shareId: string
@@ -97,12 +90,12 @@ export interface ForkRequest {
 }
 
 /** Outcome of one fork authorization. */
-export type ForkDecision =
+type ForkDecision =
   | { readonly ok: true; readonly boundary: number; readonly ceiling: ForkCeiling; readonly requestKey: string }
   | { readonly ok: false; readonly code: ForkRefusal; readonly message: string }
 
 /** Stable refusals a caller can act on without reading prose. */
-export type ForkRefusal =
+type ForkRefusal =
   | 'share-not-found'
   | 'share-stopped'
   | 'share-expired'

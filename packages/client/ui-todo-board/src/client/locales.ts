@@ -36,10 +36,6 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
 }
 
-/** Namespace-bound translator threaded through board presentation code. */
-export type TodoBoardTranslate =
-  import('@deepseek-ai/dsh-client-ui-slots').TranslateNS<typeof NS>
-
 /** English dictionary, checked complete against the Chinese source of truth. */
 export const en: Record<TodoBoardKey, string> = {
   'view.board': 'Board',

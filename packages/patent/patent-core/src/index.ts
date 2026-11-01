@@ -243,48 +243,41 @@ export {
   referencedTerms,
 } from './claim-lint/index.ts'
 
-// Adversary model: independent evaluation of response plans from an opposing examiner's perspective.
+// Adversary model + review: opposing-examiner evaluation of plans and final drafts.
+// Runtime values re-export only through the barrel so the duplication gate does not
+// see a parallel list against adversary/index.ts.
 export type * from './adversary/index.ts'
 export {
   FORBIDDEN_KEYS,
   FORBIDDEN_OUTPUT_TERMS,
   GROUND_TO_STATUTE,
   STATUTE_TO_GROUND,
-  assessEvidenceIndependent,
-  buildAdversaryPrompt,
-  buildAdversaryReport,
-  checkInputIsolation,
-  computeOverallConfidence,
-  degradedSummary,
-  detectDivergence,
-  locateDisputesIndependent,
-  parseAdversaryOutput,
-  renderAdversaryReport,
-  scanOutputForLeaks,
-} from './adversary/index.ts'
-
-// Adversary review: evaluation of final opinion statements from an opposing examiner's perspective.
-export type {
-  AdversaryReviewReport,
-  AdversaryReviewInput,
-  AdversaryReviewOfficeAction,
-} from './adversary/review.ts'
-export {
-  reviewFinalDraft,
-  detectMissedRejections,
-  detectEvidenceGaps,
-  detectClaimsCoverage,
-  identifyReviewDisputes,
-  statuteForEvidenceGap,
-  confidenceForEvidenceGap,
-  assessArgumentStrength,
-  computeReviewConfidence,
-  buildReviewSummary,
   MISSED_REJECTION_HEURISTIC_CONFIDENCE,
   CITATION_GAP_HEURISTIC_CONFIDENCE,
   INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE,
   CLAIMS_COVERAGE_GAP_HEURISTIC_CONFIDENCE,
-} from './adversary/review.ts'
+  assessArgumentStrength,
+  assessEvidenceIndependent,
+  buildAdversaryPrompt,
+  buildAdversaryReport,
+  buildReviewSummary,
+  checkInputIsolation,
+  computeOverallConfidence,
+  computeReviewConfidence,
+  confidenceForEvidenceGap,
+  degradedSummary,
+  detectClaimsCoverage,
+  detectDivergence,
+  detectEvidenceGaps,
+  detectMissedRejections,
+  identifyReviewDisputes,
+  locateDisputesIndependent,
+  parseAdversaryOutput,
+  renderAdversaryReport,
+  reviewFinalDraft,
+  scanOutputForLeaks,
+  statuteForEvidenceGap,
+} from './adversary/index.ts'
 
 // Patent analysis product contract + deterministic aggregator (Athena-inspired report).
 export type * from './analysis-report/index.ts'

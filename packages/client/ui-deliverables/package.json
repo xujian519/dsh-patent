@@ -69,7 +69,6 @@
     "@deepseek-ai/dsh-client-ui-sidebar-right": "workspace:*",
     "@deepseek-ai/dsh-client-ui-slots": "workspace:*",
     "@deepseek-ai/dsh-client-ui-tool": "workspace:*",
-    "@deepseek-ai/dsh-util-values": "workspace:*",
     "@deepseek-ai/dsh-fs": "workspace:*",
     "@deepseek-ai/dsh-fs-local": "workspace:*",
     "@deepseek-ai/dsh-llm": "workspace:*",
@@ -78,8 +77,8 @@
     "@deepseek-ai/dsh-session-query": "workspace:*",
     "@deepseek-ai/dsh-system-prompt": "workspace:*",
     "@deepseek-ai/dsh-tool-present": "workspace:*",
+    "@deepseek-ai/dsh-util-values": "workspace:*",
     "@deepseek-ai/dsh-util-workspace-path": "workspace:*",
-    "@deepseek-ai/dsh-value": "workspace:*",
     "@deepseek-ai/dsh-workspace-changes": "workspace:*",
     "react": "^18.2.0"
   },
@@ -90,6 +89,7 @@
     "lib/types/**/*.d.ts"
   ],
   "dependencies": {
-    "@deepseek-ai/dsh-typert-protocol": "workspace:*"
+    "@deepseek-ai/dsh-typert-protocol": "workspace:*",
+    "@deepseek-ai/dsh-value": "workspace:*"
   }
 }

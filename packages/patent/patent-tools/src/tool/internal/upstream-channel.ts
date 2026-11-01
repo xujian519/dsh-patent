@@ -45,3 +45,13 @@ export function renderUpstreamFailure(detail: string, attempts: number): string 
     : '；上游瞬时失败，可稍后重试'
   return `通道 ${GOOGLE_PATENTS_CHANNEL}：${detail}${retried}${remedy}`
 }
+
+/**
+ * 把第二通道的告警接到失败文案后面：调用记录要能看出第二个通道也被问过。
+ * @param report - 第一通道的失败文案。
+ * @param warnings - 第二通道留下的告警；为空时原样返回。
+ * @returns 拼接后的失败文案。
+ */
+export function appendSecondChannel(report: string, warnings: readonly string[]): string {
+  return warnings.length === 0 ? report : `${report}；${warnings.join('；')}`
+}

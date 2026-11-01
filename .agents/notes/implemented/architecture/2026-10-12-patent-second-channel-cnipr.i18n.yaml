@@ -4,16 +4,16 @@
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-12-patent-second-channel-cnipr.md
 /agent-note-serve-chinese-patent-full-text-and-legal-status-through-a-second-channel:
   en: 90348cd86d2290b1
-  zh: cd1ccdbe153624b1
+  zh: 31b31b959c2cc49d
 /agent-note-serve-chinese-patent-full-text-and-legal-status-through-a-second-channel/problem:
-  en: ffb88546adccac9f
-  zh: cb60700cab1ec0b2
+  en: 3e0f0abe1790fad9
+  zh: 422b5353dce87945
 /agent-note-serve-chinese-patent-full-text-and-legal-status-through-a-second-channel/decision:
-  en: 4282eead9845ca71
-  zh: b5eaeb137f5ad557
+  en: 1c237d15da8feed8
+  zh: 9ff068f4f738d0a5
 /agent-note-serve-chinese-patent-full-text-and-legal-status-through-a-second-channel/alternatives-considered:
-  en: c35ae8801902eedd
-  zh: e1c351261cd7eace
+  en: 65163709e2ea5edf
+  zh: 2fbb6b4406428ed0
 /agent-note-serve-chinese-patent-full-text-and-legal-status-through-a-second-channel/consequences:
-  en: 61d8ce5fb17d6862
-  zh: 7bab6cb8e7dfe35c
+  en: d8dce761935b0144
+  zh: 3f1a21ffce17e1f4

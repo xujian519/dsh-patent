@@ -485,6 +485,256 @@ describe('patent_metadata', () => {
   })
 })
 
+describe('patent_metadata through the CNIPR channel', () => {
+  const patent = 'CN218483312U'
+  const cnpirHit = {
+    patent,
+    title: '一种测试装置',
+    assignee: '某某公司',
+    publicationDate: '2023-05-09',
+    abstract: '摘要文本',
+  }
+  const notFound = (number: string) => ({
+    success: false as const,
+    patent: number,
+    url: 'u',
+    data: null,
+    errorCode: 'NOT_FOUND' as const,
+    errorMessage: 'not found',
+    parseWarnings: [],
+  })
+  const servedByCnipr = () => ({ search: async () => ({ total: 1, hits: [cnpirHit] }) })
+
+  it('serves a NOT_FOUND scrape through CNIPR and names the channel', async () => {
+    const tool = createPatentMetadataTool({
+      scrape: async number => notFound(number),
+      cnipr: servedByCnipr,
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_metadata', { patent }, 'm-cnipr-not-found')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    const out = text(result)
+    expect(out).toContain(cnpirHit.title)
+    expect(out).toContain(cnpirHit.assignee)
+    expect(out).toContain(cnpirHit.publicationDate)
+    expect(out).toContain(cnpirHit.abstract)
+    expect(out).toContain(`**channel**: ${CNIPR_CHANNEL}`)
+    // CNIPR 不发布 URL：缺席的字段整行不渲染，不留一个空 URL 行。
+    expect(out).not.toContain('**url**:')
+    expect(out).not.toContain('## 通道告警')
+  })
+
+  it('serves a failed engine scrape through CNIPR instead of failing the call', async () => {
+    const tool = createPatentMetadataTool({
+      scrapeRetryDelaysMs: [],
+      scrape: async number => ({
+        success: false as const,
+        patent: number,
+        url: 'u',
+        data: null,
+        errorCode: 'HTTP_ERROR' as const,
+        errorMessage: 'HTTP 503',
+        parseWarnings: [],
+      }),
+      cnipr: servedByCnipr,
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_metadata', { patent }, 'm-cnipr-failure')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    expect(text(result)).toContain(`**channel**: ${CNIPR_CHANNEL}`)
+  })
+
+  it('serves a thrown engine error through CNIPR', async () => {
+    const tool = createPatentMetadataTool({
+      scrape: async () => {
+        throw new Error('socket hang up')
+      },
+      cnipr: servedByCnipr,
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_metadata', { patent }, 'm-cnipr-thrown')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    expect(text(result)).toContain(`**channel**: ${CNIPR_CHANNEL}`)
+  })
+
+  it('rethrows the original engine error when no second channel is wired', async () => {
+    const tool = createPatentMetadataTool({
+      scrapeRetryDelaysMs: [],
+      scrape: async () => {
+        throw new Error('socket hang up')
+      },
+    })
+    await expect(tool.execute({ patent }, { signal } as never)).rejects.toThrow('socket hang up')
+  })
+
+  it('does not consult CNIPR when the engine already answered', async () => {
+    const cniprSearch = vi.fn(async () => ({ total: 1, hits: [cnpirHit] }))
+    const tool = createPatentMetadataTool({
+      scrape: async number => ({
+        success: true as const,
+        patent: number,
+        url: 'https://patents.google.com/patent/CN1',
+        data: minimalPatentData(),
+        errorCode: '' as const,
+        errorMessage: '',
+        parseWarnings: [],
+      }),
+      cnipr: () => ({ search: cniprSearch }),
+    })
+    const ctx = await ctxWith(tool)
+    await execute(ctx, 'patent_metadata', { patent }, 'm-cnipr-no-need')
+    expect(cniprSearch).not.toHaveBeenCalled()
+  })
+
+  it('does not consult CNIPR for a non-China number or a China application number', async () => {
+    const cniprSearch = vi.fn(async () => ({ total: 1, hits: [cnpirHit] }))
+    const tool = createPatentMetadataTool({
+      scrapeRetryDelaysMs: [],
+      scrape: async number => notFound(number),
+      cnipr: () => ({ search: cniprSearch }),
+    })
+    const ctx = await ctxWith(tool)
+    await execute(ctx, 'patent_metadata', { patent: 'US11452699B2' }, 'm-cnipr-us')
+    await execute(ctx, 'patent_metadata', { patent: 'CN202122978405' }, 'm-cnipr-app')
+    expect(cniprSearch).not.toHaveBeenCalled()
+  })
+
+  it('does not consult CNIPR when the scrape reports an invalid number', async () => {
+    const cniprSearch = vi.fn(async () => ({ total: 1, hits: [cnpirHit] }))
+    const tool = createPatentMetadataTool({
+      scrape: async number => ({
+        success: false as const,
+        patent: number,
+        url: 'u',
+        data: null,
+        errorCode: 'VALIDATION_ERROR' as const,
+        errorMessage: 'bad number',
+        parseWarnings: [],
+      }),
+      cnipr: () => ({ search: cniprSearch }),
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_metadata', { patent }, 'm-cnipr-invalid')
+    expect(result.isError).toBe(true)
+    expect(cniprSearch).not.toHaveBeenCalled()
+    expect(text(result)).toContain('bad number')
+  })
+
+  it('keeps the engine reason when CNIPR misses the number', async () => {
+    const tool = createPatentMetadataTool({
+      scrapeRetryDelaysMs: [0],
+      scrape: async number => ({
+        success: false as const,
+        patent: number,
+        url: 'u',
+        data: null,
+        errorCode: 'HTTP_ERROR' as const,
+        errorMessage: 'HTTP 503',
+        parseWarnings: [],
+      }),
+      cnipr: () => ({ search: async () => ({ total: 1, hits: [{ ...cnpirHit, patent: 'CN218483313U' }] }) }),
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_metadata', { patent }, 'm-cnipr-miss')
+    expect(result.isError).toBe(true)
+    const out = text(result)
+    expect(out).toContain('HTTP 503')
+    expect(out).toContain(`${CNIPR_CHANNEL}也未检索到该公开(公告)号`)
+  })
+
+  it('keeps a NOT_FOUND result and warns when CNIPR is unavailable', async () => {
+    const tool = createPatentMetadataTool({
+      scrape: async number => notFound(number),
+      cnipr: () => ({
+        search: async () => {
+          throw new Error('CNIPR 通道失败（login_required）：未检测到 CNIPR 登录态')
+        },
+      }),
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_metadata', { patent }, 'm-cnipr-down')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    const out = text(result)
+    expect(out).toContain('not found')
+    expect(out).toContain('## 通道告警')
+    expect(out).toContain(`${CNIPR_CHANNEL}不可用`)
+    expect(out).toContain('未检测到 CNIPR 登录态')
+    expect(out).toContain('本次结果只有')
+  })
+
+  it('names a non-Error CNIPR failure with its string form', async () => {
+    const tool = createPatentMetadataTool({
+      scrape: async number => notFound(number),
+      cnipr: () => ({
+        search: async () => {
+          throw 'channel offline'
+        },
+      }),
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_metadata', { patent }, 'm-cnipr-string')
+    expect(text(result)).toContain('channel offline')
+  })
+
+  it('skips the second channel when the lookup returns nothing', async () => {
+    const tool = createPatentMetadataTool({
+      scrape: async number => notFound(number),
+      cnipr: () => undefined,
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_metadata', { patent }, 'm-cnipr-off')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    expect(text(result)).toContain(`channel: ${GOOGLE_PATENTS_CHANNEL}`)
+  })
+
+  it('matches a hit whose number needs folding', async () => {
+    const tool = createPatentMetadataTool({
+      scrape: async number => notFound(number),
+      cnipr: () => ({ search: async () => ({ total: 1, hits: [{ ...cnpirHit, patent: ' cn218483312u ' }] }) }),
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_metadata', { patent }, 'm-cnipr-fold')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    expect(text(result)).toContain(`**patent**: ${patent}`)
+  })
+
+  it('passes the caller signal to the CNIPR channel', async () => {
+    const controller = new AbortController()
+    let seen: AbortSignal | undefined
+    const tool = createPatentMetadataTool({
+      scrape: async number => notFound(number),
+      cnipr: () => ({
+        search: async (_query, options) => {
+          seen = options?.signal
+          return { total: 1, hits: [cnpirHit] }
+        },
+      }),
+    })
+    await tool.execute({ patent }, { signal: controller.signal } as never)
+    expect(seen).toBe(controller.signal)
+  })
+
+  it('leaves the abstract and an unnamed assignee out when the caller opts out', async () => {
+    const tool = createPatentMetadataTool({
+      scrape: async number => notFound(number),
+      cnipr: () => ({
+        search: async () => ({ total: 1, hits: [{ ...cnpirHit, assignee: '' }] }),
+      }),
+    })
+    const value = await tool.execute({ patent, returnAbstract: false }, { signal } as never) as { data: { abstractText: string } }
+    expect(value.data.abstractText).toBe('')
+    const rendered = text({ content: tool.output.render({ patent, returnAbstract: false }, value) })
+    expect(rendered).toContain('**assignees**: N/A')
+    expect(rendered).not.toContain(cnpirHit.abstract)
+  })
+})
+
 describe('patent_legal_status', () => {
   const activeRecord = {
     patent_number: 'US1A', title: 'T', status: 'Active', ifi_status: 'x', estimated_expiration: '2030',

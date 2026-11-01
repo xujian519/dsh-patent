@@ -6,9 +6,14 @@ import {
   detectMissedRejections,
   detectEvidenceGaps,
   identifyReviewDisputes,
+  statuteForEvidenceGap,
+  confidenceForEvidenceGap,
   assessArgumentStrength,
   computeReviewConfidence,
   buildReviewSummary,
+  CITATION_GAP_HEURISTIC_CONFIDENCE,
+  INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE,
+  CLAIMS_COVERAGE_GAP_HEURISTIC_CONFIDENCE,
   globalAtomRegistry,
   globalStageHandlerRegistry,
   registerBuiltinAtoms,
@@ -163,6 +168,33 @@ describe('identifyReviewDisputes 法条归因与置信度分档（#653）', () =
   it('无通知书驳回类型时，对比文件缺口不捏造 A22.3', () => {
     const disputes = identifyReviewDisputes(undefined, [], ['最终产物未引用对比文件内容'])
     expect(disputes[0]?.statute).toBe('unknown')
+  })
+})
+
+describe('statuteForEvidenceGap / confidenceForEvidenceGap', () => {
+  it('对比文件缺口遇到未映射驳回类型时返回 unknown', () => {
+    expect(
+      statuteForEvidenceGap('最终产物未引用对比文件内容', {
+        rejectionTypes: ['not-a-real-ground'],
+      }),
+    ).toBe('unknown')
+  })
+
+  it('无法归因关键词的缺口不捏造 A22.3', () => {
+    expect(statuteForEvidenceGap('论证力度不足', { rejectionTypes: ['novelty'] })).toBe('unknown')
+  })
+
+  it('按缺口文案分档置信度，未命中关键词时回落创造性档', () => {
+    expect(confidenceForEvidenceGap('最终产物未引用对比文件内容')).toBe(
+      CITATION_GAP_HEURISTIC_CONFIDENCE,
+    )
+    expect(confidenceForEvidenceGap('通知书指出创造性问题但最终产物未论证')).toBe(
+      INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE,
+    )
+    expect(confidenceForEvidenceGap('最终产物未引用任何权利要求编号')).toBe(
+      CLAIMS_COVERAGE_GAP_HEURISTIC_CONFIDENCE,
+    )
+    expect(confidenceForEvidenceGap('论证力度不足')).toBe(INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE)
   })
 })
 
@@ -341,6 +373,30 @@ describe('handler execute', () => {
       .evidenceGaps
     expect(withGaps.some(gap => gap.includes('对比文件'))).toBe(true)
     expect(withoutGaps.some(gap => gap.includes('对比文件'))).toBe(false)
+  })
+
+  it('citations 派生时跳过非法条目，并接受合法 relevancy / 非数组 claimsAffected', async () => {
+    const handler = new AdversaryReviewHandler()
+    const result = await handler.execute({
+      state: {
+        draft: '本申请具有创造性，符合专利法第22条第3款',
+        claims: '权利要求1',
+        office_action: JSON.stringify({
+          rejectionTypes: ['inventiveness'],
+          affectedClaims: [1],
+          citations: [
+            null,
+            ['not-an-object'],
+            { documentNumber: '   ' },
+            { documentNumber: 'CN1111111A', relevancy: 'not-a-code', claimsAffected: '1' },
+            { documentNumber: 'CN1234567A', relevancy: 'X', claimsAffected: [1] },
+          ],
+        }),
+      },
+    })
+    const gaps = (result.adversary_review_full_report as { evidenceGaps: string[] }).evidenceGaps
+    // 合法 documentNumber 仍应派生出对比文件文本并触发缺口检查。
+    expect(gaps.some(gap => gap.includes('对比文件'))).toBe(true)
   })
 
   it('论证严重不足时 adversary_review_passed 为 false', async () => {

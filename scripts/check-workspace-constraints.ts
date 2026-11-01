@@ -252,14 +252,6 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
     'skills',
     'lib/public-url-*.js',
   ],
-  // The workspace sidebar's heavy preview/terminal libraries build as lazy
-  // chunk scripts beside the client bundle; the plugin's /sidebar/bundle
-  // route serves them (see packages/client/better-sidebar/tsdown.config.ts).
-  '@deepseek-ai/dsh-better-sidebar': [
-    'lib/client-terminal.js',
-    'lib/client-editor.js',
-    'lib/client-mermaid.js',
-  ],
   // The Web Host mounts the default-off settings owner independently of the
   // delegation-tool instances.
   '@deepseek-ai/dsh-tool-subagent': ['lib/model-selection-settings.js'],

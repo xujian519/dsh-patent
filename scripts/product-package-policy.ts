@@ -47,7 +47,6 @@ export const PRODUCT_PACKAGE_POLICY: Readonly<Record<string, ProductPackagePolic
   'packages/test-support/remote-mock': { category: 'test', reason: 'Published typed Remote test proxies.' },
   'packages/test-support/session-snapshot': { category: 'test', reason: 'Published Session snapshot replay harness.' },
   'packages/bundle/im': { category: 'optional', reason: 'Bundle installed with the dsh application and mounted by a profile that configures an IM bot.' },
-  'packages/client/better-sidebar': { category: 'optional', reason: 'Workspace sidebar plugins mounted by the desktop host composition.' },
   'packages/client/ui-brand-official': { category: 'optional', reason: 'Upstream official brand occupants, kept for official builds; a fork composition disables the row because the patent brand package owns the same single-occupant slots.' },
   'packages/desktop/desktop-seam': { category: 'optional', reason: 'Desktop host seam consumed by the desktop shell packages.' },
   'packages/desktop/directory-picker': { category: 'optional', reason: 'Native directory picker selected by the desktop host composition.' },

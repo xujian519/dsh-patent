@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for 2026-11-01-fork-removes-better-sidebar.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-01-fork-removes-better-sidebar.md
+/agent-note-this-fork-removes-deepseek-ai-dsh-better-sidebar:
+  en: ac7e66919b4b1cff
+  zh: 980fcdee284ac6ea
+/agent-note-this-fork-removes-deepseek-ai-dsh-better-sidebar/problem:
+  en: 5521bbc27acbc7fc
+  zh: 12d06eb340497814
+/agent-note-this-fork-removes-deepseek-ai-dsh-better-sidebar/decision:
+  en: 5453b96ea4463829
+  zh: b17327be48caf5fe
+/agent-note-this-fork-removes-deepseek-ai-dsh-better-sidebar/consequences:
+  en: 73e4adf7df68df56
+  zh: e525720210e37dbe

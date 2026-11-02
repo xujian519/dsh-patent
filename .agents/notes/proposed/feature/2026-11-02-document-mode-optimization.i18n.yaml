@@ -1,0 +1,88 @@
+# Bilingual-pair consistency record for 2026-11-02-document-mode-optimization.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/feature/2026-11-02-document-mode-optimization.md
+/agent-note-document-mode-preview-and-scale-optimization:
+  en: e633abd2721de7df
+  zh: fec87806ba5347d1
+/agent-note-document-mode-preview-and-scale-optimization/problem:
+  en: afef9bf3372b5e9a
+  zh: 9dc3b2a850d32ef1
+/agent-note-document-mode-preview-and-scale-optimization/problem/audit-scope-and-inputs:
+  en: 1144ebe039a5775c
+  zh: 87c4219ad22d69bd
+/agent-note-document-mode-preview-and-scale-optimization/problem/delivery-timeline-today:
+  en: 10e81dedf900adc4
+  zh: 88ccc3455bb9c669
+/agent-note-document-mode-preview-and-scale-optimization/problem/code-evidence:
+  en: 4289024c29e027f1
+  zh: d3d933c0d180dab3
+/agent-note-document-mode-preview-and-scale-optimization/proposal:
+  en: 92f77935aa7d2032
+  zh: 0d85da2db3a9b5f5
+/agent-note-document-mode-preview-and-scale-optimization/proposal/mechanism-selection:
+  en: 587ef3c2e8877d17
+  zh: c046b583a7a63d44
+/agent-note-document-mode-preview-and-scale-optimization/proposal/target-data-flow:
+  en: f4357e20ef41c371
+  zh: d372d078413ee6b1
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p0-preview-on-write:
+  en: b6a884b2ccf5e619
+  zh: c3b95d2739025de2
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p0-preview-on-write/p0-1-the-render-tool-returns-only-the-path-after-writing:
+  en: 67a6e66e54e2aa00
+  zh: a739806a2b30c120
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p0-preview-on-write/p0-2-the-studio-preview-follows-the-disk-through-the-file-resource:
+  en: 7ff590483ec607c2
+  zh: 5ea0a6464bd191b4
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p0-preview-on-write/p0-3-preview-rendering-upgrade:
+  en: 0ce76c1785080ce3
+  zh: 2e66412a6229e27f
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p0-preview-on-write/p0-4-follow-the-newest-artifact:
+  en: f0936bbb6fe5a4cc
+  zh: c565abefd9dea4fd
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p0-preview-on-write/p0-5-switch-timing-and-visibility:
+  en: defd4107c2f0f3f4
+  zh: c73c97c78c0d1ac9
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p0-preview-on-write/p0-6-skills-write-long-documents-chapter-by-chapter:
+  en: af44832378f87e7a
+  zh: b48e1e1cf38f196f
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p1-chapter-artifacts-and-scale:
+  en: 2d97b1f162181356
+  zh: 7351b02736a68009
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p1-chapter-artifacts-and-scale/p1-a-path-conventions-grouping-and-progress:
+  en: 98cf95b7dab39be3
+  zh: 0ca51601a50b5af2
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p1-chapter-artifacts-and-scale/p1-b-document-artifact-tool-decision-gate:
+  en: 98895b43995724c5
+  zh: fa10df4714b92bd7
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p1-chapter-artifacts-and-scale/p1-c-file-to-file-rendering-the-key-scale-fix-for-long-reports:
+  en: 3540f3b54bf7b08a
+  zh: 4de6bb856a665280
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p1-chapter-artifacts-and-scale/p1-d-paged-preview:
+  en: f8d7c1f1b33ad893
+  zh: 6ca49c19af726c5a
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p1-chapter-artifacts-and-scale/p1-e-compaction-and-preview-isolation-audit:
+  en: b5f5ea9e9ec8f5e1
+  zh: 3b8b93d760cd8587
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p1-chapter-artifacts-and-scale/p1-f-per-chapter-subagents-optional-long-documents:
+  en: 3ecae35422348c5a
+  zh: 3eb1c307db9aac59
+/agent-note-document-mode-preview-and-scale-optimization/proposal/p2-large-scale-and-long-term:
+  en: 8c79782a15bdb6e5
+  zh: 1c513f67042098e9
+/agent-note-document-mode-preview-and-scale-optimization/proposal/sequencing-and-pr-split:
+  en: 06ae8c7b8ec87b35
+  zh: 08c08d86e93036d3
+/agent-note-document-mode-preview-and-scale-optimization/alternatives-considered:
+  en: 6560c4ab914e7449
+  zh: 655d5b21180f07df
+/agent-note-document-mode-preview-and-scale-optimization/acceptance-criteria:
+  en: 2a0921d8e6fd0c88
+  zh: 61dc17aa1ff3840c
+/agent-note-document-mode-preview-and-scale-optimization/risks:
+  en: 77f7c2cda35b5200
+  zh: 5b6129b7c4d0b765
+/agent-note-document-mode-preview-and-scale-optimization/appendix-code-evidence-index:
+  en: d5b3d63b8d2762f5
+  zh: 0f48c5dba24c97f5

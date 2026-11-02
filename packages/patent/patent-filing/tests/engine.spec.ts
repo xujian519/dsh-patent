@@ -128,6 +128,19 @@ describe('resolveOutputDir', () => {
   it('falls back to the deployment default directory', () => {
     expect(resolveOutputDir({}, '/cwd', 'out/docs')).toBe(resolve('/cwd', 'out/docs'))
   })
+
+  it('rejects an explicit directory whose real path leaves the working directory', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dsh-filing-cwd-'))
+    const outside = mkdtempSync(join(tmpdir(), 'dsh-filing-outside-'))
+    try {
+      expect(() => resolveOutputDir({ outputDir: '../outside' }, cwd, DEFAULT_OUTPUT_DIR)).toThrow(/输出目录 越出工作目录/)
+      expect(() => resolveOutputDir({ outputDir: outside }, cwd, DEFAULT_OUTPUT_DIR)).toThrow(/输出目录 越出工作目录/)
+      expect(resolveOutputDir({ outputDir: join(cwd, 'deliver') }, cwd, DEFAULT_OUTPUT_DIR)).toBe(join(cwd, 'deliver'))
+    } finally {
+      rmSync(cwd, { recursive: true, force: true })
+      rmSync(outside, { recursive: true, force: true })
+    }
+  })
 })
 
 describe('buildFiling', () => {

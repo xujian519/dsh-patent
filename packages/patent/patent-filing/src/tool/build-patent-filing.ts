@@ -103,7 +103,7 @@ export function createBuildPatentFilingTool(options: BuildPatentFilingToolOption
       },
       outputDir: {
         type: 'string',
-        description: '可选显式输出目录（优先于案卷号与缺省目录）',
+        description: '可选显式输出目录（按工作目录解析；真实位置落在工作目录之外的路径会被拒绝）',
       },
     },
     output: {

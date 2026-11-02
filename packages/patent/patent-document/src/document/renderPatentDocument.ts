@@ -5,8 +5,8 @@
 
 import { existsSync } from 'node:fs'
 import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
-import { isAbsolute, join, resolve } from 'node:path'
-import { caseOutputsDir } from '@deepseek-ai/dsh-patent-core'
+import { join, resolve } from 'node:path'
+import { caseOutputsDir, resolveConfinedPath } from '@deepseek-ai/dsh-patent-core'
 import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import { buildBrandStyle, loadBrandFromPath, mergeBrand } from './brandInjector.ts'
 import { checkDocumentCompliance } from './documentCompliance.ts'
@@ -70,19 +70,19 @@ function assertSafe(value: string, pattern: RegExp, label: string): string {
 /**
  * 解析输出目录：显式 outputDir > caseId 约定目录 > 缺省目录。
  *
- * 显式 outputDir 只接受相对路径且不得穿越 cwd：模型控制的工具参数若允许绝对路径
+ * 显式 outputDir 的真实位置必须留在 cwd 内：模型控制的工具参数若允许绝对路径
  * 或 `../` 串联，会把文件写到 cwd 之外进程有权限的任意位置（数据污染/安全风险）。
- * caseId 已走 assertSafe 校验，不会带出 `..` 段；defaultOutputDir 是本包固定常量。
+ * cwd 内的绝对路径照常接受；caseId 已走 assertSafe 校验，不会带出 `..` 段；
+ * defaultOutputDir 是本包固定常量。
  * @param input - 渲染输入。
  * @param cwd - 相对路径基准目录。
  * @param defaultOutputDir - 缺省输出目录。
  * @returns 输出目录绝对路径。
- * @throws DocumentRenderError 当 outputDir 是绝对路径或 resolve 后落在 cwd 之外。
+ * @throws DocumentRenderError 当 outputDir 解析后的真实路径落在 cwd 之外。
  */
 function resolveOutputDir(input: DocumentRenderInput, cwd: string, defaultOutputDir: string): string {
   if (input.outputDir !== undefined) {
-    assertPathWithinCwd(input.outputDir, cwd, '输出目录')
-    return resolve(cwd, input.outputDir)
+    return resolveConfinedPath(input.outputDir, cwd, '输出目录', message => new DocumentRenderError(message))
   }
   if (input.caseId !== undefined) {
     return resolve(cwd, caseOutputsDir(assertSafe(input.caseId, SAFE_CASE_ID_PATTERN, '案卷号')))
@@ -93,34 +93,16 @@ function resolveOutputDir(input: DocumentRenderInput, cwd: string, defaultOutput
 /**
  * 解析品牌配置路径。
  *
- * brandPath 只接受相对路径且不得穿越 cwd：模型控制的路径若允许绝对路径，
- * 会读取任意文件并作为 CSS 注入（信息泄露）。
+ * brandPath 的真实位置必须留在 cwd 内：模型控制的路径若允许任意绝对路径，
+ * 会读取任意文件并作为 CSS 注入（信息泄露）。cwd 内的绝对路径照常接受。
  * @param input - 渲染输入。
  * @param cwd - 相对路径基准目录。
  * @returns 品牌配置绝对路径，未提供时 undefined。
- * @throws DocumentRenderError 当 brandPath 是绝对路径或 resolve 后落在 cwd 之外。
+ * @throws DocumentRenderError 当 brandPath 解析后的真实路径落在 cwd 之外。
  */
 function resolveBrandPath(input: DocumentRenderInput, cwd: string): string | undefined {
   if (input.brandPath === undefined) return undefined
-  assertPathWithinCwd(input.brandPath, cwd, '品牌配置路径')
-  return resolve(cwd, input.brandPath)
-}
-
-/**
- * 校验模型可控的路径字符串：resolve 后必须落在 cwd 之内。
- * 带 `..` 穿越（如 `../../../etc/cron.d`）或 cwd 外的绝对路径都会被拒绝；
- * cwd 之内的绝对路径（仅当 cwd 以该绝对路径开头时合法）也会放行。
- * @param path - 待校验路径（绝对或相对均可）。
- * @param cwd - 工作目录绝对路径。
- * @param label - 错误消息中的字段名。
- * @throws DocumentRenderError 当路径不满足约束。
- */
-function assertPathWithinCwd(path: string, cwd: string, label: string): void {
-  const resolved = resolve(cwd, path)
-  const cwdWithSep = cwd.endsWith('/') ? cwd : `${cwd}/`
-  if (resolved !== cwd && !resolved.startsWith(cwdWithSep)) {
-    throw new DocumentRenderError(`${label} 穿越了工作目录边界: ${JSON.stringify(path)} 解析为 ${resolved}，超出 ${cwd}`)
-  }
+  return resolveConfinedPath(input.brandPath, cwd, '品牌配置路径', message => new DocumentRenderError(message))
 }
 
 /**

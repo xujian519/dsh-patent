@@ -468,6 +468,8 @@ export {
   CASE_WORKFLOW_RUNS_REL,
   caseOutputsDir,
   caseWorkflowRunsDir,
+  resolveConfinedPath,
+  resolveRealPath,
 } from './paths.ts'
 
 // Shared conventions of the two PDF download tools (body verification + dated output dir).
@@ -605,7 +607,6 @@ export {
   countTableRows,
   formatGigabytes,
   prepareTempSibling,
-  resolveRealPath,
 } from './knowledge/install-fs.ts'
 export {
   articleReferenceIdentity,

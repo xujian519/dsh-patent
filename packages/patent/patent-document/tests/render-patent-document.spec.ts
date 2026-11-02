@@ -933,3 +933,71 @@ describe('renderPatentDocument 表单模板受控草案', () => {
     }
   })
 })
+
+describe('renderPatentDocument 工作目录约束', () => {
+  it('rejects an outputDir whose real path leaves the working directory', async () => {
+    const cwd = makeTempDir()
+    const outside = makeTempDir()
+    try {
+      await expect(renderPatentDocument(
+        {
+          template: 'patentability-opinion',
+          outputName: 'escape',
+          outputDir: outside,
+          format: 'html',
+          templateDraft: { fields: { 'meta-title': '越界输出' }, sections: [] },
+        },
+        cwd,
+        { subprocess: unusedSubprocess() },
+      )).rejects.toThrow(/输出目录 越出工作目录/)
+      expect(existsSync(join(outside, 'escape.html'))).toBe(false)
+    } finally {
+      cleanup(cwd)
+      cleanup(outside)
+    }
+  })
+
+  it('accepts an absolute outputDir inside the working directory', async () => {
+    const cwd = makeTempDir()
+    try {
+      const result = await renderPatentDocument(
+        {
+          template: 'patentability-opinion',
+          outputName: 'inside',
+          outputDir: join(cwd, 'deliver'),
+          format: 'html',
+          templateDraft: { fields: { 'meta-title': '工作目录内输出' }, sections: [] },
+        },
+        cwd,
+        { subprocess: unusedSubprocess() },
+      )
+      expect(result.htmlPath).toBe(join(join(cwd, 'deliver'), 'inside.html'))
+      expect(existsSync(result.htmlPath)).toBe(true)
+    } finally {
+      cleanup(cwd)
+    }
+  })
+
+  it('rejects a brandPath whose real path leaves the working directory', async () => {
+    const cwd = makeTempDir()
+    const outside = makeTempDir()
+    writeFileSync(join(outside, 'theme.json'), '{}')
+    try {
+      await expect(renderPatentDocument(
+        {
+          template: 'patentability-opinion',
+          outputName: 'escape-brand',
+          outputDir: join(cwd, 'deliver'),
+          format: 'html',
+          brandPath: join(outside, 'theme.json'),
+          templateDraft: { fields: { 'meta-title': '越界品牌' }, sections: [] },
+        },
+        cwd,
+        { subprocess: unusedSubprocess() },
+      )).rejects.toThrow(/品牌配置路径 越出工作目录/)
+    } finally {
+      cleanup(cwd)
+      cleanup(outside)
+    }
+  })
+})

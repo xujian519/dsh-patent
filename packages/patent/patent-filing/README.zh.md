@@ -26,7 +26,7 @@ kind: "package-reference"
 <a id="build_patent_filing-tool"></a>
 ## build_patent_filing 工具
 
-build_patent_filing 接收受控 `draft`（与 `render_patent_document` 的 claims-spec 模板同一份 `SpecDraft`，由 `dsh-patent-core` 的 `validateSpecDraft` 校验）、`outputName`，以及可选的 `caseId`/`outputDir`，写出一件五节的 DOCX。结果返回成品路径、真正入文的位图、各节承载的段落与图片数、段落编号总数、从源稿读到并核对过的编号数、从模板反解出的体例，以及模板的 SHA-256。旧的 `content` 参数已删除：调用方再传它会在执行器参数校验处被「missing required property \"draft\"」拒绝。
+build_patent_filing 接收受控 `draft`（与 `render_patent_document` 的 claims-spec 模板同一份 `SpecDraft`，由 `dsh-patent-core` 的 `validateSpecDraft` 校验）、`outputName`，以及可选的 `caseId`/`outputDir`，写出一件五节的 DOCX。`outputDir` 按进程工作目录解析，真实位置落在工作目录之外时在写入之前即被拒绝。结果返回成品路径、真正入文的位图、各节承载的段落与图片数、段落编号总数、从源稿读到并核对过的编号数、从模板反解出的体例，以及模板的 SHA-256。旧的 `content` 参数已删除：调用方再传它会在执行器参数校验处被「missing required property \"draft\"」拒绝。
 
 五节即法定节序：说明书摘要、摘要附图、权利要求书、说明书、说明书附图。附图按 `draft.figureFiles` 给定的图序入文——第 1 张进摘要附图节，全部进说明书附图节且每图独占一页。`.svg` 源件先经 headless Chrome 栅格化，`.png`/`.jpg`/`.jpeg` 直接使用。
 

@@ -116,7 +116,7 @@ export function createRenderPatentDocumentTool(options: RenderPatentDocumentTool
       },
       outputDir: {
         type: 'string',
-        description: 'Optional explicit output directory (overrides caseId and the default directory).',
+        description: 'Optional explicit output directory, resolved against the working directory. Paths whose real location leaves the working directory are rejected.',
       },
       format: {
         type: 'string',
@@ -136,7 +136,7 @@ export function createRenderPatentDocumentTool(options: RenderPatentDocumentTool
       },
       brandPath: {
         type: 'string',
-        description: 'Optional path to a theme.json whose documents.patent namespace supplies brand overrides.',
+        description: 'Optional path to a theme.json whose documents.patent namespace supplies brand overrides. Must stay inside the working directory.',
       },
     },
     output: {

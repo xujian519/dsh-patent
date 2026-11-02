@@ -29,7 +29,14 @@ export interface PreMergeStep {
 export function preMergeSteps(root: string): PreMergeStep[] {
   return [
     { name: 'versions', command: process.execPath, args: [join(root, 'scripts', 'verify-version-sync.ts'), root] },
+    // DSH-package license gate reads package.json files only, so it runs before install.
+    { name: 'dsh package licenses', command: 'pnpm', args: ['run', 'verify-dsh-package-licenses'] },
     { name: 'install', command: 'pnpm', args: ['install', '--frozen-lockfile'] },
+    // Inventory gates need the installed dependency tree for observed license scanning
+    // and node_modules presence. They run before the compiler contracts so a mismatched
+    // TPN or SBOM fails the build instead of confusing later steps.
+    { name: 'third-party notices', command: 'pnpm', args: ['run', 'verify-third-party-notices'] },
+    { name: 'sbom', command: 'pnpm', args: ['run', 'verify-sbom'] },
     { name: 'host contracts', command: 'pnpm', args: ['exec', 'tsx', 'scripts/compile-referenced-projects.ts', 'host-contracts'] },
     { name: 'client', command: 'pnpm', args: ['exec', 'tsx', 'scripts/compile-referenced-projects.ts', 'client'] },
   ]

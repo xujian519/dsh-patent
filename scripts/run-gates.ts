@@ -351,6 +351,11 @@ export function gatesForMode(selected: Mode): Gate[] {
           docTypecheckScript: 'doc-typecheck:contracts-ready',
         }),
         pnpmScript('module-graph', 'verify-module-graph', { label: 'module graph' }),
+        // Inventory gates: byte-locked THIRD_PARTY_NOTICES.md and SBOM files
+        // must match the current package manifests. They run alongside the
+        // hygiene gates because both read the full dependency inventory.
+        pnpmScript('third-party-notices', 'verify-third-party-notices', { label: 'third-party notices' }),
+        pnpmScript('sbom', 'verify-sbom', { label: 'SBOM bytes lock' }),
       ]
     case 'hygiene':
       return [
@@ -380,6 +385,13 @@ function ciSharedStaticGates(): Gate[] {
     pnpmScript('constraints', 'constraints'),
     pnpmScript('package-dependencies', 'verify-package-dependencies', { label: 'package dependencies' }),
     pnpmScript('dsh-package-licenses', 'verify-dsh-package-licenses', { label: 'DSH package licenses' }),
+    // Inventory gates: the THIRD_PARTY_NOTICES.md and SBOM bytes locks
+    // must stay in sync with the current package manifests. They live here
+    // rather than in hygiene because they read node_modules for observed
+    // license scanning and consume the full pnpm inventory, not just
+    // workspace package.jsons.
+    pnpmScript('third-party-notices', 'verify-third-party-notices', { label: 'third-party notices' }),
+    pnpmScript('sbom', 'verify-sbom', { label: 'SBOM bytes lock' }),
     pnpmScript('self-evolve-eval', 'verify-self-evolve-eval', { label: 'self-evolve eval decision' }),
     pnpmScript('patent-oas-gold', 'verify-patent-oas-gold', { label: 'patent-oas gold gate' }),
     pnpmScript('ipc-standards-source', 'verify-ipc-standards-source', { label: 'IPC standards source' }),

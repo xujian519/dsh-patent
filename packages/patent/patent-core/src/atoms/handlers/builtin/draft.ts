@@ -28,8 +28,6 @@ import {
 } from '../../../claim-draft/index.ts'
 import { lintClaimText, type ClaimLintReport } from '../../../claim-lint/index.ts'
 import { tryParseJson } from '../../../llm-json.ts'
-import { dataBlock } from '../../../prompt-hygiene.ts'
-import { withStageWritingSkills } from '../../stage-writing-skills.ts'
 import { type Atom } from '../../atom.ts'
 import {
   type PipelineState,
@@ -37,6 +35,7 @@ import {
   type StageHandler,
   getStateString,
 } from '../../handler.ts'
+import { dataBlock, withStageWritingSkills } from '../../../prompt-hygiene.ts'
 import { readAtomTunables } from '../../tunables.ts'
 import { callLlm, degraded } from './llm.ts'
 import { isTechDomain, readParent } from './claim-json.ts'

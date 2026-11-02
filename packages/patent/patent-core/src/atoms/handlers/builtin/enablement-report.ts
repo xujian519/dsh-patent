@@ -15,8 +15,6 @@
 import { type AnchorRange, type AnchorReason, locateQuote } from '../../../anchor/index.ts'
 import { splitClaimSegments } from '../../../claim-chart/runtime/element-validator.ts'
 import { readJsonString } from '../../../llm-json.ts'
-import { dataBlock } from '../../../prompt-hygiene.ts'
-import { withStageWritingSkills } from '../../stage-writing-skills.ts'
 import { type Atom } from '../../atom.ts'
 import {
   type PipelineState,
@@ -24,6 +22,7 @@ import {
   type StageHandler,
   getStateArray,
 } from '../../handler.ts'
+import { dataBlock, withStageWritingSkills } from '../../../prompt-hygiene.ts'
 import { degraded, requireLlm } from './llm.ts'
 import { readQuoteStageContext, requestRecords, sourceBlocks } from './quote-stage.ts'
 import { isRecord } from './state-keys.ts'

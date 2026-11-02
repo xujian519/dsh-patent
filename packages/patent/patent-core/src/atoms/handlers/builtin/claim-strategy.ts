@@ -20,8 +20,6 @@ import { type AnchorRange, type AnchorReason, locateQuote } from '../../../ancho
 import type { TechDomain } from '../../../claim-draft/index.ts'
 import { PARENT_SCHEMA, resolveDomain } from '../../../claim-draft/index.ts'
 import { readJsonString, tryParseJson } from '../../../llm-json.ts'
-import { dataBlock } from '../../../prompt-hygiene.ts'
-import { withStageWritingSkills } from '../../stage-writing-skills.ts'
 import { type Atom } from '../../atom.ts'
 import {
   type PipelineState,
@@ -30,6 +28,7 @@ import {
   getStateArray,
   getStateString,
 } from '../../handler.ts'
+import { dataBlock, withStageWritingSkills } from '../../../prompt-hygiene.ts'
 import { readAtomTunables } from '../../tunables.ts'
 import { callLlm, degraded, requireLlm } from './llm.ts'
 import { isTechDomain, readParent } from './claim-json.ts'

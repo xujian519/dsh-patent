@@ -11,8 +11,8 @@ import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { extname, isAbsolute, join, resolve } from 'node:path'
-import { assertSafeId, caseOutputsDir, isJsonRecord } from '@deepseek-ai/dsh-patent-core'
+import { extname, join, resolve } from 'node:path'
+import { assertSafeId, caseOutputsDir, isJsonRecord, resolveConfinedPath } from '@deepseek-ai/dsh-patent-core'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { PatentFilingError } from '../types.ts'
 import type { FilingBuildResult, FilingContent, FilingVerifyResult, SectionTally, SubprocessSpawner, TemplateStyle } from '../types.ts'
@@ -113,10 +113,16 @@ export function assertSafeOutputName(name: string): string {
 
 /**
  * 解析输出目录。
+ *
+ * 显式 outputDir 的真实位置必须留在 cwd 内：模型控制的工具参数若允许绝对路径
+ * 或 `../` 串联，会把文件写到 cwd 之外进程有权限的任意位置（数据污染/安全风险）。
+ * cwd 内的绝对路径照常接受；caseId 已走 assertSafeId 校验，不会带出 `..` 段；
+ * defaultOutputDir 是本包固定常量。
  * @param input - 成文请求的目录相关字段。
  * @param cwd - 进程工作目录。
  * @param defaultOutputDir - 既无 outputDir 也无 caseId 时的缺省目录。
  * @returns 输出目录绝对路径。
+ * @throws PatentFilingError 当 outputDir 解析后的真实路径落在 cwd 之外。
  */
 export function resolveOutputDir(
   input: Pick<BuildFilingInput, 'outputDir' | 'caseId'>,
@@ -124,7 +130,7 @@ export function resolveOutputDir(
   defaultOutputDir: string,
 ): string {
   if (input.outputDir !== undefined) {
-    return isAbsolute(input.outputDir) ? input.outputDir : resolve(cwd, input.outputDir)
+    return resolveConfinedPath(input.outputDir, cwd, '输出目录', message => new PatentFilingError(message))
   }
   if (input.caseId !== undefined) {
     assertSafeId(input.caseId, '案卷号')

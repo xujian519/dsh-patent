@@ -66,7 +66,7 @@ Schemastery 配置，所有字段均可选。
 
 #### 模型看到的内容
 
-一个名为 `render_patent_document` 的已注册工具，含必需的 `template` 枚举（十三个 id：`patentability-opinion`、`search-report`、`oa-response`、`claims-spec`、`invalidation-opinion`、`invalidation-analysis`、`invalidation-defense`、`rectification-response`、`re-examination-request`、`infringement-opinion`、`litigation-pleading`、`right-evaluation-report`、`search-report-form`）、必需的 `outputName`，必需的 `draft`，以及可选的 `caseId`、`outputDir`、`format`、`brand` 与 `brandPath`。结果以 Markdown 文本渲染，列出写出的 `htmlPath`、`pdfPath`、可能的 `pdfError` 与 `warnings`。
+一个名为 `render_patent_document` 的已注册工具，含必需的 `template` 枚举（十三个 id：`patentability-opinion`、`search-report`、`oa-response`、`claims-spec`、`invalidation-opinion`、`invalidation-analysis`、`invalidation-defense`、`rectification-response`、`re-examination-request`、`infringement-opinion`、`litigation-pleading`、`right-evaluation-report`、`search-report-form`）、必需的 `outputName`，必需的 `draft`，以及可选的 `caseId`、`outputDir`、`format`、`brand` 与 `brandPath`。`outputDir` 与 `brandPath` 按进程工作目录解析，真实位置落在工作目录之外时在读写之前即被拒绝。结果以 Markdown 文本渲染，列出写出的 `htmlPath`、`pdfPath`、可能的 `pdfError` 与 `warnings`。
 
 #### Token 影响
 

@@ -129,6 +129,8 @@ describe('build_patent_filing tool', () => {
     const figure = join(work, 'fig1.png')
     writeFileSync(figure, 'png')
     const explicit = join(work, 'deliver')
+    const savedCwd = process.cwd()
+    process.chdir(work)
     try {
       const tool = createBuildPatentFilingTool({
         subprocess: fakeSubprocess(() => stdoutHandle(BUILD_REPORT)).spawner,
@@ -147,6 +149,7 @@ describe('build_patent_filing tool', () => {
       }, { signal: new AbortController().signal } as never) as FilingBuildResult
       expect(value.docxPath).toBe(join(explicit, 'out.docx'))
     } finally {
+      process.chdir(savedCwd)
       rmSync(work, { recursive: true, force: true })
     }
   })

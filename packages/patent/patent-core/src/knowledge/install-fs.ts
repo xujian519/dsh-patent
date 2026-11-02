@@ -3,34 +3,13 @@
  *
  * 两个知识库安装命令（patent-knowledge:install / legal-knowledge:install）都把
  * 源库裁剪进运行时目录：先写同目录临时文件，成功后原子替换输出。这里收拢
- * 同文件守卫需要的真实路径解析、临时文件准备、提交与结果统计。
+ * 临时文件准备、提交与结果统计。
  * @module @deepseek-ai/dsh-patent-core/knowledge/install-fs
  */
 
-import { existsSync, mkdirSync, realpathSync, renameSync, rmSync } from 'node:fs'
-import { basename, dirname, join, resolve } from 'node:path'
+import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
-
-/**
- * 解析文件路径的真实形态，允许文件本身尚不存在。
- *
- * 对不存在的输出文件无法直接 realpath，因此对第一个存在的祖先目录做
- * realpath，再拼回缺失的路径段；这样 `./`、`../` 与 symlink 别名会归一到
- * 同一个值，同文件守卫才能可靠比较。
- * @param path - 待归一化的路径。
- * @returns 归一化后的绝对路径。
- */
-export function resolveRealPath(path: string): string {
-  const abs = resolve(path)
-  let dir = dirname(abs)
-  let suffix = basename(abs)
-  // 每轮上移一层，必然终止于存在的根目录。
-  while (!existsSync(dir)) {
-    suffix = join(basename(dir), suffix)
-    dir = dirname(dir)
-  }
-  return join(realpathSync(dir), suffix)
-}
 
 /**
  * 读取表的行数。

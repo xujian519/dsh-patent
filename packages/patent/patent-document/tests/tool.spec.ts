@@ -56,7 +56,9 @@ describe('render_patent_document tool', () => {
   it('executes a claims-spec render from a controlled draft', async () => {
     const subprocess = fakeSubprocess(() => successHandle()).runtime
     const dir = mkdtempSync(join(tmpdir(), 'dsh-tool-'))
+    const savedCwd = process.cwd()
     try {
+      process.chdir(dir)
       const tool = createRenderPatentDocumentTool({ subprocess })
       const value = (await tool.execute(
         {
@@ -86,6 +88,7 @@ describe('render_patent_document tool', () => {
       expect(html).toContain('<h3>技术领域</h3><p>本发明属于示例领域。</p>')
       expect(html).toContain('<span class="claim-num">1.</span>一种装置')
     } finally {
+      process.chdir(savedCwd)
       rmSync(dir, { recursive: true, force: true })
     }
   })
@@ -167,7 +170,9 @@ describe('render_patent_document tool', () => {
   it('executes an html-only render and returns the canonical value', async () => {
     const subprocess = fakeSubprocess(() => successHandle()).runtime
     const dir = mkdtempSync(join(tmpdir(), 'dsh-tool-'))
+    const savedCwd = process.cwd()
     try {
+      process.chdir(dir)
       const tool = createRenderPatentDocumentTool({ subprocess })
       const value = (await tool.execute(
         {
@@ -184,6 +189,7 @@ describe('render_patent_document tool', () => {
       expect(existsSync(value.htmlPath)).toBe(true)
       expect(Array.isArray(value.warnings)).toBe(true)
     } finally {
+      process.chdir(savedCwd)
       rmSync(dir, { recursive: true, force: true })
     }
   })
@@ -192,7 +198,9 @@ describe('render_patent_document tool', () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-tool-'))
     const chrome = join(dir, 'chrome')
     writeFileSync(chrome, '')
+    const savedCwd = process.cwd()
     try {
+      process.chdir(dir)
       const subprocess = fakeSubprocess((spec) => {
         const pdfArgument = spec.argv.find(argument => argument.startsWith('--print-to-pdf='))
         if (pdfArgument !== undefined) writeFileSync(pdfArgument.slice('--print-to-pdf='.length), '%PDF-1.4')
@@ -213,6 +221,7 @@ describe('render_patent_document tool', () => {
       expect(value.pdfPath).toBe(join(dir, 'timed.pdf'))
       expect(existsSync(value.pdfPath ?? '')).toBe(true)
     } finally {
+      process.chdir(savedCwd)
       rmSync(dir, { recursive: true, force: true })
     }
   })
@@ -246,7 +255,9 @@ describe('render_patent_document tool', () => {
   it('executes with an inline brand and brandPath overrides', async () => {
     const subprocess = fakeSubprocess(() => successHandle()).runtime
     const dir = mkdtempSync(join(tmpdir(), 'dsh-tool-'))
+    const savedCwd = process.cwd()
     try {
+      process.chdir(dir)
       const themePath = join(dir, 'theme.json')
       writeFileSync(themePath, JSON.stringify({ documents: { patent: { accent: '#112233' } } }))
       const tool = createRenderPatentDocumentTool({ subprocess })
@@ -265,6 +276,7 @@ describe('render_patent_document tool', () => {
       const html = readFileSync(value.htmlPath, 'utf8')
       expect(html).toContain('显式事务所')
     } finally {
+      process.chdir(savedCwd)
       rmSync(dir, { recursive: true, force: true })
     }
   })
@@ -296,7 +308,9 @@ describe('render_patent_document tool', () => {
 
   it('executes a PDF render and reports the written pdf path', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-tool-'))
+    const savedCwd = process.cwd()
     try {
+      process.chdir(dir)
       writeFileSync(join(dir, 'chrome'), '')
       const subprocess = fakeSubprocess((spec) => {
         const pdfArg = spec.argv.find(a => a.startsWith('--print-to-pdf='))
@@ -318,6 +332,7 @@ describe('render_patent_document tool', () => {
       expect(value.pdfPath).toBe(join(dir, 'pdf-ok.pdf'))
       expect(existsSync(value.pdfPath as string)).toBe(true)
     } finally {
+      process.chdir(savedCwd)
       rmSync(dir, { recursive: true, force: true })
     }
   })
@@ -357,7 +372,9 @@ describe('render_patent_document tool 表单草案分发', () => {
   it('executes a search-report-form render from a form draft', async () => {
     const subprocess = fakeSubprocess(() => successHandle()).runtime
     const dir = mkdtempSync(join(tmpdir(), 'dsh-tool-'))
+    const savedCwd = process.cwd()
     try {
+      process.chdir(dir)
       const tool = createRenderPatentDocumentTool({ subprocess })
       const value = (await tool.execute(
         {
@@ -375,6 +392,7 @@ describe('render_patent_document tool 表单草案分发', () => {
       expect(html).toContain('<span class="fill w-sm">R1</span>')
       expect(html).not.toContain('data-slot')
     } finally {
+      process.chdir(savedCwd)
       rmSync(dir, { recursive: true, force: true })
     }
   })
@@ -413,7 +431,9 @@ describe('render_patent_document tool 表单草案分发', () => {
   it('executes an oa-response render from a generic-template draft', async () => {
     const subprocess = fakeSubprocess(() => successHandle()).runtime
     const dir = mkdtempSync(join(tmpdir(), 'dsh-tool-'))
+    const savedCwd = process.cwd()
     try {
+      process.chdir(dir)
       const tool = createRenderPatentDocumentTool({ subprocess })
       const value = (await tool.execute(
         {
@@ -466,6 +486,7 @@ describe('render_patent_document tool 表单草案分发', () => {
       expect(html).toContain('<td>增加随动结构</td>')
       expect(html).toContain('随动结构未公开')
     } finally {
+      process.chdir(savedCwd)
       rmSync(dir, { recursive: true, force: true })
     }
   })

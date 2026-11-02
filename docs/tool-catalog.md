@@ -7093,7 +7093,7 @@ Render a patent-attorney deliverable (patentability opinion, search report, OA r
     },
     "outputDir": {
       "type": "string",
-      "description": "Optional explicit output directory (overrides caseId and the default directory)."
+      "description": "Optional explicit output directory, resolved against the working directory. Paths whose real location leaves the working directory are rejected."
     },
     "format": {
       "type": "string",
@@ -7116,7 +7116,7 @@ Render a patent-attorney deliverable (patentability opinion, search report, OA r
     },
     "brandPath": {
       "type": "string",
-      "description": "Optional path to a theme.json whose documents.patent namespace supplies brand overrides."
+      "description": "Optional path to a theme.json whose documents.patent namespace supplies brand overrides. Must stay inside the working directory."
     }
   },
   "required": [
@@ -7244,7 +7244,7 @@ render_patent_document renders patent deliverables (claims/specification/search 
     },
     "outputDir": {
       "type": "string",
-      "description": "可选显式输出目录（优先于案卷号与缺省目录）"
+      "description": "可选显式输出目录（按工作目录解析；真实位置落在工作目录之外的路径会被拒绝）"
     }
   },
   "required": [

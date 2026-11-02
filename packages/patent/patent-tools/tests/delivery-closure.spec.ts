@@ -180,7 +180,11 @@ describe('交付闭环：门禁 + 真实渲染工具（#449 正例）', () => {
 
   it('补齐四项前置后出件成功，html 落盘', async () => {
     const { ctx, dir } = await mount()
+    const previousCwd = process.cwd()
     try {
+      // render_patent_document resolves outputDir against the process working
+      // directory and rejects a target outside it.
+      process.chdir(dir)
       await satisfyPrerequisites(ctx)
       const rendered = await execute(ctx, 'render_patent_document', {
         template: 'oa-response',
@@ -192,6 +196,7 @@ describe('交付闭环：门禁 + 真实渲染工具（#449 正例）', () => {
       expect(rendered.isError, rendered.error?.message).toBe(false)
       expect(existsSync(join(dir, 'oa-ok.html'))).toBe(true)
     } finally {
+      process.chdir(previousCwd)
       rmSync(dir, { recursive: true, force: true })
     }
   })

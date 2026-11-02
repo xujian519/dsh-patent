@@ -171,7 +171,7 @@ async function renderTemplate(
   try {
     const result = await renderPatentDocument(
       { template, outputName: 'skeleton', outputDir: dir, format: 'html', ...draft },
-      process.cwd(),
+      dir,
       { subprocess: unusedSubprocess() },
     )
     return readFileSync(result.htmlPath, 'utf8')

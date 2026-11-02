@@ -59,7 +59,7 @@ Schemastery configuration, every field optional.
 
 #### What the model sees
 
-One registered tool named `render_patent_document` with a required `template` enum (thirteen ids: `patentability-opinion`, `search-report`, `oa-response`, `claims-spec`, `invalidation-opinion`, `invalidation-analysis`, `invalidation-defense`, `rectification-response`, `re-examination-request`, `infringement-opinion`, `litigation-pleading`, `right-evaluation-report`, `search-report-form`), a required `outputName`, a required `draft`, and optional `caseId`, `outputDir`, `format`, `brand`, and `brandPath`. The result renders as Markdown prose naming the written `htmlPath`, `pdfPath`, any `pdfError`, and `warnings`.
+One registered tool named `render_patent_document` with a required `template` enum (thirteen ids: `patentability-opinion`, `search-report`, `oa-response`, `claims-spec`, `invalidation-opinion`, `invalidation-analysis`, `invalidation-defense`, `rectification-response`, `re-examination-request`, `infringement-opinion`, `litigation-pleading`, `right-evaluation-report`, `search-report-form`), a required `outputName`, a required `draft`, and optional `caseId`, `outputDir`, `format`, `brand`, and `brandPath`. `outputDir` and `brandPath` resolve against the process working directory, and a real path outside it is rejected before any write or read. The result renders as Markdown prose naming the written `htmlPath`, `pdfPath`, any `pdfError`, and `warnings`.
 
 #### Token effect
 

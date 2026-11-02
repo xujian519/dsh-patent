@@ -51,7 +51,7 @@ async function renderOa(draft: TemplateDraft): Promise<{ html: string; warnings:
   try {
     const result = await renderPatentDocument(
       { template: 'oa-response', outputName: 'folded', outputDir: dir, format: 'html', templateDraft: draft },
-      process.cwd(),
+      dir,
       { subprocess: unusedSubprocess() },
     )
     return { html: readFileSync(result.htmlPath, 'utf8'), warnings: result.warnings }

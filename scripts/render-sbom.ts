@@ -230,6 +230,7 @@ interface CycloneDXComponent {
   version?: string
   group?: string
   description?: string
+  'bom-ref'?: string
   licenses?: { license: { id?: string; expression?: string } }[]
   purl?: string
   externalReferences?: { type: 'website' | 'distribution' | 'vcs'; url: string }[]
@@ -244,7 +245,7 @@ interface CycloneDXComponent {
 export function renderCycloneDX(inventory: Inventory): CycloneDXDocument {
   const root = inventory.root
   const rootRepo = root.repo ?? REPO_URL
-  const rootPurl = purlFor({ name: root.name, version: root.version, license: root.license, tier: 'runtime-npm' })
+  const rootPurl = purlFor({ name: root.name, version: root.version, license: root.license, tier: 'runtime-npm', source: 'npm' })
   const rootComponent: CycloneDXComponent = {
     type: 'application',
     name: root.name,
@@ -252,6 +253,7 @@ export function renderCycloneDX(inventory: Inventory): CycloneDXDocument {
     description: 'DeepSeek Harness — all-plugin Cordis agent harness',
     licenses: [{ license: { id: root.license } }],
     purl: rootPurl,
+    'bom-ref': rootPurl,
     externalReferences: [{ type: 'vcs', url: rootRepo }],
   }
 
@@ -272,6 +274,7 @@ export function renderCycloneDX(inventory: Inventory): CycloneDXDocument {
       type: cycloneComponentType(entry),
       name: entry.name,
       version: entry.version,
+      'bom-ref': purlFor(entry),
       licenses,
       purl: purlFor(entry),
       properties: [

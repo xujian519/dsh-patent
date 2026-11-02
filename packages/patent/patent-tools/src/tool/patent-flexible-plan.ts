@@ -158,6 +158,7 @@ export const ATOM_PARAM_DESCRIPTION = [
   'claim-breadth (params: none; reads specification, claims_draft and tech_domain, then calls the model for one record per upper-level generalization and re-checks each quote against the specification).',
   'claim-strategy (params: none; reads pfe_triples/merge_result/novelty_conclusion/prior_art/source_text/tech_domain, or confirmed_features when the caller supplies the table; writes anchor-checked claim_strategy and claim_strategy_report).',
   'draft-claims (params: none; reads claim_strategy, renders the independent claim and dependent tree deterministically, lets a dependent-claim specialist only reorder or supplement dependents, and vetoes the draft on any claim_lint error).',
+  'draft-review (params: none; reads specification, claims_draft, pfe_triples/features and prior_art, then calls the model for examiner-perspective disputes across A26.3/A26.4/unity/A33 and re-checks every quoted anchor against the specification or claims).',
 ].join(' ')
 
 /** Stage JSON schema shared by create's stages list and add's single stage. */

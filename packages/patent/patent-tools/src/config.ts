@@ -115,10 +115,10 @@ export interface Config {
   structureFigureViews?: StructureViewName[]
 }
 /** Default cap on stages per built-in workflow manifest. */
-export const DEFAULT_WORKFLOW_STAGE_BUDGET = 26
+export const DEFAULT_WORKFLOW_STAGE_BUDGET = 27
 
 /** Default cap on model-calling stages per built-in workflow manifest. */
-export const DEFAULT_WORKFLOW_LLM_STAGE_BUDGET = 13
+export const DEFAULT_WORKFLOW_LLM_STAGE_BUDGET = 14
 /** Figure/image model route used by the figure-analysis tool. */
 export interface ImageModelConfig {
   /** LLM provider route for figure/image analysis. */

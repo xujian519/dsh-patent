@@ -25,6 +25,7 @@
  * - enablement-report.ts：enablement-report（充分公开 A26.3：逐独权特征锚点复核）
  * - claim-breadth.ts：claim-breadth（概括范围 A26.4：逐条上位概括锚点复核）
  * - quote-stage.ts：enablement-report / claim-breadth 共用的输入读取与模型解析
+ * - draft-review.ts：draft-review（撰写链换位审查：争议点、判定与回退路由）
  *
  * 注：rule-lock 原子位于 @deepseek-ai/dsh-patent-law，由插件 effect 注册。
  */
@@ -188,3 +189,7 @@ export {
   type ClaimBreadthRecord,
   type ClaimBreadthResult,
 } from './claim-breadth.ts'
+export {
+  draftReviewAtom,
+  DraftReviewHandler,
+} from './draft-review.ts'

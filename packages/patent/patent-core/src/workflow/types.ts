@@ -79,8 +79,14 @@ export type WorkflowStage = {
      * 与 whenOutputMatches 至少给出一个。
      */
     whenRevisionRequested?: boolean
-    /** 回退目标阶段 id；缺省重试当前阶段。 */
+    /** 回退目标阶段 id；缺省重试当前阶段。结构化信号未命中 `routes` 时用它。 */
     rewindTo?: string
+    /**
+     * 结构化信号的分缺口路由：`RetrySignal.gapId` → 回退目标阶段 id。
+     * 只对 `whenRevisionRequested` 生效；未命中的信号使用 `rewindTo`。
+     * 一次回退重做所有请求目标中最早的一个，较晚目标随下游阶段一并重跑。
+     */
+    routes?: Readonly<Record<string, string>>
     /** 最大回退次数（缺省 1）。 */
     maxRetries?: number
   }

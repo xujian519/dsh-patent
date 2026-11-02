@@ -311,6 +311,26 @@ export const patentDisclosureManifest: WorkflowManifest = {
       params: { text_keys: ['specification'] },
     },
     {
+      id: 'draft_review',
+      strategy: 'chain',
+      description: '撰写链换位审查：只读说明书、权利要求、PFIE 特征与检索文献，按 26.3/26.4/清楚性/单一性/33 条列出争议点，可执行项按类别回退到说明书、权项或策略阶段（最多两轮，之后交人工复核）',
+      atom: 'draft-review',
+      retry: {
+        whenRevisionRequested: true,
+        // 未命中路由的信号与新增类别回落到说明书：正文是审查发现问题时最常见的
+        // 补齐位置，重做说明书也会重新生成依赖它的检查。
+        rewindTo: 'draft_specification',
+        routes: {
+          'draft-review:enablement': 'draft_specification',
+          'draft-review:support': 'draft_specification',
+          'draft-review:amendment': 'draft_specification',
+          'draft-review:clarity': 'draft_claims',
+          'draft-review:unity': 'claim_strategy',
+        },
+        maxRetries: 2,
+      },
+    },
+    {
       id: 'legal_gaps',
       strategy: 'chain',
       description: '法条缺口汇总：客体、时间基准、宽限期、新颖性、权利要求支持与充分公开对应法条的覆盖状态',

@@ -323,9 +323,22 @@ async function runSingleStage(run: StageRun, index: number): Promise<StageStep> 
       : undefined
     const textMatched = signal !== undefined && signalMatches(output, signal)
     if (textMatched || structuredRequested) {
-      const rewindTo = stage.retry.rewindTo ?? stage.id
-      const rewindIndex = run.stageIds.get(rewindTo)
-      if (rewindIndex === undefined) return { nextIndex: null }
+      const retry = stage.retry
+      const defaultRewindTo = retry.rewindTo ?? stage.id
+      // 结构化信号可按缺口路由到不同上游；一次回退只能选一个起点，取请求目标中
+      // 最早的一个，较晚的目标随其下游阶段一并重跑。
+      const targetFor = (revisionSignal: RetrySignal): string =>
+        retry.routes?.[revisionSignal.gapId] ?? defaultRewindTo
+      const targetIds = structuredRequested
+        ? [...new Set(revisionSignals.map(signal => targetFor(signal)))]
+        : [defaultRewindTo]
+      const targets = targetIds
+        .map(id => ({ id, index: run.stageIds.get(id) }))
+        .filter((entry): entry is { id: string; index: number } => entry.index !== undefined)
+      if (targets.length !== targetIds.length) return { nextIndex: null }
+      const first = targets.reduce((left, right) => (right.index < left.index ? right : left))
+      const rewindIndex = first.index
+      const rewindTo = first.id
       const rewindCount = (run.rewindCounts.get(stage.id) ?? 0) + 1
       const maxRewind = stage.retry.maxRetries ?? 1
       const exhausted = rewindCount > maxRewind
@@ -333,11 +346,12 @@ async function runSingleStage(run: StageRun, index: number): Promise<StageStep> 
         stage,
         // before/after 必须描述同一个阶段：before 取被替换的回退目标产出，而不是
         // 发出信号的阶段产出，否则两个摘要不可比较。
-        before: digestText(
+        before: target => digestText(
           /* v8 ignore next -- 回退目标必然已执行；空串分支只防稀疏结果 */
-          run.results[rewindIndex]?.output ?? (rewindTo === stage.id ? output : ''),
+          run.results[run.stageIds.get(target) ?? rewindIndex]?.output ?? (target === stage.id ? output : ''),
         ),
         rewindTo,
+        targetFor,
         round: rewindCount,
         outcome: exhausted ? 'exhausted' : 'applied',
         signals: revisionSignals,
@@ -380,9 +394,12 @@ async function runSingleStage(run: StageRun, index: number): Promise<StageStep> 
  */
 function revisionRecords(options: {
   stage: WorkflowStage
-  /** 回退目标被替换产出的摘要（与 `after` 同一阶段）。 */
-  before: string
+  /** 某个回退目标被替换产出的摘要（与 `after` 同一阶段）。 */
+  before: (rewindTo: string) => string
+  /** 本次回退的起点（所有请求目标中最早的一个）。 */
   rewindTo: string
+  /** 单个结构化信号实际请求的回退目标。 */
+  targetFor: (signal: RetrySignal) => string
   round: number
   outcome: RevisionRecord['outcome']
   signals: readonly RetrySignal[]
@@ -390,23 +407,28 @@ function revisionRecords(options: {
   now: (() => string) | undefined
 }): RevisionRecord[] {
   const base = {
-    rewindTo: options.rewindTo,
     requestedBy: options.stage.id,
     round: options.round,
-    before: options.before,
     outcome: options.outcome,
     ...(options.now !== undefined ? { at: options.now() } : {}),
   }
   if (options.signals.length > 0) {
-    return options.signals.map(signal => ({
-      ...base,
-      gapId: signal.gapId,
-      rationale: signal.rationale,
-      ...(signal.evidence !== undefined ? { evidence: signal.evidence } : {}),
-    }))
+    return options.signals.map((signal) => {
+      const rewindTo = options.targetFor(signal)
+      return {
+        ...base,
+        rewindTo,
+        before: options.before(rewindTo),
+        gapId: signal.gapId,
+        rationale: signal.rationale,
+        ...(signal.evidence !== undefined ? { evidence: signal.evidence } : {}),
+      }
+    })
   }
   return [{
     ...base,
+    rewindTo: options.rewindTo,
+    before: options.before(options.rewindTo),
     gapId: options.stage.id,
     /* v8 ignore next -- 文本触发时 textPattern 必然已定义 */
     rationale: `输出匹配回退信号 /${options.textPattern ?? ''}/`,

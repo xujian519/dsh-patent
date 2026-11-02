@@ -280,6 +280,115 @@ describe('workflow retry validation', () => {
     expect(revision.at).toBeUndefined()
   })
 
+  it('validate: routes 只对结构化信号生效，目标必须存在且回落点齐全', () => {
+    const base = (retry: NonNullable<WorkflowStage['retry']>): WorkflowManifest => ({
+      id: 'routes', name: 't', caseType: 't',
+      stages: [
+        { id: 'a', strategy: 'chain', description: 'a' },
+        { id: 'b', strategy: 'chain', description: 'b', retry },
+      ],
+    })
+    expect(() => { validateWorkflowManifest(base({ whenOutputMatches: 'x', routes: { g: 'a' } })) })
+      .toThrow(/只适用于 whenRevisionRequested/)
+    expect(() => { validateWorkflowManifest(base({ whenRevisionRequested: true, routes: { g: 'a' } })) })
+      .toThrow(/必须同时给出 retry.rewindTo/)
+    expect(() => { validateWorkflowManifest(base({ whenRevisionRequested: true, rewindTo: 'a', routes: {} })) })
+      .toThrow(/retry.routes 不能为空/)
+    expect(() => { validateWorkflowManifest(base({ whenRevisionRequested: true, rewindTo: 'a', routes: { g: 'nope' } })) })
+      .toThrow(/retry.routes.g 指向不存在的阶段/)
+    expect(() => { validateWorkflowManifest(base({ whenRevisionRequested: true, rewindTo: 'a', routes: { ' ': 'a' } })) })
+      .toThrow(/含空 gapId/)
+  })
+
+  it('runWorkflow: 结构化信号按缺口路由，并重做请求目标中最早的一个', async () => {
+    const manifest: WorkflowManifest = {
+      id: 'routed_revision',
+      name: '按缺口路由',
+      caseType: 'disclosure_analysis',
+      stages: [
+        { id: 'claims', strategy: 'chain', description: '权项', atom: 'routed_claims' },
+        { id: 'spec', strategy: 'chain', description: '说明书', atom: 'routed_spec' },
+        { id: 'figures', strategy: 'chain', description: '附图', atom: 'routed_figures' },
+        {
+          id: 'check',
+          strategy: 'chain',
+          description: '审查',
+          atom: 'routed_check',
+          retry: {
+            whenRevisionRequested: true,
+            rewindTo: 'spec',
+            routes: { 'gap-unity': 'claims', 'gap-spec': 'spec', 'gap-amend': 'figures' },
+            maxRetries: 1,
+          },
+        },
+      ],
+      validation: { requireAllSteps: true },
+    }
+    const atoms = new AtomRegistry()
+    atoms.register({ name: 'routed_claims', description: 'c', category: 'extract', inputSchema: [], outputSchema: ['claims_out'] })
+    atoms.register({ name: 'routed_spec', description: 's', category: 'extract', inputSchema: [], outputSchema: ['spec_out'] })
+    atoms.register({ name: 'routed_figures', description: 'f', category: 'extract', inputSchema: [], outputSchema: ['figures_out'] })
+    atoms.register({ name: 'routed_check', description: 'k', category: 'gate', inputSchema: [], outputSchema: ['check_out'] })
+    const handlers = new StageHandlerRegistry()
+    const calls: string[] = []
+    handlers.register({
+      name: 'routed_claims',
+      category: 'extract',
+      execute: async () => {
+        calls.push('claims')
+        return { claims_out: `权项${calls.filter(c => c === 'claims').length}` }
+      },
+    })
+    handlers.register({
+      name: 'routed_spec',
+      category: 'extract',
+      execute: async () => {
+        calls.push('spec')
+        return { spec_out: `说明书${calls.filter(c => c === 'spec').length}` }
+      },
+    })
+    handlers.register({
+      name: 'routed_figures',
+      category: 'extract',
+      execute: async () => {
+        calls.push('figures')
+        return { figures_out: `附图${calls.filter(c => c === 'figures').length}` }
+      },
+    })
+    handlers.register({
+      name: 'routed_check',
+      category: 'gate',
+      execute: async () => {
+        const round = calls.filter(c => c === 'check').length + 1
+        calls.push('check')
+        return round === 1
+          ? {
+            check_out: '发现两类缺口',
+            _revision_signals: [
+              { gapId: 'gap-amend', rationale: '附图需补修改依据' },
+              { gapId: 'gap-unity', rationale: '单一性需重排' },
+              { gapId: 'gap-spec', rationale: '说明书需补实施例' },
+            ],
+          }
+          : { check_out: '审查通过' }
+      },
+    })
+
+    const result = await runWorkflow(manifest, { input: 'x' }, undefined, { atoms, handlers })
+    expect(result.completed).toBe(true)
+    // 最早目标 claims 决定了重跑起点，spec 随下游一并重做。
+    expect(calls.filter(c => c === 'claims')).toHaveLength(2)
+    expect(calls.filter(c => c === 'spec')).toHaveLength(2)
+    expect(calls.filter(c => c === 'figures')).toHaveLength(2)
+    const revisions = result.revisions ?? []
+    // 留痕按信号顺序，各自记录自己的目标；重跑起点仍是最早的 claims。
+    expect(revisions.map(revision => revision.rewindTo)).toEqual(['figures', 'claims', 'spec'])
+    expect(revisions.map(revision => revision.gapId)).toEqual(['gap-amend', 'gap-unity', 'gap-spec'])
+    expect(revisions[0]?.before).toBe(digestText('附图1'))
+    expect(revisions[1]?.before).toBe(digestText('权项1'))
+    expect(revisions[2]?.before).toBe(digestText('说明书1'))
+  })
+
   it('validate: retry 跨过审批门被拒绝（回退会重做已确认产出）', () => {
     expect(() => {
       validateWorkflowManifest({
@@ -581,7 +690,7 @@ describe('workflow retry validation', () => {
   it('patentDisclosureManifest: structure and retry declarations are valid', () => {
     expect(() => { validateWorkflowManifest(patentDisclosureManifest) }).not.toThrow()
     expect(patentDisclosureManifest.id).toBe('patent_disclosure_v1')
-    expect(patentDisclosureManifest.stages).toHaveLength(26)
+    expect(patentDisclosureManifest.stages).toHaveLength(27)
     const consistency = patentDisclosureManifest.stages.find(s => s.id === 'consistency')!
     expect(consistency.retry?.rewindTo).toBe('extract_problem')
     expect(consistency.retry!.whenOutputMatches).toMatch(/不一致\|矛盾\|缺少\|孤立/)
@@ -590,7 +699,7 @@ describe('workflow retry validation', () => {
     expect(consistency.atom).toBe('pfe-consistency')
     const atoms = patentDisclosureManifest.stages.filter(s => s.atom !== undefined).map(s => s.atom)
     expect([...new Set(atoms)].sort()).toEqual([
-      'approval-gate', 'citation-check', 'claim-breadth', 'claim-strategy', 'draft-claims', 'draft-specification', 'eligibility', 'enablement-report', 'extract', 'figure-analysis', 'groundedness', 'keywords',
+      'approval-gate', 'citation-check', 'claim-breadth', 'claim-strategy', 'draft-claims', 'draft-review', 'draft-specification', 'eligibility', 'enablement-report', 'extract', 'figure-analysis', 'groundedness', 'keywords',
       'legal-gaps', 'merge', 'novelty', 'pfe-consistency', 'prior-art-filter', 'search', 'slop-gate',
       'spec-check', 'time-baseline',
     ])

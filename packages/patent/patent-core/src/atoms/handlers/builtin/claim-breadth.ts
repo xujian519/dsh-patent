@@ -22,6 +22,7 @@ import { parseOptionalJsonStringArray, readJsonString } from '../../../llm-json.
 import { dataBlock } from '../../../prompt-hygiene.ts'
 import { type Atom } from '../../atom.ts'
 import { type PipelineState, type StageExecuteInput, type StageHandler } from '../../handler.ts'
+import { readClaimNumber } from './claim-json.ts'
 import { degraded, requireLlm } from './llm.ts'
 import { readQuoteStageContext, requestRecords, sourceBlocks } from './quote-stage.ts'
 
@@ -202,9 +203,9 @@ function readModelRecord(
   knownClaimNumbers: readonly number[],
 ): ModelRecord | string {
   const label = `records 第 ${index + 1} 项`
-  const claimNo = record['claim_no']
-  if (typeof claimNo !== 'number' || !Number.isInteger(claimNo) || claimNo <= 0) {
-    return `${label}的 claim_no 不是正整数`
+  const claimNo = readClaimNumber(record['claim_no'])
+  if (claimNo === undefined || claimNo <= 0) {
+    return `${label}的 claim_no 不是正整数：${JSON.stringify(record)}`
   }
   if (!knownClaimNumbers.includes(claimNo)) {
     return `${label}的 claim_no ${String(claimNo)} 不在权利要求书中`
@@ -371,6 +372,7 @@ export class ClaimBreadthHandler implements StageHandler {
       '逐条找出权利要求中相对说明书实施例的上位概括，并核对说明书是否以实施例支撑该概括。',
       '要求：',
       '- 每个独立权利要求至少一条记录；同一权利要求有多个上位概括时分别记录；',
+      '- records 的每一项都是对象，必须含 claim_no（权利要求项号整数，如 1，不是 C1）、generalization、quote、parallel_lower_levels、all_parallel_same_effect、defect、reason；',
       '- claim_no 必须是权利要求书中已有的项号，generalization 写权利要求中的上位表达原文；',
       '- quote 必须逐字摘录说明书原文，不得改写、拼接或转述；没有支撑摘录时留空；',
       '- parallel_lower_levels 列出说明书中对应的并列下位实施方式，没有则留空数组；',

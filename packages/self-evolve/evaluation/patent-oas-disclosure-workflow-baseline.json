@@ -1,0 +1,72 @@
+{
+  "benchmarkId": "patent-oas",
+  "recordedAt": "2026-11-02T07:49:31.899Z",
+  "execution": "workflow",
+  "workflowId": "patent_disclosure_v1",
+  "runsPerCase": 1,
+  "cases": [
+    {
+      "caseId": "disclosure-drafting",
+      "retrieval": "none",
+      "dimensions": [
+        {
+          "index": 1,
+          "label": "独立权利要求的必要技术特征",
+          "points": 25,
+          "score": 100
+        },
+        {
+          "index": 2,
+          "label": "保护范围适中",
+          "points": 15,
+          "score": 93
+        },
+        {
+          "index": 3,
+          "label": "从属权利要求布局",
+          "points": 15,
+          "score": 95
+        },
+        {
+          "index": 4,
+          "label": "引用关系与层次",
+          "points": 10,
+          "score": 80
+        },
+        {
+          "index": 5,
+          "label": "形式与说明书支持",
+          "points": 10,
+          "score": 92
+        },
+        {
+          "index": 6,
+          "label": "充分公开与可实施",
+          "points": 15,
+          "score": 82
+        },
+        {
+          "index": 7,
+          "label": "概括范围得到说明书支持",
+          "points": 10,
+          "score": 90
+        }
+      ],
+      "concision": [
+        {
+          "proseChars": 4573,
+          "paragraphs": 40,
+          "sections": 6,
+          "emptySections": 0,
+          "repeatedSentences": 2
+        }
+      ]
+    }
+  ],
+  "provider": "deepseek-official",
+  "modelId": "deepseek-flash",
+  "tokens": {
+    "input": 2744861,
+    "output": 46721
+  }
+}

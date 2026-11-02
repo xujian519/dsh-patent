@@ -262,7 +262,7 @@ describe('claim-breadth 原子', () => {
       reason: '实施例1 支持。',
     }
     const cases: Array<{ patch: Record<string, unknown>; expected: string }> = [
-      { patch: { claim_no: '1' }, expected: 'claim_no 不是正整数' },
+      { patch: { claim_no: 1.5 }, expected: 'claim_no 不是正整数' },
       { patch: { claim_no: 0 }, expected: 'claim_no 不是正整数' },
       { patch: { generalization: '' }, expected: '缺少非空 generalization' },
       { patch: { quote: 42 }, expected: 'quote 不是字符串' },

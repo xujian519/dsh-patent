@@ -5,7 +5,7 @@
  * runWorkflow 执行器之前独立消费：非法 manifest 即抛 WorkflowError（fail-fast）。
  */
 
-import { WorkflowError, type WorkflowManifest } from './types.ts'
+import { WorkflowError, type WorkflowManifest, type WorkflowStage } from './types.ts'
 import { parseConsumeRef } from './consume-ref.ts'
 
 /**
@@ -105,25 +105,79 @@ export function validateWorkflowManifest(
           throw new WorkflowError(`阶段 ${stage.id} 的 retry.whenOutputMatches 非法正则`)
         }
       }
-      if (stage.retry.rewindTo !== undefined && !ids.has(stage.retry.rewindTo)) {
-        throw new WorkflowError(`阶段 ${stage.id} 的 retry.rewindTo 指向不存在的阶段: ${stage.retry.rewindTo}`)
-      }
-      if (stage.retry.rewindTo === stage.id) {
-        throw new WorkflowError(`阶段 ${stage.id} 的 retry.rewindTo 不能指向自身（无回退意义）`)
-      }
       if (stage.retry.rewindTo !== undefined) {
-        const rewindIndex = indexById.get(stage.retry.rewindTo)
-        const crossedGate = gateIndices.find(index =>
-          rewindIndex !== undefined && index > rewindIndex && index < stageIndex)
-        if (crossedGate !== undefined) {
-          throw new WorkflowError(
-            `阶段 ${stage.id} 的 retry.rewindTo 跨过审批门 ${manifest.stages[crossedGate]?.id}：`
-            + '回退会重做已确认的产出，跨运行重跑无法保留新的确认状态；请把审批门放到回退范围之外',
+        assertRewindTarget(stage, 'retry.rewindTo', stage.retry.rewindTo, ids, indexById, gateIndices, stageIndex, manifest)
+      }
+      if (stage.retry.routes !== undefined) {
+        if (stage.retry.whenRevisionRequested !== true) {
+          throw new WorkflowError(`阶段 ${stage.id} 的 retry.routes 只适用于 whenRevisionRequested: true`)
+        }
+        const entries = Object.entries(stage.retry.routes)
+        if (entries.length === 0) {
+          throw new WorkflowError(`阶段 ${stage.id} 的 retry.routes 不能为空`)
+        }
+        // 未命中路由的结构化信号会回落到 rewindTo；缺省目标会让这些信号无法定位。
+        if (stage.retry.rewindTo === undefined) {
+          throw new WorkflowError(`阶段 ${stage.id} 声明 retry.routes 时必须同时给出 retry.rewindTo`)
+        }
+        for (const [gapId, target] of entries) {
+          if (gapId.trim() === '') {
+            throw new WorkflowError(`阶段 ${stage.id} 的 retry.routes 含空 gapId`)
+          }
+          assertRewindTarget(
+            stage,
+            `retry.routes.${gapId}`,
+            target,
+            ids,
+            indexById,
+            gateIndices,
+            stageIndex,
+            manifest,
           )
         }
       }
       assertNonNegativeInteger(stage.retry.maxRetries ?? 1, `阶段 ${stage.id} 的 retry.maxRetries`)
     }
+  }
+}
+
+/**
+ * 校验一个回退目标：存在、非自身、位于本阶段之前且不跨审批门。
+ * 回退会重做已确认的产出，跨运行重跑无法保留新的确认状态。
+ * @param stage - 声明回退的阶段。
+ * @param label - 出错信息中的字段名（如 `retry.rewindTo`）。
+ * @param target - 回退目标阶段 id。
+ * @param ids - 已扫描到的阶段 id。
+ * @param indexById - 阶段 id → 下标。
+ * @param gateIndices - 已扫描到的审批门下标。
+ * @param stageIndex - 当前阶段下标。
+ * @param manifest - 当前 manifest（用于错误信息）。
+ * @throws WorkflowError 当目标不存在、指向自身、位于本阶段之后或跨过审批门时。
+ */
+function assertRewindTarget(
+  stage: WorkflowStage,
+  label: string,
+  target: string,
+  ids: ReadonlySet<string>,
+  indexById: ReadonlyMap<string, number>,
+  gateIndices: readonly number[],
+  stageIndex: number,
+  manifest: WorkflowManifest,
+): void {
+  if (!ids.has(target)) {
+    throw new WorkflowError(`阶段 ${stage.id} 的 ${label} 指向不存在的阶段: ${target}`)
+  }
+  if (target === stage.id) {
+    throw new WorkflowError(`阶段 ${stage.id} 的 ${label} 不能指向自身（无回退意义）`)
+  }
+  const rewindIndex = indexById.get(target)
+  const crossedGate = gateIndices.find(index =>
+    rewindIndex !== undefined && index > rewindIndex && index < stageIndex)
+  if (crossedGate !== undefined) {
+    throw new WorkflowError(
+      `阶段 ${stage.id} 的 ${label} 跨过审批门 ${manifest.stages[crossedGate]?.id}：`
+      + '回退会重做已确认的产出，跨运行重跑无法保留新的确认状态；请把审批门放到回退范围之外',
+    )
   }
 }
 

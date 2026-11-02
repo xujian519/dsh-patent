@@ -352,7 +352,7 @@ describe('legal-gaps 原子', () => {
       },
     })
     expect(out['legal_gaps_passed']).toBe(true)
-    expect(out['legal_gaps_unassessed']).toEqual(['claim-support-breadth'])
+    expect(out['legal_gaps_unassessed']).toEqual(['claim-support-breadth', 'draft-review'])
     const items = out['legal_gaps_items'] as LegalGapItem[]
     expect(items.find(item => item.id === 'grace-period')?.status).toBe('passed')
     expect(items.find(item => item.id === 'spec-form')?.status).toBe('passed')

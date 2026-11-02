@@ -193,6 +193,8 @@ export {
   disputeFramingRefineAtom,
   enablementReportAtom,
   claimBreadthAtom,
+  draftReviewAtom,
+  DraftReviewHandler,
   claimStrategyAtom,
   ClaimStrategyHandler,
   renderClaimStrategyReport,
@@ -306,6 +308,29 @@ export {
   scanOutputForLeaks,
   statuteForEvidenceGap,
 } from './adversary/index.ts'
+
+// Draft-chain review: examiner-perspective disputes over the drafted specification
+// and claims, with strict quote anchoring and per-category rewind routes.
+export type * from './draft-review/index.ts'
+export {
+  DRAFT_REVIEW_ALLOWED_KEYS,
+  DRAFT_REVIEW_CATEGORIES,
+  DRAFT_REVIEW_CATEGORY_LABELS,
+  DRAFT_REVIEW_FORBIDDEN_KEYS,
+  DRAFT_REVIEW_FORBIDDEN_OUTPUT_TERMS,
+  DRAFT_REVIEW_PROVISIONS,
+  DRAFT_REVIEW_RECOMMENDATIONS,
+  DRAFT_REVIEW_SCHEMA,
+  buildCheckedDisputes,
+  buildDraftReviewPrompt,
+  buildDraftReviewResult,
+  checkDraftReviewInput,
+  draftReviewGapId,
+  draftReviewRevisionSignals,
+  readModelDispute,
+  renderDraftReviewReport,
+  scanDraftReviewOutput,
+} from './draft-review/index.ts'
 
 // Patent analysis product contract + deterministic aggregator (Athena-inspired report).
 export type * from './analysis-report/index.ts'

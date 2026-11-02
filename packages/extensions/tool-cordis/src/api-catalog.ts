@@ -11202,7 +11202,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WorkflowStage',
-    declaration: 'export type WorkflowStage = {\n    id: string;\n    strategy: WorkflowStrategy;\n    description: string;\n    atom?: string;\n    params?: Record<string, unknown>;\n    guidance?: string;\n    consumes?: readonly string[];\n    retry?: {\n        whenOutputMatches?: string;\n        whenRevisionRequested?: boolean;\n        rewindTo?: string;\n        maxRetries?: number;\n    };\n};',
+    declaration: 'export type WorkflowStage = {\n    id: string;\n    strategy: WorkflowStrategy;\n    description: string;\n    atom?: string;\n    params?: Record<string, unknown>;\n    guidance?: string;\n    consumes?: readonly string[];\n    retry?: {\n        whenOutputMatches?: string;\n        whenRevisionRequested?: boolean;\n        rewindTo?: string;\n        routes?: Readonly<Record<string, string>>;\n        maxRetries?: number;\n    };\n};',
   },
   {
     name: 'WorkflowStageResult',

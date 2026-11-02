@@ -67,6 +67,7 @@ const REGISTERED_ATOMS = [
   'dispute-framing',
   'dispute-framing-refine',
   'draft-claims',
+  'draft-review',
   'draft-specification',
   'eligibility',
   'enablement-report',
@@ -145,7 +146,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(tool, { workflowStageBudget: 20 }))
-      .rejects.toThrow(/patent_disclosure_v1 的阶段数 26 超出预算 20/)
+      .rejects.toThrow(/patent_disclosure_v1 的阶段数 27 超出预算 20/)
   })
 
   it('fails plugin load when a manifest exceeds the configured model-calling stage budget', async () => {
@@ -153,14 +154,14 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(tool, { workflowLlmStageBudget: 8 }))
-      .rejects.toThrow(/patent_disclosure_v1 的模型调用阶段数 13 超出预算 8/)
+      .rejects.toThrow(/patent_disclosure_v1 的模型调用阶段数 14 超出预算 8/)
   })
 
   it('accepts budgets raised to the current built-in manifest sizes', async () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
-    await ctx.plugin(tool, { workflowStageBudget: 26, workflowLlmStageBudget: 13 })
+    await ctx.plugin(tool, { workflowStageBudget: 27, workflowLlmStageBudget: 14 })
     expect(ctx.tools.schemas().map(schema => schema.name)).toContain('patent_workflow_run')
   })
 
@@ -187,7 +188,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(tool, {})
-    // 完整组合后注册表含 patent-core 的 26 个内置 + 本包注册的 slop-gate、draft-specification、spec-check、response-check、eligibility 与 legal-gaps。
+    // 完整组合后注册表含 patent-core 的 27 个内置 + 本包注册的 slop-gate、draft-specification、spec-check、response-check、eligibility 与 legal-gaps。
     expect(globalAtomRegistry.list().map(atom => atom.name).sort()).toEqual(REGISTERED_ATOMS)
     for (const atom of globalAtomRegistry.list()) {
       expect(tool.ATOM_PARAM_DESCRIPTION).toContain(atom.name)

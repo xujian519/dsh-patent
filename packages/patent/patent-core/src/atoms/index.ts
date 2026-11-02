@@ -173,13 +173,15 @@ export {
   type ClaimBreadthDefect,
   type ClaimBreadthRecord,
   type ClaimBreadthResult,
+  draftReviewAtom,
+  DraftReviewHandler,
 } from './handlers/builtin/index.ts'
 
 import { globalAtomRegistry } from './atom.ts'
 import { globalStageHandlerRegistry } from './handler.ts'
 import * as builtin from './handlers/builtin/index.ts'
 
-/** 将 31 个内置原子（契约 + 运行时）注册进全局注册表。幂等：同名覆盖。 */
+/** 将 32 个内置原子（契约 + 运行时）注册进全局注册表。幂等：同名覆盖。 */
 export function registerBuiltinAtoms(): void {
   globalAtomRegistry.register(builtin.searchAtom)
   globalAtomRegistry.register(builtin.extractAtom)
@@ -212,6 +214,7 @@ export function registerBuiltinAtoms(): void {
   globalAtomRegistry.register(builtin.adversaryReviewAtom)
   globalAtomRegistry.register(builtin.enablementReportAtom)
   globalAtomRegistry.register(builtin.claimBreadthAtom)
+  globalAtomRegistry.register(builtin.draftReviewAtom)
 
   globalStageHandlerRegistry.register(new builtin.SearchHandler())
   globalStageHandlerRegistry.register(new builtin.ExtractHandler())
@@ -244,4 +247,5 @@ export function registerBuiltinAtoms(): void {
   globalStageHandlerRegistry.register(new builtin.AdversaryReviewHandler())
   globalStageHandlerRegistry.register(new builtin.EnablementReportHandler())
   globalStageHandlerRegistry.register(new builtin.ClaimBreadthHandler())
+  globalStageHandlerRegistry.register(new builtin.DraftReviewHandler())
 }

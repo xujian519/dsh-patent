@@ -73,8 +73,8 @@ Schemastery configuration, every field optional.
 | `model` | string | — | LLM model id for the LLM-consuming tools. |
 | `imageModel` | object | — | Dedicated figure/image model route (`{ provider, model }`) whose declared input modalities gate `analyze_patent_figure`; falls back to `provider`/`model` when unset. |
 | `maxTokens` | number | — | Optional output token cap for the LLM-consuming tools; omitted leaves the provider default. |
-| `workflowStageBudget` | number | `25` | Maximum stages one built-in workflow manifest may declare; plugin load fails above it. |
-| `workflowLlmStageBudget` | number | `12` | Maximum model-calling stages one built-in workflow manifest may declare. Stages without an atom and atoms whose contract sets `usesModel` count; plugin load fails above it. |
+| `workflowStageBudget` | number | `27` | Maximum stages one built-in workflow manifest may declare; plugin load fails above it. |
+| `workflowLlmStageBudget` | number | `14` | Maximum model-calling stages one built-in workflow manifest may declare. Stages without an atom and atoms whose contract sets `usesModel` count; plugin load fails above it. |
 | `noteDir` | string | `<cwd>/99-知识库` | Knowledge-note directory for `knowledge_note_save` (absolute or relative to cwd). |
 | `figureIndexFile` | string | `<cwd>/.sati/figures-index.json` | Figure index file: `analyze_patent_figure` writes analysis entries, `search_patent_figure` reads them (absolute or relative to cwd). |
 | `chemistryIndexFile` | string | `<cwd>/.sati/chemistry-index.json` | Chemistry index file for `recognize_chemical_structure` upserts (absolute or relative to cwd). |

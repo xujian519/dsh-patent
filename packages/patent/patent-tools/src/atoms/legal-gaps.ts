@@ -154,6 +154,20 @@ const CLAIM_SUPPORT_BREADTH_CHECK: LegalGapCheckpoint = {
   revisionTarget: false,
 }
 
+/**
+ * 撰写链换位审查：模型按 26.3/26.4/清楚性/单一性/33 条列出争议点；warn 级不阻断交付。
+ * `revisionTarget: false`：争议点由专项原子自己发出路由信号，采集阶段补提事实解决不了。
+ */
+const DRAFT_REVIEW_CHECK: LegalGapCheckpoint = {
+  id: 'draft-review',
+  provision: '专利法第26条第3款、第26条第4款、第31条第1款、第33条',
+  label: '撰写链换位审查',
+  severity: 'warn',
+  assessKeys: ['draft_review_report'],
+  failureKey: 'draft_review_passed',
+  revisionTarget: false,
+}
+
 /** 证据审查：无效与复审共用。 */
 const EVIDENCE_CHECK: LegalGapCheckpoint = {
   id: 'evidence',
@@ -205,6 +219,7 @@ export const LEGAL_GAP_CHECKS: Record<LegalGapProfile, readonly LegalGapCheckpoi
     CLAIM_SUPPORT_CHECK,
     CLAIM_SUPPORT_BREADTH_CHECK,
     ENABLEMENT_CHECK,
+    DRAFT_REVIEW_CHECK,
   ],
   inventiveness: [
     {

@@ -75,8 +75,8 @@ Schemastery 配置，所有字段可选。
 | `model` | string | — | LLM 消费工具的模型 id。 |
 | `imageModel` | object | — | 专用附图/图片模型路由（`{ provider, model }`），其声明的输入模态用于门禁 `analyze_patent_figure`；未设置时回退到 `provider`/`model`。 |
 | `maxTokens` | number | — | LLM 消费工具的输出 token 上限（可选）；省略时用 provider 默认值。 |
-| `workflowStageBudget` | number | `25` | 单个内置工作流 manifest 允许声明的最大阶段数；超过即插件加载失败。 |
-| `workflowLlmStageBudget` | number | `12` | 单个内置工作流 manifest 允许声明的最大模型调用阶段数：未声明 atom 的阶段与契约标记 `usesModel` 的原子计入；超过即插件加载失败。 |
+| `workflowStageBudget` | number | `27` | 单个内置工作流 manifest 允许声明的最大阶段数；超过即插件加载失败。 |
+| `workflowLlmStageBudget` | number | `14` | 单个内置工作流 manifest 允许声明的最大模型调用阶段数：未声明 atom 的阶段与契约标记 `usesModel` 的原子计入；超过即插件加载失败。 |
 | `noteDir` | string | `<cwd>/99-知识库` | `knowledge_note_save` 的知识笔记目录（绝对或相对 cwd）。 |
 | `figureIndexFile` | string | `<cwd>/.sati/figures-index.json` | 附图索引文件：`analyze_patent_figure` 写入分析条目、`search_patent_figure` 检索（绝对或相对 cwd）。 |
 | `chemistryIndexFile` | string | `<cwd>/.sati/chemistry-index.json` | `recognize_chemical_structure` 写入的化学索引文件（绝对或相对 cwd）。 |

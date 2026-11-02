@@ -85,7 +85,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     const disclosure = manifestOf('patent_disclosure_v1').stages.map(stage => stage.id)
     expect(disclosure).not.toContain('dispute-framing')
     expect(disclosure).not.toContain('dispute-framing-refine')
-    expect(disclosure).toHaveLength(26)
+    expect(disclosure).toHaveLength(27)
   })
 
   it('修正阶段排在已锁定的时间基准或程序理由之后，且阶段数在默认预算内', () => {
@@ -100,7 +100,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     }
     const expectedCounts: Record<string, number> = {
       patent_novelty_v1: 14,
-      patent_disclosure_v1: 26,
+      patent_disclosure_v1: 27,
       patent_inventiveness_v1: 16,
       patent_patentability_v1: 16,
       patent_oa_response_v1: 15,
@@ -110,11 +110,11 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     }
     for (const manifest of builtinPatentManifests) {
       expect(manifest.stages.length, manifest.id).toBe(expectedCounts[manifest.id])
-      expect(manifest.stages.length, manifest.id).toBeLessThanOrEqual(26)
+      expect(manifest.stages.length, manifest.id).toBeLessThanOrEqual(27)
     }
   })
 
-  it('默认预算（26/13）下全部内置 manifest 通过，模型阶段数不因确定性定位增加', () => {
+  it('默认预算（27/14）下全部内置 manifest 通过，模型阶段数不因确定性定位增加', () => {
     registerBuiltinAtoms()
     // patent-tools 的确定性原子在预算统计里只需契约（usesModel 标记），此处注册同名 stub。
     for (const name of ['draft-specification', 'eligibility', 'figure-analysis', 'legal-gaps', 'response-check', 'slop-gate', 'spec-check']) {
@@ -131,7 +131,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     })
     const expectedLlmStages: Record<string, number> = {
       patent_novelty_v1: 4,
-      patent_disclosure_v1: 13,
+      patent_disclosure_v1: 14,
       patent_inventiveness_v1: 7,
       patent_patentability_v1: 5,
       patent_oa_response_v1: 5,
@@ -143,9 +143,30 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
       expect(countWorkflowLlmStages(manifest, globalAtomRegistry), manifest.id)
         .toBe(expectedLlmStages[manifest.id])
       expect(() => {
-        validateWorkflowBudget(manifest, { maxStages: 26, maxLlmStages: 13 }, globalAtomRegistry)
+        validateWorkflowBudget(manifest, { maxStages: 27, maxLlmStages: 14 }, globalAtomRegistry)
       }, manifest.id).not.toThrow()
     }
+  })
+
+  it('披露链在 slop_clean 与 legal_gaps 之间插入换位审查，并按类别路由回退', () => {
+    const stage = stageOf('patent_disclosure_v1', 'draft_review')
+    expect(stage?.atom).toBe('draft-review')
+    expect(indexOf('patent_disclosure_v1', 'slop_clean'))
+      .toBeLessThan(indexOf('patent_disclosure_v1', 'draft_review'))
+    expect(indexOf('patent_disclosure_v1', 'draft_review'))
+      .toBeLessThan(indexOf('patent_disclosure_v1', 'legal_gaps'))
+    expect(stage?.retry).toEqual({
+      whenRevisionRequested: true,
+      rewindTo: 'draft_specification',
+      routes: {
+        'draft-review:enablement': 'draft_specification',
+        'draft-review:support': 'draft_specification',
+        'draft-review:amendment': 'draft_specification',
+        'draft-review:clarity': 'draft_claims',
+        'draft-review:unity': 'claim_strategy',
+      },
+      maxRetries: 2,
+    })
   })
 })
 

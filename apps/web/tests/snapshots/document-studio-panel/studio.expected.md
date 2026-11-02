@@ -1,3 +1,9 @@
-- button "specification.md md P0 1 passed · P1 1"
-- button "claims.html html P0 1 passed · P1 1 Machine-checked"
-- text: 2 delivered files
+- button "specification.md md Claimed P0 1 · P1 1 File changed, not re-checked"
+- button "claims.html html Claimed P0 1 · P1 1 Machine-checked"
+- button "brief.md"
+- button "outline.md"
+- button "01-intro.md"
+- button "big.html"
+- button "02-body.md"
+- button "Follow latest" [pressed]
+- text: 7 delivered files

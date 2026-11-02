@@ -562,6 +562,26 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-shortcuts -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-document-studio -->
+<a id="deepseek-aidsh-client-ui-document-studio"></a>
+
+## `@deepseek-ai/dsh-client-ui-document-studio`
+
+- `source`: [`packages/client/ui-document-studio/src/config.ts:5`](../packages/client/ui-document-studio/src/config.ts)
+
+```ts config-catalog
+/** Deployment limits applied to the studio's inline preview. */
+export interface Config {
+  /**
+   * Largest HTML file the studio renders inline, in bytes. A larger file is
+   * handed to the sidebar or the OS application instead of building a frame
+   * the browser would stall on.
+   */
+  htmlPreviewMaxBytes: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-document-studio -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-plugin-manager -->
 <a id="deepseek-aidsh-client-ui-plugin-manager"></a>
 
@@ -6258,7 +6278,6 @@ export type PatternCategory = (typeof PATTERN_CATEGORIES)[number]
 | `@deepseek-ai/dsh-client-ui-deliverables` | `connection` · `sessionQuery` · `sessionController` · `workspaceFiles` · `fs` · `sandboxPolicy` · `workspaceChanges` | [`packages/client/ui-deliverables/src/index.ts`](../packages/client/ui-deliverables/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-directory-picker-browse` | — | [`packages/client/ui-directory-picker-browse/src/index.ts`](../packages/client/ui-directory-picker-browse/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-directory-picker-native` | — | [`packages/client/ui-directory-picker-native/src/index.ts`](../packages/client/ui-directory-picker-native/src/index.ts) |
-| `@deepseek-ai/dsh-client-ui-document-studio` | — | [`packages/client/ui-document-studio/src/index.ts`](../packages/client/ui-document-studio/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-entry-customization` | — | [`packages/client/ui-entry-customization/src/index.ts`](../packages/client/ui-entry-customization/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-file-drag` | — | [`packages/client/ui-file-drag/src/index.ts`](../packages/client/ui-file-drag/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-goal` | — | [`packages/client/ui-goal/src/index.ts`](../packages/client/ui-goal/src/index.ts) |

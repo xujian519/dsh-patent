@@ -19,6 +19,9 @@ import type { CompleteReadText, ReadFileText } from './file-reads.ts'
 import { WorkspaceReadError } from './file-reads.ts'
 import type { KnownPath } from './workspace-probe.ts'
 import { parentDir } from './paths.ts'
+import { PreviewPane } from './PreviewPane.tsx'
+import { isHtmlPath, isTextPreviewable } from './preview-kinds.ts'
+import { readFailureText } from './read-failure.ts'
 import css from './StudioView.module.css'
 
 /** Studio view props: runtime session share + injected callbacks + locale. */
@@ -39,6 +42,10 @@ export interface StudioViewInjected {
   showInFolder: (path: string) => Promise<void>
   /** Hand one produced file to the sidebar preview. */
   openInSidebar: (path: string) => boolean
+  /** Build the `file` resource address one produced path subscribes to. */
+  resourceAddress: (path: string) => string
+  /** Deployment cap on an inline HTML preview, in bytes. */
+  htmlPreviewMaxBytes: number
   /** Read one produced file's bounded text head through the host's window cap. */
   readFileText: (path: string) => Promise<ReadFileText>
   /** Read one produced file completely, or the host cap that refused it. */
@@ -51,12 +58,6 @@ export interface StudioViewInjected {
   insertDraft: (text: string) => boolean
 }
 
-/** One read failure, kept with the Host code so its message can be localized. */
-interface ReadFailure {
-  readonly code: string | undefined
-  readonly message: string
-}
-
 /** The empty state's workspace probe; a failure carries the message it reports. */
 type ScanState =
   | { readonly state: 'idle' | 'scanning'; readonly paths: readonly string[] }
@@ -65,87 +66,6 @@ type ScanState =
 
 /** Stable empty list so the selector never allocates per snapshot. */
 const EMPTY_PRODUCED: readonly DocumentDeliverable[] = []
-
-/** The one section picker's id, so its label can be associated with it. */
-const SECTION_SELECT_ID = 'document-studio-section'
-
-/** Whether a produced path renders as an inline HTML frame. */
-export function isHtmlPath(path: string): boolean {
-  return /\.html?$/i.test(path)
-}
-
-/** Whether a produced path renders as plain text in the preview pane. */
-export function isTextPreviewable(path: string): boolean {
-  return isHtmlPath(path) || /\.(md|txt|json|ya?ml|csv|log)$/i.test(path)
-}
-
-/** The failure message one read reports, localized by the Host's wire code. */
-function readFailureText(failure: ReadFailure, t: StudioViewProps['t']): string {
-  switch (failure.code) {
-    case 'workspace-file/not-found':
-    case 'workspace-file/not-regular-file':
-      return t('studio.error.notFound')
-    case 'workspace-file/outside-workspace':
-      return t('studio.error.denied')
-    default:
-      // A client-side decode failure carries no wire code: the bytes were not
-      // UTF-8, which is the same "no text preview" outcome.
-      return failure.code === undefined
-        ? t('studio.error.notText')
-        : t('studio.error.generic', { message: failure.message })
-  }
-}
-
-/** One section a delivered HTML file declares, for the reference draft. */
-interface DocumentSection {
-  readonly id: string
-  readonly heading: string
-}
-
-/** Strip tags and decode the few entities a heading realistically carries. */
-function plainText(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-/**
- * Read the `data-doc-id` sections a delivered HTML file declares.
- *
- * The preview frame is sandboxed without script or same-origin access, so the
- * parent cannot read a text selection inside it; the section ids come from the
- * source text the preview already holds. A heading is the first `<h1>`–`<h3>`
- * up to the next section.
- * @param html - the delivered HTML source.
- * @returns declared sections in document order, ids trimmed and de-duplicated.
- */
-export function parseDocumentSections(html: string): readonly DocumentSection[] {
-  const starts = [...html.matchAll(/<section\b[^>]*?data-doc-id\s*=\s*(?:"([^"]*)"|'([^']*)')[^>]*>/gi)]
-  const sections: DocumentSection[] = []
-  const seen = new Set<string>()
-  starts.forEach((start, index) => {
-    const captured = start[1] ?? start[2]
-    /* v8 ignore next -- the alternation captures exactly one quote style, so the empty fallback only narrows the array access */
-    const id = (captured ?? '').trim()
-    if (id === '' || seen.has(id)) return
-    seen.add(id)
-    const body = html.slice(start.index, starts[index + 1]?.index ?? html.length)
-    const heading = /<h[1-3]\b[^>]*>([\s\S]*?)<\/h[1-3]>/i.exec(body)
-    if (heading === null) {
-      sections.push({ id, heading: '' })
-      return
-    }
-    /* v8 ignore next -- a matched heading always captures its inner HTML; the fallback only narrows the array access */
-    sections.push({ id, heading: plainText(heading[1] ?? '') })
-  })
-  return sections
-}
 
 /** One produced file paired with the label its list row shows. */
 interface FileRow {
@@ -329,6 +249,7 @@ function GateClaim({ file, t }: { file: DocumentDeliverable | null; t: StudioVie
 export function StudioView({
   useConversation,
   useSessions,
+  useResource,
   sessionId,
   viewRequest,
   completeViewRequest,
@@ -337,6 +258,8 @@ export function StudioView({
   openFile,
   showInFolder,
   openInSidebar,
+  resourceAddress,
+  htmlPreviewMaxBytes,
   readFileText,
   readFileTextComplete,
   statVersions,
@@ -353,25 +276,40 @@ export function StudioView({
   // action degrades to loopback-only.
   const canShowInFolder = isLoopback
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
-  const [content, setContent] = useState<{ text: string; truncated: boolean } | null>(null)
-  const [error, setError] = useState<ReadFailure | null>(null)
+  const [follow, setFollow] = useState(true)
+  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [reloadToken, setReloadToken] = useState(0)
   const [printOutcome, setPrintOutcome] = useState<PrintOutcome | null>(null)
   const [actionFailure, setActionFailure] = useState<{ path: string; message: string } | null>(null)
-  const [draftNotice, setDraftNotice] = useState<{ path: string; kind: 'revise' | 'section' } | null>(null)
+  const [draftNotice, setDraftNotice] = useState<{ path: string } | null>(null)
   const [scan, setScan] = useState<ScanState>({ state: 'idle', paths: [] })
   const [scanNonce, setScanNonce] = useState(0)
   const [stale, setStale] = useState<ReadonlySet<string>>(new Set())
-  const [sectionId, setSectionId] = useState<string>('')
   // Freshness tokens captured the first time this console saw a checked entry:
   // a later token means the bytes moved under the recorded verdict.
   const baselines = useRef<Record<string, string>>({})
+  // The produced-list length at the previous render: only a growth is a new
+  // file, and only a new file is worth following. A rewrite reuses its row.
+  const producedCount = useRef(0)
 
-  // Keep the selection on a produced file: drop stale selections, adopt the
-  // first produced file when the list first gains entries.
+  // Keep the selection on a produced file: drop stale selections, adopt a
+  // produced file when the list first gains entries, and follow the last new
+  // one while following is on.
   useEffect(() => {
-    if (selectedPath !== null && produced.some(file => file.path === selectedPath)) return
-    setSelectedPath(produced[0]?.path ?? null)
-  }, [produced, selectedPath])
+    const previous = producedCount.current
+    producedCount.current = produced.length
+    const selectedExists = selectedPath !== null && produced.some(file => file.path === selectedPath)
+    if (selectedExists) {
+      if (!follow || produced.length <= previous) return
+      const newest = produced.at(-1)
+      /* v8 ignore next -- the list grew, so the newest entry exists */
+      if (newest === undefined) return
+      setSelectedPath(newest.path)
+      return
+    }
+    const fallback = follow ? produced.at(-1) : produced[0]
+    setSelectedPath(fallback?.path ?? null)
+  }, [produced, follow, selectedPath])
 
   // Honor a one-shot focus request naming one produced file. The shell knows
   // no file identity, so the request carries the produced path.
@@ -380,35 +318,13 @@ export function StudioView({
     // Wait for the list rather than acknowledging a request this console cannot
     // resolve yet; the request survives until it can.
     if (produced.length === 0) return
-    if (produced.some(file => file.path === viewRequest.focus)) setSelectedPath(viewRequest.focus)
+    if (produced.some(file => file.path === viewRequest.focus)) {
+      // A focus request is a deliberate jump to one file, like a manual pick.
+      setFollow(false)
+      setSelectedPath(viewRequest.focus)
+    }
     completeViewRequest()
   }, [viewRequest, produced, completeViewRequest])
-
-  // Load the selected file's text on selection change; only previewable
-  // kinds read bytes at all.
-  useEffect(() => {
-    if (selectedPath === null || !isTextPreviewable(selectedPath)) {
-      setContent(null)
-      setError(null)
-      return
-    }
-    let cancelled = false
-    setContent(null)
-    setError(null)
-    readFileText(selectedPath).then(
-      (result) => {
-        if (cancelled) return
-        setContent({ text: result.content, truncated: result.truncated })
-      },
-      (reason: unknown) => {
-        if (cancelled) return
-        setError(reason instanceof WorkspaceReadError
-          ? { code: reason.code, message: reason.message }
-          : { code: undefined, message: reason instanceof Error ? reason.message : String(reason) })
-      },
-    )
-    return () => { cancelled = true }
-  }, [selectedPath, readFileText])
 
   // Compare each checked entry's current freshness token with the one captured
   // when this console first saw it. Runs when the produced list changes, never
@@ -469,14 +385,6 @@ export function StudioView({
     return () => { cancelled = true }
   }, [produced, scanNonce, probeUnregistered])
 
-  const htmlPreview = useMemo(
-    () => selectedPath !== null && isHtmlPath(selectedPath) ? content?.text ?? null : null,
-    [selectedPath, content],
-  )
-  const textPreview = useMemo(
-    () => selectedPath !== null && !isHtmlPath(selectedPath) ? content?.text ?? null : null,
-    [selectedPath, content],
-  )
   const selected = useMemo(
     () => produced.find(file => file.path === selectedPath) ?? null,
     [produced, selectedPath],
@@ -484,94 +392,50 @@ export function StudioView({
   const rows = useMemo(() => fileRows(produced), [produced])
   const selectedName = selected === null ? '' : pathBasename(selected.path)
   const previewable = selectedPath !== null && isTextPreviewable(selectedPath)
-  const sections = useMemo(
-    () => selectedPath !== null && isHtmlPath(selectedPath) && content !== null
-      ? parseDocumentSections(content.text)
-      : [],
-    [selectedPath, content],
+  const printable = selectedPath !== null && isHtmlPath(selectedPath) ? selectedPath : null
+  const reviseNotice = draftNotice !== null && draftNotice.path === selectedPath
+  const selectedAddress = useMemo(
+    () => selectedPath === null ? null : resourceAddress(selectedPath),
+    [selectedPath, resourceAddress],
   )
-  // The HTML the print action exports: the previewed document while the frame
-  // is showing, so the action never has to re-check a null it cannot see.
-  const printable = selectedPath !== null && htmlPreview !== null
-    ? { path: selectedPath, html: htmlPreview }
-    : null
-  const notice = draftNotice !== null && draftNotice.path === selectedPath ? draftNotice.kind : null
 
-  // One preview pane per state; the hint covers only "nothing selected", so a
-  // selected binary file says what to do with it instead of asking again.
-  let preview: ReactNode
-  if (selectedPath === null) {
-    preview = <div className={css.note}>{t('studio.preview.hint')}</div>
-  } else if (error !== null) {
-    preview = <div className={css.error}>{readFailureText(error, t)}</div>
-  } else if (htmlPreview !== null) {
-    preview = <iframe className={css.frame} title={selectedName} sandbox="" srcDoc={htmlPreview} />
-  } else if (textPreview !== null) {
-    preview = (
-      <div className={css.textPreview}>
-        {textPreview}
-        {content?.truncated === true && (
-          <p className={css.note}>{t('studio.preview.truncated')}</p>
-        )}
-      </div>
-    )
-  } else if (!previewable) {
-    preview = (
-      <div className={css.sidebarOnly}>
-        <p className={css.note}>{t('studio.preview.sidebarOnly')}</p>
-        {canOpenInSidebar && (
-          <button type="button" className={css.action} onClick={() => { openInSidebar(selectedPath) }}>
-            {t('studio.action.previewSidebar')}
-          </button>
-        )}
-      </div>
-    )
-  } else {
-    preview = null
-  }
-
-  const onPrint = async (target: { readonly path: string; readonly html: string }): Promise<void> => {
+  const onPrint = async (path: string): Promise<void> => {
     setPrintOutcome(null)
-    // The preview read is the host's bounded window; re-read completely so the
-    // PDF is not silently the cut head.
-    let html = target.html
-    if (content?.truncated === true) {
-      try {
-        const full = await readFileTextComplete(target.path)
-        if (full.truncated) {
-          setPrintOutcome({
-            path: target.path,
-            kind: 'failed',
-            message: t('studio.print.tooLarge', { limit: fileSizeText(full.limitBytes) }),
-          })
-          return
-        }
-        html = full.content
-      } catch (reason: unknown) {
+    // The preview may have read a bounded form or skipped the body entirely;
+    // read completely so the PDF is not silently the cut head.
+    let html: string
+    try {
+      const full = await readFileTextComplete(path)
+      if (full.truncated) {
         setPrintOutcome({
-          path: target.path,
+          path,
           kind: 'failed',
-          message: reason instanceof WorkspaceReadError
-            ? readFailureText(reason, t)
-            : reason instanceof Error ? reason.message : String(reason),
+          message: t('studio.print.tooLarge', { limit: fileSizeText(full.limitBytes) }),
         })
         return
       }
+      html = full.content
+    } catch (reason: unknown) {
+      const message = reason instanceof WorkspaceReadError
+        ? readFailureText({ code: reason.code, message: reason.message }, t)
+        : reason instanceof Error ? reason.message : String(reason)
+      setPrintOutcome({ path, kind: 'failed', message })
+      return
     }
     if (window.desktop?.printHtmlToPdf !== undefined) {
       const result = await window.desktop.printHtmlToPdf({
         html,
-        suggestedName: pathBasename(target.path),
+        suggestedName: pathBasename(path),
       })
       if (result.error !== undefined) {
-        setPrintOutcome({ path: target.path, kind: 'failed', message: result.error })
+        setPrintOutcome({ path, kind: 'failed', message: result.error })
       } else if (result.cancelled !== true && result.path !== undefined) {
-        setPrintOutcome({ path: target.path, kind: 'saved', saved: result.path })
+        setPrintOutcome({ path, kind: 'saved', saved: result.path })
       }
       return
     }
     if (!printHtmlDocument(html)) {
-      setPrintOutcome({ path: target.path, kind: 'failed', message: t('studio.print.blocked') })
+      setPrintOutcome({ path, kind: 'failed', message: t('studio.print.blocked') })
     }
   }
 
@@ -635,7 +499,7 @@ export function StudioView({
                     data-document-deliverable={file.path}
                     className={`${css.file}${file.path === selectedPath ? ` ${css.fileActive}` : ''}`}
                     title={file.path}
-                    onClick={() => { setSelectedPath(file.path); setSectionId('') }}
+                    onClick={() => { setFollow(false); setSelectedPath(file.path) }}
                   >
                     <span className={css.fileName}>{label}</span>
                     <DeliverableBadges
@@ -647,13 +511,42 @@ export function StudioView({
                   </button>
                 ))}
               </div>
-              <span className={css.count}>{t('studio.files', { count: produced.length })}</span>
+              <span className={css.listControls}>
+                <button
+                  type="button"
+                  className={css.action}
+                  aria-pressed={follow}
+                  onClick={() => { setFollow(enabled => !enabled) }}
+                >
+                  {t('studio.follow')}
+                </button>
+                <span className={css.count}>{t('studio.files', { count: produced.length })}</span>
+              </span>
             </div>
             <div className={css.preview}>
               <div className={css.previewBar}>
                 <span className={css.previewName}>{selectedName === '' ? t('studio.preview') : selectedName}</span>
                 {selected !== null && (
                   <span className={css.actions}>
+                    {previewable && (
+                      <>
+                        <button
+                          type="button"
+                          className={css.action}
+                          aria-pressed={autoRefresh}
+                          onClick={() => { setAutoRefresh(enabled => !enabled) }}
+                        >
+                          {t('studio.preview.autoRefresh')}
+                        </button>
+                        <button
+                          type="button"
+                          className={css.action}
+                          onClick={() => { setReloadToken(token => token + 1) }}
+                        >
+                          {t('studio.preview.reload')}
+                        </button>
+                      </>
+                    )}
                     <button
                       type="button"
                       className={css.action}
@@ -676,7 +569,7 @@ export function StudioView({
                       </button>
                     )}
                     {printable !== null && (
-                      <button type="button" className={css.action} onClick={() => { void onPrint(printable) }}>
+                      <button type="button" className={css.action} onClick={() => { void onPrint(selected.path) }}>
                         {t('studio.action.print')}
                       </button>
                     )}
@@ -684,7 +577,7 @@ export function StudioView({
                       type="button"
                       className={css.action}
                       onClick={() => {
-                        setDraftNotice(insertDraft(reviseDraft(selected)) ? { path: selected.path, kind: 'revise' } : null)
+                        setDraftNotice(insertDraft(reviseDraft(selected)) ? { path: selected.path } : null)
                       }}
                     >
                       {t('studio.action.revise')}
@@ -692,7 +585,7 @@ export function StudioView({
                   </span>
                 )}
               </div>
-              {htmlPreview !== null && <p className={css.printNote}>{t('studio.print.note')}</p>}
+              {printable !== null && <p className={css.printNote}>{t('studio.print.note')}</p>}
               {actionFailure !== null && actionFailure.path === selectedPath && (
                 <p className={css.error}>{actionFailure.message}</p>
               )}
@@ -703,47 +596,26 @@ export function StudioView({
                     : t('studio.print.failed', { message: printOutcome.message })}
                 </p>
               )}
-              {notice === 'revise' && <p className={css.note}>{t('studio.revise.inserted')}</p>}
-              {htmlPreview !== null && content?.truncated === true && (
-                <p className={css.note}>{t('studio.preview.truncated')}</p>
-              )}
-              {sections.length > 0 && (
-                <div className={css.sections}>
-                  <label className={css.note} htmlFor={SECTION_SELECT_ID}>{t('studio.section.pick')}</label>
-                  <select
-                    id={SECTION_SELECT_ID}
-                    className={css.select}
-                    value={sectionId}
-                    onChange={(event) => { setSectionId(event.currentTarget.value) }}
-                  >
-                    <option value="">{t('studio.section.pick')}</option>
-                    {sections.map(section => (
-                      <option key={section.id} value={section.id}>
-                        {section.heading === '' ? section.id : `${section.id} · ${section.heading}`}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className={css.action}
-                    disabled={sectionId === ''}
-                    onClick={() => {
-                      const section = sections.find(entry => entry.id === sectionId)
-                      if (section === undefined || selectedPath === null) return
-                      const reference = t('studio.section.reference', { path: selectedPath, id: section.id })
-                      const heading = section.heading === '' ? '' : `（${section.heading}）`
-                      setDraftNotice(insertDraft(`${reference}${heading}\n\n${t('studio.section.instruction')}`)
-                        ? { path: selectedPath, kind: 'section' }
-                        : null)
-                    }}
-                  >
-                    {t('studio.section.insert')}
-                  </button>
-                  {notice === 'section' && <span className={css.note}>{t('studio.section.inserted')}</span>}
-                </div>
-              )}
+              {reviseNotice && <p className={css.note}>{t('studio.revise.inserted')}</p>}
               <GateClaim file={selected} t={t} />
-              {preview}
+              {selectedPath === null || selectedAddress === null
+                ? <div className={css.note}>{t('studio.preview.hint')}</div>
+                : (
+                  <PreviewPane
+                    path={selectedPath}
+                    address={selectedAddress}
+                    autoRefresh={autoRefresh}
+                    reloadToken={reloadToken}
+                    readFileText={readFileText}
+                    readFileTextComplete={readFileTextComplete}
+                    htmlPreviewMaxBytes={htmlPreviewMaxBytes}
+                    canOpenInSidebar={canOpenInSidebar}
+                    openInSidebar={openInSidebar}
+                    insertDraft={insertDraft}
+                    useResource={useResource}
+                    t={t}
+                  />
+                )}
             </div>
           </>
         )}

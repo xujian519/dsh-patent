@@ -262,6 +262,54 @@ describe('ClaimStrategyHandler', () => {
     expect(nonObjectParsed.prior_art_text).toBe('CN123456A 一种灌溉装置')
   })
 
+  it('从权编号必须从 2 起连续，空树保持为空', async () => {
+    await expectDegraded({}, modelStrategy({
+      dependent_tree: [
+        { number: 2, parent: 1, feature_id: 'F2' },
+        { number: 4, parent: 2, feature_id: 'F2' },
+      ],
+    }), /必须从 2 起连续/)
+    const empty = await run({}, modelStrategy({ optional_features: [], dependent_tree: [] }))
+    const parsed = JSON.parse(String(empty.claim_strategy)) as { dependent_tree: unknown[] }
+    expect(parsed.dependent_tree).toEqual([])
+  })
+
+  it('已声明阶段的写作模式进入提示词，未声明的不进入', async () => {
+    let prompt = ''
+    const declared = '<writing_skills><skill id="wp-claim-software-trio">软件三件套</skill><skill id="wp-claim-dependent-layering">从权分层</skill></writing_skills>'
+    const provider: StageProvider = {
+      callLLM: async (text) => {
+        prompt = text
+        return modelStrategy()
+      },
+      writingSkillsForStage: stageId => stageId === 'claim_strategy'
+        ? declared
+        : '<writing_skills><skill id="wp-claim-utility-model">实用新型</skill></writing_skills>',
+    }
+    const out = await new ClaimStrategyHandler().execute({
+      state: { source_text: SOURCE, novelty_conclusion: NOVELTY, prior_art: PRIOR_ART },
+      provider,
+    })
+    expect(out._error).toBeUndefined()
+    expect(prompt).toContain('wp-claim-software-trio')
+    expect(prompt).toContain('wp-claim-dependent-layering')
+    expect(prompt).not.toContain('wp-claim-utility-model')
+
+    prompt = ''
+    await new ClaimStrategyHandler().execute({
+      state: { source_text: SOURCE, novelty_conclusion: NOVELTY, prior_art: PRIOR_ART },
+      provider: {
+        callLLM: async (text) => {
+          prompt = text
+          return modelStrategy()
+        },
+        writingSkillsForStage: () => '   ',
+      },
+    })
+    expect(prompt).not.toContain('本阶段写作模式')
+    expect(prompt).not.toContain('writing_skills')
+  })
+
   it('null 现有技术编号写成 null 且不渲染现有技术描述', async () => {
     const out = await run({}, modelStrategy({ prior_art_ref: null }))
     const parsed = JSON.parse(String(out.claim_strategy)) as Record<string, unknown>

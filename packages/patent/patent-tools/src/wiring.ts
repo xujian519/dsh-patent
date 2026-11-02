@@ -25,6 +25,7 @@ import { DEFAULT_INKSCAPE_RENDER_TIMEOUT_MS, exportWithInkscape, findInkscape, o
 import type { ExportFigurePort, OutlineTextPort } from './figure/inkscape-renderer.ts'
 import { pickRenderer } from './figure/render-selector.ts'
 import { PatentToolError } from './error.ts'
+import { readStagePatterns, stageWritingSkills } from './tool/internal/stage-writing-skills.ts'
 import { createPatentSearchTool } from './tool/patent-search.ts'
 import { createPatentMetadataTool } from './tool/patent-metadata.ts'
 import { createPatentLegalStatusTool } from './tool/patent-legal-status.ts'
@@ -429,12 +430,15 @@ export function registerPatentTools(ctx: Context, config: Config): void {
   // may load after this plugin; absent means the tool fails loud on that flag.
   // 图模式的规则门评估器在组合点注入：规则语料随 patent-rule 发布，
   // patent-core 只保留端口与引擎。
+  const writingSkillsForStage = (stageId: string): string | undefined =>
+    stageWritingSkills(readStagePatterns(ctx.get('writingPatterns')), stageId)
   ctx.tools.register(createPatentWorkflowRunTool({
     model,
     jobs: () => ctx.get('jobs'),
     ruleEvaluator: createCheckerRuleEvaluator(),
+    writingSkillsForStage,
   }))
-  ctx.tools.register(createFlexiblePlanTool({ model }))
+  ctx.tools.register(createFlexiblePlanTool({ model, writingSkillsForStage }))
   ctx.tools.register(createAnalyzePatentFigureTool({
     ...(imageModel === undefined ? {} : { imageModel }),
     ...(gateModel === undefined ? {} : { gateModel }),

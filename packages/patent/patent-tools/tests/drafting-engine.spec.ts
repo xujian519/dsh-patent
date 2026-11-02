@@ -163,6 +163,22 @@ describe('draft_claims deeper paths', () => {
     expect(violations.map(v => v.rule)).toContain('no_illustration')
   })
 
+  it('strips a trailing sentence period before appending one to a dependent feature', () => {
+    const tree = draftClaims({
+      invention_name: '装置',
+      technical_features: ['特征A'],
+      dependent_tree: [{ number: 2, parent: 1, text: '附加特征。' }],
+    })
+    expect(tree.claims[1]?.text).toBe('根据权利要求1所述的装置，其特征在于，还包括：附加特征。')
+
+    const optional = draftClaims({
+      invention_name: '装置',
+      technical_features: ['特征A'],
+      optional_features: ['附加特征。'],
+    })
+    expect(optional.claims[1]?.text).toBe('根据权利要求1所述的装置，其特征在于，还包括：附加特征。')
+  })
+
   it('renders a multi-branch dependent tree in ascending claim order', () => {
     const out = draftClaims({
       invention_name: '储罐',

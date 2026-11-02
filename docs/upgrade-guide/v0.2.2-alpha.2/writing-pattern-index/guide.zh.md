@@ -13,7 +13,7 @@ description: "writing-patterns:skills section 改为携带紧凑索引，不再�
 
 `sectionCategories` 现在决定索引列出哪些模式。随包语料由十条增至十八条，新增用最接近现有技术反打独权的三步法自检、A26.3 实施例矩阵、33 条修改预埋、单一性、功能性限定、软件方法/装置/介质三件套、马库什并列下位与数值范围退路。
 
-插件新增可选的 `stagePatterns` 配置：工作流阶段 id 到 3–5 个模式 id 的映射。插件挂载时按已加载语料解析该映射，并提供 `writingPatterns` 服务（`patternsForStage`、`compiledForStage`、`stageIds`），原子在该服务中读取本阶段模式。模式 id 未知或重复、数量超出 3 到 5，都会使插件加载失败；向服务查询部署未声明的阶段会抛错。随包 `patent` 预设为 `draft_claims`、`draft_specification`、`spec_check`、`enablement_report`、`claim_breadth` 与 `response-plan` 声明了映射。
+插件新增可选的 `stagePatterns` 配置：工作流阶段 id 到 3–5 个模式 id 的映射。插件挂载时按已加载语料解析该映射，并提供 `writingPatterns` 服务（`patternsForStage`、`compiledForStage`、`stageIds`），原子在该服务中读取本阶段模式。模式 id 未知或重复、数量超出 3 到 5，都会使插件加载失败；向服务查询部署未声明的阶段会抛错。随包 `patent` 预设为 `claim_strategy`（含 `wp-claim-software-trio`）、`draft_claims`、`draft_specification`、`spec_check`、`enablement_report`、`claim_breadth` 与 `response-plan` 声明了映射。调用模型的原子会把已声明阶段的 `compiledForStage` 追加进提示词；未声明的阶段仍只走索引与 `query_writing_patterns`。
 
 固定或解析提示词 section 的部署、设置 `sectionCategories` 的预设，以及期望提示词携带完整模式正文的原子或脚本，都受影响。
 

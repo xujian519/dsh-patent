@@ -30,6 +30,7 @@ import {
   type PatentWorkflowOutput,
 } from '../src/tool/patent-workflow.ts'
 import {
+  buildWorkflowProvider,
   resolveRunPersistTarget,
   resolveWorkflowRunsDir,
   stageFlagAndPreview,
@@ -237,6 +238,15 @@ afterEach(async () => {
 })
 
 describe('workflow-helpers', () => {
+  it('copies writingSkillsForStage onto the assembled provider', () => {
+    const writingSkillsForStage = (): string | undefined => 'skills'
+    const provider = buildWorkflowProvider({
+      model: { stream: async function* () { yield { type: 'done' } } },
+      writingSkillsForStage,
+    })
+    expect(provider?.writingSkillsForStage).toBe(writingSkillsForStage)
+  })
+
   it('resolves the runs dir for absolute, path-like, and plain case ids', () => {
     const cwd = '/base'
     expect(resolveWorkflowRunsDir('/abs/case', cwd)).toBe('/abs/case/workflow-runs')

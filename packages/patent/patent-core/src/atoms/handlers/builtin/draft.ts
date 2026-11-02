@@ -29,6 +29,7 @@ import {
 import { lintClaimText, type ClaimLintReport } from '../../../claim-lint/index.ts'
 import { tryParseJson } from '../../../llm-json.ts'
 import { dataBlock } from '../../../prompt-hygiene.ts'
+import { withStageWritingSkills } from '../../stage-writing-skills.ts'
 import { type Atom } from '../../atom.ts'
 import {
   type PipelineState,
@@ -45,7 +46,7 @@ import { isRecord, readStateText } from './state-keys.ts'
 export const draftClaimsAtom: Atom = {
   name: 'draft-claims',
   description:
-    '按 claim-strategy 的特征表与从权树确定性渲染权利要求书（独权+多路从权），从权专员只重排/补充从权，claim_lint 任一 error 否决本轮草稿',
+    '按 claim-strategy 的特征表与从权树确定性渲染权利要求书（独权+多路从权），从权专员只重排或补充带可选特征表 feature_id 的从权，claim_lint 任一 error 否决本轮草稿',
   category: 'extract',
   inputSchema: [
     'claim_strategy',
@@ -85,7 +86,7 @@ type ParsedStrategy = {
 type SpecialistDependent = {
   number: number
   parent: number | number[]
-  feature_id?: string
+  feature_id: string
   text: string
 }
 
@@ -106,7 +107,7 @@ const DEPENDENTS_SCHEMA = {
           feature_id: { type: 'string', description: '附加特征编号，必须来自可选特征表' },
           text: { type: 'string', description: '本条从权增加的附加技术特征文本' },
         },
-        required: ['number', 'parent', 'text'],
+        required: ['number', 'parent', 'feature_id', 'text'],
       },
     },
     notes: { type: 'string', description: '调整说明（可选，不进入交付正文）' },
@@ -251,17 +252,18 @@ function readSpecialistOutput(
       return `dependents 第 ${index + 1} 项（权${String(number)}）缺少 text`
     }
     const featureId = item['feature_id']
-    if (featureId !== undefined) {
-      if (typeof featureId !== 'string' || !byId.has(featureId)) {
-        return `dependents 第 ${index + 1} 项（权${String(number)}）的 feature_id 不在可选特征表中`
-      }
+    if (typeof featureId !== 'string' || featureId.trim().length === 0) {
+      return `dependents 第 ${index + 1} 项（权${String(number)}）缺少 feature_id`
+    }
+    if (!byId.has(featureId)) {
+      return `dependents 第 ${index + 1} 项（权${String(number)}）的 feature_id 不在可选特征表中`
     }
     const trimmed = text.trim()
     dependents.push({
       number,
       parent,
+      feature_id: featureId,
       text: trimmed.endsWith('。') ? trimmed : `${trimmed}。`,
-      ...(typeof featureId === 'string' ? { feature_id: featureId } : {}),
     })
   }
   const sorted = [...dependents].sort((left, right) => left.number - right.number)
@@ -292,7 +294,7 @@ function renderSpecialistDependents(
     type: 'dependent',
     refersTo: typeof dependent.parent === 'number' ? dependent.parent : [...dependent.parent],
     text: `根据权利要求${renderParents(dependent.parent)}所述的${name}，其特征在于，还包括：${dependent.text}`,
-    ...(dependent.feature_id !== undefined ? { featureId: dependent.feature_id } : {}),
+    featureId: dependent.feature_id,
   }))
 }
 
@@ -320,13 +322,13 @@ async function specializeDependents(
     .map(feature => `${feature.id}${feature.kind !== undefined ? `（${feature.kind}）` : ''} ${feature.text}`)
     .join('\n')
   const currentLines = current.map(claim => `${String(claim.number)}. ${claim.text}`).join('\n')
-  const prompt = [
+  const prompt = withStageWritingSkills([
     '你是从属权利要求专员。独立权利要求已冻结，你只能重排或补充从属权利要求。',
     '要求：',
     '- 不得改写、删减或新增独立权利要求；不得新增独立权利要求；',
     '- 每条从权必须引用编号更小的在先权利要求，编号从 2 起连续；',
     '- 附加技术特征只能来自给定可选特征表；text 只写该特征增加的限定，引用句由程序渲染；',
-    '- feature_id 必须来自可选特征表，用于把成文回映射到策略表；',
+    '- feature_id 必填，且必须来自可选特征表；缺省或表外编号会使本次从权输出作废，保留确定性从权；',
     '- 不得引入可选特征表之外的技术内容。',
     revisionHint.trim().length > 0 ? '- 上一轮反套话评审要求修订：只调整从权表述，不得改变特征归属。' : '',
     '',
@@ -341,7 +343,7 @@ async function specializeDependents(
     revisionHint.trim().length > 0 ? `【反套话修订提示】\n${dataBlock(revisionHint)}` : '',
     '',
     '请严格输出 JSON：dependents 为从权数组（number、parent、feature_id、text），notes 可选。',
-  ].filter(line => line !== '').join('\n')
+  ].filter(line => line !== '').join('\n'), provider, 'draft_claims')
   const res = await callLlm(provider, 'draft-claims/dependents', prompt, { schema: DEPENDENTS_SCHEMA, temperature }, signal)
   if (!res.ok) return { applied: false, reason: '从权专员调用失败，保留确定性从权' }
   const read = readSpecialistOutput(res.raw, optional)
@@ -447,11 +449,20 @@ export class DraftClaimsHandler implements StageHandler {
     if (!lint.passed) return degraded('draft-claims', lintReason(lint))
 
     const strategyReport = getStateString(state, 'claim_strategy_report')
+    const effectiveTree = specialist.applied
+      ? specialist.dependents.map(dependent => ({
+        number: dependent.number,
+        parent: dependent.parent,
+        feature_id: dependent.feature_id,
+        text: dependent.text,
+      }))
+      : undefined
     const result = {
       strategy: {
         essential: parsed.essential.map(feature => feature.id),
         optional: parsed.optional.map(feature => feature.id),
         dependent_tree: parsed.nodes,
+        ...(effectiveTree !== undefined ? { effective_tree: effectiveTree } : {}),
       },
       specialist: specialist.applied ? 'applied' : 'skipped',
       ...(specialist.applied ? {} : { specialist_reason: specialist.reason }),

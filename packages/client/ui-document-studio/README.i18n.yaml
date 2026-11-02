@@ -3,23 +3,26 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/client/ui-document-studio/README.md
 /:
-  en: 27ab038c963211ec
-  zh: 37c9a20830b785a3
+  en: 27d9266dda455f42
+  zh: 59846b0ad6260e95
 /deepseek-ai-dsh-client-ui-document-studio:
   en: 4ab19f627d93bc84
   zh: c822331eb910effd
 /deepseek-ai-dsh-client-ui-document-studio/summary:
-  en: 934d6d2acfab2b15
-  zh: 64055ec6793a3ce5
+  en: 20418066606448b1
+  zh: c42130f0bda93f03
 /deepseek-ai-dsh-client-ui-document-studio/table-of-contents:
-  en: e84d8bea456ea74b
-  zh: 0f08a98fd4c5fe46
+  en: 6913fc1b62d44fb2
+  zh: c6bf028bfac55e47
 /deepseek-ai-dsh-client-ui-document-studio/what-it-mounts:
-  en: 5d52ebf9432b23fa
-  zh: 6c80ceb677e4acf1
+  en: 99f811512efc92e6
+  zh: 1e9418b0ab47821d
 /deepseek-ai-dsh-client-ui-document-studio/prerequisites:
   en: 2db49ece2935a274
-  zh: 6b09dbcd6ed9850d
+  zh: 9701c92ea0bc7e06
+/deepseek-ai-dsh-client-ui-document-studio/preview-limits:
+  en: 6bd3801e02305e5c
+  zh: a9e5baf7b0016fcd
 /deepseek-ai-dsh-client-ui-document-studio/model-experience:
   en: b01375f20288e423
   zh: c3c64aef9908c7da
@@ -27,8 +30,8 @@
   en: cf5e68a89cb4425f
   zh: 330c1594f6c4a477
 /deepseek-ai-dsh-client-ui-document-studio/known-limitations-and-deferred-work:
-  en: 9238892f7bc8857e
-  zh: 32a0df9287e00649
+  en: 45332fedc77164b2
+  zh: aebcf81a531f0e0b
 /deepseek-ai-dsh-client-ui-document-studio/known-limitations-and-deferred-work/dev-note:
   en: 0a1253c6f7b5e8b9
   zh: 9f56528562c7c914

@@ -30,6 +30,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 // Type-only: pulls the agentPreset Session-projection key (summary.projectionValues).
 /* jscpd:ignore-end */
 import type {} from '@deepseek-ai/dsh-agent-preset-registry/types'
+import { Config } from '../config.ts'
 import {
   DOCUMENT_DELIVERABLES_TARGET, documentDeliverablesDefinition, documentDeliverablesViewDefinition,
 } from './document-deliverables.ts'
@@ -112,6 +113,7 @@ async function openPath(
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-document-studio: dictionaries')
   /* jscpd:ignore-end */
+  const config = Config((globalThis as { __DSH_DOCUMENT_STUDIO_CONFIG__?: unknown }).__DSH_DOCUMENT_STUDIO_CONFIG__ ?? {})
 
   ctx.uiConversation.events.register(documentDeliverablesDefinition)
   ctx.uiConversation.views.register(documentDeliverablesViewDefinition)
@@ -145,6 +147,8 @@ export function apply(ctx: ClientContext): void {
           sidebar.openResource(fileAddressFor(sessionId, cwd, path))
           return true
         },
+        resourceAddress: (path: string) => fileAddressFor(sessionId, cwd, path),
+        htmlPreviewMaxBytes: config.htmlPreviewMaxBytes,
         readFileText: reads.readFileText,
         readFileTextComplete: reads.readFileTextComplete,
         statVersions: probe.statVersions,

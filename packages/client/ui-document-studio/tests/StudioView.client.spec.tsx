@@ -5,7 +5,7 @@
  * machine-check badges, the workspace probes, and the file actions.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import {
   allowAllAccess, bindSnapshotSelector, conversationSnapshot, makeTranslate, sessionSnapshot, workspaceSnapshot,
@@ -18,10 +18,9 @@ import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SessionStatusSnapshot } from '@deepseek-ai/dsh-client-ui-session/client'
 import { SessionId } from '@deepseek-ai/dsh-session/types'
 import { DOCUMENT_DELIVERABLES_TARGET } from '../src/client/document-deliverables.ts'
-import {
-  StudioView, isHtmlPath, isTextPreviewable, parseDocumentSections,
-  type StudioViewInjected, type StudioViewProps,
-} from '../src/client/StudioView.tsx'
+import { StudioView, type StudioViewInjected, type StudioViewProps } from '../src/client/StudioView.tsx'
+import { parseDocumentSections } from '../src/client/PreviewPane.tsx'
+import { isHtmlPath, isTextPreviewable } from '../src/client/preview-kinds.ts'
 import type { CompleteReadText } from '../src/client/file-reads.ts'
 import { WorkspaceReadError } from '../src/client/file-reads.ts'
 import { en, zh } from '../src/client/locales.ts'
@@ -90,6 +89,8 @@ function injected(overrides: Partial<StudioViewInjected> = {}): StudioViewInject
     openFile: vi.fn(() => Promise.resolve()),
     showInFolder: vi.fn(() => Promise.resolve()),
     openInSidebar: vi.fn(() => true),
+    resourceAddress: (path: string) => `dsh-resource://file/session/s1/${path}`,
+    htmlPreviewMaxBytes: 8 * 1024 * 1024,
     readFileText: vi.fn((path: string) => Promise.resolve({ content: `<h1>${path}</h1>`, truncated: false })),
     readFileTextComplete: vi.fn((path: string): Promise<CompleteReadText> =>
       Promise.resolve({ truncated: false, content: `<h1>${path}</h1>` })),
@@ -167,34 +168,45 @@ describe('StudioView', () => {
     expect(probeUnregistered).toHaveBeenCalledTimes(2)
   })
 
-  it('lists produced files, auto-selects the first, and previews HTML in a sandboxed frame', async () => {
+  it('lists produced files, follows the newest, and previews HTML in a sandboxed frame', async () => {
     const readFileText = vi.fn((path: string) => {
       if (path === 'out/index.html') return Promise.resolve({ content: '<h1>Hi</h1>', truncated: false })
       return Promise.resolve({ content: '# Notes', truncated: true })
     })
+    const readFileTextComplete = vi.fn((path: string): Promise<CompleteReadText> =>
+      path === 'out/index.html'
+        ? Promise.resolve({ truncated: false, content: '<h1>Hi</h1>' })
+        : Promise.resolve({ truncated: false, content: '# Notes' }))
     render(
-      <StudioView {...studioProps([{ seq: 1, path: 'out/index.html' }, { seq: 2, path: 'notes.md' }], { readFileText })} />,
+      <StudioView {...studioProps([{ seq: 1, path: 'out/index.html' }, { seq: 2, path: 'notes.md' }], {
+        readFileText,
+        readFileTextComplete,
+      })} />,
     )
     expect(screen.getAllByText('index.html').length).toBeGreaterThan(0)
     expect(screen.getAllByText('notes.md').length).toBeGreaterThan(0)
     expect(screen.getByText(t('studio.files', { count: 2 }))).toBeTruthy()
-    // First file auto-selected → HTML frame (content loads asynchronously).
+    // Following is on by default, so the last produced file is selected and its
+    // Markdown is typeset, with the truncation note for the cut window.
+    expect(await screen.findByRole('heading', { name: 'Notes' })).toBeTruthy()
+    expect(screen.getByText(t('studio.preview.truncated'))).toBeTruthy()
+    // Selecting the HTML file renders it in the sandboxed frame.
+    fireEvent.click(screen.getAllByText('index.html')[0]!)
     const frame = await screen.findByTitle('index.html') as unknown as HTMLIFrameElement
     expect(frame.getAttribute('sandbox')).toBe('')
     expect(frame.srcdoc).toContain('<h1>Hi</h1>')
-    // Selecting the markdown file shows the text pane with the truncation note.
-    const notesChip = screen.getAllByText('notes.md')[0]
-    expect(notesChip).toBeDefined()
-    fireEvent.click(notesChip!)
-    expect(await screen.findByText('# Notes')).toBeTruthy()
-    expect(screen.getByText(t('studio.preview.truncated'))).toBeTruthy()
   })
 
-  it('marks a truncated HTML preview instead of passing the head off as the document', async () => {
-    const readFileText = vi.fn(() => Promise.resolve({ content: '<section data-doc-id="a">x</section>', truncated: true }))
-    render(<StudioView {...studioProps([{ seq: 1, path: 'out/index.html' }], { readFileText })} />)
-    expect(await screen.findByText(t('studio.preview.truncated'))).toBeTruthy()
-    expect(screen.getByTitle('index.html').getAttribute('sandbox')).toBe('')
+  it('hands an HTML preview above the configured cap to the sidebar instead of building a frame', async () => {
+    const readFileTextComplete = vi.fn(() => Promise.resolve({ truncated: true as const, limitBytes: 4096 }))
+    render(
+      <StudioView {...studioProps([{ seq: 1, path: 'out/index.html' }], {
+        readFileTextComplete,
+        htmlPreviewMaxBytes: 1024,
+      })} />,
+    )
+    expect(await screen.findByText(t('studio.preview.tooLarge', { limit: '4.0KB' }))).toBeTruthy()
+    expect(screen.queryByTitle('index.html')).toBeNull()
   })
 
   it('keeps the declared quality gate neutral and lists its items as the model\'s claim', () => {
@@ -210,6 +222,8 @@ describe('StudioView', () => {
     expect(screen.getByText('html')).toBeTruthy()
     // The claim badge says it is a claim, and names the declared items.
     expect(screen.getByText(t('studio.file.gateIds', { ids: '命名规范 · 可访问性' }))).toBeTruthy()
+    // Following selected the newest file; jump to the registered one.
+    fireEvent.click(screen.getAllByText('report.html')[0]!)
     // The expansion lists them as items, under the claim label.
     expect(screen.getByText(t('studio.claim.title'))).toBeTruthy()
     expect(screen.getByText(t('studio.claim.p0'))).toBeTruthy()
@@ -278,7 +292,10 @@ describe('StudioView', () => {
     expect(screen.getByText(t('studio.file.checkedSkipped')).getAttribute('title')).toBe('pdf 格式没有文本读取器')
     expect(screen.getByText(t('studio.file.checkedFailed')).getAttribute('title')).toBe('DOCX 结构报告 malformed-xml，投影文本可能不完整')
     // A file with no recorded checks renders no machine-check badge at all.
-    expect(screen.getByText('unregistered.txt').closest('button')?.textContent).not.toContain(t('studio.file.checkedPassed'))
+    const unregisteredRow = screen.getAllByText('unregistered.txt')
+      .map(node => node.closest('button'))
+      .find(button => button !== null)
+    expect(unregisteredRow?.textContent).not.toContain(t('studio.file.checkedPassed'))
   })
 
   it('withdraws the verdict once the file\'s freshness token moved', async () => {
@@ -367,8 +384,10 @@ describe('StudioView', () => {
     // The export hint is visible before the browser print dialog opens.
     expect(screen.getByText(t('studio.print.note'))).toBeTruthy()
     fireEvent.click(screen.getByText(t('studio.action.print')))
-    expect(write).toHaveBeenCalledWith('<h1>out/index.html</h1>')
-    expect(print).toHaveBeenCalled()
+    // The print action always re-reads the complete file, so the write lands
+    // after that read settles.
+    await vi.waitFor(() => { expect(write).toHaveBeenCalledWith('<h1>out/index.html</h1>') })
+    await vi.waitFor(() => { expect(print).toHaveBeenCalled() })
     // Blocked popup: window.open returns null and the view says so.
     open.mockReturnValueOnce(null)
     fireEvent.click(screen.getByText(t('studio.action.print')))
@@ -434,7 +453,7 @@ describe('StudioView', () => {
     render(
       <StudioView {...studioProps([{ seq: 1, path: 'out/report.html' }], {
         insertDraft,
-        readFileText: vi.fn(() => Promise.resolve({ content: html, truncated: false })),
+        readFileTextComplete: vi.fn(() => Promise.resolve({ truncated: false as const, content: html })),
       })} />,
     )
     await screen.findByTitle('report.html')
@@ -488,7 +507,7 @@ describe('StudioView', () => {
   it('honors a one-shot focus request naming a produced file', async () => {
     const completeViewRequest = vi.fn()
     const props = {
-      ...studioProps([{ seq: 1, path: 'a.html' }, { seq: 2, path: 'out/b.md' }]),
+      ...studioProps([{ seq: 1, path: 'out/b.md' }, { seq: 2, path: 'a.html' }]),
       completeViewRequest,
     }
     const { rerender } = render(<StudioView {...props} />)
@@ -499,6 +518,37 @@ describe('StudioView', () => {
     }} />)
     expect(await screen.findByText('<h1>out/b.md</h1>')).toBeTruthy()
     expect(completeViewRequest).toHaveBeenCalledTimes(1)
+  })
+
+  it('follows a newly produced file, pauses on a manual pick, and resumes on request', async () => {
+    const { rerender } = render(<StudioView {...studioProps([{ seq: 1, path: 'out/a.md' }])} />)
+    expect(await screen.findByText('<h1>out/a.md</h1>')).toBeTruthy()
+    rerender(<StudioView {...studioProps([{ seq: 1, path: 'out/a.md' }, { seq: 2, path: 'out/b.md' }])} />)
+    expect(await screen.findByText('<h1>out/b.md</h1>')).toBeTruthy()
+    // A manual pick pauses following.
+    fireEvent.click(screen.getAllByText('a.md')[0]!)
+    expect(await screen.findByText('<h1>out/a.md</h1>')).toBeTruthy()
+    rerender(<StudioView {...studioProps([
+      { seq: 1, path: 'out/a.md' }, { seq: 2, path: 'out/b.md' }, { seq: 3, path: 'out/c.md' },
+    ])} />)
+    await waitFor(() => { expect(screen.queryByText('<h1>out/c.md</h1>')).toBeNull() })
+    expect(screen.getByText('<h1>out/a.md</h1>')).toBeTruthy()
+    // Turning the toggle back on follows the next new file.
+    fireEvent.click(screen.getByText(t('studio.follow')))
+    rerender(<StudioView {...studioProps([
+      { seq: 1, path: 'out/a.md' }, { seq: 2, path: 'out/b.md' }, { seq: 3, path: 'out/c.md' },
+      { seq: 4, path: 'out/d.md' },
+    ])} />)
+    expect(await screen.findByText('<h1>out/d.md</h1>')).toBeTruthy()
+  })
+
+  it('falls back to the first file when the followed selection disappears', async () => {
+    const { rerender } = render(
+      <StudioView {...studioProps([{ seq: 1, path: 'out/a.md' }, { seq: 2, path: 'out/b.md' }])} />,
+    )
+    expect(await screen.findByText('<h1>out/b.md</h1>')).toBeTruthy()
+    rerender(<StudioView {...studioProps([{ seq: 1, path: 'out/a.md' }])} />)
+    expect(await screen.findByText('<h1>out/a.md</h1>')).toBeTruthy()
   })
 
   it('renders the empty list when the session carries no produced snapshot', async () => {
@@ -537,10 +587,10 @@ describe('StudioView', () => {
       ? new Promise<never>((_, reject) => { rejectFirst = reject })
       : Promise.resolve({ content: '# B', truncated: false }))
     render(
-      <StudioView {...studioProps([{ seq: 1, path: 'out/a.md' }, { seq: 2, path: 'out/b.md' }], { readFileText })} />,
+      <StudioView {...studioProps([{ seq: 1, path: 'out/b.md' }, { seq: 2, path: 'out/a.md' }], { readFileText })} />,
     )
     fireEvent.click(screen.getAllByText('b.md')[0]!)
-    expect(await screen.findByText('# B')).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'B' })).toBeTruthy()
     rejectFirst(new Error('late failure'))
     await vi.waitFor(() => { expect(screen.queryByText(t('studio.error.notText'))).toBeNull() })
   })
@@ -708,13 +758,11 @@ describe('StudioView', () => {
     const caps: Array<[number, string]> = [[512, '512B'], [2048, '2.0KB'], [5 * 1024 * 1024, '5.0MB']]
     for (const [limitBytes, size] of caps) {
       cleanup()
-      const readFileTextComplete = vi.fn((): Promise<CompleteReadText> =>
-        Promise.resolve({ truncated: true, limitBytes }))
+      const readFileTextComplete = vi.fn()
+        .mockResolvedValueOnce({ truncated: false as const, content: '<html>full</html>' })
+        .mockResolvedValue({ truncated: true as const, limitBytes })
       render(
-        <StudioView {...studioProps([{ seq: 1, path: 'out/big.html' }], {
-          readFileText: vi.fn(() => Promise.resolve({ content: '<h1>head</h1>', truncated: true })),
-          readFileTextComplete,
-        })} />,
+        <StudioView {...studioProps([{ seq: 1, path: 'out/big.html' }], { readFileTextComplete })} />,
       )
       await screen.findByTitle('big.html')
       fireEvent.click(screen.getByText(t('studio.action.print')))
@@ -725,7 +773,7 @@ describe('StudioView', () => {
     }
   })
 
-  it('prints the complete file when the preview window was cut', async () => {
+  it('prints the complete file read independently of the preview', async () => {
     const write = vi.fn()
     const open = vi.spyOn(window, 'open').mockReturnValue({
       document: { open: vi.fn(), write, close: vi.fn() },
@@ -735,10 +783,7 @@ describe('StudioView', () => {
     const readFileTextComplete = vi.fn((): Promise<CompleteReadText> =>
       Promise.resolve({ truncated: false, content: '<html>full</html>' }))
     render(
-      <StudioView {...studioProps([{ seq: 1, path: 'out/big.html' }], {
-        readFileText: vi.fn(() => Promise.resolve({ content: '<html>head', truncated: true })),
-        readFileTextComplete,
-      })} />,
+      <StudioView {...studioProps([{ seq: 1, path: 'out/big.html' }], { readFileTextComplete })} />,
     )
     await screen.findByTitle('big.html')
     fireEvent.click(screen.getByText(t('studio.action.print')))
@@ -756,12 +801,10 @@ describe('StudioView', () => {
       cleanup()
       render(
         <StudioView {...studioProps([{ seq: 1, path: 'out/big.html' }], {
-          readFileText: vi.fn(() => Promise.resolve({ content: '<h1>head</h1>', truncated: true })),
           // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- the rejection reason is the fixture
           readFileTextComplete: vi.fn(() => Promise.reject(rejection)),
         })} />,
       )
-      await screen.findByTitle('big.html')
       fireEvent.click(screen.getByText(t('studio.action.print')))
       expect(await screen.findByText(t('studio.print.failed', { message }))).toBeTruthy()
     }
@@ -805,7 +848,7 @@ describe('StudioView', () => {
     render(
       <StudioView {...studioProps([{ seq: 1, path: 'out/report.html' }], {
         insertDraft,
-        readFileText: vi.fn(() => Promise.resolve({ content: html, truncated: false })),
+        readFileTextComplete: vi.fn(() => Promise.resolve({ truncated: false as const, content: html })),
       })} />,
     )
     await screen.findByTitle('report.html')
@@ -824,7 +867,7 @@ describe('StudioView', () => {
     const { rerender } = render(
       <StudioView {...studioProps([{ seq: 1, path: 'out/report.html' }], {
         insertDraft,
-        readFileText: vi.fn(() => Promise.resolve({ content: first, truncated: false })),
+        readFileTextComplete: vi.fn(() => Promise.resolve({ truncated: false as const, content: first })),
       })} />,
     )
     await screen.findByTitle('report.html')
@@ -832,7 +875,7 @@ describe('StudioView', () => {
     rerender(
       <StudioView {...studioProps([{ seq: 1, path: 'out/report.html' }], {
         insertDraft,
-        readFileText: vi.fn(() => Promise.resolve({ content: second, truncated: false })),
+        readFileTextComplete: vi.fn(() => Promise.resolve({ truncated: false as const, content: second })),
       })} />,
     )
     expect(await screen.findByText('sec-b · B')).toBeTruthy()

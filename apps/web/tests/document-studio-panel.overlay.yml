@@ -1,0 +1,5 @@
+# The studio scenario proves the inline-HTML cap: a cap this small keeps the
+# delivered claims.html in a frame and hands the larger big.html to the sidebar.
+- id: ui-document-studio
+  config:
+    htmlPreviewMaxBytes: 1024

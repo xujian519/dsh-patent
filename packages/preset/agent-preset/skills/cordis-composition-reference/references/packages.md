@@ -81,7 +81,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | `@deepseek-ai/dsh-client-ui-deliverables` | no | Changed-files card with per-file comparison tabs, delivery cards, and clickable final-response file references for Web |
 | `@deepseek-ai/dsh-client-ui-directory-picker-browse` | no | In-app directory browsing surface: the workspace directory-flow owner rendering the host's listing and creation primitives |
 | `@deepseek-ai/dsh-client-ui-directory-picker-native` | no | Native directory-picker surface: the renderless workspace directory-flow occupant driving the local Desktop or Host OS chooser |
-| `@deepseek-ai/dsh-client-ui-document-studio` | no | Document-delivery studio view for the document agent preset: session-wide produced-file list, HTML/text preview, open and print actions, auto-switch when the session preset is document |
+| `@deepseek-ai/dsh-client-ui-document-studio` | yes | Document-delivery studio view for the document agent preset: a session-wide produced-file list that follows the newest draft, an HTML/Markdown preview kept in step with the workspace file's version, open and print actions, and auto-switch when the session preset is document |
 | `@deepseek-ai/dsh-client-ui-entry-customization` | no | Customize plugin entries in the left sidebar, conversation views, and right sidebar, and quickly create new plugins. |
 | `@deepseek-ai/dsh-client-ui-file-drag` | no | Application-owned file drag transfers and localized failure feedback |
 | `@deepseek-ai/dsh-client-ui-goal` | no | Session goal surface: GoalBar docked above the composer, read from the goal session projection |

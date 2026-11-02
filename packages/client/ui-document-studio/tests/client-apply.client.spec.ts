@@ -204,6 +204,27 @@ describe('document studio plugin body', () => {
     expect(face.canOpenInSidebar).toBe(true)
     expect(face.openInSidebar('out/report.docx')).toBe(true)
     expect(openResource).toHaveBeenCalledWith(fileAddressFor(SessionId('s1'), '/tmp/w', 'out/report.docx'))
+    expect(face.resourceAddress('out/report.docx')).toBe(
+      fileAddressFor(SessionId('s1'), '/tmp/w', 'out/report.docx'),
+    )
+    await fiber.dispose()
+  })
+
+  it('adopts the preview cap the page was served with', async () => {
+    const injected = globalThis as { __DSH_DOCUMENT_STUDIO_CONFIG__?: unknown }
+    injected.__DSH_DOCUMENT_STUDIO_CONFIG__ = { htmlPreviewMaxBytes: 4096 }
+    try {
+      const { fiber, face } = await mount()
+      expect(face.htmlPreviewMaxBytes).toBe(4096)
+      await fiber.dispose()
+    } finally {
+      delete injected.__DSH_DOCUMENT_STUDIO_CONFIG__
+    }
+  })
+
+  it('defaults the preview cap when the page carries no configuration', async () => {
+    const { fiber, face } = await mount()
+    expect(face.htmlPreviewMaxBytes).toBe(8 * 1024 * 1024)
     await fiber.dispose()
   })
 

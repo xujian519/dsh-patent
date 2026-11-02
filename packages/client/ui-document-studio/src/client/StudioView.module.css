@@ -23,6 +23,13 @@
   color: var(--dsw-alias-label-tertiary);
 }
 
+.listControls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
 .files {
   display: flex;
   flex: 1 1 auto;
@@ -259,6 +266,18 @@
   color: var(--dsw-alias-label-primary);
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* Markdown reads as a typeset document, so it gets the reading width and
+   rhythm rather than the monospace text block's treatment. */
+.markdownPreview {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 12px;
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--dsw-alias-label-primary);
 }
 
 .note {

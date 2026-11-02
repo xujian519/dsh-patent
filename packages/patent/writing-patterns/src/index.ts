@@ -8,13 +8,13 @@
  * @module @deepseek-ai/dsh-writing-patterns
  */
 
-import type { Context } from '@deepseek-ai/cordis'
+import { Service, type Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { loadPatternStore, type PatternStore } from './pattern-store.ts'
 import { renderWritingSkillsSection, WRITING_PATTERNS_SECTION_NAME } from './prompt.ts'
-import { compileWritingSkills } from './skill-compiler.ts'
+import { compileWritingPatternIndex, compileWritingSkills } from './skill-compiler.ts'
 import { createQueryWritingPatternsTool } from './tool/query-writing-patterns.ts'
-import { PATTERN_CATEGORIES, type PatternCategory, type WritingPattern } from './types.ts'
+import { PATTERN_CATEGORIES, type PatternCategory, type WritingPattern, WritingPatternError } from './types.ts'
 
 // Public library API: the pattern corpus, its lexical selection, the compiled
 // skill text, and the tool factory.
@@ -28,7 +28,7 @@ export {
   type PatternMatchSpec,
   type PatternSearchSpec,
 } from './pattern-store.ts'
-export { compileWritingSkills, escapeXmlText } from './skill-compiler.ts'
+export { compileWritingPatternIndex, compileWritingSkills, escapeXmlText } from './skill-compiler.ts'
 export {
   renderWritingSkillsSection,
   WRITING_PATTERNS_PROMPT_TEXT,
@@ -80,10 +80,16 @@ export interface Config {
   matchLimit?: number
   /** Register the always-on writing-patterns system-prompt section. Defaults to true. */
   registerSection?: boolean
-  /** Categories whose patterns the section injects; an empty list injects the guidance alone. */
+  /** Categories whose patterns the section indexes; an empty list injects the guidance alone. */
   sectionCategories?: PatternCategory[]
   /** Position of the injected section in the assembled system prompt. */
   sectionOrder?: number
+  /**
+   * Pattern ids each workflow stage's prompt receives, keyed by stage id. Every
+   * stage lists 3 to 5 pattern ids that exist in the loaded corpus; an atom
+   * reads its stage's patterns through the `writingPatterns` service.
+   */
+  stagePatterns?: Record<string, string[]>
 }
 
 /** Schemastery configuration: corpus override, result cap, and section policy. */
@@ -93,17 +99,105 @@ export const Config: z<Config> = z.object({
   registerSection: z.boolean().default(true),
   sectionCategories: z.array(z.union(PATTERN_CATEGORIES)).default([...PATTERN_CATEGORIES]),
   sectionOrder: z.natural().default(DEFAULT_SECTION_ORDER),
+  stagePatterns: z.dict(z.array(z.string().min(1)).min(3).max(5)),
 })
 
 /**
- * Register the query_writing_patterns tool and, by default, the
- * writing-patterns section carrying the compiled patterns.
+ * The writing-pattern capability seam: the patterns each workflow stage
+ * declared in `stagePatterns`, resolved against the loaded corpus at plugin
+ * load. An atom reads its stage's patterns here instead of reaching into the
+ * store, so the deployment's stage policy stays in `cordis.yml`.
+ */
+export class WritingPatternsService extends Service {
+  private readonly byStage: ReadonlyMap<string, readonly WritingPattern[]>
+
+  /**
+   * @param ctx - the plugin context the service registers on.
+   * @param store - the loaded corpus; every declared id must exist in it.
+   * @param stagePatterns - stage id to declared pattern ids; each stage lists 3 to 5.
+   * @throws WritingPatternError when a stage declares an unknown or duplicate id,
+   * or a count outside 3 to 5.
+   */
+  constructor(ctx: Context, store: PatternStore, stagePatterns: Readonly<Record<string, readonly string[]>>) {
+    // Resolve and validate before super() registers the service: an invalid
+    // stage map must fail without leaving a half-registered ctx.writingPatterns.
+    const byStage = resolveStagePatterns(store, stagePatterns)
+    super(ctx, 'writingPatterns')
+    this.byStage = byStage
+  }
+
+  /**
+   * The patterns one workflow stage declared, in declaration order.
+   * @param stageId - the workflow stage id.
+   * @returns the stage's patterns.
+   * @throws WritingPatternError when the deployment declared no patterns for the stage.
+   */
+  patternsForStage(stageId: string): readonly WritingPattern[] {
+    const patterns = this.byStage.get(stageId)
+    if (patterns === undefined) {
+      throw new WritingPatternError(`写作模式未声明阶段 "${stageId}"：请在该插件的 stagePatterns 中配置该阶段`)
+    }
+    return patterns
+  }
+
+  /**
+   * The `<writing_skills>` block of one workflow stage's declared patterns.
+   * @param stageId - the workflow stage id.
+   * @returns the compiled block.
+   * @throws WritingPatternError when the deployment declared no patterns for the stage.
+   */
+  compiledForStage(stageId: string): string {
+    return compileWritingSkills(this.patternsForStage(stageId))
+  }
+
+  /**
+   * Stage ids the deployment declared, in configuration order.
+   * @returns the declared stage ids.
+   */
+  stageIds(): readonly string[] {
+    return [...this.byStage.keys()]
+  }
+}
+
+/**
+ * Resolve and validate the stage map at plugin load.
+ * @param store - the loaded corpus.
+ * @param declared - stage id to declared pattern ids.
+ * @returns the resolved patterns per stage.
+ * @throws WritingPatternError on a duplicate or unknown id, or a count outside 3 to 5.
+ */
+function resolveStagePatterns(
+  store: PatternStore,
+  declared: Readonly<Record<string, readonly string[]>>,
+): ReadonlyMap<string, readonly WritingPattern[]> {
+  const byStage = new Map<string, readonly WritingPattern[]>()
+  for (const [stageId, ids] of Object.entries(declared)) {
+    if (ids.length < 3 || ids.length > 5) {
+      throw new WritingPatternError(`阶段 "${stageId}" 声明了 ${String(ids.length)} 条写作模式：每个阶段应为 3 到 5 条`)
+    }
+    const seen = new Set<string>()
+    const patterns = ids.map((id) => {
+      if (seen.has(id)) throw new WritingPatternError(`阶段 "${stageId}" 重复声明写作模式 "${id}"`)
+      seen.add(id)
+      const pattern = store.get(id)
+      if (pattern === undefined) throw new WritingPatternError(`阶段 "${stageId}" 声明了不存在的写作模式 "${id}"`)
+      return pattern
+    })
+    byStage.set(stageId, patterns)
+  }
+  return byStage
+}
+
+/**
+ * Register the query_writing_patterns tool, the writingPatterns service, and,
+ * by default, the writing-patterns section carrying the compiled pattern index.
  * @param ctx - registrant context carrying the tool registry and system prompt.
  * @param config - corpus location, result cap, and section policy.
  * @throws PatternAssetError when the configured corpus cannot be loaded.
  */
 export function apply(ctx: Context, config: Config): void {
   const store = loadPatternStore(config.patternDir)
+  new WritingPatternsService(ctx, store, config.stagePatterns ?? {})
   ctx.tools.register(createQueryWritingPatternsTool({
     store,
     matchLimit: config.matchLimit ?? DEFAULT_MATCH_LIMIT,
@@ -113,7 +207,7 @@ export function apply(ctx: Context, config: Config): void {
   ctx.systemPrompt.section({
     name: WRITING_PATTERNS_SECTION_NAME,
     order: config.sectionOrder ?? DEFAULT_SECTION_ORDER,
-    text: renderWritingSkillsSection(compileWritingSkills(patterns)),
+    text: renderWritingSkillsSection(compileWritingPatternIndex(patterns)),
   })
 }
 
@@ -135,4 +229,11 @@ function sectionPatterns(store: PatternStore, categories: readonly PatternCatego
     }
   }
   return patterns
+}
+
+declare module '@deepseek-ai/cordis' {
+  interface Context {
+    /** The stage-scoped writing-pattern lookup; present while this plugin is mounted. */
+    writingPatterns: WritingPatternsService
+  }
 }

@@ -113,11 +113,19 @@ describe('query_writing_patterns execution', () => {
 
   it('lists one category in id order', async () => {
     const ctx = await host()
-    const result = await execute(ctx, { category: 'claim_drafting' })
+    const result = await execute(ctx, { category: 'claim_drafting', limit: 10 })
     if (result.isError) throw new Error('expected success')
     const value = result.value as QueryWritingPatternsOutput
     expect(value.mode).toBe('category')
-    expect(value.patterns.map(pattern => pattern.id)).toEqual(['wp-claim-dependent-layering', 'wp-claim-utility-model'])
+    expect(value.patterns.map(pattern => pattern.id)).toEqual([
+      'wp-claim-3step-prior-art-check',
+      'wp-claim-dependent-layering',
+      'wp-claim-functional-limitation',
+      'wp-claim-markush-equivalents',
+      'wp-claim-software-trio',
+      'wp-claim-unity-special-feature',
+      'wp-claim-utility-model',
+    ])
     expect(value.skills).toContain('<skill id="wp-claim-utility-model">')
     expect(value.skills).not.toContain('wp-spec-background')
   })
@@ -185,7 +193,10 @@ describe('query_writing_patterns execution', () => {
     if (result.isError) throw new Error('expected success')
     const value = result.value as QueryWritingPatternsOutput
     expect(value.mode).toBe('match')
-    expect(value.patterns.map(pattern => pattern.id)).toEqual(['wp-oa-clarity-support'])
+    expect(value.patterns.map(pattern => pattern.id)).toEqual([
+      'wp-oa-clarity-support',
+      'wp-claim-functional-limitation',
+    ])
     expect(value.skills).toContain('<step order="3">')
   })
 

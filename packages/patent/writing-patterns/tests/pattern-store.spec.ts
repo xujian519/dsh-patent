@@ -58,16 +58,24 @@ describe('packaged pattern corpus', () => {
     expect(store.size).toBe(store.all().length)
     expect(store.size).toBe(new Set(store.all().map(pattern => pattern.id)).size)
     expect(store.all().map(pattern => pattern.id)).toEqual([
+      'wp-claim-3step-prior-art-check',
       'wp-claim-dependent-layering',
+      'wp-claim-functional-limitation',
+      'wp-claim-markush-equivalents',
+      'wp-claim-software-trio',
+      'wp-claim-unity-special-feature',
       'wp-claim-utility-model',
       'wp-disclosure-pfe',
+      'wp-embodiment-enablement-matrix',
       'wp-embodiment-writing',
       'wp-ipc-strategy',
       'wp-oa-clarity-support',
       'wp-oa-inventiveness-3step',
       'wp-oa-novelty-separate',
+      'wp-spec-amendment-reserve',
       'wp-spec-background',
       'wp-spec-invention-content',
+      'wp-spec-numeric-range-fallback',
     ])
   })
 
@@ -88,7 +96,7 @@ describe('packaged pattern corpus', () => {
   it('indexes patterns by category and by sub-category', () => {
     const store = loadPatternStore()
     expect(store.byCategory('oa_inventiveness').map(pattern => pattern.id)).toEqual(['wp-oa-inventiveness-3step'])
-    expect(store.byCategory('claim_drafting')).toHaveLength(2)
+    expect(store.byCategory('claim_drafting')).toHaveLength(7)
     expect(store.byCategory('background').map(pattern => pattern.id)).toEqual(['wp-spec-background'])
     expect(store.byCategory('invalidation')).toEqual([])
     expect(store.get('no-such-pattern')).toBeUndefined()
@@ -128,8 +136,9 @@ describe('packaged pattern corpus', () => {
 describe('lexical search', () => {
   it('scores a term hit in the name above a hit in the summary and keeps the best first', () => {
     const store = loadPatternStore()
-    expect(store.search('三步法', { limit: 5 }).map(pattern => pattern.id))
-      .toEqual(['wp-oa-inventiveness-3step'])
+    const ranked = store.search('三步法', { limit: 5 }).map(pattern => pattern.id)
+    expect(ranked[0]).toBe('wp-oa-inventiveness-3step')
+    expect(ranked).toContain('wp-claim-3step-prior-art-check')
   })
 
   it('multiplies the score by the pattern quality', () => {
@@ -153,13 +162,16 @@ describe('lexical search', () => {
   it('returns the candidates unscored when the query has no term', () => {
     const store = loadPatternStore()
     expect(store.search('', { limit: 3 }).map(pattern => pattern.id)).toEqual([
+      'wp-claim-3step-prior-art-check',
       'wp-claim-dependent-layering',
-      'wp-claim-utility-model',
-      'wp-disclosure-pfe',
+      'wp-claim-functional-limitation',
     ])
     expect(store.search('   ', { category: 'claim_drafting', limit: 5 }).map(pattern => pattern.id)).toEqual([
+      'wp-claim-3step-prior-art-check',
       'wp-claim-dependent-layering',
-      'wp-claim-utility-model',
+      'wp-claim-functional-limitation',
+      'wp-claim-markush-equivalents',
+      'wp-claim-software-trio',
     ])
   })
 
@@ -179,7 +191,8 @@ describe('lexical search', () => {
     const store = loadPatternStore()
     expect(store.search('创造性答复怎么写', { limit: 5 })[0]?.id).toBe('wp-oa-inventiveness-3step')
     expect(store.search('从权引用关系怎么写', { limit: 5 })[0]?.id).toBe('wp-claim-dependent-layering')
-    expect(store.search('参数范围怎么写', { limit: 5 })[0]?.id).toBe('wp-embodiment-writing')
+    expect(store.search('参数范围怎么写', { limit: 5 }).map(pattern => pattern.id))
+      .toContain('wp-embodiment-writing')
     expect(store.search('背景技术对比表怎么写', { limit: 5 })[0]?.id).toBe('wp-spec-background')
   })
 

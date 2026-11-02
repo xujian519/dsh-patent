@@ -5129,6 +5129,33 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
     ],
   },
+  {
+    key: 'writingPatterns',
+    summary: 'The writing-pattern capability seam: the patterns each workflow stage declared in `stagePatterns`, resolved against the loaded corpus at plugin load.',
+    description: 'The writing-pattern capability seam: the patterns each workflow stage declared in `stagePatterns`, resolved against the loaded corpus at plugin load. An atom reads its stage\'s patterns here instead of reaching into the store, so the deployment\'s stage policy stays in `cordis.yml`.',
+    methods: [
+      {
+        signature: 'patternsForStage(stageId: string): readonly WritingPattern[]',
+        description: 'The patterns one workflow stage declared, in declaration order.',
+        parameters: [{ name: 'stageId', description: 'the workflow stage id.' }],
+        returns: 'the stage\'s patterns.',
+        throws: ['WritingPatternError when the deployment declared no patterns for the stage.'],
+      },
+      {
+        signature: 'compiledForStage(stageId: string): string',
+        description: 'The `<writing_skills>` block of one workflow stage\'s declared patterns.',
+        parameters: [{ name: 'stageId', description: 'the workflow stage id.' }],
+        returns: 'the compiled block.',
+        throws: ['WritingPatternError when the deployment declared no patterns for the stage.'],
+      },
+      {
+        signature: 'stageIds(): readonly string[]',
+        description: 'Stage ids the deployment declared, in configuration order.',
+        parameters: [],
+        returns: 'the declared stage ids.',
+      },
+    ],
+  },
 ]
 
 /** Every harness event, sorted by name. */
@@ -8362,6 +8389,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface PatentTeamsStatusTask {\n    id: string;\n    subject: string;\n    status: string;\n    assignee: string;\n    dependencies: string[];\n    attempt: number;\n    attempt_id: string;\n    reassigning: boolean;\n    output?: string;\n    worker?: string;\n    contract_validation?: {\n        valid: boolean;\n        missing_hard_fields: string[];\n        degraded: boolean;\n    };\n    gate_feedback?: {\n        score: number;\n        satisfied: boolean;\n        failures: string[];\n        feedback: string;\n    };\n    gate_rejections?: number;\n}',
   },
   {
+    name: 'PatternCategory',
+    declaration: 'export type PatternCategory = (typeof PATTERN_CATEGORIES)[number];',
+  },
+  {
+    name: 'PatternExample',
+    declaration: 'export type PatternExample = {\n    context?: string;\n    text: string;\n    note?: string;\n};',
+  },
+  {
+    name: 'PatternPrinciple',
+    declaration: 'export type PatternPrinciple = {\n    rule: string;\n    example?: string;\n};',
+  },
+  {
+    name: 'PatternStep',
+    declaration: 'export type PatternStep = {\n    order: number;\n    name: string;\n    instruction: string;\n    example?: string;\n};',
+  },
+  {
     name: 'PeerAdmission',
     declaration: 'export type PeerAdmission = {\n    readonly peer: PeerScope;\n} | {\n    readonly rejection: 401 | 403;\n};',
   },
@@ -11308,6 +11351,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkspaceView',
     declaration: 'export interface WorkspaceView {\n    readonly workspaceId: WorkspaceId;\n    readonly path: string;\n    readonly title: string;\n    readonly sessionIds: readonly SessionId[];\n    readonly createdAt: string;\n    readonly updatedAt: string;\n}',
+  },
+  {
+    name: 'WritingPattern',
+    declaration: 'export type WritingPattern = {\n    id: string;\n    name: string;\n    category: PatternCategory;\n    subCategory?: string;\n    summary: string;\n    context?: string;\n    keywords?: readonly string[];\n    steps: readonly PatternStep[];\n    examples: readonly PatternExample[];\n    dos: readonly PatternPrinciple[];\n    donts: readonly PatternPrinciple[];\n    sourceRef?: string;\n    quality: number;\n    version?: number;\n};',
   },
 ]
 

@@ -340,6 +340,38 @@ reject(caseId: string, feedback?: string): PlantaskRunResult
 ```
 
 Source: [`packages/patent/patent-workflow/src/index.ts`](../../packages/patent/patent-workflow/src/index.ts)
+
+<a id="ctxwritingpatterns--writingpatternsservice"></a>
+
+### `ctx.writingPatterns` — `WritingPatternsService`
+
+The writing-pattern capability seam: the patterns each workflow stage declared in `stagePatterns`, resolved against the loaded corpus at plugin load. An atom reads its stage's patterns here instead of reaching into the store, so the deployment's stage policy stays in `cordis.yml`.
+
+```ts cordis-catalog
+/**
+ * The patterns one workflow stage declared, in declaration order.
+ * @param stageId - the workflow stage id.
+ * @returns the stage's patterns.
+ * @throws WritingPatternError when the deployment declared no patterns for the stage.
+ */
+patternsForStage(stageId: string): readonly WritingPattern[]
+
+/**
+ * The `<writing_skills>` block of one workflow stage's declared patterns.
+ * @param stageId - the workflow stage id.
+ * @returns the compiled block.
+ * @throws WritingPatternError when the deployment declared no patterns for the stage.
+ */
+compiledForStage(stageId: string): string
+
+/**
+ * Stage ids the deployment declared, in configuration order.
+ * @returns the declared stage ids.
+ */
+stageIds(): readonly string[]
+```
+
+Source: [`packages/patent/writing-patterns/src/index.ts`](../../packages/patent/writing-patterns/src/index.ts)
 <!-- END GENERATED cordis-surface -->
 
 ## ModelPort 契约

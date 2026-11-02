@@ -1,5 +1,5 @@
 ---
-description: "函数插件，为专利撰写者或 Agent 提供本部署适用的撰写模式：随包分发的 YAML 撰写模式语料（撰写与审查意见答复场景）经 query_writing_patterns 工具与一个 writing-patterns:skills 系统提示词 section（携带编译后的 `<writing_skills>` 块）到达模型，并作为无需密钥的库 API 供提示词装配使用。选择为词法匹配且离线完成——关键词检索、案件特征匹配、按类目列举或列举整个模式库——故同一查询始终选中同一批模式。"
+description: "函数插件，为专利撰写者或 Agent 提供本部署适用的撰写模式：随包分发的 YAML 撰写模式语料（撰写与审查意见答复场景）经 query_writing_patterns 工具与一个 writing-patterns:skills 系统提示词 section（携带紧凑的 `<pattern_index>` 模式索引）到达模型，并作为无需密钥的库 API 供提示词装配使用。选择为词法匹配且离线完成——关键词检索、案件特征匹配、按类目列举或列举整个模式库——故同一查询始终选中同一批模式。"
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-函数插件，为专利撰写者或 Agent 提供本部署适用的撰写模式：随包分发的 YAML 撰写模式语料（撰写与审查意见答复场景）经 query_writing_patterns 工具与一个 writing-patterns:skills 系统提示词 section（携带编译后的 `<writing_skills>` 块）到达模型，并作为无需密钥的库 API 供提示词装配使用。选择为词法匹配且离线完成——关键词检索、案件特征匹配、按类目列举或列举整个模式库——故同一查询始终选中同一批模式。
+函数插件，为专利撰写者或 Agent 提供本部署适用的撰写模式：随包分发的 YAML 撰写模式语料（撰写与审查意见答复场景）经 query_writing_patterns 工具与一个 writing-patterns:skills 系统提示词 section（携带紧凑的 `<pattern_index>` 模式索引）到达模型，并作为无需密钥的库 API 供提示词装配使用。选择为词法匹配且离线完成——关键词检索、案件特征匹配、按类目列举或列举整个模式库——故同一查询始终选中同一批模式。
 
 ## 目录
 
@@ -33,11 +33,11 @@ query_writing_patterns 返回适配某个撰写或审查意见答复场景的撰
 <a id="pattern-corpus-and-library-api"></a>
 ## 模式语料与库 API
 
-语料随包分发于 `assets/patterns/`，每个模式一个资产文件，后缀为 `.yaml` 或 `.yml`，经 `import.meta.url` 相对本模块解析，故源码树与构建产物读取同一目录。文件要么声明一个模式，要么以 `patterns` 列表声明多个，字段为 `id`、`name`、`category`、`summary`，可选的 `sub_category`、`context`、`keywords`、`source_ref`、`version`，以及 `steps`、`examples`、`dos`、`donts`、`quality`；出现其他键会直接拒绝，不被静默丢弃。`keywords` 是著录的检索同义词；`source_ref` 记录法律依据，不编译进提示词，由包内 `source-ref` 用例逐条对照随包法律索引解析。随包的十个模式是 MIT 许可的 Go 项目 `Mady/domains/writing` 的种子模式：实用新型权利要求撰写、从属权利要求分层、背景技术、发明内容、创造性三步法答复、新颖性单独对比、清楚性与支持、交底书 PFE 三元组、IPC 策略、具体实施方式；上游的版权与许可声明保留在 `NOTICE` 中。`invalidation` 类目不带种子模式：它命名无效宣告实务，使部署语料无需改格式即可挂接；在 `sectionCategories` 中选中它不会多注入任何内容。
+语料随包分发于 `assets/patterns/`，每个模式一个资产文件，后缀为 `.yaml` 或 `.yml`，经 `import.meta.url` 相对本模块解析，故源码树与构建产物读取同一目录。文件要么声明一个模式，要么以 `patterns` 列表声明多个，字段为 `id`、`name`、`category`、`summary`，可选的 `sub_category`、`context`、`keywords`、`source_ref`、`version`，以及 `steps`、`examples`、`dos`、`donts`、`quality`；出现其他键会直接拒绝，不被静默丢弃。`keywords` 是著录的检索同义词；`source_ref` 记录法律依据，不编译进提示词，由包内 `source-ref` 用例逐条对照随包法律索引解析。前十个是 MIT 许可的 Go 项目 `Mady/domains/writing` 的种子模式：实用新型权利要求撰写、从属权利要求分层、背景技术、发明内容、创造性三步法答复、新颖性单独对比、清楚性与支持、交底书 PFE 三元组、IPC 策略、具体实施方式；上游的版权与许可声明保留在 `NOTICE` 中。另有八条撰写期模式：用最接近现有技术反打独权的三步法自检、26.3 实施例矩阵、33 条修改预埋、单一性、功能性限定、软件方法/装置/介质三件套、马库什并列下位、数值范围退路。`invalidation` 类目不带随包模式：它命名无效宣告实务，使部署语料无需改格式即可挂接；在 `sectionCategories` 中选中它不会多索引任何内容。
 
 加载 fail-loud。`loadPatternStore()` 读取随包目录，`loadPatternStore(patternDir)` 读取显式目录（相对路径按工作目录解析）；目录不可读、目录下没有模式文件、YAML 语法错误、id 重复，或字段缺失、类型错误、超出范围、无法识别，一律抛出 `PatternAssetError` 并点名文件、字段路径与可用字段。类目不在已知九类之内同样如此，因为工具的类目枚举永远选不到这样的模式。`quality` 缺失或为零时取移植的默认值 0.8。
 
-库 API 直接导出这些部件：`PatternStore`（`size`、`get`、`all`、`byCategory`、`search`、`match`）、`loadPatternCorpus`、`parsePatternFile`、`patternKeywords`、`compileWritingSkills`、`escapeXmlText` 与 `PATTERN_FILE_SUFFIXES`。编译器是模式的纯函数，输出与提示词 section 注入的内容完全一致，故调用方可对注入文本做断言。
+库 API 直接导出这些部件：`PatternStore`（`size`、`get`、`all`、`byCategory`、`search`、`match`）、`loadPatternCorpus`、`parsePatternFile`、`patternKeywords`、`compileWritingSkills`、`compileWritingPatternIndex`、`escapeXmlText` 与 `PATTERN_FILE_SUFFIXES`。`compileWritingSkills` 输出工具结果携带的 `<writing_skills>` 块，`compileWritingPatternIndex` 输出提示词 section 携带的紧凑 `<pattern_index>`；两者都是模式的纯函数，故调用方可对注入文本做断言。插件挂载还会提供 `writingPatterns` 服务（`patternsForStage`、`compiledForStage`、`stageIds`），按下文阶段映射解析。
 
 <a id="configuration"></a>
 ## 配置
@@ -49,8 +49,9 @@ Schemastery 配置，全部字段可选。
 | patternDir | string | 随包资产 | 存放模式 YAML 文件的目录，相对路径按工作目录解析；须镜像随包布局。语料缺失或非法将使插件加载失败。 |
 | matchLimit | number | 5 | 检索、特征匹配或类目列举未自行给出 `limit` 时的返回条数上限；不带参数的列举始终返回整个模式库。移植的上游来源把一次匹配上限写死为 5。 |
 | registerSection | boolean | true | 注册常驻的 writing-patterns:skills 系统提示词 section。 |
-| sectionCategories | string[] | 全部九个类目 | 注入 section 的类目；空列表则只注入指令文字。 |
+| sectionCategories | string[] | 全部九个类目 | 索引 section 携带的类目；空列表则只注入指令文字。 |
 | sectionOrder | number | 112 | 注入 section 在系统提示词中的位置，与专利域的 TRIZ section（111）相邻。 |
+| stagePatterns | Record<string, string[]> | 无 | 每个工作流阶段的提示词应获得的模式 id，按阶段 id 索引。每个阶段列 3 到 5 个存在于已加载语料中的 id；未知或重复 id、数量超出该范围都会使插件加载失败。原子通过 `writingPatterns` 服务按阶段读取；查询未声明的阶段会抛错。 |
 
 <a id="model-experience"></a>
 ## 模型体验
@@ -73,34 +74,35 @@ Schemastery 配置，全部字段可选。
 
 #### 模型所见
 
-一个常驻的提示词 section，名为 `writing-patterns:skills`，仅在 `registerSection` 为 `true`（默认）时以位置 112 注册，携带 `sectionCategories`（默认为全部类目）中模式的编译后 `<writing_skills>` 块。其指令文字为：
+一个常驻的提示词 section，名为 `writing-patterns:skills`，仅在 `registerSection` 为 `true`（默认）时以位置 112 注册，携带 `sectionCategories`（默认为全部类目）中模式的紧凑 `<pattern_index>` 索引。索引逐条列出一个模式的 id、类目与名称；步骤与规则经 `query_writing_patterns` 取得。其指令文字为：
 
 ##### 指令原文
 
 ```markdown
-The <writing_skills> block below lists the writing patterns of this deployment for patent drafting and office-action replies; each pattern names one drafting situation with its ordered steps and the rules to follow or avoid.
-When the case at hand is not covered by those patterns, call query_writing_patterns with the case category, the case features, or search keywords to retrieve the patterns that match it.
+The <pattern_index> block below lists the writing patterns of this deployment by id, category, and name; it is an index, not the pattern text.
+Call query_writing_patterns with the case category, the case features, or search keywords to retrieve the matching patterns with their ordered steps and the rules to follow or avoid. When the case at hand is already covered by one of the indexed patterns, retrieve that pattern before drafting.
 ```
 
 #### Token 影响
 
-每次请求承担两行指令的固定成本，加上注入类目的编译块，该块仅在压缩前重复占用上下文；`sectionCategories` 为空时只剩两行指令，`registerSection: false` 则整个 section 消失。
+每次请求承担两行指令的固定成本，加上注入类目的紧凑索引，该索引仅在压缩前重复占用上下文；`sectionCategories` 为空时只剩两行指令，`registerSection: false` 则整个 section 消失。随包语料下索引为 1,819 字符，而把原先十条模式全量编译为 17,461 字符。
 
 #### KV Cache 影响
 
-section 文本、其位置与编译块不变时前缀稳定；改动 `sectionCategories`、`sectionOrder`、`patternDir` 或任一模式资产都会重新编译该块，并自该 section 起使缓存复用失效。
+section 文本、其位置与索引不变时前缀稳定；改动 `sectionCategories`、`sectionOrder`、`patternDir` 或任一模式资产都会重建索引，并自该 section 起使缓存复用失效。`stagePatterns` 的改动不影响该 section。
 
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与暂缓事项
 
-- **随包语料只有十个种子模式** —— 它们只覆盖移植种子集的场景，别处一概不覆盖。把 `patternDir` 指向部署自备目录即可替换；其中每个文件仍须满足同一套字段规则，否则插件加载失败。
+- **随包语料共十八条模式** —— 十条来自移植项目的种子模式，另加八条撰写期模式。把 `patternDir` 指向部署自备目录即可替换；其中每个文件仍须满足同一套字段规则，否则插件加载失败。
 - **选择只是词法匹配，从不做语义理解** —— 中文串通过相邻二字组与著录 `keywords` 匹配，故同一场景换个说法仍可能命中不到。工具结果最后一段给出模式库规模，使模型能区分「库窄」与「查询窄」。
 - **`quality` 是检索相关性，不是法律正确性** —— 它只乘在词法得分上且不进入工具结果，不证明模式中的规则或引用正确。
 - **`source_ref` 在测试期校验，不在加载期校验** —— 编译器不把它写入提示词。`tests/source-ref.spec.ts` 将每条引用（含款号与审查指南节号）对照随包法律索引解析，但加载器仍会接受引用无法解析的语料。
 - **`query` 与 `features` 计分方式不同且不叠加** —— 两者同时给出时按关键词检索，忽略特征匹配；特征匹配服务于已知特征、却不知如何措辞的案件。
-- **提示词 section 默认注入整个模式库** —— 随包语料下每次请求约 35 KB 编译文本。随包的 `patent` 预设把 `sectionCategories` 收窄为权利要求撰写、说明书撰写与三个审查意见类目（约 27 KB）；其他组合仍承担完整块。若部署只撰写其中部分场景，请收窄 `sectionCategories`；工具本身不受影响，始终完整。`system-prompt.expected.md` 快照逐字节固定了编译文本，语料改动使其增长时必须有意重录该 fixture。
+- **提示词 section 只带索引，不带模式正文** —— 随包语料把 18 条模式索引为 1,819 字符；把 18 条全部编译则需 27,234 字符。模型要先调用 `query_writing_patterns` 才能按某条模式撰写，比原先的常驻全量块多一次工具往返。`system-prompt.expected.md` 快照逐字节固定了索引，语料改动使其变化时必须有意重录该 fixture。
 - **`examples` 与应遵循/应避免规则的 `example` 只被解析、从不参与编译，`sub_category` 参与选择但不进入编译块** —— 编译块携带每个模式的摘要、步骤（含步骤自身的 `example`）、应遵循规则与应避免规则，与移植的编译器一致，且种子语料未设置顶层或规则级示例。`sub_category` 只参与类目查找。需要渲染示例的调用方自行从 store 读取。
 - **工具只读且无状态** —— 它读取插件加载时读入的语料，自身不写入任何持久状态或会话事件；其结果仅作为普通工具结果进入日志。
+- **阶段模式只是查询，不是注入** —— `stagePatterns` 按阶段解析 id 并经 `writingPatterns` 暴露；它不改工作流 manifest，也不自行把文本推进阶段提示词。消费方原子须主动按自己的阶段查询；未声明映射的阶段会在查询时显式失败。
 - **资产失败发生在加载期而非调用期** —— 语料非法或缺失时在插件挂载阶段抛出 `PatternAssetError`，故部署不会带着空模式库面对模型。
 
 <a id="dev-note"></a>

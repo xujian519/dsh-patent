@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-alpha.2/writing-pattern-index/guide.md
+/:
+  en: 9074bcfcfcac64c6
+  zh: 23b3d8850cb5b47c
+/writing-patterns-become-an-index-with-per-stage-selection:
+  en: 8f8f87a86d4ad2e3
+  zh: 8e43543dd69934db
+/writing-patterns-become-an-index-with-per-stage-selection/change:
+  en: 2a36a9b0a5fb27c7
+  zh: f6c2d25719075146
+/writing-patterns-become-an-index-with-per-stage-selection/migration:
+  en: b25af7c1f034198f
+  zh: 82b77545c8270ab5

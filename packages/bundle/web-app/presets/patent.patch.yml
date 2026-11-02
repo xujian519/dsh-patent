@@ -542,11 +542,10 @@
           - id: patent-law
             name: '@deepseek-ai/dsh-patent-law'
 
-          # The always-on section injects the compiled patterns of its categories on
-          # every request, so narrow it to the situations this preset drafts; the tool
-          # still searches the whole library, which is how the disclosure, IPC,
-          # embodiment, and invalidation patterns reach the model. The narrowed set is
-          # about 27 KB against the library's 35 KB.
+          # The always-on section carries only a pattern index; the full steps and
+          # rules arrive through query_writing_patterns. The stage map decides which
+          # patterns each drafting stage's prompt receives, without changing what the
+          # tool can search.
           - id: writing-patterns
             name: '@deepseek-ai/dsh-writing-patterns'
             config:
@@ -556,6 +555,35 @@
                 - oa_inventiveness
                 - oa_novelty
                 - oa_clarity
+              stagePatterns:
+                draft_claims:
+                  - wp-claim-utility-model
+                  - wp-claim-dependent-layering
+                  - wp-claim-3step-prior-art-check
+                  - wp-claim-unity-special-feature
+                  - wp-claim-functional-limitation
+                draft_specification:
+                  - wp-spec-background
+                  - wp-spec-invention-content
+                  - wp-embodiment-writing
+                  - wp-spec-amendment-reserve
+                  - wp-spec-numeric-range-fallback
+                spec_check:
+                  - wp-oa-clarity-support
+                  - wp-claim-functional-limitation
+                  - wp-claim-unity-special-feature
+                enablement_report:
+                  - wp-embodiment-enablement-matrix
+                  - wp-embodiment-writing
+                  - wp-spec-numeric-range-fallback
+                claim_breadth:
+                  - wp-claim-markush-equivalents
+                  - wp-claim-functional-limitation
+                  - wp-claim-3step-prior-art-check
+                response-plan:
+                  - wp-oa-inventiveness-3step
+                  - wp-oa-novelty-separate
+                  - wp-oa-clarity-support
 
           - id: tool-literature
             name: '@deepseek-ai/dsh-tool-literature'

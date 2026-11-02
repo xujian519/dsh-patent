@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compileWritingSkills, escapeXmlText } from '../src/skill-compiler.ts'
+import { compileWritingPatternIndex, compileWritingSkills, escapeXmlText } from '../src/skill-compiler.ts'
 import { loadPatternStore } from '../src/pattern-store.ts'
 import { makePattern } from './fixtures/patterns.ts'
 
@@ -97,5 +97,35 @@ describe('compileWritingSkills', () => {
     expect(block.startsWith('<writing_skills>\n  <skill id="wp-oa-inventiveness-3step">')).toBe(true)
     expect(block.endsWith('</writing_skills>')).toBe(true)
     expect(block).toContain('<step order="3">')
+  })
+})
+
+describe('compileWritingPatternIndex', () => {
+  it('returns nothing to inject when there is no pattern', () => {
+    expect(compileWritingPatternIndex([])).toBe('')
+  })
+
+  it('indexes id, category, and name without the pattern body', () => {
+    const pattern = makePattern({
+      id: 'wp-x',
+      name: '两段式独权',
+      category: 'claim_drafting',
+      summary: '前序写共有特征，特征部写改进',
+      steps: [{ order: 1, name: '确定主题', instruction: '写整体装置' }],
+    })
+    expect(compileWritingPatternIndex([pattern])).toBe([
+      '<pattern_index>',
+      '  <pattern id="wp-x" category="claim_drafting">两段式独权</pattern>',
+      '</pattern_index>',
+    ].join('\n'))
+  })
+
+  it('keeps the given order and escapes authored names', () => {
+    const first = makePattern({ id: 'a', name: 'A & B' })
+    const second = makePattern({ id: 'b', name: 'B' })
+    const block = compileWritingPatternIndex([second, first])
+    expect(block.indexOf('id="b"')).toBeLessThan(block.indexOf('id="a"'))
+    expect(block).toContain('A &amp; B')
+    expect(block).not.toContain('<steps>')
   })
 })

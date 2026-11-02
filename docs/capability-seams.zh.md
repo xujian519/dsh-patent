@@ -338,6 +338,8 @@ flowchart LR
   svc_patentWorkflow["ctx.patentWorkflow<br/>Patent execution pipeline"]
   pkg_patent_teams["patent-teams"]
   svc_patentTeams["ctx.patentTeams<br/>Patent team coordination domain"]
+  pkg_writing_patterns["writing-patterns"]
+  svc_writingPatterns["ctx.writingPatterns<br/>Stage-scoped writing-pattern lookup"]
   pkg_legal_knowledge["legal-knowledge"]
   svc_legalKnowledge["ctx.legalKnowledge<br/>Legal knowledge-base query seam"]
   pkg_experimental_liveshare["experimental-liveshare"]
@@ -521,6 +523,7 @@ flowchart LR
   pkg_working_directory --> svc_workingDirectory
   pkg_workspace --> svc_workspaceRegistry
   pkg_workspace_changes --> svc_workspaceChanges
+  pkg_writing_patterns --> svc_writingPatterns
   svc_actionCards --> pkg_client_ui_action_cards
   svc_actionCards --> pkg_creation_recommendations
   svc_agentDefaultModel --> pkg_api_session_controller
@@ -810,6 +813,7 @@ flowchart LR
 | `ctx.patentKnowledge` | `seam` | [`patent-knowledge`](../packages/patent/patent-knowledge) | - | - | - | 判例全文检索、法律、wiki 卡片与知识图谱查询的 Service Definition；sqlite 提供方与安装命令随 P1.3 落地。 |
 | `ctx.patentWorkflow` | `seam` | [`patent-workflow`](../packages/patent/patent-workflow) | - | - | - | workflow／flexible-plan／plantask 状态机及其 HITL 审批接线的 Service Definition；实现随 P3.1 落地。 |
 | `ctx.patentTeams` | `core` | [`patent-teams`](../packages/patent/patent-teams) | - | - | - | 持有持久团队名册、共享任务 DAG、成员邮箱与调度锁；同包内的 patent_teams_* 工具是面向模型的控制器。 |
+| `ctx.writingPatterns` | `core` | [`writing-patterns`](../packages/patent/writing-patterns) | - | - | - | 持有已加载的模式语料与解析后的阶段映射；原子按阶段读取 3–5 条模式，`query_writing_patterns` 仍是同一语料上面向模型的检索入口。 |
 | `ctx.legalKnowledge` | `seam` | [`legal-knowledge`](../packages/legal/legal-knowledge) | [`legal-knowledge`](../packages/legal/legal-knowledge) | [`legal-knowledge`](../packages/legal/legal-knowledge) | - | Service Definition 与 SQLite／内存实现同包；可选的 ./tool 插件是面向模型的 legal_knowledge_search 消费方，必须挂载在同一 isolate realm。 |
 | `ctx.liveshareShares` | `service` | [`experimental-liveshare`](../packages/experimental/liveshare) | - | - | - | 以单个 Typert Remote 命名空间发布 owner 分享管理操作，供 owner 客户端面调用；每个方法都委托给同源路由原先使用的同一组操作。 |
 

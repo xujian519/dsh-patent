@@ -336,6 +336,8 @@ flowchart LR
   svc_patentWorkflow["ctx.patentWorkflow<br/>Patent execution pipeline"]
   pkg_patent_teams["patent-teams"]
   svc_patentTeams["ctx.patentTeams<br/>Patent team coordination domain"]
+  pkg_writing_patterns["writing-patterns"]
+  svc_writingPatterns["ctx.writingPatterns<br/>Stage-scoped writing-pattern lookup"]
   pkg_legal_knowledge["legal-knowledge"]
   svc_legalKnowledge["ctx.legalKnowledge<br/>Legal knowledge-base query seam"]
   pkg_experimental_liveshare["experimental-liveshare"]
@@ -519,6 +521,7 @@ flowchart LR
   pkg_working_directory --> svc_workingDirectory
   pkg_workspace --> svc_workspaceRegistry
   pkg_workspace_changes --> svc_workspaceChanges
+  pkg_writing_patterns --> svc_writingPatterns
   svc_actionCards --> pkg_client_ui_action_cards
   svc_actionCards --> pkg_creation_recommendations
   svc_agentDefaultModel --> pkg_api_session_controller
@@ -808,6 +811,7 @@ flowchart LR
 | `ctx.patentKnowledge` | `seam` | [`patent-knowledge`](../packages/patent/patent-knowledge) | - | - | - | Service Definition for case-law FTS, legal, wiki-card, and knowledge-graph lookups; the sqlite provider and install command land with P1.3. |
 | `ctx.patentWorkflow` | `seam` | [`patent-workflow`](../packages/patent/patent-workflow) | - | - | - | Service Definition for the workflow/flexible-plan/plantask state machines with HITL approval wiring; the implementation lands with P3.1. |
 | `ctx.patentTeams` | `core` | [`patent-teams`](../packages/patent/patent-teams) | - | - | - | Owns the durable team roster, shared task DAG, member mailbox, and scheduling lock; the co-located patent_teams_* tools are the model-facing controllers. |
+| `ctx.writingPatterns` | `core` | [`writing-patterns`](../packages/patent/writing-patterns) | - | - | - | Owns the loaded pattern corpus and the resolved stage map; an atom reads its stage’s 3–5 patterns here, while query_writing_patterns stays the model-facing search over the same corpus. |
 | `ctx.legalKnowledge` | `seam` | [`legal-knowledge`](../packages/legal/legal-knowledge) | [`legal-knowledge`](../packages/legal/legal-knowledge) | [`legal-knowledge`](../packages/legal/legal-knowledge) | - | Service Definition and SQLite/in-memory implementation share one package; the optional ./tool plugin is the model-facing legal_knowledge_search consumer and must mount in the same isolate realm. |
 | `ctx.liveshareShares` | `service` | [`experimental-liveshare`](../packages/experimental/liveshare) | - | - | - | Publishes the owner share-management operations as one Typert Remote namespace that the owner client face calls; every method delegates to the same operations the same-origin routes used. |
 

@@ -43,6 +43,8 @@ describe('@deepseek-ai/dsh-writing-patterns plugin surface', () => {
     expect(typeof Pkg.parsePatternFile).toBe('function')
     expect(typeof Pkg.patternKeywords).toBe('function')
     expect(typeof Pkg.compileWritingSkills).toBe('function')
+    expect(typeof Pkg.compileWritingPatternIndex).toBe('function')
+    expect(typeof Pkg.WritingPatternsService).toBe('function')
     expect(typeof Pkg.escapeXmlText).toBe('function')
     expect(typeof Pkg.renderWritingSkillsSection).toBe('function')
     expect(typeof Pkg.createQueryWritingPatternsTool).toBe('function')
@@ -66,18 +68,19 @@ describe('@deepseek-ai/dsh-writing-patterns plugin surface', () => {
       .not.toContain(WRITING_PATTERNS_SECTION_NAME)
   })
 
-  it('injects the whole library by default and narrows it to the configured categories', async () => {
+  it('indexes the whole library by default and narrows it to the configured categories', async () => {
     const whole = await install()
     const wholeText = (await whole.ctx.systemPrompt.assemble()).sections
       .find(section => section.name === WRITING_PATTERNS_SECTION_NAME)?.text ?? ''
     expect(wholeText).toContain(Pkg.WRITING_PATTERNS_PROMPT_TEXT)
-    expect(wholeText).toContain('<skill id="wp-claim-utility-model">')
-    expect(wholeText).toContain('<skill id="wp-oa-inventiveness-3step">')
+    expect(wholeText).toContain('<pattern id="wp-claim-utility-model"')
+    expect(wholeText).toContain('<pattern id="wp-oa-inventiveness-3step"')
+    expect(wholeText).not.toContain('<steps>')
 
     const narrow = await install({ sectionCategories: ['claim_drafting'] })
     const narrowText = (await narrow.ctx.systemPrompt.assemble()).sections
       .find(section => section.name === WRITING_PATTERNS_SECTION_NAME)?.text ?? ''
-    expect(narrowText).toContain('<skill id="wp-claim-dependent-layering">')
+    expect(narrowText).toContain('<pattern id="wp-claim-dependent-layering"')
     expect(narrowText).not.toContain('wp-oa-inventiveness-3step')
   })
 
@@ -105,15 +108,15 @@ describe('@deepseek-ai/dsh-writing-patterns plugin surface', () => {
     const { ctx } = await install({ patternDir: root, sectionCategories: ['spec_drafting', 'disclosure'] })
     const text = (await ctx.systemPrompt.assemble()).sections
       .find(section => section.name === WRITING_PATTERNS_SECTION_NAME)?.text ?? ''
-    expect(text.match(/<skill id="overlap-pattern">/gu)).toHaveLength(1)
+    expect(text.match(/<pattern id="overlap-pattern"/gu)).toHaveLength(1)
   })
 
-  it('fences the compiled block so the section keeps one physical line per paragraph', async () => {
+  it('fences the compiled index so the section keeps one physical line per paragraph', async () => {
     const { ctx } = await install({ sectionCategories: ['claim_drafting'] })
     const text = (await ctx.systemPrompt.assemble()).sections
       .find(section => section.name === WRITING_PATTERNS_SECTION_NAME)?.text ?? ''
-    expect(text).toContain('```xml\n<writing_skills>')
-    expect(text.endsWith('</writing_skills>\n```')).toBe(true)
+    expect(text).toContain('```xml\n<pattern_index>')
+    expect(text.endsWith('</pattern_index>\n```')).toBe(true)
   })
 
   it('keeps the section out of the prompt when it is disabled', async () => {
@@ -186,7 +189,35 @@ describe('@deepseek-ai/dsh-writing-patterns plugin surface', () => {
 
     const section = (await ctx.systemPrompt.assemble()).sections
       .find(candidate => candidate.name === WRITING_PATTERNS_SECTION_NAME)
-    expect(section?.text).toContain('<skill id="deployment-pattern">')
+    expect(section?.text).toContain('<pattern id="deployment-pattern"')
     expect(section?.text).not.toContain('wp-claim-utility-model')
+  })
+
+  it('resolves a stage to its declared patterns and compiles only those', async () => {
+    const { ctx } = await install({
+      stagePatterns: {
+        draft_claims: ['wp-claim-dependent-layering', 'wp-claim-utility-model', 'wp-claim-3step-prior-art-check'],
+      },
+    })
+    expect(ctx.writingPatterns.stageIds()).toEqual(['draft_claims'])
+    expect(ctx.writingPatterns.patternsForStage('draft_claims').map(pattern => pattern.id))
+      .toEqual(['wp-claim-dependent-layering', 'wp-claim-utility-model', 'wp-claim-3step-prior-art-check'])
+    const compiled = ctx.writingPatterns.compiledForStage('draft_claims')
+    expect(compiled).toContain('<skill id="wp-claim-dependent-layering">')
+    expect(compiled).not.toContain('wp-oa-inventiveness-3step')
+    expect(() => ctx.writingPatterns.patternsForStage('spec_check')).toThrow(/未声明阶段 "spec_check"/)
+  })
+
+  it('fails loud on an invalid stage map', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(NativeToolExecutor)
+    expect(() => { Pkg.apply(ctx, { stagePatterns: { s: ['a', 'b'] } }) })
+      .toThrow(/应为 3 到 5 条/)
+    expect(() => { Pkg.apply(ctx, { stagePatterns: { s: ['wp-claim-utility-model', 'wp-claim-utility-model', 'wp-claim-dependent-layering'] } }) })
+      .toThrow(/重复声明写作模式 "wp-claim-utility-model"/)
+    expect(() => { Pkg.apply(ctx, { stagePatterns: { s: ['a', 'b', 'c'] } }) })
+      .toThrow(/不存在的写作模式/)
   })
 })

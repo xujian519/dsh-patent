@@ -12,13 +12,13 @@ export const WRITING_PATTERNS_SECTION_NAME = 'writing-patterns:skills'
  * should reach for the tool instead of reading it.
  */
 export const WRITING_PATTERNS_PROMPT_TEXT = [
-  'The <writing_skills> block below lists the writing patterns of this deployment for patent drafting and office-action replies; each pattern names one drafting situation with its ordered steps and the rules to follow or avoid.',
-  'When the case at hand is not covered by those patterns, call query_writing_patterns with the case category, the case features, or search keywords to retrieve the patterns that match it.',
+  'The <pattern_index> block below lists the writing patterns of this deployment by id, category, and name; it is an index, not the pattern text.',
+  'Call query_writing_patterns with the case category, the case features, or search keywords to retrieve the matching patterns with their ordered steps and the rules to follow or avoid. When the case at hand is already covered by one of the indexed patterns, retrieve that pattern before drafting.',
 ].join('\n\n')
 
 /**
- * The section text: the instruction prose, then the compiled patterns when the
- * deployment injects any.
+ * The section text: the instruction prose, then the compiled pattern index when
+ * the deployment injects any.
  *
  * The compiled block is fenced so the section reads as instruction prose plus
  * one quoted data block: a bare multi-line XML run would parse as a prose

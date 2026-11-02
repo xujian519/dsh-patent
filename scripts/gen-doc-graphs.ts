@@ -1039,6 +1039,13 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Owns the durable team roster, shared task DAG, member mailbox, and scheduling lock; the co-located patent_teams_* tools are the model-facing controllers.',
   },
   {
+    key: 'writingPatterns',
+    pkg: 'writing-patterns',
+    title: 'Stage-scoped writing-pattern lookup',
+    mode: 'core',
+    note: 'Owns the loaded pattern corpus and the resolved stage map; an atom reads its stage’s 3–5 patterns here, while query_writing_patterns stays the model-facing search over the same corpus.',
+  },
+  {
     key: 'legalKnowledge',
     pkg: 'legal-knowledge',
     title: 'Legal knowledge-base query seam',

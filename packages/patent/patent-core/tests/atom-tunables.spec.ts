@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   ClaimChartHandler,
+  ClaimStrategyHandler,
   CompareHandler,
-  DraftClaimsHandler,
   ExtractHandler,
   GroundednessHandler,
   KeywordsHandler,
@@ -105,7 +105,7 @@ type HandlerCase = { name: string; handler: StageHandler; state: Record<string, 
 
 const PROMPT_HANDLERS: readonly HandlerCase[] = [
   { name: 'extract', handler: new ExtractHandler(), state: { text: '输入文本' } },
-  { name: 'draft-claims', handler: new DraftClaimsHandler(), state: { merge_result: '分析结果' } },
+  { name: 'claim-strategy', handler: new ClaimStrategyHandler(), state: { source_text: '交底书原文' } },
   { name: 'compare', handler: new CompareHandler(), state: { claim: '权利要求' } },
   { name: 'novelty', handler: new NoveltyHandler(), state: { features: ['F1'] } },
   { name: 'keywords', handler: new KeywordsHandler(), state: { extraction_result: '分析摘要' } },
@@ -182,20 +182,20 @@ describe('handler tunable application', () => {
     expect(llm.prompts[0]).not.toContain('x'.repeat(11))
   })
 
-  it('draft-claims applies one limit to the analysis and novelty blocks', async () => {
-    const llm = captureLlm(JSON.stringify({ claims: ['1. 一种装置'] }))
-    await new DraftClaimsHandler().execute({
+  it('claim-strategy applies one limit to the PFIE and source blocks', async () => {
+    const llm = captureLlm(JSON.stringify({ essential_features: [] }))
+    await new ClaimStrategyHandler().execute({
       state: {
         merge_result: 'm'.repeat(100),
-        novelty_conclusion: 'n'.repeat(100),
+        source_text: 's'.repeat(100),
         prompt_char_limit: 5,
       },
       provider: llm.provider,
     })
     expect(llm.prompts[0]).toContain('m'.repeat(5))
     expect(llm.prompts[0]).not.toContain('m'.repeat(6))
-    expect(llm.prompts[0]).toContain('n'.repeat(5))
-    expect(llm.prompts[0]).not.toContain('n'.repeat(6))
+    expect(llm.prompts[0]).toContain('s'.repeat(5))
+    expect(llm.prompts[0]).not.toContain('s'.repeat(6))
   })
 
   it('compare raises the claim cap when configured above its default', async () => {

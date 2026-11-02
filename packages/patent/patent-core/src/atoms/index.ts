@@ -3,9 +3,10 @@
  *
  * - atom.ts：Atom 声明式契约 + 注册表（纯声明，不参与执行）
  * - handler.ts：StageHandler 运行时 + PipelineState + 错误模型 + 注册表
- * - handlers/builtin/：30 个内置原子，按职责分域：
+ * - handlers/builtin/：31 个内置原子，按职责分域：
  *   search/keywords/extract/merge/compare/novelty/reasoning/groundedness/
  *   draft-claims/approval-gate/claim-chart 为模型或检索阶段；
+ *   claim-strategy 为成文前的权利要求策略阶段（特征归属、锚点与从权树）；
  *   oa-parse/grounds/response-plan/coverage/pfe-consistency/citation-check/
  *   time-baseline/dispute-framing/dispute-framing-refine/prior-art-filter/
  *   conflicting-application/numeric-range/problem-check/amendment-basis/
@@ -70,6 +71,15 @@ export {
   GROUNDEDNESS_THRESHOLD,
   draftClaimsAtom,
   DraftClaimsHandler,
+  claimStrategyAtom,
+  ClaimStrategyHandler,
+  renderClaimStrategyReport,
+  type ClaimFeatureKind,
+  type ClaimStrategy,
+  type ClaimStrategyFeature,
+  type ClaimStrategyNode,
+  type ConfirmedClaimStrategy,
+  type ConfirmedFeature,
   degraded,
   type DegradedOptions,
   approvalGateAtom,
@@ -169,7 +179,7 @@ import { globalAtomRegistry } from './atom.ts'
 import { globalStageHandlerRegistry } from './handler.ts'
 import * as builtin from './handlers/builtin/index.ts'
 
-/** 将 30 个内置原子（契约 + 运行时）注册进全局注册表。幂等：同名覆盖。 */
+/** 将 31 个内置原子（契约 + 运行时）注册进全局注册表。幂等：同名覆盖。 */
 export function registerBuiltinAtoms(): void {
   globalAtomRegistry.register(builtin.searchAtom)
   globalAtomRegistry.register(builtin.extractAtom)
@@ -180,6 +190,7 @@ export function registerBuiltinAtoms(): void {
   globalAtomRegistry.register(builtin.noveltyAtom)
   globalAtomRegistry.register(builtin.mergeAtom)
   globalAtomRegistry.register(builtin.draftClaimsAtom)
+  globalAtomRegistry.register(builtin.claimStrategyAtom)
   globalAtomRegistry.register(builtin.approvalGateAtom)
   globalAtomRegistry.register(builtin.claimChartAtom)
   globalAtomRegistry.register(builtin.oaParseAtom)
@@ -211,6 +222,7 @@ export function registerBuiltinAtoms(): void {
   globalStageHandlerRegistry.register(new builtin.NoveltyHandler())
   globalStageHandlerRegistry.register(new builtin.MergeHandler())
   globalStageHandlerRegistry.register(new builtin.DraftClaimsHandler())
+  globalStageHandlerRegistry.register(new builtin.ClaimStrategyHandler())
   globalStageHandlerRegistry.register(new builtin.ApprovalGateHandler())
   globalStageHandlerRegistry.register(new builtin.ClaimChartHandler())
   globalStageHandlerRegistry.register(new builtin.OaParseHandler())

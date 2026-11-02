@@ -156,6 +156,8 @@ export const ATOM_PARAM_DESCRIPTION = [
   'adversary-model (params: none; reads office_action, claims, response_plan, response_plan_summary and calls the model), adversary-review (params: none; deterministic re-check of draft_tightened (falls back to draft), reference_documents or office_action.citations, claims, office_action; writes adversary_review_passed for legal-gaps).',
   'enablement-report (params: none; reads specification, claims_draft and tech_domain, then calls the model to quote embodiments for each independent-claim feature and re-checks the quotes against the specification).',
   'claim-breadth (params: none; reads specification, claims_draft and tech_domain, then calls the model for one record per upper-level generalization and re-checks each quote against the specification).',
+  'claim-strategy (params: none; reads pfe_triples/merge_result/novelty_conclusion/prior_art/source_text/tech_domain, or confirmed_features when the caller supplies the table; writes anchor-checked claim_strategy and claim_strategy_report).',
+  'draft-claims (params: none; reads claim_strategy, renders the independent claim and dependent tree deterministically, lets a dependent-claim specialist only reorder or supplement dependents, and vetoes the draft on any claim_lint error).',
 ].join(' ')
 
 /** Stage JSON schema shared by create's stages list and add's single stage. */

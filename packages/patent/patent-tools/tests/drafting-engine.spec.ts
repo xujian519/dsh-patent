@@ -228,6 +228,17 @@ describe('draft_claims deeper paths', () => {
     })).toThrow(/dependent_tree 与 optional_features 互斥/)
   })
 
+  it('translates the mutual-exclusion rejection into invalid_tool_input at the tool boundary', async () => {
+    const tool = createDraftClaimsTool()
+    const signal = new AbortController().signal
+    await expect(tool.execute({
+      invention_name: '装置',
+      technical_features: ['特征A'],
+      optional_features: ['扁平附加特征'],
+      dependent_tree: [{ number: 2, parent: 1, text: '树附加特征' }],
+    }, { signal } as never)).rejects.toMatchObject({ code: 'invalid_tool_input' })
+  })
+
   it('applies the claim ceiling and the additional-fee warning to a tree', () => {
     const tree = Array.from({ length: 10 }, (_, index) => ({
       number: index + 2,

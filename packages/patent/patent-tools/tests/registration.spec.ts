@@ -47,7 +47,7 @@ const EXPECTED_TOOLS = [
 ]
 
 /**
- * Atoms a complete composition registers: patent-core's 30 built-ins plus
+ * Atoms a complete composition registers: patent-core's 31 built-ins plus
  * `slop-gate`, `tighten`, `draft-specification`, `spec-check`, `response-check`,
  * `eligibility`, and `legal-gaps` (registered by this package, not by
  * registerBuiltinAtoms).
@@ -60,6 +60,7 @@ const REGISTERED_ATOMS = [
   'citation-check',
   'claim-breadth',
   'claim-chart',
+  'claim-strategy',
   'compare',
   'conflicting-application',
   'coverage',
@@ -144,7 +145,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(tool, { workflowStageBudget: 20 }))
-      .rejects.toThrow(/patent_disclosure_v1 的阶段数 25 超出预算 20/)
+      .rejects.toThrow(/patent_disclosure_v1 的阶段数 26 超出预算 20/)
   })
 
   it('fails plugin load when a manifest exceeds the configured model-calling stage budget', async () => {
@@ -152,14 +153,14 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(tool, { workflowLlmStageBudget: 8 }))
-      .rejects.toThrow(/patent_disclosure_v1 的模型调用阶段数 12 超出预算 8/)
+      .rejects.toThrow(/patent_disclosure_v1 的模型调用阶段数 13 超出预算 8/)
   })
 
   it('accepts budgets raised to the current built-in manifest sizes', async () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
-    await ctx.plugin(tool, { workflowStageBudget: 25, workflowLlmStageBudget: 12 })
+    await ctx.plugin(tool, { workflowStageBudget: 26, workflowLlmStageBudget: 13 })
     expect(ctx.tools.schemas().map(schema => schema.name)).toContain('patent_workflow_run')
   })
 

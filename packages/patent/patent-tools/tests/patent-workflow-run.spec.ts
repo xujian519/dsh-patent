@@ -1305,17 +1305,26 @@ describe('patent_workflow_run', () => {
   })
 
   it('disclosure manifest: a slop-heavy draft rewinds via the real slop-gate and exhausts', async () => {
-    // 固定产出套话权利要求：真实 SlopGateHandler 判失败 → 回退 draft_claims 重跑 →
-    // 仍失败 → maxRetries 耗尽降级。套话文本（total 30 < 通过线 35）由 slop-engine 确定性判定。
-    const sloppyClaims = [
-      '首先分析本申请的技术方案，再分析现有技术方案。',
+    // 策略表给出可锚定的特征；从权专员固定产出套话条文，真实 SlopGateHandler 判失败
+    // → 回退 draft_claims 重跑 → 仍失败 → maxRetries 耗尽降级。
+    const strategy = {
+      essential_features: [{ id: 'F1', text: 'technical feature', anchor: 'technical' }],
+      optional_features: [{ id: 'F2', text: 'disclosure feature', anchor: 'disclosure' }],
+      dependent_tree: [{ number: 2, parent: 1, feature_id: 'F2' }],
+      prior_art_ref: null,
+    }
+    const sloppyDependents = [
       '进一步地，此外，值得一提的是，本申请具有显著进步。',
-      '区别特征在于采用了新型结构。',
-      '综上所述，保护范围合理。',
     ]
     const model: PatentModelPort = {
-      stream: async function* () {
-        yield { type: 'delta', text: JSON.stringify({ claims: sloppyClaims, notes: '撰写说明' }) }
+      stream: async function* (request) {
+        const prompt = request.messages.map(message => message.content).join('\n')
+        const text = prompt.includes('确定特征归属')
+          ? JSON.stringify(strategy)
+          : prompt.includes('从属权利要求专员')
+            ? JSON.stringify({ dependents: [{ number: 2, parent: 1, feature_id: 'F2', text: sloppyDependents[0]! }] })
+            : JSON.stringify({ claims: sloppyDependents, notes: '撰写说明' })
+        yield { type: 'delta', text }
         yield { type: 'done' }
       },
     }
@@ -1334,7 +1343,7 @@ describe('patent_workflow_run', () => {
     // 回退 splice 掉首轮结果，最终轮 draft 保留重跑后的套话草稿。
     const draftClaims = stages.filter(s => s.stageId === 'draft_claims')
     expect(draftClaims).toHaveLength(1)
-    expect(draftClaims[0]!.output).toContain('首先分析')
+    expect(draftClaims[0]!.output).toContain('进一步地')
     expect(value.degradedSteps).toContain('slop_clean')
   })
 

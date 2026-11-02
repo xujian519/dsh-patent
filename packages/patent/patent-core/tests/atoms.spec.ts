@@ -107,7 +107,7 @@ describe('registry', () => {
     expect(globalAtomRegistry.lookup('temp-global-atom')).toBeUndefined()
   })
 
-  it('registerBuiltinAtoms 注册 30 个内置原子与 handler', () => {
+  it('registerBuiltinAtoms 注册 31 个内置原子与 handler', () => {
     registerBuiltinAtoms()
     const names = ListAtoms().map(a => a.name).sort()
     expect(names).toEqual([
@@ -118,6 +118,7 @@ describe('registry', () => {
       'citation-check',
       'claim-breadth',
       'claim-chart',
+      'claim-strategy',
       'compare',
       'conflicting-application',
       'coverage',
@@ -618,50 +619,37 @@ describe('extract 分键 / merge / draft-claims', () => {
     expect(String(out._error)).toMatch(/四路提取结果均为空/)
   })
 
-  const claimsProvider: StageProvider = {
-    callLLM: async () =>
-      JSON.stringify({
-        claims: ['1. 一种散热装置，包括散热鳍片…', '2. 根据权利要求1所述的散热装置，其特征是…'],
-        notes: '独立权利要求含必要技术特征',
-      }),
-  }
-
-  it('DraftClaimsHandler：产出权利要求草稿（逐条拼接）', async () => {
-    const h = LookupStageHandler('draft-claims')!
+  it('ClaimStrategyHandler：原文锚点未命中即降级', async () => {
+    const h = LookupStageHandler('claim-strategy')!
     const out = await h.execute({
-      state: { merge_result: 'PFE 融合：1 个问题 / 1 个特征 / 1 个效果', novelty_conclusion: '具备新颖性' },
-      provider: claimsProvider,
-    })
-    expect(String(out.claims_draft)).toMatch(/^1\. 一种散热装置/)
-    expect(String(out.claims_draft)).toMatch(/\n\n2\. /)
-  })
-
-  it('DraftClaimsHandler：无 LLM 或输入为空时降级', async () => {
-    const h = LookupStageHandler('draft-claims')!
-    const noLlm = await h.execute({ state: { merge_result: 'x' }, provider: {} })
-    expect(String(noLlm._error)).toMatch(/未配置 LLM/)
-    const empty = await h.execute({ state: {}, provider: claimsProvider })
-    expect(String(empty._error)).toMatch(/输入为空/)
-  })
-
-  it('DraftClaimsHandler：slop_revision_hint 注入上一轮反套话评审意见', async () => {
-    const h = LookupStageHandler('draft-claims')!
-    let captured = ''
-    const capturingProvider: StageProvider = {
-      callLLM: async (prompt) => {
-        captured = prompt
-        return JSON.stringify({ claims: ['1. 一种散热装置，包括散热鳍片…'], notes: '修订后' })
+      state: { source_text: '本申请公开一种散热装置。' },
+      provider: {
+        callLLM: async () => JSON.stringify({
+          essential_features: [{ id: 'F1', text: '散热鳍片', anchor: '不存在的原文' }],
+          optional_features: [],
+          dependent_tree: [],
+          prior_art_ref: null,
+        }),
       },
-    }
-    await h.execute({
-      state: { merge_result: 'x', slop_revision_hint: '命中套话表述：填充词「进一步地」 → （删除）' },
-      provider: capturingProvider,
     })
-    expect(captured).toMatch(/上一轮反套话评审意见/)
-    expect(captured).toMatch(/进一步地/)
-    expect(captured).not.toMatch(/通过线|总分/)
-    await h.execute({ state: { merge_result: 'x' }, provider: capturingProvider })
-    expect(captured).not.toMatch(/上一轮反套话评审意见/)
+    expect(String(out._error)).toMatch(/摘录未在交底书原文中命中/)
+  })
+
+  it('ClaimStrategyHandler：策略表与原文锚点一并产出', async () => {
+    const h = LookupStageHandler('claim-strategy')!
+    const out = await h.execute({
+      state: { source_text: '本申请公开一种散热装置，包括散热鳍片。' },
+      provider: {
+        callLLM: async () => JSON.stringify({
+          essential_features: [{ id: 'F1', text: '散热鳍片', anchor: '散热鳍片' }],
+          optional_features: [],
+          dependent_tree: [],
+          prior_art_ref: null,
+        }),
+      },
+    })
+    expect(String(out.claim_strategy)).toContain('"essential_features"')
+    expect(String(out.claim_strategy_report)).toContain('必要特征 1 项')
   })
 })
 

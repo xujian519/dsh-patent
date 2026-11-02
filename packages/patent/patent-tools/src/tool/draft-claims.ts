@@ -1,115 +1,35 @@
 /**
- * `draft_claims` tool: deterministic claim-drafting (five-step: feature
- * classification → technical field → essential features → independent claim →
- * dependent claims) with formal validation. Ported from Sati's draftClaims.ts.
+ * `draft_claims` tool: deterministic claim drafting over the pure engine in
+ * `@deepseek-ai/dsh-patent-core/claim-draft`.
+ *
+ * This module owns only the model-facing schema and Markdown projection; the
+ * feature table → claim-text rules live in the core engine so the workflow's
+ * `draft-claims` atom and this tool cannot drift.
  * @module @deepseek-ai/dsh-patent-tools/tool/draft-claims
  */
 
+import {
+  CLAIM_SOURCE_EXCLUSIVE_MESSAGE,
+  PARENT_SCHEMA,
+  draftClaims,
+  renderParents,
+  type DraftClaimsOutput,
+} from '@deepseek-ai/dsh-patent-core'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { PatentToolError } from '../error.ts'
 import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
 
-/** Patent technical domain (mechanical / electrical / chemical / software / general). */
-export type TechDomain = 'mechanical' | 'electrical' | 'chemical' | 'software' | 'general'
-/** Patent type (invention or utility model). */
-export type PatentType = 'invention' | 'utility_model'
-
-/**
- * One dependent claim in an explicit claim tree: its number, the claim(s) it
- * cites, and the additional feature it adds. `feature_id` carries the strategy
- * table's feature id so a caller can map the rendered claim back to that table.
- */
-export type DependentClaimNode = {
-  /** Claim number, 2 or greater, unique across the tree. */
-  number: number
-  /** Claim number cited by this claim; an array renders as an alternative citation ("或"). */
-  parent: number | readonly number[]
-  /** The additional technical feature this claim adds. */
-  text: string
-  /** Strategy-table feature id this claim's text comes from. */
-  feature_id?: string
-}
-
-/** Input for the draft_claims tool. */
-export type DraftClaimsInput = {
-  /** Invention title. */
-  invention_name: string
-  /** Technical domain (auto-detected when empty). */
-  tech_domain?: TechDomain
-  /** Essential technical features (for the independent claim). */
-  technical_features: string[]
-  /**
-   * Optional/additional technical features, rendered as a linear chain of
-   * dependent claims. Mutually exclusive with `dependent_tree`.
-   */
-  optional_features?: string[]
-  /**
-   * Explicit dependent-claim tree for multi-branch citations. Mutually
-   * exclusive with `optional_features`.
-   */
-  dependent_tree?: readonly DependentClaimNode[]
-  /** Closest prior-art description (optional, for the preamble). */
-  prior_art?: string
-  /**
-   * Claim-count ceiling fixed by the drafting instruction (user or case
-   * requirement). Exceeding it is an error: a ceiling an instructing party set
-   * is an acceptance condition, not a cost trade-off.
-   */
-  max_claims?: number
-}
-
-/** One drafted claim (independent or dependent). */
-export type DraftedClaim = {
-  number: number
-  type: 'independent' | 'dependent'
-  text: string
-  /** Cited claim number(s); an array is an alternative citation. */
-  refersTo?: number | number[]
-  /** Strategy-table feature id of a dependent claim built from `dependent_tree`. */
-  featureId?: string
-}
-
-/** One formal-validity violation found in drafted claims. */
-export type ClaimViolation = {
-  rule: string
-  severity: 'error' | 'warning'
-  claimNumber?: number
-  message: string
-  suggestion?: string
-}
-
-/** Output of the draft_claims tool. */
-export type DraftClaimsOutput = {
-  invention_name: string
-  tech_domain: TechDomain
-  claims: DraftedClaim[]
-  violations: ClaimViolation[]
-  warnings: string[]
-}
-
-/** Vague qualifiers (clarity rule). */
-const VAGUE_TERMS = ['约', '大致', '可能', '优选', '例如', '大约', '左右']
-
-/** Domain → claim-structure templates. */
-const DOMAIN_STRUCT: Record<
+export { DOMAIN_KEYWORDS, draftClaims, validateClaims } from '@deepseek-ai/dsh-patent-core'
+export type {
+  ClaimViolation,
+  DependentClaimNode,
+  DraftClaimsInput,
+  DraftClaimsOutput,
+  DraftedClaim,
+  PatentType,
   TechDomain,
-  { head: (name: string) => string; connector: string; withPriorConnector: string; priorConnector: string }
-> = {
-  mechanical: { head: name => `一种${name}，`, connector: '其特征在于，包括：', withPriorConnector: '其特征在于，还包括：', priorConnector: '包括：' },
-  electrical: { head: name => `一种${name}，`, connector: '其特征在于，包括：', withPriorConnector: '其特征在于，还包括：', priorConnector: '包括：' },
-  chemical: { head: name => `一种${name}，`, connector: '其特征在于，包含：', withPriorConnector: '其特征在于，还包含：', priorConnector: '包含：' },
-  software: { head: name => `一种${name}的实现方法，`, connector: '其特征在于，包括以下步骤：', withPriorConnector: '其特征在于，还包括以下步骤：', priorConnector: '包括以下步骤：' },
-  general: { head: name => `一种${name}，`, connector: '其特征在于，包括：', withPriorConnector: '其特征在于，还包括：', priorConnector: '包括：' },
-}
-
-/** Domain keywords → auto-detected technical domain (shared with draft_specification). */
-export const DOMAIN_KEYWORDS: Array<{ domain: TechDomain; keywords: string[] }> = [
-  { domain: 'chemical', keywords: ['组分', '化合物', '合成', '催化剂', '溶液', '材料组合物', '重量份'] },
-  { domain: 'software', keywords: ['步骤', '算法', '数据', '模块', '接口', '处理器执行', '电子设备'] },
-  { domain: 'electrical', keywords: ['电路', '电源', '信号', '传感器', '控制器', '芯片', '电压'] },
-  { domain: 'mechanical', keywords: ['壳体', '齿轮', '轴承', '支架', '轴', '弹簧', '连接件', '传动'] },
-]
+} from '@deepseek-ai/dsh-patent-core'
 
 const DESCRIPTION = '根据技术交底书或技术方案撰写权利要求书草案（机械/电学/化学/软件四领域）。当用户要求撰写权利要求、写权利要求书时使用，避免自行手写权利要求文本。输出独立权利要求 + 从属权利要求 + 形式校验报告。'
 
@@ -132,156 +52,6 @@ export function renderDraftClaims(value: DraftClaimsOutput): string {
   return lines.join('\n')
 }
 
-/** Render one cited claim or an alternative citation of several ("1或2"). */
-function renderParents(parents: number | readonly number[], separator = '或'): string {
-  return typeof parents === 'number' ? String(parents) : parents.join(separator)
-}
-
-function buildIndependentClaim(name: string, domain: TechDomain, features: string[], priorArt: string): string {
-  const struct = DOMAIN_STRUCT[domain]
-  if (features.length === 0) {
-    return `${struct.head(name)}${struct.connector}（缺少必要技术特征）`
-  }
-  const featurePart = features.join('；')
-  if (priorArt && priorArt.length > 0) {
-    const normalized = normalizePriorArt(priorArt)
-    return `${struct.head(name)}${struct.priorConnector}${normalized}；${struct.withPriorConnector}${featurePart}。`
-  }
-  if (domain === 'software') {
-    return `${struct.head(name)}${struct.connector}${features.join('；')}。`
-  }
-  return `${struct.head(name)}${struct.connector}${featurePart}。`
-}
-
-/** Strip trailing punctuation from prior_art to avoid "。；" concatenation. */
-function normalizePriorArt(priorArt: string): string {
-  return priorArt.replace(/[。；;，,]+$/, '')
-}
-
-function resolveDomain(hint: TechDomain | undefined, name: string, features: string[]): TechDomain {
-  if (hint && hint !== 'general') return hint
-  const haystack = `${name} ${features.join(' ')}`
-  for (const entry of DOMAIN_KEYWORDS) {
-    if (entry.keywords.some(k => haystack.includes(k))) return entry.domain
-  }
-  return 'general'
-}
-
-/**
- * Formal validation: numbering / trailing period / vague terms / illustration refs / circular refs.
- * @param claims - the drafted claims to validate.
- * @returns the violations found, empty when the draft is clean.
- */
-export function validateClaims(claims: DraftedClaim[]): ClaimViolation[] {
-  const violations: ClaimViolation[] = []
-  claims.forEach((c, i) => {
-    if (c.number !== i + 1) {
-      violations.push({ rule: 'numbering', severity: 'error', claimNumber: c.number, message: `权利要求未按阿拉伯数字顺序编号（应为 ${i + 1} 号）`, suggestion: '请按 1, 2, 3, ... 的顺序重新编号权利要求' })
-    }
-  })
-  for (const c of claims) {
-    if (!c.text.endsWith('。')) {
-      violations.push({ rule: 'period', severity: 'error', claimNumber: c.number, message: '权利要求未以句号结尾', suggestion: "在权利要求末尾添加'。'" })
-    }
-    const vagueHits = VAGUE_TERMS.filter(t => c.text.includes(t))
-    if (vagueHits.length > 0) {
-      violations.push({ rule: 'clarity', severity: 'warning', claimNumber: c.number, message: `权利要求包含模糊限定词: ${vagueHits.join('、')}`, suggestion: "删除'约/大致/可能/优选/例如'等模糊表述" })
-    }
-    if (/如图[一二三四五六七八九十\d]+所示|如附图/.test(c.text)) {
-      violations.push({ rule: 'no_illustration', severity: 'error', claimNumber: c.number, message: "权利要求中不得包含'如图……所示'等引用附图的表述", suggestion: "删除'如图……所示'等表述，或将其替换为技术特征的直接描述" })
-    }
-    if (c.type === 'dependent' && c.refersTo !== undefined) {
-      const parents = typeof c.refersTo === 'number' ? [c.refersTo] : [...c.refersTo]
-      if (parents.length === 0) {
-        violations.push({ rule: 'missing_reference', severity: 'error', claimNumber: c.number, message: `从属权利要求 ${c.number} 未引用任何权利要求`, suggestion: '为从属权利要求补上被引用的在先权利要求编号' })
-      }
-      const illegal = parents.filter(parent => parent < 1 || parent >= c.number)
-      if (illegal.length > 0) {
-        violations.push({ rule: 'circular_reference', severity: 'error', claimNumber: c.number, message: `从属权利要求 ${c.number} 引用了 ${illegal.join('、')}，形成非法引用`, suggestion: '从属权利要求只能引用编号更小的权利要求' })
-      }
-    }
-  }
-  return violations
-}
-
-/**
- * Render an explicit dependent-claim tree in ascending claim-number order.
- * @param name - the invention name used in each claim's citation clause.
- * @param nodes - the tree nodes; their numbers are validated afterwards.
- * @returns one drafted claim per node.
- */
-function buildDependentTree(name: string, nodes: readonly DependentClaimNode[]): DraftedClaim[] {
-  return [...nodes]
-    .sort((left, right) => left.number - right.number)
-    .map(node => ({
-      number: node.number,
-      type: 'dependent',
-      refersTo: typeof node.parent === 'number' ? node.parent : [...node.parent],
-      text: `根据权利要求${renderParents(node.parent)}所述的${name}，其特征在于，还包括：${node.text.trim()}。`,
-      ...(node.feature_id !== undefined ? { featureId: node.feature_id } : {}),
-    }))
-}
-
-/**
- * Pure entry point: generate a claim draft plus formal validation.
- * @param input - the claim-drafting request.
- * @returns the drafted claims and validation result.
- */
-export function draftClaims(input: DraftClaimsInput): DraftClaimsOutput {
-  const name = input.invention_name.trim()
-  const domain = resolveDomain(input.tech_domain, name, input.technical_features)
-  const essential = input.technical_features.map(f => f.trim()).filter(Boolean)
-  const optional = (input.optional_features ?? []).map(f => f.trim()).filter(Boolean)
-  const warnings: string[] = []
-  if (essential.length === 0) warnings.push('未提供必要技术特征，独立权利要求无法生成完整技术方案')
-  if (name.length > 25) warnings.push(`发明名称 ${name.length} 字，超过 25 字限制`)
-  const tree = input.dependent_tree
-  if (tree !== undefined && tree.length > 0 && optional.length > 0) {
-    throw new PatentToolError(
-      'invalid_tool_input',
-      'dependent_tree 与 optional_features 互斥：一次撰写只接受一种从属权利要求来源',
-      { tool: 'draft_claims' },
-    )
-  }
-  const independentText = buildIndependentClaim(name, domain, essential, input.prior_art?.trim() ?? '')
-  const dependents: DraftedClaim[] = tree !== undefined && tree.length > 0
-    ? buildDependentTree(name, tree)
-    : optional.map((feat, idx) => {
-      const number = 2 + idx
-      const refersTo = number - 1
-      return { number, type: 'dependent', refersTo, text: `根据权利要求${refersTo}所述的${name}，其特征在于，还包括：${feat}。` }
-    })
-  const claims: DraftedClaim[] = [{ number: 1, type: 'independent', text: independentText }, ...dependents]
-  const violations = validateClaims(claims)
-  const cap = input.max_claims
-  if (cap !== undefined && claims.length > cap) {
-    violations.push({
-      rule: 'claim_count_cap',
-      severity: 'error',
-      message: `权利要求共 ${claims.length} 项，超过本次撰写指令的项数上限 ${cap} 项`,
-      suggestion: `把权利要求压缩到 ${cap} 项以内：将附加技术特征并入独权或合并从属权利要求，不得以上限只是费用起征线为由保留超项`,
-    })
-  }
-  // 10 项是《专利审查指南》的申请附加费起征线（说明书超过 30 页或权利要求超过 10 项），
-  // 不是项数上限：细则第一百一十条第一款第（一）项列明该费种，第一百一十二条要求随申请费按期缴足。
-  if (claims.length > 10) {
-    violations.push({
-      rule: 'additional_fee',
-      severity: 'warning',
-      message: `权利要求共 ${claims.length} 项，超过 10 项：自第 11 项起需按项缴纳申请附加费（细则第一百一十条第一款第（一）项），未按期缴足该费用的申请视为撤回`,
-      suggestion: '合并附加技术特征，将权利要求压缩到 10 项以内以规避申请附加费',
-    })
-  }
-  return { invention_name: name, tech_domain: domain, claims, violations, warnings }
-}
-
-const PARENTS_SCHEMA = {
-  oneOf: [
-    { type: 'integer' },
-    { type: 'array', items: { type: 'integer' } },
-  ],
-} as const
-
 const CLAIM_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -289,7 +59,7 @@ const CLAIM_SCHEMA = {
     number: { type: 'integer', required: true },
     type: { type: 'string', required: true, enum: ['independent', 'dependent'] },
     text: { type: 'string', required: true },
-    refersTo: PARENTS_SCHEMA,
+    refersTo: PARENT_SCHEMA,
     featureId: { type: 'string' },
   },
 } as const
@@ -299,7 +69,7 @@ const DEPENDENT_NODE_SCHEMA = {
   additionalProperties: false,
   properties: {
     number: { type: 'integer', required: true, description: '从属权利要求编号（2 起）' },
-    parent: { ...PARENTS_SCHEMA, required: true, description: '引用的在先权利要求编号；数组表示择一引用（渲染为「权利要求 1 或 2」）' },
+    parent: { ...PARENT_SCHEMA, required: true, description: '引用的在先权利要求编号；数组表示择一引用（渲染为「权利要求 1 或 2」）' },
     text: { type: 'string', required: true, description: '本条从属权利要求增加的附加技术特征' },
     feature_id: { type: 'string', description: '特征表中的特征编号，用于把成文回映射到策略表' },
   },
@@ -354,6 +124,11 @@ export function createDraftClaimsTool(): ToolDefinition {
     },
     // oxlint-disable-next-line typescript/require-await -- tool contract requires async execute
     async execute(args) {
+      // Reject the mutually exclusive sources before the engine runs, so callers
+      // get the tool's `invalid_tool_input` code instead of a library error.
+      if ((args.optional_features?.length ?? 0) > 0 && (args.dependent_tree?.length ?? 0) > 0) {
+        throw new PatentToolError('invalid_tool_input', CLAIM_SOURCE_EXCLUSIVE_MESSAGE, { tool: 'draft_claims' })
+      }
       return draftClaims(args)
     },
   })

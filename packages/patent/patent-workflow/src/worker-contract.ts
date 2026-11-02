@@ -257,7 +257,7 @@ function analysisWorkers(): WorkerContract[] {
           requiredFields: ['技术问题', '技术特征', '技术效果'],
         },
       ],
-      forbiddenActions: ['draft_claims', 'draft_specification'],
+      forbiddenActions: ['claim_strategy', 'draft_claims', 'draft_specification'],
       triggersHITL: false,
     },
     {
@@ -384,7 +384,7 @@ function prosecutionWorkers(): WorkerContract[] {
           requiredFields: ['案卷目录', '期限节点', '补充清单'],
         },
       ],
-      forbiddenActions: ['draft_claims', 'draft_specification', 'novelty_analysis', 'inventiveness_analysis'],
+      forbiddenActions: ['claim_strategy', 'draft_claims', 'draft_specification', 'novelty_analysis', 'inventiveness_analysis'],
       triggersHITL: false,
     },
     {
@@ -401,7 +401,7 @@ function prosecutionWorkers(): WorkerContract[] {
           requiredFields: ['范围扩张机会', '从权布局', '争辩策略'],
         },
       ],
-      forbiddenActions: ['draft_claims', 'draft_specification'],
+      forbiddenActions: ['claim_strategy', 'draft_claims', 'draft_specification'],
       triggersHITL: true,
     },
     {
@@ -418,7 +418,7 @@ function prosecutionWorkers(): WorkerContract[] {
           requiredFields: ['形式缺陷清单', '完善性判定'],
         },
       ],
-      forbiddenActions: ['draft_claims', 'draft_specification', 'novelty_analysis', 'inventiveness_analysis'],
+      forbiddenActions: ['claim_strategy', 'draft_claims', 'draft_specification', 'novelty_analysis', 'inventiveness_analysis'],
       triggersHITL: false,
     },
   ]
@@ -493,7 +493,7 @@ function disputeWorkers(): WorkerContract[] {
           requiredFields: ['程序核验', '对抗评估', '结果预判'],
         },
       ],
-      forbiddenActions: ['draft_claims', 'draft_specification', 'novelty_analysis', 'inventiveness_analysis'],
+      forbiddenActions: ['claim_strategy', 'draft_claims', 'draft_specification', 'novelty_analysis', 'inventiveness_analysis'],
       triggersHITL: true,
     },
   ]
@@ -519,7 +519,7 @@ function deliverableWorkers(): WorkerContract[] {
           requiredFields: ['特征比对技术意见', '等同技术维度'],
         },
       ],
-      forbiddenActions: ['draft_claims', 'draft_specification', 'novelty_analysis', 'inventiveness_analysis'],
+      forbiddenActions: ['claim_strategy', 'draft_claims', 'draft_specification', 'novelty_analysis', 'inventiveness_analysis'],
       triggersHITL: false,
     },
     {

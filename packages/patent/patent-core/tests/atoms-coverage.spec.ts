@@ -326,23 +326,47 @@ it('groundedness：缺 feature 的低分项与全部高依据反馈', async () =
 })
 
 // ---------------------------------------------------------------------------
-// draft-claims：pfe_triples 输入 / 无新颖性 / 失败路径
+// draft-claims：策略表必填、确定性渲染与 claim_lint 否决
 // ---------------------------------------------------------------------------
 
-it('draft-claims：pfe_triples 输入与失败路径', async () => {
-  const h = new DraftClaimsHandler()
-  const triples = await h.execute({
-    state: { pfe_triples: [{ id: 'T1', problem: 'P', features: ['F'], effects: [] }] },
-    provider: { callLLM: async () => JSON.stringify({ claims: ['1. 一种装置', '2. 从属'] }) },
+/** 一份可渲染的已复核策略表。 */
+function claimStrategy(optionalText = '图像采集模块'): string {
+  return JSON.stringify({
+    invention_name: '灌溉装置',
+    tech_domain: 'mechanical',
+    essential_features: [{ id: 'F1', text: '控制模块', anchor: '控制模块', anchor_reason: 'exact' }],
+    optional_features: [{ id: 'F2', text: optionalText, anchor: '图像采集模块', anchor_reason: 'exact' }],
+    dependent_tree: [{ number: 2, parent: 1, feature_id: 'F2' }],
+    prior_art_ref: null,
+    prior_art_text: '',
   })
-  expect(String(triples.claims_draft)).toMatch(/^1\. 一种装置/)
-  expect(String(triples.claims_draft)).not.toContain('【新颖性结论】')
+}
 
-  const failing = await h.execute({ state: { merge_result: 'x' }, provider: { callLLM: async () => { throw new Error('x') } } })
-  expect(String(failing._error)).toMatch(/LLM 调用失败/)
+it('draft-claims：按策略表确定性渲染独权与多路从权', async () => {
+  const h = new DraftClaimsHandler()
+  const out = await h.execute({ state: { claim_strategy: claimStrategy() } })
+  expect(String(out.claims_draft)).toMatch(/^1\. 一种灌溉装置，其特征在于，包括：控制模块。/)
+  expect(String(out.claims_draft)).toContain('2. 根据权利要求1所述的灌溉装置，其特征在于，还包括：图像采集模块。')
+  expect(String(out.review_context)).toContain('【权利要求策略表】')
+  expect(String(out.draft_claims_result)).toContain('"specialist":"skipped"')
+})
 
-  const noClaims = await h.execute({ state: { merge_result: 'x' }, provider: { callLLM: async () => '{"notes":"n"}' } })
-  expect(String(noClaims._error)).toMatch(/claims 不是数组/)
+it('draft-claims：策略表缺失或不可解析时降级，不写半成品', async () => {
+  const h = new DraftClaimsHandler()
+  const missing = await h.execute({ state: { merge_result: 'x' } })
+  expect(String(missing._error)).toMatch(/claim_strategy 缺失/)
+  expect(missing.claims_draft).toBeUndefined()
+
+  const malformed = await h.execute({ state: { claim_strategy: '{"essential_features":[]}' } })
+  expect(String(malformed._error)).toMatch(/invention_name|essential_features/)
+  expect(malformed.claims_draft).toBeUndefined()
+})
+
+it('draft-claims：claim_lint 任一 error 否决本轮草稿', async () => {
+  const h = new DraftClaimsHandler()
+  const out = await h.execute({ state: { claim_strategy: claimStrategy('所述壳体') } })
+  expect(String(out._error)).toMatch(/claim_lint 否决/)
+  expect(out.claims_draft).toBeUndefined()
 })
 
 // ---------------------------------------------------------------------------

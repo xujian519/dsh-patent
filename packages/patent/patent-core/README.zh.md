@@ -1,5 +1,5 @@
 ---
-description: "纯 TypeScript 库（无 `ctx` 依赖），承载自 Sati 移植的专利域引擎：`StageProvider`/`StageHandler` atoms 及其 30 个内置 handler、`PatentModelPort` 适配器、双轨 checker、技术问题四检验、TRIZ 矛盾分析、证据账本与判定引擎、推理原语、claim-chart 引擎、权利要求撰写自检与权利要求形式自检、说明书摘录锚点校验、数值范围新颖性核验、程序文书解析、答复计划与复审准备段、侵权确定性内核（全面覆盖、等同一致性、风险分级）、Pregel 风格图引擎及其四个专利域子图、规则协议与文本工具、IPC 分类器与审查标准查表、专利交付工具的受控草案模型（SpecDraft/TemplateDraft）及校验器、以及持久化/路径助手。"
+description: "纯 TypeScript 库（无 `ctx` 依赖），承载自 Sati 移植的专利域引擎：`StageProvider`/`StageHandler` atoms 及其 31 个内置 handler、`PatentModelPort` 适配器、双轨 checker、技术问题四检验、TRIZ 矛盾分析、证据账本与判定引擎、推理原语、claim-chart 引擎、权利要求撰写自检与权利要求形式自检、说明书摘录锚点校验、数值范围新颖性核验、程序文书解析、答复计划与复审准备段、侵权确定性内核（全面覆盖、等同一致性、风险分级）、Pregel 风格图引擎及其四个专利域子图、规则协议与文本工具、IPC 分类器与审查标准查表、专利交付工具的受控草案模型（SpecDraft/TemplateDraft）及校验器、以及持久化/路径助手。"
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-纯 TypeScript 库（无 `ctx` 依赖），承载自 Sati 移植的专利域引擎：`StageProvider`/`StageHandler` atoms 及其 30 个内置 handler、`PatentModelPort` 适配器、双轨 checker、技术问题四检验、TRIZ 矛盾分析、证据账本与判定引擎、推理原语、claim-chart 引擎、权利要求撰写自检与权利要求形式自检、说明书摘录锚点校验、数值范围新颖性核验、程序文书解析、答复计划与复审准备段、侵权确定性内核（全面覆盖、等同一致性、风险分级）、Pregel 风格图引擎及其四个专利域子图、规则协议与文本工具、IPC 分类器与审查标准查表、专利交付工具的受控草案模型（SpecDraft/TemplateDraft）及校验器、以及持久化/路径助手。
+纯 TypeScript 库（无 `ctx` 依赖），承载自 Sati 移植的专利域引擎：`StageProvider`/`StageHandler` atoms 及其 31 个内置 handler、`PatentModelPort` 适配器、双轨 checker、技术问题四检验、TRIZ 矛盾分析、证据账本与判定引擎、推理原语、claim-chart 引擎、权利要求撰写自检与权利要求形式自检、说明书摘录锚点校验、数值范围新颖性核验、程序文书解析、答复计划与复审准备段、侵权确定性内核（全面覆盖、等同一致性、风险分级）、Pregel 风格图引擎及其四个专利域子图、规则协议与文本工具、IPC 分类器与审查标准查表、专利交付工具的受控草案模型（SpecDraft/TemplateDraft）及校验器、以及持久化/路径助手。
 
 <a id="package-surface"></a>
 ## 包入口与导出
@@ -43,7 +43,7 @@ kind: "package-reference"
 <a id="atoms-engines"></a>
 ## Atoms 引擎
 
-atoms 层定义工作流阶段词汇：`Atom`/`AtomRegistry`（声明式契约）与 `StageHandler`/`StageHandlerRegistry`（运行时）。`registerBuiltinAtoms()` 注册 30 个 handler：模型/检索阶段 `search`、`keywords`、`extract`、`merge`、`compare`、`novelty`、`reasoning`、`groundedness`、`draft-claims`、`approval-gate` 与 `claim-chart`，对立审查阶段 `adversary-model` 与 `adversary-review`，以及确定性法律检查 `oa-parse`（通知书解析）、`grounds`（程序理由识别）、`response-plan`（答复计划骨架）、`coverage`（全面覆盖与等同核验）、`pfe-consistency`、`citation-check`、`time-baseline`、`dispute-framing`（争议粗定位）、`dispute-framing-refine`（时间依据修正）、`prior-art-filter`、`conflicting-application`、`numeric-range`、`problem-check`、`amendment-basis` 与 `evidence-check`，还有 `enablement-report`：从独立权利要求派生特征，由模型逐特征给出实施例摘录，再逐条复核原文后写入 A26.3 判定。`claim-breadth` 列出权利要求中的每条上位概括，由模型给出支撑实施例摘录并判断并列下位是否达到同一效果，复核原文后写入 A26.4 判定；该项在校准达标前保持 warn 级。`@deepseek-ai/dsh-patent-tools` 通过插件 effect 另注册 6 个包内原子：`slop-gate`、`draft-specification`、`spec-check`、`response-check`、`eligibility` 与 `legal-gaps`。宿主注入一个 `StageProvider`（`callLLM` 字符串接缝或流式 `llm` 端口，以及 `search`），handler 消费它并在缺失时降级而非抛错。调用方传入的 `signal` 会透传到 LLM 接缝与检索阶段：一旦中止，阶段以 `StageCancelledError` 拒绝（`stageId` 标识阶段），不再降级或重试；图引擎直接向上抛出该拒绝，而不是标记节点降级。
+atoms 层定义工作流阶段词汇：`Atom`/`AtomRegistry`（声明式契约）与 `StageHandler`/`StageHandlerRegistry`（运行时）。`registerBuiltinAtoms()` 注册 31 个 handler：模型/检索阶段 `search`、`keywords`、`extract`、`merge`、`compare`、`novelty`、`reasoning`、`groundedness`、`draft-claims`、`approval-gate` 与 `claim-chart`，对立审查阶段 `adversary-model` 与 `adversary-review`，以及确定性法律检查 `oa-parse`（通知书解析）、`grounds`（程序理由识别）、`response-plan`（答复计划骨架）、`coverage`（全面覆盖与等同核验）、`pfe-consistency`、`citation-check`、`time-baseline`、`dispute-framing`（争议粗定位）、`dispute-framing-refine`（时间依据修正）、`prior-art-filter`、`conflicting-application`、`numeric-range`、`problem-check`、`amendment-basis` 与 `evidence-check`，还有 `enablement-report`：从独立权利要求派生特征，由模型逐特征给出实施例摘录，再逐条复核原文后写入 A26.3 判定。`claim-breadth` 列出权利要求中的每条上位概括，由模型给出支撑实施例摘录并判断并列下位是否达到同一效果，复核原文后写入 A26.4 判定；该项在校准达标前保持 warn 级。`claim-strategy` 把 PFIE 四元组、新颖性结论、已过滤文献与交底书原文固化成一张带原文锚点的特征表：必要/可选特征各带一段必须出现在交底书中的逐字摘录，从权树记录模型的分层决策，`prior_art_ref` 只接受新颖性结论或已过滤文献中已经出现的文献编号（未点名时为 `null`）。锚点未命中或编号编造使阶段失败，不降级成空表。`draft-claims` 随后通过导出的 `draftClaims` 引擎确定性渲染独立权利要求与从权树，从权专员只能重排或补充从权；任一 `claim_lint` error 否决本轮草稿，`claims_draft` 不会停在半成品。`@deepseek-ai/dsh-patent-tools` 通过插件 effect 另注册 6 个包内原子：`slop-gate`、`draft-specification`、`spec-check`、`response-check`、`eligibility` 与 `legal-gaps`。宿主注入一个 `StageProvider`（`callLLM` 字符串接缝或流式 `llm` 端口，以及 `search`），handler 消费它并在缺失时降级而非抛错。调用方传入的 `signal` 会透传到 LLM 接缝与检索阶段：一旦中止，阶段以 `StageCancelledError` 拒绝（`stageId` 标识阶段），不再降级或重试；图引擎直接向上抛出该拒绝，而不是标记节点降级。
 
 Stage params 可调整这些 handler。缺省键保留各原子默认值；畸形值会在调用模型前降级。
 

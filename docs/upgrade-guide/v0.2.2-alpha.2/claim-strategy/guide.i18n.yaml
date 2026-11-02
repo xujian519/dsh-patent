@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-alpha.2/claim-strategy/guide.md
+/:
+  en: 600cb9bc866c1cbc
+  zh: 1b8480e33b259aee
+/claim-strategy-before-claim-text:
+  en: 2ebc3c520cd1303a
+  zh: 36e1b7918f5bcb40
+/claim-strategy-before-claim-text/change:
+  en: 87e3103bbe045c43
+  zh: 1017d44181d5981e
+/claim-strategy-before-claim-text/migration:
+  en: 913845e997887c76
+  zh: ae351131ea1d862f

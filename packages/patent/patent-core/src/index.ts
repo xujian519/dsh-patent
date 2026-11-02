@@ -193,6 +193,9 @@ export {
   disputeFramingRefineAtom,
   enablementReportAtom,
   claimBreadthAtom,
+  claimStrategyAtom,
+  ClaimStrategyHandler,
+  renderClaimStrategyReport,
   frameDispute,
   refineDispute,
   scanClaimNumbers,
@@ -238,6 +241,21 @@ export {
   checkClaimUnity,
   checkEmbodimentCoverage,
 } from './claim-coverage/index.ts'
+
+// Deterministic claim drafting: feature table → independent claim → dependent
+// tree, plus formal validation. Shared by the workflow atom and the tool layer.
+export type * from './claim-draft/index.ts'
+export {
+  CLAIM_SOURCE_EXCLUSIVE_MESSAGE,
+  ClaimDraftError,
+  DOMAIN_KEYWORDS,
+  PARENT_SCHEMA,
+  claimCountViolations,
+  draftClaims,
+  renderParents,
+  resolveDomain,
+  validateClaims,
+} from './claim-draft/index.ts'
 
 // Claim-set formal lint: numbering, references, antecedent basis, subject names, wording.
 export type * from './claim-lint/index.ts'

@@ -556,6 +556,11 @@
                 - oa_novelty
                 - oa_clarity
               stagePatterns:
+                claim_strategy:
+                  - wp-claim-3step-prior-art-check
+                  - wp-claim-unity-special-feature
+                  - wp-claim-dependent-layering
+                  - wp-claim-functional-limitation
                 draft_claims:
                   - wp-claim-utility-model
                   - wp-claim-dependent-layering

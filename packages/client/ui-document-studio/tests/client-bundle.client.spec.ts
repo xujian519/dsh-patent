@@ -18,11 +18,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const PLUGIN_ID = '@deepseek-ai/dsh-client-ui-document-studio'
 
-/** Event window of a session that already registered one deliverable. */
+/** Event window of a session that already registered one deliverable and finished the turn. */
 function registeredEntries() {
   return [
     { type: 'event', event: { seq: 1, time: 1_000, type: 'tool/call', data: { turn: 1, step: 1, callId: 'reg', name: 'document_deliver', arguments: '{}' } } },
     { type: 'event', event: { seq: 2, time: 2_000, type: 'tool/result', surfaceOp: 'append', data: { turn: 1, step: 1, message: { source: { kind: 'tool', callId: 'reg' }, content: [], isError: false } } } },
+    { type: 'event', event: { seq: 3, time: 3_000, type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } } },
   ]
 }
 

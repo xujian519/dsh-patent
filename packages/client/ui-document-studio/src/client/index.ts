@@ -33,7 +33,7 @@ import type {} from '@deepseek-ai/dsh-agent-preset-registry/types'
 import {
   DOCUMENT_DELIVERABLES_TARGET, documentDeliverablesDefinition, documentDeliverablesViewDefinition,
 } from './document-deliverables.ts'
-import { DOCUMENT_PRESET_ID, hasDeliverRegistration } from './auto-switch.ts'
+import { DOCUMENT_PRESET_ID, endsAfterTurn, hasDeliverRegistration, hasDocumentProduced } from './auto-switch.ts'
 import { createFileReads } from './file-reads.ts'
 import { createWorkspaceProbe } from './workspace-probe.ts'
 import { StudioView } from './StudioView.tsx'
@@ -218,14 +218,18 @@ export function apply(ctx: ClientContext): void {
       }
       retryTimer = setTimeout(tick, SWITCH_RETRY_MS)
     }
-    /** Switch once per session entry, only when a registration is already logged. */
+    /** Switch once per session entry, only after a finished turn produced something. */
     const evaluate = (sessionId: SessionId): void => {
       if (sessionId !== entered || sessionId === switched) return
       const preset = ctx.sessions.list.getSnapshot().byId[sessionId]?.projectionValues?.agentPreset
       if (preset !== DOCUMENT_PRESET_ID) return
       const binding = ctx.sessions.binding(sessionId)
       if (binding === undefined) return
-      if (!hasDeliverRegistration(binding.eventSource.getSnapshot().entries)) return
+      const entries = binding.eventSource.getSnapshot().entries
+      // The reply is still streaming until the turn ends, so the studio waits
+      // for it instead of taking the screen mid-answer.
+      if (!endsAfterTurn(entries)) return
+      if (!hasDeliverRegistration(entries) && !hasDocumentProduced(entries)) return
       switchTo(sessionId)
     }
     /** Watch the current session's event window; the list alone cannot report a registration. */

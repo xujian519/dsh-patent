@@ -401,7 +401,12 @@ export function apply(ctx: Context, config: Config = Config({})): void {
       // Peer plugins switch this session's active view through the
       // controller: the store handle is apply-local by design, so the
       // session seat is the one place that can hand a setter outward.
-      conversation.registerViewSetter(sessionId, actions.setView)
+      conversation.registerViewSetter(sessionId, (view) => {
+        // Updating the store alone moves the tab but leaves the view target
+        // unmaterialized, so a programmatic switch would show an empty panel.
+        activateView(sessionId, view)
+        actions.setView(view)
+      })
       const openView = (view: string, focus: string): void => {
         if (!viewTabs().some(tab => tab.id === view)) return
         activateView(sessionId, view)

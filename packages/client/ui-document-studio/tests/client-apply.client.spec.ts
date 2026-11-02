@@ -84,7 +84,21 @@ function registeredWindow() {
         data: { turn: 1, step: 1, message: { source: { kind: 'tool', callId: 'reg' }, content: [], isError: false } },
       },
     },
+    {
+      type: 'event',
+      event: {
+        seq: 3, time: 3_000, type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } },
+      },
+    },
   ]
+}
+
+/** One finished turn, appended after a registration or a working draft. */
+function turnEndEntry(seq: number) {
+  return {
+    type: 'event',
+    event: { seq, time: seq * 1_000, type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
+  }
 }
 
 /** A session binding whose event window reports `entries` and records its subscribers. */
@@ -256,6 +270,55 @@ describe('document studio plugin body', () => {
     await fiber.dispose()
   })
 
+  it('waits for the turn to end before taking the screen', async () => {
+    const listeners: Array<() => void> = []
+    const setActiveView = vi.fn(() => true)
+    let entries = registeredWindow().slice(0, -1)
+    const { fiber } = await mount({
+      sessions: { byId: { s1: sessionEntry('s1', { preset: 'document', mainView: 1 }) } },
+      binding: () => sessionBinding(entries, listeners),
+      conversation: conversationFace({ setActiveView }),
+    })
+    // The registration arrived, but the reply is still streaming.
+    expect(setActiveView).not.toHaveBeenCalled()
+    entries = [...entries, turnEndEntry(3)]
+    listeners[0]!()
+    expect(setActiveView).toHaveBeenCalledTimes(1)
+    await fiber.dispose()
+  })
+
+  it('switches for a finished turn that produced only a working draft', async () => {
+    const listeners: Array<() => void> = []
+    const setActiveView = vi.fn(() => true)
+    const draft = [
+      {
+        type: 'event',
+        event: {
+          seq: 1, time: 1_000, type: 'tool/call',
+          data: {
+            turn: 1, step: 1, callId: 'wc', name: 'write',
+            arguments: JSON.stringify({ file_path: 'brief.md', content: '# Brief' }),
+          },
+        },
+      },
+      {
+        type: 'event',
+        event: {
+          seq: 2, time: 2_000, type: 'tool/result', surfaceOp: 'append',
+          data: { turn: 1, step: 1, message: { source: { kind: 'tool', callId: 'wc' }, content: [], isError: false } },
+        },
+      },
+      turnEndEntry(3),
+    ]
+    const { fiber } = await mount({
+      sessions: { byId: { s1: sessionEntry('s1', { preset: 'document', mainView: 1 }) } },
+      binding: () => sessionBinding(draft, listeners),
+      conversation: conversationFace({ setActiveView }),
+    })
+    expect(setActiveView).toHaveBeenCalledTimes(1)
+    await fiber.dispose()
+  })
+
   it('leaves a non-document session, an unregistered session, and an unbound session alone', async () => {
     const standardListeners: Array<() => void> = []
     const standardSetActiveView = vi.fn(() => true)
@@ -285,6 +348,20 @@ describe('document studio plugin body', () => {
     })
     expect(setActiveView).not.toHaveBeenCalled()
     await unbound.fiber.dispose()
+  })
+
+  it('waits when a finished turn produced no deliverable', async () => {
+    const listeners: Array<() => void> = []
+    const setActiveView = vi.fn(() => true)
+    const { fiber } = await mount({
+      sessions: { byId: { s1: sessionEntry('s1', { preset: 'document', mainView: 1 }) } },
+      binding: () => sessionBinding([turnEndEntry(1)], listeners),
+      conversation: conversationFace({ setActiveView }),
+    })
+    expect(setActiveView).not.toHaveBeenCalled()
+    listeners[0]!()
+    expect(setActiveView).not.toHaveBeenCalled()
+    await fiber.dispose()
   })
 
   it('stops evaluating a session whose binding goes away', async () => {

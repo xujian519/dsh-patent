@@ -240,7 +240,7 @@ export function parseCheckReports(meta: unknown): ReadonlyMap<string, DocumentCh
 // own separate turn keys and must compose independently
 // (packages/client/AGENTS.md forbids cross-package value imports).
 /* jscpd:ignore-start */
-function mutationPath(name: string, argsRaw: string): string | null {
+export function mutationPath(name: string, argsRaw: string): string | null {
   let args: unknown
   try {
     args = JSON.parse(argsRaw) as unknown

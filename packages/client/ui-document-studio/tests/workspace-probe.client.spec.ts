@@ -56,7 +56,7 @@ describe('statVersions', () => {
 
 describe('unregisteredDeliverables', () => {
   const files: Files = {
-    '': [
+    '.': [
       { name: 'brief.md', type: 'file' },
       { name: 'notes.txt', type: 'file' },
       { name: 'index.html', type: 'file' },
@@ -90,6 +90,13 @@ describe('unregisteredDeliverables', () => {
       'out/deck.pptx',
       'out/sub/appendix.pdf',
     ])
+  })
+
+  it('lists the workspace root as "." because the Host refuses an empty path', async () => {
+    const { remote, probe: workspace } = probe(files)
+    const list = vi.spyOn(remote, 'list')
+    await workspace.unregisteredDeliverables([])
+    expect(list).toHaveBeenCalledWith(sessionId, '.', expect.any(AbortSignal))
   })
 
   it('excludes paths the session already lists, with or without a ./ prefix', async () => {
@@ -136,7 +143,7 @@ describe('unregisteredDeliverables', () => {
     for (let index = 0; index < 45; index += 1) {
       const name = `file-${String(index)}.md`
       root.push({ name, type: 'file' })    }
-    const many: Files = { '': root, '.hidden': [{ name: 'secret.md', type: 'file' }] }
+    const many: Files = { '.': root, '.hidden': [{ name: 'secret.md', type: 'file' }] }
     const { probe: workspace } = probe(many)
     const found = await workspace.unregisteredDeliverables([])
     expect(found).toHaveLength(40)
@@ -145,7 +152,7 @@ describe('unregisteredDeliverables', () => {
 
   it('bounds how many directories it lists', async () => {
     const root: WorkspaceDirectoryEntry[] = []
-    const entries: Record<string, readonly WorkspaceDirectoryEntry[]> = { '': root }
+    const entries: Record<string, readonly WorkspaceDirectoryEntry[]> = { '.': root }
     for (let index = 0; index < 30; index += 1) {
       const name = `dir-${String(index)}`
       root.push({ name, type: 'directory' })

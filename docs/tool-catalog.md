@@ -3819,7 +3819,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 ### `draft_specification`
 
-根据技术交底书或技术方案撰写符合要求的专利说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式五部分，无附图发明省略附图说明），并生成不超过 300 字、含关键词行的确定性摘要。当用户要求撰写说明书、写专利申请文件时使用，避免自行手写说明书文本。
+根据技术交底书或技术方案撰写符合要求的专利说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式五部分，无附图发明省略附图说明），具体实施方式按实施例标题分块并复核原文锚点，标注命中的 PFIE 特征编号与附图标记，未命中原文的块整块丢弃；同时生成不超过 300 字、含关键词行的确定性摘要。当用户要求撰写说明书、写专利申请文件时使用，避免自行手写说明书文本。
 
 ```json
 {
@@ -3878,9 +3878,40 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
     },
     "embodiments": {
       "type": "array",
-      "description": "具体实施方式（可选，可多个实施例）",
+      "description": "具体实施方式（可选，可多个实施例；未给出时按 source_text 的实施例标题切分）",
       "items": {
         "type": "string"
+      }
+    },
+    "features": {
+      "type": "array",
+      "description": "PFIE 特征文本（可选，按数组顺序编号 F1、F2…；实施例块引用命中特征的编号）",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source_text": {
+      "type": "string",
+      "description": "交底书原文（可选，用于复核实施例摘录；缺省取 technical_solution）"
+    },
+    "figure_marks": {
+      "type": "array",
+      "description": "附图标记（可选，图号 + 数字标记；实施例块正文出现该标记时写入引用）",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "figure_number": {
+            "type": "number"
+          },
+          "ref_number": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "figure_number",
+          "ref_number"
+        ]
       }
     },
     "has_drawings": {
@@ -4100,7 +4131,7 @@ Flexible plan for patent cases (stage-level HITL). create: build a plan (optiona
           },
           "atom": {
             "type": "string",
-            "description": "Atom name to auto-execute this stage. Available atoms: approval-gate (params.review_context), claim-chart (params.chart_mode: infringement|invalidity|oa-response|reexamination|patentability), compare, coverage, dispute-framing, dispute-framing-refine, draft-claims, draft-specification, extract (params.extraction_type, output_key, output_mode: problem_insight), groundedness, pfe-consistency, grounds (params.ground_program: invalidation|reexamination|design), keywords, merge, novelty, oa-parse, reasoning, response-plan, search, amendment-basis (params.amended_text_keys, original_text_keys), slop-gate (params.text_keys, char_budget), tighten (params.text_key, plan_key, char_budget), figure-analysis (params.source_key), spec-check (params.mode: spec|claims, text_key, claims_key), citation-check (params.ref_text_keys, prior_art_key), time-baseline (params.filing_date_key, priority_date_key), prior-art-filter (params.publication_date_key, a24_exception_key), conflicting-application (params.conflicting_applications_key, target_date_key, target_filing_date_key), evidence-check (params.evidence_key, deadline_key, reference_date_key, filing_date_key, priority_date_key), eligibility (params.claims_key, text_key), numeric-range (params.claim_text_keys, prior_art_key), problem-check (params.diff_text_keys, feature_keys), response-check (params.response_key, office_action_key, notice_key). legal-gaps (params.profile: novelty|disclosure|inventiveness|patentability|oa-response|invalidation|reexamination|infringement). adversary-model (params: none; reads office_action, claims, response_plan, response_plan_summary and calls the model), adversary-review (params: none; deterministic re-check of draft_tightened (falls back to draft), reference_documents or office_action.citations, claims, office_action; writes adversary_review_passed for legal-gaps). enablement-report (params: none; reads specification, claims_draft and tech_domain, then calls the model to quote embodiments for each independent-claim feature and re-checks the quotes against the specification). claim-breadth (params: none; reads specification, claims_draft and tech_domain, then calls the model for one record per upper-level generalization and re-checks each quote against the specification). claim-strategy (params: none; reads pfe_triples/merge_result/novelty_conclusion/prior_art/source_text/tech_domain, or confirmed_features when the caller supplies the table; writes anchor-checked claim_strategy and claim_strategy_report). draft-claims (params: none; reads claim_strategy, renders the independent claim and dependent tree deterministically, lets a dependent-claim specialist only reorder or supplement dependents, and vetoes the draft on any claim_lint error)."
+            "description": "Atom name to auto-execute this stage. Available atoms: approval-gate (params.review_context), claim-chart (params.chart_mode: infringement|invalidity|oa-response|reexamination|patentability), compare, coverage, dispute-framing, dispute-framing-refine, draft-claims, draft-specification, extract (params.extraction_type, output_key, output_mode: problem_insight), groundedness, pfe-consistency, grounds (params.ground_program: invalidation|reexamination|design), keywords, merge, novelty, oa-parse, reasoning, response-plan, search, amendment-basis (params.amended_text_keys, original_text_keys), slop-gate (params.text_keys, char_budget), tighten (params.text_key, plan_key, char_budget), figure-analysis (params.source_key), spec-check (params.mode: spec|claims, text_key, claims_key), citation-check (params.ref_text_keys, prior_art_key), time-baseline (params.filing_date_key, priority_date_key), prior-art-filter (params.publication_date_key, a24_exception_key), conflicting-application (params.conflicting_applications_key, target_date_key, target_filing_date_key), evidence-check (params.evidence_key, deadline_key, reference_date_key, filing_date_key, priority_date_key), eligibility (params.claims_key, text_key), numeric-range (params.claim_text_keys, prior_art_key), problem-check (params.diff_text_keys, feature_keys), response-check (params.response_key, office_action_key, notice_key). legal-gaps (params.profile: novelty|disclosure|inventiveness|patentability|oa-response|invalidation|reexamination|infringement). adversary-model (params: none; reads office_action, claims, response_plan, response_plan_summary and calls the model), adversary-review (params: none; deterministic re-check of draft_tightened (falls back to draft), reference_documents or office_action.citations, claims, office_action; writes adversary_review_passed for legal-gaps). enablement-report (params: none; reads specification, claims_draft and tech_domain, then calls the model to quote embodiments for each independent-claim feature and re-checks the quotes against the specification). claim-breadth (params: none; reads specification, claims_draft and tech_domain, then calls the model for one record per upper-level generalization and re-checks each quote against the specification). claim-strategy (params: none; reads pfe_triples/merge_result/novelty_conclusion/prior_art/source_text/tech_domain, or confirmed_features when the caller supplies the table; writes anchor-checked claim_strategy and claim_strategy_report). draft-claims (params: none; reads claim_strategy, renders the independent claim and dependent tree deterministically, lets a dependent-claim specialist only reorder or supplement dependents, and vetoes the draft on any claim_lint error). draft-review (params: none; reads specification, claims_draft, pfe_triples/features and prior_art, then calls the model for examiner-perspective disputes across A26.3/A26.4/unity/A33 and re-checks every quoted anchor against the specification or claims)."
           },
           "params": {
             "type": "object",
@@ -4158,7 +4189,7 @@ Flexible plan for patent cases (stage-level HITL). create: build a plan (optiona
         },
         "atom": {
           "type": "string",
-          "description": "Atom name to auto-execute this stage. Available atoms: approval-gate (params.review_context), claim-chart (params.chart_mode: infringement|invalidity|oa-response|reexamination|patentability), compare, coverage, dispute-framing, dispute-framing-refine, draft-claims, draft-specification, extract (params.extraction_type, output_key, output_mode: problem_insight), groundedness, pfe-consistency, grounds (params.ground_program: invalidation|reexamination|design), keywords, merge, novelty, oa-parse, reasoning, response-plan, search, amendment-basis (params.amended_text_keys, original_text_keys), slop-gate (params.text_keys, char_budget), tighten (params.text_key, plan_key, char_budget), figure-analysis (params.source_key), spec-check (params.mode: spec|claims, text_key, claims_key), citation-check (params.ref_text_keys, prior_art_key), time-baseline (params.filing_date_key, priority_date_key), prior-art-filter (params.publication_date_key, a24_exception_key), conflicting-application (params.conflicting_applications_key, target_date_key, target_filing_date_key), evidence-check (params.evidence_key, deadline_key, reference_date_key, filing_date_key, priority_date_key), eligibility (params.claims_key, text_key), numeric-range (params.claim_text_keys, prior_art_key), problem-check (params.diff_text_keys, feature_keys), response-check (params.response_key, office_action_key, notice_key). legal-gaps (params.profile: novelty|disclosure|inventiveness|patentability|oa-response|invalidation|reexamination|infringement). adversary-model (params: none; reads office_action, claims, response_plan, response_plan_summary and calls the model), adversary-review (params: none; deterministic re-check of draft_tightened (falls back to draft), reference_documents or office_action.citations, claims, office_action; writes adversary_review_passed for legal-gaps). enablement-report (params: none; reads specification, claims_draft and tech_domain, then calls the model to quote embodiments for each independent-claim feature and re-checks the quotes against the specification). claim-breadth (params: none; reads specification, claims_draft and tech_domain, then calls the model for one record per upper-level generalization and re-checks each quote against the specification). claim-strategy (params: none; reads pfe_triples/merge_result/novelty_conclusion/prior_art/source_text/tech_domain, or confirmed_features when the caller supplies the table; writes anchor-checked claim_strategy and claim_strategy_report). draft-claims (params: none; reads claim_strategy, renders the independent claim and dependent tree deterministically, lets a dependent-claim specialist only reorder or supplement dependents, and vetoes the draft on any claim_lint error)."
+          "description": "Atom name to auto-execute this stage. Available atoms: approval-gate (params.review_context), claim-chart (params.chart_mode: infringement|invalidity|oa-response|reexamination|patentability), compare, coverage, dispute-framing, dispute-framing-refine, draft-claims, draft-specification, extract (params.extraction_type, output_key, output_mode: problem_insight), groundedness, pfe-consistency, grounds (params.ground_program: invalidation|reexamination|design), keywords, merge, novelty, oa-parse, reasoning, response-plan, search, amendment-basis (params.amended_text_keys, original_text_keys), slop-gate (params.text_keys, char_budget), tighten (params.text_key, plan_key, char_budget), figure-analysis (params.source_key), spec-check (params.mode: spec|claims, text_key, claims_key), citation-check (params.ref_text_keys, prior_art_key), time-baseline (params.filing_date_key, priority_date_key), prior-art-filter (params.publication_date_key, a24_exception_key), conflicting-application (params.conflicting_applications_key, target_date_key, target_filing_date_key), evidence-check (params.evidence_key, deadline_key, reference_date_key, filing_date_key, priority_date_key), eligibility (params.claims_key, text_key), numeric-range (params.claim_text_keys, prior_art_key), problem-check (params.diff_text_keys, feature_keys), response-check (params.response_key, office_action_key, notice_key). legal-gaps (params.profile: novelty|disclosure|inventiveness|patentability|oa-response|invalidation|reexamination|infringement). adversary-model (params: none; reads office_action, claims, response_plan, response_plan_summary and calls the model), adversary-review (params: none; deterministic re-check of draft_tightened (falls back to draft), reference_documents or office_action.citations, claims, office_action; writes adversary_review_passed for legal-gaps). enablement-report (params: none; reads specification, claims_draft and tech_domain, then calls the model to quote embodiments for each independent-claim feature and re-checks the quotes against the specification). claim-breadth (params: none; reads specification, claims_draft and tech_domain, then calls the model for one record per upper-level generalization and re-checks each quote against the specification). claim-strategy (params: none; reads pfe_triples/merge_result/novelty_conclusion/prior_art/source_text/tech_domain, or confirmed_features when the caller supplies the table; writes anchor-checked claim_strategy and claim_strategy_report). draft-claims (params: none; reads claim_strategy, renders the independent claim and dependent tree deterministically, lets a dependent-claim specialist only reorder or supplement dependents, and vetoes the draft on any claim_lint error). draft-review (params: none; reads specification, claims_draft, pfe_triples/features and prior_art, then calls the model for examiner-perspective disputes across A26.3/A26.4/unity/A33 and re-checks every quoted anchor against the specification or claims)."
         },
         "params": {
           "type": "object",

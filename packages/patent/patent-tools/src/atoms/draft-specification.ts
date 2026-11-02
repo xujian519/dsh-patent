@@ -19,12 +19,13 @@ import {
   renderDraftSpecification,
   type DraftSpecificationInput,
 } from '../tool/draft-specification.ts'
+import type { SpecFigureMark } from '../tool/spec-blocks.ts'
 import { firstStateString, resolvePatentType, resolveTechDomain } from './state-values.ts'
 
 /** draft-specification 原子：从工作流状态生成五部分说明书草案。 */
 export const draftSpecificationAtom: Atom = {
   name: 'draft-specification',
-  description: '生成说明书草案与摘要（技术领域/背景技术/发明内容/具体实施方式，有附图时含附图说明，确定性）：读取技术方案、问题、效果与实施例，输出 ≤300 字摘要、完整度与缺失章节，供 spec-check 的 spec 模式检查 A26.3/A26.4',
+  description: '生成说明书草案与摘要（技术领域/背景技术/发明内容/具体实施方式，有附图时含附图说明，确定性）：读取技术方案、问题、效果、实施例、PFIE 特征与附图分析，按实施例标题切分具体实施方式并复核每块原文锚点，标注命中的特征编号（F1、F2…）与附图标记；未命中原文的块整块丢弃并报告，输出 ≤300 字摘要、完整度与缺失章节，供 spec-check 的 spec 模式检查 A26.3/A26.4',
   category: 'extract',
   inputSchema: [
     'title',
@@ -38,13 +39,25 @@ export const draftSpecificationAtom: Atom = {
     'beneficial_effects',
     'background',
     'embodiments',
+    'features',
+    'figure_analysis',
     'drawing_descriptions',
     'tech_domain',
     'patent_type',
     'has_drawings',
   ],
   // title/patent_type 是调用方输入：同名键不能声明为输出，否则阶段回退清理会先删掉输入。
-  outputSchema: ['specification', 'abstract', 'draft_specification_warnings', 'draft_title', 'draft_patent_type', 'complete', 'missing_inputs'],
+  outputSchema: [
+    'specification',
+    'abstract',
+    'embodiment_blocks',
+    'dropped_embodiment_blocks',
+    'draft_specification_warnings',
+    'draft_title',
+    'draft_patent_type',
+    'complete',
+    'missing_inputs',
+  ],
 }
 
 /**
@@ -61,6 +74,41 @@ function stringList(state: PipelineState, key: string): string[] {
     if (text.length > 0) values.push(text)
   }
   return values
+}
+
+/**
+ * 读取 `figure_analysis` 中可用的附图标记；图号缺省按数组序号加一。
+ *
+ * 该键来自上游 stage 的共享状态，读取时按状态边界窄化：不可用图、缺失图号与
+ * 非法组件都跳过，不把畸形项写进实施例引用。
+ * @param state - 阶段执行态。
+ * @returns 去重后的附图标记。
+ */
+function readFigureMarks(state: PipelineState): SpecFigureMark[] {
+  const marks: SpecFigureMark[] = []
+  const seen = new Set<string>()
+  for (const [index, entry] of getStateArray(state, 'figure_analysis').entries()) {
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) continue
+    const record = entry as Record<string, unknown>
+    if (record['usable'] === false) continue
+    const rawNumber = record['figureNumber']
+    const figureNumber = typeof rawNumber === 'number' && Number.isInteger(rawNumber) && rawNumber > 0
+      ? rawNumber
+      : index + 1
+    const components = Array.isArray(record['components']) ? record['components'] : []
+    for (const component of components) {
+      if (component === null || typeof component !== 'object' || Array.isArray(component)) continue
+      const rawRef = (component as Record<string, unknown>)['refNumber']
+      if (typeof rawRef !== 'string') continue
+      const refNumber = rawRef.trim()
+      if (refNumber.length === 0) continue
+      const key = `${figureNumber}\u0000${refNumber}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      marks.push({ figure_number: figureNumber, ref_number: refNumber })
+    }
+  }
+  return marks
 }
 
 /**
@@ -102,6 +150,8 @@ export class DraftSpecificationHandler implements StageHandler {
     const problems = stringList(state, 'problems')
     const effects = stringList(state, 'effects')
     const embodiments = stringList(state, 'embodiments')
+    const features = stringList(state, 'features')
+    const figureMarks = readFigureMarks(state)
     const drawingDescriptions = stringList(state, 'drawing_descriptions')
     const problem = firstStateString(state, ['technical_problem', 'problem']) || problems.join('；')
     const beneficialEffects = firstStateString(state, ['beneficial_effects', 'effects']) || effects.join('；')
@@ -111,8 +161,11 @@ export class DraftSpecificationHandler implements StageHandler {
     const draftInput: DraftSpecificationInput = {
       title: resolveTitle(state),
       technical_solution: solution,
-      embodiments: embodiments.length > 0 ? embodiments : [solution],
+      source_text: solution,
       has_drawings: state['has_drawings'] === true,
+      ...(embodiments.length > 0 ? { embodiments } : {}),
+      ...(features.length > 0 ? { features } : {}),
+      ...(figureMarks.length > 0 ? { figure_marks: figureMarks } : {}),
       ...(problem.length > 0 ? { technical_problem: problem } : {}),
       ...(beneficialEffects.length > 0 ? { beneficial_effects: beneficialEffects } : {}),
       ...(background.length > 0 ? { background } : {}),
@@ -124,6 +177,8 @@ export class DraftSpecificationHandler implements StageHandler {
     return {
       specification: renderDraftSpecification(draft),
       abstract: draft.abstract,
+      embodiment_blocks: draft.embodiment_blocks,
+      dropped_embodiment_blocks: draft.dropped_embodiment_blocks,
       draft_specification_warnings: draft.warnings,
       draft_title: draft.title,
       draft_patent_type: draft.patent_type,

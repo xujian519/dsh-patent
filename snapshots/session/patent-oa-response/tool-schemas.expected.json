@@ -430,7 +430,7 @@
     },
     {
       "name": "draft_specification",
-      "description": "根据技术交底书或技术方案撰写符合要求的专利说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式五部分，无附图发明省略附图说明），并生成不超过 300 字、含关键词行的确定性摘要。当用户要求撰写说明书、写专利申请文件时使用，避免自行手写说明书文本。",
+      "description": "根据技术交底书或技术方案撰写符合要求的专利说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式五部分，无附图发明省略附图说明），具体实施方式按实施例标题分块并复核原文锚点，标注命中的 PFIE 特征编号与附图标记，未命中原文的块整块丢弃；同时生成不超过 300 字、含关键词行的确定性摘要。当用户要求撰写说明书、写专利申请文件时使用，避免自行手写说明书文本。",
       "parameters": {
         "type": "object",
         "properties": {
@@ -487,9 +487,40 @@
           },
           "embodiments": {
             "type": "array",
-            "description": "具体实施方式（可选，可多个实施例）",
+            "description": "具体实施方式（可选，可多个实施例；未给出时按 source_text 的实施例标题切分）",
             "items": {
               "type": "string"
+            }
+          },
+          "features": {
+            "type": "array",
+            "description": "PFIE 特征文本（可选，按数组顺序编号 F1、F2…；实施例块引用命中特征的编号）",
+            "items": {
+              "type": "string"
+            }
+          },
+          "source_text": {
+            "type": "string",
+            "description": "交底书原文（可选，用于复核实施例摘录；缺省取 technical_solution）"
+          },
+          "figure_marks": {
+            "type": "array",
+            "description": "附图标记（可选，图号 + 数字标记；实施例块正文出现该标记时写入引用）",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "figure_number": {
+                  "type": "number"
+                },
+                "ref_number": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "figure_number",
+                "ref_number"
+              ]
             }
           },
           "has_drawings": {

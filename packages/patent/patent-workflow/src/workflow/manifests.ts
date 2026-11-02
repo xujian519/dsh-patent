@@ -97,7 +97,7 @@ const FIGURE_ANALYSIS_STAGES: readonly WorkflowStage[] = [
 const DRAFT_SPECIFICATION_STAGE: WorkflowStage = {
   id: 'draft_specification',
   strategy: 'chain',
-  description: '生成五部分说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式，确定性）',
+  description: '生成五部分说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式，确定性）：具体实施方式按实施例标题分块，复核每块原文锚点并标注特征编号与附图标记，未命中原文的块整块丢弃',
   atom: 'draft-specification',
 }
 

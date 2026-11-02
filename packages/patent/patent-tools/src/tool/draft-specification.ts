@@ -11,6 +11,15 @@ import { resolveDomain as resolveClaimDomain } from '@deepseek-ai/dsh-patent-cor
 import { createToolInputReader } from './internal/tool-input.ts'
 import type { PatentType, TechDomain } from './draft-claims.ts'
 import { WARNINGS_SCHEMA } from './internal/tool-output.ts'
+import {
+  buildEmbodimentBlocks,
+  numberFeatures,
+  renderEmbodimentBlocks,
+  type DroppedEmbodimentBlock,
+  type EmbodimentBlock,
+  type EmbodimentBuild,
+  type SpecFigureMark,
+} from './spec-blocks.ts'
 
 /** Minimal figure-analysis shape the drafting layer reads (Sati figure/types.ts). */
 type FigureAnalysisResult = {
@@ -40,6 +49,12 @@ export type DraftSpecificationInput = {
   figure_analysis?: FigureAnalysisResult[]
   /** Embodiments (optional, may be several). */
   embodiments?: string[]
+  /** PFIE feature texts; numbered `F1`, `F2`… in input order for block citations. */
+  features?: string[]
+  /** Source text used to verify each embodiment excerpt; defaults to `technical_solution`. */
+  source_text?: string
+  /** Figure marks (figure number plus reference numeral) cited by matching blocks. */
+  figure_marks?: SpecFigureMark[]
   /** Whether drawings exist (utility models require them). */
   has_drawings?: boolean
 }
@@ -60,6 +75,10 @@ export type DraftSpecificationOutput = {
   /** Deterministic abstract (≤300 characters) carrying the title, problem, solution and effects. */
   abstract: string
   sections: SpecificationSection[]
+  /** Kept embodiment blocks with their feature and figure citations. */
+  embodiment_blocks: EmbodimentBlock[]
+  /** Blocks dropped because their excerpt did not occur in the source text. */
+  dropped_embodiment_blocks: DroppedEmbodimentBlock[]
   /** Whether every section carries written content rather than a drafting guide. */
   complete: boolean
   /** Sections still holding a drafting guide. */
@@ -67,7 +86,7 @@ export type DraftSpecificationOutput = {
   warnings: string[]
 }
 
-const DESCRIPTION = '根据技术交底书或技术方案撰写符合要求的专利说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式五部分，无附图发明省略附图说明），并生成不超过 300 字、含关键词行的确定性摘要。当用户要求撰写说明书、写专利申请文件时使用，避免自行手写说明书文本。'
+const DESCRIPTION = '根据技术交底书或技术方案撰写符合要求的专利说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式五部分，无附图发明省略附图说明），具体实施方式按实施例标题分块并复核原文锚点，标注命中的 PFIE 特征编号与附图标记，未命中原文的块整块丢弃；同时生成不超过 300 字、含关键词行的确定性摘要。当用户要求撰写说明书、写专利申请文件时使用，避免自行手写说明书文本。'
 
 /**
  * Render the canonical draft into model-facing Markdown.
@@ -156,10 +175,9 @@ function buildDrawings(
   return undefined
 }
 
-function buildEmbodiments(embodiments?: string[], patentType?: PatentType): SpecificationSection {
-  if (embodiments && embodiments.length > 0) {
-    const content = embodiments.map((e, i) => `实施例${i + 1}：${e.trim()}`).join('\n')
-    return { name: '具体实施方式', content, placeholder: false }
+function buildEmbodiments(build: EmbodimentBuild, patentType?: PatentType): SpecificationSection {
+  if (build.blocks.length > 0) {
+    return { name: '具体实施方式', content: renderEmbodimentBlocks(build.blocks), placeholder: false }
   }
   return { name: '具体实施方式', content: `【撰写指引】撰写至少一个实施例，使所属领域技术人员能够实现：① 实施例的操作步骤/参数/条件记载完整；② 数值范围给出端点值和至少一个中间值的实施例；③ 有益效果有定量效果数据；④ 有与最接近现有技术的对比实验数据（${patentType === 'utility_model' ? '实用新型' : '创造性'}判断的关键支撑）。`, placeholder: true }
 }
@@ -231,12 +249,23 @@ export function draftSpecification(input: DraftSpecificationInput): DraftSpecifi
   const autoDescriptions = input.figure_analysis?.map(f => enrichFigureDescription(f).trim()).filter(d => d.length > 0) ?? []
   const drawingDescriptions = explicitDescriptions ?? (autoDescriptions.length > 0 ? autoDescriptions : undefined)
   if (!explicitDescriptions && autoDescriptions.length > 0) warnings.push('附图说明由附图智能分析自动生成，请人工核对附图标记与图面一致')
+  const splitSource = input.source_text ?? input.technical_solution
+  const featureTable = numberFeatures(input.features)
+  const embodimentBuild = buildEmbodimentBlocks({
+    ...(splitSource === undefined ? {} : { sourceText: splitSource }),
+    // 显式实施例的空锚点源表示“未提供原文”，跳过复核而不是拿技术方案代填。
+    anchorText: input.source_text ?? '',
+    ...(input.embodiments === undefined ? {} : { embodiments: input.embodiments }),
+    ...(featureTable.length === 0 ? {} : { features: featureTable }),
+    ...(input.figure_marks === undefined ? {} : { figureMarks: input.figure_marks }),
+  })
+  warnings.push(...embodimentBuild.warnings)
   const sections = [
     buildTechField(title, domain),
     buildBackground(input.background),
     buildContent(input),
     buildDrawings(drawingDescriptions, input.has_drawings, patentType),
-    buildEmbodiments(input.embodiments, patentType),
+    buildEmbodiments(embodimentBuild, patentType),
   ].filter((section): section is SpecificationSection => section !== undefined)
   const missingInputs = sections.filter(section => section.placeholder).map(section => section.name)
   return {
@@ -245,6 +274,8 @@ export function draftSpecification(input: DraftSpecificationInput): DraftSpecifi
     patent_type: patentType,
     abstract: composeAbstract(input),
     sections,
+    embodiment_blocks: embodimentBuild.blocks,
+    dropped_embodiment_blocks: embodimentBuild.dropped,
     complete: missingInputs.length === 0,
     missing_inputs: missingInputs,
     warnings,
@@ -258,6 +289,38 @@ const SECTION_SCHEMA = {
     name: { type: 'string', required: true },
     content: { type: 'string', required: true },
     placeholder: { type: 'boolean', required: true },
+  },
+} as const
+
+const FIGURE_MARK_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    figure_number: { type: 'number', required: true },
+    ref_number: { type: 'string', required: true },
+  },
+} as const
+
+const EMBODIMENT_BLOCK_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    index: { type: 'number', required: true },
+    heading: { type: 'string' },
+    preamble: { type: 'boolean' },
+    text: { type: 'string', required: true },
+    feature_ids: { type: 'array', required: true, items: { type: 'string' } },
+    figure_marks: { type: 'array', required: true, items: FIGURE_MARK_SCHEMA },
+    anchor_reason: { type: 'string', required: true, enum: ['exact', 'normalized', 'not-found', 'empty'] },
+  },
+} as const
+
+const DROPPED_EMBODIMENT_BLOCK_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    text: { type: 'string', required: true },
+    reason: { type: 'string', required: true, enum: ['empty', 'anchor-not-found'] },
   },
 } as const
 
@@ -336,7 +399,10 @@ export function createDraftSpecificationTool(): ToolDefinition {
       background: { type: 'string', description: '背景技术/现有技术描述（可选）' },
       drawing_descriptions: { type: 'array', items: { type: 'string' }, description: '附图说明（可选，每项只写图名与描述文字，不含图号与句末标点，如 "整体结构示意图"）' },
       figure_analysis: { type: 'array', items: { type: 'json' }, description: '附图智能分析结果（可选，未提供 drawing_descriptions 时自动生成附图说明）' },
-      embodiments: { type: 'array', items: { type: 'string' }, description: '具体实施方式（可选，可多个实施例）' },
+      embodiments: { type: 'array', items: { type: 'string' }, description: '具体实施方式（可选，可多个实施例；未给出时按 source_text 的实施例标题切分）' },
+      features: { type: 'array', items: { type: 'string' }, description: 'PFIE 特征文本（可选，按数组顺序编号 F1、F2…；实施例块引用命中特征的编号）' },
+      source_text: { type: 'string', description: '交底书原文（可选，用于复核实施例摘录；缺省取 technical_solution）' },
+      figure_marks: { type: 'array', items: FIGURE_MARK_SCHEMA, description: '附图标记（可选，图号 + 数字标记；实施例块正文出现该标记时写入引用）' },
       has_drawings: { type: 'boolean', description: '是否有附图（实用新型必须有附图）' },
     },
     output: {
@@ -349,6 +415,8 @@ export function createDraftSpecificationTool(): ToolDefinition {
           patent_type: { type: 'string', required: true, enum: ['invention', 'utility_model'] },
           abstract: { type: 'string', required: true, description: '确定性摘要（≤300 字，含关键词行，不引用权利要求编号）' },
           sections: { type: 'array', required: true, items: SECTION_SCHEMA },
+          embodiment_blocks: { type: 'array', required: true, items: EMBODIMENT_BLOCK_SCHEMA, description: '保留的实施例块及其特征/附图引用' },
+          dropped_embodiment_blocks: { type: 'array', required: true, items: DROPPED_EMBODIMENT_BLOCK_SCHEMA, description: '因摘录未命中原文而丢弃的实施例块' },
           complete: { type: 'boolean', required: true },
           missing_inputs: { type: 'array', required: true, items: { type: 'string' } },
           warnings: WARNINGS_SCHEMA,

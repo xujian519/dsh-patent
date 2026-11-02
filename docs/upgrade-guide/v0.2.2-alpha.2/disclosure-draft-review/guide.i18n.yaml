@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-alpha.2/disclosure-draft-review/guide.md
+/:
+  en: 22c035df0fc6a318
+  zh: 6f429136864fc14a
+/the-disclosure-chain-reviews-the-draft-before-legal-gaps:
+  en: 24978113720dd8a0
+  zh: 4128803b9eed71d5
+/the-disclosure-chain-reviews-the-draft-before-legal-gaps/change:
+  en: fc986601dc0ef0e9
+  zh: 4ae18fce54bd63b8
+/the-disclosure-chain-reviews-the-draft-before-legal-gaps/migration:
+  en: cd8ee1cb26094717
+  zh: fa830d9287414c59

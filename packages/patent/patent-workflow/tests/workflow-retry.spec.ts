@@ -613,6 +613,76 @@ describe('workflow retry validation', () => {
     expect(result.stages.find(stage => stage.stageId === 'check')?.degraded).toBe(false)
   })
 
+  it('runWorkflow: draft review stops after two rewinds and enters the approval stage', async () => {
+    const manifest: WorkflowManifest = {
+      id: 'draft_review_exhaust',
+      name: '撰写链两轮审查耗尽测试',
+      caseType: 'disclosure_analysis',
+      stages: [
+        { id: 'draft_specification', strategy: 'chain', description: '重写说明书', atom: 'review_spec_round' },
+        {
+          id: 'draft_review',
+          strategy: 'chain',
+          description: '换位审查',
+          atom: 'review_examiner_round',
+          retry: {
+            whenRevisionRequested: true,
+            rewindTo: 'draft_specification',
+            routes: { 'draft-review:enablement': 'draft_specification' },
+            maxRetries: 2,
+          },
+        },
+        { id: 'review_gate', strategy: 'chain', description: '审批门', atom: 'review_approval_gate' },
+      ],
+      validation: { requireAllSteps: true },
+    }
+    const atoms = new AtomRegistry()
+    atoms.register({ name: 'review_spec_round', description: 's', category: 'extract', inputSchema: [], outputSchema: ['specification'] })
+    atoms.register({ name: 'review_examiner_round', description: 'e', category: 'gate', inputSchema: [], outputSchema: ['draft_review_report'] })
+    atoms.register({ name: 'review_approval_gate', description: 'g', category: 'gate', inputSchema: [], outputSchema: ['approval'] })
+    const handlers = new StageHandlerRegistry()
+    let specificationRounds = 0
+    let reviewRounds = 0
+    let gateRounds = 0
+    handlers.register({
+      name: 'review_spec_round',
+      category: 'extract',
+      execute: async () => {
+        specificationRounds += 1
+        return { specification: `说明书第 ${String(specificationRounds)} 版` }
+      },
+    })
+    handlers.register({
+      name: 'review_examiner_round',
+      category: 'gate',
+      execute: async () => {
+        reviewRounds += 1
+        return {
+          draft_review_report: '仍缺实施例',
+          draft_review_passed: false,
+          _revision_signals: [{ gapId: 'draft-review:enablement', rationale: '专利法第26条第3款：补充实施例' }],
+        }
+      },
+    })
+    handlers.register({
+      name: 'review_approval_gate',
+      category: 'gate',
+      execute: async () => {
+        gateRounds += 1
+        return { approval: 'APPROVED' }
+      },
+    })
+
+    const result = await runWorkflow(manifest, { input: 'x' }, undefined, { atoms, handlers })
+    // 初次审查加两次回退；第三次审查仍失败时保留产出，交给下游审批门。
+    expect(specificationRounds).toBe(3)
+    expect(reviewRounds).toBe(3)
+    expect(result.revisions?.map(record => record.outcome)).toEqual(['applied', 'applied', 'exhausted'])
+    expect(gateRounds).toBe(1)
+    expect(result.completed).toBe(true)
+    expect(result.degradedSteps).toHaveLength(0)
+  })
+
   it('runWorkflow: structured retry without a signal advances without rewinding', async () => {
     const manifest: WorkflowManifest = {
       id: 'structured_quiet',

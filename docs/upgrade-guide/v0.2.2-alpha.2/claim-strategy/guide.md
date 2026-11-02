@@ -15,13 +15,13 @@ English | [中文](guide.zh.md)
 
 `confirmed_features` accepts the model-output shape: `essential_features` and `optional_features` arrays (each item needs `id`, `text`, and an `anchor` copied from the disclosure), plus optional `dependent_tree` and `prior_art_ref` fields.
 
-The stage writes `review_context` with the feature table, dependent tree, and claim draft, and the disclosure manifest's `review_gate` no longer sets a static `review_context` parameter. The manifest grows from 25 to 26 stages and from 12 to 13 model-calling stages; the default `workflowStageBudget` and `workflowLlmStageBudget` rise from 25/12 to 26/13.
+The stage writes `review_context` with the feature table, dependent tree, and claim draft, and the disclosure manifest's `review_gate` no longer sets a static `review_context` parameter. The manifest grows from 25 to 26 stages and from 12 to 13 model-calling stages; the default `workflowStageBudget` and `workflowLlmStageBudget` rise from 25/12 to 26/13 at this change. The later [draft-review guide](../disclosure-draft-review/guide.md) raises them to 27/14.
 
 The deterministic engine moved from `@deepseek-ai/dsh-patent-tools` to `@deepseek-ai/dsh-patent-core` (`draftClaims`, `validateClaims`, `claimCountViolations`, `DOMAIN_KEYWORDS`). The tool package re-exports the same names, and the model-facing `draft_claims` tool keeps its schema, output, and `invalid_tool_input` error for mutually exclusive inputs.
 
 ## Migration
 
-1. If a deployment sets `workflowStageBudget` or `workflowLlmStageBudget` explicitly, raise them to at least 26 and 13, or plugin load rejects `patent_disclosure_v1`.
+1. If a deployment sets `workflowStageBudget` or `workflowLlmStageBudget` explicitly, raise them to at least 27 and 14, or plugin load rejects `patent_disclosure_v1`.
 2. A custom manifest that runs `draft-claims` must place `claim-strategy` before it and wire `claim_strategy` into the state; the handler degrades without it.
 3. Stop treating `draft_claims_result` as free-form model prose. Read the JSON record, or keep using `claims_draft` for the rendered claims.
 4. Replace any caller that supplied claim text through the old `draft-claims` prompt inputs (`merge_result`, `novelty_conclusion`, `slop_revision_hint`). Supply `claim_strategy` instead, or inject `confirmed_features` and let `claim-strategy` build it.

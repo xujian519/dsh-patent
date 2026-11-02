@@ -159,7 +159,7 @@ nodes:
   enablement-implementable:
     domain: enablement
     label: 充分公开与可实施（A26.3）
-    observable: 说明书对独立权利的每个必要技术特征给出可实施的实施例,本领域技术人员无需创造性劳动即可实现
+    observable: 说明书对独立权利要求的每个必要技术特征给出可实施的实施例,本领域技术人员按照说明书记载的内容能够实现
     dependsOn: [claim-essential-features]
   claim-breadth-supported:
     domain: enablement

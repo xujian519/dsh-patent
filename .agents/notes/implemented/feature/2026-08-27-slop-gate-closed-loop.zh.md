@@ -12,11 +12,13 @@ dsh 专利域已带确定性反套话引擎（`patent_eval`、内联 `slop-engin
 
 `patent-tools` 现在提供 `slop-gate` 原子与 handler。handler 放在本包而非 `patent-core`，因为它依赖本包的 slop 引擎；`apply()` 在 `registerBuiltinAtoms()` 之上，将 `slopGateAtom` 与 `SlopGateHandler` 注册进全局注册表（`src/index.ts` 第 283-284 行）。
 
-`slopGateAtom` 声明 `inputSchema: ['claims_draft']` 与 `outputSchema: ['slop_report', 'slop_score']`。`SlopGateHandler` 对草稿确定性运行 `analyzeSlop`，写入 `slop_report`（✅ 通过 / ⚠️ 需修订，附总分与通过线）与 `slop_score`（总分）；当草稿未通过时，额外写入由新 `buildSlopRevisionHint`（`src/internal/retry-hints.ts`）构造的 `slop_revision_hint`。草稿为空或全空白时降级（`degraded('slop-gate', '输入为空…')`），而非抛错。
+`slopGateAtom` 声明 `inputSchema: ['claims_draft', 'draft', 'draft_tightened', 'specification', 'text_keys', 'char_budget']` 与 `outputSchema: ['slop_report', 'slop_score']`。`SlopGateHandler` 对草稿确定性运行 `analyzeSlop`，写入 `slop_report`（✅ 通过 / ⚠️ 需修订，附总分与通过线）与 `slop_score`（总分）；当草稿未通过时，额外写入由新 `buildSlopRevisionHint`（`src/internal/retry-hints.ts`）构造的 `slop_revision_hint`。草稿为空或全空白时降级（`degraded('slop-gate', '输入为空…')`），而非抛错。
 
 `buildSlopRevisionHint` 在构造层面执行保密契约：只输出命中短语变更（上限 8 条）与结构问题（上限 3 条）及余量统计，外加一句固定修订方向，绝不输出评分数字、总分、通过线或任何 checklist 判定。无任何可引证据时返回 `undefined`，handler 便不写 hint——未通过但无证据的草稿照常过不了门，却不会注入空提示的语义噪音。
 
-闭环复用既有的工作流 `retry` 机制：disclosure manifest 新增 `slop_clean` 阶段（`atom: 'slop-gate'`、`retry: { whenOutputMatches: '需修订', rewindTo: 'draft_claims', maxRetries: 1 }`）。命中失败信号时回退阶段输出到 `draft_claims`；回退移除 stage-id 状态键但保留非 stage 键，故 `slop_revision_hint` 存活，`DraftClaimsHandler`——其 `inputSchema` 现含 `slop_revision_hint`——将之作为「上一轮反套话评审意见（仅修订提示，不含评分）」注入重写 prompt。第二次失败耗尽重试并降级为 `[WORKFLOW_RETRY_EXHAUSTED]`，以显式「需修订」报告收尾，而非静默通过。
+闭环复用既有的工作流 `retry` 机制：`patent_oa_response_v1` 的 `slop_gate` 阶段声明 `retry: { whenOutputMatches: '需修订', rewindTo: 'draft', maxRetries: 1 }`。命中失败信号时回退阶段输出到 `draft`；回退移除 stage-id 状态键但保留非 stage 键，故 `slop_revision_hint` 存活，重写 prompt 以「上一轮反套话评审意见（仅修订提示，不含评分）」收到它。第二次失败耗尽重试并降级为 `[WORKFLOW_RETRY_EXHAUSTED]`，以显式「需修订」报告收尾，而非静默通过。
+
+`patent_disclosure_v1` 的 `slop_clean` 阶段沿用同一原子，但不声明 `retry`：披露链的权利要求由策略表确定性渲染，回退到 `draft_claims` 既改不了文本也改不了分数，第二次失败只会耗尽重试、把运行判成未完成。该阶段现在评 `specification`，未通过只经 `slop_report` / `slop_score` 报告，不降级。
 
 `patent-core` 现经两个 atom barrel 导出 `degraded`；slop-gate handler 是它的首个消费者。通过线保持为固定常量（`SLOP_GATE_PASS_THRESHOLD = 35`，已导出），因为它是移植 slop 引擎的校准阈值，而非随部署变化的可调项。
 
@@ -29,7 +31,7 @@ dsh 专利域已带确定性反套话引擎（`patent_eval`、内联 `slop-engin
 
 ## 影响
 
-- 撰写工作流现受门控：套话草稿先带仅含证据的指引重写一次，仍失败则降级为显式「需修订」报告——模型无可追逐的伪分数上限。
+- 答复正文现受门控：套话草稿先带仅含证据的指引重写一次，仍失败则降级为显式「需修订」报告——模型无可追逐的伪分数上限。披露链上同一道门只报告：说明书未达通过线不阻断交付。
 - 模型可见面只携带证据（短语→替换、行号→原文→建议）加一句固定修订方向；评分数字、总分与通过线永不进入模型请求。因 hint 是模型可见输入，它属于撰写 prompt 的一部分，可从 session log 重建（`Model-visible ⟺ logged`）。
 - `slop_clean` 阶段给 disclosure manifest 增加一次确定性、无 LLM 的检查（廉价），`patent_workflow_run` 无需新配置即可运行。
 - `patent-workflow` 的 manifest 校验测试现注册 `slop-gate` 契约 stub，因为该包不能依赖 `patent-tools`；真实原子由 `patent-tools` 测试与 `apply()` 覆盖。

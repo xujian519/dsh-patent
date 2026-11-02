@@ -19,5 +19,5 @@ description: "patent_disclosure_v1 的 slop_clean 改为评说明书正文并只
 
 1. 自定义 manifest 若复制了披露链的 `slop_clean` 配置，同步改为 `text_keys: ['specification']` 并删除 `retry`；继续评权项草稿时，门在标准权项文本上无法达到 35 分。
 2. 原本把 `slop_clean` 的降级或 `[WORKFLOW_RETRY_EXHAUSTED]` 当作阻断信号的工具，改为读取 `slop_report` 与 `slop_score`；`completed` 不再因该阶段为 false。
-3. 需要保留硬阻断的调用方，在 `legal_gaps` 或 `review_gate` 上自行读取 `slop_score`，不要恢复对确定性阶段的回退。
+3. 需要保留硬阻断的调用方，从运行记录读取 `slop_score` 自行判定；`legal_gaps` 与 `review_gate` 都不消费该键，自定义 manifest 要自己补这一步。
 4. 确认：说明书总分低于 35 时，运行仍以 26/26 阶段完成，`degradedSteps` 为空，`slop_clean` 输出含「需修订」。

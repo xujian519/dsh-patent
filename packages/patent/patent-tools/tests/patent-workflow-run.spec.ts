@@ -1305,8 +1305,9 @@ describe('patent_workflow_run', () => {
   })
 
   it('disclosure manifest: a failing slop gate reports without rewinding deterministic claims', async () => {
-    // 策略表给出可锚定的特征；从权专员固定产出套话条文，真实 SlopGateHandler 判失败
-    // → 回退 draft_claims 重跑 → 仍失败 → maxRetries 耗尽降级。
+    // 策略表给出可锚定的特征；从权专员固定产出套话条文，确定性说明书把这些条文带进正文，
+    // 真实 SlopGateHandler 判失败。披露链的 slop_clean 评说明书正文且不声明 retry：
+    // 确定性权项重跑不改分，门只报告。
     const strategy = {
       essential_features: [{ id: 'F1', text: 'technical feature', anchor: 'technical' }],
       optional_features: [{ id: 'F2', text: 'disclosure feature', anchor: 'disclosure' }],

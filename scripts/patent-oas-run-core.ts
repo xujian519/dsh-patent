@@ -556,8 +556,11 @@ export function workflowExecutorPrompt(options: {
   const { plan, round } = options
   const approval = plan.approvalStages.map(stage => `"${stage}"`).join(', ')
   const stages = plan.deliverableStages.map(stage => `"${stage}"`).join('、')
+  const claimsSource = options.previousArtifact === undefined
+    ? '从上面这段任务文本里逐字摘录权利要求正文'
+    : '上一轮交付物给了修改后的权利要求就逐字摘录修改后的权项正文,否则从上面这段任务文本里逐字摘录权利要求正文'
   const claimsBasis = '若该 manifest 需要单独提供待审权利要求(如审查意见答复),claims 传本轮待答复的权利要求原文:'
-    + '从任务文本或上一轮交付物里逐字摘录权利要求正文,去掉行首标签;交底书类任务不传 claims。'
+    + `${claimsSource},去掉行首 "- 独立权利要求 1:" 这类标签;交底书类任务不传 claims。`
     + '不要把审查员论点的编号行或【要求】里的步骤列表放进 claims——要素级阶段按行首编号切分权项段。'
   const steps = [
     `1. 调用 patent_workflow_run 跑完整工作流:manifestId 传 "${plan.manifestId}",caseId 传 "${round.caseId}"${plan.approvalStages.length > 0 ? `,approveStageIds 传 [${approval}]` : ''},input 逐字原样传下面这段任务文本(不要改写、不要省略、不要只传片段);${claimsBasis}任务文本给出申请日或优先权日时,把给出的日期按 ISO 日期传给 filingDate(有优先权日时再传 priorityDate)——时间基准阶段缺日期会降级,连带下游检索过滤失败。`,
@@ -868,26 +871,33 @@ export async function collectRunRecord(options: CollectRunOptions): Promise<RunR
         const roundAccumulator = roundAccumulators[round - 1]
         if (roundAccumulator === undefined) throw new Error(`${caseId}: 缺少第 ${round} 轮的累加器`)
         const executorLabel = `${caseId} run ${run} 第 ${round} 轮执行者`
-        const roundFiles = workflowRound(caseId, run, round, workflow?.artifact ?? 'deliverable')
+        const workflowFiles = workflow === undefined
+          ? undefined
+          : { plan: workflow, round: workflowRound(caseId, run, round, workflow.artifact) }
         addUsage(await options.runAgents({
           cwd: agentStatePath,
-          prompt: workflow === undefined
+          prompt: workflowFiles === undefined
             ? executorPrompt(agentStatePath, roundText, isFirst ? undefined : PREVIOUS_DELIVERABLE_FILENAME)
             : workflowExecutorPrompt({
               agentStatePath,
               statement: roundText,
-              plan: workflow,
-              round: roundFiles,
+              plan: workflowFiles.plan,
+              round: workflowFiles.round,
               roundNumber: round,
-              ...(isFirst ? {} : { previousArtifact: workflowRound(caseId, run, round - 1, workflow.artifact).artifactPath }),
+              ...(isFirst ? {} : { previousArtifact: workflowRound(caseId, run, round - 1, workflowFiles.plan.artifact).artifactPath }),
             }),
           label: executorLabel,
         }))
         let deliverable: string
-        if (workflow === undefined) {
+        if (workflowFiles === undefined) {
           deliverable = await readArtifact(join(agentStatePath, DELIVERABLE_FILENAME), executorLabel)
         } else {
-          const observed = await readWorkflowRound({ cwd: agentStatePath, round: roundFiles, plan: workflow, label: executorLabel })
+          const observed = await readWorkflowRound({
+            cwd: agentStatePath,
+            round: workflowFiles.round,
+            plan: workflowFiles.plan,
+            label: executorLabel,
+          })
           deliverable = observed.deliverable
           roundAccumulator.claimVersions.push(observed.claimVersion)
         }

@@ -839,7 +839,7 @@ describe('工作流设置编排', () => {
     expect(prompt).toContain('matter_log_append')
     expect(prompt).toContain('action 传 "修订"')
     expect(prompt).toContain('supersedes 传 ["outputs/oa-response-r1.md"]')
-    expect(prompt).toContain('从任务文本或上一轮交付物里逐字摘录权利要求正文')
+    expect(prompt).toContain('上一轮交付物给了修改后的权利要求就逐字摘录修改后的权项正文')
     expect(prompt).toContain('不要把审查员论点的编号行或【要求】里的步骤列表放进 claims')
     expect(prompt).toContain('审查意见正文')
     expect(workflowExecutorPrompt({
@@ -859,7 +859,8 @@ describe('工作流设置编排', () => {
       round: workflowRound('oa-answer', 1, 1, 'oa-response'),
       roundNumber: 1,
     })
-    expect(prompt).toContain('从任务文本或上一轮交付物里逐字摘录权利要求正文')
+    expect(prompt).toContain('从上面这段任务文本里逐字摘录权利要求正文')
+    expect(prompt).not.toContain('上一轮交付物')
     expect(prompt).not.toContain('supersedes')
   })
 

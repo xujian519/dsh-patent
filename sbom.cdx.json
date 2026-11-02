@@ -1,0 +1,7779 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-02T20:09:28.030Z",
+    "component": {
+      "type": "application",
+      "name": "@deepseek-ai/dsh-root",
+      "version": "0.2.2-alpha.2",
+      "description": "DeepSeek Harness — all-plugin Cordis agent harness",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/deepseek-ai/deepseek-harness"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "name": "scripts/gen-third-party-notices.ts",
+          "version": "1.0.0",
+          "description": "DeepSeek Harness SBOM generator — shares inventory with THIRD_PARTY_NOTICES.md"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "@agentclientprotocol/sdk",
+      "version": "1.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@agentclientprotocol%2Fsdk@1.4.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/agentclientprotocol/typescript-sdk"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/agentclientprotocol/typescript-sdk"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@anthropic-ai/claude-agent-sdk",
+      "version": "0.3.263",
+      "licenses": [
+        {
+          "license": {
+            "expression": "SEE LICENSE IN README.md"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@anthropic-ai%2Fclaude-agent-sdk@0.3.263",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/anthropics/claude-agent-sdk-typescript"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/anthropics/claude-agent-sdk-typescript"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@anthropic-ai/sdk",
+      "version": "0.93.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@anthropic-ai%2Fsdk@0.93.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/anthropics/anthropic-sdk-typescript"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/anthropics/anthropic-sdk-typescript"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/code-frame",
+      "version": "7.29.7",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@babel%2Fcode-frame@7.29.7",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/babel/babel"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/babel/babel"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@botiverse/oar",
+      "version": "0.67.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@botiverse%2Foar@0.67.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/botiverse/oar"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/botiverse/oar"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@browserbasehq/stagehand",
+      "version": "4.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@browserbasehq%2Fstagehand@4.1.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/browserbase/stagehand"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/browserbase/stagehand"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/libreoffice-kit",
+      "version": "0.1.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MPL-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@deepseek-ai%2Flibreoffice-kit@0.1.5",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/deepseek-ai/dsh-libreoffice-kit"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/deepseek-ai/dsh-libreoffice-kit"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@earendil-works/pi-ai",
+      "version": "1.3.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@earendil-works%2Fpi-ai@1.3.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/earendil-works/pi"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/earendil-works/pi"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@earendil-works/pi-coding-agent",
+      "version": "1.3.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@earendil-works%2Fpi-coding-agent@1.3.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/earendil-works/pi"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/earendil-works/pi"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@eslint-community/regexpp",
+      "version": "4.12.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@eslint-community%2Fregexpp@4.12.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/eslint-community/regexpp"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/eslint-community/regexpp"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@fortune-sheet/core",
+      "version": "1.0.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@fortune-sheet%2Fcore@1.0.4",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/ruilisi/fortune-sheet"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/ruilisi/fortune-sheet"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@fortune-sheet/react",
+      "version": "1.0.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@fortune-sheet%2Freact@1.0.4",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/ruilisi/fortune-sheet"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/ruilisi/fortune-sheet"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@joplin/turndown-plugin-gfm",
+      "version": "1.0.67",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@joplin%2Fturndown-plugin-gfm@1.0.67",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/laurent22/joplin-turndown-plugin-gfm"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/laurent22/joplin-turndown-plugin-gfm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@jridgewell/gen-mapping",
+      "version": "0.3.13",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@jridgewell%2Fgen-mapping@0.3.13",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/jridgewell/sourcemaps"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/jridgewell/sourcemaps"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@js-temporal/polyfill",
+      "version": "0.5.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@js-temporal%2Fpolyfill@0.5.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/js-temporal/temporal-polyfill"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/js-temporal/temporal-polyfill"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@lexical/history",
+      "version": "0.49.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@lexical%2Fhistory@0.49.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/facebook/lexical"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/lexical"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@lexical/plain-text",
+      "version": "0.49.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@lexical%2Fplain-text@0.49.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/facebook/lexical"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/lexical"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@lexical/text",
+      "version": "0.49.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@lexical%2Ftext@0.49.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/facebook/lexical"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/lexical"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@lexical/utils",
+      "version": "0.49.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@lexical%2Futils@0.49.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/facebook/lexical"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/lexical"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@modelcontextprotocol/client",
+      "version": "2.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@modelcontextprotocol%2Fclient@2.2.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/modelcontextprotocol/typescript-sdk"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/modelcontextprotocol/typescript-sdk"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@modelcontextprotocol/sdk",
+      "version": "1.31.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@modelcontextprotocol%2Fsdk@1.31.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/modelcontextprotocol/typescript-sdk"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/modelcontextprotocol/typescript-sdk"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@noble/hashes",
+      "version": "2.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@noble%2Fhashes@2.4.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/paulmillr/noble-hashes"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/paulmillr/noble-hashes"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@octokit/webhooks",
+      "version": "14.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@octokit%2Fwebhooks@14.2.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/octokit/webhooks.js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/octokit/webhooks.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@openai/codex",
+      "version": "0.153.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@openai%2Fcodex@0.153.4",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/openai/codex"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/openai/codex"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@opentelemetry/api",
+      "version": "1.9.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@opentelemetry%2Fapi@1.9.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@opentelemetry/api-logs",
+      "version": "0.222.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@opentelemetry%2Fapi-logs@0.222.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@opentelemetry/core",
+      "version": "2.11.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@opentelemetry%2Fcore@2.11.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@opentelemetry/otlp-exporter-base",
+      "version": "0.222.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@opentelemetry%2Fotlp-exporter-base@0.222.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@opentelemetry/otlp-transformer",
+      "version": "0.222.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@opentelemetry%2Fotlp-transformer@0.222.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@opentelemetry/resources",
+      "version": "2.11.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@opentelemetry%2Fresources@2.11.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@opentelemetry/sdk-logs",
+      "version": "0.222.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@opentelemetry%2Fsdk-logs@0.222.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/open-telemetry/opentelemetry-js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@playwright/mcp",
+      "version": "0.0.80",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@playwright%2Fmcp@0.0.80",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/microsoft/playwright-mcp"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/microsoft/playwright-mcp"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@puppeteer/browsers",
+      "version": "3.2.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@puppeteer%2Fbrowsers@3.2.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/puppeteer/puppeteer/tree/main/packages/browsers"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/puppeteer/puppeteer/tree/main/packages/browsers"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@shikijs/langs",
+      "version": "4.4.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@shikijs%2Flangs@4.4.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/shikijs/shiki"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/shikijs/shiki"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@standard-schema/spec",
+      "version": "1.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@standard-schema%2Fspec@1.1.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/standard-schema/standard-schema"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/standard-schema/standard-schema"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@tanstack/react-virtual",
+      "version": "3.14.10",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@tanstack%2Freact-virtual@3.14.10",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/TanStack/virtual"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/TanStack/virtual"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@trycua/cua-driver",
+      "version": "0.28.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@trycua%2Fcua-driver@0.28.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/trycua/cua"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/trycua/cua"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@viz-js/viz",
+      "version": "3.31.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@viz-js%2Fviz@3.31.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/mdaines/viz-js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/mdaines/viz-js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vscode/ripgrep",
+      "version": "1.18.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@vscode%2Fripgrep@1.18.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/microsoft/vscode-ripgrep"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/microsoft/vscode-ripgrep"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@xmanrui/dsh-im",
+      "version": "3.0.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@xmanrui%2Fdsh-im@3.0.5",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/xmanrui/dsh-im"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/xmanrui/dsh-im"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@xterm/addon-fit",
+      "version": "0.11.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@xterm%2Faddon-fit@0.11.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/xtermjs/xterm.js/tree/master/addons/addon-fit"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/xtermjs/xterm.js/tree/master/addons/addon-fit"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@xterm/addon-serialize",
+      "version": "0.14.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@xterm%2Faddon-serialize@0.14.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/xtermjs/xterm.js/tree/master/addons/addon-serialize"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/xtermjs/xterm.js/tree/master/addons/addon-serialize"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@xterm/headless",
+      "version": "6.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@xterm%2Fheadless@6.0.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/xtermjs/xterm.js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/xtermjs/xterm.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@xterm/xterm",
+      "version": "6.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@xterm%2Fxterm@6.0.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/xtermjs/xterm.js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/xtermjs/xterm.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@yarnpkg/parsers",
+      "version": "3.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@yarnpkg%2Fparsers@3.1.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/yarnpkg/berry"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/yarnpkg/berry"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "acorn",
+      "version": "8.18.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/acorn@8.18.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/acornjs/acorn"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/acornjs/acorn"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "acorn-walk",
+      "version": "8.3.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/acorn-walk@8.3.5",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/acornjs/acorn"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/acornjs/acorn"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "ajv",
+      "version": "8.20.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/ajv@8.20.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/ajv-validator/ajv"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/ajv-validator/ajv"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "anser",
+      "version": "2.3.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/anser@2.3.5",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/IonicaBizau/anser"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/IonicaBizau/anser"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "big.js",
+      "version": "7.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/big.js@7.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/MikeMcl/big.js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/MikeMcl/big.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "birpc",
+      "version": "4.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/birpc@4.2.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/antfu-collective/birpc"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/antfu-collective/birpc"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "buffer",
+      "version": "6.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/buffer@6.0.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/feross/buffer"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/feross/buffer"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cheerio",
+      "version": "1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/cheerio@1.2.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/cheeriojs/cheerio"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/cheeriojs/cheerio"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "chokidar",
+      "version": "4.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/chokidar@4.0.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/paulmillr/chokidar"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/paulmillr/chokidar"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "chrome-devtools-frontend",
+      "version": "1.0.1638082",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:npm/chrome-devtools-frontend@1.0.1638082",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/ChromeDevTools/devtools-frontend"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/ChromeDevTools/devtools-frontend"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "chrome-devtools-mcp",
+      "version": "1.9.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/chrome-devtools-mcp@1.9.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/ChromeDevTools/chrome-devtools-mcp"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "clsx",
+      "version": "2.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/clsx@2.1.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/lukeed/clsx"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/lukeed/clsx"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "commander",
+      "version": "15.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/commander@15.0.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/tj/commander.js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/tj/commander.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "compression",
+      "version": "1.8.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/compression@1.8.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/expressjs/compression"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/expressjs/compression"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cross-spawn",
+      "version": "7.0.6",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/cross-spawn@7.0.6",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/moxystudio/node-cross-spawn"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/moxystudio/node-cross-spawn"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "diff",
+      "version": "9.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:npm/diff@9.0.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/kpdecker/jsdiff"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/kpdecker/jsdiff"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "domhandler",
+      "version": "6.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:npm/domhandler@6.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/fb55/domhandler"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/fb55/domhandler"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "dompurify",
+      "version": "3.4.16",
+      "licenses": [
+        {
+          "license": {
+            "expression": "(MPL-2.0 OR Apache-2.0)"
+          }
+        }
+      ],
+      "purl": "pkg:npm/dompurify@3.4.16",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/cure53/DOMPurify"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/cure53/DOMPurify"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "electron-updater",
+      "version": "6.8.9",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/electron-updater@6.8.9",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/electron-userland/electron-builder"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/electron-userland/electron-builder"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "eventsource-parser",
+      "version": "3.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/eventsource-parser@3.1.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/rexxars/eventsource-parser"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/rexxars/eventsource-parser"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "exceljs",
+      "version": "4.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/exceljs@4.4.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/exceljs/exceljs"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/exceljs/exceljs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "execa",
+      "version": "10.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/execa@10.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/sindresorhus/execa"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/sindresorhus/execa"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fast-xml-parser",
+      "version": "5.11.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/fast-xml-parser@5.11.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/NaturalIntelligence/fast-xml-parser"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/NaturalIntelligence/fast-xml-parser"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fflate",
+      "version": "0.8.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/fflate@0.8.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/101arrowz/fflate"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/101arrowz/fflate"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "got",
+      "version": "14.6.6",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/got@14.6.6",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/sindresorhus/got"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/sindresorhus/got"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "hosted-git-info",
+      "version": "9.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "purl": "pkg:npm/hosted-git-info@9.0.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/npm/hosted-git-info"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/npm/hosted-git-info"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "immer",
+      "version": "10.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/immer@10.2.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/immerjs/immer"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/immerjs/immer"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "ipaddr.js",
+      "version": "2.5.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/ipaddr.js@2.5.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/whitequark/ipaddr.js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/whitequark/ipaddr.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "js-yaml",
+      "version": "4.3.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/js-yaml@4.3.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/nodeca/js-yaml"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/nodeca/js-yaml"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "katex",
+      "version": "0.18.7",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/katex@0.18.7",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/KaTeX/KaTeX"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/KaTeX/KaTeX"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "koffi",
+      "version": "3.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/koffi@3.1.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/Koromix/koffi"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/Koromix/koffi"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "lexical",
+      "version": "0.49.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/lexical@0.49.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/facebook/lexical"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/lexical"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "marked",
+      "version": "16.4.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/marked@16.4.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/markedjs/marked"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/markedjs/marked"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mdast-util-from-markdown",
+      "version": "2.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/mdast-util-from-markdown@2.0.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/syntax-tree/mdast-util-from-markdown"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/syntax-tree/mdast-util-from-markdown"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mdast-util-gfm",
+      "version": "3.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/mdast-util-gfm@3.1.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/syntax-tree/mdast-util-gfm"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/syntax-tree/mdast-util-gfm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mdast-util-math",
+      "version": "3.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/mdast-util-math@3.0.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/syntax-tree/mdast-util-math"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/syntax-tree/mdast-util-math"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "micromark-core-commonmark",
+      "version": "2.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/micromark-core-commonmark@2.0.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/micromark/micromark/tree/main/packages/micromark-core-commonmark"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/micromark/micromark/tree/main/packages/micromark-core-commonmark"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "micromark-extension-gfm",
+      "version": "3.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/micromark-extension-gfm@3.0.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/micromark/micromark-extension-gfm"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/micromark/micromark-extension-gfm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "micromark-extension-math",
+      "version": "3.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/micromark-extension-math@3.1.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/micromark/micromark-extension-math"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/micromark/micromark-extension-math"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "micromark-factory-space",
+      "version": "2.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/micromark-factory-space@2.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-space"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-space"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "micromark-util-character",
+      "version": "2.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/micromark-util-character@2.1.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-character"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-character"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "micromark-util-classify-character",
+      "version": "2.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/micromark-util-classify-character@2.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-classify-character"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-classify-character"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "micromark-util-decode-string",
+      "version": "2.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/micromark-util-decode-string@2.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-decode-string"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-decode-string"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "micromark-util-sanitize-uri",
+      "version": "2.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/micromark-util-sanitize-uri@2.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-sanitize-uri"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-sanitize-uri"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "micromark-util-symbol",
+      "version": "2.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/micromark-util-symbol@2.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-symbol"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-symbol"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mime",
+      "version": "4.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/mime@4.1.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/broofa/mime"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/broofa/mime"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mime-types",
+      "version": "3.0.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/mime-types@3.0.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/jshttp/mime-types"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/jshttp/mime-types"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "minisearch",
+      "version": "7.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/minisearch@7.2.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/lucaong/minisearch"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/lucaong/minisearch"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "negotiator",
+      "version": "1.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/negotiator@1.1.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/jshttp/negotiator"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/jshttp/negotiator"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "node-addon-require-builtin",
+      "version": "0.1.9",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/node-addon-require-builtin@0.1.9",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://www.npmjs.com/package/node-addon-require-builtin"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://www.npmjs.com/package/node-addon-require-builtin"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "node-pty",
+      "version": "1.2.0-beta.15",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/node-pty@1.2.0-beta.15",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/microsoft/node-pty"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/microsoft/node-pty"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "open",
+      "version": "11.0.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/open@11.0.4",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/sindresorhus/open"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/sindresorhus/open"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "p-limit",
+      "version": "7.3.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/p-limit@7.3.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/sindresorhus/p-limit"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/sindresorhus/p-limit"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "papaparse",
+      "version": "5.5.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/papaparse@5.5.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/mholt/PapaParse"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/mholt/PapaParse"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pdfjs-dist",
+      "version": "6.3.289",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/pdfjs-dist@6.3.289",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/mozilla/pdf.js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/mozilla/pdf.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "picomatch",
+      "version": "4.0.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/picomatch@4.0.4",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/micromatch/picomatch"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/micromatch/picomatch"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "version": "18.3.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/react@18.3.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/facebook/react"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/react"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-dom",
+      "version": "18.3.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/react-dom@18.3.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/facebook/react"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/react"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "readable-stream",
+      "version": "4.7.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/readable-stream@4.7.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/nodejs/readable-stream"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/nodejs/readable-stream"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "resolve.exports",
+      "version": "2.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/resolve.exports@2.0.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/lukeed/resolve.exports"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/lukeed/resolve.exports"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "semver",
+      "version": "7.8.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "purl": "pkg:npm/semver@7.8.5",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/npm/node-semver"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/npm/node-semver"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "serve-static",
+      "version": "2.2.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/serve-static@2.2.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/expressjs/serve-static"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/expressjs/serve-static"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "sharp",
+      "version": "0.35.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/sharp@0.35.5",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/lovell/sharp"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/lovell/sharp"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "shell-quote",
+      "version": "1.12.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/shell-quote@1.12.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "http://github.com/ljharb/shell-quote"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "http://github.com/ljharb/shell-quote"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "sherpa-onnx-node",
+      "version": "1.13.8",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/sherpa-onnx-node@1.13.8",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/csukuangfj/sherpa-onnx"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/csukuangfj/sherpa-onnx"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "shiki",
+      "version": "4.4.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/shiki@4.4.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/shikijs/shiki"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/shikijs/shiki"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "simple-icons",
+      "version": "16.31.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "CC0-1.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/simple-icons@16.31.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/simple-icons/simple-icons"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/simple-icons/simple-icons"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "string_decoder",
+      "version": "1.3.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/string_decoder@1.3.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/nodejs/string_decoder"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/nodejs/string_decoder"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "supports-color",
+      "version": "9.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/supports-color@9.4.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/chalk/supports-color"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/chalk/supports-color"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tar",
+      "version": "7.5.22",
+      "licenses": [
+        {
+          "license": {
+            "id": "BlueOak-1.0.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/tar@7.5.22",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/isaacs/node-tar"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/isaacs/node-tar"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tsx",
+      "version": "4.23.13",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/tsx@4.23.13",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/privatenumber/tsx"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/privatenumber/tsx"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "turndown",
+      "version": "7.2.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/turndown@7.2.4",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/mixmark-io/turndown"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/mixmark-io/turndown"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "typescript",
+      "version": "6.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/typescript@6.0.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/microsoft/TypeScript"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/microsoft/TypeScript"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "undici",
+      "version": "8.11.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/undici@8.11.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/nodejs/undici"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/nodejs/undici"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "use-sync-external-store",
+      "version": "1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/use-sync-external-store@1.6.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/facebook/react"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/react"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "which",
+      "version": "2.0.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "purl": "pkg:npm/which@2.0.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/isaacs/node-which"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/isaacs/node-which"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "ws",
+      "version": "8.21.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/ws@8.21.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/websockets/ws"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/websockets/ws"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "xlsx",
+      "version": "0.20.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/xlsx@0.20.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://git.sheetjs.com/SheetJS/sheetjs"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://git.sheetjs.com/SheetJS/sheetjs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "yaml",
+      "version": "2.9.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "purl": "pkg:npm/yaml@2.9.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/eemeli/yaml"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/eemeli/yaml"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "zod",
+      "version": "4.4.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/zod@4.4.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/colinhacks/zod"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/colinhacks/zod"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "zustand",
+      "version": "4.5.7",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/zustand@4.5.7",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "runtime-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/pmndrs/zustand"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/pmndrs/zustand"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@braintree/sanitize-url",
+      "version": "7.1.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@braintree%2Fsanitize-url@7.1.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/braintree/sanitize-url"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/braintree/sanitize-url"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@electron/get",
+      "version": "5.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@electron%2Fget@5.1.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/electron/get"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/electron/get"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@electron/notarize",
+      "version": "2.5.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@electron%2Fnotarize@2.5.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/electron/notarize"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/electron/notarize"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@lexical/headless",
+      "version": "0.49.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@lexical%2Fheadless@0.49.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/facebook/lexical"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/lexical"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@modelcontextprotocol/node",
+      "version": "2.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@modelcontextprotocol%2Fnode@2.0.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/modelcontextprotocol/typescript-sdk"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/modelcontextprotocol/typescript-sdk"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@modelcontextprotocol/server",
+      "version": "2.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@modelcontextprotocol%2Fserver@2.2.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/modelcontextprotocol/typescript-sdk"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/modelcontextprotocol/typescript-sdk"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@modelcontextprotocol/server-everything",
+      "version": "2026.8.31",
+      "licenses": [
+        {
+          "license": {
+            "expression": "MIT / Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@modelcontextprotocol%2Fserver-everything@2026.8.31",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/modelcontextprotocol/servers"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/modelcontextprotocol/servers"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@modelcontextprotocol/server-filesystem",
+      "version": "2026.8.31",
+      "licenses": [
+        {
+          "license": {
+            "expression": "MIT / Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@modelcontextprotocol%2Fserver-filesystem@2026.8.31",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/modelcontextprotocol/servers"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/modelcontextprotocol/servers"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@panzoom/panzoom",
+      "version": "4.6.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@panzoom%2Fpanzoom@4.6.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/timmywil/panzoom"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/timmywil/panzoom"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@stylistic/eslint-plugin",
+      "version": "5.10.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@stylistic%2Feslint-plugin@5.10.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/eslint-stylistic/eslint-stylistic"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/eslint-stylistic/eslint-stylistic"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@testing-library/dom",
+      "version": "10.4.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@testing-library%2Fdom@10.4.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/testing-library/dom-testing-library"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/testing-library/dom-testing-library"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@testing-library/react",
+      "version": "16.3.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@testing-library%2Freact@16.3.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/testing-library/react-testing-library"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/testing-library/react-testing-library"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/babel__code-frame",
+      "version": "7.27.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fbabel__code-frame@7.27.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/big.js",
+      "version": "6.2.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fbig.js@6.2.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/compression",
+      "version": "1.8.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fcompression@1.8.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/hosted-git-info",
+      "version": "3.0.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fhosted-git-info@3.0.5",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/js-yaml",
+      "version": "4.0.9",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fjs-yaml@4.0.9",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/jsdom",
+      "version": "28.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fjsdom@28.0.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/mdast",
+      "version": "4.0.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fmdast@4.0.4",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/mime-types",
+      "version": "3.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fmime-types@3.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/negotiator",
+      "version": "0.6.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fnegotiator@0.6.5",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/node",
+      "version": "22.20.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fnode@22.20.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/papaparse",
+      "version": "5.5.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fpapaparse@5.5.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/picomatch",
+      "version": "3.0.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fpicomatch@3.0.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/react",
+      "version": "18.3.31",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Freact@18.3.31",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/react-dom",
+      "version": "18.3.7",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Freact-dom@18.3.7",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/readable-stream",
+      "version": "4.0.24",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Freadable-stream@4.0.24",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/semver",
+      "version": "7.8.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fsemver@7.8.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/serve-static",
+      "version": "2.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fserve-static@2.2.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/spdx-expression-parse",
+      "version": "4.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fspdx-expression-parse@4.0.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/turndown",
+      "version": "5.0.6",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fturndown@5.0.6",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/use-sync-external-store",
+      "version": "1.7.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fuse-sync-external-store@1.7.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/ws",
+      "version": "8.18.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@types%2Fws@8.18.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vitejs/plugin-react",
+      "version": "4.7.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@vitejs%2Fplugin-react@4.7.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/vitejs/vite-plugin-react"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/vitejs/vite-plugin-react"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vitest/coverage-v8",
+      "version": "4.1.11",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@vitest%2Fcoverage-v8@4.1.11",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/vitest-dev/vitest"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/vitest-dev/vitest"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vitest/spy",
+      "version": "4.1.11",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@vitest%2Fspy@4.1.11",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/vitest-dev/vitest"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/vitest-dev/vitest"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@yao-pkg/pkg",
+      "version": "6.21.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@yao-pkg%2Fpkg@6.21.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/yao-pkg/pkg"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/yao-pkg/pkg"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@yarnpkg/cli-dist",
+      "version": "4.18.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@yarnpkg%2Fcli-dist@4.18.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/yarnpkg/berry"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/yarnpkg/berry"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "app-builder-lib",
+      "version": "26.17.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/app-builder-lib@26.17.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/electron-userland/electron-builder"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/electron-userland/electron-builder"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cos-nodejs-sdk-v5",
+      "version": "3.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ],
+      "purl": "pkg:npm/cos-nodejs-sdk-v5@3.0.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/tencentyun/cos-nodejs-sdk-v5"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/tencentyun/cos-nodejs-sdk-v5"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cytoscape",
+      "version": "3.34.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/cytoscape@3.34.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/cytoscape/cytoscape.js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/cytoscape/cytoscape.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cytoscape-cose-bilkent",
+      "version": "4.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/cytoscape-cose-bilkent@4.1.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/cytoscape/cytoscape.js-cose-bilkent"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/cytoscape/cytoscape.js-cose-bilkent"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "dayjs",
+      "version": "1.11.23",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/dayjs@1.11.23",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/iamkun/dayjs"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/iamkun/dayjs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "debug",
+      "version": "4.4.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/debug@4.4.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/debug-js/debug"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/debug-js/debug"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "electron",
+      "version": "44.7.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/electron@44.7.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/electron/electron"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/electron/electron"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "electron-builder",
+      "version": "26.17.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/electron-builder@26.17.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/electron-userland/electron-builder"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/electron-userland/electron-builder"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "esbuild",
+      "version": "0.28.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/esbuild@0.28.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/evanw/esbuild"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/evanw/esbuild"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "eslint-plugin-sonarjs",
+      "version": "4.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "LGPL-3.0-only"
+          }
+        }
+      ],
+      "purl": "pkg:npm/eslint-plugin-sonarjs@4.2.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/SonarSource/SonarJS"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/SonarSource/SonarJS"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "extract-zip",
+      "version": "2.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:npm/extract-zip@2.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/maxogden/extract-zip"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/maxogden/extract-zip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fast-check",
+      "version": "4.9.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/fast-check@4.9.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/dubzzz/fast-check"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/dubzzz/fast-check"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "http-server",
+      "version": "14.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/http-server@14.1.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/http-party/http-server"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/http-party/http-server"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "istanbul-lib-report",
+      "version": "3.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:npm/istanbul-lib-report@3.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/istanbuljs/istanbuljs"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/istanbuljs/istanbuljs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "jscpd",
+      "version": "5.1.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/jscpd@5.1.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/kucherenko/jscpd"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/kucherenko/jscpd"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "jsdom",
+      "version": "29.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/jsdom@29.1.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/jsdom/jsdom"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/jsdom/jsdom"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "lefthook",
+      "version": "2.1.12",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/lefthook@2.1.12",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/evilmartians/lefthook"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/evilmartians/lefthook"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "lightningcss",
+      "version": "1.33.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MPL-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/lightningcss@1.33.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/parcel-bundler/lightningcss"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/parcel-bundler/lightningcss"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mermaid",
+      "version": "11.17.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/mermaid@11.17.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/mermaid-js/mermaid"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/mermaid-js/mermaid"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "micromark-util-types",
+      "version": "2.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/micromark-util-types@2.0.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-types"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-types"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "oxlint",
+      "version": "1.81.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/oxlint@1.81.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/oxc-project/oxc"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/oxc-project/oxc"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "oxlint-tsgolint",
+      "version": "7.0.2001",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/oxlint-tsgolint@7.0.2001",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/oxc-project/tsgolint"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/oxc-project/tsgolint"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "playwright",
+      "version": "1.61.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/playwright@1.61.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/microsoft/playwright"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/microsoft/playwright"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pnpm",
+      "version": "11.28.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/pnpm@11.28.5",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/pnpm/pnpm"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/pnpm/pnpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "publint",
+      "version": "0.3.24",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/publint@0.3.24",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/publint/publint"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/publint/publint"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "selfsigned",
+      "version": "4.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/selfsigned@4.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/jfromaniello/selfsigned"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/jfromaniello/selfsigned"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "smol-toml",
+      "version": "1.9.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:npm/smol-toml@1.9.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/squirrelchat/smol-toml"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/squirrelchat/smol-toml"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "spdx-expression-parse",
+      "version": "5.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/spdx-expression-parse@5.0.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/jslicense/spdx-expression-parse.js"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/jslicense/spdx-expression-parse.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tencentcloud-sdk-nodejs-teo",
+      "version": "4.1.330",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/tencentcloud-sdk-nodejs-teo@4.1.330",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/tencentcloud/tencentcloud-sdk-nodejs"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/tencentcloud/tencentcloud-sdk-nodejs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tsdown",
+      "version": "0.22.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/tsdown@0.22.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/rolldown/tsdown"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/rolldown/tsdown"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "typescript-language-server",
+      "version": "5.3.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/typescript-language-server@5.3.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/typescript-language-server/typescript-language-server"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/typescript-language-server/typescript-language-server"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vite",
+      "version": "8.2.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/vite@8.2.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/vitejs/vite"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/vitejs/vite"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vite-tsconfig-paths",
+      "version": "6.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/vite-tsconfig-paths@6.1.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/aleclarson/vite-tsconfig-paths"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/aleclarson/vite-tsconfig-paths"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vitepress",
+      "version": "1.6.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/vitepress@1.6.4",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/vuejs/vitepress"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/vuejs/vitepress"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vitepress-plugin-mermaid",
+      "version": "2.0.17",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/vitepress-plugin-mermaid@2.0.17",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/emersonbottero/vitepress-plugin-mermaid"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/emersonbottero/vitepress-plugin-mermaid"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vitest",
+      "version": "4.1.11",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/vitest@4.1.11",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/vitest-dev/vitest"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/vitest-dev/vitest"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vue",
+      "version": "3.5.42",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/vue@3.5.42",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "dev-npm"
+        },
+        {
+          "name": "source",
+          "value": "npm"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/vuejs/core"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/vuejs/core"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "et-xmlfile",
+      "version": "2.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/et-xmlfile@2.0.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://foss.heptapod.net/openpyxl/et_xmlfile"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://foss.heptapod.net/openpyxl/et_xmlfile"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "lxml",
+      "version": "6.1.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/lxml@6.1.3",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/lxml/lxml"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/lxml/lxml"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "numpy",
+      "version": "2.3.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/numpy@2.3.5",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/numpy/numpy"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/numpy/numpy"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "openpyxl",
+      "version": "3.1.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/openpyxl@3.1.5",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://foss.heptapod.net/openpyxl/openpyxl"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://foss.heptapod.net/openpyxl/openpyxl"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pandas",
+      "version": "3.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/pandas@3.0.1",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/pandas-dev/pandas"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/pandas-dev/pandas"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pillow",
+      "version": "12.3.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT-CMU"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/pillow@12.3.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/python-pillow/Pillow"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/python-pillow/Pillow"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "licenses": [
+        {
+          "license": {
+            "expression": "Apache-2.0 OR BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/python-dateutil@2.9.0.post0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/dateutil/dateutil"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/dateutil/dateutil"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "python-docx",
+      "version": "1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/python-docx@1.2.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/python-openxml/python-docx"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/python-openxml/python-docx"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "python-pptx",
+      "version": "1.0.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/python-pptx@1.0.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/scanny/python-pptx"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/scanny/python-pptx"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "six",
+      "version": "1.17.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/six@1.17.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/benjaminp/six"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/benjaminp/six"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "PSF-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/typing-extensions@4.16.0",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/python/typing_extensions"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/python/typing_extensions"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tzdata",
+      "version": "2025.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/tzdata@2025.2",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/python/tzdata"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/python/tzdata"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "xlsxwriter",
+      "version": "3.2.9",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/xlsxwriter@3.2.9",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "bundled-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/jmcnamara/XlsxWriter"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/jmcnamara/XlsxWriter"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "hatchling",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/hatchling",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "direct-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/pypa/hatch"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/pypa/hatch"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pillow",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT-CMU"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/pillow",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "direct-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/python-pillow/Pillow"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/python-pillow/Pillow"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pydantic",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/pydantic",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "direct-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/pydantic/pydantic"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/pydantic/pydantic"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pytest",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/pytest",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "direct-python"
+        },
+        {
+          "name": "source",
+          "value": "python"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/pytest-dev/pytest"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/pytest-dev/pytest"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/cosmokit",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@deepseek-ai/cosmokit?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcosmokit",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "vendored"
+        },
+        {
+          "name": "source",
+          "value": "vendor"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/deepseek-harness/cosmokit"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/deepseek-harness/cosmokit"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/schemastery",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@deepseek-ai/schemastery?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fschemastery",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "vendored"
+        },
+        {
+          "name": "source",
+          "value": "vendor"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/deepseek-harness/schemastery"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/deepseek-harness/schemastery"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/cordis",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@deepseek-ai/cordis?repository_url=https%3A%2F%2Fgithub.com%2Fcordiverse%2Fcordis",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "vendored"
+        },
+        {
+          "name": "source",
+          "value": "vendor"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/cordiverse/cordis"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/cordiverse/cordis"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/cordis-plugin-loader",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-loader?repository_url=https%3A%2F%2Fgithub.com%2Fcordiverse%2Fcordis",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "vendored"
+        },
+        {
+          "name": "source",
+          "value": "vendor"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/cordiverse/cordis"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/cordiverse/cordis"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/cordis-plugin-include",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-include?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "vendored"
+        },
+        {
+          "name": "source",
+          "value": "vendor"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/deepseek-harness/cordis"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/deepseek-harness/cordis"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/cordis-plugin-group",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-group?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "vendored"
+        },
+        {
+          "name": "source",
+          "value": "vendor"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/deepseek-harness/cordis"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/deepseek-harness/cordis"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/cordis-plugin-timer",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-timer?repository_url=https%3A%2F%2Fgithub.com%2Fcordiverse%2Fcordis",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "vendored"
+        },
+        {
+          "name": "source",
+          "value": "vendor"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/cordiverse/cordis"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/cordiverse/cordis"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/cordis-plugin-hmr",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-hmr?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "vendored"
+        },
+        {
+          "name": "source",
+          "value": "vendor"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/deepseek-harness/cordis"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/deepseek-harness/cordis"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/cordis-plugin-logger-console",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-logger-console?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "vendored"
+        },
+        {
+          "name": "source",
+          "value": "vendor"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/deepseek-harness/cordis"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/deepseek-harness/cordis"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/nuo-patent",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@deepseek-ai/nuo-patent?repository_url=https%3A%2F%2Fgithub.com%2Fxujian519%2Fnuo-patent",
+      "properties": [
+        {
+          "name": "tier",
+          "value": "vendored"
+        },
+        {
+          "name": "source",
+          "value": "vendor"
+        },
+        {
+          "name": "upstream",
+          "value": "https://github.com/xujian519/nuo-patent"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/xujian519/nuo-patent"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/node-addon-system",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "first-party-native"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/node-addon-system-darwin-arm64",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "first-party-native"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/node-addon-system-darwin-x64",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "first-party-native"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/node-addon-system-linux-arm64",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "first-party-native"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@deepseek-ai/node-addon-system-linux-x64",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "first-party-native"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@anthropic-ai/claude-agent-sdk-darwin-arm64",
+      "version": "0.3.263",
+      "licenses": [
+        {
+          "license": {
+            "expression": "SEE LICENSE IN LICENSE.md"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "claude-platform"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@anthropic-ai/claude-agent-sdk-darwin-x64",
+      "version": "0.3.263",
+      "licenses": [
+        {
+          "license": {
+            "expression": "SEE LICENSE IN LICENSE.md"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "claude-platform"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@anthropic-ai/claude-agent-sdk-linux-arm64",
+      "version": "0.3.263",
+      "licenses": [
+        {
+          "license": {
+            "expression": "SEE LICENSE IN LICENSE.md"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "claude-platform"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@anthropic-ai/claude-agent-sdk-linux-arm64-musl",
+      "version": "0.3.263",
+      "licenses": [
+        {
+          "license": {
+            "expression": "SEE LICENSE IN LICENSE.md"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "claude-platform"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@anthropic-ai/claude-agent-sdk-linux-x64",
+      "version": "0.3.263",
+      "licenses": [
+        {
+          "license": {
+            "expression": "SEE LICENSE IN LICENSE.md"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "claude-platform"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@anthropic-ai/claude-agent-sdk-linux-x64-musl",
+      "version": "0.3.263",
+      "licenses": [
+        {
+          "license": {
+            "expression": "SEE LICENSE IN LICENSE.md"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "claude-platform"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@anthropic-ai/claude-agent-sdk-win32-arm64",
+      "version": "0.3.263",
+      "licenses": [
+        {
+          "license": {
+            "expression": "SEE LICENSE IN LICENSE.md"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "claude-platform"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@anthropic-ai/claude-agent-sdk-win32-x64",
+      "version": "0.3.263",
+      "licenses": [
+        {
+          "license": {
+            "expression": "SEE LICENSE IN LICENSE.md"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "tier",
+          "value": "claude-platform"
+        }
+      ]
+    }
+  ],
+  "dependencies": []
+}

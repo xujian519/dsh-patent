@@ -19,5 +19,5 @@ Affected: callers running `patent_disclosure_v1`. The stage count stays 26 and t
 
 1. If a custom manifest copied the disclosure chain's `slop_clean` configuration, switch it to `text_keys: ['specification']` and drop `retry`. A gate over standard claim text cannot reach 35.
 2. Tooling that treated a `slop_clean` degradation or `[WORKFLOW_RETRY_EXHAUSTED]` as a blocking signal should read `slop_report` and `slop_score`; `completed` no longer turns false for this stage.
-3. Callers that need a hard block should read `slop_score` in `legal_gaps` or at `review_gate` instead of restoring a rewind over deterministic stages.
+3. Callers that need a hard block should read `slop_score` from the run record and decide there; neither `legal_gaps` nor `review_gate` consumes the key, so a custom manifest has to add that read itself.
 4. Confirm: a specification scoring below 35 still completes 26/26 stages, leaves `degradedSteps` empty, and prints `需修订` in the `slop_clean` output.

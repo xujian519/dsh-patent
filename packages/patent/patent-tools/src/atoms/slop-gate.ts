@@ -1,19 +1,20 @@
 /**
- * 反套话域原子：slop-gate（评分门 + 失败带证据自动回退）。
+ * 反套话域原子：slop-gate（确定性评分门 + 失败时的证据型修订提示）。
  *
  * 移植自 Sati 的 src/patent/atoms/handlers/builtin/gate.ts（SlopGateHandler）。
  * 与 patent-core 的内置 handler 不同，本 handler 依赖 dsh-patent-tools 的
  * slop 引擎（analyzeSlop / buildSlopRevisionHint），故按依赖方向落在本包。
  *
- * 闭环：manifest 中 draft-claims 之后接 slop-gate 阶段，其 retry 声明
- * `whenOutputMatches: '需修订'`、`rewindTo: 'draft_claims'`；未通过时本
- * handler 输出含「需修订」的 slop_report（retry 信号载体）并写入仅含证据
- * 的 slop_revision_hint（保密契约，见 retry-hints.ts），runWorkflow 捕获信号
- * 回退重跑 draft-claims，其 prompt 注入上一轮 hint。
+ * 未通过时输出含「需修订」的 slop_report（retry 信号载体）与 slop_score，并写入
+ * 仅含证据的 slop_revision_hint（保密契约，见 retry-hints.ts）。回退由 manifest
+ * 的 retry 声明，不由本 handler 执行：`patent_oa_response_v1` 的 `slop_gate`
+ * 命中「需修订」后回退到 `draft`，重写时注入该提示；`patent_disclosure_v1` 的
+ * `slop_clean` 评说明书正文且不声明 retry——权项由策略表确定性渲染，重跑不会
+ * 改分，未通过只报告。
  *
  * 受理文本由阶段参数决定，不绑定单一链路：
- * - `text_keys`（缺省 `['claims_draft']`）：按顺序读取并拼接，撰写链路行为不变；
- *   意见陈述书链路传 `['draft']`（收口阶段的产出落在 `state[stage.id]`）。
+ * - `text_keys`（缺省 `['claims_draft']`）：按顺序读取并拼接；答复链传
+ *   `['draft_tightened']`，披露链传 `['specification']`。
  * - `char_budget`：该文书的篇幅预算（可见字符）。声明后 concision 按预算归一，
  *   未声明则沿用段数口径（见 slop 引擎 scoreConcision）。
  */
@@ -59,9 +60,9 @@ function resolveTextKeys(state: PipelineState): string[] | undefined {
 /** slop-gate 原子：对草稿文本做确定性套话检测，未通过时输出「需修订」并附证据提示。 */
 export const slopGateAtom: Atom = {
   name: 'slop-gate',
-  description: '反套话评分门：对权利要求草稿或意见陈述书正文做确定性套话检测；未通过时输出「需修订」并写入证据型修订提示（自动回退重写）',
+  description: '反套话评分门：对权利要求草稿、说明书正文或意见陈述书正文做确定性套话检测；未通过时输出「需修订」并写入证据型修订提示（声明 retry 的 manifest 据此回退重写）',
   category: 'gate',
-  inputSchema: ['claims_draft', 'draft', 'text_keys', 'char_budget'],
+  inputSchema: ['claims_draft', 'draft', 'draft_tightened', 'specification', 'text_keys', 'char_budget'],
   outputSchema: ['slop_report', 'slop_score'],
 }
 

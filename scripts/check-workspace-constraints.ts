@@ -194,8 +194,8 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   // The video preset resolves its six skills from this package's own location,
   // and the operator guides ship beside the preset declaration.
   '@deepseek-ai/dsh-experimental-video-bundle': ['presets/video.md', 'presets/video.zh.md', 'skills'],
-  // The embedded OAR implementation retains its upstream license.
-  '@deepseek-ai/dsh-experimental-subagent-oar': ['LICENSE-OAR'],
+  // The embedded OAR implementation retains its upstream license and modification notice.
+  '@deepseek-ai/dsh-experimental-subagent-oar': ['LICENSE-OAR', 'NOTICE'],
   // CUA publishes its client API and attributed native source for local macOS builds.
   '@deepseek-ai/dsh-cua': ['lib/remote-types.js', 'lib/api.js', 'lib/bridge.js', 'lib/native-client.js', 'lib/protocol.js'],
   '@deepseek-ai/dsh-experimental-cua-macos': ['native/bin', 'native/Package.swift', 'native/Sources', 'native/tests/swift', 'native/tests/test_swift.py', 'native/LICENSE.cua-driver', 'native/upstream.json', 'native/README.md', 'native/README.zh.md', 'native/protocol.schema.json'],

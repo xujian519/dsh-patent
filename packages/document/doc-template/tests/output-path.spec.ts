@@ -97,6 +97,11 @@ function renderedValue(result: { isError: boolean; value?: unknown }): RenderDoc
   return result.value as RenderDocTemplateOutput
 }
 
+/** The model-facing text of one tool result. */
+function textOf(result: { content: readonly { type: string; text?: string }[] }): string {
+  return result.content.filter(block => block.type === 'text').map(block => block.text ?? '').join('')
+}
+
 describe('render_doc_template output_path', () => {
   it('writes a DOCX package to disk and reports path and bytes', async () => {
     const cwd = await tempWorkspace()
@@ -118,6 +123,11 @@ describe('render_doc_template output_path', () => {
     expect(projected.problems).toEqual([])
     expect(projected.text).toContain('权利要求书')
     expect(value.encoding).toBe('base64')
+    // The written package stays on disk: the result names the file instead of
+    // carrying the document back into every later request.
+    expect(value.content).toBeUndefined()
+    expect(value.markdown).toBeUndefined()
+    expect(textOf(result)).not.toContain('base64 characters')
   })
 
   it('writes a text format as UTF-8', async () => {
@@ -132,8 +142,11 @@ describe('render_doc_template output_path', () => {
     const value = renderedValue(result)
     const written = join(cwd, 'out', 'report.md')
     expect(value.path).toBe(await realpath(written))
-    expect(value.bytes).toBe(Buffer.byteLength(value.content, 'utf8'))
-    expect(await readFile(written, 'utf8')).toBe(value.content)
+    const text = await readFile(written, 'utf8')
+    expect(value.bytes).toBe(Buffer.byteLength(text, 'utf8'))
+    expect(value.content).toBeUndefined()
+    expect(textOf(result)).toContain(`Written to ${value.path} (${String(value.bytes ?? 0)} bytes).`)
+    expect(textOf(result)).not.toContain('--- document ---')
   })
 
   it('resolves a relative output_path against the agent session cwd', async () => {
@@ -147,10 +160,25 @@ describe('render_doc_template output_path', () => {
     }, cwd)
     const written = join(cwd, 'out', 'report.md')
     expect(value.path).toBe(await realpath(written))
-    expect(await readFile(written, 'utf8')).toBe(value.content)
+    expect(await readFile(written, 'utf8')).toContain('权利要求书')
   })
 
-  it('keeps the pure-render behavior when output_path is omitted', async () => {
+  it('keeps the inline render for text formats when output_path is omitted', async () => {
+    const cwd = await tempWorkspace()
+    const ctx = await mounted(cwd)
+    const result = await execute(ctx, 'render_doc_template', {
+      template: 'method-claim',
+      variables: variablesFor('method-claim'),
+      format: 'markdown',
+    })
+    const value = renderedValue(result)
+    expect(value.path).toBeUndefined()
+    expect(value.bytes).toBeUndefined()
+    expect(value.content).toContain('权利要求书')
+    expect(await readdir(cwd)).toEqual([])
+  })
+
+  it('fails a DOCX render that names no output_path', async () => {
     const cwd = await tempWorkspace()
     const ctx = await mounted(cwd)
     const result = await execute(ctx, 'render_doc_template', {
@@ -158,10 +186,8 @@ describe('render_doc_template output_path', () => {
       variables: variablesFor('method-claim'),
       format: 'docx',
     })
-    const value = renderedValue(result)
-    expect(value.path).toBeUndefined()
-    expect(value.bytes).toBeUndefined()
-    expect(value.encoding).toBe('base64')
+    expect(result.isError).toBe(true)
+    expect(textOf(result)).toContain('output_path')
     expect(await readdir(cwd)).toEqual([])
   })
 

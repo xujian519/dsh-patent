@@ -55,7 +55,7 @@ A variable's `type` is one of `string`, `multiline`, `number`, or `bool`; an abs
 <a id="render_doc_template-tool"></a>
 ## render_doc_template tool
 
-`render_doc_template` resolves one template's variables and renders it. The result carries the rendered document, the suggested file name, the content type, the encoding, the resolved Markdown body, the residual placeholders, and the validation warnings. `format` defaults to Markdown and must be one the template declares; `title`, `author`, `date`, and `filename` override the template's own values, and an optional `output_path` writes the rendered document through the session filesystem — UTF-8 text through `writeText`, a DOCX package through `writeBytes` — reporting the written path and byte count.
+`render_doc_template` resolves one template's variables and renders it. The result carries the suggested file name, the content type, the encoding, the residual placeholders, and the validation warnings. `format` defaults to Markdown and must be one the template declares; `title`, `author`, `date`, and `filename` override the template's own values, and `output_path` writes the rendered document through the session filesystem — UTF-8 text through `writeText`, a DOCX package through `writeBytes` — reporting the written path and byte count instead of repeating the document. An inline render without `output_path` returns the document in `content` and the resolved Markdown body in `markdown`; a DOCX render requires `output_path`, so the package never enters the result.
 
 The call fails rather than returning a degraded document for an unknown template, an unknown style name, a format the template does not support, a variable whose value is not a string, and a missing required variable. A type mismatch and an unfilled placeholder are not failures: they are reported as a warning and as a residual placeholder, because a caller may still want the partially filled document.
 
@@ -118,11 +118,11 @@ The section is static text, so it sits in the prefix: registering or removing th
 
 #### What the model sees
 
-The `render_doc_template` tool definition and its result. The result text names the template, the format, the suggested file name, the content type, and the encoding, then the residual placeholders and the warnings, then the document. A base64 DOCX result reports the package's size instead of printing it, and shows the resolved Markdown as the readable document; a render written to `output_path` reports the path and byte count instead.
+The `render_doc_template` tool definition and its result. The result text names the template, the format, the suggested file name, the content type, and the encoding, then either the written path and byte count or the inline document, then the residual placeholders and the warnings. A written render leaves the document body out of the result; an inline render shows it. A DOCX render always writes, because the tool requires `output_path`.
 
 #### Token effect
 
-Fixed definition cost on every request while the tool is enabled, plus the rendered document, which is the largest thing this plugin puts in a request: a complete patent template renders to a few thousand tokens. The result is resent only until compaction.
+Fixed definition cost on every request while the tool is enabled, plus an inline render's document. A written render reports only the path, byte count, residual placeholders, and warnings, so a long document is charged once at the write instead of on every later request.
 
 #### KV Cache effect
 
@@ -153,7 +153,7 @@ Append-only; the listing follows the reusable request prefix and does not invali
 - **The shipped templates are Chinese only** — the assets self-describe with `language: zh-CN` and no bilingual twin ships, so a document in another language needs its own template asset.
 - **`rendererRegistry` has no consumer yet** — the store hands out the registry a consumer would call to add a render format; every shipped format is registered at construction, so nothing reads it.
 - **A written render runs under the deployment's file policy** — `output_path` is resolved against the session workspace and written without a per-call `sandboxPolicy`, so a workspace-confined deployment uses its configured root: a session whose working directory sits outside that root cannot write through this tool. Per-call escalation is deferred.
-- **DOCX bytes travel base64 unless a path is given** — without `output_path` a `docx` result carries the package base64-encoded in its `content` field, which is roughly a third larger than the package and never reaches the model as bytes; with `output_path` the package is written and the result reports the path and size. The transcription keeps the package out of the transcript either way.
+- **DOCX requires `output_path`** — a `docx` render without one fails, because a base64 package in the result would be re-sent on every later request and the model cannot decode it. The written file is the copy the caller reads.
 
 ### Dev Note
 

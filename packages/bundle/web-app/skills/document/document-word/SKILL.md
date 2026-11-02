@@ -20,11 +20,9 @@ whenToUse: 用户明确要求 .docx/Word 文件（合同、规范、报告、论
 3. 撰写变量内容（正文段落、表格以 Markdown 片段传入），调用 `render_doc_template`：
    - `variables` 必须填齐模板的全部必填变量，缺失会让调用失败并指名变量；
    - 读回 `residual`（未填占位符）与 `warnings`，两者都必须清空再交付；
-   - 传 `output_path`（如 `out/report.docx`）由工具直接落盘，返回 `path` 与 `bytes`；
+   - 必须传 `output_path`（如 `out/report.docx`）由工具直接落盘，返回 `path` 与 `bytes`；DOCX 不传 `output_path` 会失败；
    - 需要时用 `title` / `author` / `date` / `filename` 覆盖元数据。
-4. 未传 `output_path` 时才需要自己落盘：`content` 是 base64 的 DOCX 包，用 shell 解码写入
-   成品路径（`printf '%s' '<base64>' | base64 -d > out/report.docx`；macOS 旧版 `base64` 用 `-D`）。
-   随后用 shell 的 `ls -l` 复核文件存在与字节数。
+4. 结果只含路径、字节数、残余占位符与警告。需要复核或继续加工时用文件工具读取 `path`，不要期待结果里带包内容。
 5. 需要页眉页脚、目录字段、页码或命名样式套用时，交 officecli 技能继续加工同一文件。
 6. 自检（document-quality-gate）后交付：`<name>.docx` 路径与摘要；登记时格式填 `docx`。
 

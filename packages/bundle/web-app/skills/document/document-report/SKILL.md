@@ -16,7 +16,7 @@ whenToUse: 需要交付多章节文档（报告、PRD、手册、FAQ、方案书
 
 1. 读 brief；无则先跑 document-brief。
 2. `list_doc_templates` 找匹配模板（检索报告/分析报告等）；有模板时用
-   `render_doc_template` 生成骨架，把模板变量填成真实内容；无模板时按下面的结构自建。
+   `render_doc_template` 生成骨架（传 `output_path` 落盘，结果只回路径与字节数），把模板变量填成真实内容；无模板时按下面的结构自建。
 3. 写大纲：章节树（H1→H3 不超过三层）、每章一句话要点；用 ask_user_question 确认。
 4. 按章撰写 Markdown：真实内容、事实附来源、代码/表格用规范语法。
 5. 渲染 HTML：

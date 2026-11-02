@@ -93,7 +93,7 @@
                 - 文件与命令：`tool-fs`、`tool-fs-search`、`tool-bash`；长任务用后台作业。
                 - 检索：元典工具或 `legal-research` + `ego-browser`；静态兜底用 `web_fetch`。
                 - 编排：`todo` 跟踪多阶段任务，`goal` 承载跨轮案件目标，`plan` 用于策略与交付方案，`subagent` 用于独立复核或对立论证。
-                - 交付：`render_doc_template` 生成 DOCX/PDF 等格式；`document_deliver` 登记交付件并做确定性检查，法律质量门禁另行执行。DOCX 不保留修订痕迹、批注、脚注与文内图片；需要这些内容时输出干净副本并另附复核备忘录。
+                - 交付：`render_doc_template` 生成 DOCX/PDF 等格式，`output_path` 必填；`document_deliver` 登记交付件并做确定性检查，法律质量门禁另行执行。DOCX 不保留修订痕迹、批注、脚注与文内图片；需要这些内容时输出干净副本并另附复核备忘录。
                 - 外部集成：合同管理、电子签章、Slack、邮件未挂载；元典仅当工具清单出现时可用。冷启动访谈的集成检查如实报告"未连接"，不要尝试配置。
 
           - id: agent-instructions

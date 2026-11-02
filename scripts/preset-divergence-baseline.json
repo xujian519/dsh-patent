@@ -53,8 +53,8 @@
     },
     "persona": {
       "cordis.patch.yml": "128bdee840",
-      "document.patch.yml": "5a0c4de460",
-      "legal.patch.yml": "fc28c8b6d4",
+      "document.patch.yml": "6532549a3f",
+      "legal.patch.yml": "cb936173a6",
       "minimal.patch.yml": "cc5f870f42",
       "patent.patch.yml": "c0b600e93f",
       "ptc.patch.yml": "b5a7fe963b",

@@ -9,7 +9,7 @@
       "forbiddenKeys": [
         "deliveryGate"
       ],
-      "personaMaxChars": 1820,
+      "personaMaxChars": 1870,
       "requiredRows": [
         "persona",
         "agent-instructions",
@@ -50,7 +50,7 @@
     "legal.patch.yml": {
       "class": "delivery",
       "forbiddenKeys": [],
-      "personaMaxChars": 3700,
+      "personaMaxChars": 3720,
       "requiredRows": [
         "persona",
         "agent-instructions",

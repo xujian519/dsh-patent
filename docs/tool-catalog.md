@@ -7880,10 +7880,12 @@ Source: [`packages/document/doc-template/src/index.ts`](../packages/document/doc
 
 ### `render_doc_template`
 
-- Renders one document template with supplied variables and returns the document, the placeholders that stayed unfilled, and the variable warnings.
+- Renders one document template with supplied variables and reports the written file, or the inline document, beside the placeholders that stayed unfilled and the variable warnings.
 - Get the template name and its variables from `list_doc_templates` first. Every required variable must be supplied: a missing one fails the call and names it, rather than returning a document with a hole in it.
-- `format` defaults to the template's fallback format; a template only renders to the formats it lists. `markdown` and `html` return text; `docx` carries the package base64-encoded in `content`. `markdown` is the resolved body before the injected document title and style disclaimer, whatever the format: the delivered file is `content`, and a file written from `markdown` loses both.
-- `output_path` (workspace-relative or absolute) writes the rendered document through the session filesystem and reports `path` and `bytes`: text formats write UTF-8, `docx` writes the package bytes. Omit it to receive the render result without touching the filesystem.
+- `format` defaults to the template's fallback format; a template only renders to the formats it lists. `markdown` is the resolved body before the injected document title and style disclaimer.
+- Deliverables pass `output_path` (workspace-relative or absolute): the document is written through the session filesystem and the result reports `path`, `bytes`, `residual`, and `warnings` without repeating the body. Read the file with `read` when you need to review or verify it. Text formats write UTF-8; `docx` writes the package bytes.
+- `docx` requires `output_path`. The package is never returned in the result, base64 or otherwise.
+- Omit `output_path` only for a small inline render of `markdown` or `html`; the result then carries `content` and `markdown`. Use `output_path` for anything delivered to a user.
 - Variables are substituted by name; a placeholder with no supplied value stays in the document and is reported under `residual` instead of being erased. Both residual placeholders and warnings are returned for every successful render: read them before treating a document as final.
 
 Usage notes:
@@ -7931,7 +7933,7 @@ Usage notes:
     },
     "output_path": {
       "type": "string",
-      "description": "Write the rendered document here (workspace-relative or absolute) and report path and bytes; omit to return the content without writing"
+      "description": "Write the rendered document here (workspace-relative or absolute) and report path and bytes; required for docx, and the normal choice for any delivered file"
     }
   },
   "required": [

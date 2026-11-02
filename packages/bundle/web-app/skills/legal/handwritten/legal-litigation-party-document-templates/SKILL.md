@@ -72,7 +72,7 @@ description: "按最高人民法院《当事人参考民事诉讼文书样式》
 ## 渲染与交付
 
 1. 先调用 `list_doc_templates`，用 `domain=legal` 查核心模板。
-2. 有对应核心模板：按模板变量表填入已核实材料，调用 `render_doc_template` 输出 `docx`。
+2. 有对应核心模板：按模板变量表填入已核实材料，调用 `render_doc_template` 输出 `docx`，并传 `output_path`（如 `matters/<slug>/output/<name>.docx`）由工具落盘；结果是路径与字节数，复核时读取该文件。
 3. 没有对应核心模板：使用通用模板 `legal-party-document`，把按官方样式填好的正文传给 {{body}}，文书标题传给 {{document_title}}。
 4. 文件写入 `matters/<slug>/output/`；过程稿留在 `matters/<slug>/work/`，不覆盖 `input/`。
 5. 依次运行 `legal-quality-gate`、`legal-citation-check` 与 `document_deliver`。交付摘要写：文件路径、选用的样式与官网链接、未核验条号、待补字段、副本份数与附件清单。

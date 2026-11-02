@@ -164,4 +164,69 @@ describe('PreviewPane', () => {
     expect(await screen.findByText(t('studio.preview.sidebarOnly'))).toBeTruthy()
     expect(screen.queryByText(t('studio.action.previewSidebar'))).toBeTruthy()
   })
+  it('renders a plain-text file and marks a truncated read', async () => {
+    const readFileText = vi.fn((_path: string): Promise<ReadFileText> =>
+      Promise.resolve({ content: 'rows', truncated: false }))
+    const base = props({ path: 'out/a.log', readFileText })
+    const { rerender } = render(<Harness {...base} resource={live('v1')} />)
+    expect(await screen.findByText('rows')).toBeTruthy()
+    expect(screen.queryByText(t('studio.preview.truncated'))).toBeNull()
+    readFileText.mockResolvedValue({ content: 'rows', truncated: true })
+    rerender(<Harness {...base} resource={live('v2')} />)
+    expect(await screen.findByText(t('studio.preview.truncated'))).toBeTruthy()
+  })
+
+  it('shows the loading note until the first read settles', async () => {
+    const readFileText = vi.fn(() => new Promise<ReadFileText>(() => {}))
+    render(<Harness {...props({ readFileText })} resource={live('v1')} />)
+    expect(await screen.findByText(t('studio.preview.loading'))).toBeTruthy()
+  })
+
+  it('drops a text read that settles after unmount', async () => {
+    let resolveRead: ((value: ReadFileText) => void) | undefined
+    const readFileText = vi.fn(() => new Promise<ReadFileText>((resolve) => { resolveRead = resolve }))
+    const { unmount } = render(<Harness {...props({ readFileText })} resource={live('v1')} />)
+    await waitFor(() => { expect(readFileText).toHaveBeenCalledTimes(1) })
+    unmount()
+    resolveRead?.({ content: '# late', truncated: false })
+    await Promise.resolve()
+  })
+
+  it('drops a complete HTML read that settles after unmount', async () => {
+    let resolveRead: ((value: CompleteReadText) => void) | undefined
+    const readFileTextComplete = vi.fn(() => new Promise<CompleteReadText>((resolve) => { resolveRead = resolve }))
+    const { unmount } = render(
+      <Harness {...props({ path: 'out/a.html', readFileTextComplete })} resource={live('v1', 20)} />,
+    )
+    await waitFor(() => { expect(readFileTextComplete).toHaveBeenCalledTimes(1) })
+    unmount()
+    resolveRead?.({ truncated: false, content: '<h1>late</h1>' })
+    await Promise.resolve()
+  })
+
+  it('drops a failed read that settles after unmount', async () => {
+    let rejectRead: ((reason: unknown) => void) | undefined
+    const readFileText = vi.fn(() => new Promise<ReadFileText>((_resolve, reject) => { rejectRead = reject }))
+    const { unmount } = render(<Harness {...props({ readFileText })} resource={live('v1')} />)
+    await waitFor(() => { expect(readFileText).toHaveBeenCalledTimes(1) })
+    unmount()
+    rejectRead?.(new WorkspaceReadError('gone', 'workspace-file/not-found'))
+    await Promise.resolve()
+  })
+
+  it('says a file is gone before it ever loaded', async () => {
+    render(<Harness {...props()} resource={GONE} />)
+    expect(await screen.findByText(t('studio.preview.deleted'))).toBeTruthy()
+    expect(screen.queryByText(t('studio.preview.loading'))).toBeNull()
+  })
+
+  it('reports a stat failure beside content it already holds', async () => {
+    const failure: ResourceFailure = new RemoteError('workspace-file/outside-workspace', 'outside', { path: 'out/a.md' })
+    const base = props()
+    const { rerender } = render(<Harness {...base} resource={live('v1')} />)
+    await screen.findByRole('heading', { name: 'A' })
+    rerender(<Harness {...base} resource={{ status: 'failed', value: undefined, failure }} />)
+    expect(await screen.findByText(t('studio.error.denied'))).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'A' })).toBeTruthy()
+  })
 })

@@ -301,11 +301,14 @@ export function StudioView({
     const selectedExists = selectedPath !== null && produced.some(file => file.path === selectedPath)
     if (selectedExists) {
       if (!follow || produced.length <= previous) return
-      setSelectedPath(produced[produced.length - 1]?.path ?? selectedPath)
+      const newest = produced.at(-1)
+      /* v8 ignore next -- the list grew, so the newest entry exists */
+      if (newest === undefined) return
+      setSelectedPath(newest.path)
       return
     }
-    const fallback = follow ? produced[produced.length - 1]?.path : produced[0]?.path
-    setSelectedPath(fallback ?? null)
+    const fallback = follow ? produced.at(-1) : produced[0]
+    setSelectedPath(fallback?.path ?? null)
   }, [produced, follow, selectedPath])
 
   // Honor a one-shot focus request naming one produced file. The shell knows

@@ -903,4 +903,28 @@ describe('StudioView', () => {
       { id: 'two', heading: '' },
     ])
   })
+
+  it('toggles automatic refresh and reloads the preview on demand', async () => {
+    const readFileText = vi.fn((path: string) => Promise.resolve({ content: `<h1>${path}</h1>`, truncated: false }))
+    render(<StudioView {...studioProps([{ seq: 1, path: 'out/a.md' }], { readFileText })} />)
+    await screen.findByText('<h1>out/a.md</h1>')
+    const toggle = screen.getByText(t('studio.preview.autoRefresh'))
+    fireEvent.click(toggle)
+    expect(toggle.getAttribute('aria-pressed')).toBe('false')
+    const calls = readFileText.mock.calls.length
+    fireEvent.click(screen.getByText(t('studio.preview.reload')))
+    await waitFor(() => { expect(readFileText.mock.calls.length).toBeGreaterThan(calls) })
+  })
+
+  it('falls back to the first file when a manually picked file disappears', async () => {
+    const files = [{ seq: 1, path: 'out/a.md' }, { seq: 2, path: 'out/b.md' }]
+    const { rerender } = render(<StudioView {...studioProps(files)} />)
+    await screen.findByText('<h1>out/b.md</h1>')
+    fireEvent.click(screen.getAllByText('a.md')[0]!)
+    expect(await screen.findByText('<h1>out/a.md</h1>')).toBeTruthy()
+    rerender(<StudioView {...studioProps([{ seq: 2, path: 'out/b.md' }])} />)
+    expect(await screen.findByText('<h1>out/b.md</h1>')).toBeTruthy()
+    rerender(<StudioView {...studioProps([])} />)
+    expect(await screen.findByText(t('studio.empty'))).toBeTruthy()
+  })
 })

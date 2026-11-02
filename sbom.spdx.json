@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "@deepseek-ai/dsh-root-sbom",
-  "documentNamespace": "https://github.com/deepseek-ai/deepseek-harness/spdx/-deepseek-ai-dsh-root-0.2.2-alpha.2/2026-11-02T20-09-28.030Z",
+  "documentNamespace": "https://github.com/deepseek-ai/deepseek-harness/spdx/-deepseek-ai-dsh-root-0.2.2-alpha.2/2026-11-02T20-25-15.281Z",
   "creationInfo": {
-    "created": "2026-11-02T20:09:28.030Z",
+    "created": "2026-11-02T20:25:15.281Z",
     "creators": [
       "Tool: DeepSeek Harness SBOM Generator",
       "Tool: scripts/gen-third-party-notices.ts@1.0.0"
@@ -20,6 +20,7 @@
       "downloadLocation": "https://github.com/deepseek-ai/deepseek-harness",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION"
     },
     {
@@ -29,6 +30,7 @@
       "downloadLocation": "https://github.com/agentclientprotocol/typescript-sdk",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -45,6 +47,7 @@
       "downloadLocation": "https://github.com/anthropics/claude-agent-sdk-typescript",
       "licenseConcluded": "SEE LICENSE IN README.md",
       "licenseDeclared": "SEE LICENSE IN README.md",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -61,6 +64,7 @@
       "downloadLocation": "https://github.com/anthropics/anthropic-sdk-typescript",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -77,6 +81,7 @@
       "downloadLocation": "https://github.com/babel/babel",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -93,6 +98,7 @@
       "downloadLocation": "https://github.com/botiverse/oar",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -109,6 +115,7 @@
       "downloadLocation": "https://github.com/browserbase/stagehand",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -125,6 +132,7 @@
       "downloadLocation": "https://github.com/deepseek-ai/dsh-libreoffice-kit",
       "licenseConcluded": "MPL-2.0",
       "licenseDeclared": "MPL-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -141,6 +149,7 @@
       "downloadLocation": "https://github.com/earendil-works/pi",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -157,6 +166,7 @@
       "downloadLocation": "https://github.com/earendil-works/pi",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -173,6 +183,7 @@
       "downloadLocation": "https://github.com/eslint-community/regexpp",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -189,6 +200,7 @@
       "downloadLocation": "https://github.com/ruilisi/fortune-sheet",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -205,6 +217,7 @@
       "downloadLocation": "https://github.com/ruilisi/fortune-sheet",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -221,6 +234,7 @@
       "downloadLocation": "https://github.com/laurent22/joplin-turndown-plugin-gfm",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -237,6 +251,7 @@
       "downloadLocation": "https://github.com/jridgewell/sourcemaps",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -253,6 +268,7 @@
       "downloadLocation": "https://github.com/js-temporal/temporal-polyfill",
       "licenseConcluded": "ISC",
       "licenseDeclared": "ISC",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -269,6 +285,7 @@
       "downloadLocation": "https://github.com/facebook/lexical",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -285,6 +302,7 @@
       "downloadLocation": "https://github.com/facebook/lexical",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -301,6 +319,7 @@
       "downloadLocation": "https://github.com/facebook/lexical",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -317,6 +336,7 @@
       "downloadLocation": "https://github.com/facebook/lexical",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -333,6 +353,7 @@
       "downloadLocation": "https://github.com/modelcontextprotocol/typescript-sdk",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -349,6 +370,7 @@
       "downloadLocation": "https://github.com/modelcontextprotocol/typescript-sdk",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -365,6 +387,7 @@
       "downloadLocation": "https://github.com/paulmillr/noble-hashes",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -381,6 +404,7 @@
       "downloadLocation": "https://github.com/octokit/webhooks.js",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -397,6 +421,7 @@
       "downloadLocation": "https://github.com/openai/codex",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -413,6 +438,7 @@
       "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -429,6 +455,7 @@
       "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -445,6 +472,7 @@
       "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -461,6 +489,7 @@
       "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -477,6 +506,7 @@
       "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -493,6 +523,7 @@
       "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -509,6 +540,7 @@
       "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -525,6 +557,7 @@
       "downloadLocation": "https://github.com/microsoft/playwright-mcp",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -541,6 +574,7 @@
       "downloadLocation": "https://github.com/puppeteer/puppeteer/tree/main/packages/browsers",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -557,6 +591,7 @@
       "downloadLocation": "https://github.com/shikijs/shiki",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -573,6 +608,7 @@
       "downloadLocation": "https://github.com/standard-schema/standard-schema",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -589,6 +625,7 @@
       "downloadLocation": "https://github.com/TanStack/virtual",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -605,6 +642,7 @@
       "downloadLocation": "https://github.com/trycua/cua",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -621,6 +659,7 @@
       "downloadLocation": "https://github.com/mdaines/viz-js",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -637,6 +676,7 @@
       "downloadLocation": "https://github.com/microsoft/vscode-ripgrep",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -653,6 +693,7 @@
       "downloadLocation": "https://github.com/xmanrui/dsh-im",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -669,6 +710,7 @@
       "downloadLocation": "https://github.com/xtermjs/xterm.js/tree/master/addons/addon-fit",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -685,6 +727,7 @@
       "downloadLocation": "https://github.com/xtermjs/xterm.js/tree/master/addons/addon-serialize",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -701,6 +744,7 @@
       "downloadLocation": "https://github.com/xtermjs/xterm.js",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -717,6 +761,7 @@
       "downloadLocation": "https://github.com/xtermjs/xterm.js",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -733,6 +778,7 @@
       "downloadLocation": "https://github.com/yarnpkg/berry",
       "licenseConcluded": "BSD-2-Clause",
       "licenseDeclared": "BSD-2-Clause",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -749,6 +795,7 @@
       "downloadLocation": "https://github.com/acornjs/acorn",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -765,6 +812,7 @@
       "downloadLocation": "https://github.com/acornjs/acorn",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -781,6 +829,7 @@
       "downloadLocation": "https://github.com/ajv-validator/ajv",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -797,6 +846,7 @@
       "downloadLocation": "https://github.com/IonicaBizau/anser",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -813,6 +863,7 @@
       "downloadLocation": "https://github.com/MikeMcl/big.js",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -829,6 +880,7 @@
       "downloadLocation": "https://github.com/antfu-collective/birpc",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -845,6 +897,7 @@
       "downloadLocation": "https://github.com/feross/buffer",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -861,6 +914,7 @@
       "downloadLocation": "https://github.com/cheeriojs/cheerio",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -877,6 +931,7 @@
       "downloadLocation": "https://github.com/paulmillr/chokidar",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -893,6 +948,7 @@
       "downloadLocation": "https://github.com/ChromeDevTools/devtools-frontend",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "BSD-3-Clause",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -909,6 +965,7 @@
       "downloadLocation": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -925,6 +982,7 @@
       "downloadLocation": "https://github.com/lukeed/clsx",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -941,6 +999,7 @@
       "downloadLocation": "https://github.com/tj/commander.js",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -957,6 +1016,7 @@
       "downloadLocation": "https://github.com/expressjs/compression",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -973,6 +1033,7 @@
       "downloadLocation": "https://github.com/moxystudio/node-cross-spawn",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -989,6 +1050,7 @@
       "downloadLocation": "https://github.com/kpdecker/jsdiff",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "BSD-3-Clause",
+      "licenseObserved": "BSD-3-Clause",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1005,6 +1067,7 @@
       "downloadLocation": "https://github.com/fb55/domhandler",
       "licenseConcluded": "BSD-2-Clause",
       "licenseDeclared": "BSD-2-Clause",
+      "licenseObserved": "BSD-3-Clause",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1021,6 +1084,7 @@
       "downloadLocation": "https://github.com/cure53/DOMPurify",
       "licenseConcluded": "(MPL-2.0 OR Apache-2.0)",
       "licenseDeclared": "(MPL-2.0 OR Apache-2.0)",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1037,6 +1101,7 @@
       "downloadLocation": "https://github.com/electron-userland/electron-builder",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1053,6 +1118,7 @@
       "downloadLocation": "https://github.com/rexxars/eventsource-parser",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1069,6 +1135,7 @@
       "downloadLocation": "https://github.com/exceljs/exceljs",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1085,6 +1152,7 @@
       "downloadLocation": "https://github.com/sindresorhus/execa",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1101,6 +1169,7 @@
       "downloadLocation": "https://github.com/NaturalIntelligence/fast-xml-parser",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1117,6 +1186,7 @@
       "downloadLocation": "https://github.com/101arrowz/fflate",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1133,6 +1203,7 @@
       "downloadLocation": "https://github.com/sindresorhus/got",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1149,6 +1220,7 @@
       "downloadLocation": "https://github.com/npm/hosted-git-info",
       "licenseConcluded": "ISC",
       "licenseDeclared": "ISC",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1165,6 +1237,7 @@
       "downloadLocation": "https://github.com/immerjs/immer",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1181,6 +1254,7 @@
       "downloadLocation": "https://github.com/whitequark/ipaddr.js",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1197,6 +1271,7 @@
       "downloadLocation": "https://github.com/nodeca/js-yaml",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1213,6 +1288,7 @@
       "downloadLocation": "https://github.com/KaTeX/KaTeX",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1229,6 +1305,7 @@
       "downloadLocation": "https://github.com/Koromix/koffi",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1245,6 +1322,7 @@
       "downloadLocation": "https://github.com/facebook/lexical",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1261,6 +1339,7 @@
       "downloadLocation": "https://github.com/markedjs/marked",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "BSD-3-Clause",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1277,6 +1356,7 @@
       "downloadLocation": "https://github.com/syntax-tree/mdast-util-from-markdown",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1293,6 +1373,7 @@
       "downloadLocation": "https://github.com/syntax-tree/mdast-util-gfm",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1309,6 +1390,7 @@
       "downloadLocation": "https://github.com/syntax-tree/mdast-util-math",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1325,6 +1407,7 @@
       "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-core-commonmark",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1341,6 +1424,7 @@
       "downloadLocation": "https://github.com/micromark/micromark-extension-gfm",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1357,6 +1441,7 @@
       "downloadLocation": "https://github.com/micromark/micromark-extension-math",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1373,6 +1458,7 @@
       "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-space",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1389,6 +1475,7 @@
       "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-character",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1405,6 +1492,7 @@
       "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-classify-character",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1421,6 +1509,7 @@
       "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-decode-string",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1437,6 +1526,7 @@
       "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-sanitize-uri",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1453,6 +1543,7 @@
       "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-symbol",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1469,6 +1560,7 @@
       "downloadLocation": "https://github.com/broofa/mime",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1485,6 +1577,7 @@
       "downloadLocation": "https://github.com/jshttp/mime-types",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1501,6 +1594,7 @@
       "downloadLocation": "https://github.com/lucaong/minisearch",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1517,6 +1611,7 @@
       "downloadLocation": "https://github.com/jshttp/negotiator",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1533,6 +1628,7 @@
       "downloadLocation": "https://www.npmjs.com/package/node-addon-require-builtin",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1549,6 +1645,7 @@
       "downloadLocation": "https://github.com/microsoft/node-pty",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1565,6 +1662,7 @@
       "downloadLocation": "https://github.com/sindresorhus/open",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1581,6 +1679,7 @@
       "downloadLocation": "https://github.com/sindresorhus/p-limit",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1597,6 +1696,7 @@
       "downloadLocation": "https://github.com/mholt/PapaParse",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1613,6 +1713,7 @@
       "downloadLocation": "https://github.com/mozilla/pdf.js",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1629,6 +1730,7 @@
       "downloadLocation": "https://github.com/micromatch/picomatch",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1645,6 +1747,7 @@
       "downloadLocation": "https://github.com/facebook/react",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1661,6 +1764,7 @@
       "downloadLocation": "https://github.com/facebook/react",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1677,6 +1781,7 @@
       "downloadLocation": "https://github.com/nodejs/readable-stream",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1693,6 +1798,7 @@
       "downloadLocation": "https://github.com/lukeed/resolve.exports",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1709,6 +1815,7 @@
       "downloadLocation": "https://github.com/npm/node-semver",
       "licenseConcluded": "ISC",
       "licenseDeclared": "ISC",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1725,6 +1832,7 @@
       "downloadLocation": "https://github.com/expressjs/serve-static",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1741,6 +1849,7 @@
       "downloadLocation": "https://github.com/lovell/sharp",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "Apache-2.0",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1757,6 +1866,7 @@
       "downloadLocation": "http://github.com/ljharb/shell-quote",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1773,6 +1883,7 @@
       "downloadLocation": "https://github.com/csukuangfj/sherpa-onnx",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1789,6 +1900,7 @@
       "downloadLocation": "https://github.com/shikijs/shiki",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1805,6 +1917,7 @@
       "downloadLocation": "https://github.com/simple-icons/simple-icons",
       "licenseConcluded": "CC0-1.0",
       "licenseDeclared": "CC0-1.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1821,6 +1934,7 @@
       "downloadLocation": "https://github.com/nodejs/string_decoder",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1837,6 +1951,7 @@
       "downloadLocation": "https://github.com/chalk/supports-color",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1853,6 +1968,7 @@
       "downloadLocation": "https://github.com/isaacs/node-tar",
       "licenseConcluded": "BlueOak-1.0.0",
       "licenseDeclared": "BlueOak-1.0.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1869,6 +1985,7 @@
       "downloadLocation": "https://github.com/privatenumber/tsx",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1885,6 +2002,7 @@
       "downloadLocation": "https://github.com/mixmark-io/turndown",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1901,6 +2019,7 @@
       "downloadLocation": "https://github.com/microsoft/TypeScript",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "Apache-2.0",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1917,6 +2036,7 @@
       "downloadLocation": "https://github.com/nodejs/undici",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1933,6 +2053,7 @@
       "downloadLocation": "https://github.com/facebook/react",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1949,6 +2070,7 @@
       "downloadLocation": "https://github.com/isaacs/node-which",
       "licenseConcluded": "ISC",
       "licenseDeclared": "ISC",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1965,6 +2087,7 @@
       "downloadLocation": "https://github.com/websockets/ws",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1981,6 +2104,7 @@
       "downloadLocation": "https://git.sheetjs.com/SheetJS/sheetjs",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -1997,6 +2121,7 @@
       "downloadLocation": "https://github.com/eemeli/yaml",
       "licenseConcluded": "ISC",
       "licenseDeclared": "ISC",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2013,6 +2138,7 @@
       "downloadLocation": "https://github.com/colinhacks/zod",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2029,6 +2155,7 @@
       "downloadLocation": "https://github.com/pmndrs/zustand",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2045,6 +2172,7 @@
       "downloadLocation": "https://github.com/braintree/sanitize-url",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2057,7 +2185,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2069,6 +2197,7 @@
       "downloadLocation": "https://github.com/electron/get",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2081,7 +2210,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2093,6 +2222,7 @@
       "downloadLocation": "https://github.com/electron/notarize",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2105,7 +2235,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2117,6 +2247,7 @@
       "downloadLocation": "https://github.com/facebook/lexical",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2129,7 +2260,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2141,6 +2272,7 @@
       "downloadLocation": "https://github.com/modelcontextprotocol/typescript-sdk",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2153,7 +2285,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2165,6 +2297,7 @@
       "downloadLocation": "https://github.com/modelcontextprotocol/typescript-sdk",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2177,7 +2310,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2189,6 +2322,7 @@
       "downloadLocation": "https://github.com/modelcontextprotocol/servers",
       "licenseConcluded": "MIT / Apache-2.0",
       "licenseDeclared": "SEE LICENSE IN LICENSE",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2201,7 +2335,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2213,6 +2347,7 @@
       "downloadLocation": "https://github.com/modelcontextprotocol/servers",
       "licenseConcluded": "MIT / Apache-2.0",
       "licenseDeclared": "SEE LICENSE IN LICENSE",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2225,7 +2360,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2237,6 +2372,7 @@
       "downloadLocation": "https://github.com/timmywil/panzoom",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2249,7 +2385,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2261,6 +2397,7 @@
       "downloadLocation": "https://github.com/eslint-stylistic/eslint-stylistic",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2273,7 +2410,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2285,6 +2422,7 @@
       "downloadLocation": "https://github.com/testing-library/dom-testing-library",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2297,7 +2435,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2309,6 +2447,7 @@
       "downloadLocation": "https://github.com/testing-library/react-testing-library",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2321,7 +2460,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2333,6 +2472,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2345,7 +2485,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2357,6 +2497,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2369,7 +2510,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2381,6 +2522,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2393,7 +2535,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2405,6 +2547,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2417,7 +2560,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2429,6 +2572,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2441,7 +2585,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2453,6 +2597,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2465,7 +2610,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2477,6 +2622,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2489,7 +2635,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2501,6 +2647,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2513,7 +2660,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2525,6 +2672,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2537,7 +2685,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2549,6 +2697,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2561,7 +2710,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2573,6 +2722,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2585,7 +2735,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2597,6 +2747,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2609,7 +2760,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2621,6 +2772,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2633,7 +2785,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2645,6 +2797,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2657,7 +2810,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2669,6 +2822,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2681,7 +2835,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2693,6 +2847,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2705,7 +2860,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2717,6 +2872,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2729,7 +2885,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2741,6 +2897,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2753,7 +2910,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2765,6 +2922,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2777,7 +2935,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2789,6 +2947,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2801,7 +2960,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2813,6 +2972,7 @@
       "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2825,7 +2985,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2837,6 +2997,7 @@
       "downloadLocation": "https://github.com/vitejs/vite-plugin-react",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2849,7 +3010,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2861,6 +3022,7 @@
       "downloadLocation": "https://github.com/vitest-dev/vitest",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2873,7 +3035,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2885,6 +3047,7 @@
       "downloadLocation": "https://github.com/vitest-dev/vitest",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2897,7 +3060,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2909,6 +3072,7 @@
       "downloadLocation": "https://github.com/yao-pkg/pkg",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2921,7 +3085,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2933,6 +3097,7 @@
       "downloadLocation": "https://github.com/yarnpkg/berry",
       "licenseConcluded": "BSD-2-Clause",
       "licenseDeclared": "BSD-2-Clause",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2945,7 +3110,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2957,6 +3122,7 @@
       "downloadLocation": "https://github.com/electron-userland/electron-builder",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2969,7 +3135,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2981,6 +3147,7 @@
       "downloadLocation": "https://github.com/tencentyun/cos-nodejs-sdk-v5",
       "licenseConcluded": "ISC",
       "licenseDeclared": "ISC",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -2993,7 +3160,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3005,6 +3172,7 @@
       "downloadLocation": "https://github.com/cytoscape/cytoscape.js",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3017,7 +3185,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3029,6 +3197,7 @@
       "downloadLocation": "https://github.com/cytoscape/cytoscape.js-cose-bilkent",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3041,7 +3210,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3053,6 +3222,7 @@
       "downloadLocation": "https://github.com/iamkun/dayjs",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3065,7 +3235,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3077,6 +3247,7 @@
       "downloadLocation": "https://github.com/debug-js/debug",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3089,7 +3260,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3101,6 +3272,7 @@
       "downloadLocation": "https://github.com/electron/electron",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3113,7 +3285,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3125,6 +3297,7 @@
       "downloadLocation": "https://github.com/electron-userland/electron-builder",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3137,7 +3310,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3149,6 +3322,7 @@
       "downloadLocation": "https://github.com/evanw/esbuild",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3161,7 +3335,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3173,6 +3347,7 @@
       "downloadLocation": "https://github.com/SonarSource/SonarJS",
       "licenseConcluded": "LGPL-3.0-only",
       "licenseDeclared": "LGPL-3.0-only",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3185,7 +3360,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3197,6 +3372,7 @@
       "downloadLocation": "https://github.com/maxogden/extract-zip",
       "licenseConcluded": "BSD-2-Clause",
       "licenseDeclared": "BSD-2-Clause",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3209,7 +3385,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3221,6 +3397,7 @@
       "downloadLocation": "https://github.com/dubzzz/fast-check",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3233,7 +3410,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3245,6 +3422,7 @@
       "downloadLocation": "https://github.com/http-party/http-server",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3257,7 +3435,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3269,6 +3447,7 @@
       "downloadLocation": "https://github.com/istanbuljs/istanbuljs",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "BSD-3-Clause",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3281,7 +3460,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3293,6 +3472,7 @@
       "downloadLocation": "https://github.com/kucherenko/jscpd",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3305,7 +3485,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3317,6 +3497,7 @@
       "downloadLocation": "https://github.com/jsdom/jsdom",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3329,7 +3510,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3341,6 +3522,7 @@
       "downloadLocation": "https://github.com/evilmartians/lefthook",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3353,7 +3535,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3365,6 +3547,7 @@
       "downloadLocation": "https://github.com/parcel-bundler/lightningcss",
       "licenseConcluded": "MPL-2.0",
       "licenseDeclared": "MPL-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3377,7 +3560,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3389,6 +3572,7 @@
       "downloadLocation": "https://github.com/mermaid-js/mermaid",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3401,7 +3585,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3413,6 +3597,7 @@
       "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-types",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3425,7 +3610,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3437,6 +3622,7 @@
       "downloadLocation": "https://github.com/oxc-project/oxc",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3449,7 +3635,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3461,6 +3647,7 @@
       "downloadLocation": "https://github.com/oxc-project/tsgolint",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3473,7 +3660,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3485,6 +3672,7 @@
       "downloadLocation": "https://github.com/microsoft/playwright",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3497,7 +3685,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3509,6 +3697,7 @@
       "downloadLocation": "https://github.com/pnpm/pnpm",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3521,7 +3710,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3533,6 +3722,7 @@
       "downloadLocation": "https://github.com/publint/publint",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3545,7 +3735,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3557,6 +3747,7 @@
       "downloadLocation": "https://github.com/jfromaniello/selfsigned",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3569,7 +3760,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3581,6 +3772,7 @@
       "downloadLocation": "https://github.com/squirrelchat/smol-toml",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "BSD-3-Clause",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3593,7 +3785,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3605,6 +3797,7 @@
       "downloadLocation": "https://github.com/jslicense/spdx-expression-parse.js",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3617,7 +3810,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3629,6 +3822,7 @@
       "downloadLocation": "https://github.com/tencentcloud/tencentcloud-sdk-nodejs",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3641,7 +3835,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3653,6 +3847,7 @@
       "downloadLocation": "https://github.com/rolldown/tsdown",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3665,7 +3860,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3677,6 +3872,7 @@
       "downloadLocation": "https://github.com/typescript-language-server/typescript-language-server",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3689,7 +3885,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3701,6 +3897,7 @@
       "downloadLocation": "https://github.com/vitejs/vite",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3713,7 +3910,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3725,6 +3922,7 @@
       "downloadLocation": "https://github.com/aleclarson/vite-tsconfig-paths",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3737,7 +3935,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3749,6 +3947,7 @@
       "downloadLocation": "https://github.com/vuejs/vitepress",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3761,7 +3960,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3773,6 +3972,7 @@
       "downloadLocation": "https://github.com/emersonbottero/vitepress-plugin-mermaid",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3785,7 +3985,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3797,6 +3997,7 @@
       "downloadLocation": "https://github.com/vitest-dev/vitest",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3809,7 +4010,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3821,6 +4022,7 @@
       "downloadLocation": "https://github.com/vuejs/core",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3833,7 +4035,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3845,6 +4047,7 @@
       "downloadLocation": "https://foss.heptapod.net/openpyxl/et_xmlfile",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3861,6 +4064,7 @@
       "downloadLocation": "https://github.com/lxml/lxml",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3877,6 +4081,7 @@
       "downloadLocation": "https://github.com/numpy/numpy",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3893,6 +4098,7 @@
       "downloadLocation": "https://foss.heptapod.net/openpyxl/openpyxl",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3909,6 +4115,7 @@
       "downloadLocation": "https://github.com/pandas-dev/pandas",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3925,6 +4132,7 @@
       "downloadLocation": "https://github.com/python-pillow/Pillow",
       "licenseConcluded": "MIT-CMU",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3941,6 +4149,7 @@
       "downloadLocation": "https://github.com/dateutil/dateutil",
       "licenseConcluded": "Apache-2.0 OR BSD-3-Clause",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3957,6 +4166,7 @@
       "downloadLocation": "https://github.com/python-openxml/python-docx",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3973,6 +4183,7 @@
       "downloadLocation": "https://github.com/scanny/python-pptx",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -3989,6 +4200,7 @@
       "downloadLocation": "https://github.com/benjaminp/six",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4005,6 +4217,7 @@
       "downloadLocation": "https://github.com/python/typing_extensions",
       "licenseConcluded": "PSF-2.0",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4021,6 +4234,7 @@
       "downloadLocation": "https://github.com/python/tzdata",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4037,6 +4251,7 @@
       "downloadLocation": "https://github.com/jmcnamara/XlsxWriter",
       "licenseConcluded": "BSD-2-Clause",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4052,6 +4267,7 @@
       "downloadLocation": "https://github.com/pypa/hatch",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4064,7 +4280,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=direct-python — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4075,6 +4291,7 @@
       "downloadLocation": "https://github.com/python-pillow/Pillow",
       "licenseConcluded": "MIT-CMU",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4087,7 +4304,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=direct-python — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4098,6 +4315,7 @@
       "downloadLocation": "https://github.com/pydantic/pydantic",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4110,7 +4328,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=direct-python — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4121,6 +4339,7 @@
       "downloadLocation": "https://github.com/pytest-dev/pytest",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4133,7 +4352,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=direct-python — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4144,6 +4363,7 @@
       "downloadLocation": "https://github.com/deepseek-harness/cosmokit",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4156,7 +4376,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4167,6 +4387,7 @@
       "downloadLocation": "https://github.com/deepseek-harness/schemastery",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4179,7 +4400,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4190,6 +4411,7 @@
       "downloadLocation": "https://github.com/cordiverse/cordis",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4202,7 +4424,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4213,6 +4435,7 @@
       "downloadLocation": "https://github.com/cordiverse/cordis",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4225,7 +4448,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4236,6 +4459,7 @@
       "downloadLocation": "https://github.com/deepseek-harness/cordis",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4248,7 +4472,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4259,6 +4483,7 @@
       "downloadLocation": "https://github.com/deepseek-harness/cordis",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4271,7 +4496,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4282,6 +4507,7 @@
       "downloadLocation": "https://github.com/cordiverse/cordis",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4294,7 +4520,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4305,6 +4531,7 @@
       "downloadLocation": "https://github.com/deepseek-harness/cordis",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4317,7 +4544,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4328,6 +4555,7 @@
       "downloadLocation": "https://github.com/deepseek-harness/cordis",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4340,7 +4568,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4351,6 +4579,7 @@
       "downloadLocation": "https://github.com/xujian519/nuo-patent",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "externalRefs": [
         {
@@ -4363,7 +4592,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4374,6 +4603,7 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION"
     },
     {
@@ -4382,6 +4612,7 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION"
     },
     {
@@ -4390,6 +4621,7 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION"
     },
     {
@@ -4398,6 +4630,7 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION"
     },
     {
@@ -4406,6 +4639,7 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "BSD-3-Clause",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION"
     },
     {
@@ -4415,12 +4649,13 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "SEE LICENSE IN LICENSE.md",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4432,12 +4667,13 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "SEE LICENSE IN LICENSE.md",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4449,12 +4685,13 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "SEE LICENSE IN LICENSE.md",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4466,12 +4703,13 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "SEE LICENSE IN LICENSE.md",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4483,12 +4721,13 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "SEE LICENSE IN LICENSE.md",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4500,12 +4739,13 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "SEE LICENSE IN LICENSE.md",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4517,12 +4757,13 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "SEE LICENSE IN LICENSE.md",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4534,12 +4775,13 @@
       "downloadLocation": "NOASSERTION",
       "licenseConcluded": "SEE LICENSE IN LICENSE.md",
       "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
       "copyrightText": "NOASSERTION",
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:09:28.030Z",
+          "annotationDate": "2026-11-02T20:25:15.281Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]

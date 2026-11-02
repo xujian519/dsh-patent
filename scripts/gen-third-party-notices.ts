@@ -8,7 +8,7 @@
  * `.agents/notes/implemented/process/2026-07-30-generated-third-party-notices.md`.
  */
 
-import { existsSync, globSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, globSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import * as yaml from 'js-yaml'
 import { parse as parseToml, type TomlTableWithoutBigInt, type TomlValueWithoutBigInt } from 'smol-toml'
@@ -140,7 +140,10 @@ interface ExternalDep {
   name: string
   version?: string
   license: string
+  /** Raw license field from the published manifest (declared). */
   declaredLicense?: string
+  /** License SPDX id extracted from the shipped LICENSE file, when recognizable. */
+  observedLicense?: string
   repo: string
   /** True when a shipped workspace consumer installs it at runtime or embeds its implementation. */
   runtime: boolean
@@ -352,8 +355,10 @@ function installedMetadata(name: string, manifests: Map<string, Manifest>): {
   declaredLicense?: string
   repo: string
   version?: string
+  observedLicense?: string
 } {
   const override = OVERRIDES[name]
+  const installDir = installedDirectory(name, manifests)
   const manifest = installedManifest(name, manifests)
   const license = override?.license ?? manifest?.license
   const declaredLicense = manifest?.license
@@ -362,7 +367,118 @@ function installedMetadata(name: string, manifests: Map<string, Manifest>): {
   if (license === undefined || repo === undefined) {
     throw new Error(`gen-third-party-notices: cannot resolve ${license === undefined ? 'license' : 'repository'} for ${name}; run \`pnpm install\`, or add an OVERRIDES entry.`)
   }
-  return { license, declaredLicense, repo, version: manifest?.version }
+  const observedLicense = installDir ? extractObservedLicenseFromDir(installDir) : undefined
+  return { license, declaredLicense, repo, version: manifest?.version, observedLicense }
+}
+
+/**
+ * Find the filesystem directory that holds an installed package so we can read
+ * its LICENSE file. Prefers a workspace-local node_modules link (which surfaces
+ * all of that package's sibling files), falls back to a virtual-store directory.
+ */
+function installedDirectory(name: string, manifests: Map<string, Manifest>): string | undefined {
+  const linked = workspaceLinkedManifest(name, manifests)
+  if (linked !== undefined) {
+    const dir = dirname(resolve(root, 'node_modules', name, 'package.json'))
+    if (existsSync(dir)) return dir
+  }
+  for (const store of ['node_modules', 'native/system/node_modules']) {
+    const direct = resolve(root, store, name)
+    if (existsSync(direct)) return direct
+    const virtual = resolve(root, store, '.pnpm')
+    if (!existsSync(virtual)) continue
+    const foundDir = findInVirtualStore(virtual, name)
+    if (foundDir !== undefined) return foundDir
+  }
+  return undefined
+}
+
+/** Walk the pnpm virtual store looking for a directory containing `node_modules/<name>/package.json`. */
+function findInVirtualStore(virtual: string, name: string): string | undefined {
+  for (const entry of readdirSync(virtual)) {
+    const candidate = resolve(virtual, entry, 'node_modules', name)
+    if (existsSync(candidate)) return candidate
+  }
+  return undefined
+}
+
+/** Common license basenames to probe, in precedence order. */
+const LICENSE_FILENAMES = [
+  'LICENSE', 'LICENSE.md', 'LICENSE.txt', 'LICENSE.bsd', 'LICENSE.mit',
+  'LICENSE-MIT', 'LICENSE-BSD', 'LICENSE.APACHE', 'LICENSE.apache', 'LICENSE',
+  'COPYING', 'COPYING.md', 'COPYING.txt', 'NOTICE', 'NOTICE.md', 'NOTICE.txt',
+] as const
+
+/**
+ * Try to extract the SPDX identifier of the license that ships alongside an
+ * installed package. Returns undefined when no recognizable license file is
+ * present or its contents cannot be mapped to a stable SPDX identifier.
+ *
+ * This is a heuristic, not a lawyer: it reads the first lines of each known
+ * license filename and looks for the canonical SPDX identifier markers.
+ */
+export function extractObservedLicenseFromDir(dir: string): string | undefined {
+  if (!statSync(dir).isDirectory()) return undefined
+  const entries = readdirSync(dir).map(name => name.toLowerCase())
+  const candidates: string[] = []
+  for (const basename of LICENSE_FILENAMES) {
+    const match = entries.find(name => name === basename.toLowerCase())
+    if (match) {
+      // Preserve original case when resolving, since `entries` was lower-cased.
+      const actual = readdirSync(dir).find(name => name.toLowerCase() === match)
+      if (actual && !candidates.includes(actual)) candidates.push(actual)
+    }
+  }
+  // Some packages bundle all their licenses into `LICENSES/` (REUSE convention).
+  const reuseDir = entries.find(name => name === 'licenses')
+  if (reuseDir) {
+    const reuseActual = readdirSync(dir).find(name => name.toLowerCase() === 'licenses')!
+    for (const file of readdirSync(resolve(dir, reuseActual))) {
+      if (/\.(txt|md)$/i.test(file) || /^LICEN[CS]E/i.test(file)) {
+        candidates.push(`licenses/${file}`)
+      }
+    }
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const path = resolve(dir, candidate)
+      const text = readFileSync(path, 'utf8')
+      const id = guessSpdxIdFromLicenseText(text)
+      if (id !== undefined) return id
+    } catch {
+      // Permission denied or binary content — skip, try next candidate.
+    }
+  }
+  return undefined
+}
+
+/**
+ * Map a license file's opening text to an SPDX identifier via marker phrases.
+ * The regexes are ordered by confidence — e.g. the Apache license body
+ * literally begins with "Apache License" — and fail closed on ambiguous text
+ * (so we return undefined rather than making a guess).
+ */
+export function guessSpdxIdFromLicenseText(text: string): string | undefined {
+  const head = text.slice(0, 4000)
+  if (/^apache license\s+version\s+2\.0/i.test(head)) return 'Apache-2.0'
+  if (/^mit license/i.test(head) || /permission is hereby granted[^\n]*free of charge[^\n]*copy[, ]modify[, ]merge[, ]publish[, ]distribute[, ]sublicense[, ]and\/or sell/i.test(head)) return 'MIT'
+  if (/^bsd 3-clause license/i.test(head) || /redistribution and use in source and binary forms[^\n]*are permitted provided that the following conditions are met/i.test(head)) return 'BSD-3-Clause'
+  if (/^bsd 2-clause license/i.test(head) || /redistribution and use in source and binary forms[^\n]*are permitted provided that the following conditions are met[^\n]*redistributions in source code/i.test(head)) return 'BSD-2-Clause'
+  if (/^mpl version 2\.0/i.test(head) || /this source code form is subject to the terms of the mozilla public license/i.test(head)) return 'MPL-2.0'
+  if (/^isc license/i.test(head) || /permission to use[, ]copy[, ]modify[, ]and\/or distribute this software for any purpose with or without fee/i.test(head)) return 'ISC'
+  if (/^gpl license\s+version\s+3/i.test(head)) return 'GPL-3.0-only'
+  if (/^gpl license\s+version\s+2/i.test(head)) return 'GPL-2.0-only'
+  if (/^agpl license\s+version\s+3/i.test(head)) return 'AGPL-3.0-only'
+  if (/^lgpl license\s+version\s+3/i.test(head)) return 'LGPL-3.0-only'
+  if (/^python software foundation license\s+version\s+2/i.test(head)) return 'PSF-2.0'
+  if (/^unlicense/i.test(head) || /this is free and unencumbered software released into the public domain/i.test(head)) return 'Unlicense'
+  if (/^the unlicense/i.test(head)) return 'Unlicense'
+  if (/^creative commons zero/i.test(head)) return 'CC0-1.0'
+  if (/^0-clause bsd/i.test(head) || /0bsd/i.test(head) || /permission is hereby granted[^\n]*use copy modify merge publish distribute sublicense and\/or sell/i.test(head) && /neither the name of/i.test(head) === false) return '0BSD'
+  // MIT-CMU: same shape as MIT but the CMU-specific disclaimer shows up later.
+  if (/permission is hereby granted[^\n]*free of charge[^\n]*copy[, ]modify[, ]merge[, ]publish[, ]distribute[, ]sublicense[, ]and\/or sell/i.test(head) && /carnegie mellon university/i.test(head)) return 'MIT-CMU'
+  return undefined
 }
 
 function collectClaudeDistribution(manifests: Map<string, Manifest>): ClaudeDistribution {
@@ -774,8 +890,10 @@ export interface InventoryEntry {
   version?: string
   /** Concluded license expression (after OVERRIDES). */
   license: string
-  /** Raw license field from the published manifest, when different from `license`. */
+  /** Raw license field from the published manifest (declared). */
   declaredLicense?: string
+  /** SPDX id extracted from the shipped LICENSE file, when recognizable; undefined → NOASSERTION. */
+  observedLicense?: string
   /** Browsable source URL for the package. */
   repo?: string
   /** Which tier the entry occupies in the distribution model. */
@@ -854,13 +972,15 @@ export async function collectInventory(generatedAt?: string): Promise<Inventory>
   const entries: InventoryEntry[] = [
     ...runtimeDeps.map(dep => ({
       name: dep.name, version: dep.version, license: dep.license,
-      declaredLicense: dep.declaredLicense, repo: dep.repo,
+      declaredLicense: dep.declaredLicense, observedLicense: dep.observedLicense,
+      repo: dep.repo,
       tier: 'runtime-npm' as const, source: 'npm' as const,
       patched: patchSpecs.has(dep.name),
     })),
     ...devDeps.map(dep => ({
       name: dep.name, version: dep.version, license: dep.license,
-      declaredLicense: dep.declaredLicense, repo: dep.repo,
+      declaredLicense: dep.declaredLicense, observedLicense: dep.observedLicense,
+      repo: dep.repo,
       tier: 'dev-npm' as const, source: 'npm' as const,
       patched: patchSpecs.has(dep.name),
     })),

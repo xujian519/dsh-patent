@@ -104,6 +104,8 @@ interface SpdxPackage {
   downloadLocation: string
   licenseConcluded: string
   licenseDeclared: string
+  /** Observed license id (from shipped LICENSE file), or NOASSERTION if unavailable. */
+  licenseObserved: string
   copyrightText: string
   externalRefs?: { referenceCategory: 'PACKAGE-MANAGER' | 'SECURITY'; referenceType: string; referenceLocator: string }[]
   annotations?: SpdxAnnotation[]
@@ -141,6 +143,7 @@ export function renderSpdx(inventory: Inventory): SpdxDocument {
     downloadLocation: safeRepo(rootRepo),
     licenseConcluded: root.license,
     licenseDeclared: root.license,
+    licenseObserved: 'NOASSERTION',
     copyrightText: 'NOASSERTION',
   }
 
@@ -162,6 +165,7 @@ export function renderSpdx(inventory: Inventory): SpdxDocument {
       downloadLocation: safeRepo(entry.repo),
       licenseConcluded: entry.license,
       licenseDeclared: entry.declaredLicense ?? 'NOASSERTION',
+      licenseObserved: entry.observedLicense ?? 'NOASSERTION',
       copyrightText: 'NOASSERTION',
     }
     const purl = purlFor(entry)
@@ -275,6 +279,8 @@ export function renderCycloneDX(inventory: Inventory): CycloneDXDocument {
         ...(entry.source ? [{ name: 'source', value: entry.source }] : []),
         ...(entry.patched ? [{ name: 'patched', value: 'true' }] : []),
         ...(entry.repo ? [{ name: 'upstream', value: entry.repo }] : []),
+        ...(entry.declaredLicense ? [{ name: 'licenseDeclared', value: entry.declaredLicense }] : []),
+        ...(entry.observedLicense ? [{ name: 'licenseObserved', value: entry.observedLicense }] : []),
       ],
     }
     if (entry.repo) {

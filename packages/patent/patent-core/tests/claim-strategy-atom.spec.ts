@@ -62,6 +62,33 @@ describe('ClaimStrategyHandler', () => {
     expect(String(out.claim_strategy_report)).toContain('最接近现有技术：D1')
   })
 
+  it('提示词点名每个特征项的字段,不只依赖响应 schema', async () => {
+    let prompt = ''
+    const provider: StageProvider = {
+      callLLM: async (text) => {
+        prompt = text
+        return modelStrategy()
+      },
+    }
+    await new ClaimStrategyHandler().execute({
+      state: { source_text: SOURCE, novelty_conclusion: NOVELTY, prior_art: PRIOR_ART },
+      provider,
+    })
+    expect(prompt).toContain('必须含 id（如 F1、F2，全表唯一）、text、anchor')
+    expect(prompt).toContain('feature_id 必须引用上面给出的 id')
+  })
+
+  it('从权编号与引用写成数字字符串时仍可解析', async () => {
+    const out = await run({}, JSON.stringify({
+      essential_features: [{ id: 'F1', text: '控制模块', anchor: '控制模块' }],
+      optional_features: [{ id: 'F2', text: '图像采集模块', anchor: '图像采集模块' }],
+      dependent_tree: [{ number: '2', parent: '1', feature_id: 'F2' }],
+      prior_art_ref: null,
+    }))
+    const strategy = JSON.parse(String(out.claim_strategy)) as { dependent_tree: unknown[] }
+    expect(strategy.dependent_tree).toEqual([{ number: 2, parent: 1, feature_id: 'F2' }])
+  })
+
   it('没有从权树时按可选特征顺序生成线性链', async () => {
     const out = await run({
       source_text: '一种装置，包括控制模块和图像采集模块。',
@@ -224,8 +251,10 @@ describe('ClaimStrategyHandler', () => {
     const tree = (value: unknown): string => modelStrategy({ dependent_tree: value })
     await expectDegraded({}, tree('x'), /dependent_tree 不是数组/)
     await expectDegraded({}, tree([null]), /第 1 项不是对象/)
-    await expectDegraded({}, tree([{ number: '2', parent: 1, feature_id: 'F2' }]), /number 不是整数/)
+    await expectDegraded({}, tree([{ number: 2.5, parent: 1, feature_id: 'F2' }]), /number 不是整数/)
+    await expectDegraded({}, tree([{ number: null, parent: 1, feature_id: 'F2' }]), /number 不是整数/)
     await expectDegraded({}, tree([{ number: 2, parent: [], feature_id: 'F2' }]), /parent 非法/)
+    await expectDegraded({}, tree([{ number: 2, parent: null, feature_id: 'F2' }]), /parent 非法/)
     await expectDegraded({}, tree([{ number: 2, parent: [1, 'x'], feature_id: 'F2' }]), /parent 非法/)
     await expectDegraded({}, tree([{ number: 2, parent: 1 }]), /缺少 feature_id/)
     await expectDegraded({}, tree([{ number: 1, parent: 1, feature_id: 'F2' }]), /从权编号 1 小于 2/)

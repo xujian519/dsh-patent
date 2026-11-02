@@ -12,8 +12,8 @@
  * `previous-deliverable.md` 参考;终局维度只取最后一轮,逐轮观测写入记录的 `rounds`。
  *
  * 被测面(`execution`)有两条:`prompt` 就是上面的提示词调用;`workflow` 让执行者经
- * `patent_workflow_run` 跑 `patent_oa_response_v1` manifest 的全部阶段,把撰写阶段的答复另存为
- * 本轮交付物,再经 `matter_log_append` 落一条审计记录。工作流设置多记两样东西:记录里的
+ * `patent_workflow_run` 跑问题空间为该 case 声明的 manifest 的全部阶段,把声明的交付阶段正文
+ * 另存为本轮交付物,再经 `matter_log_append` 落一条审计记录。工作流设置多记两样东西:记录里的
  * `workflowId`,以及 `rounds[].claimVersions` —— 每轮交付物在 `_matter-log.md` 取代链上的深度,
  * 由 {@link parseMatterEntries} 从日志复算,不是执行者自报。阶段定义、审批门阶段与日志文法都取自
  * patent 包(`builtinPatentManifests`、`MATTER_LOG_FILE`、`parseMatterEntries`),评测器不重实现工作流。
@@ -40,7 +40,7 @@ import { createWriteStream } from 'node:fs'
 import { access, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { StringDecoder } from 'node:string_decoder'
-import { CASE_OUTPUTS_REL, CASE_ROOT_REL, caseOutputsDir, caseWorkflowRunsDir, type WorkflowManifest } from '@deepseek-ai/dsh-patent-core'
+import { CASE_OUTPUTS_REL, CASE_ROOT_REL, caseOutputsDir, caseWorkflowRunsDir } from '@deepseek-ai/dsh-patent-core'
 import { builtinPatentManifests } from '@deepseek-ai/dsh-patent-workflow'
 import { MATTER_LOG_FILE, parseMatterEntries } from '@deepseek-ai/dsh-patent-tools'
 import {
@@ -60,6 +60,7 @@ import {
   type RunRecord,
   type RunRound,
   type RunRoundDimension,
+  type WorkflowDeliverable,
 } from './patent-oas-gate-core.ts'
 import { budgetOf, observeConcision, type ConcisionObservation } from './patent-oas-concision.ts'
 
@@ -162,8 +163,10 @@ export interface WorkflowPlan {
   manifestId: string
   /** 按执行顺序排列的阶段 id。 */
   stages: string[]
-  /** 写出答复正文的阶段 id —— manifest 里唯一不绑定原子的阶段。 */
-  deliverableStage: string
+  /** 交付物文件名主干:第 N 轮写 `<artifact>-r<N>.md`。 */
+  artifact: string
+  /** 组成交付物的阶段 id,按声明顺序拼接;由问题空间为该 case 声明。 */
+  deliverableStages: string[]
   /** 需要显式放行的人工确认阶段 id(manifest 里由 `approval-gate` 原子标记的阶段)。 */
   approvalStages: string[]
 }
@@ -276,7 +279,10 @@ export function planRun(options: RunPlanOptions): RunPlan {
     if (mapping.workflow === undefined) {
       throw new Error(`case "${caseId}" 没有声明工作流 manifest,不能在 workflow 设置下采集`)
     }
-    return { ...base, workflow: workflowPlanOf(mapping.workflow, caseId) }
+    if (mapping.workflowDeliverable === undefined) {
+      throw new Error(`case "${caseId}" 声明了工作流 manifest 但没有 workflowDeliverable,无法确定交付物`)
+    }
+    return { ...base, workflow: workflowPlanOf(mapping.workflow, caseId, mapping.workflowDeliverable) }
   })
   const manifestIds = [...new Set(cases.map(entry => entry.workflow?.manifestId).filter(isString))].sort()
   if (manifestIds.length > 1) {
@@ -301,41 +307,37 @@ function isString(value: string | undefined): value is string {
 /**
  * 读内置 patent workflow manifest 并算出工作流采集清单。
  *
+ * 交付阶段来自问题空间为该 case 的声明,不按 manifest 猜:同一份 manifest 可以交付答复书,
+ * 也可以交付权利要求书加说明书。声明里出现 manifest 没有的阶段即报错。
+ *
  * @param manifestId 问题空间为 case 声明的 manifest id。
  * @param caseId 诊断用的 case id。
+ * @param deliverable 该 case 声明的交付物文件名主干与来源阶段。
  * @returns 该 manifest 的阶段清单。
  */
-function workflowPlanOf(manifestId: string, caseId: string): WorkflowPlan {
+function workflowPlanOf(
+  manifestId: string,
+  caseId: string,
+  deliverable: WorkflowDeliverable,
+): WorkflowPlan {
   const manifest = builtinPatentManifests.find(candidate => candidate.id === manifestId)
   if (manifest === undefined) {
     throw new Error(`case "${caseId}" 声明的 manifest "${manifestId}" 不在内置 patent workflow 清单中`)
   }
-  return {
-    manifestId,
-    stages: manifest.stages.map(stage => stage.id),
-    deliverableStage: deliverableStageOf(manifest),
-    approvalStages: manifest.stages.filter(stage => stage.atom === APPROVAL_ATOM).map(stage => stage.id),
-  }
-}
-
-/**
- * 取 manifest 里由模型撰写答复的阶段:绑定原子的阶段是确定性执行,不绑定原子的只有一个,
- * 它的输出就是交付物。数量不是 1 时无法定位交付物,直接失败而不是猜一个。
- *
- * @param manifest 被测的 manifest。
- * @returns 该阶段 id。
- * @throws 不绑定原子的阶段不唯一时抛出。
- */
-function deliverableStageOf(manifest: WorkflowManifest): string {
-  const modelStages = manifest.stages.filter(stage => stage.atom === undefined)
-  const only = modelStages[0]
-  if (modelStages.length !== 1 || only === undefined) {
+  const declared = new Set(manifest.stages.map(stage => stage.id))
+  const unknown = deliverable.stages.filter(stage => !declared.has(stage))
+  if (unknown.length > 0) {
     throw new Error(
-      `manifest "${manifest.id}" 有 ${modelStages.length} 个不绑定原子的阶段,`
-      + '无法确定答复撰写阶段;请在工作流引擎里为该 manifest 明确交付阶段',
+      `case "${caseId}" 的 workflowDeliverable 引用了 manifest "${manifestId}" 没有的阶段:${unknown.join('、')}`,
     )
   }
-  return only.id
+  return {
+    manifestId,
+    stages: [...declared],
+    artifact: deliverable.artifact,
+    deliverableStages: [...deliverable.stages],
+    approvalStages: manifest.stages.filter(stage => stage.atom === APPROVAL_ATOM).map(stage => stage.id),
+  }
 }
 
 /**
@@ -513,30 +515,32 @@ export interface WorkflowRound {
  * @param caseId 金标 case id。
  * @param run 运行序号,1 起。
  * @param round 轮次,1 起。
+ * @param artifact 交付物文件名主干,由问题空间为该 case 声明。
  * @returns 该次运行该轮的产物定位。
  */
-export function workflowRound(caseId: string, run: number, round: number): WorkflowRound {
+export function workflowRound(caseId: string, run: number, round: number, artifact: string): WorkflowRound {
   const slug = `patent-oas-${caseId}-run${run}`
-  const artifact = `oa-response-r${round}.md`
+  const file = `${artifact}-r${round}.md`
   return {
     caseId: slug,
     caseDir: `${CASE_ROOT_REL}/${slug}`,
-    deliverablePath: `${caseOutputsDir(slug)}/${artifact}`,
-    artifactPath: `${CASE_OUTPUTS_REL}/${artifact}`,
+    deliverablePath: `${caseOutputsDir(slug)}/${file}`,
+    artifactPath: `${CASE_OUTPUTS_REL}/${file}`,
   }
 }
 
 /**
- * 工作流设置的执行者提示词:一次 `patent_workflow_run` 跑完整 manifest,答复另存为本轮交付物,
- * 再经 `matter_log_append` 留档。
+ * 工作流设置的执行者提示词:一次 `patent_workflow_run` 跑完整 manifest,指定阶段的正文另存为
+ * 本轮交付物,再经 `matter_log_append` 留档。
  *
  * 阶段清单与审批门阶段都来自 manifest,提示词只点名 `patent_workflow_run` 一次:阶段推进、
  * 上游产出注入与 `requireAllSteps` 判定由工作流引擎负责,评测器不重实现。无人值守采集要显式
  * 放行审批门,否则 `requireAllSteps` 把停在人工确认的运行判为未完成。
  *
- * `claims` 与 `input` 分开传:要素级阶段在没有 `claims` 时按 `input` 全文切分权项段,而任务文本里
- * 审查员论点与步骤列表都是行首编号,会被当成权项段,逐字子串校验必然失败(实测首轮 `claim-chart`
- * 因此降级)。
+ * `claims` 只对需要单独提供待审权利要求的 manifest(审查意见答复)给出口径:要素级阶段在没有
+ * `claims` 时按 `input` 全文切分权项段,而任务文本里审查员论点与步骤列表都是行首编号,会被当
+ * 成权项段,逐字子串校验必然失败(实测首轮 `claim-chart` 因此降级)。交底书类任务没有待审
+ * 权利要求,传了反而让阶段读到不存在的权项。
  *
  * @param options 该轮的任务文本、工作流清单、产物定位与上一轮交付物。
  * @returns 提示词。
@@ -551,19 +555,20 @@ export function workflowExecutorPrompt(options: {
 }): string {
   const { plan, round } = options
   const approval = plan.approvalStages.map(stage => `"${stage}"`).join(', ')
-  const claimsBasis = options.previousArtifact === undefined
-    ? 'claims 只传本轮待答复的权利要求原文:从上面这段任务文本里逐字摘录权利要求正文,去掉行首 "- 独立权利要求 1:" 这类标签'
-    : 'claims 只传本轮待答复的权利要求原文:上一轮交付物给了修改后的权利要求就逐字摘录修改后的权项正文,否则从上面这段任务文本里逐字摘录权利要求正文,去掉行首 "- 独立权利要求 1:" 这类标签'
+  const stages = plan.deliverableStages.map(stage => `"${stage}"`).join('、')
+  const claimsBasis = '若该 manifest 需要单独提供待审权利要求(如审查意见答复),claims 传本轮待答复的权利要求原文:'
+    + '从任务文本或上一轮交付物里逐字摘录权利要求正文,去掉行首标签;交底书类任务不传 claims。'
+    + '不要把审查员论点的编号行或【要求】里的步骤列表放进 claims——要素级阶段按行首编号切分权项段。'
   const steps = [
-    `1. 调用 patent_workflow_run 跑完整工作流:manifestId 传 "${plan.manifestId}",caseId 传 "${round.caseId}"${plan.approvalStages.length > 0 ? `,approveStageIds 传 [${approval}]` : ''},input 逐字原样传下面这段任务文本(不要改写、不要省略、不要只传片段);${claimsBasis}。不要把审查员的编号论点或【要求】里的步骤列表放进 claims——要素级阶段按行首编号切分权利要求段,混进去会把论点行当成权项。`,
+    `1. 调用 patent_workflow_run 跑完整工作流:manifestId 传 "${plan.manifestId}",caseId 传 "${round.caseId}"${plan.approvalStages.length > 0 ? `,approveStageIds 传 [${approval}]` : ''},input 逐字原样传下面这段任务文本(不要改写、不要省略、不要只传片段);${claimsBasis}任务文本给出申请日或优先权日时,把给出的日期按 ISO 日期传给 filingDate(有优先权日时再传 priorityDate)——时间基准阶段缺日期会降级,连带下游检索过滤失败。`,
     '',
     options.statement,
     '',
-    `2. 把工作流 "${plan.deliverableStage}" 阶段产出的答复意见书正文原样写入当前工作目录的 ${round.deliverablePath};这是转存,不要改写、不要另写一份与前文无关的答复。`,
-    `3. 调用 matter_log_append 留档本轮:case_dir 传 "${round.caseDir}",action 传 "${options.roundNumber === 1 ? '建案' : '修订'}",artifacts 传 ["${round.artifactPath}"],changes 用一句话写清本轮改了什么、为什么、是否影响保护点${options.previousArtifact === undefined ? '' : `,supersedes 传 ["${options.previousArtifact}"]`}。第 3 步不能跳过,也不能用 shell 直接改日志。`,
+    `2. 把工作流 ${stages} 阶段产出的正文按上述顺序原样写入当前工作目录的 ${round.deliverablePath};每段之间空一行、保留各段原有标题,不要改写、不要另写一份与前文无关的正文。`,
+    `3. 调用 matter_log_append 留档本轮:case_dir 传 "${round.caseDir}",action 传 "${options.roundNumber === 1 ? '建案' : '修订'}",artifacts 传 ["${round.artifactPath}"],changes 用一句话写清本轮交付了什么、依据是什么、是否影响保护点${options.previousArtifact === undefined ? '' : `,supersedes 传 ["${options.previousArtifact}"]`}。第 3 步不能跳过,也不能用 shell 直接改日志。`,
   ]
   return [
-    '你是任务执行者。请依据目标 agent 状态目录中的作业规范,完成下列审查意见答复任务。',
+    '你是任务执行者。请依据目标 agent 状态目录中的作业规范,完成下列专利作业任务。',
     '任务(statement):',
     options.statement,
     '作业规范目录:',
@@ -863,7 +868,7 @@ export async function collectRunRecord(options: CollectRunOptions): Promise<RunR
         const roundAccumulator = roundAccumulators[round - 1]
         if (roundAccumulator === undefined) throw new Error(`${caseId}: 缺少第 ${round} 轮的累加器`)
         const executorLabel = `${caseId} run ${run} 第 ${round} 轮执行者`
-        const roundFiles = workflowRound(caseId, run, round)
+        const roundFiles = workflowRound(caseId, run, round, workflow?.artifact ?? 'deliverable')
         addUsage(await options.runAgents({
           cwd: agentStatePath,
           prompt: workflow === undefined
@@ -874,7 +879,7 @@ export async function collectRunRecord(options: CollectRunOptions): Promise<RunR
               plan: workflow,
               round: roundFiles,
               roundNumber: round,
-              ...(isFirst ? {} : { previousArtifact: workflowRound(caseId, run, round - 1).artifactPath }),
+              ...(isFirst ? {} : { previousArtifact: workflowRound(caseId, run, round - 1, workflow.artifact).artifactPath }),
             }),
           label: executorLabel,
         }))

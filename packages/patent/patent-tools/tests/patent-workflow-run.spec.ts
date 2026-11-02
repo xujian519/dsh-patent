@@ -1304,7 +1304,7 @@ describe('patent_workflow_run', () => {
     expect((value.degradedSteps ?? []).length).toBeGreaterThan(0)
   })
 
-  it('disclosure manifest: a slop-heavy draft rewinds via the real slop-gate and exhausts', async () => {
+  it('disclosure manifest: a failing slop gate reports without rewinding deterministic claims', async () => {
     // 策略表给出可锚定的特征；从权专员固定产出套话条文，真实 SlopGateHandler 判失败
     // → 回退 draft_claims 重跑 → 仍失败 → maxRetries 耗尽降级。
     const strategy = {
@@ -1333,18 +1333,17 @@ describe('patent_workflow_run', () => {
       { manifestId: 'patent_disclosure_v1', input: 'technical disclosure', approveStageIds: ['review_gate'], maxResults: 3 },
       exec,
     )) as PatentWorkflowRunOutput
-    // 耗尽标记只在回退超过 maxRetries 时出现——证明 rewind 真实发生。
+    // 披露链的权项由确定性渲染产出，回退重跑同一份策略表不会改分：门只报告，不声明回退。
     // stages 在输出类型中是 JsonValue[]，运行值为 WorkflowStageResult[]（单向断言合法）。
     const stages = (value.stages ?? []) as WorkflowStageResult[]
     const slopClean = stages.filter(s => s.stageId === 'slop_clean')
     expect(slopClean).toHaveLength(1)
-    expect(slopClean[0]!.output).toMatch(/\[WORKFLOW_RETRY_EXHAUSTED\]/)
-    expect(slopClean[0]!.degraded).toBe(true)
-    // 回退 splice 掉首轮结果，最终轮 draft 保留重跑后的套话草稿。
+    expect(slopClean[0]!.output).toContain('需修订')
+    expect(slopClean[0]!.degraded).toBe(false)
     const draftClaims = stages.filter(s => s.stageId === 'draft_claims')
     expect(draftClaims).toHaveLength(1)
     expect(draftClaims[0]!.output).toContain('进一步地')
-    expect(value.degradedSteps).toContain('slop_clean')
+    expect(value.degradedSteps ?? []).not.toContain('slop_clean')
   })
 
   it('renders graph edge cases and manifest prose', () => {

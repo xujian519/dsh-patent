@@ -38,7 +38,7 @@ import {
 import { dataBlock, withStageWritingSkills } from '../../../prompt-hygiene.ts'
 import { readAtomTunables } from '../../tunables.ts'
 import { callLlm, degraded } from './llm.ts'
-import { isTechDomain, readParent } from './claim-json.ts'
+import { isTechDomain, readClaimNumber, readParent } from './claim-json.ts'
 import { isRecord, readStateText } from './state-keys.ts'
 
 /** draft-claims 原子：按策略表渲染权利要求书并执行形式否决。 */
@@ -161,10 +161,10 @@ function parseStrategy(raw: string): ParsedStrategy | string {
   const nodes: StrategyNode[] = []
   for (const item of treeRaw) {
     if (!isRecord(item)) return 'claim_strategy.dependent_tree 含非对象项'
-    const number = item['number']
+    const number = readClaimNumber(item['number'])
     const parent = readParent(item['parent'])
     const featureId = item['feature_id']
-    if (typeof number !== 'number' || !Number.isInteger(number) || parent === undefined
+    if (number === undefined || parent === undefined
       || typeof featureId !== 'string' || featureId.trim() === '') {
       return 'claim_strategy.dependent_tree 的 number/parent/feature_id 非法'
     }
@@ -240,9 +240,9 @@ function readSpecialistOutput(
   const dependents: SpecialistDependent[] = []
   for (const [index, item] of dependentsRaw.entries()) {
     if (!isRecord(item)) return `dependents 第 ${index + 1} 项不是对象`
-    const number = item['number']
-    if (typeof number !== 'number' || !Number.isInteger(number)) {
-      return `dependents 第 ${index + 1} 项的 number 不是整数`
+    const number = readClaimNumber(item['number'])
+    if (number === undefined) {
+      return `dependents 第 ${index + 1} 项的 number 不是整数：${JSON.stringify(item['number'])}`
     }
     const parent = readParent(item['parent'])
     if (parent === undefined) return `dependents 第 ${index + 1} 项（权${String(number)}）的 parent 非法`

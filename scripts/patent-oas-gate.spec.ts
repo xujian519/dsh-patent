@@ -353,6 +353,12 @@ describe('金标与问题空间 DAG', () => {
       .rejects.toThrow('文件名主干只能是小写字母、数字与连字符')
     await expect(loadProblemSpace(seed(text.replace('stages: [draft]', 'stages: []'))))
       .rejects.toThrow('必须是非空阶段 id 数组')
+    await expect(loadProblemSpace(seed(text.replace('stages: [draft]', 'stages: [draft, draft]'))))
+      .rejects.toThrow('重复列出阶段')
+    await expect(loadProblemSpace(seed(text.replace('stages: [draft]', 'stages: [draft, 3]'))))
+      .rejects.toThrow('必须是非空阶段 id')
+    await expect(loadProblemSpace(seed(text.replace('    workflow: patent_oa_response_v1\n', ''))))
+      .rejects.toThrow('没有声明 workflow 的 case 不得给出 workflowDeliverable')
   })
 })
 

@@ -561,7 +561,6 @@ export class ClaimStrategyHandler implements StageHandler {
         '- dependent_tree 的每一项都是对象，必须含 number（从权序号，整数，2 起连续）、parent（被引用的权项号，或表示择一引用的数组）、feature_id；',
         '- dependent_tree 的 feature_id 必须引用上面给出的 id，不得引用 PFIE 编号或数组序号；',
         '- anchor 必须逐字摘录技术交底书原文，用于程序复核；摘录不得改写、拼接或转述；',
-        '- dependent_tree 给出每条从权的编号、父项（数组表示择一引用）与 feature_id；',
         '- prior_art_ref 只写新颖性结论或已过滤文献中出现的编号；没有点名最接近现有技术时写 null。',
         '',
         '【发明名称】',

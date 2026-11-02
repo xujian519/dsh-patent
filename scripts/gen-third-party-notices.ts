@@ -95,6 +95,10 @@ const OVERRIDES: Record<string, { license?: string; repo?: string }> = {
   // No repository field in the published manifest.
   'node-addon-require-builtin': { repo: 'https://www.npmjs.com/package/node-addon-require-builtin' },
   // No `license` field in the published manifest; the tarball's LICENSE.txt is the MIT text.
+  // License mismatch: manifest declares ISC, but the tarball LICENSE text is the standard MIT License.
+  // Observed license scan confirmed MIT (title "MIT License" + MIT-typical permission paragraph).
+  // Reviewed 2026-11-03 — override takes precedence over manifest ISC.
+  'cos-nodejs-sdk-v5': { license: 'MIT' },
 }
 
 /**
@@ -463,8 +467,13 @@ export function guessSpdxIdFromLicenseText(text: string): string | undefined {
   const head = text.slice(0, 4000)
   if (/^apache license\s+version\s+2\.0/i.test(head)) return 'Apache-2.0'
   if (/^mit license/i.test(head) || /permission is hereby granted[^\n]*free of charge[^\n]*copy[, ]modify[, ]merge[, ]publish[, ]distribute[, ]sublicense[, ]and\/or sell/i.test(head)) return 'MIT'
-  if (/^bsd 3-clause license/i.test(head) || /redistribution and use in source and binary forms[^\n]*are permitted provided that the following conditions are met/i.test(head)) return 'BSD-3-Clause'
-  if (/^bsd 2-clause license/i.test(head) || /redistribution and use in source and binary forms[^\n]*are permitted provided that the following conditions are met[^\n]*redistributions in source code/i.test(head)) return 'BSD-2-Clause'
+  // BSD-3 is distinguished from BSD-2 by a third clause forbidding use of
+  // the copyright holder's name or contributors' names to endorse derived
+  // products. Without that clause we treat it as BSD-2.
+  if (/^bsd 3-clause license/i.test(head)) return 'BSD-3-Clause'
+  if (/redistribution and use in source and binary forms[^\n]*are permitted provided that the following conditions are met/i.test(head) && /neither the name of[^\n]*nor the names of its contributors/i.test(head)) return 'BSD-3-Clause'
+  if (/^bsd 2-clause license/i.test(head)) return 'BSD-2-Clause'
+  if (/redistribution and use in source and binary forms[^\n]*are permitted provided that the following conditions are met/i.test(head)) return 'BSD-2-Clause'
   if (/^mpl version 2\.0/i.test(head) || /this source code form is subject to the terms of the mozilla public license/i.test(head)) return 'MPL-2.0'
   if (/^isc license/i.test(head) || /permission to use[, ]copy[, ]modify[, ]and\/or distribute this software for any purpose with or without fee/i.test(head)) return 'ISC'
   if (/^gpl license\s+version\s+3/i.test(head)) return 'GPL-3.0-only'

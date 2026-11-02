@@ -3,7 +3,7 @@
   "specVersion": "1.7",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-02T20:25:15.281Z",
+    "timestamp": "2026-11-02T20:32:53.044Z",
     "component": {
       "type": "application",
       "name": "@deepseek-ai/dsh-root",
@@ -2399,7 +2399,7 @@
         },
         {
           "name": "licenseObserved",
-          "value": "BSD-3-Clause"
+          "value": "BSD-2-Clause"
         }
       ],
       "externalReferences": [
@@ -3027,7 +3027,7 @@
         },
         {
           "name": "licenseObserved",
-          "value": "BSD-3-Clause"
+          "value": "BSD-2-Clause"
         }
       ],
       "externalReferences": [
@@ -6351,7 +6351,7 @@
       "licenses": [
         {
           "license": {
-            "id": "ISC"
+            "id": "MIT"
           }
         }
       ],

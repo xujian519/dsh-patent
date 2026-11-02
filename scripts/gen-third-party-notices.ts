@@ -142,12 +142,12 @@ export interface Manifest {
 /** One disclosed external npm dependency. */
 interface ExternalDep {
   name: string
-  version?: string
+  version?: string | undefined
   license: string
   /** Raw license field from the published manifest (declared). */
-  declaredLicense?: string
+  declaredLicense?: string | undefined
   /** License SPDX id extracted from the shipped LICENSE file, when recognizable. */
-  observedLicense?: string
+  observedLicense?: string | undefined
   repo: string
   /** True when a shipped workspace consumer installs it at runtime or embeds its implementation. */
   runtime: boolean
@@ -356,10 +356,10 @@ function installedManifest(name: string, manifests: Map<string, Manifest>, expec
 /** License and repository URL for an installed external package, from the pnpm store. */
 function installedMetadata(name: string, manifests: Map<string, Manifest>): {
   license: string
-  declaredLicense?: string
+  declaredLicense?: string | undefined
   repo: string
-  version?: string
-  observedLicense?: string
+  version?: string | undefined
+  observedLicense?: string | undefined
 } {
   const override = OVERRIDES[name]
   const installDir = installedDirectory(name, manifests)
@@ -434,9 +434,8 @@ export function extractObservedLicenseFromDir(dir: string): string | undefined {
     }
   }
   // Some packages bundle all their licenses into `LICENSES/` (REUSE convention).
-  const reuseDir = entries.find(name => name === 'licenses')
-  if (reuseDir) {
-    const reuseActual = readdirSync(dir).find(name => name.toLowerCase() === 'licenses')!
+  const reuseActual = readdirSync(dir).find(name => name.toLowerCase() === 'licenses')
+  if (reuseActual !== undefined) {
     for (const file of readdirSync(resolve(dir, reuseActual))) {
       if (/\.(txt|md)$/i.test(file) || /^LICEN[CS]E/i.test(file)) {
         candidates.push(`licenses/${file}`)
@@ -484,7 +483,7 @@ export function guessSpdxIdFromLicenseText(text: string): string | undefined {
   if (/^unlicense/i.test(head) || /this is free and unencumbered software released into the public domain/i.test(head)) return 'Unlicense'
   if (/^the unlicense/i.test(head)) return 'Unlicense'
   if (/^creative commons zero/i.test(head)) return 'CC0-1.0'
-  if (/^0-clause bsd/i.test(head) || /0bsd/i.test(head) || /permission is hereby granted[^\n]*use copy modify merge publish distribute sublicense and\/or sell/i.test(head) && /neither the name of/i.test(head) === false) return '0BSD'
+  if (/^0-clause bsd/i.test(head) || /0bsd/i.test(head) || (/permission is hereby granted[^\n]*use copy modify merge publish distribute sublicense and\/or sell/i.test(head) && !/neither the name of/i.test(head))) return '0BSD'
   // MIT-CMU: same shape as MIT but the CMU-specific disclaimer shows up later.
   if (/permission is hereby granted[^\n]*free of charge[^\n]*copy[, ]modify[, ]merge[, ]publish[, ]distribute[, ]sublicense[, ]and\/or sell/i.test(head) && /carnegie mellon university/i.test(head)) return 'MIT-CMU'
   return undefined
@@ -896,15 +895,15 @@ export interface InventoryEntry {
   /** The npm or Python distribution name, or a stable identifier for non-npm entries. */
   name: string
   /** Pinned resolved version, when known. */
-  version?: string
+  version?: string | undefined
   /** Concluded license expression (after OVERRIDES). */
   license: string
   /** Raw license field from the published manifest (declared). */
-  declaredLicense?: string
+  declaredLicense?: string | undefined
   /** SPDX id extracted from the shipped LICENSE file, when recognizable; undefined → NOASSERTION. */
-  observedLicense?: string
+  observedLicense?: string | undefined
   /** Browsable source URL for the package. */
-  repo?: string
+  repo?: string | undefined
   /** Which tier the entry occupies in the distribution model. */
   tier: 'runtime-npm' | 'dev-npm' | 'bundled-python' | 'direct-python' | 'vendored' | 'first-party-native' | 'claude-platform' | 'patched'
   /** Narrower source hint for renderers that want to bucket entries that way. */
@@ -926,7 +925,7 @@ export interface InventoryEntry {
  */
 export interface Inventory {
   /** Root package identity. */
-  root: { name: string; version: string; license: string; repo?: string }
+  root: { name: string; version: string; license: string; repo?: string | undefined }
   /** Timestamp the inventory was assembled (ISO 8601). */
   generatedAt: string
   /** Tool name and version identifying the generator. */
@@ -936,7 +935,7 @@ export interface Inventory {
   /** pnpm patches applied at install time (spec → patch file). */
   patches: { spec: string; patch: string }[]
   /** Optional distribution context attached to the SDK declaration. */
-  claudeDistribution?: ClaudeDistribution
+  claudeDistribution?: ClaudeDistribution | undefined
   /** Inspector build facts consumed by the markdown renderer. */
   devtools?: { version: string; revision: string }
   /** Whether the LibreOffice kit runtime is installed. */

@@ -28,7 +28,7 @@ function parseArgs(argv: string[]): { formats: Format[]; checkOnly: boolean } {
   const formats: Format[] = []
   let checkOnly = false
   for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i]
+    const arg = argv[i] ?? ''
     if (arg === '--check') {
       checkOnly = true
       continue
@@ -122,9 +122,8 @@ async function main(): Promise<void> {
   if (checkOnly) {
     for (const format of formats) perFormatTs.set(format, readCommittedTimestamp(format))
   }
-  const tsCandidate = checkOnly
-    ? (perFormatTs.get(formats[0]!) ?? undefined)
-    : undefined
+  const firstFormat = formats[0]
+  const tsCandidate = checkOnly && firstFormat !== undefined ? perFormatTs.get(firstFormat) : undefined
   const inventory = await collectInventory(tsCandidate)
 
   let anyStale = false

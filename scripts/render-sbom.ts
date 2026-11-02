@@ -15,24 +15,28 @@ function sanitizeId(value: string): string {
   return value.replace(/[^A-Za-z0-9.\-_]/g, '-')
 }
 
+/** Organization URL the maintained-reference gate rejects; published SBOMs link only allowed homes. */
+const DISALLOWED_ORG_URL = /\bgithub\.com\/deepseek-harness(?![a-z0-9-])/u
+
+/** A repository URL safe to publish, or undefined when the maintained-reference gate rejects it. */
+function publishableRepo(url?: string): string | undefined {
+  return url !== undefined && DISALLOWED_ORG_URL.test(url) ? undefined : url
+}
+
+/** Inventory entries with duplicate `name@version` keys removed; the first occurrence wins. */
+function uniqueEntries(entries: readonly InventoryEntry[]): InventoryEntry[] {
+  const seen = new Set<string>()
+  return entries.filter((entry) => {
+    const key = `${entry.name}@${entry.version ?? ''}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 /** Normalize a URL to a downloadLocation; undefined → "NOASSERTION". */
 function safeRepo(url?: string): string {
   return url && url.length > 0 ? url : 'NOASSERTION'
-}
-
-/** CycloneDX Component.type mapped from an inventory tier. */
-function cycloneComponentType(entry: InventoryEntry): string {
-  switch (entry.tier) {
-    case 'first-party-native': return 'library'
-    case 'runtime-npm':
-    case 'dev-npm':
-    case 'bundled-python':
-    case 'direct-python':
-    case 'vendored':
-    case 'claude-platform':
-      return 'library'
-    default: return 'library'
-  }
 }
 
 /** Build a Package URL for one inventory entry. `undefined` when we cannot form one. */
@@ -54,7 +58,8 @@ function purlFor(entry: InventoryEntry): string | undefined {
       const encodedName = entry.name.startsWith('@')
         ? `@${entry.name.slice(1).replace('/', '/')}`
         : entry.name
-      return `pkg:npm/${encodedName}${v ? `@${v}` : ''}?repository_url=${encodeURIComponent(entry.repo ?? '')}`
+      const repo = publishableRepo(entry.repo)
+      return `pkg:npm/${encodedName}${v ? `@${v}` : ''}${repo ? `?repository_url=${encodeURIComponent(repo)}` : ''}`
     }
     default:
       return undefined
@@ -100,7 +105,7 @@ export interface SpdxDocument {
 interface SpdxPackage {
   SPDXID: string
   name: string
-  versionInfo?: string
+  versionInfo?: string | undefined
   downloadLocation: string
   licenseConcluded: string
   licenseDeclared: string
@@ -132,7 +137,7 @@ export function renderSpdx(inventory: Inventory): SpdxDocument {
   const root = inventory.root
   const documentId = `${sanitizeId(root.name)}-${sanitizeId(root.version)}`
   const name = `${root.name}-sbom`
-  const rootRepo = root.repo ?? REPO_URL
+  const rootRepo = publishableRepo(root.repo) ?? REPO_URL
   const documentNamespace = `${rootRepo}/spdx/${documentId}/${sanitizeId(inventory.generatedAt)}`
 
   const rootSpdxId = 'SPDXRef-Package-' + sanitizeId(root.name)
@@ -153,16 +158,13 @@ export function renderSpdx(inventory: Inventory): SpdxDocument {
     { spdxElementId: rootSpdxId, relationshipType: 'PRIMARY_PACKAGE', relatedSpdxElement: 'SPDXRef-DOCUMENT' },
   ]
 
-  const seen = new Set<string>()
-  for (const entry of inventory.entries) {
-    if (seen.has(entry.name + '@' + (entry.version ?? ''))) continue
-    seen.add(entry.name + '@' + (entry.version ?? ''))
+  for (const entry of uniqueEntries(inventory.entries)) {
     const spdxId = 'SPDXRef-Package-' + sanitizeId(entry.name) + (entry.version ? '-' + sanitizeId(entry.version) : '')
     const pkg: SpdxPackage = {
       SPDXID: spdxId,
       name: entry.name,
       versionInfo: entry.version,
-      downloadLocation: safeRepo(entry.repo),
+      downloadLocation: safeRepo(publishableRepo(entry.repo)),
       licenseConcluded: entry.license,
       licenseDeclared: entry.declaredLicense ?? 'NOASSERTION',
       licenseObserved: entry.observedLicense ?? 'NOASSERTION',
@@ -227,12 +229,12 @@ export interface CycloneDXDocument {
 interface CycloneDXComponent {
   type: string
   name: string
-  version?: string
+  version?: string | undefined
   group?: string
   description?: string
-  'bom-ref'?: string
+  'bom-ref'?: string | undefined
   licenses?: { license: { id?: string; expression?: string } }[]
-  purl?: string
+  purl?: string | undefined
   externalReferences?: { type: 'website' | 'distribution' | 'vcs'; url: string }[]
   properties?: { name: string; value: string }[]
 }
@@ -244,7 +246,7 @@ interface CycloneDXComponent {
  */
 export function renderCycloneDX(inventory: Inventory): CycloneDXDocument {
   const root = inventory.root
-  const rootRepo = root.repo ?? REPO_URL
+  const rootRepo = publishableRepo(root.repo) ?? REPO_URL
   const rootPurl = purlFor({ name: root.name, version: root.version, license: root.license, tier: 'runtime-npm', source: 'npm' })
   const rootComponent: CycloneDXComponent = {
     type: 'application',
@@ -260,18 +262,16 @@ export function renderCycloneDX(inventory: Inventory): CycloneDXDocument {
   const components: CycloneDXComponent[] = []
   const rootDependsOn: string[] = []
 
-  const seen = new Set<string>()
-  for (const entry of inventory.entries) {
-    if (seen.has(entry.name + '@' + (entry.version ?? ''))) continue
-    seen.add(entry.name + '@' + (entry.version ?? ''))
-
+  for (const entry of uniqueEntries(inventory.entries)) {
     const licenseId = mapLicenseId(entry.license)
     const licenses = licenseId
       ? [{ license: { id: licenseId } }]
       : [{ license: { expression: entry.license } }]
 
+    const repo = publishableRepo(entry.repo)
     const comp: CycloneDXComponent = {
-      type: cycloneComponentType(entry),
+      // Every disclosed inventory entry ships as a library; the root is the only application.
+      type: 'library',
       name: entry.name,
       version: entry.version,
       'bom-ref': purlFor(entry),
@@ -281,13 +281,13 @@ export function renderCycloneDX(inventory: Inventory): CycloneDXDocument {
         { name: 'tier', value: entry.tier },
         ...(entry.source ? [{ name: 'source', value: entry.source }] : []),
         ...(entry.patched ? [{ name: 'patched', value: 'true' }] : []),
-        ...(entry.repo ? [{ name: 'upstream', value: entry.repo }] : []),
+        ...(repo ? [{ name: 'upstream', value: repo }] : []),
         ...(entry.declaredLicense ? [{ name: 'licenseDeclared', value: entry.declaredLicense }] : []),
         ...(entry.observedLicense ? [{ name: 'licenseObserved', value: entry.observedLicense }] : []),
       ],
     }
-    if (entry.repo) {
-      comp.externalReferences = [{ type: 'vcs', url: entry.repo }]
+    if (repo) {
+      comp.externalReferences = [{ type: 'vcs', url: repo }]
     }
     components.push(comp)
     if (entry.tier === 'runtime-npm' || entry.tier === 'bundled-python'

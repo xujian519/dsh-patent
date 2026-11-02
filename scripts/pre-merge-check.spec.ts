@@ -42,12 +42,15 @@ describe('pre-merge check', () => {
     }
   })
 
-  it('checks the versions before it installs, and installs before the builds', () => {
+  it('checks versions and package licenses before install, then inventory bytes and builds', () => {
     const steps = preMergeSteps('/repo')
-    expect(steps.map(step => step.name)).toEqual(['versions', 'install', 'host contracts', 'client'])
+    expect(steps.map(step => step.name)).toEqual([
+      'versions', 'dsh package licenses', 'install', 'third-party notices', 'sbom', 'host contracts', 'client',
+    ])
     expect(steps[0]).toEqual({ name: 'versions', command: process.execPath, args: [join('/repo', 'scripts', 'verify-version-sync.ts'), '/repo'] })
-    expect(steps[1]).toEqual({ name: 'install', command: 'pnpm', args: ['install', '--frozen-lockfile'] })
-    expect(steps[3]?.args).toEqual(['exec', 'tsx', 'scripts/compile-referenced-projects.ts', 'client'])
+    expect(steps[1]).toEqual({ name: 'dsh package licenses', command: 'pnpm', args: ['run', 'verify-dsh-package-licenses'] })
+    expect(steps[2]).toEqual({ name: 'install', command: 'pnpm', args: ['install', '--frozen-lockfile'] })
+    expect(steps[6]?.args).toEqual(['exec', 'tsx', 'scripts/compile-referenced-projects.ts', 'client'])
   })
 
   it('annotates a failure as a warning and passes in report mode', () => {

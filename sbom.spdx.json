@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "@deepseek-ai/dsh-root-sbom",
-  "documentNamespace": "https://github.com/deepseek-ai/deepseek-harness/spdx/-deepseek-ai-dsh-root-0.2.2-alpha.2/2026-11-02T20-50-46.333Z",
+  "documentNamespace": "https://github.com/deepseek-ai/deepseek-harness/spdx/-deepseek-ai-dsh-root-0.2.2-alpha.2/2026-11-02T23-23-28.991Z",
   "creationInfo": {
-    "created": "2026-11-02T20:50:46.333Z",
+    "created": "2026-11-02T23:23:28.991Z",
     "creators": [
       "Tool: DeepSeek Harness SBOM Generator",
       "Tool: scripts/gen-third-party-notices.ts@1.0.0"
@@ -2185,7 +2185,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2210,7 +2210,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2235,7 +2235,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2260,7 +2260,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2285,7 +2285,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2310,7 +2310,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2335,7 +2335,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2360,7 +2360,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2385,7 +2385,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2410,7 +2410,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2435,7 +2435,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2460,7 +2460,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2485,7 +2485,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2510,7 +2510,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2535,7 +2535,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2560,7 +2560,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2585,7 +2585,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2610,7 +2610,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2635,7 +2635,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2660,7 +2660,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2685,7 +2685,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2710,7 +2710,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2735,7 +2735,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2760,7 +2760,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2785,7 +2785,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2810,7 +2810,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2835,7 +2835,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2860,7 +2860,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2885,7 +2885,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2910,7 +2910,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2935,7 +2935,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2960,7 +2960,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -2985,7 +2985,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3010,7 +3010,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3035,7 +3035,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3060,7 +3060,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3085,7 +3085,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3110,7 +3110,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3135,7 +3135,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3160,7 +3160,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3185,7 +3185,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3210,7 +3210,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3235,7 +3235,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3260,7 +3260,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3285,7 +3285,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3310,7 +3310,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3335,7 +3335,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3360,7 +3360,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3385,7 +3385,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3410,7 +3410,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3435,7 +3435,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3460,7 +3460,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3485,7 +3485,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3510,7 +3510,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3535,7 +3535,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3560,7 +3560,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3585,7 +3585,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3610,7 +3610,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3635,7 +3635,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3660,7 +3660,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3685,7 +3685,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3710,7 +3710,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3735,7 +3735,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3760,7 +3760,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3785,7 +3785,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3810,7 +3810,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3835,7 +3835,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3860,7 +3860,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3885,7 +3885,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3910,7 +3910,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3935,7 +3935,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3960,7 +3960,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -3985,7 +3985,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4010,7 +4010,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4035,7 +4035,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4280,7 +4280,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=direct-python — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4304,7 +4304,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=direct-python — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4328,7 +4328,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=direct-python — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4352,7 +4352,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=direct-python — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4360,7 +4360,7 @@
     {
       "SPDXID": "SPDXRef-Package--deepseek-ai-cosmokit",
       "name": "@deepseek-ai/cosmokit",
-      "downloadLocation": "https://github.com/deepseek-harness/cosmokit",
+      "downloadLocation": "NOASSERTION",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
       "licenseObserved": "NOASSERTION",
@@ -4369,14 +4369,14 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/@deepseek-ai/cosmokit?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcosmokit"
+          "referenceLocator": "pkg:npm/@deepseek-ai/cosmokit"
         }
       ],
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4384,7 +4384,7 @@
     {
       "SPDXID": "SPDXRef-Package--deepseek-ai-schemastery",
       "name": "@deepseek-ai/schemastery",
-      "downloadLocation": "https://github.com/deepseek-harness/schemastery",
+      "downloadLocation": "NOASSERTION",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
       "licenseObserved": "NOASSERTION",
@@ -4393,14 +4393,14 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/@deepseek-ai/schemastery?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fschemastery"
+          "referenceLocator": "pkg:npm/@deepseek-ai/schemastery"
         }
       ],
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4424,7 +4424,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4448,7 +4448,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4456,7 +4456,7 @@
     {
       "SPDXID": "SPDXRef-Package--deepseek-ai-cordis-plugin-include",
       "name": "@deepseek-ai/cordis-plugin-include",
-      "downloadLocation": "https://github.com/deepseek-harness/cordis",
+      "downloadLocation": "NOASSERTION",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
       "licenseObserved": "NOASSERTION",
@@ -4465,14 +4465,14 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-include?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis"
+          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-include"
         }
       ],
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4480,7 +4480,7 @@
     {
       "SPDXID": "SPDXRef-Package--deepseek-ai-cordis-plugin-group",
       "name": "@deepseek-ai/cordis-plugin-group",
-      "downloadLocation": "https://github.com/deepseek-harness/cordis",
+      "downloadLocation": "NOASSERTION",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
       "licenseObserved": "NOASSERTION",
@@ -4489,14 +4489,14 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-group?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis"
+          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-group"
         }
       ],
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4520,7 +4520,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4528,7 +4528,7 @@
     {
       "SPDXID": "SPDXRef-Package--deepseek-ai-cordis-plugin-hmr",
       "name": "@deepseek-ai/cordis-plugin-hmr",
-      "downloadLocation": "https://github.com/deepseek-harness/cordis",
+      "downloadLocation": "NOASSERTION",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
       "licenseObserved": "NOASSERTION",
@@ -4537,14 +4537,14 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-hmr?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis"
+          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-hmr"
         }
       ],
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4552,7 +4552,7 @@
     {
       "SPDXID": "SPDXRef-Package--deepseek-ai-cordis-plugin-logger-console",
       "name": "@deepseek-ai/cordis-plugin-logger-console",
-      "downloadLocation": "https://github.com/deepseek-harness/cordis",
+      "downloadLocation": "NOASSERTION",
       "licenseConcluded": "MIT",
       "licenseDeclared": "NOASSERTION",
       "licenseObserved": "NOASSERTION",
@@ -4561,14 +4561,14 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-logger-console?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis"
+          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-logger-console"
         }
       ],
       "annotations": [
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4592,7 +4592,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=vendored — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4655,7 +4655,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4673,7 +4673,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4691,7 +4691,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4709,7 +4709,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4727,7 +4727,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4745,7 +4745,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4763,7 +4763,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]
@@ -4781,7 +4781,7 @@
         {
           "annotationType": "OTHER",
           "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
-          "annotationDate": "2026-11-02T20:50:46.333Z",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
           "annotator": "Tool: DeepSeek Harness SBOM Generator"
         }
       ]

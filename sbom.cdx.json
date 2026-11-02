@@ -3,7 +3,7 @@
   "specVersion": "1.7",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-02T20:50:46.333Z",
+    "timestamp": "2026-11-02T23:23:28.991Z",
     "component": {
       "type": "application",
       "name": "@deepseek-ai/dsh-root",
@@ -8500,7 +8500,7 @@
     {
       "type": "library",
       "name": "@deepseek-ai/cosmokit",
-      "bom-ref": "pkg:npm/@deepseek-ai/cosmokit?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcosmokit",
+      "bom-ref": "pkg:npm/@deepseek-ai/cosmokit",
       "licenses": [
         {
           "license": {
@@ -8508,7 +8508,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/@deepseek-ai/cosmokit?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcosmokit",
+      "purl": "pkg:npm/@deepseek-ai/cosmokit",
       "properties": [
         {
           "name": "tier",
@@ -8517,23 +8517,13 @@
         {
           "name": "source",
           "value": "vendor"
-        },
-        {
-          "name": "upstream",
-          "value": "https://github.com/deepseek-harness/cosmokit"
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "https://github.com/deepseek-harness/cosmokit"
         }
       ]
     },
     {
       "type": "library",
       "name": "@deepseek-ai/schemastery",
-      "bom-ref": "pkg:npm/@deepseek-ai/schemastery?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fschemastery",
+      "bom-ref": "pkg:npm/@deepseek-ai/schemastery",
       "licenses": [
         {
           "license": {
@@ -8541,7 +8531,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/@deepseek-ai/schemastery?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fschemastery",
+      "purl": "pkg:npm/@deepseek-ai/schemastery",
       "properties": [
         {
           "name": "tier",
@@ -8550,16 +8540,6 @@
         {
           "name": "source",
           "value": "vendor"
-        },
-        {
-          "name": "upstream",
-          "value": "https://github.com/deepseek-harness/schemastery"
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "https://github.com/deepseek-harness/schemastery"
         }
       ]
     },
@@ -8632,7 +8612,7 @@
     {
       "type": "library",
       "name": "@deepseek-ai/cordis-plugin-include",
-      "bom-ref": "pkg:npm/@deepseek-ai/cordis-plugin-include?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis",
+      "bom-ref": "pkg:npm/@deepseek-ai/cordis-plugin-include",
       "licenses": [
         {
           "license": {
@@ -8640,7 +8620,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-include?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis",
+      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-include",
       "properties": [
         {
           "name": "tier",
@@ -8649,23 +8629,13 @@
         {
           "name": "source",
           "value": "vendor"
-        },
-        {
-          "name": "upstream",
-          "value": "https://github.com/deepseek-harness/cordis"
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "https://github.com/deepseek-harness/cordis"
         }
       ]
     },
     {
       "type": "library",
       "name": "@deepseek-ai/cordis-plugin-group",
-      "bom-ref": "pkg:npm/@deepseek-ai/cordis-plugin-group?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis",
+      "bom-ref": "pkg:npm/@deepseek-ai/cordis-plugin-group",
       "licenses": [
         {
           "license": {
@@ -8673,7 +8643,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-group?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis",
+      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-group",
       "properties": [
         {
           "name": "tier",
@@ -8682,16 +8652,6 @@
         {
           "name": "source",
           "value": "vendor"
-        },
-        {
-          "name": "upstream",
-          "value": "https://github.com/deepseek-harness/cordis"
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "https://github.com/deepseek-harness/cordis"
         }
       ]
     },
@@ -8731,7 +8691,7 @@
     {
       "type": "library",
       "name": "@deepseek-ai/cordis-plugin-hmr",
-      "bom-ref": "pkg:npm/@deepseek-ai/cordis-plugin-hmr?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis",
+      "bom-ref": "pkg:npm/@deepseek-ai/cordis-plugin-hmr",
       "licenses": [
         {
           "license": {
@@ -8739,7 +8699,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-hmr?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis",
+      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-hmr",
       "properties": [
         {
           "name": "tier",
@@ -8748,23 +8708,13 @@
         {
           "name": "source",
           "value": "vendor"
-        },
-        {
-          "name": "upstream",
-          "value": "https://github.com/deepseek-harness/cordis"
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "https://github.com/deepseek-harness/cordis"
         }
       ]
     },
     {
       "type": "library",
       "name": "@deepseek-ai/cordis-plugin-logger-console",
-      "bom-ref": "pkg:npm/@deepseek-ai/cordis-plugin-logger-console?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis",
+      "bom-ref": "pkg:npm/@deepseek-ai/cordis-plugin-logger-console",
       "licenses": [
         {
           "license": {
@@ -8772,7 +8722,7 @@
           }
         }
       ],
-      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-logger-console?repository_url=https%3A%2F%2Fgithub.com%2Fdeepseek-harness%2Fcordis",
+      "purl": "pkg:npm/@deepseek-ai/cordis-plugin-logger-console",
       "properties": [
         {
           "name": "tier",
@@ -8781,16 +8731,6 @@
         {
           "name": "source",
           "value": "vendor"
-        },
-        {
-          "name": "upstream",
-          "value": "https://github.com/deepseek-harness/cordis"
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "vcs",
-          "url": "https://github.com/deepseek-harness/cordis"
         }
       ]
     },

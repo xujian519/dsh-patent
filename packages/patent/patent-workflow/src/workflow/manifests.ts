@@ -275,12 +275,6 @@ export const patentDisclosureManifest: WorkflowManifest = {
     ...FIGURE_ANALYSIS_STAGES,
     DRAFT_SPECIFICATION_STAGE,
     {
-      id: 'claim_breadth',
-      strategy: 'chain',
-      description: '概括范围实体判定（A26.4，warn 级）：逐条列出上位概括，复核说明书支撑摘录的原文锚点与并列下位效果',
-      atom: 'claim-breadth',
-    },
-    {
       id: 'spec_check',
       strategy: 'chain',
       description: '说明书与权利要求合规检查（A26.3/A26.4）：五部分章节、充分公开与权项特征支持',
@@ -292,6 +286,12 @@ export const patentDisclosureManifest: WorkflowManifest = {
       strategy: 'chain',
       description: '充分公开实体判定（A26.3）：逐独权特征在说明书中定位实施例摘录，并复核原文锚点',
       atom: 'enablement-report',
+    },
+    {
+      id: 'claim_breadth',
+      strategy: 'chain',
+      description: '概括范围实体判定（A26.4，warn 级）：逐条列出上位概括，复核说明书支撑摘录的原文锚点与并列下位效果',
+      atom: 'claim-breadth',
     },
     {
       id: 'slop_clean',

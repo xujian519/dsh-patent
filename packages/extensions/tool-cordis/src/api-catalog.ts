@@ -10178,7 +10178,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'StageProvider',
-    declaration: 'export interface StageProvider {\n    caseId?: string;\n    callLLM?: (prompt: string, opts?: {\n        jsonSchema?: unknown;\n        temperature?: number;\n    }, signal?: AbortSignal) => Promise<string>;\n    llm?: PatentModelPort;\n    search?: (query: string, opts?: {\n        maxResults?: number;\n    }) => Promise<StageSearchHit[]>;\n}',
+    declaration: 'export interface StageProvider {\n    caseId?: string;\n    callLLM?: (prompt: string, opts?: {\n        jsonSchema?: unknown;\n        temperature?: number;\n    }, signal?: AbortSignal) => Promise<string>;\n    llm?: PatentModelPort;\n    search?: (query: string, opts?: {\n        maxResults?: number;\n    }) => Promise<StageSearchHit[]>;\n    writingSkillsForStage?: (stageId: string) => string | undefined;\n}',
   },
   {
     name: 'StageSearchHit',

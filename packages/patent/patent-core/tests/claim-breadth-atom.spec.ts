@@ -75,6 +75,22 @@ describe('claim-breadth 原子', () => {
     }
   })
 
+  it('已声明阶段的写作模式进入提示词，未声明的不进入', async () => {
+    const captured: { prompt?: string } = {}
+    const out = await handler.execute({
+      state: { specification: SPEC, claims_draft: CLAIMS },
+      provider: {
+        ...providerFor(SUPPORTED_RECORD, captured),
+        writingSkillsForStage: stageId => stageId === 'claim_breadth'
+          ? '<skill id="wp-claim-markush-equivalents">'
+          : '<skill id="wp-claim-utility-model">',
+      },
+    })
+    expect(out._error).toBeUndefined()
+    expect(captured.prompt).toContain('wp-claim-markush-equivalents')
+    expect(captured.prompt).not.toContain('wp-claim-utility-model')
+  })
+
   it('有实施例支撑的上位概括：摘录命中原文，报告与判定同时产出', async () => {
     const out = await handler.execute({
       state: { specification: SPEC, claims_draft: CLAIMS },

@@ -15,7 +15,6 @@
 import { type AnchorRange, type AnchorReason, locateQuote } from '../../../anchor/index.ts'
 import { splitClaimSegments } from '../../../claim-chart/runtime/element-validator.ts'
 import { readJsonString } from '../../../llm-json.ts'
-import { dataBlock } from '../../../prompt-hygiene.ts'
 import { type Atom } from '../../atom.ts'
 import {
   type PipelineState,
@@ -23,6 +22,7 @@ import {
   type StageHandler,
   getStateArray,
 } from '../../handler.ts'
+import { dataBlock, withStageWritingSkills } from '../../../prompt-hygiene.ts'
 import { degraded, requireLlm } from './llm.ts'
 import { readQuoteStageContext, requestRecords, sourceBlocks } from './quote-stage.ts'
 import { isRecord } from './state-keys.ts'
@@ -393,7 +393,7 @@ export class EnablementReportHandler implements StageHandler {
     const figureRefs = collectFigureRefs(input.state)
     const featureLines = features.map(feature => `${feature.id} ${feature.text}`).join('\n')
 
-    const prompt = [
+    const prompt = withStageWritingSkills([
       '你是专利审查员，负责判断说明书是否满足专利法第26条第3款（充分公开，能够实现）。',
       '逐条核对下列独立权利要求特征，并在说明书中找到直接记载这些特征的实施例摘录。',
       '要求：',
@@ -417,7 +417,7 @@ export class EnablementReportHandler implements StageHandler {
         promptLimit,
       }),
       '请严格输出 JSON：records 为逐特征记录数组（feature_id、quote、embodiment_id、parameter_or_effect、enabled），notes 为判定说明。',
-    ].filter(line => line !== '').join('\n')
+    ].filter(line => line !== '').join('\n'), input.provider, 'enablement_report')
 
     const parsed = await requestRecords(
       input.provider,

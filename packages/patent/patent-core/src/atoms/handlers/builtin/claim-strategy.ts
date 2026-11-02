@@ -8,7 +8,8 @@
  *   任一特征没有命中原文即阶段失败，不降级成空表继续写；
  * - `prior_art_ref` 只接受 `novelty_conclusion` 或已过滤文献中出现过的编号，
  *   否则失败；文献未点名最接近现有技术时写 `null`；
- * - 从权树由模型给出，`draftClaims` 负责循环引用与编号校验；
+ * - 从权树由模型给出；本阶段校验编号从 2 起连续、引用方向与 feature_id，
+ *   `draftClaims` 再做形式校验；
  * - 调用方注入 `confirmed_features` 时按同一校验读取该表，不再调用模型改写归属。
  *
  * 输出 `claim_strategy` 为 JSON（不进交付正文），`claim_strategy_report` 供
@@ -19,7 +20,6 @@ import { type AnchorRange, type AnchorReason, locateQuote } from '../../../ancho
 import type { TechDomain } from '../../../claim-draft/index.ts'
 import { PARENT_SCHEMA, resolveDomain } from '../../../claim-draft/index.ts'
 import { readJsonString, tryParseJson } from '../../../llm-json.ts'
-import { dataBlock } from '../../../prompt-hygiene.ts'
 import { type Atom } from '../../atom.ts'
 import {
   type PipelineState,
@@ -28,6 +28,7 @@ import {
   getStateArray,
   getStateString,
 } from '../../handler.ts'
+import { dataBlock, withStageWritingSkills } from '../../../prompt-hygiene.ts'
 import { readAtomTunables } from '../../tunables.ts'
 import { callLlm, degraded, requireLlm } from './llm.ts'
 import { isTechDomain, readClaimNumber, readParent } from './claim-json.ts'
@@ -352,6 +353,22 @@ function anchorFeature(
 }
 
 /**
+ * 从权编号必须是 2..n 的连续整数。
+ * @param nodes - 已通过重复与引用检查的从权节点。
+ * @returns 不连续时的原因；连续或空树时返回 undefined。
+ */
+function contiguousDependentNumbers(nodes: readonly ClaimStrategyNode[]): string | undefined {
+  const ordered = [...nodes].sort((left, right) => left.number - right.number)
+  for (const [index, node] of ordered.entries()) {
+    const expected = index + 2
+    if (node.number !== expected) {
+      return `从权编号必须从 2 起连续，第 ${String(expected)} 项实为权${String(node.number)}`
+    }
+  }
+  return undefined
+}
+
+/**
  * 解析并复核策略表；模型输出与调用方 `confirmed_features` 共用同一条路径。
  * @param raw - 待解析的策略对象。
  * @param source - 交底书原文。
@@ -421,6 +438,8 @@ function buildStrategy(
       }
     }
   }
+  const gap = contiguousDependentNumbers(nodes)
+  if (gap !== undefined) return { ok: false, reason: gap }
 
   const priorArtValue = raw['prior_art_ref']
   if (priorArtValue !== null && priorArtValue !== undefined && typeof priorArtValue !== 'string') {
@@ -551,7 +570,7 @@ export class ClaimStrategyHandler implements StageHandler {
           ? JSON.stringify(pfeFeatures, null, 2)
           : getStateString(state, 'merge_result')
       const priorArtText = priorArt.length > 0 ? JSON.stringify(priorArt, null, 2) : '(无已过滤文献)'
-      const prompt = [
+      const prompt = withStageWritingSkills([
         '你是专利代理师，负责在撰写权利要求正文前确定特征归属与从权分层。',
         '只做决定，不写权利要求正文；正文随后由确定性渲染器按你的策略表生成。',
         '要求：',
@@ -578,7 +597,7 @@ export class ClaimStrategyHandler implements StageHandler {
         dataBlock(source.slice(0, promptLimit)),
         '',
         '请严格输出 JSON：essential_features、optional_features、dependent_tree、prior_art_ref，notes 可选。',
-      ].filter(line => line !== '').join('\n')
+      ].filter(line => line !== '').join('\n'), provider, 'claim_strategy')
       const res = await callLlm(
         provider,
         'claim-strategy',

@@ -53,6 +53,22 @@ describe('enablement-report 原子', () => {
     }
   })
 
+  it('已声明阶段的写作模式进入提示词，未声明的不进入', async () => {
+    const captured: { prompt?: string } = {}
+    const out = await handler.execute({
+      state: { specification: SPEC, claims_draft: CLAIMS },
+      provider: {
+        ...providerFor(CLEAN_RECORDS, captured),
+        writingSkillsForStage: stageId => stageId === 'enablement_report'
+          ? '<skill id="wp-embodiment-enablement-matrix">'
+          : '<skill id="wp-claim-utility-model">',
+      },
+    })
+    expect(out._error).toBeUndefined()
+    expect(captured.prompt).toContain('wp-embodiment-enablement-matrix')
+    expect(captured.prompt).not.toContain('wp-claim-utility-model')
+  })
+
   it('干净说明书：每条独权特征的摘录命中原文，报告与判定同时产出', async () => {
     const out = await handler.execute({
       state: { specification: SPEC, claims_draft: CLAIMS },

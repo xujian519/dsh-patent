@@ -102,7 +102,7 @@ section 文本、其位置与索引不变时前缀稳定；改动 `sectionCatego
 - **提示词 section 只带索引，不带模式正文** —— 随包语料把 18 条模式索引为 1,819 字符；把 18 条全部编译则需 27,234 字符。模型要先调用 `query_writing_patterns` 才能按某条模式撰写，比原先的常驻全量块多一次工具往返。`system-prompt.expected.md` 快照逐字节固定了索引，语料改动使其变化时必须有意重录该 fixture。
 - **`examples` 与应遵循/应避免规则的 `example` 只被解析、从不参与编译，`sub_category` 参与选择但不进入编译块** —— 编译块携带每个模式的摘要、步骤（含步骤自身的 `example`）、应遵循规则与应避免规则，与移植的编译器一致，且种子语料未设置顶层或规则级示例。`sub_category` 只参与类目查找。需要渲染示例的调用方自行从 store 读取。
 - **工具只读且无状态** —— 它读取插件加载时读入的语料，自身不写入任何持久状态或会话事件；其结果仅作为普通工具结果进入日志。
-- **阶段模式只是查询，不是注入** —— `stagePatterns` 按阶段解析 id 并经 `writingPatterns` 暴露；它不改工作流 manifest，也不自行把文本推进阶段提示词。消费方原子须主动按自己的阶段查询；未声明映射的阶段会在查询时显式失败。
+- **阶段模式只有原子索取时才进入模型提示词** —— `stagePatterns` 仍只把 id 解析到 `writingPatterns`，不改工作流 manifest。工作流宿主把 `compiledForStage` 接到 `StageProvider.writingSkillsForStage`。`claim-strategy`、`draft-claims`、`enablement-report` 与 `claim-breadth` 在回调返回文本时把它追加进提示词。未声明的阶段不返回文本，提示词仍走模式索引与 `query_writing_patterns`。直接对未声明阶段调用 `compiledForStage` 仍会抛错。
 - **资产失败发生在加载期而非调用期** —— 语料非法或缺失时在插件挂载阶段抛出 `PatternAssetError`，故部署不会带着空模式库面对模型。
 
 <a id="dev-note"></a>

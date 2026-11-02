@@ -116,4 +116,13 @@ export interface StageProvider {
    * @returns the mapped hits in source order.
    */
   search?: (query: string, opts?: { maxResults?: number }) => Promise<StageSearchHit[]>
+  /**
+   * Compiled writing skills for one workflow stage id (`stagePatterns` key).
+   * The host returns the stage's `<writing_skills>` block, or `undefined` when
+   * the deployment declared no patterns for that stage. A missing callback
+   * leaves the atom prompt on the pattern index and `query_writing_patterns`.
+   * @param stageId - the workflow stage id.
+   * @returns the compiled block, or undefined when the stage has no map.
+   */
+  writingSkillsForStage?: (stageId: string) => string | undefined
 }

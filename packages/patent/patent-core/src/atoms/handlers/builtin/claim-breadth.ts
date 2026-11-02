@@ -19,7 +19,7 @@ import { type AnchorRange, type AnchorReason, locateQuote } from '../../../ancho
 import { deriveClaimRefs } from '../../../claim-chart/runtime/claim-refs.ts'
 import { splitClaimSegments } from '../../../claim-chart/runtime/element-validator.ts'
 import { parseOptionalJsonStringArray, readJsonString } from '../../../llm-json.ts'
-import { dataBlock } from '../../../prompt-hygiene.ts'
+import { dataBlock, withStageWritingSkills } from '../../../prompt-hygiene.ts'
 import { type Atom } from '../../atom.ts'
 import { type PipelineState, type StageExecuteInput, type StageHandler } from '../../handler.ts'
 import { readClaimNumber } from './claim-json.ts'
@@ -367,7 +367,7 @@ export class ClaimBreadthHandler implements StageHandler {
     const missingLlm = requireLlm(input.provider, 'claim-breadth')
     if (missingLlm) return missingLlm
 
-    const prompt = [
+    const prompt = withStageWritingSkills([
       '你是专利审查员，负责判断权利要求是否符合专利法第26条第4款（概括范围得到说明书支持）。',
       '逐条找出权利要求中相对说明书实施例的上位概括，并核对说明书是否以实施例支撑该概括。',
       '要求：',
@@ -393,7 +393,7 @@ export class ClaimBreadthHandler implements StageHandler {
         promptLimit,
       }),
       '请严格输出 JSON：records 为逐条记录数组（claim_no、generalization、quote、parallel_lower_levels、all_parallel_same_effect、defect、reason），notes 为整体判定说明。',
-    ].filter(line => line !== '').join('\n')
+    ].filter(line => line !== '').join('\n'), input.provider, 'claim_breadth')
 
     const parsed = await requestRecords(
       input.provider,

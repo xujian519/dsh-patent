@@ -7,8 +7,14 @@ set -euo pipefail
 # This amd64 build needs glibc 2.38+ and Linux 5.10+; Ubuntu 24.04 satisfies both.
 readonly BUBBLEWRAP_VERSION='0.12.0-1'
 readonly BUBBLEWRAP_SHA256='db4d572a7927bfd34cc9b8e24b56983efa8e0483d03da6c810f6caae081dcc36'
-# The recorded build remains addressable after Ubuntu prunes its live package pool.
-readonly BUBBLEWRAP_URL="https://launchpad.net/ubuntu/+source/bubblewrap/${BUBBLEWRAP_VERSION}/+build/33546835/+files/bubblewrap_${BUBBLEWRAP_VERSION}_amd64.deb"
+# Launchpad keeps the recorded build after Ubuntu drops it from the live pool,
+# but launchpad.net answers 503 often enough to fail the job. The pool copies
+# are the same amd64 payload; a checksum mismatch discards them.
+readonly -a BUBBLEWRAP_URLS=(
+  "https://launchpad.net/ubuntu/+source/bubblewrap/${BUBBLEWRAP_VERSION}/+build/33546835/+files/bubblewrap_${BUBBLEWRAP_VERSION}_amd64.deb"
+  "https://archive.ubuntu.com/ubuntu/pool/main/b/bubblewrap/bubblewrap_${BUBBLEWRAP_VERSION}_amd64.deb"
+  "https://mirrors.ocf.berkeley.edu/ubuntu/pool/main/b/bubblewrap/bubblewrap_${BUBBLEWRAP_VERSION}_amd64.deb"
+)
 
 : "${RUNNER_TEMP:?prepare-ci-bubblewrap requires RUNNER_TEMP}"
 : "${GITHUB_PATH:?prepare-ci-bubblewrap requires GITHUB_PATH}"
@@ -21,16 +27,29 @@ fi
 archive="${RUNNER_TEMP}/bubblewrap_${BUBBLEWRAP_VERSION}_amd64.deb"
 root="${RUNNER_TEMP}/dsh-bubblewrap"
 
-# Launchpad intermittently answers 503 or drops the connection, and a dead
-# socket otherwise holds one attempt open for minutes. Bound each attempt with
-# a speed floor so the retries run inside the job's time budget.
-curl --fail --silent --show-error --location \
-  --connect-timeout 15 --max-time 120 \
-  --speed-limit 1024 --speed-time 20 \
-  --retry 8 --retry-delay 5 --retry-max-time 300 \
-  --retry-all-errors \
-  --output "$archive" "$BUBBLEWRAP_URL"
-printf '%s  %s\n' "$BUBBLEWRAP_SHA256" "$archive" | sha256sum --check --status
+# One dead mirror must not spend the job's retry budget. Each URL gets a short
+# bounded attempt; the next URL runs only when this download or its checksum fails.
+fetched=0
+for url in "${BUBBLEWRAP_URLS[@]}"; do
+  echo "prepare-ci-bubblewrap: fetching ${url}" >&2
+  rm -f "$archive"
+  if curl --fail --silent --show-error --location \
+    --connect-timeout 15 --max-time 45 \
+    --speed-limit 1024 --speed-time 20 \
+    --retry 2 --retry-delay 2 --retry-max-time 50 \
+    --retry-all-errors \
+    --output "$archive" "$url" \
+    && printf '%s  %s\n' "$BUBBLEWRAP_SHA256" "$archive" | sha256sum --check --status
+  then
+    fetched=1
+    break
+  fi
+  echo "prepare-ci-bubblewrap: ${url} failed download or the pinned SHA256" >&2
+done
+if [[ "$fetched" -ne 1 ]]; then
+  echo 'prepare-ci-bubblewrap: every mirror failed the pinned SHA256' >&2
+  exit 1
+fi
 mkdir -p "$root"
 dpkg-deb --extract "$archive" "$root"
 printf '%s\n' "$root/usr/bin" >> "$GITHUB_PATH"

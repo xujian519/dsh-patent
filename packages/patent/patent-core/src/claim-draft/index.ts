@@ -160,9 +160,21 @@ function buildDependentTree(name: string, nodes: readonly DependentClaimNode[]):
       number: node.number,
       type: 'dependent',
       refersTo: typeof node.parent === 'number' ? node.parent : [...node.parent],
-      text: `根据权利要求${renderParents(node.parent)}所述的${name}，其特征在于，还包括：${node.text.trim()}。`,
+      text: dependentClaimText(name, node.parent, node.text),
       ...(node.feature_id !== undefined ? { featureId: node.feature_id } : {}),
     }))
+}
+
+/**
+ * Render one dependent claim, appending a single sentence period.
+ * @param name - the invention name used in the citation clause.
+ * @param parent - the cited claim number or alternative citation.
+ * @param feature - the additional feature; trailing sentence periods are removed first.
+ * @returns the claim sentence.
+ */
+function dependentClaimText(name: string, parent: number | readonly number[], feature: string): string {
+  const body = feature.trim().replace(/[。．.]+$/u, '')
+  return `根据权利要求${renderParents(parent)}所述的${name}，其特征在于，还包括：${body}。`
 }
 
 /**
@@ -305,7 +317,7 @@ export function draftClaims(input: DraftClaimsInput): DraftClaimsOutput {
     : optional.map((feat, idx) => {
       const number = 2 + idx
       const refersTo = number - 1
-      return { number, type: 'dependent', refersTo, text: `根据权利要求${refersTo}所述的${name}，其特征在于，还包括：${feat}。` }
+      return { number, type: 'dependent', refersTo, text: dependentClaimText(name, refersTo, feat) }
     })
   const claims: DraftedClaim[] = [{ number: 1, type: 'independent', text: independentText }, ...dependents]
   const violations = [...validateClaims(claims), ...claimCountViolations(claims.length, input.max_claims)]

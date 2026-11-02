@@ -153,6 +153,27 @@ describe('DraftClaimsHandler', () => {
     expect(String(out.claims_draft)).toMatch(/^1\. 一种装置/)
   })
 
+  it('从权专员提示词只带本阶段声明的写作模式', async () => {
+    let prompt = ''
+    const out = await new DraftClaimsHandler().execute({
+      state: { claim_strategy: strategy() },
+      provider: {
+        callLLM: async (text) => {
+          prompt = text
+          return JSON.stringify({
+            dependents: [{ number: 2, parent: 1, feature_id: 'F2', text: '周期性拍摄' }],
+          })
+        },
+        writingSkillsForStage: stageId => stageId === 'draft_claims'
+          ? '<writing_skills><skill id="wp-claim-dependent-layering">从权分层</skill></writing_skills>'
+          : '<writing_skills><skill id="wp-claim-utility-model">实用新型</skill></writing_skills>',
+      },
+    })
+    expect(String(out.draft_claims_result)).toContain('"specialist":"applied"')
+    expect(prompt).toContain('wp-claim-dependent-layering')
+    expect(prompt).not.toContain('wp-claim-utility-model')
+  })
+
   it('从权专员重排/补充从权时独权文本保持确定性渲染', async () => {
     let prompt = ''
     const provider: StageProvider = {
@@ -176,6 +197,17 @@ describe('DraftClaimsHandler', () => {
     expect(text).toContain('2. 根据权利要求1所述的灌溉装置，其特征在于，还包括：周期性拍摄。')
     expect(text).toContain('3. 根据权利要求1或2所述的灌溉装置，其特征在于，还包括：按灌溉区域分别控制。')
     expect(String(out.draft_claims_result)).toContain('"specialist":"applied"')
+    const applied = JSON.parse(String(out.draft_claims_result)) as {
+      strategy: { dependent_tree: unknown; effective_tree: unknown }
+    }
+    expect(applied.strategy.dependent_tree).toEqual([
+      { number: 2, parent: 1, feature_id: 'F2' },
+      { number: 3, parent: [1, 2], feature_id: 'F3' },
+    ])
+    expect(applied.strategy.effective_tree).toEqual([
+      { number: 2, parent: 1, feature_id: 'F2', text: '周期性拍摄。' },
+      { number: 3, parent: [1, 2], feature_id: 'F3', text: '按灌溉区域分别控制。' },
+    ])
     expect(prompt).toContain('【反套话修订提示】')
     expect(prompt).toContain('进一步地')
   })
@@ -198,7 +230,11 @@ describe('DraftClaimsHandler', () => {
     }), JSON.stringify({
       dependents: [{ number: 2, parent: 1, text: '周期性拍摄。' }],
     }))
-    expect(String(withoutFeatureId.claims_draft)).toContain('周期性拍摄。')
+    expect(String(withoutFeatureId.draft_claims_result)).toContain('"specialist":"skipped"')
+    expect(String(withoutFeatureId.draft_claims_result)).toMatch(/缺少 feature_id/)
+    expect(String(withoutFeatureId.claims_draft)).toContain('图像采集模块。')
+    expect(String(withoutFeatureId.claims_draft)).not.toContain('周期性拍摄')
+    expect(String(withoutFeatureId.draft_claims_result)).not.toContain('effective_tree')
 
     const withinCap = await run(strategy(), undefined, { max_claims: 3 })
     expect(withinCap._error).toBeUndefined()
@@ -234,9 +270,11 @@ describe('DraftClaimsHandler', () => {
       ['{"dependents":[{"number":2,"parent":1,"text":"  "}]}', /缺少 text/],
       ['{"dependents":[{"number":2,"parent":1,"text":"x","feature_id":"F9"}]}', /feature_id 不在可选特征表中/],
       ['{"dependents":[]}', /没有返回任何从权/],
-      ['{"dependents":[{"number":3,"parent":1,"text":"x"}]}', /必须从 2 起连续/],
-      ['{"dependents":[{"number":2,"parent":5,"text":"x"}]}', /引用了非在先权 5/],
-      ['{"dependents":[{"number":2,"parent":3,"text":"x"}]}', /引用了非在先权 3/],
+      ['{"dependents":[{"number":2,"parent":1,"text":"x","feature_id":""}]}', /缺少 feature_id/],
+      ['{"dependents":[{"number":2,"parent":1,"text":"x","feature_id":1}]}', /缺少 feature_id/],
+      ['{"dependents":[{"number":3,"parent":1,"text":"x","feature_id":"F2"}]}', /必须从 2 起连续/],
+      ['{"dependents":[{"number":2,"parent":5,"text":"x","feature_id":"F2"}]}', /引用了非在先权 5/],
+      ['{"dependents":[{"number":2,"parent":3,"text":"x","feature_id":"F2"}]}', /引用了非在先权 3/],
     ]
     for (const [raw, reason] of cases) {
       const out = await run(strategy(), raw)

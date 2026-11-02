@@ -275,7 +275,7 @@ export const patentDisclosureManifest: WorkflowManifest = {
     {
       id: 'draft_claims',
       strategy: 'chain',
-      description: '按策略表确定性渲染权利要求草稿（独权+多路从权），从权专员只重排/补充从权',
+      description: '按策略表确定性渲染权利要求草稿（独权+多路从权），从权专员只重排或补充带可选特征编号的从权',
       atom: 'draft-claims',
     },
     ...FIGURE_ANALYSIS_STAGES,

@@ -386,6 +386,11 @@ export interface WorkflowProviderDeps {
   model?: PatentModelPort
   /** Prior-art search function (default: the nuo-patent provider). */
   search?: StageProvider['search']
+  /**
+   * Compiled writing skills for one workflow stage. Copied onto the provider
+   * so model-calling atoms can append them. Absent leaves those prompts unchanged.
+   */
+  writingSkillsForStage?: StageProvider['writingSkillsForStage']
 }
 
 /** Context the workflow provider reads (case identity, propagated to atoms). */
@@ -423,6 +428,7 @@ export function buildWorkflowProvider(
     /* v8 ignore next -- deps.search ?? createNuoSearchProvider().search is never undefined. */
     ...(search === undefined ? {} : { search }),
     caseId: context.caseId ?? '',
+    ...(deps.writingSkillsForStage !== undefined ? { writingSkillsForStage: deps.writingSkillsForStage } : {}),
   }
 }
 

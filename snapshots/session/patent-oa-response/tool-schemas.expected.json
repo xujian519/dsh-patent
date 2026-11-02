@@ -367,9 +367,50 @@
           },
           "optional_features": {
             "type": "array",
-            "description": "附加/可选技术特征列表（用于从属权利要求）",
+            "description": "附加/可选技术特征列表：渲染为逐条引用前一条的线性从权链。与 dependent_tree 互斥",
             "items": {
               "type": "string"
+            }
+          },
+          "dependent_tree": {
+            "type": "array",
+            "description": "显式从权树：每个从权给出编号、父项（数字或数字数组）与附加特征，支持多路引用。与 optional_features 互斥",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "description": "从属权利要求编号（2 起）"
+                },
+                "parent": {
+                  "oneOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    }
+                  ],
+                  "description": "引用的在先权利要求编号；数组表示择一引用（渲染为「权利要求 1 或 2」）"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "本条从属权利要求增加的附加技术特征"
+                },
+                "feature_id": {
+                  "type": "string",
+                  "description": "特征表中的特征编号，用于把成文回映射到策略表"
+                }
+              },
+              "required": [
+                "number",
+                "parent",
+                "text"
+              ]
             }
           },
           "prior_art": {

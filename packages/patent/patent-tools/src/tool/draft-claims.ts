@@ -7,12 +7,29 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { PatentToolError } from '../error.ts'
 import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
 
 /** Patent technical domain (mechanical / electrical / chemical / software / general). */
 export type TechDomain = 'mechanical' | 'electrical' | 'chemical' | 'software' | 'general'
 /** Patent type (invention or utility model). */
 export type PatentType = 'invention' | 'utility_model'
+
+/**
+ * One dependent claim in an explicit claim tree: its number, the claim(s) it
+ * cites, and the additional feature it adds. `feature_id` carries the strategy
+ * table's feature id so a caller can map the rendered claim back to that table.
+ */
+export type DependentClaimNode = {
+  /** Claim number, 2 or greater, unique across the tree. */
+  number: number
+  /** Claim number cited by this claim; an array renders as an alternative citation ("或"). */
+  parent: number | readonly number[]
+  /** The additional technical feature this claim adds. */
+  text: string
+  /** Strategy-table feature id this claim's text comes from. */
+  feature_id?: string
+}
 
 /** Input for the draft_claims tool. */
 export type DraftClaimsInput = {
@@ -22,8 +39,16 @@ export type DraftClaimsInput = {
   tech_domain?: TechDomain
   /** Essential technical features (for the independent claim). */
   technical_features: string[]
-  /** Optional/additional technical features (for the dependent claims). */
+  /**
+   * Optional/additional technical features, rendered as a linear chain of
+   * dependent claims. Mutually exclusive with `dependent_tree`.
+   */
   optional_features?: string[]
+  /**
+   * Explicit dependent-claim tree for multi-branch citations. Mutually
+   * exclusive with `optional_features`.
+   */
+  dependent_tree?: readonly DependentClaimNode[]
   /** Closest prior-art description (optional, for the preamble). */
   prior_art?: string
   /**
@@ -39,7 +64,10 @@ export type DraftedClaim = {
   number: number
   type: 'independent' | 'dependent'
   text: string
-  refersTo?: number
+  /** Cited claim number(s); an array is an alternative citation. */
+  refersTo?: number | number[]
+  /** Strategy-table feature id of a dependent claim built from `dependent_tree`. */
+  featureId?: string
 }
 
 /** One formal-validity violation found in drafted claims. */
@@ -95,13 +123,18 @@ export function renderDraftClaims(value: DraftClaimsOutput): string {
     `# 权利要求书草案（${value.invention_name}）`,
     `技术领域: ${value.tech_domain}`,
     '',
-    ...value.claims.map(c => `${c.number}. [${c.type}]${c.refersTo !== undefined ? `（引用 ${c.refersTo}）` : ''} ${c.text}`),
+    ...value.claims.map(c => `${c.number}. [${c.type}]${c.refersTo !== undefined ? `（引用 ${renderParents(c.refersTo, ' 或 ')}）` : ''} ${c.text}`),
   ]
   if (value.violations.length > 0) {
     lines.push('', '## 形式校验违规', ...value.violations.map(v => `- [${v.severity}] ${v.rule}${v.claimNumber !== undefined ? `（权${v.claimNumber}）` : ''}: ${v.message}${v.suggestion ? ` → ${v.suggestion}` : ''}`))
   }
   lines.push(...warningSection(value.warnings))
   return lines.join('\n')
+}
+
+/** Render one cited claim or an alternative citation of several ("1或2"). */
+function renderParents(parents: number | readonly number[], separator = '或'): string {
+  return typeof parents === 'number' ? String(parents) : parents.join(separator)
 }
 
 function buildIndependentClaim(name: string, domain: TechDomain, features: string[], priorArt: string): string {
@@ -157,11 +190,36 @@ export function validateClaims(claims: DraftedClaim[]): ClaimViolation[] {
     if (/如图[一二三四五六七八九十\d]+所示|如附图/.test(c.text)) {
       violations.push({ rule: 'no_illustration', severity: 'error', claimNumber: c.number, message: "权利要求中不得包含'如图……所示'等引用附图的表述", suggestion: "删除'如图……所示'等表述，或将其替换为技术特征的直接描述" })
     }
-    if (c.refersTo !== undefined && c.refersTo >= c.number && c.type === 'dependent') {
-      violations.push({ rule: 'circular_reference', severity: 'error', claimNumber: c.number, message: `从属权利要求 ${c.number} 引用了 ${c.refersTo}，形成非法引用`, suggestion: '从属权利要求只能引用编号更小的权利要求' })
+    if (c.type === 'dependent' && c.refersTo !== undefined) {
+      const parents = typeof c.refersTo === 'number' ? [c.refersTo] : [...c.refersTo]
+      if (parents.length === 0) {
+        violations.push({ rule: 'missing_reference', severity: 'error', claimNumber: c.number, message: `从属权利要求 ${c.number} 未引用任何权利要求`, suggestion: '为从属权利要求补上被引用的在先权利要求编号' })
+      }
+      const illegal = parents.filter(parent => parent < 1 || parent >= c.number)
+      if (illegal.length > 0) {
+        violations.push({ rule: 'circular_reference', severity: 'error', claimNumber: c.number, message: `从属权利要求 ${c.number} 引用了 ${illegal.join('、')}，形成非法引用`, suggestion: '从属权利要求只能引用编号更小的权利要求' })
+      }
     }
   }
   return violations
+}
+
+/**
+ * Render an explicit dependent-claim tree in ascending claim-number order.
+ * @param name - the invention name used in each claim's citation clause.
+ * @param nodes - the tree nodes; their numbers are validated afterwards.
+ * @returns one drafted claim per node.
+ */
+function buildDependentTree(name: string, nodes: readonly DependentClaimNode[]): DraftedClaim[] {
+  return [...nodes]
+    .sort((left, right) => left.number - right.number)
+    .map(node => ({
+      number: node.number,
+      type: 'dependent',
+      refersTo: typeof node.parent === 'number' ? node.parent : [...node.parent],
+      text: `根据权利要求${renderParents(node.parent)}所述的${name}，其特征在于，还包括：${node.text.trim()}。`,
+      ...(node.feature_id !== undefined ? { featureId: node.feature_id } : {}),
+    }))
 }
 
 /**
@@ -177,12 +235,22 @@ export function draftClaims(input: DraftClaimsInput): DraftClaimsOutput {
   const warnings: string[] = []
   if (essential.length === 0) warnings.push('未提供必要技术特征，独立权利要求无法生成完整技术方案')
   if (name.length > 25) warnings.push(`发明名称 ${name.length} 字，超过 25 字限制`)
+  const tree = input.dependent_tree
+  if (tree !== undefined && tree.length > 0 && optional.length > 0) {
+    throw new PatentToolError(
+      'invalid_tool_input',
+      'dependent_tree 与 optional_features 互斥：一次撰写只接受一种从属权利要求来源',
+      { tool: 'draft_claims' },
+    )
+  }
   const independentText = buildIndependentClaim(name, domain, essential, input.prior_art?.trim() ?? '')
-  const dependents: DraftedClaim[] = optional.map((feat, idx) => {
-    const number = 2 + idx
-    const refersTo = number - 1
-    return { number, type: 'dependent', refersTo, text: `根据权利要求${refersTo}所述的${name}，其特征在于，还包括：${feat}。` }
-  })
+  const dependents: DraftedClaim[] = tree !== undefined && tree.length > 0
+    ? buildDependentTree(name, tree)
+    : optional.map((feat, idx) => {
+      const number = 2 + idx
+      const refersTo = number - 1
+      return { number, type: 'dependent', refersTo, text: `根据权利要求${refersTo}所述的${name}，其特征在于，还包括：${feat}。` }
+    })
   const claims: DraftedClaim[] = [{ number: 1, type: 'independent', text: independentText }, ...dependents]
   const violations = validateClaims(claims)
   const cap = input.max_claims
@@ -207,6 +275,13 @@ export function draftClaims(input: DraftClaimsInput): DraftClaimsOutput {
   return { invention_name: name, tech_domain: domain, claims, violations, warnings }
 }
 
+const PARENTS_SCHEMA = {
+  oneOf: [
+    { type: 'integer' },
+    { type: 'array', items: { type: 'integer' } },
+  ],
+} as const
+
 const CLAIM_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -214,7 +289,19 @@ const CLAIM_SCHEMA = {
     number: { type: 'integer', required: true },
     type: { type: 'string', required: true, enum: ['independent', 'dependent'] },
     text: { type: 'string', required: true },
-    refersTo: { type: 'integer' },
+    refersTo: PARENTS_SCHEMA,
+    featureId: { type: 'string' },
+  },
+} as const
+
+const DEPENDENT_NODE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    number: { type: 'integer', required: true, description: '从属权利要求编号（2 起）' },
+    parent: { ...PARENTS_SCHEMA, required: true, description: '引用的在先权利要求编号；数组表示择一引用（渲染为「权利要求 1 或 2」）' },
+    text: { type: 'string', required: true, description: '本条从属权利要求增加的附加技术特征' },
+    feature_id: { type: 'string', description: '特征表中的特征编号，用于把成文回映射到策略表' },
   },
 } as const
 
@@ -242,7 +329,12 @@ export function createDraftClaimsTool(): ToolDefinition {
       invention_name: { type: 'string', required: true, description: '发明名称' },
       tech_domain: { type: 'string', enum: ['mechanical', 'electrical', 'chemical', 'software', 'general'], description: '技术领域（为空时自动识别）' },
       technical_features: { type: 'array', required: true, items: { type: 'string' }, description: '必要技术特征列表（用于独立权利要求）' },
-      optional_features: { type: 'array', items: { type: 'string' }, description: '附加/可选技术特征列表（用于从属权利要求）' },
+      optional_features: { type: 'array', items: { type: 'string' }, description: '附加/可选技术特征列表：渲染为逐条引用前一条的线性从权链。与 dependent_tree 互斥' },
+      dependent_tree: {
+        type: 'array',
+        items: DEPENDENT_NODE_SCHEMA,
+        description: '显式从权树：每个从权给出编号、父项（数字或数字数组）与附加特征，支持多路引用。与 optional_features 互斥',
+      },
       prior_art: { type: 'string', description: '最接近现有技术描述（可选，用于前序部分）' },
       max_claims: { type: 'integer', description: '本次撰写指令给定的权利要求项数上限（可选）。超过上限判 error——指令给定的上限是验收条件，不得以申请附加费起征线为由放宽' },
     },

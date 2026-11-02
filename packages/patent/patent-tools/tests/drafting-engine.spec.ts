@@ -162,6 +162,110 @@ describe('draft_claims deeper paths', () => {
     const violations = validateClaims(claims)
     expect(violations.map(v => v.rule)).toContain('no_illustration')
   })
+
+  it('renders a multi-branch dependent tree in ascending claim order', () => {
+    const out = draftClaims({
+      invention_name: '储罐',
+      tech_domain: 'mechanical',
+      technical_features: ['壳体'],
+      dependent_tree: [
+        { number: 4, parent: [1, 2], text: '螺距为 30-45mm', feature_id: 'F6' },
+        { number: 2, parent: 1, text: '伴热夹套内设加热通道', feature_id: 'F4' },
+        { number: 3, parent: 1, text: '加热通道为螺旋形通道', feature_id: 'F5' },
+      ],
+    })
+    expect(out.claims.map(claim => claim.number)).toEqual([1, 2, 3, 4])
+    expect(out.claims[1]?.text).toContain('根据权利要求1所述的储罐')
+    expect(out.claims[2]?.text).toContain('根据权利要求1所述的储罐')
+    expect(out.claims[3]?.text).toContain('根据权利要求1或2所述的储罐')
+    expect(out.claims[3]?.refersTo).toEqual([1, 2])
+    expect(out.claims[1]?.featureId).toBe('F4')
+    expect(out.violations).toEqual([])
+    expect(renderDraftClaims(out)).toContain('（引用 1 或 2）')
+  })
+
+  it('rejects a forward or self citation in a dependent tree', () => {
+    const forward = draftClaims({
+      invention_name: '装置',
+      technical_features: ['特征A'],
+      dependent_tree: [{ number: 2, parent: 3, text: '附加特征' }],
+    })
+    expect(forward.violations.find(v => v.rule === 'circular_reference')?.claimNumber).toBe(2)
+
+    const self = draftClaims({
+      invention_name: '装置',
+      technical_features: ['特征A'],
+      dependent_tree: [{ number: 2, parent: [1, 2], text: '附加特征' }],
+    })
+    expect(self.violations.some(v => v.rule === 'circular_reference' && v.message.includes('2'))).toBe(true)
+  })
+
+  it('rejects a non-contiguous dependent tree and an empty citation list', () => {
+    const gap = draftClaims({
+      invention_name: '装置',
+      technical_features: ['特征A'],
+      dependent_tree: [
+        { number: 2, parent: 1, text: '附加特征2' },
+        { number: 4, parent: 1, text: '附加特征4' },
+      ],
+    })
+    expect(gap.violations.find(v => v.rule === 'numbering')?.claimNumber).toBe(4)
+
+    const empty = draftClaims({
+      invention_name: '装置',
+      technical_features: ['特征A'],
+      dependent_tree: [{ number: 2, parent: [], text: '附加特征' }],
+    })
+    expect(empty.violations.map(v => v.rule)).toContain('missing_reference')
+  })
+
+  it('rejects dependent_tree together with optional_features', () => {
+    expect(() => draftClaims({
+      invention_name: '装置',
+      technical_features: ['特征A'],
+      optional_features: ['扁平附加特征'],
+      dependent_tree: [{ number: 2, parent: 1, text: '树附加特征' }],
+    })).toThrow(/dependent_tree 与 optional_features 互斥/)
+  })
+
+  it('applies the claim ceiling and the additional-fee warning to a tree', () => {
+    const tree = Array.from({ length: 10 }, (_, index) => ({
+      number: index + 2,
+      parent: 1,
+      text: `附加特征${index + 1}`,
+    }))
+    const overTen = draftClaims({ invention_name: '装置', technical_features: ['特征A'], dependent_tree: tree })
+    expect(overTen.claims).toHaveLength(11)
+    expect(overTen.violations.find(v => v.rule === 'additional_fee')?.severity).toBe('warning')
+
+    const capped = draftClaims({
+      invention_name: '装置',
+      technical_features: ['特征A'],
+      dependent_tree: tree,
+      max_claims: 5,
+    })
+    expect(capped.violations.find(v => v.rule === 'claim_count_cap')?.severity).toBe('error')
+  })
+
+  it('exposes the dependent tree through the tool schema and execution', async () => {
+    const ctx = await ctxWith(createDraftClaimsTool())
+    const result = await execute(ctx, 'draft_claims', {
+      invention_name: '储罐',
+      tech_domain: 'mechanical',
+      technical_features: ['壳体'],
+      dependent_tree: [
+        { number: 2, parent: 1, text: '伴热夹套' },
+        { number: 3, parent: [1, 2], text: '螺距为 30-45mm' },
+      ],
+    }, 'dc-tree')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    expect(text(result)).toContain('（引用 1 或 2）')
+    expect(text(result)).toContain('根据权利要求1或2所述的储罐')
+
+    const parameters = ctx.tools.get('draft_claims')?.parameters as { properties: Record<string, unknown> }
+    expect(parameters.properties['dependent_tree']).toBeDefined()
+  })
 })
 
 describe('draft_specification deeper paths', () => {

@@ -301,14 +301,14 @@ export const patentDisclosureManifest: WorkflowManifest = {
     },
     {
       id: 'slop_clean',
+      // 披露链的权利要求由 `draft_claims` 确定性渲染，文件格式（"其特征在于"、分号特征串）
+      // 本身就会让面向意见陈述书的 directness/evidence 维度失分，回退重跑同一份策略表也
+      // 不会改分；因此这里评说明书正文，未通过只报告，不阻断交付（由 rubric 的 26.3/26.4
+      // 维度承担质量判定）。
       strategy: 'chain',
-      description: '反套话评分门（未通过自动带证据提示回退权利要求修订）',
+      description: '反套话评分门（说明书正文，warn 级：未通过只报告，确定性撰写不重跑）',
       atom: 'slop-gate',
-      retry: {
-        whenOutputMatches: '需修订',
-        rewindTo: 'draft_claims',
-        maxRetries: 1,
-      },
+      params: { text_keys: ['specification'] },
     },
     {
       id: 'legal_gaps',

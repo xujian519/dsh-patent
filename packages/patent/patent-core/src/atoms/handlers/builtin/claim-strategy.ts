@@ -30,7 +30,7 @@ import {
 } from '../../handler.ts'
 import { readAtomTunables } from '../../tunables.ts'
 import { callLlm, degraded, requireLlm } from './llm.ts'
-import { isTechDomain, readParent } from './claim-json.ts'
+import { isTechDomain, readClaimNumber, readParent } from './claim-json.ts'
 import { isRecord, readStateText } from './state-keys.ts'
 
 /** 可选特征在从权中的用途；`fallback` 为未写用途时的缺省。 */
@@ -313,9 +313,9 @@ function readTree(value: unknown): ClaimStrategyNode[] | string {
   const nodes: ClaimStrategyNode[] = []
   for (const [index, item] of value.entries()) {
     if (!isRecord(item)) return `dependent_tree 第 ${index + 1} 项不是对象`
-    const number = item['number']
-    if (typeof number !== 'number' || !Number.isInteger(number)) {
-      return `dependent_tree 第 ${index + 1} 项的 number 不是整数`
+    const number = readClaimNumber(item['number'])
+    if (number === undefined) {
+      return `dependent_tree 第 ${index + 1} 项的 number 不是整数：${JSON.stringify(item)}`
     }
     const parent = readParent(item['parent'])
     if (parent === undefined) return `dependent_tree 第 ${index + 1} 项（权${String(number)}）的 parent 非法`
@@ -557,6 +557,9 @@ export class ClaimStrategyHandler implements StageHandler {
         '要求：',
         '- 必要特征：解决技术问题不可缺少的特征，全部进入独立权利要求；不得混入实施例细节；',
         '- 可选特征：优选方案、备用方案或数值范围，进入从属权利要求；',
+        '- essential_features 与 optional_features 的每一项都是对象，必须含 id（如 F1、F2，全表唯一）、text、anchor；可选特征另加 kind（fallback/preferred/range 之一）；',
+        '- dependent_tree 的每一项都是对象，必须含 number（从权序号，整数，2 起连续）、parent（被引用的权项号，或表示择一引用的数组）、feature_id；',
+        '- dependent_tree 的 feature_id 必须引用上面给出的 id，不得引用 PFIE 编号或数组序号；',
         '- anchor 必须逐字摘录技术交底书原文，用于程序复核；摘录不得改写、拼接或转述；',
         '- dependent_tree 给出每条从权的编号、父项（数组表示择一引用）与 feature_id；',
         '- prior_art_ref 只写新颖性结论或已过滤文献中出现的编号；没有点名最接近现有技术时写 null。',

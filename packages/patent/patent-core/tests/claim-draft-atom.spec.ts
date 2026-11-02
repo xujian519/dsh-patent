@@ -229,7 +229,7 @@ describe('DraftClaimsHandler', () => {
       ['not json', /不是 JSON 对象/],
       ['{"dependents":"x"}', /缺少 dependents 数组/],
       ['{"dependents":[null]}', /第 1 项不是对象/],
-      ['{"dependents":[{"number":"2","parent":1,"text":"x"}]}', /number 不是整数/],
+      ['{"dependents":[{"number":2.5,"parent":1,"text":"x"}]}', /number 不是整数/],
       ['{"dependents":[{"number":2,"parent":[],"text":"x"}]}', /parent 非法/],
       ['{"dependents":[{"number":2,"parent":1,"text":"  "}]}', /缺少 text/],
       ['{"dependents":[{"number":2,"parent":1,"text":"x","feature_id":"F9"}]}', /feature_id 不在可选特征表中/],

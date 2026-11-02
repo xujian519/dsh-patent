@@ -636,12 +636,12 @@ describe('workflow retry validation', () => {
     expect(ids.indexOf('novelty') < ids.indexOf('citation_check')).toBe(true)
     expect(ids.indexOf('citation_check') < ids.indexOf('report')).toBe(true)
     expect(patentDisclosureManifest.stages.find(s => s.id === 'report')?.consumes).toContain('citation_check')
-    // slop_clean gates the draft and rewinds to draft_claims on a fail signal.
+    // 披露链的权项由确定性渲染产出，回退重跑同一份策略表不会改分：slop_clean 评说明书正文，
+    // 未通过只报告，不声明回退。
     const slopClean = patentDisclosureManifest.stages.find(s => s.id === 'slop_clean')!
     expect(slopClean.atom).toBe('slop-gate')
-    expect(slopClean.retry?.rewindTo).toBe('draft_claims')
-    expect(slopClean.retry!.whenOutputMatches).toBe('需修订')
-    expect(slopClean.retry!.maxRetries).toBe(1)
+    expect(slopClean.params).toEqual({ text_keys: ['specification'] })
+    expect(slopClean.retry).toBeUndefined()
     expect(ids.indexOf('draft_claims') < ids.indexOf('slop_clean')).toBe(true)
     // 说明书草案接在权项草稿之后；spec_check 以草案为说明书文本、权项草稿为权利要求文本。
     const draftSpecification = patentDisclosureManifest.stages.find(s => s.id === 'draft_specification')!
@@ -713,137 +713,44 @@ describe('workflow retry validation', () => {
     ).not.toThrow()
   })
 
-  it('patentDisclosureManifest: slop_clean fail signal rewinds to draft_claims and re-runs it', async () => {
+  it('patentDisclosureManifest: slop_clean 未通过只报告，不回退确定性撰写', async () => {
     registerBuiltinAtoms()
-    globalAtomRegistry.register({
-      name: 'slop-gate',
-      category: 'gate',
-      description: 'test stub — 真实注册在 patent-tools apply()',
-      inputSchema: [],
-      outputSchema: ['slop_report'],
-    })
-    globalAtomRegistry.register({
-      name: 'draft-specification',
-      category: 'extract',
-      description: 'test stub — 真实注册在 patent-tools apply()',
-      inputSchema: [],
-      outputSchema: ['specification'],
-    })
-    globalAtomRegistry.register({
-      name: 'figure-analysis',
-      category: 'extract',
-      description: 'test stub — 真实注册在 patent-tools apply()',
-      inputSchema: [],
-      outputSchema: ['figure_analysis'],
-    })
-    globalAtomRegistry.register({
-      name: 'spec-check',
-      category: 'gate',
-      description: 'test stub — 真实注册在 patent-tools apply()',
-      inputSchema: [],
-      outputSchema: ['spec_check_report'],
-    })
-    globalAtomRegistry.register({
-      name: 'eligibility',
-      category: 'gate',
-      description: 'test stub — 真实注册在 patent-tools apply()',
-      inputSchema: [],
-      outputSchema: ['eligibility_report'],
-    })
-    globalAtomRegistry.register({
-      name: 'legal-gaps',
-      category: 'gate',
-      description: 'test stub — 真实注册在 patent-tools apply()',
-      inputSchema: [],
-      outputSchema: ['legal_gaps_report'],
-    })
-    // 空 handler 注册表覆盖全局：本测试只驱动 runWorkflow 的 retry 机制，
-    // 不触发内置 handler（其真实执行路径由 patent-tools 覆盖）。
-    let draftRound = 0
+    for (const [name, category, outputSchema] of [
+      ['slop-gate', 'gate', ['slop_report']],
+      ['draft-specification', 'extract', ['specification']],
+      ['figure-analysis', 'extract', ['figure_analysis']],
+      ['spec-check', 'gate', ['spec_check_report']],
+      ['eligibility', 'gate', ['eligibility_report']],
+      ['legal-gaps', 'gate', ['legal_gaps_report']],
+    ] as const) {
+      globalAtomRegistry.register({
+        name,
+        category,
+        description: 'test stub — 真实注册在 patent-tools apply()',
+        inputSchema: [],
+        outputSchema: [...outputSchema],
+      })
+    }
+    let draftRounds = 0
     const executor = async (stage: WorkflowStage) => {
       if (stage.id === 'draft_claims') {
-        draftRound += 1
-        return draftRound === 1 ? '深入分析，全面论述，综上所述，保护范围合理。' : '一种结构，包括壳体与连接部。'
+        draftRounds += 1
+        return '一种结构，包括壳体与连接部。'
       }
-      if (stage.id === 'slop_clean') {
-        return draftRound === 1 ? '反套话评分门: ⚠️ 需修订（总分 18，通过线 35）' : '反套话评分门: ✅ 通过（总分 39，通过线 35）'
-      }
+      if (stage.id === 'slop_clean') return '反套话评分门: ⚠️ 需修订（总分 34，通过线 35）'
       return `${stage.id} 完成`
     }
 
     const result = await runWorkflow(patentDisclosureManifest, { input: '交底书' }, executor, {
       handlers: new StageHandlerRegistry(),
     })
-    expect(draftRound).toBe(2) // 初次撰写 + 信号回退后重跑
+    // 权利要求由确定性渲染产出，回退重跑同一份策略表不会改分；门只报告。
+    expect(draftRounds).toBe(1)
     const slopClean = result.stages.find(s => s.stageId === 'slop_clean')!
-    expect(slopClean.output).toContain('✅ 通过')
+    expect(slopClean.output).toContain('需修订')
     expect(slopClean.degraded).toBe(false)
-    const draftClaims = result.stages.filter(s => s.stageId === 'draft_claims')
-    expect(draftClaims).toHaveLength(1) // 回退 splice 掉首轮结果，只保留最终轮
-    expect(draftClaims[0]!.output).toContain('一种结构')
     expect(result.completed).toBe(true)
     expect(result.degradedSteps).toHaveLength(0)
-  })
-
-  it('patentDisclosureManifest: persistent slop_clean failure exhausts the retry and marks degraded', async () => {
-    registerBuiltinAtoms()
-    globalAtomRegistry.register({
-      name: 'slop-gate',
-      category: 'gate',
-      description: 'test stub — 真实注册在 patent-tools apply()',
-      inputSchema: [],
-      outputSchema: ['slop_report'],
-    })
-    globalAtomRegistry.register({
-      name: 'draft-specification',
-      category: 'extract',
-      description: 'test stub — 真实注册在 patent-tools apply()',
-      inputSchema: [],
-      outputSchema: ['specification'],
-    })
-    globalAtomRegistry.register({
-      name: 'figure-analysis',
-      category: 'extract',
-      description: 'test stub — 真实注册在 patent-tools apply()',
-      inputSchema: [],
-      outputSchema: ['figure_analysis'],
-    })
-    globalAtomRegistry.register({
-      name: 'spec-check',
-      category: 'gate',
-      description: 'test stub — 真实注册在 patent-tools apply()',
-      inputSchema: [],
-      outputSchema: ['spec_check_report'],
-    })
-    globalAtomRegistry.register({
-      name: 'eligibility',
-      category: 'gate',
-      description: 'test stub — 真实注册在 patent-tools apply()',
-      inputSchema: [],
-      outputSchema: ['eligibility_report'],
-    })
-    globalAtomRegistry.register({
-      name: 'legal-gaps',
-      category: 'gate',
-      description: 'test stub — 真实注册在 patent-tools apply()',
-      inputSchema: [],
-      outputSchema: ['legal_gaps_report'],
-    })
-    let draftRound = 0
-    const executor = async (stage: WorkflowStage) => {
-      if (stage.id === 'draft_claims') { draftRound += 1; return '套话草稿' }
-      if (stage.id === 'slop_clean') return '反套话评分门: ⚠️ 需修订（总分 18，通过线 35）'
-      return `${stage.id} 完成`
-    }
-
-    const result = await runWorkflow(patentDisclosureManifest, { input: '交底书' }, executor, {
-      handlers: new StageHandlerRegistry(),
-    })
-    expect(draftRound).toBe(2) // 初次 + 一次回退（maxRetries=1），此后耗尽
-    const slopClean = result.stages.find(s => s.stageId === 'slop_clean')!
-    expect(slopClean.output).toMatch(/\[WORKFLOW_RETRY_EXHAUSTED\]/)
-    expect(slopClean.degraded).toBe(true)
-    expect(result.degradedSteps).toContain('slop_clean')
   })
 })
 

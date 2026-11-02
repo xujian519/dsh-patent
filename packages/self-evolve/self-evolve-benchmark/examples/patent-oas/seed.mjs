@@ -8,6 +8,7 @@
  *   ├── benchmark_config.yaml        # { title }
  *   ├── oa-answer/statement|rubric
  *   ├── claim-drafting/statement|rubric
+ *   ├── disclosure-drafting/statement|rubric
  *   ├── infringement-comparison/statement|rubric
  *   └── novelty-creative/statement|rubric
  *

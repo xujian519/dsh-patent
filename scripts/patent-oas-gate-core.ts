@@ -55,6 +55,14 @@ export interface DimensionMapping {
   nodes: Record<string, number>
 }
 
+/** 工作流设置下交付物的文件名主干与组成它的阶段。 */
+export interface WorkflowDeliverable {
+  /** 交付物文件名主干:第 N 轮写 `<artifact>-r<N>.md`。 */
+  artifact: string
+  /** 组成交付物的阶段 id,按声明顺序拼接;每个阶段必须存在于该 case 的 manifest。 */
+  stages: string[]
+}
+
 /** 一个 case 的全部维度映射。 */
 export interface CaseMapping {
   /** 中文短名。 */
@@ -63,6 +71,8 @@ export interface CaseMapping {
   retrieval: RetrievalSetting
   /** 该 case 可在工作流设置下采集时,所用的 patent workflow manifest id;不支持时省略。 */
   workflow?: string
+  /** `workflow` 非空时必填:交付物落点与来源阶段。 */
+  workflowDeliverable?: WorkflowDeliverable
   /** rubric 维度序号(1 起) → 拆解。 */
   dimensions: Record<number, DimensionMapping>
 }
@@ -471,6 +481,49 @@ function requireRecord(source: Record<string, unknown>, key: string, where: stri
   return value
 }
 
+/**
+ * 读一个 case 的工作流交付物声明。
+ *
+ * `workflow` 与 `workflowDeliverable` 必须成对出现:工作流设置要读哪几个阶段的正文、
+ * 交付物写进哪个文件,都不能由采集器按 manifest 猜——同一份 manifest 的交付物可以是答复书,
+ * 也可以是权利要求书加说明书。
+ *
+ * @param source case 映射对象。
+ * @param workflow 该 case 声明的 manifest id。
+ * @param where 诊断位置。
+ * @returns 交付物声明;case 不跑工作流时 undefined。
+ */
+function parseWorkflowDeliverable(
+  source: Record<string, unknown>,
+  workflow: string | undefined,
+  where: string,
+): WorkflowDeliverable | undefined {
+  const value = source.workflowDeliverable
+  if (value === undefined || value === null) {
+    if (workflow !== undefined) throw new Error(`${where}: 声明了 workflow 的 case 必须给出 workflowDeliverable(交付文件名主干与来源阶段)`)
+    return undefined
+  }
+  if (workflow === undefined) throw new Error(`${where}: 没有声明 workflow 的 case 不得给出 workflowDeliverable`)
+  if (!isRecord(value)) throw new Error(`${where}.workflowDeliverable: 必须是对象`)
+  const artifact = requireString(value, 'artifact', `${where}.workflowDeliverable`)
+  if (!/^[a-z0-9][a-z0-9-]*$/u.test(artifact)) {
+    throw new Error(`${where}.workflowDeliverable.artifact: 文件名主干只能是小写字母、数字与连字符,得到 ${JSON.stringify(artifact)}`)
+  }
+  const rawStages = value.stages
+  if (!Array.isArray(rawStages) || rawStages.length === 0) {
+    throw new Error(`${where}.workflowDeliverable.stages: 必须是非空阶段 id 数组`)
+  }
+  const stages = rawStages.map((stage, index) => {
+    if (typeof stage !== 'string' || stage.trim() === '') {
+      throw new Error(`${where}.workflowDeliverable.stages[${index}]: 必须是非空阶段 id`)
+    }
+    return stage
+  })
+  const duplicated = stages.find((stage, index) => stages.indexOf(stage) !== index)
+  if (duplicated !== undefined) throw new Error(`${where}.workflowDeliverable.stages: 重复列出阶段 "${duplicated}"`)
+  return { artifact, stages }
+}
+
 /** 解析一个 YAML 文档为对象;非对象文档即抛错。 */
 async function loadYamlObject(path: string): Promise<Record<string, unknown>> {
   const parsed: unknown = loadYaml(await readFile(path, 'utf8'), { schema: JSON_SCHEMA })
@@ -630,6 +683,7 @@ export async function loadProblemSpace(path: string): Promise<ProblemSpace> {
     const retrieval = requireRetrieval(rawCase, 'retrieval', where)
     const workflow = optionalString(rawCase, 'workflow', where)
     if (workflow === '') throw new Error(`${where}: 字段 "workflow" 不能是空串`)
+    const workflowDeliverable = parseWorkflowDeliverable(rawCase, workflow, where)
     const rawDimensions = requireRecord(rawCase, 'dimensions', where)
     const dimensions: Record<number, DimensionMapping> = {}
     for (const [index, rawDimension] of Object.entries(rawDimensions)) {
@@ -647,7 +701,13 @@ export async function loadProblemSpace(path: string): Promise<ProblemSpace> {
       }
       dimensions[numeric] = { nodes }
     }
-    cases[caseId] = { label, retrieval, ...workflow === undefined ? {} : { workflow }, dimensions }
+    cases[caseId] = {
+      label,
+      retrieval,
+      ...workflow === undefined ? {} : { workflow },
+      ...workflowDeliverable === undefined ? {} : { workflowDeliverable },
+      dimensions,
+    }
   }
   const nodes: Record<string, ProblemSpaceNode> = {}
   for (const [nodeId, rawNode] of Object.entries(rawNodes)) {

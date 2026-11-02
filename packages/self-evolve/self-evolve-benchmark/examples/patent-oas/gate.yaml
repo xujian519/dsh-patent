@@ -10,7 +10,7 @@
 # 门槛的来源:
 #   - node 是单个问题空间切面的保守下限,可随实测调高;
 #   - case 与 aggregate 的 maxDrop 比 node 更紧(3 vs 5):case 分是该 case 各维度观测的
-#     加权均值、聚合分是 4 个 case 的均值,它们的抽样噪声更小,容忍回退的理由也更少。
+#     加权均值、聚合分是全部 case 的均值,它们的抽样噪声更小,容忍回退的理由也更少。
 #     不设这一层时,单个 case 的掉分会被跨 case 的节点均值摊薄掉;
 #   - 两条逐节点覆盖只加在 DAG 的前置脊柱上(区别特征认定、实际解决的技术问题):
 #     它们失败会把下游全部拖偏,所以下限高于 node 门槛。其余节点用 node 门槛;
@@ -22,21 +22,25 @@
 
 benchmarkId: patent-oas
 
-goldDigest: "sha256:34e3e528668f78a1becb71753bc2348e1311b9f4d26d481af08b6b495739df26"
+goldDigest: "sha256:738d5304d036294e0507b40e5865b9dff9b73449fe6073a83243661c36d53a4e"
 
 # 基线按被测面各一条:提示词调用(`prompt`)与工作流调用(`workflow`)测的不是同一能力面,
 # 读数不能互比,所以 `--accept` 按记录自己的 `execution`/`workflowId` 找落点,找不到就拒绝。
 # 一条基线由一次实测产生,再由门禁提升:
 #   pnpm run gate:patent-oas -- --execution prompt                 # 采集(需要 key),写出 run 记录
 #   pnpm run verify-patent-oas-gold -- --accept <run.json>
-# 每个被测面只要求覆盖它自己能跑的 case:工作流面目前只有 `oa-answer` 声明了
-# `patent_oa_response_v1`,其余 case 没有该工作流可跑,所以那条基线的记录不含它们。
+# 每个被测面只要求覆盖它自己能跑的 case:工作流面按 manifest 分开落基线,`oa-answer` 声明了
+# `patent_oa_response_v1`,`disclosure-drafting` 声明了 `patent_disclosure_v1`,两条基线的记录
+# 各含该 manifest 能跑的 case,互不覆盖。
 baselines:
   - execution: prompt
     path: packages/self-evolve/evaluation/patent-oas-baseline.json
   - execution: workflow
     workflowId: patent_oa_response_v1
     path: packages/self-evolve/evaluation/patent-oas-workflow-baseline.json
+  - execution: workflow
+    workflowId: patent_disclosure_v1
+    path: packages/self-evolve/evaluation/patent-oas-disclosure-workflow-baseline.json
 
 thresholds:
   node: { minScore: 70, maxDrop: 5 }

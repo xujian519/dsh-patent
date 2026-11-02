@@ -401,8 +401,8 @@ describe('凭据信号', () => {
 describe('编排', () => {
   it('每个 case 一次执行者、每维度一次评估者,记录与金标维度一一对应', async () => {
     const { record, calls } = await collect({})
-    expect(calls.length).toBe(4 + 21 + 7)
-    expect(record.cases.length).toBe(4)
+    expect(calls.length).toBe(5 + 28 + 7)
+    expect(record.cases.length).toBe(5)
     expect(record.benchmarkId).toBe('patent-oas')
     expect(record.runsPerCase).toBe(1)
     expect(validateRunRecord(record, space, gold, 'collected')).toEqual([])
@@ -422,18 +422,21 @@ describe('编排', () => {
 
   it('计划给出逐 case 维度数与调用总数,重复 case 被拒', () => {
     const plan = planRun({ space, gold })
-    expect(plan.cases.length).toBe(4)
-    expect(plan.calls).toBe(32)
+    expect(plan.cases.length).toBe(5)
+    expect(plan.calls).toBe(40)
     expect(plan.cases.find(entry => entry.caseId === 'oa-answer')?.dimensions).toBe(6)
     expect(plan.cases.find(entry => entry.caseId === 'oa-answer')?.retrieval).toBe('oracle')
     expect(plan.cases.find(entry => entry.caseId === 'claim-drafting')?.retrieval).toBe('none')
-    expect(plan.cases.filter(entry => entry.caseId !== 'oa-answer').every(entry => entry.dimensions === 5)).toBe(true)
+    for (const caseId of ['claim-drafting', 'infringement-comparison', 'novelty-creative']) {
+      expect(plan.cases.find(entry => entry.caseId === caseId)?.dimensions).toBe(5)
+    }
+    expect(plan.cases.find(entry => entry.caseId === 'disclosure-drafting')?.dimensions).toBe(7)
     expect(() => planRun({ space, gold, caseIds: ['oa-answer', 'oa-answer'] })).toThrow('被选中多次')
   })
 
   it('计划摘要列出逐 case 维度、总轮次与 profile', () => {
     const single = formatRunPlan(planRun({ space, gold: singleRoundGold() }), 'headless')
-    expect(single).toContain('计划 4 case × 1 次运行,共 4 轮 = 25 次 agent 调用')
+    expect(single).toContain('计划 5 case × 1 次运行,共 5 轮 = 33 次 agent 调用')
     expect(single).toContain('oa-answer:6')
     expect(single).toContain('claim-drafting:5')
     expect(single).toContain('oa-answer:6/oracle')
@@ -442,7 +445,7 @@ describe('编排', () => {
 
     const multi = formatRunPlan(planRun({ space, gold }), 'headless')
     expect(multi).toContain('oa-answer:6×2轮')
-    expect(multi).toContain('共 5 轮 = 32 次 agent 调用')
+    expect(multi).toContain('共 6 轮 = 40 次 agent 调用')
   })
 
   it('--dry-run 打印计划、总预算与单次调用上限', async () => {
@@ -456,7 +459,7 @@ describe('编排', () => {
       log.mockRestore()
     }
     const output = lines.join('\n')
-    expect(output).toContain('计划 4 case × 2 次运行')
+    expect(output).toContain('计划 5 case × 2 次运行')
     expect(output).toContain('总预算 2000ms,单次调用上限 1000ms')
   })
 
@@ -587,7 +590,7 @@ describe('多轮编排', () => {
   it('计划把轮次计入调用总数', () => {
     const plan = planRun({ space, gold })
     expect(plan.cases.find(entry => entry.caseId === 'oa-answer')?.rounds).toBe(2)
-    expect(plan.calls).toBe(32)
+    expect(plan.calls).toBe(40)
   })
 
   it('两轮各自执行与评分,终局取第 2 轮并记录权项版本', async () => {
@@ -595,7 +598,7 @@ describe('多轮编排', () => {
       scoreFor: label => label.includes('oa-answer') && label.includes('第 1 轮') ? 60 : 90,
       deliverableFor: label => label.includes('oa-answer') && label.includes('第 1 轮') ? '第 1 轮答复' : '第 2 轮答复',
     })
-    expect(calls.length).toBe(32)
+    expect(calls.length).toBe(40)
     const runCase = record.cases.find(entry => entry.caseId === 'oa-answer')
     expect(runCase).toBeDefined()
     if (runCase === undefined) return
@@ -779,7 +782,8 @@ describe('工作流设置编排', () => {
     const workflow = first(plan.cases).workflow
     const manifest = first(builtinPatentManifests.filter(entry => entry.id === 'patent_oa_response_v1'))
     expect(workflow?.stages).toEqual(manifest.stages.map(stage => stage.id))
-    expect(workflow?.deliverableStage).toBe('draft')
+    expect(workflow?.deliverableStages).toEqual(['draft'])
+    expect(workflow?.artifact).toBe('oa-response')
     expect(workflow?.approvalStages).toEqual(['approval'])
     expect(plan.execution).toBe('workflow')
     // 从 manifest 推出期望值:阶段数由 manifest 决定,写死字面量只会每加一个阶段就红一次,
@@ -795,12 +799,35 @@ describe('工作流设置编排', () => {
       .toThrow('case "claim-drafting" 没有声明工作流 manifest')
   })
 
+  it('交付阶段与文件名主干来自问题空间,并校验阶段确实存在于 manifest', () => {
+    const plan = planRun({ space, gold, execution: 'workflow', caseIds: ['disclosure-drafting'], runsPerCase: 1 })
+    const workflow = first(plan.cases).workflow
+    expect(workflow?.deliverableStages).toEqual(['draft_claims', 'draft_specification'])
+    expect(workflow?.artifact).toBe('disclosure')
+    expect(plan.calls).toBe(8)
+    const broken = structuredClone(space)
+    const mapping = broken.cases['oa-answer']
+    if (mapping === undefined) throw new Error('fixture: 缺少 oa-answer 映射')
+    mapping.workflowDeliverable = { artifact: 'oa-response', stages: ['no-such-stage'] }
+    expect(() => planRun({ space: broken, gold, execution: 'workflow', caseIds: ['oa-answer'], runsPerCase: 1 }))
+      .toThrow('workflowDeliverable 引用了 manifest "patent_oa_response_v1" 没有的阶段:no-such-stage')
+  })
+
+  it('声明了 manifest 却没有交付物声明时拒绝采集', () => {
+    const broken = structuredClone(space)
+    const mapping = broken.cases['oa-answer']
+    if (mapping === undefined) throw new Error('fixture: 缺少 oa-answer 映射')
+    delete mapping.workflowDeliverable
+    expect(() => planRun({ space: broken, gold, execution: 'workflow', caseIds: ['oa-answer'], runsPerCase: 1 }))
+      .toThrow('声明了工作流 manifest 但没有 workflowDeliverable')
+  })
+
   it('执行者提示词钉住 manifest、case id、审批门放行与留档参数', () => {
-    const round = workflowRound('oa-answer', 1, 2)
+    const round = workflowRound('oa-answer', 1, 2, 'oa-response')
     const prompt = workflowExecutorPrompt({
       agentStatePath: '/tmp/agent-state',
       statement: '审查意见正文',
-      plan: { manifestId: 'patent_oa_response_v1', stages: ['draft'], deliverableStage: 'draft', approvalStages: ['approval'] },
+      plan: { manifestId: 'patent_oa_response_v1', stages: ['draft'], artifact: 'oa-response', deliverableStages: ['draft'], approvalStages: ['approval'] },
       round,
       roundNumber: 2,
       previousArtifact: 'outputs/oa-response-r1.md',
@@ -812,27 +839,27 @@ describe('工作流设置编排', () => {
     expect(prompt).toContain('matter_log_append')
     expect(prompt).toContain('action 传 "修订"')
     expect(prompt).toContain('supersedes 传 ["outputs/oa-response-r1.md"]')
-    expect(prompt).toContain('上一轮交付物给了修改后的权利要求就逐字摘录修改后的权项正文')
-    expect(prompt).toContain('不要把审查员的编号论点或【要求】里的步骤列表放进 claims')
+    expect(prompt).toContain('从任务文本或上一轮交付物里逐字摘录权利要求正文')
+    expect(prompt).toContain('不要把审查员论点的编号行或【要求】里的步骤列表放进 claims')
     expect(prompt).toContain('审查意见正文')
     expect(workflowExecutorPrompt({
       agentStatePath: '/tmp/agent-state',
       statement: '正文',
-      plan: { manifestId: 'patent_oa_response_v1', stages: [], deliverableStage: 'draft', approvalStages: [] },
-      round: workflowRound('oa-answer', 1, 1),
+      plan: { manifestId: 'patent_oa_response_v1', stages: [], artifact: 'oa-response', deliverableStages: ['draft'], approvalStages: [] },
+      round: workflowRound('oa-answer', 1, 1, 'oa-response'),
       roundNumber: 1,
     })).toContain('action 传 "建案"')
   })
 
-  it('首轮提示词只让执行者从任务文本摘录权项,不引入上一轮权项', () => {
+  it('首轮提示词不引入上一轮权项、不写 supersedes', () => {
     const prompt = workflowExecutorPrompt({
       agentStatePath: '/tmp/agent-state',
       statement: '正文',
-      plan: { manifestId: 'patent_oa_response_v1', stages: [], deliverableStage: 'draft', approvalStages: [] },
-      round: workflowRound('oa-answer', 1, 1),
+      plan: { manifestId: 'patent_oa_response_v1', stages: [], artifact: 'oa-response', deliverableStages: ['draft'], approvalStages: [] },
+      round: workflowRound('oa-answer', 1, 1, 'oa-response'),
       roundNumber: 1,
     })
-    expect(prompt).toContain('从上面这段任务文本里逐字摘录权利要求正文')
+    expect(prompt).toContain('从任务文本或上一轮交付物里逐字摘录权利要求正文')
     expect(prompt).not.toContain('supersedes')
   })
 

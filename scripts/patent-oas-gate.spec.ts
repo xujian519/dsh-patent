@@ -336,6 +336,24 @@ describe('金标与问题空间 DAG', () => {
     writeFileSync(path, readFileSync(problemSpacePath, 'utf8').replace('retrieval: oracle', 'retrieval: unknown'), 'utf8')
     await expect(loadProblemSpace(path)).rejects.toThrow('必须是 none、oracle 或 simulation')
   })
+
+  it('工作流交付物声明必须与 workflow 成对出现,文件名主干与阶段受限', async () => {
+    const text = readFileSync(problemSpacePath, 'utf8')
+    const seed = (content: string): string => {
+      const dir = mkdtempSync(join(tmpdir(), 'patent-oas-space-'))
+      scratchDirs.push(dir)
+      const path = join(dir, 'problem-space.yaml')
+      writeFileSync(path, content, 'utf8')
+      return path
+    }
+    const deliverable = '    workflowDeliverable:\n      artifact: oa-response\n      stages: [draft]\n'
+    await expect(loadProblemSpace(seed(text.replace(deliverable, ''))))
+      .rejects.toThrow('必须给出 workflowDeliverable')
+    await expect(loadProblemSpace(seed(text.replace('artifact: oa-response', 'artifact: OA Response'))))
+      .rejects.toThrow('文件名主干只能是小写字母、数字与连字符')
+    await expect(loadProblemSpace(seed(text.replace('stages: [draft]', 'stages: []'))))
+      .rejects.toThrow('必须是非空阶段 id 数组')
+  })
 })
 
 describe('金标摘要', () => {
@@ -503,6 +521,11 @@ describe('门槛策略', () => {
         execution: 'workflow',
         workflowId: 'patent_oa_response_v1',
         path: 'packages/self-evolve/evaluation/patent-oas-workflow-baseline.json',
+      },
+      {
+        execution: 'workflow',
+        workflowId: 'patent_disclosure_v1',
+        path: 'packages/self-evolve/evaluation/patent-oas-disclosure-workflow-baseline.json',
       },
     ])
   })
@@ -1230,11 +1253,11 @@ describe('判定与归因', () => {
 describe('门禁进程', () => {
   it('基线缺席时拒绝放行、记录后报已记录', () => {
     // 基线一旦按 README 记录下来,这条用例必须继续成立,而不是因为「下一步动作」变红。
-    const recorded = existsSync(resolve(root, first(config.baselines).path))
+    const recorded = config.baselines.every(entry => existsSync(resolve(root, entry.path)))
     const result = runGate()
     expect(result.error).toBeUndefined()
     expect(result.signal).toBeNull()
-    expect(String(result.stdout)).toContain('18 节点')
+    expect(String(result.stdout)).toContain(`${Object.keys(space.nodes).length} 节点`)
     if (recorded) {
       expect(result.status, String(result.stderr)).toBe(0)
       expect(String(result.stdout)).toContain('基线已记录')

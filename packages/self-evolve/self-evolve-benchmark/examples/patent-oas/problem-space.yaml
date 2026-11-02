@@ -32,6 +32,10 @@ cases:
     # 该 case 也能在 `--execution workflow` 下采集:阶段清单、审批门与答复撰写阶段都取自这个
     # manifest,评测器不另立定义。没有该字段的 case 在工作流设置下会被采集器拒绝。
     workflow: patent_oa_response_v1
+    # 工作流设置的交付物:答复书由 `draft` 阶段产出,按轮另存为 `outputs/oa-response-r<N>.md`。
+    workflowDeliverable:
+      artifact: oa-response
+      stages: [draft]
     dimensions:
       1: { nodes: { distinguishing-features: 28 } }
       2: { nodes: { technical-problem: 18 } }
@@ -48,6 +52,24 @@ cases:
       3: { nodes: { claim-dependent-layout: 20 } }
       4: { nodes: { claim-reference-hierarchy: 15 } }
       5: { nodes: { claim-form-and-support: 15 } }
+  disclosure-drafting:
+    label: 交底书撰写（权利要求书与说明书）
+    # 交底书自带全部技术输入,不依赖现有技术检索;26.3/26.4 的判定只需要交底书与交付物。
+    retrieval: none
+    # 工作流面跑披露分析 manifest:权利要求由 `draft_claims` 确定性渲染,说明书由
+    # `draft_specification` 生成,两者按顺序拼成同一份交付物供逐维评分。
+    workflow: patent_disclosure_v1
+    workflowDeliverable:
+      artifact: disclosure
+      stages: [draft_claims, draft_specification]
+    dimensions:
+      1: { nodes: { claim-essential-features: 25 } }
+      2: { nodes: { claim-protection-scope: 15 } }
+      3: { nodes: { claim-dependent-layout: 15 } }
+      4: { nodes: { claim-reference-hierarchy: 10 } }
+      5: { nodes: { claim-form-and-support: 10 } }
+      6: { nodes: { enablement-implementable: 15 } }
+      7: { nodes: { claim-breadth-supported: 10 } }
   infringement-comparison:
     label: 侵权比对
     retrieval: none
@@ -134,6 +156,16 @@ nodes:
     label: 形式与说明书支持
     observable: 前序+特征+其特征在于格式规范,内容不超出交底书公开范围
     dependsOn: [claim-essential-features]
+  enablement-implementable:
+    domain: enablement
+    label: 充分公开与可实施（A26.3）
+    observable: 说明书对独立权利的每个必要技术特征给出可实施的实施例,本领域技术人员无需创造性劳动即可实现
+    dependsOn: [claim-essential-features]
+  claim-breadth-supported:
+    domain: enablement
+    label: 概括范围得到说明书支持（A26.4）
+    observable: 权利要求的概括有说明书实施方式支撑,并列的下位方案有记载且技术效果可验证
+    dependsOn: [claim-protection-scope, enablement-implementable]
   infringement-all-elements:
     domain: infringement
     label: 逐特征比对完整性

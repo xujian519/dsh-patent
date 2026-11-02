@@ -88,6 +88,10 @@ export type DraftClaimsOutput = {
   warnings: string[]
 }
 
+/** Rejection message for a request that supplies both dependent-claim sources. */
+export const CLAIM_SOURCE_EXCLUSIVE_MESSAGE =
+  'dependent_tree 与 optional_features 互斥：一次撰写只接受一种从属权利要求来源'
+
 /**
  * Rejected drafting request: the caller supplied mutually exclusive inputs.
  * Tool wrappers may translate it into their own error vocabulary.
@@ -293,7 +297,7 @@ export function draftClaims(input: DraftClaimsInput): DraftClaimsOutput {
   if (name.length > 25) warnings.push(`发明名称 ${name.length} 字，超过 25 字限制`)
   const tree = input.dependent_tree
   if (tree !== undefined && tree.length > 0 && optional.length > 0) {
-    throw new ClaimDraftError('dependent_tree 与 optional_features 互斥：一次撰写只接受一种从属权利要求来源')
+    throw new ClaimDraftError(CLAIM_SOURCE_EXCLUSIVE_MESSAGE)
   }
   const independentText = buildIndependentClaim(name, domain, essential, input.prior_art?.trim() ?? '')
   const dependents: DraftedClaim[] = tree !== undefined && tree.length > 0

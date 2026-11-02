@@ -246,6 +246,7 @@ export {
 // tree, plus formal validation. Shared by the workflow atom and the tool layer.
 export type * from './claim-draft/index.ts'
 export {
+  CLAIM_SOURCE_EXCLUSIVE_MESSAGE,
   ClaimDraftError,
   DOMAIN_KEYWORDS,
   PARENT_SCHEMA,

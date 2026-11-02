@@ -9,7 +9,7 @@
  */
 
 import {
-  ClaimDraftError,
+  CLAIM_SOURCE_EXCLUSIVE_MESSAGE,
   PARENT_SCHEMA,
   draftClaims,
   renderParents,
@@ -124,16 +124,12 @@ export function createDraftClaimsTool(): ToolDefinition {
     },
     // oxlint-disable-next-line typescript/require-await -- tool contract requires async execute
     async execute(args) {
-      try {
-        return draftClaims(args)
-      } catch (error) {
-        // The core engine rejects mutually exclusive inputs; the tool keeps its
-        // `invalid_tool_input` vocabulary for callers and the tool catalog.
-        if (error instanceof ClaimDraftError) {
-          throw new PatentToolError('invalid_tool_input', error.message, { tool: 'draft_claims' })
-        }
-        throw error
+      // Reject the mutually exclusive sources before the engine runs, so callers
+      // get the tool's `invalid_tool_input` code instead of a library error.
+      if ((args.optional_features?.length ?? 0) > 0 && (args.dependent_tree?.length ?? 0) > 0) {
+        throw new PatentToolError('invalid_tool_input', CLAIM_SOURCE_EXCLUSIVE_MESSAGE, { tool: 'draft_claims' })
       }
+      return draftClaims(args)
     },
   })
 }

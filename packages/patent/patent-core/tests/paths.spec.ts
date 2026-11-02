@@ -51,7 +51,7 @@ describe('resolveConfinedPath', () => {
     expect(() => resolveConfinedPath(join('link', 'file.txt'), root, '输出目录', fail)).toThrow(/越出工作目录/)
   })
 
-  it('rejects a path whose alias resolves outside the root', () => {
+  it('rejects a not-yet-created path outside the root', () => {
     const outside = tempDir('dsh-confine-outside-')
     const root = tempDir('dsh-confine-root-')
     // The target does not exist yet, so containment reads the deepest existing ancestor.

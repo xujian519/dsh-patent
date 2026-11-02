@@ -3,7 +3,7 @@
  *
  * 两个知识库安装命令（patent-knowledge:install / legal-knowledge:install）都把
  * 源库裁剪进运行时目录：先写同目录临时文件，成功后原子替换输出。这里收拢
- * 同文件守卫需要的真实路径解析、临时文件准备、提交与结果统计。
+ * 临时文件准备、提交与结果统计。
  * @module @deepseek-ai/dsh-patent-core/knowledge/install-fs
  */
 

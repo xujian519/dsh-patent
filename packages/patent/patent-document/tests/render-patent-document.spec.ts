@@ -971,7 +971,7 @@ describe('renderPatentDocument 工作目录约束', () => {
         cwd,
         { subprocess: unusedSubprocess() },
       )
-      expect(result.htmlPath).toBe(join(join(cwd, 'deliver'), 'inside.html'))
+      expect(result.htmlPath).toBe(join(cwd, 'deliver', 'inside.html'))
       expect(existsSync(result.htmlPath)).toBe(true)
     } finally {
       cleanup(cwd)

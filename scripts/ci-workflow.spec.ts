@@ -1207,15 +1207,18 @@ describe('Runtime and LLM e2e Blacksmith routing', () => {
 })
 
 describe('bubblewrap preparation script', () => {
-  it('pins bubblewrap to a recorded Launchpad build and excludes Ubuntu pool downloads', () => {
+  it('tries the pinned Launchpad build before pool mirrors and still checks SHA256', () => {
     const script = readFileSync(resolve(root, 'scripts/prepare-ci-bubblewrap.sh'), 'utf8')
-    const url = /^readonly BUBBLEWRAP_URL="([^"]+)"$/mu.exec(script)?.[1]
+    const launchpad = script.indexOf('https://launchpad.net/ubuntu/+source/bubblewrap/${BUBBLEWRAP_VERSION}/+build/33546835/+files/')
+    const archive = script.indexOf('https://archive.ubuntu.com/ubuntu/pool/main/b/bubblewrap/bubblewrap_${BUBBLEWRAP_VERSION}_amd64.deb')
+    const mirror = script.indexOf('https://mirrors.ocf.berkeley.edu/ubuntu/pool/main/b/bubblewrap/bubblewrap_${BUBBLEWRAP_VERSION}_amd64.deb')
 
-    expect(url).toMatch(
-      /^https:\/\/launchpad\.net\/ubuntu\/\+source\/bubblewrap\/[^/]+\/\+build\/\d+\/\+files\/bubblewrap_[^/]+_amd64\.deb$/u,
-    )
-    // Ubuntu removes superseded versions from its live package pool.
-    expect(script).not.toMatch(/https?:\/\/[^/'"\s]+\/ubuntu(?:-ports)?\/pool\//u)
+    expect(launchpad).toBeGreaterThanOrEqual(0)
+    expect(archive).toBeGreaterThan(launchpad)
+    expect(mirror).toBeGreaterThan(archive)
+    expect(script).toContain('db4d572a7927bfd34cc9b8e24b56983efa8e0483d03da6c810f6caae081dcc36')
+    expect(script).toContain('sha256sum --check --status')
+    expect(script).toContain('"$root/usr/bin/bwrap" --ro-bind / /')
   })
 })
 

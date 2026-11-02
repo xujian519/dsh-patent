@@ -13,9 +13,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {
   WorkspaceDirectoryListing, WorkspaceFileStat,
 } from '@deepseek-ai/dsh-api-workspace-files/types'
-
-/** Extensions the document workline delivers; the probe reports only these. */
-const DELIVERABLE_EXTENSIONS = ['.md', '.html', '.htm', '.pdf', '.docx', '.pptx'] as const
+import { isDeliverablePath } from './paths.ts'
 
 /**
  * Directories the empty-state probe never descends into: package caches and
@@ -110,20 +108,14 @@ function samePath(known: KnownPath, listed: string, resolve: (path: string) => s
   return known.identity !== undefined && joined(known.identity) === target
 }
 
-/** Whether a listing entry name carries a deliverable extension. */
-function isDeliverableName(name: string): boolean {
-  const lower = name.toLowerCase()
-  return DELIVERABLE_EXTENSIONS.some(extension => lower.endsWith(extension))
-}
-
 /** Join a workspace directory path with one child name. */
 function joinPath(directory: string, name: string): string {
-  return directory === '' ? name : `${directory}/${name}`
+  return directory === '.' ? name : `${directory}/${name}`
 }
 
 /** Segment depth of one listed directory, with the workspace root at 0. */
 function depthOf(directory: string): number {
-  return directory === '' ? 0 : directory.split('/').length
+  return directory === '.' ? 0 : directory.split('/').length
 }
 
 /**
@@ -153,7 +145,7 @@ export function createWorkspaceProbe(
     // Breadth-first from the workspace root, listing at most MAX_DIRECTORIES
     // directories: the root is always listed first, so its files never depend
     // on how many subdirectories a workspace happens to hold.
-    const pending: string[] = ['']
+    const pending: string[] = ['.']
     let listed = 0
     const candidates: string[] = []
     // An array iterator re-reads `length` on every step, so the directories
@@ -175,7 +167,7 @@ export function createWorkspaceProbe(
           }
           continue
         }
-        if (entry.type !== 'file' || !isDeliverableName(entry.name)) continue
+        if (entry.type !== 'file' || !isDeliverablePath(entry.name)) continue
         if (known.some(produced => samePath(produced, path, resolve))) continue
         // Every listed path is visited once, so no candidate can repeat.
         candidates.push(path)

@@ -321,6 +321,33 @@ describe('Conversation inject API', () => {
     await b.runtime.dispose()
   })
 
+  it('activates the target when a peer switches the View programmatically', async () => {
+    const b = await bench()
+    const binding = b.runtime.ctx.uiConversation.binding(ROOT)
+    const activate = vi.spyOn(binding, 'select')
+    const removeChat = b.slots.register(
+      { name: 'conversation.view', id: 'chat', order: 0 },
+      (() => null) as never,
+    )
+    const removeDocument = b.slots.register(
+      { name: 'conversation.view', id: 'document', order: 10 },
+      (() => null) as never,
+    )
+    try {
+      const body = b.conversationApi(ROOT)
+      await Promise.resolve()
+      activate.mockClear()
+
+      expect(b.runtime.ctx.conversation.setActiveView(ROOT, 'document')).toBe(true)
+      expect(activate).toHaveBeenLastCalledWith('document')
+      expect(body.instance.store.getSnapshot().view).toBe('document')
+    } finally {
+      removeDocument()
+      removeChat()
+      await b.runtime.dispose()
+    }
+  })
+
   it('restores the selected View when a cached Session becomes Provider-bound', async () => {
     const b = await bench()
     const binding = b.runtime.ctx.uiConversation.binding(ROOT)

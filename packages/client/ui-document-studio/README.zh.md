@@ -31,7 +31,7 @@ kind: "package-reference"
 - **预览**——选中文件后经会话的 `remote.workspaceFiles.readBytes` 读取一个字节窗口并按 UTF-8 解码（被窗口从中间切断的字符整字丢弃）。窗口大小即宿主的配置上限，故超限文件显示开头并附截断提示（HTML 同样提示）；读取失败按宿主错误码本地化。HTML 在沙箱 iframe（`sandbox=""`，不执行脚本）中渲染；Markdown/JSON/YAML/CSV/LOG 以文本渲染；没有内联预览的格式会说明这一点并给出侧栏入口。
 - **动作**——用系统默认应用打开、在系统文件管理器中定位文件（`SessionOpenWorkspacePathRequest.action: 'reveal'`，仅在回环权威下）、在右侧栏预览（组合了该面板时经 `ctx.sidebarRight.openResource` 与会话文件地址交接，`.docx`/`.pptx`/`.pdf` 也由此渲染）、打印 / 导出 PDF（预览头被截断时经 `remote.workspaceFiles.readBytes`（不带 range）重新读取完整文件——文件超过宿主整文件上限时被拒绝，工作室据此报「文件过大」——再经桌面桥或浏览器打印对话框导出，其中「另存为 PDF」完成导出；弹窗被拦截会报错），以及要求修改。打开或定位失败会在该动作旁显示一行本地化错误，而不是让点击静默。
 - **只写草稿、不发送**——「要求修改」把选中文件的机器核验 findings（逐条、带报告的行号）插入会话的输入框草稿；已交付 HTML 中声明的 `data-doc-id` 小节出现在选择器里，插入一段引用。两条都走 `ctx.conversation.input.setDraft`；是否发送由人决定，界面只报告"已填入"，不会声称已发送。
-- **自动跳转**——仅当当前会话的 preset 是文档智能体，**且**该会话的事件窗口里已有成功的 `document_deliver` 登记时，才激活工作室视图。工作室只在该有东西可看时占屏：还没产出任何交付物的会话留在聊天，正在流式生成的回复因此可见。切换经 `ctx.conversation.setActiveView`——这是受认可的跨插件通道（按设计，per-session store 句柄仅限 apply 局部）；setter 随会话的 conversation seat 挂载，因此切换在有限窗口内重试，且每次进入会话最多切换一次。
+- **自动跳转**——当当前会话的 preset 是文档智能体，且最新一轮在结束后已有成功的 `document_deliver` 登记或交付物形态的工作稿时，激活工作室视图。切换等待 `turn/end`，用户正在读的回复先完整显示；还没产出任何东西的会话留在聊天。切换经 `ctx.conversation.setActiveView`——这是受认可的跨插件通道（按设计，per-session store 句柄仅限 apply 局部）；setter 随会话的 conversation seat 挂载，因此切换在有限窗口内重试，且每次进入会话最多切换一次。
 
 Web patch（`packages/bundle/web-app/cordis.patch.yml`）是加载本包的唯一组合。移除其唯一条目即同时移除标签、词汇、预览与自动跳转。
 
@@ -56,7 +56,7 @@ Web patch（`packages/bundle/web-app/cordis.patch.yml`）是加载本包的唯�
 - **桌面端 PDF 静默导出**——在桌面 App（Electron）内，打印动作经 `window.desktop.printHtmlToPdf` 走隐藏窗口 + `webContents.printToPDF` 并弹出系统保存对话框；桌面壳之外回退浏览器打印对话框。
 - **过期结论的基线是"本控制台第一次看到"**——登记的工具结果没有携带文件版本，因此新鲜度 token 记录于工作室首次渲染该条目时；登记与首次渲染之间的改写不会被发现。把登记的版本写进结果元数据可以闭合这一点。
 - **选区锚定是降级方案**——沙箱 iframe 跨源，父页面读不到其中的文本选区；小节选择器改为按声明的 `data-doc-id` 插入引用，而不是按选中文字。本批次未实测选区通路。
-- **自动跳转只在进入会话时触发，每次进入最多一次**——手动切回聊天后，离开并重新进入会话前不会被覆盖；重新进入一个已登记交付物的会话会再次切换。
+- **自动跳转只在进入会话时触发，每次进入最多一次**——手动切回聊天后，离开并重新进入会话前不会被覆盖；重新进入一个已结束回合且有产出的会话会再次切换。
 - **预览按扩展名仅限文本**——二进制格式（`.docx`、`.pptx`、`.pdf`）没有内联预览；它们带徽标列出，由右侧栏预览或系统默认应用渲染。
 - **列表跟随会话日志窗口**——长会话中落在已加载窗口之外的早期 turn 会从列表丢失；批量导出与跨会话聚合属于延后的工作台 v2。
 

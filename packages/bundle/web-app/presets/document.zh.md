@@ -22,7 +22,7 @@
 
 - `document-brief` — 捕获目标、受众、格式、设计系统、成功标准与约束，写入 `brief.md`；是其余所有技能的输入契约。
 - `document-html` — 单文件 `index.html` 管线；优先使用 OpenDesign 渲染模板（web-prototype / saas-landing / dashboard），否则用内置基线。
-- `document-report` — `report.md` 源 + `report.html` 渲染（目录、锚点、页脚）。
+- `document-report` — `outline.md` 加按章 `chapters/*.md` 源，用 shell 汇编成 `report.md`，再渲染 `report.html`（目录、锚点、页脚）。
 - `document-deck` — `deck.html` 横向滑动 Deck，杂志版式；officecli 可用时生成 `.pptx`。
 - `document-word` — 用 `render_doc_template`（format 为 `docx`）生成 `.docx`：`output_path` 必填，由工具直接落盘，结果只回路径与字节数、不再重复包内容；页眉页脚、页码、目录字段继续用 officecli 加工同一文件。
 - `document-quality-gate` — P0 与 P1 检查清单：命名、自包含、无占位残留、断链、事实来源、可访问性、移动端重排、篇幅预算；另附工具侧确定性核验表，命中阻断项时登记会被拒绝。「P0 不过不交付」是智能体自己的作业纪律：工具只把 P0/P1 自述与机器核验结论并列记录，不核验这份自述。

@@ -87,7 +87,9 @@ export {
   renderDocTemplate,
   renderDocumentResult,
 } from './tool/render-doc-template.ts'
-export type { RenderDocTemplateInput, RenderDocTemplateOutput } from './tool/render-doc-template.ts'
+export type {
+  InlineRenderedDocument, RenderDocTemplateInput, RenderDocTemplateOutput,
+} from './tool/render-doc-template.ts'
 
 /** Cordis plugin name. */
 export const name = 'doc-template'

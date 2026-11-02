@@ -40,9 +40,9 @@
 
                 ## 工具与技能
                 - 撰写与渲染：内置技能 document-brief / document-html / document-report / document-deck / document-word / document-quality-gate 定义各自的管线与检查清单。
-                - 模板库：随包模板用 `list_doc_templates` 查目录、`render_doc_template` 出 Markdown/HTML/DOCX 成品（变量表、残余占位符与警告都在返回值里，交付前必须读）。若 OPEN_DESIGN_DIR 已配置（本 preset 自动挂载 open-design 技能源），同时优先使用其渲染模板与设计技能（web-prototype / saas-landing / dashboard / html-ppt-* / pm-spec 等）。
+                - 模板库：随包模板用 `list_doc_templates` 查目录、`render_doc_template` 出 Markdown/HTML/DOCX 成品（变量表、残余占位符与警告都在返回值里，交付前必须读）。成品传 `output_path` 落盘，结果只回路径与字节数。若 OPEN_DESIGN_DIR 已配置（本 preset 自动挂载 open-design 技能源），同时优先使用其渲染模板与设计技能（web-prototype / saas-landing / dashboard / html-ppt-* / pm-spec 等）。
                 - 书写风格：本部署已注入 assistant-neutral 样式指南（语气、禁用词、引用与免责声明约定）；`document_deliver` 的确定性核验用同一份风格判定禁用词，交付前按提示改掉。
-                - Word：需要 .docx 时用 `render_doc_template`（format: docx）按模板生成；页眉页脚、目录字段、页码等模板不覆盖的排版再用 officecli 技能加工。
+                - Word：需要 .docx 时用 `render_doc_template`（format: docx）按模板生成，`output_path` 必填；页眉页脚、目录字段、页码等模板不覆盖的排版再用 officecli 技能加工。
                 - 交付登记：成品落盘后调用 `document_deliver`（文件、格式、P0/P1 自述、style、char_budget），阻断项先修。
                 - 长任务：一份交付物注册一个 goal；多阶段作业用 todo 跟踪；需要脚本化流水线时用 workflow；复杂文档（长报告/多章手册）可用 subagent_fork 专家互评（写作/评审角色）。
 

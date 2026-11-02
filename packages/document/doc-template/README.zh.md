@@ -55,7 +55,7 @@ front-matter 字段如下，读取自上游模板约定：
 <a id="render_doc_template-tool"></a>
 ## render_doc_template 工具
 
-`render_doc_template` 解析一个模板的变量并渲染它。结果包含渲染后的文档、建议文件名、内容类型、编码方式、解析后的 Markdown 正文、残余占位符与校验警告。`format` 默认 Markdown，且必须是该模板声明的格式之一；`title`、`author`、`date`、`filename` 可覆盖模板自带的值；可选的 `output_path` 把渲染结果经会话文件系统写盘——UTF-8 文本走 `writeText`、DOCX 包走 `writeBytes`——并回报写入路径与字节数。
+`render_doc_template` 解析一个模板的变量并渲染它。结果包含建议文件名、内容类型、编码方式、残余占位符与校验警告。`format` 默认 Markdown，且必须是该模板声明的格式之一；`title`、`author`、`date`、`filename` 可覆盖模板自带的值；`output_path` 把渲染结果经会话文件系统写盘——UTF-8 文本走 `writeText`、DOCX 包走 `writeBytes`——并回报写入路径与字节数，不再重复文档正文。不传 `output_path` 的内联渲染在 `content` 返回文档、在 `markdown` 返回解析后的 Markdown 正文；DOCX 渲染必须传 `output_path`，包内容不会进入结果。
 
 以下情形直接报错，而不是返回一份降级文档：未知模板、未知样式名、模板不支持的格式、变量值不是字符串、缺少必填变量。类型不匹配与未填充的占位符不算失败：它们分别以警告和残余占位符的形式报告，因为调用方可能仍需要这份部分填充的文档。
 
@@ -118,11 +118,11 @@ Schemastery 配置，所有字段可选。
 
 #### What the model sees
 
-`render_doc_template` 的工具定义与结果。结果文本依次给出模板名、格式、建议文件名、内容类型与编码，然后给出残余占位符与警告，最后是文档正文。base64 的 DOCX 结果只报告包大小而不打印它，并把解析后的 Markdown 作为可读文档展示；写入 `output_path` 的渲染则报告路径与字节数。
+`render_doc_template` 的工具定义与结果。结果文本依次给出模板名、格式、建议文件名、内容类型与编码，然后是写入路径与字节数或内联文档，最后是残余占位符与警告。写盘渲染不在结果里重复文档正文；内联渲染则展示正文。DOCX 渲染总是写盘，因为工具要求 `output_path`。
 
 #### Token effect
 
-工具启用期间每次请求固定承担定义成本，另加渲染出的文档——这是本插件放进请求的最大一块，一份完整的专利模板大约数千 token。结果只在压缩之前被重发。
+工具启用期间每次请求固定承担定义成本，另加内联渲染的文档。写盘渲染只回报路径、字节数、残余占位符与警告，长文档在写入时计一次，不再随之后每个请求重发。
 
 #### KV Cache effect
 
@@ -153,7 +153,7 @@ Schemastery 配置，所有字段可选。
 - **`styleGuide` 留空会让门禁无预告** — [`@deepseek-ai/dsh-document-deliver`](../document-deliver/README.zh.md) 只看风格的 `block` 判定，与模型是否见过指南无关；因此"开了核验但不注入指南"的部署可能拒绝掉模型无从预判的登记。请把 `styleGuide` 设成门禁所用的那套风格。
 - **随包模板只有中文** — 资产用 `language: zh-CN` 自描述，不提供双语孪生版本，其他语言的文档需要自己的模板资产。
 - **`rendererRegistry` 目前没有消费者** — store 会把「注册新渲染格式」所需的注册表交出去；随包格式在构造时全部注册完毕，因此没有人读它。
-- **不给路径时 DOCX 以 base64 传输** — 没有 `output_path` 时，`docx` 结果把包以 base64 放在 `content` 字段里，体积比原包大约三成，且模型永远拿不到字节；给了 `output_path` 则写盘并回报路径与大小。两种情况下转录都不包含包体。
+- **DOCX 必须传 `output_path`** — 不传会失败：结果里的 base64 包会随之后每个请求重发，模型也无法解码。写入的文件就是调用方读取的那份副本。
 - **写盘按部署的文件策略执行** — `output_path` 按会话工作区解析，调用不传逐次 `sandboxPolicy`，因此工作区围栏部署使用其配置的根：会话工作目录在该根之外时无法经此工具写入。逐次升级协商属于待办。
 
 ### 开发备注

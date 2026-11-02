@@ -24,7 +24,7 @@ Six skills ship in `skills/document/`, forming one pipeline: `document-brief` �
 - `document-html` — single-file `index.html` pipeline; prefers OpenDesign render templates (web-prototype / saas-landing / dashboard), falls back to a built-in baseline.
 - `document-report` — `report.md` source + `report.html` render with TOC, anchors, and footer.
 - `document-deck` — `deck.html` horizontal-slide deck with magazine layout; optional `.pptx` via officecli.
-- `document-word` — `.docx` from `render_doc_template` (format `docx`): `output_path` writes the file through the session filesystem, and without it the tool returns the base64 package in `content` for the agent to save; officecli continues from the same file for headers, footers, page numbers, and TOC fields.
+- `document-word` — `.docx` from `render_doc_template` (format `docx`): `output_path` is required and writes the file through the session filesystem; the result carries the path and byte count without repeating the package. officecli continues from the same file for headers, footers, page numbers, and TOC fields.
 - `document-quality-gate` — P0 and P1 checklist: naming, self-containment, no placeholders, no broken links, sourced facts, accessibility, mobile reflow, budget; plus the table of tool-computed checks, which the registration refuses on a blocking finding. No delivery without passing P0 is the agent's own discipline: the tool records the P0/P1 claim beside its machine checks instead of verifying it.
 
 ## Prerequisites

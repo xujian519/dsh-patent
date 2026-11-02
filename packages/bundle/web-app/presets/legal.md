@@ -66,7 +66,7 @@ The privacy and product reference baselines include comparative U.S./EU watch li
 
 ## Deliverable limits
 
-`render_doc_template` produces clean Markdown, DOCX, and PDF files. The DOCX path does not preserve tracked changes, comments, footnotes, or inline images. When a matter needs those, deliver a clean copy plus a separate review memo that lists each change, comment, and citation; do not describe the output as a redline.
+`render_doc_template` produces clean Markdown, DOCX, and PDF files. A delivered file passes `output_path`, so the tool writes it and reports the path and byte count instead of returning the document; `docx` requires it. The DOCX path does not preserve tracked changes, comments, footnotes, or inline images. When a matter needs those, deliver a clean copy plus a separate review memo that lists each change, comment, and citation; do not describe the output as a redline.
 
 ## Evaluation status
 

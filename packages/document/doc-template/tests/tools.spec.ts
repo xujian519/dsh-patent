@@ -300,12 +300,38 @@ describe('renderDocumentResult', () => {
     expect(text).toContain('--- document ---\n正文')
   })
 
+  it('reports a written document by path without repeating its body', () => {
+    const text = renderDocumentResult({
+      ...base,
+      path: 'out/t.md',
+      bytes: 12,
+    })
+    expect(text).toContain('Written to out/t.md (12 bytes).')
+    expect(text).toContain('The document body is on disk.')
+    expect(text).not.toContain('--- document ---')
+    expect(text).not.toContain('正文')
+  })
+
   it('renders a written path even when the byte count is absent', () => {
     const text = renderDocumentResult({ ...base, path: 'out/t.md' })
     expect(text).toContain('Written to out/t.md (0 bytes).')
   })
 
-  it('renders the residual placeholders, the warnings, and the encoded package size', () => {
+  it('renders the diagnostics alone when an inline value carries no body', () => {
+    const text = renderDocumentResult({
+      template: base.template,
+      format: base.format,
+      fileName: base.fileName,
+      mimeType: base.mimeType,
+      encoding: base.encoding,
+      residual: base.residual,
+      warnings: base.warnings,
+    })
+    expect(text).toContain('Residual placeholders: none')
+    expect(text).not.toContain('--- document ---')
+  })
+
+  it('renders the residual placeholders, the warnings, and the inline package body', () => {
     const text = renderDocumentResult({
       ...base,
       format: 'docx',
@@ -314,9 +340,9 @@ describe('renderDocumentResult', () => {
       residual: ['a', 'b'],
       warnings: [{ variable: 'n', code: 'invalid_type', message: '期望 number 类型' }],
     })
-    expect(text).toContain('The rendered package is 8 base64 characters in the content field.')
     expect(text).toContain('Residual placeholders (2): a, b')
     expect(text).toContain('Warnings:\n- n: 期望 number 类型')
+    expect(text).toContain('--- document ---\n正文')
   })
 })
 
@@ -418,13 +444,10 @@ describe('render_doc_template tool', () => {
     expect(textOf(unsupported)).toContain('不支持 docx 格式')
   })
 
-  it('returns the DOCX package encoded when the template supports it', async () => {
+  it('refuses a DOCX render that names no output_path', async () => {
     const ctx = await host()
     const result = await execute(ctx, 'render_doc_template', { template: 'method-claim', variables: {}, format: 'docx' })
-    expect(result.isError).toBe(false)
-    if (result.isError) throw new Error('expected success')
-    const value = result.value as unknown as RenderDocTemplateOutput
-    expect(value.encoding).toBe('base64')
-    expect(textOf(result)).toContain('base64 characters in the content field')
+    expect(result.isError).toBe(true)
+    expect(textOf(result)).toContain('output_path')
   })
 })

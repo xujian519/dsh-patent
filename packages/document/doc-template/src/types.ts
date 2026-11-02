@@ -223,6 +223,7 @@ export const TEMPLATE_ERROR_CODES = [
   'variable-invalid',
   'duplicate-template',
   'renderer-missing',
+  'output-path-required',
 ] as const
 
 /** One failure kind. */

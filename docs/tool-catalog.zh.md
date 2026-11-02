@@ -7886,10 +7886,12 @@ Source: [`packages/document/doc-template/src/index.ts`](../packages/document/doc
 
 ### `render_doc_template`
 
-- 用给定变量渲染一个文档模板，返回文档本体、未填充的占位符与变量警告
+- 用给定变量渲染一个文档模板，报告写入的文件或内联文档，并附上未填充的占位符与变量警告
 - 先用 `list_doc_templates` 取得模板名与其变量。每个必填变量都必须提供：缺一个即调用失败并点名该变量，而不是返回一份带缺口的文档
-- `format` 默认取模板的兜底格式；模板只渲染它声明的格式。`markdown` 与 `html` 返回文本，`docx` 把包体以 base64 放在 `content`；无论哪种格式，`markdown` 都是注入文档标题与风格免责声明之前的解析正文：落盘的成品是 `content`，用 `markdown` 写出的文件会丢掉这两者
-- `output_path`（工作区相对或绝对）把渲染结果经会话文件系统写盘并回报 `path` 与 `bytes`：文本格式写 UTF-8，`docx` 写包体字节。省略它则只返回渲染结果、不碰文件系统
+- `format` 默认取模板的兜底格式；模板只渲染它声明的格式。`markdown` 是注入文档标题与风格免责声明之前的解析正文
+- 交付件传 `output_path`（工作区相对或绝对）：文档经会话文件系统写盘，结果回报 `path`、`bytes`、`residual` 与 `warnings`，不重复正文。需要复核或核验时用 `read` 读取该文件。文本格式写 UTF-8，`docx` 写包体字节
+- `docx` 必须传 `output_path`。包内容不会以 base64 或任何形式进入结果
+- 只有 `markdown` 或 `html` 的小型内联渲染才省略 `output_path`，此时结果带 `content` 与 `markdown`。交付给用户的文件一律传 `output_path`
 - 变量按名替换；没有提供值的占位符保留在文档中并在 `residual` 中报告，而不是被抹掉。每次成功渲染都会返回残余占位符与警告：把文档当作成品之前先读它们
 
 使用说明：
@@ -7937,7 +7939,7 @@ Source: [`packages/document/doc-template/src/index.ts`](../packages/document/doc
     },
     "output_path": {
       "type": "string",
-      "description": "Write the rendered document here (workspace-relative or absolute) and report path and bytes; omit to return the content without writing"
+      "description": "Write the rendered document here (workspace-relative or absolute) and report path and bytes; required for docx, and the normal choice for any delivered file"
     }
   },
   "required": [

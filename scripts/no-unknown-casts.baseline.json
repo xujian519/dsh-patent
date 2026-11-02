@@ -1046,7 +1046,7 @@
     "59c63f734e8bba862325f776e3fcbebd78a84cfb4161f8df41c216950d9bf351": 1
   },
   "packages/document/doc-template/tests/tools.spec.ts": {
-    "64ab5463fdb068e88a33f022baff473b7a0da77854c4ecf8e26412763d6dccf6": 2
+    "64ab5463fdb068e88a33f022baff473b7a0da77854c4ecf8e26412763d6dccf6": 1
   },
   "packages/document/document-deliver/tests/document-deliver.spec.ts": {
     "7237af6787a1c0f0229f46b1ae7837d33de11feba09213aa62ad9cc078944ad9": 1,

@@ -267,9 +267,15 @@ export const patentDisclosureManifest: WorkflowManifest = {
       consumes: ['merge', 'novelty', 'citation_check', 'eligibility'],
     },
     {
+      id: 'claim_strategy',
+      strategy: 'chain',
+      description: '权利要求策略：必要/可选特征与原文锚点、多路从权树、最接近现有技术编号（不进交付正文）',
+      atom: 'claim-strategy',
+    },
+    {
       id: 'draft_claims',
       strategy: 'chain',
-      description: '基于 PFE 与新颖性结果直出权利要求草稿（独立+从属）',
+      description: '按策略表确定性渲染权利要求草稿（独权+多路从权），从权专员只重排/补充从权',
       atom: 'draft-claims',
     },
     ...FIGURE_ANALYSIS_STAGES,
@@ -316,11 +322,12 @@ export const patentDisclosureManifest: WorkflowManifest = {
     {
       // 审批门放在反哺回路之后：legal_gaps 回退会重做报告、权利要求与说明书，
       // 门若在上游，回退就会绕过人工复核。manifest 校验禁止回退跨过审批门。
+      // 复核上下文由 draft-claims 写入（含特征表、从权树与权利要求草稿），
+      // 因此本阶段不再用静态 params 覆盖 review_context。
       id: 'review_gate',
       strategy: 'chain',
-      description: '人工复核披露分析报告、权利要求与说明书草案（中断等待确认）',
+      description: '人工复核披露分析报告、权利要求特征表/从权树与说明书草案（中断等待确认）',
       atom: 'approval-gate',
-      params: { review_context: '披露分析报告、权利要求与说明书草案需人工复核后方可交付' },
     },
   ],
   validation: { requireAllSteps: true, maxRetries: 2 },

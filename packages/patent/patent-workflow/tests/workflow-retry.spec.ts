@@ -581,7 +581,7 @@ describe('workflow retry validation', () => {
   it('patentDisclosureManifest: structure and retry declarations are valid', () => {
     expect(() => { validateWorkflowManifest(patentDisclosureManifest) }).not.toThrow()
     expect(patentDisclosureManifest.id).toBe('patent_disclosure_v1')
-    expect(patentDisclosureManifest.stages).toHaveLength(25)
+    expect(patentDisclosureManifest.stages).toHaveLength(26)
     const consistency = patentDisclosureManifest.stages.find(s => s.id === 'consistency')!
     expect(consistency.retry?.rewindTo).toBe('extract_problem')
     expect(consistency.retry!.whenOutputMatches).toMatch(/不一致\|矛盾\|缺少\|孤立/)
@@ -590,7 +590,7 @@ describe('workflow retry validation', () => {
     expect(consistency.atom).toBe('pfe-consistency')
     const atoms = patentDisclosureManifest.stages.filter(s => s.atom !== undefined).map(s => s.atom)
     expect([...new Set(atoms)].sort()).toEqual([
-      'approval-gate', 'citation-check', 'claim-breadth', 'draft-claims', 'draft-specification', 'eligibility', 'enablement-report', 'extract', 'figure-analysis', 'groundedness', 'keywords',
+      'approval-gate', 'citation-check', 'claim-breadth', 'claim-strategy', 'draft-claims', 'draft-specification', 'eligibility', 'enablement-report', 'extract', 'figure-analysis', 'groundedness', 'keywords',
       'legal-gaps', 'merge', 'novelty', 'pfe-consistency', 'prior-art-filter', 'search', 'slop-gate',
       'spec-check', 'time-baseline',
     ])
@@ -604,7 +604,10 @@ describe('workflow retry validation', () => {
     expect(ids.indexOf('extract_problem') < ids.indexOf('extract_effects')).toBe(true)
     expect(ids.indexOf('extract_effects') < ids.indexOf('merge')).toBe(true)
     expect(ids.indexOf('merge') < ids.indexOf('consistency')).toBe(true)
-    expect(ids.indexOf('report') < ids.indexOf('draft_claims')).toBe(true)
+    expect(ids.indexOf('report') < ids.indexOf('claim_strategy')).toBe(true)
+    // 策略表先固定特征归属，再交给确定性渲染器成文。
+    expect(ids.indexOf('claim_strategy') < ids.indexOf('draft_claims')).toBe(true)
+    expect(patentDisclosureManifest.stages.find(s => s.id === 'claim_strategy')?.atom).toBe('claim-strategy')
     // 审批门在 legal-gaps 反哺回路之后：回退不会跨过人工确认。
     expect(ids.indexOf('legal_gaps') < ids.indexOf('review_gate')).toBe(true)
     expect(ids.at(-1)).toBe('review_gate')

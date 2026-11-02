@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   CompareHandler,
-  DraftClaimsHandler,
   ExtractHandler,
   KeywordsHandler,
   NoveltyHandler,
@@ -24,22 +23,6 @@ describe('keywords：字符串数组严格校验', () => {
   it('非字符串项降级并带下标', async () => {
     const out = await run(new KeywordsHandler(), { extraction_result: 'x' }, JSON.stringify({ keywords: ['壳体', { x: 1 }] }))
     expectDegradedWithoutStringification(out, /keywords 数组含非字符串项（下标 1）/)
-  })
-})
-
-describe('draft-claims：claims 字符串数组严格校验', () => {
-  it('null 项降级并带下标', async () => {
-    const out = await run(
-      new DraftClaimsHandler(),
-      { merge_result: 'x' },
-      JSON.stringify({ claims: ['1. 一种装置', null] }),
-    )
-    expectDegradedWithoutStringification(out, /claims 数组含非字符串项（下标 1）/)
-  })
-
-  it('非 JSON 输出保留原文兜底', async () => {
-    const out = await run(new DraftClaimsHandler(), { merge_result: 'x' }, '1. 一种装置')
-    expect(out.claims_draft).toBe('1. 一种装置')
   })
 })
 

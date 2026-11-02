@@ -52,7 +52,7 @@ describe('workflow manifest DAG bridge', () => {
     expect(mermaid).toContain('preprocess --> eligibility')
     expect(mermaid).toContain('eligibility --> extract_problem')
     expect(mermaid).toContain('consistency -.-> extract_problem')
-    expect(mermaid).toContain('review_gate["人工复核披露分析报告、权利要求与说明书草案（中断等待确认）"]')
+    expect(mermaid).toContain('review_gate["人工复核披露分析报告、权利要求特征表/从权树与说明书草案（中断等待确认）"]')
   })
 
   it('workflowManifestToMermaid renders plain chain for acyclic novelty manifest', () => {

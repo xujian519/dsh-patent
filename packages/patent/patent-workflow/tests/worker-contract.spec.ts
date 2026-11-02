@@ -210,7 +210,7 @@ describe('defaultPatentWorkers', () => {
     }
     const analyzer = workers.find(w => w.name === 'patent-technical-analyzer')!
     expect(analyzer.tier).toBe('work')
-    expect(analyzer.forbiddenActions).toEqual(['draft_claims', 'draft_specification'])
+    expect(analyzer.forbiddenActions).toEqual(['claim_strategy', 'draft_claims', 'draft_specification'])
     const novelty = workers.find(w => w.name === 'patent-novelty-analyzer')!
     expect(novelty.triggersHITL).toBe(true)
     expect(novelty.canInvoke).toContain('patent-search-commander')

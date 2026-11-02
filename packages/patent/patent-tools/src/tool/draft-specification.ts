@@ -7,8 +7,8 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { resolveDomain as resolveClaimDomain } from '@deepseek-ai/dsh-patent-core'
 import { createToolInputReader } from './internal/tool-input.ts'
-import { DOMAIN_KEYWORDS } from './draft-claims.ts'
 import type { PatentType, TechDomain } from './draft-claims.ts'
 import { WARNINGS_SCHEMA } from './internal/tool-output.ts'
 
@@ -196,12 +196,11 @@ export function composeAbstract(input: DraftSpecificationInput): string {
 }
 
 function resolveDomain(hint: TechDomain | undefined, title: string, input: DraftSpecificationInput): TechDomain {
-  if (hint && hint !== 'general') return hint
-  const haystack = `${title} ${input.technical_solution ?? ''} ${input.background ?? ''}`
-  for (const entry of DOMAIN_KEYWORDS) {
-    if (entry.keywords.some(k => haystack.includes(k))) return entry.domain
-  }
-  return 'general'
+  return resolveClaimDomain(
+    hint,
+    `${title} ${input.technical_solution ?? ''} ${input.background ?? ''}`,
+    [],
+  )
 }
 
 /** Enrich a figure description with electrical component detail (Step3), when present. */

@@ -31,9 +31,11 @@ kind: "package-reference"
 
 `patent_disclosure_v1` 与 `patent_patentability_v1` 在撰写前运行 `figure_analysis`（sub_agent，对 `figure_files` 中每个文件调用一次 `analyze_patent_figure`）与 `figure_analysis_parse`（确定性 `figure-analysis` 原子）；无附图、无视觉能力或未产出结果时写 `figure_analysis_skipped`，使说明书门禁能区分“未核”与“已核且一致”。
 
+`patent_disclosure_v1` 在 `report` 与 `draft_claims` 之间运行 `claim_strategy`（原子 `claim-strategy`）。该阶段在成文前固定特征归属：必要/可选特征各带一段经锚点校验器复核的交底书原文摘录，从权树记录模型的分层决策，`prior_art_ref` 必须已经出现在新颖性结论或已过滤文献中。锚点未命中或编号编造使阶段失败，`draft_claims` 因此不会收到空策略表。`draft_claims` 随后确定性渲染独立权利要求与从权树，从权专员只能重排或补充从权；任一 `claim_lint` error 否决本轮草稿。审批门从 `draft_claims` 写入的 `review_context` 读取特征表与从权树。
+
 `builtinPatentManifests` 是八个内置 manifest 的数据目录：patent_novelty_v1、patent_disclosure_v1、patent_inventiveness_v1、patent_patentability_v1、patent_oa_response_v1、patent_invalidation_v1、patent_reexamination_v1、patent_infringement_v1。无效宣告与复审两个 manifest 共用同一个阶段构建器，差异只在确定性阶段的接线：无效宣告用无效理由表与 `invalidity` 图表模式，复审用复审理由表（多一项专利法第 2 条第 3 款的实用新型客体缺陷理由，专利权类型单独输出）与 `reexamination` 图表模式，后者也让两种案件落盘的对照表互不覆盖。
 
-这些 manifest 共声明 36 个不同原子。`registerBuiltinAtoms()`（由 `PatentWorkflow` 构造函数与 dsh-patent-tools 调用）提供其中 28 个核心原子；依赖 patent-tools 的 slop 引擎、说明书校验器、附图分析与规则资产的八个原子（`draft-specification`、`eligibility`、`figure-analysis`、`legal-gaps`、`response-check`、`slop-gate`、`spec-check`、`tighten`）由 `@deepseek-ai/dsh-patent-tools` 在其插件 effect 中注册。仅挂载本包时，声明了这八个原子的 manifest 会在执行任何阶段之前被未知原子检查拒绝；请挂载 dsh-patent-tools，或经 `options.atoms` 与 `options.handlers` 注入对应契约与 handler。
+这些 manifest 共声明 37 个不同原子。`registerBuiltinAtoms()`（由 `PatentWorkflow` 构造函数与 dsh-patent-tools 调用）提供其中 29 个核心原子；依赖 patent-tools 的 slop 引擎、说明书校验器、附图分析与规则资产的八个原子（`draft-specification`、`eligibility`、`figure-analysis`、`legal-gaps`、`response-check`、`slop-gate`、`spec-check`、`tighten`）由 `@deepseek-ai/dsh-patent-tools` 在其插件 effect 中注册。仅挂载本包时，声明了这八个原子的 manifest 会在执行任何阶段之前被未知原子检查拒绝；请挂载 dsh-patent-tools，或经 `options.atoms` 与 `options.handlers` 注入对应契约与 handler。
 
 ### runPlantask(agent, caseId, planSteps, options?)
 

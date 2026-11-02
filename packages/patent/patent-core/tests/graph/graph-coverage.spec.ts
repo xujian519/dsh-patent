@@ -252,14 +252,28 @@ it('manifestToGraph：handler 主输出键字符串与非字符串', async () =>
   const provider: StageProvider = {
     callLLM: async () => JSON.stringify({ claims: ['1. 一种装置'], notes: 'n' }),
   }
+  const strategyState = {
+    claim_strategy: JSON.stringify({
+      invention_name: '装置',
+      tech_domain: 'general',
+      essential_features: [{ id: 'F1', text: '壳体', anchor: '壳体', anchor_reason: 'exact' }],
+      optional_features: [],
+      dependent_tree: [],
+      prior_art_ref: null,
+      prior_art_text: '',
+    }),
+  }
   const g = manifestToGraph(manifest, { provider })
-  const r = await g.run({ problems: ['P1'], features: ['F1'], effects: [] })
+  const r = await g.run({ problems: ['P1'], features: ['F1'], effects: [], ...strategyState })
   expect(JSON.parse(String(r.state.m))).toEqual([{ id: 'T1', problem: 'P1', features: ['F1'], effects: [] }])
   expect(String(r.state.d)).toContain('1. 一种装置')
 
   // deps.provider 缺省 → 节点上下文 provider 兜底（deps.provider ?? provider 路径 2）
   const gNoDeps = manifestToGraph(manifest)
-  const rNoDeps = await gNoDeps.run({ problems: ['P1'], features: ['F1'], effects: [] }, { provider })
+  const rNoDeps = await gNoDeps.run(
+    { problems: ['P1'], features: ['F1'], effects: [], ...strategyState },
+    { provider },
+  )
   expect(String(rNoDeps.state.d)).toContain('1. 一种装置')
 })
 

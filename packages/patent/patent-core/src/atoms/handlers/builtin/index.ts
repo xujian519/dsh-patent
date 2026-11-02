@@ -7,6 +7,7 @@
  * - compare.ts：compare（特征对比）/ novelty（逐特征新颖性）
  * - reason.ts：reasoning（自由推理）/ groundedness（原文依据过滤）
  * - draft.ts：draft-claims（权利要求草稿）
+ * - claim-strategy.ts：claim-strategy（权利要求策略表：特征归属、锚点与从权树）
  * - gate.ts：approval-gate（人机审批门）
  * - chart.ts：claim-chart（要素级证据网格）
  * - notice.ts：oa-parse（通知书解析）/ grounds（程序法定理由识别）/ response-plan（答复计划骨架）
@@ -65,6 +66,17 @@ export {
   GROUNDEDNESS_THRESHOLD,
 } from './reason.ts'
 export { draftClaimsAtom, DraftClaimsHandler } from './draft.ts'
+export {
+  claimStrategyAtom,
+  ClaimStrategyHandler,
+  renderClaimStrategyReport,
+  type ClaimFeatureKind,
+  type ClaimStrategy,
+  type ClaimStrategyFeature,
+  type ClaimStrategyNode,
+  type ConfirmedClaimStrategy,
+  type ConfirmedFeature,
+} from './claim-strategy.ts'
 export { degraded, type DegradedOptions } from './llm.ts'
 export {
   approvalGateAtom,

@@ -27,6 +27,25 @@ export function compileWritingSkills(patterns: readonly WritingPattern[]): strin
 }
 
 /**
+ * Compile patterns into the compact `<pattern_index>` block a system prompt
+ * carries by default: one line per pattern with its id, category, and name.
+ * Full steps and rules stay behind `query_writing_patterns`, so an always-on
+ * section does not resend the whole corpus on every request.
+ * @param patterns - the patterns to index, in the order they should be read.
+ * @returns the XML block, or `''` when there is no pattern to index.
+ */
+export function compileWritingPatternIndex(patterns: readonly WritingPattern[]): string {
+  if (patterns.length === 0) return ''
+  const lines = ['<pattern_index>']
+  for (const pattern of patterns) {
+    // The category is a validated member of the closed set, so it needs no escaping.
+    lines.push(`${INDENT}<pattern id="${escapeXmlText(pattern.id)}" category="${pattern.category}">${escapeXmlText(pattern.name)}</pattern>`)
+  }
+  lines.push('</pattern_index>')
+  return lines.join('\n')
+}
+
+/**
  * Escape text for an XML text node or attribute value.
  * @param value - the raw text.
  * @returns the text with the five predefined XML entities escaped.

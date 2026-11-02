@@ -3,14 +3,14 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/patent/writing-patterns/README.md
 /:
-  en: 826a1d87ccf98b45
-  zh: 8a5d27060869fc81
+  en: 602a2fb318f4be79
+  zh: 91727942827ec5d2
 /deepseek-ai-dsh-writing-patterns:
   en: 2e89bfa9dd21c508
   zh: dc69d4f409c3420a
 /deepseek-ai-dsh-writing-patterns/summary:
-  en: 03f66247793b9719
-  zh: 04475f14147a7148
+  en: b4bc8222db44414c
+  zh: 5d97cb2b2f876d50
 /deepseek-ai-dsh-writing-patterns/table-of-contents:
   en: 5a00d01e21b4fbd8
   zh: a8abc823b76c69dd
@@ -18,11 +18,11 @@
   en: 596b9513dc3c701f
   zh: 1e578fbbad493191
 /deepseek-ai-dsh-writing-patterns/pattern-corpus-and-library-api:
-  en: 893d156e0254ea31
-  zh: 1b28ab8a19e151d3
+  en: 9749a1bc599e311b
+  zh: 353be885adbc8551
 /deepseek-ai-dsh-writing-patterns/configuration:
-  en: 6a00eae5a0463f9c
-  zh: 494ce71df1e50065
+  en: b685d5a29b70d144
+  zh: 837a126170e811f7
 /deepseek-ai-dsh-writing-patterns/model-experience:
   en: 215e7ba838619b7b
   zh: a311da3843709f90
@@ -42,20 +42,20 @@
   en: c38b8ad6c2f54077
   zh: 32f1977b752afece
 /deepseek-ai-dsh-writing-patterns/model-experience/writing-patterns-skills-system-prompt-section/what-the-model-sees:
-  en: 7c643ba834e154c5
-  zh: f092c46b55ba6b93
+  en: a5da0744f351fecc
+  zh: 180558ece25f9343
 /deepseek-ai-dsh-writing-patterns/model-experience/writing-patterns-skills-system-prompt-section/what-the-model-sees/verbatim-instruction-prose:
   en: db62a6b9133c32da
   zh: 60e5a2e440d5d90a
 /deepseek-ai-dsh-writing-patterns/model-experience/writing-patterns-skills-system-prompt-section/token-effect:
-  en: 77e455cbb7eb0c18
-  zh: 27b23d50bdd3658c
+  en: 381c95f674d9c8e5
+  zh: 6f0a2a8991af1a3b
 /deepseek-ai-dsh-writing-patterns/model-experience/writing-patterns-skills-system-prompt-section/kv-cache-effect:
-  en: e9cd276a58f76953
-  zh: ca216007a65e0bec
+  en: b2bbb3e2071a34d8
+  zh: 808a1ce37acbac27
 /deepseek-ai-dsh-writing-patterns/known-limitations-and-deferred-work:
-  en: de1d8ce984482f81
-  zh: beea903791d01f09
+  en: 6ffc6aaec9ff9f7b
+  zh: 8af425b381f3d458
 /deepseek-ai-dsh-writing-patterns/known-limitations-and-deferred-work/dev-note:
   en: 0a1253c6f7b5e8b9
   zh: 48bdabcf5427b3a2

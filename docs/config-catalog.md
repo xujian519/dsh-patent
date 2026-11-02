@@ -2579,7 +2579,7 @@ export type PiAiReasoningEfforts = Partial<Record<ModelThinkingLevel, string | n
 export type PiAiThinkingFormat = NonNullable<OpenAICompletionsCompat['thinkingFormat']>
 
 /** The reasoning-budget field spellings pi-ai accepts. */
-export type PiAiThinkingTokenBudgetField = NonNullable<OpenAICompletionsCompat['thinkingTokenBudgetField']>
+type PiAiThinkingTokenBudgetField = NonNullable<OpenAICompletionsCompat['thinkingTokenBudgetField']>
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-llm-pi-ai -->
 
@@ -6205,10 +6205,16 @@ export interface Config {
   matchLimit?: number
   /** Register the always-on writing-patterns system-prompt section. Defaults to true. */
   registerSection?: boolean
-  /** Categories whose patterns the section injects; an empty list injects the guidance alone. */
+  /** Categories whose patterns the section indexes; an empty list injects the guidance alone. */
   sectionCategories?: PatternCategory[]
   /** Position of the injected section in the assembled system prompt. */
   sectionOrder?: number
+  /**
+   * Pattern ids each workflow stage's prompt receives, keyed by stage id. Every
+   * stage lists 3 to 5 pattern ids that exist in the loaded corpus; an atom
+   * reads its stage's patterns through the `writingPatterns` service.
+   */
+  stagePatterns?: Record<string, string[]>
 }
 
 /** One category of the closed {@link PATTERN_CATEGORIES} set. */

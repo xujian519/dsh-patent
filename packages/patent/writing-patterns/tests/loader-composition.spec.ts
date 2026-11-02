@@ -77,7 +77,7 @@ describe('writing-patterns real Loader composition through cordis.yml', () => {
     expect(result.isError).toBe(false)
     if (result.isError) throw new Error('expected success')
     const value = result.value as { patterns: { id: string }[]; librarySize: number }
-    expect(value.librarySize).toBe(10)
+    expect(value.librarySize).toBe(18)
     expect(value.patterns.length).toBeLessThanOrEqual(value.librarySize)
     expect(value.patterns[0]?.id).toBe('wp-oa-inventiveness-3step')
   }, 30_000)
@@ -87,8 +87,8 @@ describe('writing-patterns real Loader composition through cordis.yml', () => {
     const section = (await ctx.systemPrompt.assemble()).sections
       .find(candidate => candidate.name === WritingPatterns.WRITING_PATTERNS_SECTION_NAME)
     expect(section?.text).toContain('query_writing_patterns')
-    expect(section?.text).toContain('<writing_skills>')
-    expect(section?.text).toContain('<skill id="wp-oa-inventiveness-3step">')
+    expect(section?.text).toContain('<pattern_index>')
+    expect(section?.text).toContain('<pattern id="wp-oa-inventiveness-3step" category="oa_inventiveness">')
   }, 30_000)
 
   it('honours the corpus, cap, and section scope given in cordis.yml', async () => {
@@ -108,7 +108,7 @@ describe('writing-patterns real Loader composition through cordis.yml', () => {
 
     const section = (await ctx.systemPrompt.assemble()).sections
       .find(candidate => candidate.name === WritingPatterns.WRITING_PATTERNS_SECTION_NAME)
-    expect(section?.text).toContain('<skill id="wp-oa-inventiveness-3step">')
+    expect(section?.text).toContain('<pattern id="wp-oa-inventiveness-3step" category="oa_inventiveness">')
     expect(section?.text).not.toContain('wp-claim-utility-model')
   }, 30_000)
 })

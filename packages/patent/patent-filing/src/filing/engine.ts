@@ -113,10 +113,15 @@ export function assertSafeOutputName(name: string): string {
 
 /**
  * 解析输出目录。
+ *
+ * 显式 outputDir 只接受相对路径且不得穿越 cwd：模型控制的工具参数若允许绝对路径
+ * 或 `../` 串联，会把文件写到 cwd 之外进程有权限的任意位置（数据污染/安全风险）。
+ * caseId 已走 assertSafeId 校验，不会带出 `..` 段；defaultOutputDir 是本包固定常量。
  * @param input - 成文请求的目录相关字段。
  * @param cwd - 进程工作目录。
  * @param defaultOutputDir - 既无 outputDir 也无 caseId 时的缺省目录。
  * @returns 输出目录绝对路径。
+ * @throws PatentFilingError 当 outputDir 是绝对路径或 resolve 后落在 cwd 之外。
  */
 export function resolveOutputDir(
   input: Pick<BuildFilingInput, 'outputDir' | 'caseId'>,
@@ -124,13 +129,31 @@ export function resolveOutputDir(
   defaultOutputDir: string,
 ): string {
   if (input.outputDir !== undefined) {
-    return isAbsolute(input.outputDir) ? input.outputDir : resolve(cwd, input.outputDir)
+    assertPathWithinCwd(input.outputDir, cwd, '输出目录')
+    return resolve(cwd, input.outputDir)
   }
   if (input.caseId !== undefined) {
     assertSafeId(input.caseId, '案卷号')
     return resolve(cwd, caseOutputsDir(input.caseId))
   }
   return resolve(cwd, defaultOutputDir)
+}
+
+/**
+ * 校验模型可控的路径字符串：resolve 后必须落在 cwd 之内。
+ * 带 `..` 穿越（如 `../../../etc/cron.d`）或 cwd 外的绝对路径都会被拒绝；
+ * cwd 之内的绝对路径也会放行。
+ * @param path - 待校验路径（绝对或相对均可）。
+ * @param cwd - 工作目录绝对路径。
+ * @param label - 错误消息中的字段名。
+ * @throws PatentFilingError 当路径不满足约束。
+ */
+function assertPathWithinCwd(path: string, cwd: string, label: string): void {
+  const resolved = resolve(cwd, path)
+  const cwdWithSep = cwd.endsWith('/') ? cwd : `${cwd}/`
+  if (resolved !== cwd && !resolved.startsWith(cwdWithSep)) {
+    throw new PatentFilingError(`${label} 穿越了工作目录边界: ${JSON.stringify(path)} 解析为 ${resolved}，超出 ${cwd}`)
+  }
 }
 
 /**

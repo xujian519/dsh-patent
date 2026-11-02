@@ -141,7 +141,7 @@ describe('renderPatentDocument 段落编号', () => {
             },
           },
         },
-        process.cwd(),
+        dir,
         { subprocess: unusedSubprocess() },
       )
       expect(existsSync(result.htmlPath)).toBe(true)

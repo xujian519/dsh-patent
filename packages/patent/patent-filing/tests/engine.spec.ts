@@ -113,7 +113,7 @@ describe('assertSafeOutputName', () => {
 
 describe('resolveOutputDir', () => {
   it('prefers an explicit directory, absolute or relative to cwd', () => {
-    expect(resolveOutputDir({ outputDir: '/abs/out' }, '/cwd', DEFAULT_OUTPUT_DIR)).toBe('/abs/out')
+    expect(resolveOutputDir({ outputDir: '/abs/out' }, '/abs', DEFAULT_OUTPUT_DIR)).toBe('/abs/out')
     expect(resolveOutputDir({ outputDir: 'rel/out' }, '/cwd', DEFAULT_OUTPUT_DIR)).toBe(resolve('/cwd', 'rel/out'))
   })
 
@@ -138,7 +138,7 @@ describe('buildFiling', () => {
     writeFileSync(figure, 'png')
     const input = { content: { ...CONTENT, figures: [figure] }, outputName: '案卷_申请文件', outputDir: outDir }
     try {
-      const result = await buildFiling(input, buildOptions(spawner), '/cwd', new AbortController().signal)
+      const result = await buildFiling(input, buildOptions(spawner), outDir, new AbortController().signal)
       expect(result.docxPath).toBe(join(outDir, '案卷_申请文件.docx'))
       expect(result.numberingTotal).toBe(7)
       expect(result.upstreamNumberingSeen).toBe(0)
@@ -176,7 +176,7 @@ describe('buildFiling', () => {
     const outDir = mkdtempSync(join(tmpdir(), 'dsh-filing-out-'))
     const input = { content: { ...CONTENT, figures: [second, png, first] }, outputName: 'ordered', outputDir: outDir }
     try {
-      const result = await buildFiling(input, buildOptions(spawner), '/cwd', new AbortController().signal)
+      const result = await buildFiling(input, buildOptions(spawner), outDir, new AbortController().signal)
       // 输入顺序 [fig2.svg, fig3.png, fig1.svg] → 栅格化产物按 .svg 出现顺序插回原位。
       expect(result.figures).toEqual(['/work/figures/fig1.png', png, '/work/figures/fig2.png'])
       const rasterArgv = argvOf(calls[0] as SubprocessSpawnSpec)
@@ -191,7 +191,7 @@ describe('buildFiling', () => {
   it('reports a missing figure source before reaching the engine', async () => {
     const { spawner, calls } = answering({ 'build.py': buildReport() })
     const input = { content: { ...CONTENT, figures: ['/nope/missing.png'] }, outputName: 'x', outputDir: '/tmp' }
-    await expect(buildFiling(input, buildOptions(spawner), '/cwd', new AbortController().signal))
+    await expect(buildFiling(input, buildOptions(spawner), '/tmp', new AbortController().signal))
       .rejects.toThrow(/附图源件不存在：\/nope\/missing\.png/)
     expect(calls).toHaveLength(0)
   })
@@ -203,7 +203,7 @@ describe('buildFiling', () => {
     const { spawner } = answering({ 'build.py': buildReport() })
     try {
       await expect(buildFiling({ content: { ...CONTENT, figures: [pdf] }, outputName: 'x', outputDir: work },
-        buildOptions(spawner), '/cwd', new AbortController().signal))
+        buildOptions(spawner), work, new AbortController().signal))
         .rejects.toThrow(/只接受 \.svg 源件或 \.png\/\.jpg\/\.jpeg 位图/)
     } finally {
       rmSync(work, { recursive: true, force: true })
@@ -220,7 +220,7 @@ describe('buildFiling', () => {
     })
     try {
       await expect(buildFiling({ content: { ...CONTENT, figures: [svg] }, outputName: 'x', outputDir: work },
-        buildOptions(spawner), '/cwd', new AbortController().signal))
+        buildOptions(spawner), work, new AbortController().signal))
         .rejects.toThrow(/figures 少于输入的 \.svg 张数/)
     } finally {
       rmSync(work, { recursive: true, force: true })
@@ -237,7 +237,7 @@ describe('buildFiling', () => {
     })
     try {
       await expect(buildFiling({ content: { ...CONTENT, figures: [svg] }, outputName: 'x', outputDir: work },
-        buildOptions(spawner), '/cwd', new AbortController().signal))
+        buildOptions(spawner), work, new AbortController().signal))
         .rejects.toThrow(/render_figures 报告缺少 figures/)
     } finally {
       rmSync(work, { recursive: true, force: true })
@@ -247,14 +247,14 @@ describe('buildFiling', () => {
   it('rejects content before touching the engine', async () => {
     const { spawner, calls } = answering({ 'build.py': buildReport() })
     await expect(buildFiling({ content: { ...CONTENT, claims: [] }, outputName: 'x', outputDir: '/tmp' },
-      buildOptions(spawner), '/cwd', new AbortController().signal)).rejects.toThrow(PatentFilingError)
+      buildOptions(spawner), '/tmp', new AbortController().signal)).rejects.toThrow(PatentFilingError)
     expect(calls).toHaveLength(0)
   })
 
   it('rejects an unsafe output name before touching the engine', async () => {
     const { spawner, calls } = answering({ 'build.py': buildReport() })
     await expect(buildFiling({ content: CONTENT, outputName: '../escape', outputDir: '/tmp' },
-      buildOptions(spawner), '/cwd', new AbortController().signal)).rejects.toThrow(/不可用/)
+      buildOptions(spawner), '/tmp', new AbortController().signal)).rejects.toThrow(/不可用/)
     expect(calls).toHaveLength(0)
   })
 })
@@ -450,7 +450,7 @@ describe('engine output parsing', () => {
     try {
       for (const stdout of bad) {
         const options = { ...buildOptions(fakeSubprocess(() => stdoutHandle(stdout)).spawner), templatePath: template }
-        await expect(buildFiling(input, options, '/cwd', new AbortController().signal)).rejects.toThrow(PatentFilingError)
+        await expect(buildFiling(input, options, dir, new AbortController().signal)).rejects.toThrow(PatentFilingError)
       }
     } finally {
       rmSync(dir, { recursive: true, force: true })
@@ -576,7 +576,7 @@ describe('engine invocation edge branches', () => {
         JSON.stringify({ sections: [], numbering_total: 1, upstream_numbering_seen: 0 }),
       ]) {
         const options = { ...buildOptions(fakeSubprocess(() => stdoutHandle(stdout)).spawner) }
-        await expect(buildFiling(input, options, '/cwd', new AbortController().signal)).rejects.toThrow(PatentFilingError)
+        await expect(buildFiling(input, options, dir, new AbortController().signal)).rejects.toThrow(PatentFilingError)
       }
     } finally {
       rmSync(dir, { recursive: true, force: true })
@@ -594,7 +594,7 @@ describe('engine invocation edge branches', () => {
     const outDir = mkdtempSync(join(tmpdir(), 'dsh-filing-out-'))
     try {
       await buildFiling({ content: { ...CONTENT, figures: [svg] }, outputName: 'x', outputDir: outDir },
-        { ...buildOptions(spawner), chromePath: '/opt/chrome' }, '/cwd', new AbortController().signal)
+        { ...buildOptions(spawner), chromePath: '/opt/chrome' }, outDir, new AbortController().signal)
       const rasterArgv = argvOf(calls[0] as SubprocessSpawnSpec)
       expect(rasterArgv[rasterArgv.indexOf('--chrome') + 1]).toBe('/opt/chrome')
     } finally {

@@ -31,6 +31,8 @@ kind: "package-reference"
 
 `patent_disclosure_v1` 与 `patent_patentability_v1` 在撰写前运行 `figure_analysis`（sub_agent，对 `figure_files` 中每个文件调用一次 `analyze_patent_figure`）与 `figure_analysis_parse`（确定性 `figure-analysis` 原子）；无附图、无视觉能力或未产出结果时写 `figure_analysis_skipped`，使说明书门禁能区分“未核”与“已核且一致”。
 
+`patent_disclosure_v1` 在 `slop_clean` 与 `legal_gaps` 之间运行 `draft_review`（原子 `draft-review`）。审查员回合只读 `specification`、`claims_draft`、`pfe_triples`/`features` 与 `prior_art`，按 A26.3、A26.4（支持与清楚性）、A31.1 单一性与 A33 修改依据输出结构化争议点，逐条复核锚点是否命中说明书或权利要求，并写入 `draft_review_report`、`draft_review_disputes` 与 `draft_review_passed`。可执行争议点按类别发出 `RetrySignal`：充分公开、支持与修改依据回退到 `draft_specification`，清楚性回退到 `draft_claims`，单一性回退到 `claim_strategy`。最多允许两次回退；第三次审查仍失败时保留该轮产出，经 `legal_gaps` 进入 `review_gate`。`legal_gaps` 以 warn 级检查项报告 `draft_review_passed`。
+
 `patent_disclosure_v1` 在 `report` 与 `draft_claims` 之间运行 `claim_strategy`（原子 `claim-strategy`）。该阶段在成文前固定特征归属：必要/可选特征各带一段经锚点校验器复核的交底书原文摘录，从权树记录模型的分层决策且从权编号从 2 起连续，`prior_art_ref` 必须已经出现在新颖性结论或已过滤文献中。锚点未命中或编号编造使阶段失败，`draft_claims` 因此不会收到空策略表。`draft_claims` 随后确定性渲染独立权利要求与从权树，从权专员只能重排或补充带有可选特征编号的从权；任一 `claim_lint` error 否决本轮草稿。审批门从 `draft_claims` 写入的 `review_context` 读取特征表与从权树。
 
 `builtinPatentManifests` 是八个内置 manifest 的数据目录：patent_novelty_v1、patent_disclosure_v1、patent_inventiveness_v1、patent_patentability_v1、patent_oa_response_v1、patent_invalidation_v1、patent_reexamination_v1、patent_infringement_v1。无效宣告与复审两个 manifest 共用同一个阶段构建器，差异只在确定性阶段的接线：无效宣告用无效理由表与 `invalidity` 图表模式，复审用复审理由表（多一项专利法第 2 条第 3 款的实用新型客体缺陷理由，专利权类型单独输出）与 `reexamination` 图表模式，后者也让两种案件落盘的对照表互不覆盖。

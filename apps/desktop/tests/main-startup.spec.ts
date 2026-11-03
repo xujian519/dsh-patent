@@ -631,7 +631,10 @@ describe('desktop main startup', () => {
     // Locale changes rebuild the tray context menu after the application menu,
     // so the last buildFromTemplate call is not the application menu.
     const refreshed = platform === 'win32' ? applicationMenuItems()
-      : harness.menu.mock.lastCall![0][0]!.submenu as MenuItemConstructorOptions[]
+      : harness.menu.mock.calls
+        .map(([template]) => template)
+        .filter(template => Array.isArray(template[0]?.submenu))
+        .at(-1)![0]!.submenu as MenuItemConstructorOptions[]
     expect(refreshed.filter(item => item.role === 'toggleDevTools' && item.visible !== false)).toEqual([
       { role: 'toggleDevTools', label: nextLocale === 'en' ? en.toggleDevToolsMenu : zh.toggleDevToolsMenu },
     ])

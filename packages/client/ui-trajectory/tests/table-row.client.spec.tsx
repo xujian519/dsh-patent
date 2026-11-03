@@ -73,6 +73,8 @@ function table(props: Partial<ComponentProps<typeof TrajectoryTable>> = {}) {
       onToggleTurn={NOOP}
       collapsedAssistants={EMPTY_ASSISTANTS}
       onToggleAssistant={NOOP}
+      collapsedTools={new Set<string>()}
+      onToggleTool={NOOP}
       {...props}
     />
   )

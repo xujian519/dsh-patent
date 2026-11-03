@@ -4,6 +4,7 @@
  * top action group: the slot right after 「新会话」, with that button's class,
  * icon size and label class, and with the scheduled-task trigger hidden.
  */
+import { contextMenuHook } from '@deepseek-ai/dsh-client-test-runtime'
 import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -37,12 +38,14 @@ function mountRootedShell({ appRoot = true }: { appRoot?: boolean } = {}) {
   let collapsed = false
   const shell = (): ReactNode => (
     <SidebarRoot
+      drawer={false}
       collapsed={collapsed} width={300}
       useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
       useShortcuts={selector => selector([])}
       usePanelInfo={usePanelInfo} selectPanel={() => {}} setPinned={() => {}} trackEntryClick={() => {}}
       usePanels={selector => selector([])} useEntryPins={selector => selector([])}
       useEntryActions={selector => selector(false)}
+      useContextMenu={contextMenuHook()}
       useResource={useResource} useWorkspaces={neverHook}
       useRemoteAccess={() => true} useSessionAccess={neverHook} useWorkspaceAccess={neverHook}
       startSession={vi.fn()} toggleSidebar={vi.fn()} t={t}

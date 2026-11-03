@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-docx-kit",
   "description": "Markdown to DOCX rendering and DOCX to text projection over Node's standard library only: six heading levels, paragraphs, unordered lists, tables, and inline bold and code, with recoverable parse failures returned as structured problems",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

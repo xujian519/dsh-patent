@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-patent-deadline",
   "description": "Chinese patent statutory deadlines for the DeepSeek Harness: the period arithmetic of the Implementing Regulations (period start, corresponding day, rest-day roll-forward), delivery-date determination, and the patent_deadlines tool",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

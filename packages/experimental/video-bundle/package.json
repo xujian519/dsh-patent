@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-experimental-video-bundle",
   "description": "Experimental video production switched on from the plugin manager: the video agent preset, six production skills, the media tools, and the Web studio",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "icon": "./icon.svg",
   "publishConfig": {
     "access": "public"

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-patent-fees",
   "description": "Shipped Chinese patent fee index for the DeepSeek Harness: the fee items an application, a grant, or a procedure owes with each one's countable basis, a per-item record of the amount's official source and verification date, the fee-reduction and surcharge rules, and the patent_fees tool, which never presents an unverified amount as the total",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

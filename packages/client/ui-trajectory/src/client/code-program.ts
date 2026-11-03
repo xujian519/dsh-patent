@@ -1,5 +1,4 @@
 /** Read replayable PTC source and language hints from recorded tool arguments and schemas. */
-import { asRecord } from '@deepseek-ai/dsh-value'
 import type { TrajectoryCellProps } from './trajectory-record.ts'
 
 /** Recorded name of the programmatic tool-calling entry point. */
@@ -14,28 +13,41 @@ export interface CodeProgram {
   language: 'typescript' | 'python' | undefined
 }
 
-function parseRecord(value: string | undefined): Record<string, unknown> | null {
-  if (value === undefined) return null
+function record(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined
+}
+
+function parseRecord(value: string | undefined): Record<string, unknown> | undefined {
+  if (value === undefined) return undefined
   try {
-    return asRecord(JSON.parse(value))
+    return record(JSON.parse(value))
   } catch {
-    return null
+    return undefined
   }
 }
 
 function recordedLanguage(schemaRaw: string | undefined): CodeProgram['language'] {
   const schema = parseRecord(schemaRaw)
-  const properties = asRecord(asRecord(schema?.parameters)?.properties)
-  const description = asRecord(properties?.code)?.description
-  if (typeof description !== 'string') return undefined
-  const typescript = /\bTypeScript\b/i.test(description)
-  const python = /\bPython\b/i.test(description)
+  const declaredLanguage = typeof schema?.description === 'string'
+    ? /^Execute a program in `([^`]+)`/.exec(schema.description)?.[1]?.toLowerCase()
+    : undefined
+  if (declaredLanguage !== undefined
+    && declaredLanguage !== 'typescript' && declaredLanguage !== 'python') return undefined
+  const properties = record(record(schema?.parameters)?.properties)
+  const description = record(properties?.code)?.description
+  const typescript = declaredLanguage === 'typescript'
+    || (typeof description === 'string' && /\bTypeScript\b/i.test(description))
+  const python = declaredLanguage === 'python'
+    || (typeof description === 'string' && /\bPython\b/i.test(description))
   if (typescript === python) return undefined
   return typescript ? 'typescript' : 'python'
 }
 
 /**
  * Resolve a PTC program without guessing its language from source or current runtime settings.
+ * Unknown explicit languages or conflicting recorded hints leave the source unhighlighted.
  * @param cell - Recorded tool arguments and the schema visible at call time.
  * @returns The program, or undefined for another tool or unsupported arguments.
  */

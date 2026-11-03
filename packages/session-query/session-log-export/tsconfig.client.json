@@ -17,7 +17,6 @@
     "src/css-modules.d.ts"
   ],
   "references": [
-    { "path": "../../util/value" },
     { "path": "../../../vendor/cordis" },
     { "path": "../../client/locale/tsconfig.client.json" },
     { "path": "../../client/store" },

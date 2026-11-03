@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-contained-emit",
   "description": "Contained observe-only event dispatch over Cordis: per-listener sync-throw and async-rejection containment with caller-owned log labels and renderers",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

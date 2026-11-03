@@ -4,6 +4,7 @@
 # release's 1,800 put the replacement above the trigger once this tree's longer
 # `todo_write` schema raised the tool-schema budget by 133 tokens.
 
+
 - id: agent-instructions
   disabled: true
 
@@ -38,3 +39,8 @@
                 defaultMaxTokens: 1000
     - id: compaction-working-directory
       name: '../../../packages/test-support/session-snapshot/tests/fixtures/compaction-working-directory.ts'
+
+# Fixed-budget compaction scenario: keep the recorded tool set, whose token counts the thresholds were tuned to.
+- id: tool-fs
+  config:
+    applyPatch: false

@@ -4,6 +4,7 @@
 # (5,883); the headroom is recalibrated for this tree's tool-schema budget,
 # as compaction-output-reserve records.
 
+
 - id: agent-instructions
   disabled: true
 
@@ -37,3 +38,8 @@
                 defaultMaxTokens: 1000
     - id: compaction-working-directory
       name: '../../../packages/test-support/session-snapshot/tests/fixtures/compaction-working-directory.ts'
+
+# Fixed-budget compaction scenario: keep the recorded tool set, whose token counts the thresholds were tuned to.
+- id: tool-fs
+  config:
+    applyPatch: false

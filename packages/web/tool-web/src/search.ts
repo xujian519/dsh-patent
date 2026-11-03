@@ -337,7 +337,7 @@ function mergeSearchResults(
  * @param maxQueries - the deployment's query cap enforced before provider calls.
  * @param summaryMaxChars - the deployment's per-source summary cap in the output value.
  * @param timeoutMs - the cooperative tool-call budget (ms) attached as the tool's
- *   `ToolDefinition.timeoutMs` for `@deepseek-ai/dsh-timeout-guard` to enforce.
+ *   `ToolDefinition.timeoutMs` for `@deepseek-ai/dsh-tool-call-timeout-policy` to enforce.
  * @param fetchEnabled - whether the same composition exposes `web_fetch`, which
  *   permits recommending that follow-up tool when it is also visible at assembly.
  */

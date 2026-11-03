@@ -196,7 +196,7 @@ These limits define when the registry needs special care. They are current packa
 - **Concurrency policy is not an event gate** — `executionMode()` reads the resolved tool definition directly; plugins can only declare a classifier on definitions they own.
 - **`tools/pre-execute` deliberately cannot rewrite `exec.arguments`** — logged and rendered args would desync from what ran; the rewrite design is [a proposed Agent Note](../../../.agents/notes/proposed/feature/2026-06-30-pre-tool-input-rewrite.md).
 - **Caller-defined subagent and workflow structured outputs remain object-rooted** — this is a consumer-level guard; the shared schema vocabulary and tool outputs support every JSON root.
-- **`timeoutMs` on a definition is declarative only** — the registry never enforces deadlines; enforcement requires the `@deepseek-ai/dsh-timeout-guard` wrapper.
+- **`timeoutMs` on a definition is declarative only** — the registry never enforces deadlines; enforcement requires the `@deepseek-ai/dsh-tool-call-timeout-policy` wrapper.
 
 `defineTool()`, registry schema projection, and system-prompt assembly preserve `deferLoading: true`. The marker requests deferred definition loading and does not imply a `tool-addition` record; the [LLM package](../../../packages/llm/llm/README.md#known-limitations-and-deferred-work) documents provider enforcement limits.
 

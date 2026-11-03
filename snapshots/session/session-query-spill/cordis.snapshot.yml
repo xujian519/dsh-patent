@@ -56,8 +56,8 @@
     - id: tool-session-query
       name: '@deepseek-ai/dsh-tool-session-query'
 
-- id: timeout-guard
-  name: '@deepseek-ai/dsh-timeout-guard'
+- id: timeout-policy
+  name: '@deepseek-ai/dsh-tool-call-timeout-policy'
 
 - insert:
     - id: snapshot-spill-locators

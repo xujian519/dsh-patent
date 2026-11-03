@@ -16,11 +16,12 @@
  * scrollbar indirection away while it is elsewhere, so a list the user is not
  * pointing at carries no bar.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
-  FishLogo, IconAppsAddOutlineRegular, IconNewChatOutlineMedium, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular,
-  isDarwinDesktop, Menu, ShortcutKeys, Tooltip,
+  FishLogo, IconAppsAddOutlineRegular, IconNewChatOutlineMedium, IconNewChatOutlineRegular,
+  IconPanelLeftOutlineRegular, focusWithoutRing, isBehindModal, isDarwinDesktop, Menu, ShortcutKeys, Toast, Tooltip, useModalLayer,
+  writeClipboard,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {
@@ -39,6 +40,16 @@ const COLLAPSE_SETTLE_MS = 150
  * edge — on the way to the conversation, or around a portalled menu.
  */
 const SCROLLBAR_LINGER_MS = 2000
+
+/** Format complete-build metadata for the local brand badge. */
+function localBuildVersion(): string | undefined {
+  const version = process.env.DSH_CLIENT_VERSION
+  if (version === undefined) return undefined
+  const commit = process.env.DSH_CLIENT_COMMIT_HASH
+  return version
+    + (commit === undefined ? '' : `-${commit}`)
+    + (process.env.DSH_CLIENT_GIT_DIRTY === 'true' ? '-dirty' : '')
+}
 
 type PanelRowProps =
   Pick<SidebarPanelMetadata, 'id' | 'label'>
@@ -120,6 +131,7 @@ function PanelMoreMenu({ wide, label, entries, onOpen, onPinnedChange, trackEntr
 export function SidebarRoot({
   collapsed,
   width,
+  drawer,
   startSession,
   toggleSidebar,
   selectPanel,
@@ -145,14 +157,15 @@ export function SidebarRoot({
   const toggleLabel = collapsed ? t('toggle.open') : t('toggle.collapse')
   // Wide content stays mounted while the collapse animates (fading via
   // .collapsed .wide), unmounts at settle, and remounts right away on expand.
+  // A closed drawer retains its content with the rail phase already settled.
   const [settled, setSettled] = useState(collapsed)
   useEffect(() => {
-    if (!collapsed) { setSettled(false); return }
+    if (drawer || !collapsed) { setSettled(collapsed); return }
     const timer = window.setTimeout(() => { setSettled(true) }, COLLAPSE_SETTLE_MS)
     return () => { window.clearTimeout(timer) }
-  }, [collapsed])
+  }, [collapsed, drawer])
   const windowsTitlebar = document.documentElement.hasAttribute('data-windows-titlebar')
-  const wide = windowsTitlebar ? !collapsed : !collapsed || !settled
+  const wide = drawer || (windowsTitlebar ? !collapsed : !collapsed || !settled)
   // The Windows titlebar hosts the New Session controls while the sidebar is collapsed.
   const openNewSession = (): void => {
     trackEntryClick({ menu_name: 'new_session', position: windowsTitlebar && collapsed ? 'titlebar' : 'sidebar' })
@@ -166,18 +179,29 @@ export function SidebarRoot({
   // && wide): the sliding column then clips it instead of reflowing it. The
   // rail layout (.collapsed styles) only applies once the fade settles.
   const lastWideWidth = useRef(width)
-  if (!collapsed) lastWideWidth.current = width
+  if (drawer || !collapsed) lastWideWidth.current = width
 
-  // Rail-in only crossfades a live collapse: a refresh straight into the
-  // collapsed state renders the rail statically (no delay-hidden icons).
-  const everWide = useRef(!collapsed)
-  if (!collapsed) everWide.current = true
+  // A closed drawer returns to the static rail; only a live collapse fades it in.
+  const animateRail = useRef(!collapsed)
+  if (drawer || !collapsed) animateRail.current = !collapsed
 
   // Scrollbars in the column follow the pointer (.quietBars rebinds them
   // away): drawn while it is inside, and for SCROLLBAR_LINGER_MS after it
   // leaves. A pointer that returns within that window cancels the pending
   // hide rather than restarting from a hidden bar.
   const column = useRef<HTMLDivElement>(null)
+  const sidebarFocus = useRef<Element | null>(null)
+  useModalLayer(column, drawer && !collapsed, toggleSidebar)
+  useLayoutEffect(() => {
+    if (!collapsed) return
+    const controlled = sidebarFocus.current?.getAttribute('aria-controls')?.split(/\s+/) ?? []
+    const ownsMenuFocus = controlled.some(id => document.getElementById(id)?.contains(document.activeElement))
+    if (sidebarFocus.current !== document.activeElement && !ownsMenuFocus) return
+    const opener = drawer
+      ? column.current?.ownerDocument.querySelector<HTMLElement>('[data-sidebar-opener]')
+      : column.current?.querySelector<HTMLElement>('[data-sidebar-toggle]')
+    if (opener != null && !isBehindModal(opener)) focusWithoutRing(opener, { preventScroll: true })
+  }, [drawer, collapsed])
   const [pointerInside, setPointerInside] = useState(false)
   const lingerTimer = useRef<number | undefined>(undefined)
   const armLinger = (): void => {
@@ -216,73 +240,27 @@ export function SidebarRoot({
     }
   }, [pointerInside])
 
-  // The @dely0/dsh-personal-workbench plugin injects its sidebar entry
-  // (`button[data-dsh-personal-workbench-entry]`) into this column after mount.
-  // Promote it into the top action group: the slot right after 「新会话」, with
-  // that button's class, icon size and label class so it reads as a peer, and
-  // with the scheduled-task trigger hidden in the place it takes. The anchor is
-  // this shell's own new-session button, selected by the module class (the
-  // expanded column carries TWO `session.new.label` buttons — the brand shortcut
-  // and the real one — so the label alone is ambiguous); the surface itself
-  // comes from the matching rule in SidebarRoot.module.css, because the plugin's
-  // own sheet is appended to <head> after the bundle and would otherwise win the
-  // tie. `wide` re-promotes so the rail gets the rail icon size.
-  useEffect(() => {
-    let disposed = false
-    let frame: number | null = null
-    const promoteEntry = (): void => {
-      /* v8 ignore next -- cleanup cancels the rAF and disconnects the observer, so this guard is unreachable after dispose */
-      if (disposed) return
-      const entry = document.querySelector<HTMLButtonElement>('button[data-dsh-personal-workbench-entry]')
-      if (entry === null) return
-      const timer = document.querySelector<HTMLButtonElement>('button.dshc-trigger')
-      if (timer !== null) timer.style.display = 'none'
-      const anchor = document.querySelector<HTMLButtonElement>(
-        `button.${css.newSession}:not([data-dsh-personal-workbench-entry])`,
-      )
-      // querySelector only returns connected nodes, so a found anchor is always in the DOM.
-      if (anchor === null) return
-      if (entry !== anchor.nextElementSibling) anchor.insertAdjacentElement('afterend', entry)
-      entry.className = anchor.className
-      const label = entry.querySelector('span')
-      // Copy the anchor's own label class rather than naming it: New Session wraps
-      // its label in a mask span, and the entry's single span takes that span's seat.
-      const anchorLabel = anchor.querySelector('span')
-      if (label !== null && anchorLabel !== null) label.className = anchorLabel.className
-      const icon = entry.querySelector('svg')
-      if (icon !== null) {
-        // Inline: the plugin's own [data-…] svg rule outranks presentational sizes.
-        icon.style.width = `${String(wide ? 14 : 18)}px`
-        icon.style.height = `${String(wide ? 14 : 18)}px`
-        icon.style.flex = '0 0 auto'
-      }
-    }
-    const schedule = (): void => {
-      /* v8 ignore next -- dedupes burst mutations into one rAF; the re-entrant visit is not observable in tests */
-      if (frame !== null) return
-      frame = requestAnimationFrame(() => {
-        frame = null
-        promoteEntry()
-      })
-    }
-    const watcher = new MutationObserver(schedule)
-    const root = document.getElementById('root')
-    if (root !== null) watcher.observe(root, { childList: true, subtree: true })
-    promoteEntry()
-    return () => {
-      disposed = true
-      if (frame !== null) cancelAnimationFrame(frame)
-      watcher.disconnect()
-    }
-  }, [wide])
+  const buildVersion = localBuildVersion()
+  // The local-build fallbacks copy the badge text; the brand button below
+  // skips New Session for clicks inside them. The click still bubbles, so
+  // document-level outside-click listeners see it.
+  // Each successful copy bumps the key so a repeated copy replays the toast.
+  const [copiedToast, setCopiedToast] = useState<number | null>(null)
+  const copyVersion = (version: string) => (): void => {
+    void writeClipboard(version).then((ok) => {
+      if (ok) setCopiedToast(seq => (seq ?? 0) + 1)
+    })
+  }
 
   const darwinDesktop = isDarwinDesktop()
   // Rail resting state is the whale mark; hovering swaps in the panel icon
   // (the expand affordance, figma sidebar-hover flow). Expanded it is a plain
   // panel icon.
   const toggle = (
-    <Tooltip label={toggleLabel} shortcutKeys={shortcut?.keys} delayMs={500} side={captionTooltipSide}>
+    <Tooltip label={toggleLabel} shortcutKeys={shortcut?.keys} delayMs={500} side={captionTooltipSide} portal={drawer}>
       <button
+        data-sidebar-toggle
+        data-modal-autofocus={drawer || undefined}
         type="button"
         className={clsx(css.iconButton, css.toggle)}
         aria-label={toggleLabel}
@@ -304,11 +282,17 @@ export function SidebarRoot({
   return (
     <div
       ref={column}
+      onFocusCapture={(event) => { sidebarFocus.current = event.target }}
+      role={drawer ? 'dialog' : undefined}
+      data-shortcut-modal={drawer ? 'sidebar' : undefined}
+      aria-modal={drawer && !collapsed ? true : undefined}
+      aria-label={drawer ? t('navigation.label') : undefined}
+      tabIndex={drawer ? -1 : undefined}
       className={clsx(
-        css.root, !wide && css.collapsed, !wide && everWide.current && css.railIn,
-        collapsed && wide && css.fading, !pointerInside && css.quietBars,
+        css.root, !wide && css.collapsed, !wide && animateRail.current && css.railIn,
+        !drawer && collapsed && wide && css.fading, !pointerInside && css.quietBars,
       )}
-      style={wide ? { width: collapsed ? lastWideWidth.current : width } : undefined}
+      style={wide ? { width: !drawer && collapsed ? lastWideWidth.current : width } : undefined}
       onPointerEnter={() => {
         cancelLinger()
         setPointerInside(true)
@@ -323,16 +307,28 @@ export function SidebarRoot({
             access snapshot allows `session/create` — except on
             macOS, where it stays part of the logo row's window-drag surface
             (a button would subtract itself through the global no-drag rule);
-            the collapsed rail's logo is the expand toggle below instead. */}
+            the collapsed rail's logo is the expand toggle below instead.
+            Mouse clicks on the local-build fallbacks copy the version instead. */}
         {wide && (() => {
           const identity = (
             <span className={css.brandIdentity} aria-hidden="true">
               <span className={css.brandMark}>
-                {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
+                {renderSlot('sidebar.brand.mark', { size: 24 }, {
+                  fallback: buildVersion === undefined
+                    ? <FishLogo size={24} />
+                    : <span className={css.copyVersion} data-copy-version onClick={copyVersion(buildVersion)}><FishLogo size={24} /></span>,
+                })}
               </span>
               <span className={css.brandName}>
                 {renderSlot('sidebar.brand.name', {}, {
-                  fallback: <span className={css.fallbackBrandName}>{t('brand.localBuild')}</span>,
+                  fallback: buildVersion === undefined
+                    ? <span className={css.fallbackBrandName}>{t('brand.localBuild')}</span>
+                    : (
+                      <span className={clsx(css.localBuildBrand, css.copyVersion)} data-copy-version onClick={copyVersion(buildVersion)}>
+                        <span className={css.localBuildTitle}>{t('brand.localBuild')}</span>
+                        <span className={css.buildVersion}>{buildVersion}</span>
+                      </span>
+                    ),
                 })}
               </span>
             </span>
@@ -345,7 +341,10 @@ export function SidebarRoot({
                 className={clsx(css.brand, css.wide)}
                 aria-label={t('session.new.label')}
                 aria-keyshortcuts={newShortcut?.aria}
-                onClick={() => { openNewSession() }}
+                onClick={(event) => {
+                  if ((event.target as Element).closest('[data-copy-version]') !== null) return
+                  openNewSession()
+                }}
               >
                 {identity}
               </button>
@@ -419,6 +418,10 @@ export function SidebarRoot({
           expandSidebar: () => { if (collapsed) toggleSidebar() },
         })}
       </div>
+
+      {copiedToast !== null && (
+        <Toast key={copiedToast} tone="success" text={t('version.copied')} onDone={() => { setCopiedToast(null) }} />
+      )}
 
       {/* Footer actions stack above Settings in both sidebar widths. */}
       <div className={css.footArea}>

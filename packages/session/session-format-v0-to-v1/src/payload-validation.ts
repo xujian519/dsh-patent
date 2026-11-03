@@ -147,67 +147,8 @@ export function assertReleasedPayloadSemantics(event: SessionFormatEvent, versio
       nonEmptyString(data['model'], `${label} model`)
       if (data['reasoningEffort'] !== undefined) nonEmptyString(data['reasoningEffort'], `${label} reasoningEffort`)
       return
-    case 'patent-teams/member-added':
-      nonEmptyString(data['teamId'], `${label} teamId`)
-      nonEmptyString(data['memberId'], `${label} memberId`)
-      nonEmptyString(data['name'], `${label} name`)
-      if (data['role'] !== undefined) stringValue(data['role'], `${label} role`)
-      return
-    case 'patent-teams/member-removed':
-      nonEmptyString(data['teamId'], `${label} teamId`)
-      nonEmptyString(data['memberId'], `${label} memberId`)
-      return
-    case 'patent-teams/message-sent':
-      nonEmptyString(data['teamId'], `${label} teamId`)
-      nonEmptyString(data['messageId'], `${label} messageId`)
-      nonEmptyString(data['from'], `${label} from`)
-      nonEmptyString(data['to'], `${label} to`)
-      nonEmptyString(data['content'], `${label} content`)
-      finiteNumberValue(data['ts'], `${label} ts`)
-      return
-    case 'patent-teams/task-created':
-      nonEmptyString(data['teamId'], `${label} teamId`)
-      nonEmptyString(data['taskId'], `${label} taskId`)
-      nonEmptyString(data['subject'], `${label} subject`)
-      arrayValue(data['dependencies'], `${label} dependencies`, stringValue)
-      if (data['assignee'] !== undefined) stringValue(data['assignee'], `${label} assignee`)
-      if (data['worker'] !== undefined) stringValue(data['worker'], `${label} worker`)
-      return
-    case 'patent-teams/task-gated':
-      nonEmptyString(data['teamId'], `${label} teamId`)
-      nonEmptyString(data['taskId'], `${label} taskId`)
-      finiteNumberValue(data['score'], `${label} score`)
-      arrayValue(data['failures'], `${label} failures`, stringValue)
-      stringValue(data['feedback'], `${label} feedback`)
-      return
-    case 'patent-teams/task-updated':
-      nonEmptyString(data['teamId'], `${label} teamId`)
-      nonEmptyString(data['taskId'], `${label} taskId`)
-      nonEmptyString(data['status'], `${label} status`)
-      if (data['assignee'] !== undefined) stringValue(data['assignee'], `${label} assignee`)
-      if (data['output'] !== undefined) stringValue(data['output'], `${label} output`)
-      if (data['attempt'] !== undefined) safeIntegerValue(data['attempt'], `${label} attempt`)
-      if (data['attemptId'] !== undefined) stringValue(data['attemptId'], `${label} attemptId`)
-      return
-    case 'patent-teams/task-validated':
-      nonEmptyString(data['teamId'], `${label} teamId`)
-      nonEmptyString(data['taskId'], `${label} taskId`)
-      nonEmptyString(data['worker'], `${label} worker`)
-      booleanValue(data['valid'], `${label} valid`)
-      arrayValue(data['missingHardFields'], `${label} missingHardFields`, stringValue)
-      booleanValue(data['degraded'], `${label} degraded`)
-      return
-    case 'patent-teams/team-created':
-      nonEmptyString(data['teamId'], `${label} teamId`)
-      nonEmptyString(data['captainSessionId'], `${label} captainSessionId`)
-      nonEmptyString(data['name'], `${label} name`)
-      if (data['description'] !== undefined) stringValue(data['description'], `${label} description`)
-      return
     case 'permission/preset':
       nonEmptyString(data['preset'], `${label} preset`)
-      if (data['origin'] !== undefined) {
-        literalValue(data['origin'], ['default', 'selection'], `${label} origin`)
-      }
       return
     case 'plan/mode':
       booleanValue(data['active'], `${label} active`)
@@ -228,13 +169,6 @@ export function assertReleasedPayloadSemantics(event: SessionFormatEvent, versio
       return
     case 'schedule/change':
       scheduleChangeValue(data, label)
-      return
-    case 'self-evolve/reflection':
-      countValue(data['turn'], `${label} turn`)
-      countValue(data['step'], `${label} step`)
-      nonEmptyString(data['patternId'], `${label} patternId`)
-      finiteNumberValue(data['confidence'], `${label} confidence`)
-      stringValue(data['suggestion'], `${label} suggestion`)
       return
     case 'session-log-deepseek/delivery-accepted':
       {
@@ -292,14 +226,9 @@ export function assertReleasedPayloadSemantics(event: SessionFormatEvent, versio
       return
     case 'todo/write':
       arrayValue(data['todos'], `${label} todos`, (value, itemLabel) => {
-        const item = exactRecord(value, itemLabel, ['content', 'status'], ['tags'])
+        const item = exactRecord(value, itemLabel, ['content', 'status'])
         stringValue(item['content'], `${itemLabel} content`)
         literalValue(item['status'], ['pending', 'in_progress', 'completed'], `${itemLabel} status`)
-        if (item['tags'] !== undefined) {
-          arrayValue(item['tags'], `${itemLabel} tags`, (tag, tagLabel) => {
-            nonEmptyString(tag, tagLabel)
-          })
-        }
       })
       return
     case 'tool-workflow/agent-end':
@@ -831,10 +760,10 @@ function finishReasonValue(value: SessionFormatJsonValue | undefined, label: str
 }
 
 function replayEnvelopeValue(value: SessionFormatJsonValue | undefined, label: string): void {
-  // Replay metadata is adapter-private and owner-opaque. `response`/`blocks` is
-  // the current generic envelope, but released v0 carried per-provider flat
-  // records (kind/version/api/...): freeze only "it is a record", never members.
-  releasedV0Record(value, label)
+  const replay = exactRecord(value, label, ['response'], ['blocks'])
+  if (replay['blocks'] !== undefined && !Array.isArray(replay['blocks'])) {
+    throw new SessionFormatError(`${label} blocks must be an array`)
+  }
 }
 
 function turnEndReasonValue(value: SessionFormatJsonValue | undefined, label: string): void {
@@ -1021,20 +950,32 @@ function modelRouteValue(value: SessionFormatJsonValue | undefined, label: strin
   nonEmptyString(route['model'], `${label} model`)
 }
 
+/** `subagent/descriptor` versions that format v0 logs contain. */
+export const SUBAGENT_DESCRIPTOR_VERSIONS: readonly number[] = [1, 2, 3]
+
 function subagentDescriptorValue(data: JsonRecord, label: string): void {
-  literalValue(data['version'], [2, 3], `${label} version`)
+  literalValue(data['version'], SUBAGENT_DESCRIPTOR_VERSIONS, `${label} version`)
   nonEmptyString(data['provider'], `${label} provider`)
-  if (data['mode'] === 'one-shot') {
+  const composition = ['agentProvider', 'agentModel', 'persona', 'toolFilter']
+  if (data['version'] === 1) {
+    assertReleasedV0Keys(data, ['version', 'provider', 'label'], composition, `${label} data`)
+  } else if (data['mode'] === 'one-shot') {
     assertReleasedV0Keys(data, ['mode', 'version', 'provider'], ['label'], `${label} data`)
     if (data['label'] !== undefined) stringValue(data['label'], `${label} label`)
     return
+  } else {
+    literalValue(data['mode'], ['continuable'], `${label} mode`)
+    const optional = data['version'] === 3 ? [...composition, 'agentReasoningEffort'] : composition
+    assertReleasedV0Keys(data, ['mode', 'version', 'provider', 'label'], optional, `${label} data`)
   }
-  literalValue(data['mode'], ['continuable'], `${label} mode`)
-  nonEmptyString(data['label'], `${label} label`)
+  // Descriptor v1 and v2 writers defaulted each route member independently and did not reject empty strings.
+  const strict = data['version'] === 3
+  const stringField: (value: SessionFormatJsonValue | undefined, label: string) => void = strict ? nonEmptyString : stringValue
+  stringField(data['label'], `${label} label`)
   for (const key of ['agentProvider', 'agentModel', 'agentReasoningEffort', 'persona'] as const) {
-    if (data[key] !== undefined) nonEmptyString(data[key], `${label} ${key}`)
+    if (data[key] !== undefined) stringField(data[key], `${label} ${key}`)
   }
-  if ((data['agentProvider'] === undefined) !== (data['agentModel'] === undefined)) {
+  if (strict && (data['agentProvider'] === undefined) !== (data['agentModel'] === undefined)) {
     throw new SessionFormatError(`${label} agentProvider and agentModel must be paired`)
   }
   if (data['toolFilter'] !== undefined) {
@@ -1042,8 +983,8 @@ function subagentDescriptorValue(data: JsonRecord, label: string): void {
     if (filter['allow'] === undefined && filter['deny'] === undefined) {
       throw new SessionFormatError(`${label} toolFilter requires allow or deny`)
     }
-    if (filter['allow'] !== undefined) arrayValue(filter['allow'], `${label} allow`, nonEmptyString)
-    if (filter['deny'] !== undefined) arrayValue(filter['deny'], `${label} deny`, nonEmptyString)
+    if (filter['allow'] !== undefined) arrayValue(filter['allow'], `${label} allow`, stringField)
+    if (filter['deny'] !== undefined) arrayValue(filter['deny'], `${label} deny`, stringField)
   }
 }
 

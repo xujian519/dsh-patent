@@ -17,5 +17,5 @@
       config:
         maxLocations: 1
 
-- id: timeout-guard
-  name: '@deepseek-ai/dsh-timeout-guard'
+- id: timeout-policy
+  name: '@deepseek-ai/dsh-tool-call-timeout-policy'

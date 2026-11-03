@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-self-evolve-app",
   "description": "The dsh self-evolve opt-in bundle: the self-evolve capability seam, provider, and tools as a profile patch layer",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

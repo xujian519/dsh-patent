@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-entry-lifecycle",
   "description": "Publication state for one registry entry: a single creation announcement, the listener dispatches that keep it live, and removal deferred to the last one",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

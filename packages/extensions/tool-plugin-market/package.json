@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-plugin-market",
   "description": "Plugin catalog discovery tools: list catalog sources, search the bundled/online catalog, and preview a package before install",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

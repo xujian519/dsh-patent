@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-patent-core",
   "description": "Pure patent-domain library for the DeepSeek Harness: ModelPort, atoms, checker, claim-chart, problem, evidence, reasoning, and graph engines",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

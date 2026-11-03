@@ -14,7 +14,7 @@ import SessionStore, { SessionId, SessionSeq, type SessionEvent, type SurfaceInt
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import AgentRegistry, { agentEvents, type Agent } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { FileSystem, FsTargetKey, FsVersion } from '@deepseek-ai/dsh-fs'
+import { FileSystem, FsError, FsTargetKey, FsVersion } from '@deepseek-ai/dsh-fs'
 import type {
   FsDirEntry,
   FsEditOutcome,
@@ -268,6 +268,9 @@ class RecordingFileSystem extends FileSystem {
   override async editText(_target: FsTarget, _edit: FsEditRequest): Promise<FsEditOutcome> {
     return { version: FsVersion('unused'), before: '', after: '' }
   }
+  override async patchText(): Promise<never> { throw new FsError('patch unsupported by test provider', 'FS_IO_ERROR') }
+  override async deleteFile(): Promise<never> { throw new FsError('delete unsupported by test provider', 'FS_IO_ERROR') }
+  override async moveFile(): Promise<never> { throw new FsError('move unsupported by test provider', 'FS_IO_ERROR') }
 }
 
 class BlockingReadFileSystem extends RecordingFileSystem {
@@ -290,7 +293,7 @@ class BlockingReadFileSystem extends RecordingFileSystem {
 
 async function mountAgentInstructionsPlugin(ctx: Context, config: AgentInstructionsConfig): Promise<Awaited<ReturnType<Context['plugin']>>> {
   if (ctx.get('workingDirectory') === undefined) provideWorkingDirectoryFixture(ctx)
-  if (ctx.get('sessionProjections') === undefined) if (ctx.get('sessionProjections') === undefined) await ctx.plugin(SessionProjectionRegistry)
+  if (ctx.get('sessionProjections') === undefined) await ctx.plugin(SessionProjectionRegistry)
   if (ctx.get('agents') === undefined) await ctx.plugin(AgentRegistry)
   return ctx.plugin(AgentInstructions, config)
 }

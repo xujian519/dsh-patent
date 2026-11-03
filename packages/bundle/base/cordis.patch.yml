@@ -302,9 +302,13 @@
 
     - id: fs-observation-policy
       name: '@deepseek-ai/dsh-fs-observation-policy'
+      disabled: true
 
     - id: tool-fs
       name: '@deepseek-ai/dsh-tool-fs'
+      config:
+        # Set false to drop the apply_patch tool beside edit.
+        applyPatch: false
 
     - id: tool-fs-search
       name: '@deepseek-ai/dsh-tool-fs-search'
@@ -414,8 +418,8 @@
     - id: tool-workflow
       name: '@deepseek-ai/dsh-tool-workflow'
 
-    - id: timeout-guard
-      name: '@deepseek-ai/dsh-timeout-guard'
+    - id: timeout-policy
+      name: '@deepseek-ai/dsh-tool-call-timeout-policy'
 
     - id: spill-local
       name: '@deepseek-ai/dsh-spill-local'

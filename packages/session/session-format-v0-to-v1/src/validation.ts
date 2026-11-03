@@ -13,7 +13,7 @@ import type {
   SessionFormatJsonValue,
 } from '@deepseek-ai/dsh-session-format'
 import { RELEASED_V0_EVENT_DISPOSITIONS } from './dispositions.ts'
-import { assertReleasedPayloadSemantics } from './payload-validation.ts'
+import { assertReleasedPayloadSemantics, SUBAGENT_DESCRIPTOR_VERSIONS } from './payload-validation.ts'
 import { assertReleasedV0Keys, releasedV0Record } from './validation-helpers.ts'
 
 const HEADER_REQUIRED = ['version', 'id', 'createdAt', 'isSeeded', 'delegationDepth'] as const
@@ -113,7 +113,7 @@ export function assertReleasedArtifactCoordinates(
     const disposition = RELEASED_V0_EVENT_DISPOSITIONS[type]
     const legacy = allowLegacySteering && LEGACY_SOURCE_TYPES.has(type)
     const currentKnown = knownEventTypes?.has(type) === true
-    const ignorableCurrent = !currentKnown && record['ignorable'] === true
+    const ignorableCurrent = !allowLegacySteering && !currentKnown && record['ignorable'] === true
     if (!currentKnown && !legacy && !ignorableCurrent && !vocabularyNeutral) {
       if (allowLegacySteering) {
         throw new SessionFormatUnsupportedMigrationError(
@@ -188,32 +188,21 @@ export function assertReleasedSurfaceMetadata(
  */
 export function assertReleasedEventPayload(event: SessionFormatEvent, version: 0 | 1): void {
   const disposition = RELEASED_V0_EVENT_DISPOSITIONS[event.type]
+  /* v8 ignore next -- artifact coordinate validation admits only the frozen inventory before payload validation. */
   if (disposition === undefined) {
-    // An external plugin's ignorable event is preserved through the identity
-    // v0->v1 edge (see v1->v2, where ignorable unknowns are ultimately dropped).
-    const record = releasedV0Record(event, `${event.type} ${event.seq} envelope`)
-    /* v8 ignore next -- coordinate validation refuses non-ignorable unknown events before payload validation. */
-    if (record['ignorable'] === true) return
-    /* v8 ignore next -- the same coordinate-validation refusal makes this arm unreachable. */
     throw new SessionFormatUnsupportedMigrationError(
       `format v0 contains unknown historical event type ${JSON.stringify(event.type)} at seq ${event.seq}; migration refuses unknown historical events even when ignorable`,
     )
   }
   const data = releasedV0Record(event.data, `${event.type} ${event.seq} data`)
-  if (event.type === 'subagent/descriptor') {
+  if (event.type === 'subagent/descriptor' && !SUBAGENT_DESCRIPTOR_VERSIONS.some(known => known === data['version'])) {
     const descriptorVersion = sessionFormatCount(data['version'], `${event.type} ${event.seq} version`)
-    // Released v0 source carried descriptor versions 2 (pre-persona/toolFilter
-    // continuation) and 3 (current); the v0-to-v1 migration normalizes v2 to v3
-    // so the runbook's SUBAGENT_DESCRIPTOR_VERSION reader can classify the child.
-    // A future descriptor version is unanticipated released data and refuses the
-    // migration step. Current-artifact reads stay forward-compatible instead:
-    // an unknown descriptor version is retained unvalidated for the runbook.
-    if (descriptorVersion !== 2 && descriptorVersion !== 3 && version !== 0) return
-    if (descriptorVersion !== 2 && descriptorVersion !== 3) {
+    if (version === 0) {
       throw new SessionFormatUnsupportedMigrationError(
         `${event.type} ${event.seq} uses unsupported descriptor version ${descriptorVersion}`,
       )
     }
+    return
   }
   const versionOptional = version === 1 && event.type === 'session-log-deepseek/delivery-accepted'
     ? [...disposition.optional, 'sessionFormatVersion']

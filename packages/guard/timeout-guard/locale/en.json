@@ -1,6 +1,0 @@
-{
-  "meta": {
-    "title": "Tool-call timeout control",
-    "description": "Signals cancellation at each tool's own time limit and returns the timeout result."
-  }
-}

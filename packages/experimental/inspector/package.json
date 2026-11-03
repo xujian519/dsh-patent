@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-experimental-inspector",
   "description": "Experimental cross-realm CDP hub for Host debugging and Client Runtime inspection",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "icon": "./icon.svg",
   "publishConfig": {
     "access": "public"
@@ -48,12 +48,12 @@
   "dependencies": {
     "@deepseek-ai/dsh-app-boot": "workspace:*",
     "@deepseek-ai/dsh-util-crypto": "workspace:*",
-    "@deepseek-ai/dsh-util-values": "workspace:*",
-    "@deepseek-ai/dsh-value": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~",
     "open": "^11.0.2",
     "serve-static": "^2.2.1",
-    "ws": "^8.21.3"
+    "ws": "^8.21.3",
+    "@deepseek-ai/dsh-util-values": "workspace:*",
+    "@deepseek-ai/dsh-value": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~"

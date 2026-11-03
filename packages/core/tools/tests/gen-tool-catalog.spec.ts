@@ -2,7 +2,8 @@
  * Guarantee tests for the tool-schema catalog generator (`scripts/gen-tool-catalog.ts`).
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import ScheduleService from '@deepseek-ai/dsh-schedule'
 import {
   assertManifestComplete,
   assertToolsHarvested,
@@ -26,7 +27,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
     const catalog = await collectToolCatalog()
     const names = catalog.flatMap(entry => entry.schemas.map(s => s.name)).sort()
     expect(names).toEqual([
-      'add_patent_figure_references', 'analyze_patent_figure', 'ask_user_question', 'bash', 'bash', 'build_patent_filing', 'check_patent_figure_consistency',
+      'add_patent_figure_references', 'analyze_patent_figure', 'apply_patch', 'ask_user_question', 'bash', 'bash', 'build_patent_filing', 'check_patent_figure_consistency',
       'claim_chart_build', 'claim_lint', 'compare_patent_figure_analysis', 'cordis_inspect_list',
       'cordis_inspect_query', 'create_goal', 'create_worktree', 'document_deliver', 'draft_claims', 'draft_specification', 'edit', 'evaluate_evidence', 'evaluate_legal_evidence',
       'exit_plan_mode', 'flexible_plan', 'generate_patent_figure', 'generate_structure_figure', 'get_goal', 'glob', 'grep', 'interrupt_agent',
@@ -39,7 +40,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
       'patent_teams_remove_member', 'patent_teams_send_message', 'patent_teams_status', 'patent_teams_update_task', 'patent_teams_wait', 'patent_wiki_search', 'patent_worker_validate', 'patent_workflow', 'patent_workflow_run',
       'plugin_manager', 'plugin_market', 'present', 'propose_action', 'pwsh', 'pwsh', 'query_writing_patterns', 'ralph', 'read', 'read_image',
       'read_mcp_resource', 'recognize_chemical_structure', 'render_doc_template', 'render_patent_document', 'rule_check', 'run_code', 'schedule_create', 'schedule_delete',
-      'schedule_list', 'schedule_update', 'search_patent_figure', 'self_evolve_inspect_patterns', 'self_evolve_now', 'send_message', 'send_message', 'session_event_read',
+      'schedule_edit', 'schedule_list', 'schedule_update', 'schedule_view', 'search_patent_figure', 'self_evolve_inspect_patterns', 'self_evolve_now', 'send_message', 'send_message', 'session_event_read',
       'session_event_search', 'session_event_trace', 'session_search', 'session_trace', 'skill', 'spawn_teammate', 'stagehand_act', 'stagehand_extract',
       'stagehand_navigate', 'stagehand_observe', 'stagehand_screenshot', 'stagehand_tabs', 'str_replace_editor', 'subagent', 'subagent_oar', 'team_task_create', 'team_task_get',
       'team_task_list', 'team_task_update', 'terminal_close', 'terminal_list', 'terminal_open', 'terminal_read', 'terminal_send', 'terminal_signal',
@@ -82,6 +83,21 @@ describe('gen-tool-catalog collectToolCatalog', () => {
       list_agents: 'packages/subagent/tool-subagent-control/src/list-agents.ts',
       send_message: 'packages/subagent/tool-subagent-control/src/index.ts',
     })
+  })
+
+  it('lists Schedule prompt dependencies and reads delivery limits from Schedule Config', async () => {
+    const config = vi.spyOn(ScheduleService, 'Config').mockReturnValue({ newSessionIntervalSeconds: 900 })
+    try {
+      const catalog = await collectToolCatalog()
+      const schedule = catalog.find(entry => entry.pkg === '@deepseek-ai/dsh-tool-schedule')
+      expect(schedule?.requires).toEqual(['ctx.tools', 'ctx.schedule', 'ctx.systemPrompt'])
+      expect(config).toHaveBeenCalledWith({})
+      expect(schedule?.schemas.find(schema => schema.name === 'schedule_create')?.parameters).toMatchObject({
+        properties: { target: { description: expect.stringContaining('at most once every 15 minutes') as string } },
+      })
+    } finally {
+      config.mockRestore()
+    }
   })
 
   it('harvests search tools without depending on the generator process PATH', async () => {

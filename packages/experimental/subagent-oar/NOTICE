@@ -1,0 +1,14 @@
+Third-party notices
+
+The published artifact of this package embeds the Apache-2.0 licensed OAR
+library, so consumers do not need a separate OAR CLI installation:
+
+  @botiverse/oar 0.67.0
+  https://github.com/botiverse/oar
+
+Its license text ships beside this file as LICENSE-OAR.
+
+The embedded copy is modified: `patches/@botiverse__oar@0.67.0.patch` in the
+repository is the complete record of the change applied at install time.
+
+This package's own source is MIT licensed under the repository root LICENSE.

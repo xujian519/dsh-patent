@@ -607,7 +607,7 @@ it('requires the OAR license while rejecting unrelated payload files', () => {
   const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
   const files = [
     'icon.svg', 'locale/*.json', 'lib/index.js',
-    'LICENSE-OAR', 'lib/types/**/*.d.ts',
+    'LICENSE-OAR', 'NOTICE', 'lib/types/**/*.d.ts',
   ]
   expect(expectedDshPackageFiles(manifest)).toEqual(files)
   expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])

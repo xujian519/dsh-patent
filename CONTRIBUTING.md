@@ -20,4 +20,10 @@ DeepSeek Harness is designed to be deeply customizable. We do not believe that p
 
 We have already seen exciting projects emerge from the community, and we hope to see the ecosystem continue to grow in its own directions.
 
+### License and dependency boundaries
+
+All repository-owned DSH packages declare MIT. Third-party dependencies must be permissive or weak-copyleft; GPLv1/v2 and AGPLv3 are excluded. The full policy, the allow-list, the declared / observed / concluded license dimensions, and the automated gates are documented in [LICENSE_POLICY.md](LICENSE_POLICY.md).
+
+If your change introduces a dependency whose license is outside the allow-list, or if you believe a dependency's shipped LICENSE file contradicts its manifest declaration, please open an issue or — once we accept external PRs — include an `OVERRIDES` entry with reasoning.
+
 Into the unknown.

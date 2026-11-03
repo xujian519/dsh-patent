@@ -8,7 +8,7 @@
  * `.agents/notes/implemented/process/2026-07-30-generated-third-party-notices.md`.
  */
 
-import { existsSync, globSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, globSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import * as yaml from 'js-yaml'
 import { parse as parseToml, type TomlTableWithoutBigInt, type TomlValueWithoutBigInt } from 'smol-toml'
@@ -95,6 +95,10 @@ const OVERRIDES: Record<string, { license?: string; repo?: string }> = {
   // No repository field in the published manifest.
   'node-addon-require-builtin': { repo: 'https://www.npmjs.com/package/node-addon-require-builtin' },
   // No `license` field in the published manifest; the tarball's LICENSE.txt is the MIT text.
+  // License mismatch: manifest declares ISC, but the tarball LICENSE text is the standard MIT License.
+  // Observed license scan confirmed MIT (title "MIT License" + MIT-typical permission paragraph).
+  // Reviewed 2026-11-03 — override takes precedence over manifest ISC.
+  'cos-nodejs-sdk-v5': { license: 'MIT' },
 }
 
 /**
@@ -138,7 +142,12 @@ export interface Manifest {
 /** One disclosed external npm dependency. */
 interface ExternalDep {
   name: string
+  version?: string | undefined
   license: string
+  /** Raw license field from the published manifest (declared). */
+  declaredLicense?: string | undefined
+  /** License SPDX id extracted from the shipped LICENSE file, when recognizable. */
+  observedLicense?: string | undefined
   repo: string
   /** True when a shipped workspace consumer installs it at runtime or embeds its implementation. */
   runtime: boolean
@@ -345,16 +354,139 @@ function installedManifest(name: string, manifests: Map<string, Manifest>, expec
 }
 
 /** License and repository URL for an installed external package, from the pnpm store. */
-function installedMetadata(name: string, manifests: Map<string, Manifest>): { license: string; repo: string } {
+function installedMetadata(name: string, manifests: Map<string, Manifest>): {
+  license: string
+  declaredLicense?: string | undefined
+  repo: string
+  version?: string | undefined
+  observedLicense?: string | undefined
+} {
   const override = OVERRIDES[name]
+  const installDir = installedDirectory(name, manifests)
   const manifest = installedManifest(name, manifests)
   const license = override?.license ?? manifest?.license
+  const declaredLicense = manifest?.license
   const rawRepo = typeof manifest?.repository === 'string' ? manifest.repository : manifest?.repository?.url ?? manifest?.homepage
   const repo = override?.repo ?? normalizeRepo(rawRepo)
   if (license === undefined || repo === undefined) {
     throw new Error(`gen-third-party-notices: cannot resolve ${license === undefined ? 'license' : 'repository'} for ${name}; run \`pnpm install\`, or add an OVERRIDES entry.`)
   }
-  return { license, repo }
+  const observedLicense = installDir ? extractObservedLicenseFromDir(installDir) : undefined
+  return { license, declaredLicense, repo, version: manifest?.version, observedLicense }
+}
+
+/**
+ * Find the filesystem directory that holds an installed package so we can read
+ * its LICENSE file. Prefers a workspace-local node_modules link (which surfaces
+ * all of that package's sibling files), falls back to a virtual-store directory.
+ */
+function installedDirectory(name: string, manifests: Map<string, Manifest>): string | undefined {
+  const linked = workspaceLinkedManifest(name, manifests)
+  if (linked !== undefined) {
+    const dir = dirname(resolve(root, 'node_modules', name, 'package.json'))
+    if (existsSync(dir)) return dir
+  }
+  for (const store of ['node_modules', 'native/system/node_modules']) {
+    const direct = resolve(root, store, name)
+    if (existsSync(direct)) return direct
+    const virtual = resolve(root, store, '.pnpm')
+    if (!existsSync(virtual)) continue
+    const foundDir = findInVirtualStore(virtual, name)
+    if (foundDir !== undefined) return foundDir
+  }
+  return undefined
+}
+
+/** Walk the pnpm virtual store looking for a directory containing `node_modules/<name>/package.json`. */
+function findInVirtualStore(virtual: string, name: string): string | undefined {
+  for (const entry of readdirSync(virtual)) {
+    const candidate = resolve(virtual, entry, 'node_modules', name)
+    if (existsSync(candidate)) return candidate
+  }
+  return undefined
+}
+
+/** Common license basenames to probe, in precedence order. */
+const LICENSE_FILENAMES = [
+  'LICENSE', 'LICENSE.md', 'LICENSE.txt', 'LICENSE.bsd', 'LICENSE.mit',
+  'LICENSE-MIT', 'LICENSE-BSD', 'LICENSE.APACHE', 'LICENSE.apache', 'LICENSE',
+  'COPYING', 'COPYING.md', 'COPYING.txt', 'NOTICE', 'NOTICE.md', 'NOTICE.txt',
+] as const
+
+/**
+ * Try to extract the SPDX identifier of the license that ships alongside an
+ * installed package. Returns undefined when no recognizable license file is
+ * present or its contents cannot be mapped to a stable SPDX identifier.
+ *
+ * This is a heuristic, not a lawyer: it reads the first lines of each known
+ * license filename and looks for the canonical SPDX identifier markers.
+ */
+export function extractObservedLicenseFromDir(dir: string): string | undefined {
+  if (!statSync(dir).isDirectory()) return undefined
+  const entries = readdirSync(dir).map(name => name.toLowerCase())
+  const candidates: string[] = []
+  for (const basename of LICENSE_FILENAMES) {
+    const match = entries.find(name => name === basename.toLowerCase())
+    if (match) {
+      // Preserve original case when resolving, since `entries` was lower-cased.
+      const actual = readdirSync(dir).find(name => name.toLowerCase() === match)
+      if (actual && !candidates.includes(actual)) candidates.push(actual)
+    }
+  }
+  // Some packages bundle all their licenses into `LICENSES/` (REUSE convention).
+  const reuseActual = readdirSync(dir).find(name => name.toLowerCase() === 'licenses')
+  if (reuseActual !== undefined) {
+    for (const file of readdirSync(resolve(dir, reuseActual))) {
+      if (/\.(txt|md)$/i.test(file) || /^LICEN[CS]E/i.test(file)) {
+        candidates.push(`licenses/${file}`)
+      }
+    }
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const path = resolve(dir, candidate)
+      const text = readFileSync(path, 'utf8')
+      const id = guessSpdxIdFromLicenseText(text)
+      if (id !== undefined) return id
+    } catch {
+      // Permission denied or binary content — skip, try next candidate.
+    }
+  }
+  return undefined
+}
+
+/**
+ * Map a license file's opening text to an SPDX identifier via marker phrases.
+ * The regexes are ordered by confidence — e.g. the Apache license body
+ * literally begins with "Apache License" — and fail closed on ambiguous text
+ * (so we return undefined rather than making a guess).
+ */
+export function guessSpdxIdFromLicenseText(text: string): string | undefined {
+  const head = text.slice(0, 4000)
+  if (/^apache license\s+version\s+2\.0/i.test(head)) return 'Apache-2.0'
+  if (/^mit license/i.test(head) || /permission is hereby granted[^\n]*free of charge[^\n]*copy[, ]modify[, ]merge[, ]publish[, ]distribute[, ]sublicense[, ]and\/or sell/i.test(head)) return 'MIT'
+  // BSD-3 is distinguished from BSD-2 by a third clause forbidding use of
+  // the copyright holder's name or contributors' names to endorse derived
+  // products. Without that clause we treat it as BSD-2.
+  if (/^bsd 3-clause license/i.test(head)) return 'BSD-3-Clause'
+  if (/redistribution and use in source and binary forms[^\n]*are permitted provided that the following conditions are met/i.test(head) && /neither the name of[^\n]*nor the names of its contributors/i.test(head)) return 'BSD-3-Clause'
+  if (/^bsd 2-clause license/i.test(head)) return 'BSD-2-Clause'
+  if (/redistribution and use in source and binary forms[^\n]*are permitted provided that the following conditions are met/i.test(head)) return 'BSD-2-Clause'
+  if (/^mpl version 2\.0/i.test(head) || /this source code form is subject to the terms of the mozilla public license/i.test(head)) return 'MPL-2.0'
+  if (/^isc license/i.test(head) || /permission to use[, ]copy[, ]modify[, ]and\/or distribute this software for any purpose with or without fee/i.test(head)) return 'ISC'
+  if (/^gpl license\s+version\s+3/i.test(head)) return 'GPL-3.0-only'
+  if (/^gpl license\s+version\s+2/i.test(head)) return 'GPL-2.0-only'
+  if (/^agpl license\s+version\s+3/i.test(head)) return 'AGPL-3.0-only'
+  if (/^lgpl license\s+version\s+3/i.test(head)) return 'LGPL-3.0-only'
+  if (/^python software foundation license\s+version\s+2/i.test(head)) return 'PSF-2.0'
+  if (/^unlicense/i.test(head) || /this is free and unencumbered software released into the public domain/i.test(head)) return 'Unlicense'
+  if (/^the unlicense/i.test(head)) return 'Unlicense'
+  if (/^creative commons zero/i.test(head)) return 'CC0-1.0'
+  if (/^0-clause bsd/i.test(head) || /0bsd/i.test(head) || (/permission is hereby granted[^\n]*use copy modify merge publish distribute sublicense and\/or sell/i.test(head) && !/neither the name of/i.test(head))) return '0BSD'
+  // MIT-CMU: same shape as MIT but the CMU-specific disclaimer shows up later.
+  if (/permission is hereby granted[^\n]*free of charge[^\n]*copy[, ]modify[, ]merge[, ]publish[, ]distribute[, ]sublicense[, ]and\/or sell/i.test(head) && /carnegie mellon university/i.test(head)) return 'MIT-CMU'
+  return undefined
 }
 
 function collectClaudeDistribution(manifests: Map<string, Manifest>): ClaudeDistribution {
@@ -756,16 +888,76 @@ ${rows.join('\n')}
 }
 
 /**
- * Render the complete notices document.
- * @returns The exact bytes THIRD_PARTY_NOTICES.md must hold after resolving browser inputs.
+ * A flattened inventory entry consumed by every renderer (markdown, SPDX, CycloneDX).
+ * Tells renderers which tier this dependency belongs to without redoing tier policy.
  */
-export async function render(): Promise<string> {
+export interface InventoryEntry {
+  /** The npm or Python distribution name, or a stable identifier for non-npm entries. */
+  name: string
+  /** Pinned resolved version, when known. */
+  version?: string | undefined
+  /** Concluded license expression (after OVERRIDES). */
+  license: string
+  /** Raw license field from the published manifest (declared). */
+  declaredLicense?: string | undefined
+  /** SPDX id extracted from the shipped LICENSE file, when recognizable; undefined → NOASSERTION. */
+  observedLicense?: string | undefined
+  /** Browsable source URL for the package. */
+  repo?: string | undefined
+  /** Which tier the entry occupies in the distribution model. */
+  tier: 'runtime-npm' | 'dev-npm' | 'bundled-python' | 'direct-python' | 'vendored' | 'first-party-native' | 'claude-platform' | 'patched'
+  /** Narrower source hint for renderers that want to bucket entries that way. */
+  source?: 'npm' | 'python' | 'vendor'
+  /** Python-role disclosure. */
+  role?: string
+  /** Whether the repository applies a patch to this package before distribution. */
+  patched?: boolean
+  /** Upstream project display name for vendored entries (from vendor/README.md). */
+  upstreamName?: string
+  /** Repository-relative directory for vendored sources. */
+  sourceDirectory?: string
+}
+
+/**
+ * Complete dependency inventory for the repository, as assembled by the
+ * generator. Every renderer (markdown, SPDX, CycloneDX) consumes this one
+ * object so tier policy and license overrides cannot drift across formats.
+ */
+export interface Inventory {
+  /** Root package identity. */
+  root: { name: string; version: string; license: string; repo?: string | undefined }
+  /** Timestamp the inventory was assembled (ISO 8601). */
+  generatedAt: string
+  /** Tool name and version identifying the generator. */
+  generator: { name: string; version: string }
+  /** Flat list of every disclosed third-party or embedded first-party entry. */
+  entries: InventoryEntry[]
+  /** pnpm patches applied at install time (spec → patch file). */
+  patches: { spec: string; patch: string }[]
+  /** Optional distribution context attached to the SDK declaration. */
+  claudeDistribution?: ClaudeDistribution | undefined
+  /** Inspector build facts consumed by the markdown renderer. */
+  devtools?: { version: string; revision: string }
+  /** Whether the LibreOffice kit runtime is installed. */
+  libreOfficeRuntime: boolean
+}
+
+/**
+ * Assemble the repository's third-party inventory.
+ * This is the single source of truth for both THIRD_PARTY_NOTICES.md and the SBOM formats;
+ * any change to tier policy, overrides, or source discovery lives here.
+ * @param generatedAt - optional timestamp to reuse (used by SBOM --check mode so
+ *   the generated bytes match the committed artifact byte-for-byte). When omitted,
+ *   the current time is used.
+ */
+export async function collectInventory(generatedAt?: string): Promise<Inventory> {
   const browser = await browserBundledExternals(root)
-  // The Inspector's Host build hook compiles this standalone frontend outside the Client bundle graph.
   browser.add('chrome-devtools-frontend')
-  // The linked-manifest cache is keyed by name only, so it must not outlive
-  // the manifests map it was resolved from; render() owns that single load.
   workspaceLinkedManifestCache.clear()
+
+  const rootManifest = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) as Manifest & {
+    repository?: string | { url?: string }
+  }
   const { manifests, names } = loadWorkspaceManifests()
   const npm = collectNpmDeps(manifests, names, browser)
   const runtimeDeps = npm.filter(dep => dep.runtime)
@@ -774,16 +966,114 @@ export async function render(): Promise<string> {
   const vendored = collectVendored()
   const python = collectPython()
   const bundledPython = collectBundledPythonDependencies(primaryRuntimeLock.pythonPackages)
-  const patched = collectPatched()
+  const patches = collectPatched()
   const claudeDistribution = runtimeDeps.some(
     dep => dep.name === CLAUDE_AGENT_SDK_PACKAGE,
   )
     ? collectClaudeDistribution(manifests)
     : undefined
-  const nonPermissiveDev = devDeps.filter(dep => !isPermissive(dep.license))
+
   assertRuntimeLicenses(runtimeDeps)
   assertRuntimeLicenses(bundledPython)
-  const patchedLines = patched.map(({ spec, patch }) => `- \`${spec}\` — [\`${patch}\`](${patch})`)
+
+  const patchSpecs = new Set(patches.map(p => p.spec))
+  const entries: InventoryEntry[] = [
+    ...runtimeDeps.map(dep => ({
+      name: dep.name, version: dep.version, license: dep.license,
+      declaredLicense: dep.declaredLicense, observedLicense: dep.observedLicense,
+      repo: dep.repo,
+      tier: 'runtime-npm' as const, source: 'npm' as const,
+      patched: patchSpecs.has(dep.name),
+    })),
+    ...devDeps.map(dep => ({
+      name: dep.name, version: dep.version, license: dep.license,
+      declaredLicense: dep.declaredLicense, observedLicense: dep.observedLicense,
+      repo: dep.repo,
+      tier: 'dev-npm' as const, source: 'npm' as const,
+      patched: patchSpecs.has(dep.name),
+    })),
+    ...bundledPython.map(dep => ({
+      name: dep.name, version: dep.version, license: dep.license, repo: dep.repo,
+      tier: 'bundled-python' as const, source: 'python' as const,
+    })),
+    ...python.map(dep => ({
+      name: dep.name, license: dep.license, repo: dep.repo,
+      tier: 'direct-python' as const, source: 'python' as const, role: dep.role,
+    })),
+    ...vendored.map(row => ({
+      name: row.npmName, license: 'MIT', repo: row.upstream,
+      tier: 'vendored' as const, source: 'vendor' as const,
+      upstreamName: row.upstreamName, sourceDirectory: row.sourceDirectory,
+    })),
+    // First-party native packages appear in the inventory for completeness,
+    // but they are not third-party. They are kept in the entries list so
+    // downstream SBOM consumers can see the complete distribution.
+    ...[...FIRST_PARTY].map(name => ({
+      name, license: 'BSD-3-Clause',
+      tier: 'first-party-native' as const,
+    })),
+  ]
+
+  if (claudeDistribution !== undefined) {
+    for (const payload of claudeDistribution.payloads) {
+      entries.push({
+        name: payload.name, version: payload.version,
+        license: CLAUDE_PLATFORM_DECLARED_LICENSE,
+        tier: 'claude-platform' as const,
+      })
+    }
+  }
+
+  return {
+    root: {
+      name: rootManifest.name ?? '@deepseek-ai/dsh-root',
+      version: rootManifest.version ?? '0.0.0',
+      license: rootManifest.license ?? 'MIT',
+      repo: typeof rootManifest.repository === 'string'
+        ? normalizeRepo(rootManifest.repository)
+        : normalizeRepo(rootManifest.repository?.url),
+    },
+    generatedAt: generatedAt ?? new Date().toISOString(),
+    generator: { name: 'scripts/gen-third-party-notices.ts', version: '1.0.0' },
+    entries,
+    patches,
+    claudeDistribution,
+    devtools: { version: DEVTOOLS_NPM_VERSION, revision: DEVTOOLS_SOURCE_REVISION },
+    libreOfficeRuntime: kitRuntime,
+  }
+}
+
+/**
+ * Render the complete notices document.
+ * @returns The exact bytes THIRD_PARTY_NOTICES.md must hold after resolving browser inputs.
+ */
+export async function render(): Promise<string> {
+  const inventory = await collectInventory()
+  const toRuntimeDep = (e: InventoryEntry): ExternalDep => ({
+    name: e.name, version: e.version, license: e.license,
+    declaredLicense: e.declaredLicense, repo: e.repo ?? '', runtime: true,
+  })
+  const toDevDep = (e: InventoryEntry): ExternalDep => ({
+    name: e.name, version: e.version, license: e.license,
+    declaredLicense: e.declaredLicense, repo: e.repo ?? '', runtime: false,
+  })
+  const runtimeDeps = inventory.entries.filter(e => e.tier === 'runtime-npm').map(toRuntimeDep)
+  const devDeps = inventory.entries.filter(e => e.tier === 'dev-npm').map(toDevDep)
+  const kitRuntime = inventory.libreOfficeRuntime
+  const vendored = inventory.entries
+    .filter(e => e.tier === 'vendored')
+    .map(e => ({
+      npmName: e.name,
+      upstreamName: e.upstreamName ?? e.name,
+      sourceDirectory: e.sourceDirectory ?? `vendor/${e.name.replace('/', '')}`,
+    }))
+  const python = inventory.entries.filter(e => e.tier === 'direct-python')
+    .map(e => ({ name: e.name, license: e.license, repo: e.repo, role: e.role }))
+  const bundledPython = inventory.entries.filter(e => e.tier === 'bundled-python')
+    .map(e => ({ name: e.name, version: e.version, license: e.license, repo: e.repo }))
+  const patchedLines = inventory.patches.map(({ spec, patch }) => `- \`${spec}\` — [\`${patch}\`](${patch})`)
+  const claudeDistribution = inventory.claudeDistribution
+  const nonPermissiveDev = devDeps.filter(dep => !isPermissive(dep.license))
 
   return `<!-- Generated by scripts/gen-third-party-notices.ts — do not edit by hand.
      Run \`pnpm run gen-third-party-notices\` to regenerate. -->

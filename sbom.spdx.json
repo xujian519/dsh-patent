@@ -1,0 +1,5612 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "@deepseek-ai/dsh-root-sbom",
+  "documentNamespace": "https://github.com/deepseek-ai/deepseek-harness/spdx/-deepseek-ai-dsh-root-0.2.2-alpha.2/2026-11-02T23-23-28.991Z",
+  "creationInfo": {
+    "created": "2026-11-02T23:23:28.991Z",
+    "creators": [
+      "Tool: DeepSeek Harness SBOM Generator",
+      "Tool: scripts/gen-third-party-notices.ts@1.0.0"
+    ],
+    "documentComment": "Automated from scripts/gen-third-party-notices.ts inventory. Tier policy and license overrides live there; do not edit by hand."
+  },
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "name": "@deepseek-ai/dsh-root",
+      "versionInfo": "0.2.2-alpha.2",
+      "downloadLocation": "https://github.com/deepseek-ai/deepseek-harness",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package--agentclientprotocol-sdk-1.4.0",
+      "name": "@agentclientprotocol/sdk",
+      "versionInfo": "1.4.0",
+      "downloadLocation": "https://github.com/agentclientprotocol/typescript-sdk",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@agentclientprotocol%2Fsdk@1.4.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-0.3.263",
+      "name": "@anthropic-ai/claude-agent-sdk",
+      "versionInfo": "0.3.263",
+      "downloadLocation": "https://github.com/anthropics/claude-agent-sdk-typescript",
+      "licenseConcluded": "SEE LICENSE IN README.md",
+      "licenseDeclared": "SEE LICENSE IN README.md",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@anthropic-ai%2Fclaude-agent-sdk@0.3.263"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--anthropic-ai-sdk-0.93.0",
+      "name": "@anthropic-ai/sdk",
+      "versionInfo": "0.93.0",
+      "downloadLocation": "https://github.com/anthropics/anthropic-sdk-typescript",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@anthropic-ai%2Fsdk@0.93.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--babel-code-frame-7.29.7",
+      "name": "@babel/code-frame",
+      "versionInfo": "7.29.7",
+      "downloadLocation": "https://github.com/babel/babel",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@babel%2Fcode-frame@7.29.7"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--botiverse-oar-0.67.0",
+      "name": "@botiverse/oar",
+      "versionInfo": "0.67.0",
+      "downloadLocation": "https://github.com/botiverse/oar",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@botiverse%2Foar@0.67.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--browserbasehq-stagehand-4.1.0",
+      "name": "@browserbasehq/stagehand",
+      "versionInfo": "4.1.0",
+      "downloadLocation": "https://github.com/browserbase/stagehand",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@browserbasehq%2Fstagehand@4.1.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-libreoffice-kit-0.1.5",
+      "name": "@deepseek-ai/libreoffice-kit",
+      "versionInfo": "0.1.5",
+      "downloadLocation": "https://github.com/deepseek-ai/dsh-libreoffice-kit",
+      "licenseConcluded": "MPL-2.0",
+      "licenseDeclared": "MPL-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@deepseek-ai%2Flibreoffice-kit@0.1.5"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--earendil-works-pi-ai-1.3.0",
+      "name": "@earendil-works/pi-ai",
+      "versionInfo": "1.3.0",
+      "downloadLocation": "https://github.com/earendil-works/pi",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@earendil-works%2Fpi-ai@1.3.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--earendil-works-pi-coding-agent-1.3.0",
+      "name": "@earendil-works/pi-coding-agent",
+      "versionInfo": "1.3.0",
+      "downloadLocation": "https://github.com/earendil-works/pi",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@earendil-works%2Fpi-coding-agent@1.3.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--eslint-community-regexpp-4.12.2",
+      "name": "@eslint-community/regexpp",
+      "versionInfo": "4.12.2",
+      "downloadLocation": "https://github.com/eslint-community/regexpp",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@eslint-community%2Fregexpp@4.12.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--fortune-sheet-core-1.0.4",
+      "name": "@fortune-sheet/core",
+      "versionInfo": "1.0.4",
+      "downloadLocation": "https://github.com/ruilisi/fortune-sheet",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@fortune-sheet%2Fcore@1.0.4"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--fortune-sheet-react-1.0.4",
+      "name": "@fortune-sheet/react",
+      "versionInfo": "1.0.4",
+      "downloadLocation": "https://github.com/ruilisi/fortune-sheet",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@fortune-sheet%2Freact@1.0.4"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--joplin-turndown-plugin-gfm-1.0.67",
+      "name": "@joplin/turndown-plugin-gfm",
+      "versionInfo": "1.0.67",
+      "downloadLocation": "https://github.com/laurent22/joplin-turndown-plugin-gfm",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@joplin%2Fturndown-plugin-gfm@1.0.67"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--jridgewell-gen-mapping-0.3.13",
+      "name": "@jridgewell/gen-mapping",
+      "versionInfo": "0.3.13",
+      "downloadLocation": "https://github.com/jridgewell/sourcemaps",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@jridgewell%2Fgen-mapping@0.3.13"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--js-temporal-polyfill-0.5.1",
+      "name": "@js-temporal/polyfill",
+      "versionInfo": "0.5.1",
+      "downloadLocation": "https://github.com/js-temporal/temporal-polyfill",
+      "licenseConcluded": "ISC",
+      "licenseDeclared": "ISC",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@js-temporal%2Fpolyfill@0.5.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--lexical-history-0.49.0",
+      "name": "@lexical/history",
+      "versionInfo": "0.49.0",
+      "downloadLocation": "https://github.com/facebook/lexical",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@lexical%2Fhistory@0.49.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--lexical-plain-text-0.49.0",
+      "name": "@lexical/plain-text",
+      "versionInfo": "0.49.0",
+      "downloadLocation": "https://github.com/facebook/lexical",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@lexical%2Fplain-text@0.49.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--lexical-text-0.49.0",
+      "name": "@lexical/text",
+      "versionInfo": "0.49.0",
+      "downloadLocation": "https://github.com/facebook/lexical",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@lexical%2Ftext@0.49.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--lexical-utils-0.49.0",
+      "name": "@lexical/utils",
+      "versionInfo": "0.49.0",
+      "downloadLocation": "https://github.com/facebook/lexical",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@lexical%2Futils@0.49.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--modelcontextprotocol-client-2.2.0",
+      "name": "@modelcontextprotocol/client",
+      "versionInfo": "2.2.0",
+      "downloadLocation": "https://github.com/modelcontextprotocol/typescript-sdk",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@modelcontextprotocol%2Fclient@2.2.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--modelcontextprotocol-sdk-1.31.0",
+      "name": "@modelcontextprotocol/sdk",
+      "versionInfo": "1.31.0",
+      "downloadLocation": "https://github.com/modelcontextprotocol/typescript-sdk",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@modelcontextprotocol%2Fsdk@1.31.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--noble-hashes-2.4.0",
+      "name": "@noble/hashes",
+      "versionInfo": "2.4.0",
+      "downloadLocation": "https://github.com/paulmillr/noble-hashes",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@noble%2Fhashes@2.4.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--octokit-webhooks-14.2.0",
+      "name": "@octokit/webhooks",
+      "versionInfo": "14.2.0",
+      "downloadLocation": "https://github.com/octokit/webhooks.js",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@octokit%2Fwebhooks@14.2.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--openai-codex-0.153.4",
+      "name": "@openai/codex",
+      "versionInfo": "0.153.4",
+      "downloadLocation": "https://github.com/openai/codex",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@openai%2Fcodex@0.153.4"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--opentelemetry-api-1.9.1",
+      "name": "@opentelemetry/api",
+      "versionInfo": "1.9.1",
+      "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@opentelemetry%2Fapi@1.9.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--opentelemetry-api-logs-0.222.0",
+      "name": "@opentelemetry/api-logs",
+      "versionInfo": "0.222.0",
+      "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@opentelemetry%2Fapi-logs@0.222.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--opentelemetry-core-2.11.0",
+      "name": "@opentelemetry/core",
+      "versionInfo": "2.11.0",
+      "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@opentelemetry%2Fcore@2.11.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--opentelemetry-otlp-exporter-base-0.222.0",
+      "name": "@opentelemetry/otlp-exporter-base",
+      "versionInfo": "0.222.0",
+      "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@opentelemetry%2Fotlp-exporter-base@0.222.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--opentelemetry-otlp-transformer-0.222.0",
+      "name": "@opentelemetry/otlp-transformer",
+      "versionInfo": "0.222.0",
+      "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@opentelemetry%2Fotlp-transformer@0.222.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--opentelemetry-resources-2.11.0",
+      "name": "@opentelemetry/resources",
+      "versionInfo": "2.11.0",
+      "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@opentelemetry%2Fresources@2.11.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--opentelemetry-sdk-logs-0.222.0",
+      "name": "@opentelemetry/sdk-logs",
+      "versionInfo": "0.222.0",
+      "downloadLocation": "https://github.com/open-telemetry/opentelemetry-js",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@opentelemetry%2Fsdk-logs@0.222.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--playwright-mcp-0.0.80",
+      "name": "@playwright/mcp",
+      "versionInfo": "0.0.80",
+      "downloadLocation": "https://github.com/microsoft/playwright-mcp",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@playwright%2Fmcp@0.0.80"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--puppeteer-browsers-3.2.2",
+      "name": "@puppeteer/browsers",
+      "versionInfo": "3.2.2",
+      "downloadLocation": "https://github.com/puppeteer/puppeteer/tree/main/packages/browsers",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@puppeteer%2Fbrowsers@3.2.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--shikijs-langs-4.4.3",
+      "name": "@shikijs/langs",
+      "versionInfo": "4.4.3",
+      "downloadLocation": "https://github.com/shikijs/shiki",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@shikijs%2Flangs@4.4.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--standard-schema-spec-1.1.0",
+      "name": "@standard-schema/spec",
+      "versionInfo": "1.1.0",
+      "downloadLocation": "https://github.com/standard-schema/standard-schema",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@standard-schema%2Fspec@1.1.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--tanstack-react-virtual-3.14.10",
+      "name": "@tanstack/react-virtual",
+      "versionInfo": "3.14.10",
+      "downloadLocation": "https://github.com/TanStack/virtual",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@tanstack%2Freact-virtual@3.14.10"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--trycua-cua-driver-0.28.0",
+      "name": "@trycua/cua-driver",
+      "versionInfo": "0.28.0",
+      "downloadLocation": "https://github.com/trycua/cua",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@trycua%2Fcua-driver@0.28.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--viz-js-viz-3.31.0",
+      "name": "@viz-js/viz",
+      "versionInfo": "3.31.0",
+      "downloadLocation": "https://github.com/mdaines/viz-js",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@viz-js%2Fviz@3.31.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--vscode-ripgrep-1.18.0",
+      "name": "@vscode/ripgrep",
+      "versionInfo": "1.18.0",
+      "downloadLocation": "https://github.com/microsoft/vscode-ripgrep",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@vscode%2Fripgrep@1.18.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--xmanrui-dsh-im-3.0.5",
+      "name": "@xmanrui/dsh-im",
+      "versionInfo": "3.0.5",
+      "downloadLocation": "https://github.com/xmanrui/dsh-im",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@xmanrui%2Fdsh-im@3.0.5"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--xterm-addon-fit-0.11.0",
+      "name": "@xterm/addon-fit",
+      "versionInfo": "0.11.0",
+      "downloadLocation": "https://github.com/xtermjs/xterm.js/tree/master/addons/addon-fit",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@xterm%2Faddon-fit@0.11.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--xterm-addon-serialize-0.14.0",
+      "name": "@xterm/addon-serialize",
+      "versionInfo": "0.14.0",
+      "downloadLocation": "https://github.com/xtermjs/xterm.js/tree/master/addons/addon-serialize",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@xterm%2Faddon-serialize@0.14.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--xterm-headless-6.0.0",
+      "name": "@xterm/headless",
+      "versionInfo": "6.0.0",
+      "downloadLocation": "https://github.com/xtermjs/xterm.js",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@xterm%2Fheadless@6.0.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--xterm-xterm-6.0.0",
+      "name": "@xterm/xterm",
+      "versionInfo": "6.0.0",
+      "downloadLocation": "https://github.com/xtermjs/xterm.js",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@xterm%2Fxterm@6.0.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--yarnpkg-parsers-3.1.0",
+      "name": "@yarnpkg/parsers",
+      "versionInfo": "3.1.0",
+      "downloadLocation": "https://github.com/yarnpkg/berry",
+      "licenseConcluded": "BSD-2-Clause",
+      "licenseDeclared": "BSD-2-Clause",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@yarnpkg%2Fparsers@3.1.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-acorn-8.18.0",
+      "name": "acorn",
+      "versionInfo": "8.18.0",
+      "downloadLocation": "https://github.com/acornjs/acorn",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/acorn@8.18.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-acorn-walk-8.3.5",
+      "name": "acorn-walk",
+      "versionInfo": "8.3.5",
+      "downloadLocation": "https://github.com/acornjs/acorn",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/acorn-walk@8.3.5"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-ajv-8.20.0",
+      "name": "ajv",
+      "versionInfo": "8.20.0",
+      "downloadLocation": "https://github.com/ajv-validator/ajv",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/ajv@8.20.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-anser-2.3.5",
+      "name": "anser",
+      "versionInfo": "2.3.5",
+      "downloadLocation": "https://github.com/IonicaBizau/anser",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/anser@2.3.5"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-big.js-7.0.1",
+      "name": "big.js",
+      "versionInfo": "7.0.1",
+      "downloadLocation": "https://github.com/MikeMcl/big.js",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/big.js@7.0.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-birpc-4.2.0",
+      "name": "birpc",
+      "versionInfo": "4.2.0",
+      "downloadLocation": "https://github.com/antfu-collective/birpc",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/birpc@4.2.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-buffer-6.0.3",
+      "name": "buffer",
+      "versionInfo": "6.0.3",
+      "downloadLocation": "https://github.com/feross/buffer",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/buffer@6.0.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-cheerio-1.2.0",
+      "name": "cheerio",
+      "versionInfo": "1.2.0",
+      "downloadLocation": "https://github.com/cheeriojs/cheerio",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/cheerio@1.2.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-chokidar-4.0.3",
+      "name": "chokidar",
+      "versionInfo": "4.0.3",
+      "downloadLocation": "https://github.com/paulmillr/chokidar",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/chokidar@4.0.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-chrome-devtools-frontend-1.0.1638082",
+      "name": "chrome-devtools-frontend",
+      "versionInfo": "1.0.1638082",
+      "downloadLocation": "https://github.com/ChromeDevTools/devtools-frontend",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/chrome-devtools-frontend@1.0.1638082"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-chrome-devtools-mcp-1.9.0",
+      "name": "chrome-devtools-mcp",
+      "versionInfo": "1.9.0",
+      "downloadLocation": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/chrome-devtools-mcp@1.9.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-clsx-2.1.1",
+      "name": "clsx",
+      "versionInfo": "2.1.1",
+      "downloadLocation": "https://github.com/lukeed/clsx",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/clsx@2.1.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-commander-15.0.0",
+      "name": "commander",
+      "versionInfo": "15.0.0",
+      "downloadLocation": "https://github.com/tj/commander.js",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/commander@15.0.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-compression-1.8.2",
+      "name": "compression",
+      "versionInfo": "1.8.2",
+      "downloadLocation": "https://github.com/expressjs/compression",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/compression@1.8.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-cross-spawn-7.0.6",
+      "name": "cross-spawn",
+      "versionInfo": "7.0.6",
+      "downloadLocation": "https://github.com/moxystudio/node-cross-spawn",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/cross-spawn@7.0.6"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-diff-9.0.0",
+      "name": "diff",
+      "versionInfo": "9.0.0",
+      "downloadLocation": "https://github.com/kpdecker/jsdiff",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseObserved": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/diff@9.0.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-domhandler-6.0.1",
+      "name": "domhandler",
+      "versionInfo": "6.0.1",
+      "downloadLocation": "https://github.com/fb55/domhandler",
+      "licenseConcluded": "BSD-2-Clause",
+      "licenseDeclared": "BSD-2-Clause",
+      "licenseObserved": "BSD-2-Clause",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/domhandler@6.0.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-dompurify-3.4.16",
+      "name": "dompurify",
+      "versionInfo": "3.4.16",
+      "downloadLocation": "https://github.com/cure53/DOMPurify",
+      "licenseConcluded": "(MPL-2.0 OR Apache-2.0)",
+      "licenseDeclared": "(MPL-2.0 OR Apache-2.0)",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/dompurify@3.4.16"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-electron-updater-6.8.9",
+      "name": "electron-updater",
+      "versionInfo": "6.8.9",
+      "downloadLocation": "https://github.com/electron-userland/electron-builder",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/electron-updater@6.8.9"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-eventsource-parser-3.1.0",
+      "name": "eventsource-parser",
+      "versionInfo": "3.1.0",
+      "downloadLocation": "https://github.com/rexxars/eventsource-parser",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/eventsource-parser@3.1.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-exceljs-4.4.0",
+      "name": "exceljs",
+      "versionInfo": "4.4.0",
+      "downloadLocation": "https://github.com/exceljs/exceljs",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/exceljs@4.4.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-execa-10.0.1",
+      "name": "execa",
+      "versionInfo": "10.0.1",
+      "downloadLocation": "https://github.com/sindresorhus/execa",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/execa@10.0.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-fast-xml-parser-5.11.1",
+      "name": "fast-xml-parser",
+      "versionInfo": "5.11.1",
+      "downloadLocation": "https://github.com/NaturalIntelligence/fast-xml-parser",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/fast-xml-parser@5.11.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-fflate-0.8.3",
+      "name": "fflate",
+      "versionInfo": "0.8.3",
+      "downloadLocation": "https://github.com/101arrowz/fflate",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/fflate@0.8.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-got-14.6.6",
+      "name": "got",
+      "versionInfo": "14.6.6",
+      "downloadLocation": "https://github.com/sindresorhus/got",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/got@14.6.6"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-hosted-git-info-9.0.3",
+      "name": "hosted-git-info",
+      "versionInfo": "9.0.3",
+      "downloadLocation": "https://github.com/npm/hosted-git-info",
+      "licenseConcluded": "ISC",
+      "licenseDeclared": "ISC",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/hosted-git-info@9.0.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-immer-10.2.0",
+      "name": "immer",
+      "versionInfo": "10.2.0",
+      "downloadLocation": "https://github.com/immerjs/immer",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/immer@10.2.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-ipaddr.js-2.5.0",
+      "name": "ipaddr.js",
+      "versionInfo": "2.5.0",
+      "downloadLocation": "https://github.com/whitequark/ipaddr.js",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/ipaddr.js@2.5.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-js-yaml-4.3.2",
+      "name": "js-yaml",
+      "versionInfo": "4.3.2",
+      "downloadLocation": "https://github.com/nodeca/js-yaml",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/js-yaml@4.3.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-katex-0.18.7",
+      "name": "katex",
+      "versionInfo": "0.18.7",
+      "downloadLocation": "https://github.com/KaTeX/KaTeX",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/katex@0.18.7"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-koffi-3.1.1",
+      "name": "koffi",
+      "versionInfo": "3.1.1",
+      "downloadLocation": "https://github.com/Koromix/koffi",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/koffi@3.1.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-lexical-0.49.0",
+      "name": "lexical",
+      "versionInfo": "0.49.0",
+      "downloadLocation": "https://github.com/facebook/lexical",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/lexical@0.49.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-marked-16.4.2",
+      "name": "marked",
+      "versionInfo": "16.4.2",
+      "downloadLocation": "https://github.com/markedjs/marked",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "BSD-2-Clause",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/marked@16.4.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-mdast-util-from-markdown-2.0.3",
+      "name": "mdast-util-from-markdown",
+      "versionInfo": "2.0.3",
+      "downloadLocation": "https://github.com/syntax-tree/mdast-util-from-markdown",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/mdast-util-from-markdown@2.0.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-mdast-util-gfm-3.1.0",
+      "name": "mdast-util-gfm",
+      "versionInfo": "3.1.0",
+      "downloadLocation": "https://github.com/syntax-tree/mdast-util-gfm",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/mdast-util-gfm@3.1.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-mdast-util-math-3.0.0",
+      "name": "mdast-util-math",
+      "versionInfo": "3.0.0",
+      "downloadLocation": "https://github.com/syntax-tree/mdast-util-math",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/mdast-util-math@3.0.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-micromark-core-commonmark-2.0.3",
+      "name": "micromark-core-commonmark",
+      "versionInfo": "2.0.3",
+      "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-core-commonmark",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/micromark-core-commonmark@2.0.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-micromark-extension-gfm-3.0.0",
+      "name": "micromark-extension-gfm",
+      "versionInfo": "3.0.0",
+      "downloadLocation": "https://github.com/micromark/micromark-extension-gfm",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/micromark-extension-gfm@3.0.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-micromark-extension-math-3.1.0",
+      "name": "micromark-extension-math",
+      "versionInfo": "3.1.0",
+      "downloadLocation": "https://github.com/micromark/micromark-extension-math",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/micromark-extension-math@3.1.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-micromark-factory-space-2.0.1",
+      "name": "micromark-factory-space",
+      "versionInfo": "2.0.1",
+      "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-space",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/micromark-factory-space@2.0.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-micromark-util-character-2.1.1",
+      "name": "micromark-util-character",
+      "versionInfo": "2.1.1",
+      "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-character",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/micromark-util-character@2.1.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-micromark-util-classify-character-2.0.1",
+      "name": "micromark-util-classify-character",
+      "versionInfo": "2.0.1",
+      "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-classify-character",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/micromark-util-classify-character@2.0.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-micromark-util-decode-string-2.0.1",
+      "name": "micromark-util-decode-string",
+      "versionInfo": "2.0.1",
+      "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-decode-string",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/micromark-util-decode-string@2.0.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-micromark-util-sanitize-uri-2.0.1",
+      "name": "micromark-util-sanitize-uri",
+      "versionInfo": "2.0.1",
+      "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-sanitize-uri",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/micromark-util-sanitize-uri@2.0.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-micromark-util-symbol-2.0.1",
+      "name": "micromark-util-symbol",
+      "versionInfo": "2.0.1",
+      "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-symbol",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/micromark-util-symbol@2.0.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-mime-4.1.1",
+      "name": "mime",
+      "versionInfo": "4.1.1",
+      "downloadLocation": "https://github.com/broofa/mime",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/mime@4.1.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-mime-types-3.0.2",
+      "name": "mime-types",
+      "versionInfo": "3.0.2",
+      "downloadLocation": "https://github.com/jshttp/mime-types",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/mime-types@3.0.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-minisearch-7.2.0",
+      "name": "minisearch",
+      "versionInfo": "7.2.0",
+      "downloadLocation": "https://github.com/lucaong/minisearch",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/minisearch@7.2.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-negotiator-1.1.0",
+      "name": "negotiator",
+      "versionInfo": "1.1.0",
+      "downloadLocation": "https://github.com/jshttp/negotiator",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/negotiator@1.1.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-node-addon-require-builtin-0.1.9",
+      "name": "node-addon-require-builtin",
+      "versionInfo": "0.1.9",
+      "downloadLocation": "https://www.npmjs.com/package/node-addon-require-builtin",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/node-addon-require-builtin@0.1.9"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-node-pty-1.2.0-beta.15",
+      "name": "node-pty",
+      "versionInfo": "1.2.0-beta.15",
+      "downloadLocation": "https://github.com/microsoft/node-pty",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/node-pty@1.2.0-beta.15"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-open-11.0.4",
+      "name": "open",
+      "versionInfo": "11.0.4",
+      "downloadLocation": "https://github.com/sindresorhus/open",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/open@11.0.4"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-p-limit-7.3.3",
+      "name": "p-limit",
+      "versionInfo": "7.3.3",
+      "downloadLocation": "https://github.com/sindresorhus/p-limit",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/p-limit@7.3.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-papaparse-5.5.3",
+      "name": "papaparse",
+      "versionInfo": "5.5.3",
+      "downloadLocation": "https://github.com/mholt/PapaParse",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/papaparse@5.5.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pdfjs-dist-6.3.289",
+      "name": "pdfjs-dist",
+      "versionInfo": "6.3.289",
+      "downloadLocation": "https://github.com/mozilla/pdf.js",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/pdfjs-dist@6.3.289"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-picomatch-4.0.4",
+      "name": "picomatch",
+      "versionInfo": "4.0.4",
+      "downloadLocation": "https://github.com/micromatch/picomatch",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/picomatch@4.0.4"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-18.3.1",
+      "name": "react",
+      "versionInfo": "18.3.1",
+      "downloadLocation": "https://github.com/facebook/react",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/react@18.3.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-dom-18.3.1",
+      "name": "react-dom",
+      "versionInfo": "18.3.1",
+      "downloadLocation": "https://github.com/facebook/react",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/react-dom@18.3.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-readable-stream-4.7.0",
+      "name": "readable-stream",
+      "versionInfo": "4.7.0",
+      "downloadLocation": "https://github.com/nodejs/readable-stream",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/readable-stream@4.7.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-resolve.exports-2.0.3",
+      "name": "resolve.exports",
+      "versionInfo": "2.0.3",
+      "downloadLocation": "https://github.com/lukeed/resolve.exports",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/resolve.exports@2.0.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-semver-7.8.5",
+      "name": "semver",
+      "versionInfo": "7.8.5",
+      "downloadLocation": "https://github.com/npm/node-semver",
+      "licenseConcluded": "ISC",
+      "licenseDeclared": "ISC",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/semver@7.8.5"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-serve-static-2.2.1",
+      "name": "serve-static",
+      "versionInfo": "2.2.1",
+      "downloadLocation": "https://github.com/expressjs/serve-static",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/serve-static@2.2.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-sharp-0.35.5",
+      "name": "sharp",
+      "versionInfo": "0.35.5",
+      "downloadLocation": "https://github.com/lovell/sharp",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "Apache-2.0",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/sharp@0.35.5"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-shell-quote-1.12.0",
+      "name": "shell-quote",
+      "versionInfo": "1.12.0",
+      "downloadLocation": "http://github.com/ljharb/shell-quote",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/shell-quote@1.12.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-sherpa-onnx-node-1.13.8",
+      "name": "sherpa-onnx-node",
+      "versionInfo": "1.13.8",
+      "downloadLocation": "https://github.com/csukuangfj/sherpa-onnx",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/sherpa-onnx-node@1.13.8"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-shiki-4.4.3",
+      "name": "shiki",
+      "versionInfo": "4.4.3",
+      "downloadLocation": "https://github.com/shikijs/shiki",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/shiki@4.4.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-simple-icons-16.31.0",
+      "name": "simple-icons",
+      "versionInfo": "16.31.0",
+      "downloadLocation": "https://github.com/simple-icons/simple-icons",
+      "licenseConcluded": "CC0-1.0",
+      "licenseDeclared": "CC0-1.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/simple-icons@16.31.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-string_decoder-1.3.0",
+      "name": "string_decoder",
+      "versionInfo": "1.3.0",
+      "downloadLocation": "https://github.com/nodejs/string_decoder",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/string_decoder@1.3.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-supports-color-9.4.0",
+      "name": "supports-color",
+      "versionInfo": "9.4.0",
+      "downloadLocation": "https://github.com/chalk/supports-color",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/supports-color@9.4.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-tar-7.5.22",
+      "name": "tar",
+      "versionInfo": "7.5.22",
+      "downloadLocation": "https://github.com/isaacs/node-tar",
+      "licenseConcluded": "BlueOak-1.0.0",
+      "licenseDeclared": "BlueOak-1.0.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/tar@7.5.22"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-tsx-4.23.13",
+      "name": "tsx",
+      "versionInfo": "4.23.13",
+      "downloadLocation": "https://github.com/privatenumber/tsx",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/tsx@4.23.13"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-turndown-7.2.4",
+      "name": "turndown",
+      "versionInfo": "7.2.4",
+      "downloadLocation": "https://github.com/mixmark-io/turndown",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/turndown@7.2.4"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-typescript-6.0.3",
+      "name": "typescript",
+      "versionInfo": "6.0.3",
+      "downloadLocation": "https://github.com/microsoft/TypeScript",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "Apache-2.0",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/typescript@6.0.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-undici-8.11.2",
+      "name": "undici",
+      "versionInfo": "8.11.2",
+      "downloadLocation": "https://github.com/nodejs/undici",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/undici@8.11.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-use-sync-external-store-1.6.0",
+      "name": "use-sync-external-store",
+      "versionInfo": "1.6.0",
+      "downloadLocation": "https://github.com/facebook/react",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/use-sync-external-store@1.6.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-which-2.0.2",
+      "name": "which",
+      "versionInfo": "2.0.2",
+      "downloadLocation": "https://github.com/isaacs/node-which",
+      "licenseConcluded": "ISC",
+      "licenseDeclared": "ISC",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/which@2.0.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-ws-8.21.3",
+      "name": "ws",
+      "versionInfo": "8.21.3",
+      "downloadLocation": "https://github.com/websockets/ws",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/ws@8.21.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-xlsx-0.20.3",
+      "name": "xlsx",
+      "versionInfo": "0.20.3",
+      "downloadLocation": "https://git.sheetjs.com/SheetJS/sheetjs",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/xlsx@0.20.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-yaml-2.9.0",
+      "name": "yaml",
+      "versionInfo": "2.9.0",
+      "downloadLocation": "https://github.com/eemeli/yaml",
+      "licenseConcluded": "ISC",
+      "licenseDeclared": "ISC",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/yaml@2.9.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-zod-4.4.3",
+      "name": "zod",
+      "versionInfo": "4.4.3",
+      "downloadLocation": "https://github.com/colinhacks/zod",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/zod@4.4.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-zustand-4.5.7",
+      "name": "zustand",
+      "versionInfo": "4.5.7",
+      "downloadLocation": "https://github.com/pmndrs/zustand",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/zustand@4.5.7"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--braintree-sanitize-url-7.1.2",
+      "name": "@braintree/sanitize-url",
+      "versionInfo": "7.1.2",
+      "downloadLocation": "https://github.com/braintree/sanitize-url",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@braintree%2Fsanitize-url@7.1.2"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--electron-get-5.1.0",
+      "name": "@electron/get",
+      "versionInfo": "5.1.0",
+      "downloadLocation": "https://github.com/electron/get",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@electron%2Fget@5.1.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--electron-notarize-2.5.0",
+      "name": "@electron/notarize",
+      "versionInfo": "2.5.0",
+      "downloadLocation": "https://github.com/electron/notarize",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@electron%2Fnotarize@2.5.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--lexical-headless-0.49.0",
+      "name": "@lexical/headless",
+      "versionInfo": "0.49.0",
+      "downloadLocation": "https://github.com/facebook/lexical",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@lexical%2Fheadless@0.49.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--modelcontextprotocol-node-2.0.0",
+      "name": "@modelcontextprotocol/node",
+      "versionInfo": "2.0.0",
+      "downloadLocation": "https://github.com/modelcontextprotocol/typescript-sdk",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@modelcontextprotocol%2Fnode@2.0.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--modelcontextprotocol-server-2.2.0",
+      "name": "@modelcontextprotocol/server",
+      "versionInfo": "2.2.0",
+      "downloadLocation": "https://github.com/modelcontextprotocol/typescript-sdk",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@modelcontextprotocol%2Fserver@2.2.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--modelcontextprotocol-server-everything-2026.8.31",
+      "name": "@modelcontextprotocol/server-everything",
+      "versionInfo": "2026.8.31",
+      "downloadLocation": "https://github.com/modelcontextprotocol/servers",
+      "licenseConcluded": "MIT / Apache-2.0",
+      "licenseDeclared": "SEE LICENSE IN LICENSE",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@modelcontextprotocol%2Fserver-everything@2026.8.31"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--modelcontextprotocol-server-filesystem-2026.8.31",
+      "name": "@modelcontextprotocol/server-filesystem",
+      "versionInfo": "2026.8.31",
+      "downloadLocation": "https://github.com/modelcontextprotocol/servers",
+      "licenseConcluded": "MIT / Apache-2.0",
+      "licenseDeclared": "SEE LICENSE IN LICENSE",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@modelcontextprotocol%2Fserver-filesystem@2026.8.31"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--panzoom-panzoom-4.6.2",
+      "name": "@panzoom/panzoom",
+      "versionInfo": "4.6.2",
+      "downloadLocation": "https://github.com/timmywil/panzoom",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@panzoom%2Fpanzoom@4.6.2"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--stylistic-eslint-plugin-5.10.0",
+      "name": "@stylistic/eslint-plugin",
+      "versionInfo": "5.10.0",
+      "downloadLocation": "https://github.com/eslint-stylistic/eslint-stylistic",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@stylistic%2Feslint-plugin@5.10.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--testing-library-dom-10.4.2",
+      "name": "@testing-library/dom",
+      "versionInfo": "10.4.2",
+      "downloadLocation": "https://github.com/testing-library/dom-testing-library",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@testing-library%2Fdom@10.4.2"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--testing-library-react-16.3.3",
+      "name": "@testing-library/react",
+      "versionInfo": "16.3.3",
+      "downloadLocation": "https://github.com/testing-library/react-testing-library",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@testing-library%2Freact@16.3.3"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-babel__code-frame-7.27.0",
+      "name": "@types/babel__code-frame",
+      "versionInfo": "7.27.0",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fbabel__code-frame@7.27.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-big.js-6.2.2",
+      "name": "@types/big.js",
+      "versionInfo": "6.2.2",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fbig.js@6.2.2"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-compression-1.8.1",
+      "name": "@types/compression",
+      "versionInfo": "1.8.1",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fcompression@1.8.1"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-hosted-git-info-3.0.5",
+      "name": "@types/hosted-git-info",
+      "versionInfo": "3.0.5",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fhosted-git-info@3.0.5"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-js-yaml-4.0.9",
+      "name": "@types/js-yaml",
+      "versionInfo": "4.0.9",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fjs-yaml@4.0.9"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-jsdom-28.0.3",
+      "name": "@types/jsdom",
+      "versionInfo": "28.0.3",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fjsdom@28.0.3"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-mdast-4.0.4",
+      "name": "@types/mdast",
+      "versionInfo": "4.0.4",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fmdast@4.0.4"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-mime-types-3.0.1",
+      "name": "@types/mime-types",
+      "versionInfo": "3.0.1",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fmime-types@3.0.1"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-negotiator-0.6.5",
+      "name": "@types/negotiator",
+      "versionInfo": "0.6.5",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fnegotiator@0.6.5"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-node-22.20.1",
+      "name": "@types/node",
+      "versionInfo": "22.20.1",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fnode@22.20.1"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-papaparse-5.5.2",
+      "name": "@types/papaparse",
+      "versionInfo": "5.5.2",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fpapaparse@5.5.2"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-picomatch-3.0.2",
+      "name": "@types/picomatch",
+      "versionInfo": "3.0.2",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fpicomatch@3.0.2"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-react-18.3.31",
+      "name": "@types/react",
+      "versionInfo": "18.3.31",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Freact@18.3.31"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-react-dom-18.3.7",
+      "name": "@types/react-dom",
+      "versionInfo": "18.3.7",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Freact-dom@18.3.7"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-readable-stream-4.0.24",
+      "name": "@types/readable-stream",
+      "versionInfo": "4.0.24",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Freadable-stream@4.0.24"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-semver-7.8.0",
+      "name": "@types/semver",
+      "versionInfo": "7.8.0",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fsemver@7.8.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-serve-static-2.2.0",
+      "name": "@types/serve-static",
+      "versionInfo": "2.2.0",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fserve-static@2.2.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-spdx-expression-parse-4.0.0",
+      "name": "@types/spdx-expression-parse",
+      "versionInfo": "4.0.0",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fspdx-expression-parse@4.0.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-turndown-5.0.6",
+      "name": "@types/turndown",
+      "versionInfo": "5.0.6",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fturndown@5.0.6"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-use-sync-external-store-1.7.0",
+      "name": "@types/use-sync-external-store",
+      "versionInfo": "1.7.0",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fuse-sync-external-store@1.7.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--types-ws-8.18.1",
+      "name": "@types/ws",
+      "versionInfo": "8.18.1",
+      "downloadLocation": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@types%2Fws@8.18.1"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--vitejs-plugin-react-4.7.0",
+      "name": "@vitejs/plugin-react",
+      "versionInfo": "4.7.0",
+      "downloadLocation": "https://github.com/vitejs/vite-plugin-react",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@vitejs%2Fplugin-react@4.7.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--vitest-coverage-v8-4.1.11",
+      "name": "@vitest/coverage-v8",
+      "versionInfo": "4.1.11",
+      "downloadLocation": "https://github.com/vitest-dev/vitest",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@vitest%2Fcoverage-v8@4.1.11"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--vitest-spy-4.1.11",
+      "name": "@vitest/spy",
+      "versionInfo": "4.1.11",
+      "downloadLocation": "https://github.com/vitest-dev/vitest",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@vitest%2Fspy@4.1.11"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--yao-pkg-pkg-6.21.0",
+      "name": "@yao-pkg/pkg",
+      "versionInfo": "6.21.0",
+      "downloadLocation": "https://github.com/yao-pkg/pkg",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@yao-pkg%2Fpkg@6.21.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--yarnpkg-cli-dist-4.18.0",
+      "name": "@yarnpkg/cli-dist",
+      "versionInfo": "4.18.0",
+      "downloadLocation": "https://github.com/yarnpkg/berry",
+      "licenseConcluded": "BSD-2-Clause",
+      "licenseDeclared": "BSD-2-Clause",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@yarnpkg%2Fcli-dist@4.18.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-app-builder-lib-26.17.0",
+      "name": "app-builder-lib",
+      "versionInfo": "26.17.0",
+      "downloadLocation": "https://github.com/electron-userland/electron-builder",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/app-builder-lib@26.17.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-cos-nodejs-sdk-v5-3.0.0",
+      "name": "cos-nodejs-sdk-v5",
+      "versionInfo": "3.0.0",
+      "downloadLocation": "https://github.com/tencentyun/cos-nodejs-sdk-v5",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "ISC",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/cos-nodejs-sdk-v5@3.0.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-cytoscape-3.34.2",
+      "name": "cytoscape",
+      "versionInfo": "3.34.2",
+      "downloadLocation": "https://github.com/cytoscape/cytoscape.js",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/cytoscape@3.34.2"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-cytoscape-cose-bilkent-4.1.0",
+      "name": "cytoscape-cose-bilkent",
+      "versionInfo": "4.1.0",
+      "downloadLocation": "https://github.com/cytoscape/cytoscape.js-cose-bilkent",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/cytoscape-cose-bilkent@4.1.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-dayjs-1.11.23",
+      "name": "dayjs",
+      "versionInfo": "1.11.23",
+      "downloadLocation": "https://github.com/iamkun/dayjs",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/dayjs@1.11.23"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-debug-4.4.3",
+      "name": "debug",
+      "versionInfo": "4.4.3",
+      "downloadLocation": "https://github.com/debug-js/debug",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/debug@4.4.3"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-electron-44.7.0",
+      "name": "electron",
+      "versionInfo": "44.7.0",
+      "downloadLocation": "https://github.com/electron/electron",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/electron@44.7.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-electron-builder-26.17.0",
+      "name": "electron-builder",
+      "versionInfo": "26.17.0",
+      "downloadLocation": "https://github.com/electron-userland/electron-builder",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/electron-builder@26.17.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-esbuild-0.28.2",
+      "name": "esbuild",
+      "versionInfo": "0.28.2",
+      "downloadLocation": "https://github.com/evanw/esbuild",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/esbuild@0.28.2"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-eslint-plugin-sonarjs-4.2.0",
+      "name": "eslint-plugin-sonarjs",
+      "versionInfo": "4.2.0",
+      "downloadLocation": "https://github.com/SonarSource/SonarJS",
+      "licenseConcluded": "LGPL-3.0-only",
+      "licenseDeclared": "LGPL-3.0-only",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/eslint-plugin-sonarjs@4.2.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-extract-zip-2.0.1",
+      "name": "extract-zip",
+      "versionInfo": "2.0.1",
+      "downloadLocation": "https://github.com/maxogden/extract-zip",
+      "licenseConcluded": "BSD-2-Clause",
+      "licenseDeclared": "BSD-2-Clause",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/extract-zip@2.0.1"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-fast-check-4.9.0",
+      "name": "fast-check",
+      "versionInfo": "4.9.0",
+      "downloadLocation": "https://github.com/dubzzz/fast-check",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/fast-check@4.9.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-http-server-14.1.1",
+      "name": "http-server",
+      "versionInfo": "14.1.1",
+      "downloadLocation": "https://github.com/http-party/http-server",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/http-server@14.1.1"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-istanbul-lib-report-3.0.1",
+      "name": "istanbul-lib-report",
+      "versionInfo": "3.0.1",
+      "downloadLocation": "https://github.com/istanbuljs/istanbuljs",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/istanbul-lib-report@3.0.1"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-jscpd-5.1.2",
+      "name": "jscpd",
+      "versionInfo": "5.1.2",
+      "downloadLocation": "https://github.com/kucherenko/jscpd",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/jscpd@5.1.2"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-jsdom-29.1.1",
+      "name": "jsdom",
+      "versionInfo": "29.1.1",
+      "downloadLocation": "https://github.com/jsdom/jsdom",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/jsdom@29.1.1"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-lefthook-2.1.12",
+      "name": "lefthook",
+      "versionInfo": "2.1.12",
+      "downloadLocation": "https://github.com/evilmartians/lefthook",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/lefthook@2.1.12"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-lightningcss-1.33.0",
+      "name": "lightningcss",
+      "versionInfo": "1.33.0",
+      "downloadLocation": "https://github.com/parcel-bundler/lightningcss",
+      "licenseConcluded": "MPL-2.0",
+      "licenseDeclared": "MPL-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/lightningcss@1.33.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-mermaid-11.17.2",
+      "name": "mermaid",
+      "versionInfo": "11.17.2",
+      "downloadLocation": "https://github.com/mermaid-js/mermaid",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/mermaid@11.17.2"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-micromark-util-types-2.0.3",
+      "name": "micromark-util-types",
+      "versionInfo": "2.0.3",
+      "downloadLocation": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-types",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/micromark-util-types@2.0.3"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-oxlint-1.81.0",
+      "name": "oxlint",
+      "versionInfo": "1.81.0",
+      "downloadLocation": "https://github.com/oxc-project/oxc",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/oxlint@1.81.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-oxlint-tsgolint-7.0.2001",
+      "name": "oxlint-tsgolint",
+      "versionInfo": "7.0.2001",
+      "downloadLocation": "https://github.com/oxc-project/tsgolint",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/oxlint-tsgolint@7.0.2001"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-playwright-1.61.1",
+      "name": "playwright",
+      "versionInfo": "1.61.1",
+      "downloadLocation": "https://github.com/microsoft/playwright",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/playwright@1.61.1"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pnpm-11.28.5",
+      "name": "pnpm",
+      "versionInfo": "11.28.5",
+      "downloadLocation": "https://github.com/pnpm/pnpm",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/pnpm@11.28.5"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-publint-0.3.24",
+      "name": "publint",
+      "versionInfo": "0.3.24",
+      "downloadLocation": "https://github.com/publint/publint",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/publint@0.3.24"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-selfsigned-4.0.1",
+      "name": "selfsigned",
+      "versionInfo": "4.0.1",
+      "downloadLocation": "https://github.com/jfromaniello/selfsigned",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/selfsigned@4.0.1"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-smol-toml-1.9.0",
+      "name": "smol-toml",
+      "versionInfo": "1.9.0",
+      "downloadLocation": "https://github.com/squirrelchat/smol-toml",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/smol-toml@1.9.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-spdx-expression-parse-5.0.0",
+      "name": "spdx-expression-parse",
+      "versionInfo": "5.0.0",
+      "downloadLocation": "https://github.com/jslicense/spdx-expression-parse.js",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/spdx-expression-parse@5.0.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-tencentcloud-sdk-nodejs-teo-4.1.330",
+      "name": "tencentcloud-sdk-nodejs-teo",
+      "versionInfo": "4.1.330",
+      "downloadLocation": "https://github.com/tencentcloud/tencentcloud-sdk-nodejs",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/tencentcloud-sdk-nodejs-teo@4.1.330"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-tsdown-0.22.2",
+      "name": "tsdown",
+      "versionInfo": "0.22.2",
+      "downloadLocation": "https://github.com/rolldown/tsdown",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/tsdown@0.22.2"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-typescript-language-server-5.3.0",
+      "name": "typescript-language-server",
+      "versionInfo": "5.3.0",
+      "downloadLocation": "https://github.com/typescript-language-server/typescript-language-server",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/typescript-language-server@5.3.0"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-vite-8.2.2",
+      "name": "vite",
+      "versionInfo": "8.2.2",
+      "downloadLocation": "https://github.com/vitejs/vite",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/vite@8.2.2"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-vite-tsconfig-paths-6.1.1",
+      "name": "vite-tsconfig-paths",
+      "versionInfo": "6.1.1",
+      "downloadLocation": "https://github.com/aleclarson/vite-tsconfig-paths",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/vite-tsconfig-paths@6.1.1"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-vitepress-1.6.4",
+      "name": "vitepress",
+      "versionInfo": "1.6.4",
+      "downloadLocation": "https://github.com/vuejs/vitepress",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/vitepress@1.6.4"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-vitepress-plugin-mermaid-2.0.17",
+      "name": "vitepress-plugin-mermaid",
+      "versionInfo": "2.0.17",
+      "downloadLocation": "https://github.com/emersonbottero/vitepress-plugin-mermaid",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/vitepress-plugin-mermaid@2.0.17"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-vitest-4.1.11",
+      "name": "vitest",
+      "versionInfo": "4.1.11",
+      "downloadLocation": "https://github.com/vitest-dev/vitest",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/vitest@4.1.11"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-vue-3.5.42",
+      "name": "vue",
+      "versionInfo": "3.5.42",
+      "downloadLocation": "https://github.com/vuejs/core",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/vue@3.5.42"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=dev-npm — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-et-xmlfile-2.0.0",
+      "name": "et-xmlfile",
+      "versionInfo": "2.0.0",
+      "downloadLocation": "https://foss.heptapod.net/openpyxl/et_xmlfile",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/et-xmlfile@2.0.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-lxml-6.1.3",
+      "name": "lxml",
+      "versionInfo": "6.1.3",
+      "downloadLocation": "https://github.com/lxml/lxml",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/lxml@6.1.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-numpy-2.3.5",
+      "name": "numpy",
+      "versionInfo": "2.3.5",
+      "downloadLocation": "https://github.com/numpy/numpy",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/numpy@2.3.5"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-openpyxl-3.1.5",
+      "name": "openpyxl",
+      "versionInfo": "3.1.5",
+      "downloadLocation": "https://foss.heptapod.net/openpyxl/openpyxl",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/openpyxl@3.1.5"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pandas-3.0.1",
+      "name": "pandas",
+      "versionInfo": "3.0.1",
+      "downloadLocation": "https://github.com/pandas-dev/pandas",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pandas@3.0.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pillow-12.3.0",
+      "name": "pillow",
+      "versionInfo": "12.3.0",
+      "downloadLocation": "https://github.com/python-pillow/Pillow",
+      "licenseConcluded": "MIT-CMU",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pillow@12.3.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-python-dateutil-2.9.0.post0",
+      "name": "python-dateutil",
+      "versionInfo": "2.9.0.post0",
+      "downloadLocation": "https://github.com/dateutil/dateutil",
+      "licenseConcluded": "Apache-2.0 OR BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/python-dateutil@2.9.0.post0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-python-docx-1.2.0",
+      "name": "python-docx",
+      "versionInfo": "1.2.0",
+      "downloadLocation": "https://github.com/python-openxml/python-docx",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/python-docx@1.2.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-python-pptx-1.0.2",
+      "name": "python-pptx",
+      "versionInfo": "1.0.2",
+      "downloadLocation": "https://github.com/scanny/python-pptx",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/python-pptx@1.0.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-six-1.17.0",
+      "name": "six",
+      "versionInfo": "1.17.0",
+      "downloadLocation": "https://github.com/benjaminp/six",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/six@1.17.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-typing-extensions-4.16.0",
+      "name": "typing-extensions",
+      "versionInfo": "4.16.0",
+      "downloadLocation": "https://github.com/python/typing_extensions",
+      "licenseConcluded": "PSF-2.0",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/typing-extensions@4.16.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-tzdata-2025.2",
+      "name": "tzdata",
+      "versionInfo": "2025.2",
+      "downloadLocation": "https://github.com/python/tzdata",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/tzdata@2025.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-xlsxwriter-3.2.9",
+      "name": "xlsxwriter",
+      "versionInfo": "3.2.9",
+      "downloadLocation": "https://github.com/jmcnamara/XlsxWriter",
+      "licenseConcluded": "BSD-2-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/xlsxwriter@3.2.9"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-hatchling",
+      "name": "hatchling",
+      "downloadLocation": "https://github.com/pypa/hatch",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/hatchling"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=direct-python — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pillow",
+      "name": "pillow",
+      "downloadLocation": "https://github.com/python-pillow/Pillow",
+      "licenseConcluded": "MIT-CMU",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pillow"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=direct-python — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pydantic",
+      "name": "pydantic",
+      "downloadLocation": "https://github.com/pydantic/pydantic",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pydantic"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=direct-python — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pytest",
+      "name": "pytest",
+      "downloadLocation": "https://github.com/pytest-dev/pytest",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pytest"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=direct-python — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-cosmokit",
+      "name": "@deepseek-ai/cosmokit",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@deepseek-ai/cosmokit"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=vendored — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-schemastery",
+      "name": "@deepseek-ai/schemastery",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@deepseek-ai/schemastery"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=vendored — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-cordis",
+      "name": "@deepseek-ai/cordis",
+      "downloadLocation": "https://github.com/cordiverse/cordis",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@deepseek-ai/cordis?repository_url=https%3A%2F%2Fgithub.com%2Fcordiverse%2Fcordis"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=vendored — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-cordis-plugin-loader",
+      "name": "@deepseek-ai/cordis-plugin-loader",
+      "downloadLocation": "https://github.com/cordiverse/cordis",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-loader?repository_url=https%3A%2F%2Fgithub.com%2Fcordiverse%2Fcordis"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=vendored — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-cordis-plugin-include",
+      "name": "@deepseek-ai/cordis-plugin-include",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-include"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=vendored — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-cordis-plugin-group",
+      "name": "@deepseek-ai/cordis-plugin-group",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-group"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=vendored — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-cordis-plugin-timer",
+      "name": "@deepseek-ai/cordis-plugin-timer",
+      "downloadLocation": "https://github.com/cordiverse/cordis",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-timer?repository_url=https%3A%2F%2Fgithub.com%2Fcordiverse%2Fcordis"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=vendored — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-cordis-plugin-hmr",
+      "name": "@deepseek-ai/cordis-plugin-hmr",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-hmr"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=vendored — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-cordis-plugin-logger-console",
+      "name": "@deepseek-ai/cordis-plugin-logger-console",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@deepseek-ai/cordis-plugin-logger-console"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=vendored — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-nuo-patent",
+      "name": "@deepseek-ai/nuo-patent",
+      "downloadLocation": "https://github.com/xujian519/nuo-patent",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/@deepseek-ai/nuo-patent?repository_url=https%3A%2F%2Fgithub.com%2Fxujian519%2Fnuo-patent"
+        }
+      ],
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=vendored — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-node-addon-system",
+      "name": "@deepseek-ai/node-addon-system",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-node-addon-system-darwin-arm64",
+      "name": "@deepseek-ai/node-addon-system-darwin-arm64",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-node-addon-system-darwin-x64",
+      "name": "@deepseek-ai/node-addon-system-darwin-x64",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-node-addon-system-linux-arm64",
+      "name": "@deepseek-ai/node-addon-system-linux-arm64",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package--deepseek-ai-node-addon-system-linux-x64",
+      "name": "@deepseek-ai/node-addon-system-linux-x64",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-darwin-arm64-0.3.263",
+      "name": "@anthropic-ai/claude-agent-sdk-darwin-arm64",
+      "versionInfo": "0.3.263",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "SEE LICENSE IN LICENSE.md",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-darwin-x64-0.3.263",
+      "name": "@anthropic-ai/claude-agent-sdk-darwin-x64",
+      "versionInfo": "0.3.263",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "SEE LICENSE IN LICENSE.md",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-linux-arm64-0.3.263",
+      "name": "@anthropic-ai/claude-agent-sdk-linux-arm64",
+      "versionInfo": "0.3.263",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "SEE LICENSE IN LICENSE.md",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-linux-arm64-musl-0.3.263",
+      "name": "@anthropic-ai/claude-agent-sdk-linux-arm64-musl",
+      "versionInfo": "0.3.263",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "SEE LICENSE IN LICENSE.md",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-linux-x64-0.3.263",
+      "name": "@anthropic-ai/claude-agent-sdk-linux-x64",
+      "versionInfo": "0.3.263",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "SEE LICENSE IN LICENSE.md",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-linux-x64-musl-0.3.263",
+      "name": "@anthropic-ai/claude-agent-sdk-linux-x64-musl",
+      "versionInfo": "0.3.263",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "SEE LICENSE IN LICENSE.md",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-win32-arm64-0.3.263",
+      "name": "@anthropic-ai/claude-agent-sdk-win32-arm64",
+      "versionInfo": "0.3.263",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "SEE LICENSE IN LICENSE.md",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-win32-x64-0.3.263",
+      "name": "@anthropic-ai/claude-agent-sdk-win32-x64",
+      "versionInfo": "0.3.263",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "SEE LICENSE IN LICENSE.md",
+      "licenseDeclared": "NOASSERTION",
+      "licenseObserved": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "annotations": [
+        {
+          "annotationType": "OTHER",
+          "annotationComment": "tier=claude-platform — not distributed with the primary artifact",
+          "annotationDate": "2026-11-02T23:23:28.991Z",
+          "annotator": "Tool: DeepSeek Harness SBOM Generator"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-dsh-root"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "PRIMARY_PACKAGE",
+      "relatedSpdxElement": "SPDXRef-DOCUMENT"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--agentclientprotocol-sdk-1.4.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-0.3.263"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--anthropic-ai-sdk-0.93.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--babel-code-frame-7.29.7"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--botiverse-oar-0.67.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--browserbasehq-stagehand-4.1.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-libreoffice-kit-0.1.5"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--earendil-works-pi-ai-1.3.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--earendil-works-pi-coding-agent-1.3.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--eslint-community-regexpp-4.12.2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--fortune-sheet-core-1.0.4"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--fortune-sheet-react-1.0.4"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--joplin-turndown-plugin-gfm-1.0.67"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--jridgewell-gen-mapping-0.3.13"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--js-temporal-polyfill-0.5.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--lexical-history-0.49.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--lexical-plain-text-0.49.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--lexical-text-0.49.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--lexical-utils-0.49.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--modelcontextprotocol-client-2.2.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--modelcontextprotocol-sdk-1.31.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--noble-hashes-2.4.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--octokit-webhooks-14.2.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--openai-codex-0.153.4"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--opentelemetry-api-1.9.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--opentelemetry-api-logs-0.222.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--opentelemetry-core-2.11.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--opentelemetry-otlp-exporter-base-0.222.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--opentelemetry-otlp-transformer-0.222.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--opentelemetry-resources-2.11.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--opentelemetry-sdk-logs-0.222.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--playwright-mcp-0.0.80"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--puppeteer-browsers-3.2.2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--shikijs-langs-4.4.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--standard-schema-spec-1.1.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--tanstack-react-virtual-3.14.10"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--trycua-cua-driver-0.28.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--viz-js-viz-3.31.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--vscode-ripgrep-1.18.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--xmanrui-dsh-im-3.0.5"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--xterm-addon-fit-0.11.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--xterm-addon-serialize-0.14.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--xterm-headless-6.0.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--xterm-xterm-6.0.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--yarnpkg-parsers-3.1.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-acorn-8.18.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-acorn-walk-8.3.5"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-ajv-8.20.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-anser-2.3.5"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-big.js-7.0.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-birpc-4.2.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-buffer-6.0.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-cheerio-1.2.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-chokidar-4.0.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-chrome-devtools-frontend-1.0.1638082"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-chrome-devtools-mcp-1.9.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-clsx-2.1.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-commander-15.0.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-compression-1.8.2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-cross-spawn-7.0.6"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-diff-9.0.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-domhandler-6.0.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-dompurify-3.4.16"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-electron-updater-6.8.9"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-eventsource-parser-3.1.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-exceljs-4.4.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-execa-10.0.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-fast-xml-parser-5.11.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-fflate-0.8.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-got-14.6.6"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-hosted-git-info-9.0.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-immer-10.2.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-ipaddr.js-2.5.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-js-yaml-4.3.2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-katex-0.18.7"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-koffi-3.1.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-lexical-0.49.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-marked-16.4.2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-mdast-util-from-markdown-2.0.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-mdast-util-gfm-3.1.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-mdast-util-math-3.0.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-micromark-core-commonmark-2.0.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-micromark-extension-gfm-3.0.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-micromark-extension-math-3.1.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-micromark-factory-space-2.0.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-micromark-util-character-2.1.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-micromark-util-classify-character-2.0.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-micromark-util-decode-string-2.0.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-micromark-util-sanitize-uri-2.0.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-micromark-util-symbol-2.0.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-mime-4.1.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-mime-types-3.0.2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-minisearch-7.2.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-negotiator-1.1.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-node-addon-require-builtin-0.1.9"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-node-pty-1.2.0-beta.15"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-open-11.0.4"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-p-limit-7.3.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-papaparse-5.5.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-pdfjs-dist-6.3.289"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-picomatch-4.0.4"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-react-18.3.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-react-dom-18.3.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-readable-stream-4.7.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-resolve.exports-2.0.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-semver-7.8.5"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-serve-static-2.2.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-sharp-0.35.5"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-shell-quote-1.12.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-sherpa-onnx-node-1.13.8"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-shiki-4.4.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-simple-icons-16.31.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-string_decoder-1.3.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-supports-color-9.4.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-tar-7.5.22"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-tsx-4.23.13"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-turndown-7.2.4"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-typescript-6.0.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-undici-8.11.2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-use-sync-external-store-1.6.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-which-2.0.2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-ws-8.21.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-xlsx-0.20.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-yaml-2.9.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-zod-4.4.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-zustand-4.5.7"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-et-xmlfile-2.0.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-lxml-6.1.3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-numpy-2.3.5"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-openpyxl-3.1.5"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-pandas-3.0.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-pillow-12.3.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-python-dateutil-2.9.0.post0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-python-docx-1.2.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-python-pptx-1.0.2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-six-1.17.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-typing-extensions-4.16.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-tzdata-2025.2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-xlsxwriter-3.2.9"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-cosmokit"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-schemastery"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-cordis"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-cordis-plugin-loader"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-cordis-plugin-include"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-cordis-plugin-group"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-cordis-plugin-timer"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-cordis-plugin-hmr"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-cordis-plugin-logger-console"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-nuo-patent"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-node-addon-system"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-node-addon-system-darwin-arm64"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-node-addon-system-darwin-x64"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-node-addon-system-linux-arm64"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--deepseek-ai-node-addon-system-linux-x64"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-darwin-arm64-0.3.263"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-darwin-x64-0.3.263"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-linux-arm64-0.3.263"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-linux-arm64-musl-0.3.263"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-linux-x64-0.3.263"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-linux-x64-musl-0.3.263"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-win32-arm64-0.3.263"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package--deepseek-ai-dsh-root",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--anthropic-ai-claude-agent-sdk-win32-x64-0.3.263"
+    }
+  ]
+}

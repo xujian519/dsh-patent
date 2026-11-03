@@ -20,4 +20,10 @@ DeepSeek Harness 的设计支持深度定制。我们并不认为官方仓库中
 
 我们已经看到社区中涌现出令人期待的项目，也希望生态系统继续沿着自己的方向发展。
 
+### 许可证与依赖边界
+
+本仓库自有 DSH 包统一声明 MIT。第三方依赖仅限于 permissive 或弱 copyleft 许可证；GPLv1/v2 和 AGPLv3 排除在外。完整的策略、允许列表、declared / observed / concluded 三个许可证维度、以及自动化 gate 清单见 [LICENSE_POLICY.md](LICENSE_POLICY.md)。
+
+如果你要引入的依赖许可证不在允许列表内，或发现某个依赖随包分发的 LICENSE 文件与其 manifest 声明不一致，请先开 Issue 说明；待我们开始接受外部 PR 后，可在 PR 里附上 `OVERRIDES` 条目和理由。
+
 探索未至之境。

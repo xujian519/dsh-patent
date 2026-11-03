@@ -10,7 +10,6 @@ import type {
 import type { MessageImageLoader, MessageImageSource } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { AskUserQuestionAnswerItem, AskUserQuestionItem } from '@deepseek-ai/dsh-user-questions/types'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type { ToolFileInjected } from '../tool/file-menu.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
@@ -145,6 +144,12 @@ export type ToolHostInfoInjected = {
      */
     hostInfo: HostObservable<RemoteHostFacts>
   }
+}
+
+/** File paths are resolved when a gesture begins, not when the Slot is mounted. */
+export interface ToolFileInjected {
+  /** Resolve an argument from the live Session directory. @param path - Recorded path. @returns Host path. */
+  resolveFilePath: (path: string) => string
 }
 
 /** Full props of the Tool call-tree renderer registered as a tool-call Chat Node. */

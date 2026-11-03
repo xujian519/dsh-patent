@@ -102,6 +102,18 @@ vi.mock('electron', () => ({
 }))
 // The Windows tray relabels through Menu as well; keep the menu call counts below platform-neutral.
 vi.mock('../src/tray.ts', () => ({ DesktopTray: class { relabel() {} dispose() {} } }))
+// Startup wiring is the subject here: the real bridge would bind the Windows
+// pipe name derived from the stubbed platform, which POSIX hosts turn into a
+// socket file in the working directory, so the server is faked.
+vi.mock('../src/bridge-server.ts', async importOriginal => ({
+  ...await importOriginal<typeof import('../src/bridge-server.ts')>(),
+  BridgeServer: class {
+    readonly start = vi.fn(async (_path: string) => {})
+    readonly setAppMenuBase = vi.fn()
+    readonly initTray = vi.fn()
+    readonly dispose = vi.fn()
+  },
+}))
 
 vi.mock('../src/paths.ts', () => ({ resolveDesktopPaths: () => ({ profile: '/profile' }) }))
 vi.mock('../src/settings.ts', () => ({ readDesktopSettings: () => ({ updates: { allowTestAuthPopupWindow: false } }) }))

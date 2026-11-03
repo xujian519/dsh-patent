@@ -358,8 +358,8 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- tech-debt-counters:start -->
 | 计数 | 值 |
 | --- | --- |
-| `structure.long-functions` | 186 |
-| `structure.large-files` | 89 |
+| `structure.long-functions` | 185 |
+| `structure.large-files` | 90 |
 | `structure.patent-large-files` | 10 |
 | `lint.v8-ignore` | 1315 |
 | `lint.ts-expect-error` | 193 |
@@ -394,7 +394,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 ### 客户端与实验域大文件裁定（2026-11-02，Issue #654）
 
-#654 点名的六个文件里，`better-sidebar` 的 `Sidebar.tsx` 与 `state.ts` 已随该包在 PR #677 整体删除；其余五个保留为「接受」。当前全仓计数为 186 个 >150 行函数、89 个 >800 行文件，与上方计数表一致。裁定按 #86 的「能说出切割换来什么」作出：五个文件都已是所在界面的组合根，可独立命名的子面已拆成兄弟模块，余下的是同一次渲染的状态、事件与 JSX；再切会把同一组 props 与草稿状态原样转交，行数下降而调用面不变。上限是裁定当日的行数，出现第二个消费方或新增职责时须重新定性。该表不在 `verify-tech-debt-counters` 的审计域内，由人工复审维护；审计域（`packages/patent`、`packages/legal`、`packages/document`）仍由上方结构裁定表机检。
+#654 点名的六个文件里，`better-sidebar` 的 `Sidebar.tsx` 与 `state.ts` 已随该包在 PR #677 整体删除；其余五个保留为「接受」。当前全仓计数为 185 个 >150 行函数、90 个 >800 行文件，与上方计数表一致。裁定按 #86 的「能说出切割换来什么」作出：五个文件都已是所在界面的组合根，可独立命名的子面已拆成兄弟模块，余下的是同一次渲染的状态、事件与 JSX；再切会把同一组 props 与草稿状态原样转交，行数下降而调用面不变。上限是裁定当日的行数，出现第二个消费方或新增职责时须重新定性。该表不在 `verify-tech-debt-counters` 的审计域内，由人工复审维护；审计域（`packages/patent`、`packages/legal`、`packages/document`）仍由上方结构裁定表机检。
 
 | 文件 | 行数 | 裁定 | 上限 | 理由 |
 | --- | ---: | --- | ---: | --- |
@@ -406,6 +406,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-03 上游 0.2.2-alpha.3 同步复测**:随同步合并按当前 shipped sources 重新实测,`structure.long-functions` 由 186 降至 **185**、`structure.large-files` 由 89 升至 **90**(两向都来自上游对既有文件的增删与拆分,非本仓新债);`lint.v8-ignore`、`lint.ts-expect-error`、`structure.patent-large-files` 与其余计数不变。
 - **2026-11-03 E 撰写链换位审查**:`manifests.ts` 因披露链在 `slop_clean` 与 `legal_gaps` 之间插入 `draft_review` 阶段（含按缺口路由的 `retry.routes`）由 878 升至 **898**,接受上限同步重定;`lint.v8-ignore` 由 1313 升至 **1315**:`draft-review` 的输入组装只复制白名单键,禁用键在构造上不可达,另一处防御未来的 `inputSchema` 编辑;两条守卫均带理由,新原子其余分支由用例覆盖。`structure.long-functions` 与 `structure.large-files` 不变。
 - **2026-11-02 B2 权利要求策略**:`manifests.ts` 因披露链新增 `claim_strategy` 阶段由 871 升至 **878**,接受上限同步重定;`structure.long-functions`、`structure.large-files` 与 `lint.v8-ignore` 不变,新增分支由用例覆盖。
 - **2026-11-02 A26.4 概括范围判定**:`lint.v8-ignore` 由 1312 升至 **1313**;A1 锚点件的 `matchRange` 对两个平行下标的取值守卫补一处带理由的豁免(`indexOf` 命中保证下标落在数组内),其余新增分支由用例覆盖。`structure.long-functions` 与 `structure.large-files` 不变;`manifests.ts` 因披露链新增 `claim_breadth` 阶段由 859 升至 **871**,接受上限同步重定。

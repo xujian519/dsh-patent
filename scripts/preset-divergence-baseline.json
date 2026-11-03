@@ -105,13 +105,13 @@
       "legal.patch.yml": "d2641ea609"
     },
     "tool-fs": {
-      "cordis.patch.yml": "eac4eb155e",
+      "cordis.patch.yml": "506d7a7c91",
       "document.patch.yml": "630bf4b5e9",
       "legal.patch.yml": "630bf4b5e9",
       "minimal.patch.yml": "7d9ea77daa",
       "patent.patch.yml": "630bf4b5e9",
-      "ptc.patch.yml": "eac4eb155e",
-      "standard.patch.yml": "eac4eb155e"
+      "ptc.patch.yml": "506d7a7c91",
+      "standard.patch.yml": "6e0d9b39ae"
     },
     "tool-fs-search": {
       "cordis.patch.yml": "1bddd43402",

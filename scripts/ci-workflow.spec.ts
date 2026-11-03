@@ -758,7 +758,7 @@ describe('CI workflow', () => {
   })
 
   it('runs only Wine for its manual suite and retains master-push scheduling', () => {
-    const master = loadWorkflow('.github/workflows/ci-master.yml')
+    const master = loadArchivedWorkflow('.github/workflows/ci-master.yml')
     if (!isRecord(master.on) || !isRecord(master.on.workflow_dispatch)
       || !isRecord(master.on.workflow_dispatch.inputs) || !isRecord(master.on.workflow_dispatch.inputs.suite)
       || !isRecord(master.jobs)) throw new TypeError('CI master must define manual suites and jobs')
@@ -1468,7 +1468,7 @@ describe('Python release workflows', () => {
     ['POSIX', 'posix', "runner.os != 'Windows'"],
     ['Windows', 'windows', "runner.os == 'Windows'"],
   ])('runs native command regressions through the installed %s wheels', (platform, suffix, condition) => {
-    const build = workflowJob(loadWorkflow('.github/workflows/build-exe-for-python-sdk.yml'), 'build')
+    const build = workflowJob(loadArchivedWorkflow('.github/workflows/build-exe-for-python-sdk.yml'), 'build')
     if (!Array.isArray(build.steps)) throw new TypeError('Python wheel builder must define steps')
     const steps = build.steps.filter(isRecord)
     const installIndex = steps.findIndex(step => step.id === `smoke-venv-${suffix}`)

@@ -110,6 +110,8 @@ export class Include extends EntryTree {
   private _disposed = false
   private _seq = 0
   private persistenceError: unknown
+  /** Set once the initial tree has been applied; later failures are reloads. */
+  private _mounted = false
 
   constructor(ctx: Context, public config: Include.Config) {
     super(ctx)
@@ -154,6 +156,7 @@ export class Include extends EntryTree {
 
     yield () => this.stop()
     await this._applyTask
+    this._mounted = true
   }
 
   async stop() {
@@ -455,6 +458,12 @@ export class Include extends EntryTree {
           this._pendingTree = undefined
           await this.root.update(tree)
         }
+      } catch (error) {
+        // The initial mount fails loud; a failed hot reload keeps the running
+        // tree — a live app must never go down over an invalid file edit.
+        if (!this._mounted) throw error
+        this.ctx.logger.warn('config reload at %C failed; keeping the running tree', this.filename)
+        this.ctx.logger.warn(error)
       } finally {
         this._applyTask = undefined
       }

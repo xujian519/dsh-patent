@@ -147,8 +147,67 @@ export function assertReleasedPayloadSemantics(event: SessionFormatEvent, versio
       nonEmptyString(data['model'], `${label} model`)
       if (data['reasoningEffort'] !== undefined) nonEmptyString(data['reasoningEffort'], `${label} reasoningEffort`)
       return
+    case 'patent-teams/member-added':
+      nonEmptyString(data['teamId'], `${label} teamId`)
+      nonEmptyString(data['memberId'], `${label} memberId`)
+      nonEmptyString(data['name'], `${label} name`)
+      if (data['role'] !== undefined) stringValue(data['role'], `${label} role`)
+      return
+    case 'patent-teams/member-removed':
+      nonEmptyString(data['teamId'], `${label} teamId`)
+      nonEmptyString(data['memberId'], `${label} memberId`)
+      return
+    case 'patent-teams/message-sent':
+      nonEmptyString(data['teamId'], `${label} teamId`)
+      nonEmptyString(data['messageId'], `${label} messageId`)
+      nonEmptyString(data['from'], `${label} from`)
+      nonEmptyString(data['to'], `${label} to`)
+      nonEmptyString(data['content'], `${label} content`)
+      finiteNumberValue(data['ts'], `${label} ts`)
+      return
+    case 'patent-teams/task-created':
+      nonEmptyString(data['teamId'], `${label} teamId`)
+      nonEmptyString(data['taskId'], `${label} taskId`)
+      nonEmptyString(data['subject'], `${label} subject`)
+      arrayValue(data['dependencies'], `${label} dependencies`, stringValue)
+      if (data['assignee'] !== undefined) stringValue(data['assignee'], `${label} assignee`)
+      if (data['worker'] !== undefined) stringValue(data['worker'], `${label} worker`)
+      return
+    case 'patent-teams/task-gated':
+      nonEmptyString(data['teamId'], `${label} teamId`)
+      nonEmptyString(data['taskId'], `${label} taskId`)
+      finiteNumberValue(data['score'], `${label} score`)
+      arrayValue(data['failures'], `${label} failures`, stringValue)
+      stringValue(data['feedback'], `${label} feedback`)
+      return
+    case 'patent-teams/task-updated':
+      nonEmptyString(data['teamId'], `${label} teamId`)
+      nonEmptyString(data['taskId'], `${label} taskId`)
+      nonEmptyString(data['status'], `${label} status`)
+      if (data['assignee'] !== undefined) stringValue(data['assignee'], `${label} assignee`)
+      if (data['output'] !== undefined) stringValue(data['output'], `${label} output`)
+      if (data['attempt'] !== undefined) safeIntegerValue(data['attempt'], `${label} attempt`)
+      if (data['attemptId'] !== undefined) stringValue(data['attemptId'], `${label} attemptId`)
+      return
+    case 'patent-teams/task-validated':
+      nonEmptyString(data['teamId'], `${label} teamId`)
+      nonEmptyString(data['taskId'], `${label} taskId`)
+      nonEmptyString(data['worker'], `${label} worker`)
+      booleanValue(data['valid'], `${label} valid`)
+      arrayValue(data['missingHardFields'], `${label} missingHardFields`, stringValue)
+      booleanValue(data['degraded'], `${label} degraded`)
+      return
+    case 'patent-teams/team-created':
+      nonEmptyString(data['teamId'], `${label} teamId`)
+      nonEmptyString(data['captainSessionId'], `${label} captainSessionId`)
+      nonEmptyString(data['name'], `${label} name`)
+      if (data['description'] !== undefined) stringValue(data['description'], `${label} description`)
+      return
     case 'permission/preset':
       nonEmptyString(data['preset'], `${label} preset`)
+      if (data['origin'] !== undefined) {
+        literalValue(data['origin'], ['default', 'selection'], `${label} origin`)
+      }
       return
     case 'plan/mode':
       booleanValue(data['active'], `${label} active`)
@@ -169,6 +228,13 @@ export function assertReleasedPayloadSemantics(event: SessionFormatEvent, versio
       return
     case 'schedule/change':
       scheduleChangeValue(data, label)
+      return
+    case 'self-evolve/reflection':
+      countValue(data['turn'], `${label} turn`)
+      countValue(data['step'], `${label} step`)
+      nonEmptyString(data['patternId'], `${label} patternId`)
+      finiteNumberValue(data['confidence'], `${label} confidence`)
+      stringValue(data['suggestion'], `${label} suggestion`)
       return
     case 'session-log-deepseek/delivery-accepted':
       {
@@ -760,10 +826,10 @@ function finishReasonValue(value: SessionFormatJsonValue | undefined, label: str
 }
 
 function replayEnvelopeValue(value: SessionFormatJsonValue | undefined, label: string): void {
-  const replay = exactRecord(value, label, ['response'], ['blocks'])
-  if (replay['blocks'] !== undefined && !Array.isArray(replay['blocks'])) {
-    throw new SessionFormatError(`${label} blocks must be an array`)
-  }
+  // Replay metadata is adapter-private and owner-opaque. `response`/`blocks` is
+  // the current generic envelope, but released v0 carried per-provider flat
+  // records (kind/version/api/...): freeze only "it is a record", never members.
+  releasedV0Record(value, label)
 }
 
 function turnEndReasonValue(value: SessionFormatJsonValue | undefined, label: string): void {

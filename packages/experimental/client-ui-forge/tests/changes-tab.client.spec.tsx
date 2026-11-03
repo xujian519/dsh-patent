@@ -264,10 +264,10 @@ describe('ChangesTab keyboard file navigation', () => {
   it.each([{ kind: 'local' }, { kind: 'change', url: URL7 }] as const)('uses file-tree order for $kind diff sections and keyboard navigation', async (source) => {
     const files = [
       file('README.md'), file('packages/plugin/README.md'), file('packages/plugin/tests/index.spec.ts'),
-      file('packages/plugin/src/index.ts'), file('packages/plugin/src/adapter.ts'), file('docs/guide.md'),
+      file('packages/plugin/src/index.ts'), file('packages/plugin/src/adapter.ts'), file('manual/guide.md'),
     ]
     const expected = [
-      'docs/guide.md', 'packages/plugin/src/adapter.ts', 'packages/plugin/src/index.ts',
+      'manual/guide.md', 'packages/plugin/src/adapter.ts', 'packages/plugin/src/index.ts',
       'packages/plugin/tests/index.spec.ts', 'packages/plugin/README.md', 'README.md',
     ]
     const m = mount({ source, setup: (faces) => {

@@ -556,10 +556,10 @@ export class HarnessClient {
   }
 
   private settleStreams(): Promise<void> {
-    return Promise.race([
-      this.streamsSettled,
-      new Promise<void>((resolve) => { setTimeout(resolve, STREAM_SETTLE_MS) }),
-    ])
+    return new Promise<void>((resolve) => {
+      const timer = setTimeout(resolve, STREAM_SETTLE_MS)
+      void this.streamsSettled.then(() => { clearTimeout(timer); resolve() })
+    })
   }
 
   private closedError(reason: string): TransportClosedError {

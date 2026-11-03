@@ -149,8 +149,6 @@ describe('SidebarRoot shell', () => {
     expect(Array.from(screen.getByRole('tooltip').querySelectorAll('kbd'), key => key.textContent)).toEqual(['Ctrl', 'N'])
   })
   it('routes New Session (capsule + wordmark) and the column toggle', () => {
-    // Occupied brand slots keep New Session even when the build carries a version.
-    vi.stubEnv('DSH_CLIENT_VERSION', '1.2.3')
     const b = mountShell()
     expect(screen.getByTestId('custom-brand-mark')).toBeTruthy()
     expect(screen.getByTestId('custom-brand-name')).toBeTruthy()
@@ -225,92 +223,10 @@ describe('SidebarRoot shell', () => {
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
     />)
 
-    expect(screen.getByText('DSH Local Build')).toBeTruthy()
-    expect(screen.getByText('1.2.3-rc.4-0123456-dirty')).toBeTruthy()
+    // The brand area never surfaces build-version metadata, whatever the build injected.
+    expect(screen.getByText('DSH Patent')).toBeTruthy()
+    expect(screen.queryByText('1.2.3-rc.4-0123456-dirty')).toBeNull()
     expect(container.querySelector('svg')).not.toBeNull()
-  })
-
-  it.each([
-    [{ DSH_CLIENT_VERSION: '1.2.3' }, '1.2.3'],
-    [{ DSH_CLIENT_COMMIT_HASH: 'abcdef0', DSH_CLIENT_VERSION: '1.2.3' }, '1.2.3-abcdef0'],
-  ])('omits unavailable build-version suffixes from %j', (environment, expected) => {
-    for (const [name, value] of Object.entries(environment)) vi.stubEnv(name, value)
-    render(<SidebarRoot
-      drawer={false}
-      collapsed={false} width={300}
-      useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
-      usePanelInfo={usePanelInfo} selectPanel={() => {}} usePanels={selector => selector([])} useEntryPins={selector => selector([])}
-      useEntryActions={selector => selector(false)} setPinned={vi.fn()}
-      useShortcuts={selector => selector([])}
-      useContextMenu={contextMenuHook()} useResource={useResource} useWorkspaces={neverHook}
-      {...allowAllAccess}
-      startSession={vi.fn()} toggleSidebar={vi.fn()} trackEntryClick={vi.fn()} t={t}
-      renderSlot={((_key: string, _owner: unknown, options?: { fallback?: ReactNode }) =>
-        options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
-    />)
-
-    expect(screen.getByText('DSH Local Build')).toBeTruthy()
-    expect(screen.getByText(expected)).toBeTruthy()
-  })
-
-  it.each([false, true])('copies the local-build version from the fallback mark and name (darwin=%s)', async (darwin) => {
-    if (darwin) document.documentElement.dataset.platform = 'darwin'
-    vi.stubEnv('DSH_CLIENT_COMMIT_HASH', 'abcdef0')
-    vi.stubEnv('DSH_CLIENT_VERSION', '1.2.3')
-    const writeText = vi.fn<(text: string) => Promise<void>>()
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error('denied'))
-      .mockResolvedValueOnce(undefined)
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
-    const startSession = vi.fn()
-    const trackEntryClick = vi.fn<SidebarRootComponentProps['trackEntryClick']>()
-    render(<SidebarRoot
-      collapsed={false} width={300} drawer={false}
-      useSessions={neverHook} useSessionStatus={useSessionStatus} useSessionRetainInfo={neverHook}
-      usePanelInfo={usePanelInfo} selectPanel={() => {}} usePanels={selector => selector([])} useEntryPins={selector => selector([])}
-      useEntryActions={selector => selector(false)} setPinned={vi.fn()}
-      useShortcuts={selector => selector([])}
-      useContextMenu={contextMenuHook()} useResource={useResource} useWorkspaces={neverHook}
-      {...allowAllAccess}
-      startSession={startSession} toggleSidebar={vi.fn()} trackEntryClick={trackEntryClick} t={t}
-      renderSlot={((_key: string, _owner: unknown, options?: { fallback?: ReactNode }) =>
-        options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
-    />)
-    vi.useFakeTimers()
-
-    const copiedToasts = () => screen.queryAllByRole('alert').map(toast => toast.textContent)
-    await act(async () => { fireEvent.click(screen.getByText('DSH Local Build')) })
-    expect(writeText).toHaveBeenLastCalledWith('1.2.3-abcdef0')
-    expect(copiedToasts()).toEqual(['Version copied'])
-    // The brand itself keeps its title and version.
-    expect(screen.getByText('DSH Local Build')).toBeTruthy()
-    expect(screen.getByText('1.2.3-abcdef0')).toBeTruthy()
-    act(() => { vi.advanceTimersByTime(4000) })
-    expect(copiedToasts()).toEqual([])
-
-    // A refused write claims no success.
-    await act(async () => { fireEvent.click(screen.getByText('1.2.3-abcdef0')) })
-    expect(copiedToasts()).toEqual([])
-
-    // The fallback mark copies too, and its click still reaches document.
-    const documentClick = vi.fn()
-    document.addEventListener('click', documentClick)
-    const mark = screen.getByText('DSH Local Build').closest('[aria-hidden]')!.querySelector('svg')!
-    await act(async () => { fireEvent.click(mark) })
-    document.removeEventListener('click', documentClick)
-    expect(documentClick).toHaveBeenCalledOnce()
-    expect(writeText).toHaveBeenCalledTimes(3)
-    expect(copiedToasts()).toEqual(['Version copied'])
-    expect(startSession).not.toHaveBeenCalled()
-    // Copying the version is not a New Session click.
-    expect(trackEntryClick).not.toHaveBeenCalled()
-
-    // The rest of the brand button still starts and reports a session.
-    if (!darwin) {
-      fireEvent.click(screen.getAllByRole('button', { name: 'New session' })[0]!)
-      expect(startSession).toHaveBeenCalledOnce()
-      expect(trackEntryClick).toHaveBeenCalledExactlyOnceWith({ menu_name: 'new_session', position: 'sidebar' })
-    }
   })
 
   it('retains the local-build fallback without complete build metadata', () => {
@@ -328,7 +244,7 @@ describe('SidebarRoot shell', () => {
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
     />)
 
-    expect(screen.getByText('DSH Local Build')).toBeTruthy()
+    expect(screen.getByText('DSH Patent')).toBeTruthy()
   })
 
   it('hands the region its wide flag and clamps expandSidebar to the collapsed state', () => {

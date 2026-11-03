@@ -20,8 +20,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
   FishLogo, IconAppsAddOutlineRegular, IconNewChatOutlineMedium, IconNewChatOutlineRegular,
-  IconPanelLeftOutlineRegular, focusWithoutRing, isBehindModal, isDarwinDesktop, Menu, ShortcutKeys, Toast, Tooltip, useModalLayer,
-  writeClipboard,
+  IconPanelLeftOutlineRegular, focusWithoutRing, isBehindModal, isDarwinDesktop, Menu, ShortcutKeys, Tooltip, useModalLayer,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {
@@ -40,16 +39,6 @@ const COLLAPSE_SETTLE_MS = 150
  * edge — on the way to the conversation, or around a portalled menu.
  */
 const SCROLLBAR_LINGER_MS = 2000
-
-/** Format complete-build metadata for the local brand badge. */
-function localBuildVersion(): string | undefined {
-  const version = process.env.DSH_CLIENT_VERSION
-  if (version === undefined) return undefined
-  const commit = process.env.DSH_CLIENT_COMMIT_HASH
-  return version
-    + (commit === undefined ? '' : `-${commit}`)
-    + (process.env.DSH_CLIENT_GIT_DIRTY === 'true' ? '-dirty' : '')
-}
 
 type PanelRowProps =
   Pick<SidebarPanelMetadata, 'id' | 'label'>
@@ -240,17 +229,65 @@ export function SidebarRoot({
     }
   }, [pointerInside])
 
-  const buildVersion = localBuildVersion()
-  // The local-build fallbacks copy the badge text; the brand button below
-  // skips New Session for clicks inside them. The click still bubbles, so
-  // document-level outside-click listeners see it.
-  // Each successful copy bumps the key so a repeated copy replays the toast.
-  const [copiedToast, setCopiedToast] = useState<number | null>(null)
-  const copyVersion = (version: string) => (): void => {
-    void writeClipboard(version).then((ok) => {
-      if (ok) setCopiedToast(seq => (seq ?? 0) + 1)
-    })
-  }
+  // The @dely0/dsh-personal-workbench plugin injects its sidebar entry
+  // (`button[data-dsh-personal-workbench-entry]`) into this column after mount.
+  // Promote it into the top action group: the slot right after 「新会话」, with
+  // that button's class, icon size and label class so it reads as a peer, and
+  // with the scheduled-task trigger hidden in the place it takes. The anchor is
+  // this shell's own new-session button, selected by the module class (the
+  // expanded column carries TWO `session.new.label` buttons — the brand shortcut
+  // and the real one — so the label alone is ambiguous); the surface itself
+  // comes from the matching rule in SidebarRoot.module.css, because the plugin's
+  // own sheet is appended to <head> after the bundle and would otherwise win the
+  // tie. `wide` re-promotes so the rail gets the rail icon size.
+  useEffect(() => {
+    let disposed = false
+    let frame: number | null = null
+    const promoteEntry = (): void => {
+      /* v8 ignore next -- cleanup cancels the rAF and disconnects the observer, so this guard is unreachable after dispose */
+      if (disposed) return
+      const entry = document.querySelector<HTMLButtonElement>('button[data-dsh-personal-workbench-entry]')
+      if (entry === null) return
+      const timer = document.querySelector<HTMLButtonElement>('button.dshc-trigger')
+      if (timer !== null) timer.style.display = 'none'
+      const anchor = document.querySelector<HTMLButtonElement>(
+        `button.${css.newSession}:not([data-dsh-personal-workbench-entry])`,
+      )
+      // querySelector only returns connected nodes, so a found anchor is always in the DOM.
+      if (anchor === null) return
+      if (entry !== anchor.nextElementSibling) anchor.insertAdjacentElement('afterend', entry)
+      entry.className = anchor.className
+      const label = entry.querySelector('span')
+      // Copy the anchor's own label class rather than naming it: New Session wraps
+      // its label in a mask span, and the entry's single span takes that span's seat.
+      const anchorLabel = anchor.querySelector('span')
+      if (label !== null && anchorLabel !== null) label.className = anchorLabel.className
+      const icon = entry.querySelector('svg')
+      if (icon !== null) {
+        // Inline: the plugin's own [data-…] svg rule outranks presentational sizes.
+        icon.style.width = `${String(wide ? 14 : 18)}px`
+        icon.style.height = `${String(wide ? 14 : 18)}px`
+        icon.style.flex = '0 0 auto'
+      }
+    }
+    const schedule = (): void => {
+      /* v8 ignore next -- dedupes burst mutations into one rAF; the re-entrant visit is not observable in tests */
+      if (frame !== null) return
+      frame = requestAnimationFrame(() => {
+        frame = null
+        promoteEntry()
+      })
+    }
+    const watcher = new MutationObserver(schedule)
+    const root = document.getElementById('root')
+    if (root !== null) watcher.observe(root, { childList: true, subtree: true })
+    promoteEntry()
+    return () => {
+      disposed = true
+      if (frame !== null) cancelAnimationFrame(frame)
+      watcher.disconnect()
+    }
+  }, [wide])
 
   const darwinDesktop = isDarwinDesktop()
   // Rail resting state is the whale mark; hovering swaps in the panel icon
@@ -307,28 +344,16 @@ export function SidebarRoot({
             access snapshot allows `session/create` — except on
             macOS, where it stays part of the logo row's window-drag surface
             (a button would subtract itself through the global no-drag rule);
-            the collapsed rail's logo is the expand toggle below instead.
-            Mouse clicks on the local-build fallbacks copy the version instead. */}
+            the collapsed rail's logo is the expand toggle below instead. */}
         {wide && (() => {
           const identity = (
             <span className={css.brandIdentity} aria-hidden="true">
               <span className={css.brandMark}>
-                {renderSlot('sidebar.brand.mark', { size: 24 }, {
-                  fallback: buildVersion === undefined
-                    ? <FishLogo size={24} />
-                    : <span className={css.copyVersion} data-copy-version onClick={copyVersion(buildVersion)}><FishLogo size={24} /></span>,
-                })}
+                {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
               </span>
               <span className={css.brandName}>
                 {renderSlot('sidebar.brand.name', {}, {
-                  fallback: buildVersion === undefined
-                    ? <span className={css.fallbackBrandName}>{t('brand.localBuild')}</span>
-                    : (
-                      <span className={clsx(css.localBuildBrand, css.copyVersion)} data-copy-version onClick={copyVersion(buildVersion)}>
-                        <span className={css.localBuildTitle}>{t('brand.localBuild')}</span>
-                        <span className={css.buildVersion}>{buildVersion}</span>
-                      </span>
-                    ),
+                  fallback: <span className={css.fallbackBrandName}>{t('brand.localBuild')}</span>,
                 })}
               </span>
             </span>
@@ -341,10 +366,7 @@ export function SidebarRoot({
                 className={clsx(css.brand, css.wide)}
                 aria-label={t('session.new.label')}
                 aria-keyshortcuts={newShortcut?.aria}
-                onClick={(event) => {
-                  if ((event.target as Element).closest('[data-copy-version]') !== null) return
-                  openNewSession()
-                }}
+                onClick={() => { openNewSession() }}
               >
                 {identity}
               </button>
@@ -418,10 +440,6 @@ export function SidebarRoot({
           expandSidebar: () => { if (collapsed) toggleSidebar() },
         })}
       </div>
-
-      {copiedToast !== null && (
-        <Toast key={copiedToast} tone="success" text={t('version.copied')} onDone={() => { setCopiedToast(null) }} />
-      )}
 
       {/* Footer actions stack above Settings in both sidebar widths. */}
       <div className={css.footArea}>

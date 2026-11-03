@@ -123,8 +123,9 @@ it('keeps company signing outside pull-request release rehearsals', () => {
   expect(workflow).toContain('workflow_call:')
   expect(workflow).not.toContain('pull_request:')
   expect(workflow).toContain('dsh-mac-package-trial')
-  const release = readFileSync(resolve('.github/workflows/release-publish.yml'), 'utf8')
+  // The fork archives the upstream release workflows it does not run.
+  const release = readFileSync(resolve('.github/workflows-disabled/release-publish.yml'), 'utf8')
   expect(release).toContain('needs: cua-helper')
   expect(release).toContain('scripts/cua-helper/stage.ts')
-  expect(readFileSync(resolve('.github/workflows/release.yml'), 'utf8')).not.toContain('cua-helper-package.yml')
+  expect(readFileSync(resolve('.github/workflows-disabled/release.yml'), 'utf8')).not.toContain('cua-helper-package.yml')
 })

@@ -190,15 +190,15 @@ describe('FileTree', () => {
     const { view } = draw({
       root: '',
       entries: [
-        { path: 'docs/guide.md', name: 'guide.md' },
-        { path: 'docs', name: 'Documentation', meta: { kind: 'directory' } },
+        { path: 'manual/guide.md', name: 'guide.md' },
+        { path: 'manual', name: 'Documentation', meta: { kind: 'directory' } },
         { path: 'README.md', name: 'README.md' },
         { path: '/etc/hosts', name: 'hosts' },
         { path: '/etc/ssh/config', name: 'config' },
       ],
-      expanded: ['docs', '/etc', '/etc/ssh'],
+      expanded: ['manual', '/etc', '/etc/ssh'],
     })
-    expect(paths(view.container)).toEqual(['docs', 'docs/guide.md', '/etc', '/etc/ssh', '/etc/ssh/config', '/etc/hosts', 'README.md'])
+    expect(paths(view.container)).toEqual(['manual', 'manual/guide.md', '/etc', '/etc/ssh', '/etc/ssh/config', '/etc/hosts', 'README.md'])
     expect(rows(view.container)).toEqual([
       'directory Documentation', 'file guide.md', 'directory etc', 'directory ssh', 'file config', 'file hosts', 'file README.md',
     ])

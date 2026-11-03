@@ -124,7 +124,7 @@ const validPayloads: Readonly<Record<string, SessionFormatJsonValue>> = {
       blockedBy: [], writeScopes: ['/work'],
     },
   },
-  'todo/write': { todos: [{ content: 'work', status: 'in_progress', tags: ['planning'] }] },
+  'todo/write': { todos: [{ content: 'work', status: 'in_progress' }] },
   'tool-workflow/agent-end': { runId: 'run-1', seq: 1, outcome: 'completed' },
   'tool-workflow/agent-start': { runId: 'run-1', seq: 1, label: 'worker', phase: 'build', childId: 'child-1' },
   'tool-workflow/run-end': { runId: 'run-1', stopReason: 'completed' },
@@ -302,18 +302,6 @@ describe('released event and payload inventory', () => {
     }).not.toThrow()
   })
 
-  it('refuses a todo item whose optional tags are not a non-empty string array', () => {
-    expect(() => {
-      assertPayload('todo/write', { todos: [{ content: 'x', status: 'pending', tags: ['ok'] }] })
-    }).not.toThrow()
-    expect(() => {
-      assertPayload('todo/write', { todos: [{ content: 'x', status: 'pending', tags: 'oops' }] })
-    }).toThrow(/tags must be an array/)
-    expect(() => {
-      assertPayload('todo/write', { todos: [{ content: 'x', status: 'pending', tags: ['a', 1] }] })
-    }).toThrow(/tags\[1\] must be a non-empty string/)
-  })
-
   it('accepts released v0 permission/preset origin values', () => {
     expect(() => { assertPayload('permission/preset', { preset: 'default' }) }).not.toThrow()
     expect(() => { assertPayload('permission/preset', { preset: 'workspace-write', origin: 'default' }) }).not.toThrow()
@@ -388,11 +376,10 @@ describe('released event and payload inventory', () => {
     expect(() => { assertPayload(type, data) }).not.toThrow()
   })
 
-  it('preserves an unknown v0 event marked ignorable across the identity edge', () => {
+  it('refuses unknown v0 events even when the envelope marks them ignorable', () => {
     const row = { type: 'plugin/unknown', seq: 0, time: 1, data: {}, ignorable: true }
-    const restored = restoreV0ToV1(v0Header, [row])
-    expect(restored.header.version).toBe(1)
-    expect(restored.events).toEqual([row])
+    expect(() => restoreV0ToV1(v0Header, [row]))
+      .toThrow(/unknown historical event.*refuses.*ignorable/)
   })
 
   it('exercises each released test validation policy', () => {
@@ -429,7 +416,7 @@ describe('released event and payload inventory', () => {
     expect(() => { assertReleasedV0SourceArtifact({
       ...v0,
       events: [{ type: 'plugin/unknown', seq: 0, time: 1, data: {}, ignorable: true }],
-    }) }).not.toThrow()
+    }) }).toThrow(/unknown historical event/)
   })
 
   it('refuses an unknown non-ignorable historical event in a released v0 source artifact', () => {

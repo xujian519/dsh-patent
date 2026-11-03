@@ -147,6 +147,12 @@ export abstract class EntryTree {
     const legacy = { ...entry.options }
     if (parent !== undefined) {
       const target = this.resolveGroup(parent)
+      const container = target.ctx.fiber.entry
+      if (container && entry.contains(container)) {
+        throw new TypeError(
+          `cannot move loader entry ${id} under group ${parent}: the target group sits inside the entry's own subtree`,
+        )
+      }
       const moved = target.tree === source.tree ? [] : members(entry)
       for (const member of moved) {
         const { id } = member.options

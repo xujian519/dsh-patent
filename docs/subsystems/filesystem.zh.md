@@ -242,14 +242,30 @@ interface FsWriteOutcome {
   version: FsVersion
   /**
    * The file's content BEFORE the write, or `null` when the file did not exist
-   * (a create) or the backend declined a contextual basis (for example, a
-   * binary/non-UTF-8 prior file or either overwrite side reaching its exclusive limit).
+   * (a create), the write carried raw bytes rather than text, or the backend
+   * declined a contextual basis (for example, a binary/non-UTF-8 prior file or
+   * either overwrite side reaching its exclusive limit).
    * LF-normalized storage text (the diff basis), never a diff — a consumer
    * computes the result-time contextual diff from `before`/`after` when
    * `before` is present, else falls back to a whole-file diff.
    */
   before: string | null
-  /** The file's content AFTER the write, LF-normalized to share `before`'s diff basis. */
+  /**
+   * The file's content AFTER the write, LF-normalized to share `before`'s diff
+   * basis, or `null` for a byte write whose content has no text projection.
+   */
+  after: string | null
+}
+```
+
+```ts type-equiv
+/**
+ * Outcome of a full-file text write: identical to {@link FsWriteOutcome} except
+ * that `after` is the written text rather than `null`, because a text write
+ * always has a text projection.
+ */
+interface FsTextWriteOutcome extends FsWriteOutcome {
+  /** The written text, LF-normalized to share `before`'s diff basis. */
   after: string
 }
 ```

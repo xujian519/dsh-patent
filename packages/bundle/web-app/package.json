@@ -39,8 +39,6 @@
     "presets/ptc.patch.yml",
     "presets/minimal.patch.yml",
     "presets/cordis.patch.yml",
-    "lib/public-url-*.js",
-    "lib/types/**/*.d.ts",
     "presets/patent.patch.yml",
     "presets/document.patch.yml",
     "presets/legal.patch.yml",
@@ -50,7 +48,9 @@
     "presets/document.zh.md",
     "presets/legal.md",
     "presets/legal.zh.md",
-    "skills"
+    "skills",
+    "lib/public-url-*.js",
+    "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
   "dsh": {

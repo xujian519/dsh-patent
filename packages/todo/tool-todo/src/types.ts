@@ -25,6 +25,12 @@ export interface TodoItem {
   content: string
   /** Lifecycle state. `in_progress` marks a task being worked now; parallel work may mark several. */
   status: 'pending' | 'in_progress' | 'completed'
+  /**
+   * Optional short category labels for the cross-session board filter.
+   * Absent when the model does not tag the item; the board treats that as
+   * an empty tag set.
+   */
+  tags?: string[]
 }
 
 declare module '@deepseek-ai/dsh-session/types' {
@@ -44,5 +50,12 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
      * exclusion mark so the pre-first-write value stays expressible.
      */
     todos: SessionProjectionSummaryExcluded<TodoItem[]> | null
+    /**
+     * Whole-log standing plan for the cross-session board: the latest
+     * `todo/write` list that is not cleared on `turn/start`, or `null` before
+     * the first write. Included in Session summary payloads so the board tab
+     * can fold cards across sessions without opening each log.
+     */
+    todosLatest: TodoItem[] | null
   }
 }

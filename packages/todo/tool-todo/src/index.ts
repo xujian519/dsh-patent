@@ -109,8 +109,9 @@ const todosProjectionSchema: ZodType<TodoItem[] | null> = zod.union([
 ])
 
 /**
- * Register the `todo_write` tool on `ctx.tools` and the `todos` unit on
- * `ctx.sessionProjections`.
+ * Register the `todo_write` tool on `ctx.tools` and the `todos` (current-turn
+ * standing plan) plus `todosLatest` (whole-log, never cleared — the board
+ * feed) units on `ctx.sessionProjections`.
  * @param ctx - registrant context carrying the tool and session-projection registries.
  * @param config - deployment's explicit todo policy.
  * @returns when the plugin is ready.
@@ -132,6 +133,16 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     },
     wire: { viewSchema: todosProjectionSchema, view: state => state, summary: false },
     stateVersion: 2,
+  })
+  // Board feed: same last-write-wins fold as `todos`, but turn/start does not
+  // clear it, so a session's board cards survive into later turns.
+  await ctx.sessionProjections.register<'todosLatest', TodoItem[] | null>({
+    key: 'todosLatest',
+    stateSchema: todosProjectionSchema,
+    init: () => null,
+    apply: (state, event) => (event.type === 'todo/write' ? event.data.todos : state),
+    wire: { viewSchema: todosProjectionSchema, view: state => state },
+    stateVersion: 1,
   })
   ctx.tools.register(defineTool({
     name: 'todo_write',

@@ -154,6 +154,36 @@ it('重做超过 2 次仍失败 → 降级输出', async () => {
   expect((state._error as string).includes('claim-chart')).toBeTruthy()
 })
 
+it('权利要求原文编号重复或跳号 → 不调用 LLM，直接降级', async () => {
+  let calls = 0
+  const provider: StageProvider = {
+    callLLM: async () => {
+      calls += 1
+      return JSON.stringify(goodChart())
+    },
+  }
+  const handler = new ClaimChartHandler()
+  const duplicate = await handler.execute({
+    state: {
+      claim: '1. 一种装置，包括壳体。\n1. 根据权利要求1所述的装置，还包括滤芯。',
+      chart_targets: '[]',
+    },
+    provider,
+  })
+  expect(duplicate._error as string).toContain('权利要求编号结构非法')
+  expect(duplicate._error as string).toContain('重复')
+  const skipped = await handler.execute({
+    state: {
+      claim: '1. 一种装置，包括壳体。\n3. 根据权利要求1所述的装置，还包括滤芯。',
+      chart_targets: '[]',
+    },
+    provider,
+  })
+  expect(skipped._error as string).toContain('权利要求编号结构非法')
+  expect(skipped._error as string).toContain('跳号')
+  expect(calls).toBe(0)
+})
+
 it('字段级 malformed 输出（缺 text/null 项）→ 打回重做而非崩溃', async () => {
   const prompts: string[] = []
   let calls = 0

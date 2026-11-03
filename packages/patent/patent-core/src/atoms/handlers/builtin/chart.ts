@@ -20,7 +20,7 @@ import {
   type ClaimChart,
   type ClaimElement,
 } from '../../../claim-chart/protocol/types.ts'
-import { validateElements } from '../../../claim-chart/runtime/element-validator.ts'
+import { validateClaimTextStructure, validateElements } from '../../../claim-chart/runtime/element-validator.ts'
 import { deriveClaimRefs } from '../../../claim-chart/runtime/claim-refs.ts'
 import { validateRowMapping } from '../../../claim-chart/runtime/mapping-machine.ts'
 import { deriveInvalidityConclusion } from '../../../claim-chart/runtime/invalidity-conclusion.ts'
@@ -359,6 +359,21 @@ function renderTargetLines(targets: readonly ChartTarget[]): string {
     .join('\n')
 }
 
+/**
+ * 校验权利要求原文能否进入图表生成。
+ *
+ * 空文本与编号结构错误（重复、跳号、首号非 1）都是输入质量问题，让 LLM 重试
+ * 无法修复，因此在进入模型循环前直接降级。
+ * @param claim - 权利要求原文。
+ * @returns 降级原因；可以继续时返回 undefined。
+ */
+function claimInputFailure(claim: string): string | undefined {
+  if (claim.trim().length === 0) return '权利要求为空'
+  const errors = validateClaimTextStructure(claim)
+  if (errors.length === 0) return undefined
+  return `权利要求编号结构非法: ${errors.join('；')}`
+}
+
 /** claim-chart 执行器：构建权利要求要素级证据网格。 */
 export class ClaimChartHandler implements StageHandler {
   readonly name = 'claim-chart'
@@ -391,9 +406,8 @@ export class ClaimChartHandler implements StageHandler {
     const missing = requireLlm(provider, 'claim-chart')
     if (missing) return missing
     const claim = resolveInputText(state, ['claim', 'claim_text'], '')
-    if (claim.trim().length === 0) {
-      return degraded('claim-chart', '权利要求为空')
-    }
+    const claimFailure = claimInputFailure(claim)
+    if (claimFailure !== undefined) return degraded('claim-chart', claimFailure)
     // 缺省/空白 chart_mode 沿用 invalidity；显式给出的非法值降级，不静默换模式
     // （静默回退会让调用方的侵权/可专利性输入按无效模式产出结论）。
     const modeRaw = getStateString(state, 'chart_mode').trim()

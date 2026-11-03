@@ -2,6 +2,7 @@ export * from './protocol/types.ts'
 export {
   normalizeWhitespace,
   validateElements,
+  validateClaimTextStructure,
   splitClaimSegments,
   type ElementValidationResult,
 } from './runtime/element-validator.ts'

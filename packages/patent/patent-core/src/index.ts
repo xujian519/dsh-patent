@@ -231,6 +231,7 @@ export {
   saveClaimChart,
   splitClaimSegments,
   validateClaimRefs,
+  validateClaimTextStructure,
   validateElements,
   validatePinCite,
   validateRowMapping,

@@ -1,4 +1,5 @@
 import { ToolExecutionPipeline } from '@deepseek-ai/dsh-tools/pipeline'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
@@ -30,7 +31,6 @@ import {
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { ToolResult } from '@deepseek-ai/dsh-tools'
 import { parseSearchArgs } from '../src/search.ts'
-import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const testToolSignal = new AbortController().signal
 
@@ -62,20 +62,12 @@ function searchProvider(result: WebSearchResult, isAvailable = available): WebSe
   return { id: 'stub-search', available: () => isAvailable, search: () => Promise.resolve(result) }
 }
 
-function fetchProvider(isAvailable = available): WebFetchProvider {
-  return {
-    id: 'stub-fetch',
-    available: () => isAvailable,
-    fetch: () => Promise.resolve({ url: 'https://stub.test', statusCode: 503, body: { kind: 'text', content: '' }, truncated: false }),
-  }
-}
-
 /** Mount the real registry, seam, and tool-web; return an executor helper. */
 async function mountTools(opts: {
   config?: ToolWeb.Config
   webConfig?: { searchProvider?: string; fetchProvider?: string }
   search?: WebSearchProvider
-  fetchProvider?: WebFetchProvider | null
+  fetchProvider?: WebFetchProvider
 } = {}): Promise<{ ctx: Context; agent: Agent; fiber: Awaited<ReturnType<Context['plugin']>>; call: (name: string, args: unknown) => Promise<ToolExecutionResult> }> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
@@ -83,9 +75,7 @@ async function mountTools(opts: {
   await ctx.plugin(NativeToolExecutor)
   await ctx.plugin(WebRuntime, opts.webConfig ?? {})
   if (opts.search) ctx.web.registerSearchProvider(opts.search)
-  // fetch 默认开启,tool-web 在无可用 provider 时于加载阶段 fail-loud(fork 的
-  // SSRF 保护改进);默认挂一个 stub provider,需要显式无 provider 时传 null。
-  if (opts.fetchProvider !== null) ctx.web.registerFetchProvider(opts.fetchProvider ?? fetchProvider())
+  if (opts.fetchProvider) ctx.web.registerFetchProvider(opts.fetchProvider)
   const fiber = await ctx.plugin(ToolWeb, opts.config ?? {})
   const agent = { id: SessionId('tool-web') } as Agent
   await ctx.plugin(Object.assign((inner: Context) => { createScope(inner, agent) }, { inject: ['tools'] }))
@@ -811,7 +801,7 @@ describe('tool-web execution through the real registry', () => {
       truncated: false,
     })
     // The model schema exposes no timeout: the tool forwards only the url; the
-    // tool-call budget is owned by dsh-timeout-guard over exec.signal.
+    // tool-call budget is owned by dsh-tool-call-timeout-policy over exec.signal.
     expect(seen.request).toEqual({ url: 'https://a.test' })
     expect(seen.signal).toBe(controller.signal)
     await fiber.dispose()

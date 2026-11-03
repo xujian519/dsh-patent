@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-agent",
   "description": "Agent interface, registry, initiator scope, and event vocabulary for the DeepSeek Harness",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },
@@ -43,11 +43,6 @@
     "@deepseek-ai/dsh-util-values": "workspace:*",
     "@deepseek-ai/dsh-workspace": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~"
-  },
-  "dependencies": {
-    "@deepseek-ai/dsh-contained-emit": "workspace:*",
-    "@deepseek-ai/dsh-entry-lifecycle": "workspace:*",
-    "@deepseek-ai/dsh-value": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/dsh-workspace": {

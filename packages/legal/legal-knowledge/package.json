@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-legal-knowledge",
   "description": "Legal knowledge-base query seam for the DeepSeek Harness: case-law search, legal regulation search, judicial interpretation search, and guiding case lookup over SQLite FTS5 (with in-memory fallback)",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

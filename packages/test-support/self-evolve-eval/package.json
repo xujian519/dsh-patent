@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-self-evolve-eval",
   "description": "Offline P1-10 evaluation scaffold for the self-evolve capability: deterministic subset selection, paired result scoring, and the net-win confidence rollback switch",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

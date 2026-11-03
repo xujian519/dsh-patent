@@ -3,7 +3,10 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "lib/types",
-    "types": ["client-build-environment", "node"]
+    "types": [
+      "client-build-environment",
+      "node"
+    ]
   },
   "include": [
     "src"
@@ -89,6 +92,9 @@
     },
     {
       "path": "../../client/hmr"
+    },
+    {
+      "path": "../../client/ui-context-menu"
     }
   ]
 }

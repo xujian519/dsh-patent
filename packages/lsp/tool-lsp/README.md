@@ -43,7 +43,7 @@ Navigation returns `path:line:character` locations grouped by file (one-based); 
 |---|---|---|
 | `maxLocations` | `100` | Largest number of rendered locations before an omission marker |
 | `maxResultChars` | `16000` | Largest complete rendered result, including truncation metadata |
-| `timeoutMs` | `60000` | Tool-call timeout budget enforced by `dsh-timeout-guard`; covers the complete queued open/query/close lifecycle and is not model-configurable |
+| `timeoutMs` | `60000` | Tool-call timeout budget enforced by `dsh-tool-call-timeout-policy`; covers the complete queued open/query/close lifecycle and is not model-configurable |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-tool-lsp) is the exhaustive source for every accepted field.
 

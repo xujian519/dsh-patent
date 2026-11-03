@@ -63,7 +63,6 @@ describe('todos projection provider', () => {
     seedMessage(bench.session)
     const projections = await bench.tailProjections()
     expect(projections?.values.todos).toBeNull()
-    expect(projections?.values.todosLatest).toBeNull()
     expect(projections?.asOfSeq).toBe(bench.session.seq - 1)
   })
 
@@ -100,34 +99,12 @@ describe('todos projection provider', () => {
     expect(cleared?.asOfSeq).toBe(session.seq - 1)
   })
 
-  it('keeps todosLatest across turn boundaries (whole-log last-wins)', async () => {
-    const bench = await harness(true)
-    const session = bench.session
-    seedMessage(session)
-    const first: TodoItem[] = [{ content: 'a', status: 'pending' }]
-    const second: TodoItem[] = [
-      { content: 'a', status: 'completed' },
-      { content: 'b', status: 'pending' },
-    ]
-    session.append('turn/start', { turn: 1 })
-    session.append('todo/write', { todos: first })
-    session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
-    session.append('turn/start', { turn: 2 })
-    // The standing plan cleared at this turn/start; the board feed did not.
-    expect((await bench.tailProjections())?.values.todosLatest).toEqual(first)
-    session.append('todo/write', { todos: second })
-    const projections = await bench.tailProjections()
-    expect(projections?.values.todosLatest).toEqual(second)
-    expect(projections?.asOfSeq).toBe(session.seq - 1)
-  })
-
   it('has no todos key when tool-todo is not composed', async () => {
     const bench = await harness(false)
     seedMessage(bench.session)
     const projections = await bench.tailProjections()
     expect(projections).toBeDefined()
     expect('todos' in (projections?.values ?? {})).toBe(false)
-    expect('todosLatest' in (projections?.values ?? {})).toBe(false)
   })
 
   it('drops the key when the tool-todo fiber unloads (HMR safety)', async () => {
@@ -135,9 +112,7 @@ describe('todos projection provider', () => {
     seedMessage(bench.session)
     const fiber = await bench.ctx.plugin(ToolTodo, { allowParallelInProgress: true })
     expect((await bench.tailProjections())?.values.todos).toBeNull()
-    expect((await bench.tailProjections())?.values.todosLatest).toBeNull()
     await fiber.dispose()
     expect('todos' in ((await bench.tailProjections())?.values ?? {})).toBe(false)
-    expect('todosLatest' in ((await bench.tailProjections())?.values ?? {})).toBe(false)
   })
 })

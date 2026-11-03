@@ -18,13 +18,13 @@ import type { SandboxPolicyService } from '@deepseek-ai/dsh-sandbox-policy'
 import { FsError } from '@deepseek-ai/dsh-fs'
 
 /** The two escalation arguments a mutating tool may carry (advertised only under a confining backend). */
-interface FsEscalationArgs {
+export interface FsEscalationArgs {
   sandbox_permissions?: string
   justification?: string
 }
 
 /** The schema fields for the escalation arguments, spread into a tool's `parameters` when a confining backend is mounted. */
-interface EscalationSchemaFields {
+export interface EscalationSchemaFields {
   sandbox_permissions: { type: 'string'; enum: string[]; description: string }
   justification: { type: 'string'; description: string }
 }
@@ -126,6 +126,14 @@ export class FsSandboxController {
    * @param policy - the policy stamped onto the call (names the mode in the marker).
    * @returns the error to throw — the marker `FsError` for a sandbox denial, else the original.
    */
+  mapError(error: FsError, policy: SandboxExecutionPolicy | undefined): FsError
+  /**
+   * Map a caught value, preserving failures other than sandbox denials.
+   * @param error - value thrown by a mutation.
+   * @param policy - policy stamped onto the call, when applicable.
+   * @returns the denial marker error, or the unchanged caught value.
+   */
+  mapError(error: unknown, policy: SandboxExecutionPolicy | undefined): unknown
   mapError(error: unknown, policy: SandboxExecutionPolicy | undefined): unknown {
     if (!(error instanceof FsError) || error.code !== 'FS_SANDBOX_DENIED') return error
     // A FS_SANDBOX_DENIED only arises under a confining backend, whose tool

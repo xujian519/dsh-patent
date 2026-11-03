@@ -95,7 +95,7 @@ function normalizeReleasedV0Event(
   const steering = normalizeLegacySteering(header, sessionId)
   const retry = normalizeLegacyRetry(steering, sessionId, state.retryIds)
   const compaction = normalizeLegacyCompaction(retry, sessionId, state)
-  const message = normalizeDescriptorVersion(normalizeLegacyMessage(compaction, sessionId, state.messageIds))
+  const message = normalizeLegacyMessage(compaction, sessionId, state.messageIds)
   if (message.type !== 'assistant/chunk') assertReleasedEventPayload(message, 0)
   const messageId = eventMessageId(message)
   if (messageId !== undefined) state.messageIds.set(message.seq, messageId)
@@ -416,16 +416,6 @@ function normalizeLegacyMessage(
     default:
       return event
   }
-}
-
-function normalizeDescriptorVersion(event: SessionFormatEvent): SessionFormatEvent {
-  if (event.type !== 'subagent/descriptor') return event
-  const data = releasedV0Record(event.data, `subagent/descriptor ${event.seq} data`)
-  if (data['version'] !== 2) return event
-  // Descriptor v2 is the pre-persona/pre-toolFilter continuation shape; its
-  // field set is a subset of v3, so a plain version bump reproduces the same
-  // durable composition as the runbook's SUBAGENT_DESCRIPTOR_VERSION reader.
-  return { ...event, data: { ...data, version: 3 } }
 }
 
 function replacementStart(event: SessionFormatEvent): number | undefined {

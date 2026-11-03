@@ -52,14 +52,7 @@ const DESCRIPTION_PARALLEL =
 const DESCRIPTION_SINGLE =
   'While work remains, keep exactly one todo `in_progress`. '
 
-const DESCRIPTION_TAIL =
-  'Mark a todo '
-  + '`completed` the moment it is done (do not batch completions), and allow no '
-  + '`in_progress` item only once all work is complete. Skip the list for trivial '
-  + 'single-step tasks. Statuses: `pending` (not started), `in_progress` (being '
-  + 'worked on now), `completed` (finished). Optionally attach short `tags` '
-  + '(1-3 lowercase category or component names, e.g. `docs`, `release`) to '
-  + 'tasks that belong to a category; omit them when a tag adds nothing.'
+const DESCRIPTION_TAIL = 'Mark each todo `completed` as soon as it is done.'
 
 /**
  * The model-facing description for one activation. The active-status clause is the only part that
@@ -75,19 +68,16 @@ function describe(allowParallel: boolean): string {
 
 /**
  * Validate the value constraints the ParameterSchemaSpec can't express and build the canonical {@link
- * TodoItem}[]: trimmed non-empty unique content, trimmed non-empty unique tags, and at most one
- * `in_progress` item unless the deployment allows parallel work. The registry has already enforced
- * the status enum and rejected unknown item keys (`additionalProperties: false` — the logged
- * snapshot must equal what the model believes it wrote, so a nested/extended item shape fails loud
- * at the schema boundary instead of silently flattening); the casts below record that guarantee.
+ * TodoItem}[]: trimmed non-empty unique content, and at most one `in_progress` item unless the
+ * deployment allows parallel work. The registry has already enforced the status enum and rejected
+ * unknown item keys (`additionalProperties: false` — the logged snapshot must equal what the model
+ * believes it wrote, so a nested/extended item shape fails loud at the schema boundary instead of
+ * silently flattening); the cast below records that guarantee.
  * @param raw - the model-supplied list, already schema-checked.
  * @param allowParallel - whether several items may be `in_progress` at once.
  * @returns the canonical list.
  */
-function toTodoList(
-  raw: { content: string; status: string; tags?: string[] }[],
-  allowParallel: boolean,
-): TodoItem[] {
+function toTodoList(raw: { content: string; status: string }[], allowParallel: boolean): TodoItem[] {
   const todos: TodoItem[] = []
   const seen = new Set<string>()
   let active = 0
@@ -101,9 +91,7 @@ function toTodoList(
     }
     seen.add(content)
     if (item.status === 'in_progress') active++
-    const status = item.status as TodoItem['status']
-    const tags = toTags(item.tags)
-    todos.push(tags === undefined ? { content, status } : { content, status, tags })
+    todos.push({ content, status: item.status as TodoItem['status'] })
   }
   if (!allowParallel && active > 1) {
     throw new Error(`invalid todos: at most one task may be in_progress (got ${active})`)
@@ -111,35 +99,11 @@ function toTodoList(
   return todos
 }
 
-/**
- * Canonicalize one item's optional tags: trimmed, non-empty, unique per item.
- * Absent or empty arrays normalize to no key, so pre-tags items and untagged
- * items are indistinguishable on the log.
- * @param raw - the model-supplied tags, already schema-checked.
- * @returns the canonical tags, or `undefined` when the item carries none.
- */
-function toTags(raw: string[] | undefined): string[] | undefined {
-  if (raw === undefined || raw.length === 0) return undefined
-  const seen = new Set<string>()
-  for (const tag of raw) {
-    const canonical = tag.trim()
-    if (canonical.length === 0) {
-      throw new Error('invalid todos: `tags` entries must be non-empty strings')
-    }
-    if (seen.has(canonical)) {
-      throw new Error(`invalid todos: duplicate tag ${JSON.stringify(canonical)}`)
-    }
-    seen.add(canonical)
-  }
-  return [...seen]
-}
-
 /** Wire payload schema of the `todos` projection (whole list or pre-first-write null). */
 const todosProjectionSchema: ZodType<TodoItem[] | null> = zod.union([
   zod.array(zod.object({
     content: zod.string(),
     status: zod.union([zod.literal('pending'), zod.literal('in_progress'), zod.literal('completed')]),
-    tags: zod.array(zod.string()).optional(),
   })),
   zod.null(),
 ])
@@ -170,9 +134,8 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     wire: { viewSchema: todosProjectionSchema, view: state => state, summary: false },
     stateVersion: 2,
   })
-  // Whole-log fold for cross-session surfaces (the todo board): the latest
-  // written list stays visible across turn boundaries, so a session's board
-  // cards survive into later turns instead of vanishing at turn/start.
+  // Board feed: same last-write-wins fold as `todos`, but turn/start does not
+  // clear it, so a session's board cards survive into later turns.
   await ctx.sessionProjections.register<'todosLatest', TodoItem[] | null>({
     key: 'todosLatest',
     stateSchema: todosProjectionSchema,
@@ -200,11 +163,6 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
               enum: [...STATUSES],
               description: 'pending (not started) | in_progress (now) | completed (done).',
             },
-            tags: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Optional short category labels (1-3, lowercase), e.g. ["docs"].',
-            },
           },
         },
       },
@@ -223,7 +181,6 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
               properties: {
                 content: { type: 'string', required: true },
                 status: { type: 'string', required: true, enum: [...STATUSES] },
-                tags: { type: 'array', items: { type: 'string' } },
               },
             },
           },
@@ -254,11 +211,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       exec.agent.session.append('todo/write', { todos })
       const count = (status: TodoItem['status']): number => todos.filter(t => t.status === status).length
       return Promise.resolve({
-        todos: todos.map(todo => ({
-          content: todo.content,
-          status: todo.status,
-          ...(todo.tags === undefined ? {} : { tags: todo.tags }),
-        })),
+        todos: todos.map(todo => ({ content: todo.content, status: todo.status })),
         counts: {
           pending: count('pending'),
           inProgress: count('in_progress'),

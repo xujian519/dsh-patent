@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import {
-  allowAllAccess, bindSnapshotSelector, conversationSnapshot, makeTranslate, sessionSnapshot, workspaceSnapshot,
+  allowAllAccess, bindSnapshotSelector, contextMenuHook, conversationSnapshot, makeTranslate, sessionSnapshot, workspaceSnapshot,
 } from '@deepseek-ai/dsh-client-test-runtime'
 import type {
   ConversationSnapshot, ConversationViewSnapshotMap,
@@ -123,6 +123,7 @@ function studioProps(
     useWorkspaces: bindSnapshotSelector(createSnapshotStore(workspaceSnapshot())),
     useProjection: () => undefined,
     useInput: (() => undefined) as StudioViewProps['useInput'],
+    useContextMenu: contextMenuHook(),
     inputActions: {} as StudioViewProps['inputActions'],
     ...allowAllAccess,
     usePanelInfo,

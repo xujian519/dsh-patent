@@ -13,16 +13,20 @@ import { basename, dirname, isAbsolute, join, resolve, sep } from 'node:path'
 import { TextDecoder, promisify } from 'node:util'
 import { homedir } from 'node:os'
 import { FsError, FsTargetKey, FsVersion } from '@deepseek-ai/dsh-fs'
-import { errorMessage, isAbortError, isEEXIST, isENOENT } from '@deepseek-ai/dsh-value'
 import { copyFileDaclWin32, replaceFileWin32 } from './win32.ts'
 
 const BINARY_SAMPLE_BYTES = 8192
 const realpath = promisify(realpathCallback.native)
 // Bound one non-abortable FileHandle.read so cancellation is observed between chunks.
 const DIFF_BASIS_READ_CHUNK_BYTES = 64 * 1024
-// Children resolved concurrently by one listing: keeps the libuv pool busy on a
-// large directory without queueing the whole directory at once.
-const LIST_BATCH_SIZE = 32
+
+function isENOENT(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT'
+}
+
+function isEEXIST(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'EEXIST'
+}
 
 /**
  * A path component that is expected to be a directory is a regular file (e.g.
@@ -33,6 +37,16 @@ const LIST_BATCH_SIZE = 32
 function isENOTDIR(error: unknown): boolean {
   return error instanceof Error && 'code' in error && error.code === 'ENOTDIR'
 }
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError'
+}
+
+/* v8 ignore start -- composes secondary cleanup-failure messages, which require a filesystem/kernel fault after the primary failure. */
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+/* v8 ignore stop */
 
 function isPermissionError(error: unknown): boolean {
   return error instanceof Error && 'code' in error && (error.code === 'EACCES' || error.code === 'EPERM')
@@ -82,6 +96,10 @@ export interface FsIoInternals {
   linkFile?: (existingPath: string, newPath: string) => Promise<void>
   /** Override target inspection after guarded publication fails. */
   inspectPublicationTarget?: (path: string) => Promise<BigIntStats>
+  /** Observe the final cancellable checkpoint before delete or move commits. */
+  inspectBeforeMutation?: (target: LocalTarget) => void | Promise<void>
+  /** Override non-recursive source removal for delete and move failures. */
+  removeFile?: (path: string) => Promise<void>
   /** Override staging-directory removal for commit-point failure coverage. */
   removeStagingDir?: (stagingDir: string) => Promise<void>
   /** Test hook after the temp file is written/synced but before final chmod+publication. */
@@ -99,7 +117,7 @@ export interface LocalTarget {
 }
 
 /** Result of probing a path: null when it does not exist. */
-interface PathInfo {
+export interface PathInfo {
   version: FsVersion
   mode: number
   type: 'file' | 'directory' | 'other'
@@ -107,7 +125,7 @@ interface PathInfo {
 }
 
 /** Result of probing a path without following the final symlink component. */
-interface PathLinkInfo {
+export interface PathLinkInfo {
   version: FsVersion
   mode: number
   type: 'file' | 'directory' | 'symlink' | 'other'
@@ -115,7 +133,7 @@ interface PathLinkInfo {
 }
 
 /** One local directory child with a resolved target and cheap metadata. */
-interface LocalDirEntry {
+export interface LocalDirEntry {
   name: string
   type: 'file' | 'directory' | 'other'
   target: LocalTarget
@@ -293,7 +311,7 @@ async function resolveListedChildTarget(parent: LocalTarget, name: string): Prom
  * a resolved target plus stat metadata when still available; file contents are
  * never read.
  * @param target - the resolved directory to list; a missing or non-directory target throws.
- * @param signal - aborts the listing, checked before each batch of children (`FS_ABORTED`).
+ * @param signal - aborts the listing, checked between children (`FS_ABORTED`).
  * @returns one entry per direct child, sorted by name.
  */
 export async function listDirectory(target: LocalTarget, signal?: AbortSignal): Promise<LocalDirEntry[]> {
@@ -316,30 +334,24 @@ export async function listDirectory(target: LocalTarget, signal?: AbortSignal): 
   }
   throwIfAborted(signal, 'list')
 
-  const sorted = entries.sort((left, right) => left.name.localeCompare(right.name))
   const result: LocalDirEntry[] = []
-  for (let start = 0; start < sorted.length; start += LIST_BATCH_SIZE) {
+  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
     throwIfAborted(signal, 'list')
-    // One child's realpath and stat are independent of its siblings', so a batch
-    // overlaps their threadpool round trips; entries still land in name order.
-    const resolved = await Promise.all(sorted.slice(start, start + LIST_BATCH_SIZE).map(async (entry): Promise<LocalDirEntry> => {
-      try {
-        const childTarget = await resolveListedChildTarget(target, entry.name)
-        const childInfo = await probe(childTarget.targetKey)
-        return {
-          name: entry.name,
-          type: childInfo?.type ?? 'other',
-          target: childTarget,
-          ...(childInfo ? { version: childInfo.version } : {}),
-          ...(childInfo?.type === 'file' ? { size: childInfo.size } : {}),
-        }
-      } catch (error: unknown) {
-        throw listingIoError(localDisplayPath(target.displayPath, entry.name), error)
-      }
-    }))
-    result.push(...resolved)
+    try {
+      const childTarget = await resolveListedChildTarget(target, entry.name)
+      const childInfo = await probe(childTarget.targetKey)
+      result.push({
+        name: entry.name,
+        type: childInfo?.type ?? 'other',
+        target: childTarget,
+        ...(childInfo ? { version: childInfo.version } : {}),
+        ...(childInfo?.type === 'file' ? { size: childInfo.size } : {}),
+      })
+    } catch (error: unknown) {
+      throw listingIoError(localDisplayPath(target.displayPath, entry.name), error)
+    }
+    throwIfAborted(signal, 'list')
   }
-  throwIfAborted(signal, 'list')
   return result
 }
 
@@ -576,20 +588,32 @@ async function throwGuardedCreateFailure(
   throw new FsError(`cannot write "${displayPath}": ${errorMessage(error)}`, 'FS_IO_ERROR', { cause: error })
 }
 
+/** Preserve typed failures and defects; map Node write errors for filesystem consumers. */
+function writeIoError(path: string, error: unknown): unknown {
+  if (error instanceof FsError) return error
+  if (isPermissionError(error)) return new FsError(`cannot write "${path}": permission denied`, 'FS_PERMISSION_DENIED', { cause: error })
+  if (error instanceof Error && 'code' in error && typeof error.code === 'string') {
+    return new FsError(`cannot write "${path}": ${error.message}`, 'FS_IO_ERROR', { cause: error })
+  }
+  return error
+}
+
 /**
  * Atomically replace a file through a private, synced staging file in the same directory.
  * POSIX protects the staging directory and file with `0o700` and `0o600`. A new Windows file
  * inherits the destination directory's DACL; a replacement copies the existing target's DACL
  * onto the empty temp before writing and preserves the target descriptor at publication.
+ * Node write errors become FsError; permission refusals use FS_PERMISSION_DENIED and other I/O uses FS_IO_ERROR.
  * @param absolutePath - destination; missing parent directories are created.
  * @param content - the full UTF-8 text or the raw bytes to write.
- * @param mode - existing destination's POSIX mode to preserve, or `undefined` for a new file;
- * inert as a mode on Windows but identifies replacement security semantics.
+ * @param mode - POSIX mode to apply, or undefined to retain the new-file default.
  * @param signal - cancellation checked before final publication.
  * @param internals - Test hook for pinning temp names and observing the staged file.
- * @param createIfAbsent - when provided, publish with a hard-link no-replace
- * primitive; a concurrent creator's file is preserved and this write is
- * rejected with `FS_NOT_OBSERVED` using the supplied display path.
+ * @param options - `displayPath` names the target in diagnostics (defaults to `absolutePath`);
+ * `createIfAbsent` publishes with a hard-link no-replace primitive, so a concurrent creator's
+ * file is preserved and this write is rejected with `FS_NOT_OBSERVED`; `existingDestination`
+ * states whether Windows must preserve destination security and defaults to mode presence,
+ * while moves pass destination presence separately from the source mode.
  */
 export async function writeFileAtomic(
   absolutePath: string,
@@ -597,11 +621,13 @@ export async function writeFileAtomic(
   mode: number | undefined,
   signal: AbortSignal | undefined,
   internals: FsIoInternals = {},
-  createIfAbsent?: { displayPath: string },
+  options: { displayPath?: string; createIfAbsent?: boolean; existingDestination?: boolean } = {},
 ): Promise<void> {
+  const displayPath = options.displayPath ?? absolutePath
+  const existingDestination = options.existingDestination ?? mode !== undefined
   throwIfAborted(signal, 'write')
   const directory = dirname(absolutePath)
-  await mkdir(directory, { recursive: true })
+  try { await mkdir(directory, { recursive: true }) } catch (error) { throw writeIoError(displayPath, error) }
 
   throwIfAborted(signal, 'write')
   const stagingDirName = internals.tempDirName?.(absolutePath) ?? `.${basename(absolutePath)}.${process.pid}.${randomUUID()}.tmpdir`
@@ -625,11 +651,14 @@ export async function writeFileAtomic(
 
     handle = await open(tempPath, 'wx', 0o600)
     await handle.chmod(0o600)
-    if (platform === 'win32' && mode !== undefined) {
+    if (platform === 'win32' && existingDestination) {
       await copyFileDacl(absolutePath, tempPath)
     }
-    // `encoding` applies to string content only; raw bytes are written verbatim.
-    await handle.writeFile(content, { encoding: 'utf8', ...signal ? { signal } : {} })
+    if (typeof content === 'string') {
+      await handle.writeFile(content, { encoding: 'utf8', ...signal ? { signal } : {} })
+    } else {
+      await handle.writeFile(content, signal ? { signal } : {})
+    }
     await handle.sync()
     await internals.inspectTemp?.({ stagingDir, tempPath })
     if (mode !== undefined) await handle.chmod(mode)
@@ -637,13 +666,13 @@ export async function writeFileAtomic(
     handle = undefined
 
     throwIfAborted(signal, 'write')
-    if (createIfAbsent !== undefined) {
+    if (options.createIfAbsent) {
       try {
         await linkFile(tempPath, absolutePath)
       } catch (error: unknown) {
-        await throwGuardedCreateFailure(error, absolutePath, createIfAbsent.displayPath, inspectPublicationTarget)
+        await throwGuardedCreateFailure(error, absolutePath, displayPath, inspectPublicationTarget)
       }
-    } else if (platform === 'win32' && mode !== undefined) {
+    } else if (platform === 'win32' && existingDestination) {
       try {
         await replaceFile(absolutePath, tempPath)
       } catch (error: unknown) {
@@ -662,7 +691,7 @@ export async function writeFileAtomic(
     }
   } catch (error: unknown) {
     /* v8 ignore next -- abort-mid-write needs a writeFile/signal race; the non-abort (rename/open) side is tested. */
-    let failure: unknown = isAbortError(error) ? new FsError('write aborted', 'FS_ABORTED') : error
+    let failure: unknown = isAbortError(error) ? new FsError('write aborted', 'FS_ABORTED') : writeIoError(displayPath, error)
     /* v8 ignore next 8 -- reached only if writeFile/sync throws with the handle open (IO fault); close-failure is a double fault. */
     if (handle) {
       try {
@@ -676,10 +705,26 @@ export async function writeFileAtomic(
   }
 }
 
+/**
+ * Remove one resolved file without recursive traversal.
+ * @param absolutePath - resolved file identity; a concurrently substituted directory is refused.
+ * @param displayPath - caller-facing source path for diagnostics.
+ * @param internals - optional source-removal fault injection; omission uses non-recursive rm.
+ * @returns once removal completes; permission and other failures use filesystem error codes.
+ */
+export async function removeFile(absolutePath: string, displayPath: string, internals: FsIoInternals = {}): Promise<void> {
+  try {
+    await (internals.removeFile ?? rm)(absolutePath)
+  } catch (error: unknown) {
+    throw new FsError(`cannot delete "${displayPath}": ${errorMessage(error)}`,
+      isPermissionError(error) ? 'FS_PERMISSION_DENIED' : 'FS_IO_ERROR', { cause: error })
+  }
+}
+
 // --- Editing ---
 
 /** Line ending style detected before LF normalization. */
-type LineEndings = 'LF' | 'CRLF'
+export type LineEndings = 'LF' | 'CRLF'
 
 /**
  * Collapse CRLF to LF — the canonical in-memory form every edit/diff basis

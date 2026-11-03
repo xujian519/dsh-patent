@@ -11,9 +11,11 @@ Check the [exit code: N] marker on every bash result; investigate failures befor
 
 Use the read tool — not shell commands like cat — to inspect text files. Use offset and limit to continue reading large files.
 
-Read an existing file before overwriting it with write (the default fs-observation-policy requires it) and prefer edit for targeted changes.
+Read an existing file before overwriting it with write and prefer edit for targeted changes.
 
-Read a file before editing it (the default fs-observation-policy requires it), unless you just created or edited it in this session.
+Read a file before editing it unless you just created or edited it in this session.
+
+Prefer apply_patch over separate edit calls for changes across files or separated regions. Give every hunk enough surrounding context lines to match one place in the current file. The whole patch is checked first (syntax, hunk matching, missing files) and a rejected patch changes nothing; once applying starts, operations run in order, stop at the first failure, and are not rolled back, so re-read affected files before retrying when needed.
 
 Use the glob tool — not shell find — to discover files by path pattern.
 
@@ -45,6 +47,38 @@ from typing import Any, Literal, NotRequired, Protocol, TypedDict
 
 class ToolCallError(Exception):
     toolName: str
+
+class ApplyPatchArgs(TypedDict):
+    # Codex patch text: start with *** Begin Patch and end with *** End Patch. Use *** Add File: path with + lines; *** Update File: path, optionally followed by *** Move to: path, with @@ or @@ context and space-prefixed context, + added, or - removed lines; *** End of File anchors the last hunk to the file end. Use *** Delete File: path to delete. Paths are relative to the Session working directory.
+    input: str
+    # The narrowest wider sandbox mode for a one-shot retry of the exact operation the sandbox just denied; the retry asks the user for approval.
+    sandbox_permissions: NotRequired[Literal["workspace-write", "danger-full-access"]]
+    # Required with sandbox_permissions: one sentence for the user explaining why this exact file operation needs the wider access. Use the language of the user’s current request.
+    justification: NotRequired[str]
+    # Additional keys beyond those declared are allowed.
+
+class ApplyPatchOutputOperationsChanges(TypedDict):
+    path: str
+    before: str | None
+    after: str | None
+
+class ApplyPatchOutputOperations(TypedDict):
+    index: int
+    kind: Literal["add", "update", "delete", "move"]
+    path: str
+    destination: NotRequired[str]
+    patchLine: int
+    status: Literal["completed", "failed", "unknown", "skipped"]
+    code: NotRequired[str]
+    message: NotRequired[str]
+    hunkLine: NotRequired[int]
+    changes: NotRequired[list[ApplyPatchOutputOperationsChanges]]
+
+class ApplyPatchOutput(TypedDict):
+    phase: Literal["commit"]
+    cancelled: bool
+    operations: list[ApplyPatchOutputOperations]
+    affectedPaths: list[str]
 
 class BashArgs(TypedDict):
     # Clear, concise description of what this command does in active voice, 5-10 words (shown in the UI). Examples: "ls" → "List files in current directory"; "git status" → "Show working tree status"; "npm install" → "Install package dependencies".
@@ -386,8 +420,6 @@ class TodoWriteArgsTodos(TypedDict):
     content: str
     # pending (not started) | in_progress (now) | completed (done).
     status: Literal["pending", "in_progress", "completed"]
-    # Optional short category labels (1-3, lowercase), e.g. ["docs"].
-    tags: NotRequired[list[str]]
 
 class TodoWriteArgs(TypedDict):
     # The COMPLETE task list, replacing any previous list.
@@ -397,7 +429,6 @@ class TodoWriteArgs(TypedDict):
 class TodoWriteOutputTodos(TypedDict):
     content: str
     status: Literal["pending", "in_progress", "completed"]
-    tags: NotRequired[list[str]]
 
 class TodoWriteOutputCounts(TypedDict):
     pending: int
@@ -507,6 +538,8 @@ class WriteOutput(TypedDict):
     after: str
 
 class Tools(Protocol):
+    async def apply_patch(self, args: ApplyPatchArgs) -> ApplyPatchOutput:
+        """Create, update, delete, or move UTF-8 text files with one Codex-style patch; prefer it over multiple edit calls when a change spans several files or separated regions."""
     async def bash(self, args: BashArgs) -> BashOutput1 | BashOutput2 | BashOutput3:
         """Execute a bash command (`bash -c`) and return its stdout/stderr. Each call runs in a fresh shell; pass `workdir` instead of using `cd`. Managed `$DSH_*` variables expose current harness environment facts. Long output is truncated to its tail; the full output is saved to a file whose path is reported when available. Provide `description` before `command` in the arguments. Before any delete or move, verify that the resolved absolute target path is the intended one; never run it against a computed path you have not checked. An unset variable expands to an empty string, so guard variables in such paths with `${VAR:?}`. Commands may run under a file sandbox; a blocked file operation is reported as `[sandbox: file access denied under <mode> mode]`, a policy denial: do not retry another way."""
     async def create_goal(self, args: CreateGoalArgs) -> CreateGoalOutput1 | CreateGoalOutput2:
@@ -542,7 +575,7 @@ class Tools(Protocol):
     async def subagent_fork(self, args: SubagentForkArgs) -> SubagentForkOutput:
         """Delegate a task to a subagent that inherits this conversation: a child agent seeded with all completed turns so far (it does not see the current in-flight turn). Use this when the subtask builds on this conversation's context — a follow-up analysis, a review, a continuation — without consuming this conversation's context for the work itself. You receive its result, not its intermediate steps. This tool starts an independently managed subagent and immediately returns its id. The runtime notifies you when it finishes. The child reports results with `send_message`; use `send_message` to steer it while running or continue its conversation after it finishes."""
     async def todo_write(self, args: TodoWriteArgs) -> TodoWriteOutput:
-        """Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete step before you start. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark a todo `completed` the moment it is done (do not batch completions), and allow no `in_progress` item only once all work is complete. Skip the list for trivial single-step tasks. Statuses: `pending` (not started), `in_progress` (being worked on now), `completed` (finished). Optionally attach short `tags` (1-3 lowercase category or component names, e.g. `docs`, `release`) to tasks that belong to a category; omit them when a tag adds nothing."""
+        """Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete step before you start. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark each todo `completed` as soon as it is done."""
     async def update_goal(self, args: UpdateGoalArgs) -> UpdateGoalOutput1 | UpdateGoalOutput2:
         """Update the current goal."""
     async def web_fetch(self, args: WebFetchArgs) -> WebFetchOutput:

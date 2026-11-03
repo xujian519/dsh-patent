@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-writing-patterns",
   "description": "Writing-pattern library for patent drafting and office-action replies for the DeepSeek Harness: a packaged YAML pattern corpus with lexical search and match, a deterministic <writing_skills> compiler, a system-prompt section, and the query_writing_patterns tool",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

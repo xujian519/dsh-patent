@@ -52,7 +52,7 @@ kind: "package-reference"
 | `searchTimeoutMs` | `30000` | `web_search` 的协作式工具调用超时预算（ms） |
 | `fetchMaxOutputChars` | `200000` | 同步转换的源字符数与单次完整 `web_fetch` 输出的上限 |
 
-生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-tool-web)是每个受支持字段及其 JSDoc 的穷尽式真源。`searchMaxQueries` 在完全相同的字符串去重与提供方请求扇出之前限制可接受的数组；校验会在任何搜索开始前拒绝超限数组。超时预算附加到每个工具定义，由 [`@deepseek-ai/dsh-timeout-guard`](../../guard/timeout-guard/README.zh.md) 强制执行；面向模型的 schema 不公开超时参数。
+生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-tool-web)是每个受支持字段及其 JSDoc 的穷尽式真源。`searchMaxQueries` 在完全相同的字符串去重与提供方请求扇出之前限制可接受的数组；校验会在任何搜索开始前拒绝超限数组。超时预算附加到每个工具定义，由 [`@deepseek-ai/dsh-tool-call-timeout-policy`](../../guard/timeout-policy/README.zh.md) 强制执行；面向模型的 schema 不公开超时参数。
 
 ### 使用 web_search
 
@@ -139,7 +139,7 @@ schema 校验会在执行前拒绝缺失或非数组的 `queries` 字段、非�
 - [web 包映射](../README.zh.md)——六包家族与各角色。
 - [dsh-web](../web/README.zh.md)——工具经由其执行的 web 服务。
 - [生成工具目录](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-web)——精确的 `web_search` 与 `web_fetch` schema。
-- [dsh-timeout-guard](../../guard/timeout-guard/README.zh.md)——强制执行每个工具超时预算的部署策略。
+- [dsh-tool-call-timeout-policy](../../guard/timeout-policy/README.zh.md)——强制执行每个工具超时预算的部署策略。
 - [生成配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-tool-web)——每个受支持配置字段及其源声明。
 - [web 能力 seam 决策](../../../.agents/notes/implemented/architecture/2026-06-24-web-capability-seam.zh.md)——搜索与抓取为何共用一项提供方选择服务。
 - [搜索就绪决策](../../../.agents/notes/implemented/architecture/2026-09-27-web-search-offered-by-provider-readiness.zh.md)——就绪判断为何拆分到提供方、`ctx.web` 与本包。

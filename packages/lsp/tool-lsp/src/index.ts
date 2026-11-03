@@ -3,7 +3,7 @@
  * (`goToDefinition`/`findReferences`/`goToImplementation`/`hover`); it converts one-based UTF-16
  * cursor coordinates to the seam's zero-based positions, requires the session workspace with no
  * fallback, caps and renders results, and attaches a configurable timeout budget for
- * `dsh-timeout-guard` to enforce. It runtime-injects only `tools`, `lsp`, and `systemPrompt` and
+ * `dsh-tool-call-timeout-policy` to enforce. It runtime-injects only `tools`, `lsp`, and `systemPrompt` and
  * imports no provider.
  *
  * Namespace plugin (named exports, no default export).
@@ -14,7 +14,6 @@ import type {} from '@deepseek-ai/dsh-working-directory'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { assertPositiveInteger } from '@deepseek-ai/dsh-value'
 import { LspError } from '@deepseek-ai/dsh-lsp'
 import type {} from '@deepseek-ai/dsh-lsp'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
@@ -96,8 +95,8 @@ const LSP_RANGE_OUTPUT_SCHEMA = {
  */
 export function apply(ctx: Context, config: Config): void {
   const resolved = config as ResolvedConfig
-  assertPositiveInteger('tool-lsp: maxLocations', resolved.maxLocations)
-  assertPositiveInteger('tool-lsp: maxResultChars', resolved.maxResultChars)
+  assertPositiveInteger('maxLocations', resolved.maxLocations)
+  assertPositiveInteger('maxResultChars', resolved.maxResultChars)
   assertTimer('timeoutMs', resolved.timeoutMs)
 
   ctx.systemPrompt.section({
@@ -229,6 +228,13 @@ export function apply(ctx: Context, config: Config): void {
     },
     presentCall: presentLspCall,
   }))
+}
+
+/** Reject a non-positive-integer config value at load, so misconfiguration fails loud. */
+function assertPositiveInteger(name: string, value: number): void {
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`tool-lsp: ${name} must be a positive integer`)
+  }
 }
 
 /** Reject a timer value Node would clamp instead of scheduling as configured. */

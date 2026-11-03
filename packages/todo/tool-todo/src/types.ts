@@ -14,12 +14,11 @@ import type { SessionProjectionSummaryExcluded } from '@deepseek-ai/dsh-session-
  * One entry in an agent's todo list — the unit of the `todo/write`
  * whole-list snapshot declared by this package.
  *
- * `content` and `status` are the required core; the list is replaced wholesale
+ * Deliberately minimal: a human-readable `content` line and a three-state
+ * `status`. No id, priority, or `activeForm` — the list is replaced wholesale
  * on every write (last-write-wins), so entries need no stable identity. The
  * three statuses describe the complete portable lifecycle needed by model and
- * UI consumers. `tags` is optional model-authored grouping metadata (short
- * category labels); consumers must treat it as advisory — absent on every
- * pre-tags item and on any item the model chooses not to tag.
+ * UI consumers.
  */
 export interface TodoItem {
   /** What this task is — a short imperative line shown in the UI. */
@@ -27,11 +26,11 @@ export interface TodoItem {
   /** Lifecycle state. `in_progress` marks a task being worked now; parallel work may mark several. */
   status: 'pending' | 'in_progress' | 'completed'
   /**
-   * Optional short category labels (e.g. `docs`, `release`); trimmed,
-   * non-empty, unique per item. `| undefined` mirrors the wire schema's
-   * zod-optional inference.
+   * Optional short category labels for the cross-session board filter.
+   * Absent when the model does not tag the item; the board treats that as
+   * an empty tag set.
    */
-  tags?: string[] | undefined
+  tags?: string[]
 }
 
 declare module '@deepseek-ai/dsh-session/types' {
@@ -52,10 +51,10 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
      */
     todos: SessionProjectionSummaryExcluded<TodoItem[]> | null
     /**
-     * The agent's latest whole todo list across the entire log, or `null`
-     * before the first write. Unlike {@link todos} this fold never clears:
-     * turn boundaries keep the last written list visible, which is what a
-     * cross-session board (not the current-turn dock strip) renders.
+     * Whole-log standing plan for the cross-session board: the latest
+     * `todo/write` list that is not cleared on `turn/start`, or `null` before
+     * the first write. Included in Session summary payloads so the board tab
+     * can fold cards across sessions without opening each log.
      */
     todosLatest: TodoItem[] | null
   }

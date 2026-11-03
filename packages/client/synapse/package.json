@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-synapse",
   "description": "The Synapse session-map browser half for dsh web: the 对话/会话地图 view switch and the /synapse/ iframe bridge over the client session and workspace services",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

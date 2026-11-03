@@ -283,19 +283,6 @@ describe('released Session format v0 to v1', () => {
     expect(() => reset.transform({ ...(rows[1] as SessionFormatEvent), seq: 3 })).toThrow(/compactionId/)
   })
 
-  it('upgrades a released v2 subagent descriptor to v3 during migration', () => {
-    const header = { type: 'session', version: 0, id: 'descriptor', createdAt: 1, cwd: '/work', delegationDepth: 0 }
-    const descriptor = {
-      type: 'subagent/descriptor', seq: 0, time: 2,
-      data: {
-        version: 2, mode: 'continuable', provider: 'spawn', label: 'child',
-        agentProvider: 'mock', agentModel: 'mock',
-      },
-    }
-    const migrated = restoreV0ToV1(header, [descriptor])
-    expect(migrated.events[0]).toEqual({ ...descriptor, data: { ...descriptor.data, version: 3 } })
-  })
-
   it('preserves a complete canonical multi-owner log except for header.version', () => {
     const physicalHeader = {
       type: 'session', version: 0, id: 'full-identity', createdAt: 1, cwd: '/work', delegationDepth: 0,

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-patent-data",
   "description": "Patent data access seam: nuo-patent vendor mapping/search provider plus the ego-browser anti-crawl subprocess provider for the DeepSeek Harness",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

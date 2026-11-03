@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-experimental-video-mode",
   "description": "Experimental video production mode: a media provider seam, deterministic project and EDL contracts, a model-facing generation/assembly/delivery tool set, a synthetic provider for end-to-end runs without credentials, a local ComfyUI provider for Wan video and Z-Image keyframes, and cloud MiniMax-H3, MiniMax speech, and SiliconFlow Wan2.2 providers",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

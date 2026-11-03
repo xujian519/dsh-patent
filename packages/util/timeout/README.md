@@ -132,7 +132,7 @@ The library is built on one boundary: share the timing and classification, keep 
 Read these pages when you need the consumers or the boundary decision behind the library.
 
 - [Timeout-deadline library Agent Note](../../../.agents/notes/implemented/architecture/2026-07-06-timeout-deadline-library.md) — the shared-timing, local-kill boundary.
-- [Tool-call timeout policy](../../guard/timeout-guard/README.md) — the consumer that enforces declared tool timeouts.
+- [Tool-call timeout policy](../../guard/timeout-policy/README.md) — the consumer that enforces declared tool timeouts.
 - [Bash provider](../../shell/bash-local/README.md) — a foreground deadline consumer that kills a process group.
 - [Filesystem subsystem](../../../docs/subsystems/filesystem.md) — why local file IO runs untimed.
 

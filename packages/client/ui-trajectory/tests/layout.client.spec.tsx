@@ -1,13 +1,17 @@
 // @vitest-environment jsdom
 /**
- * Trajectory layout fold: expand blocks, usage on Message, tool own-duration,
- * group wall-span descriptions, in-flight rows.
+ * Trajectory turn chrome and layout fold: expand blocks, usage on Message,
+ * tool own-duration, group wall-span descriptions, in-flight rows.
  */
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { cleanup, render, screen } from '@testing-library/react'
 import type {
   ConversationLocation, ConversationNode, RequestView,
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { PartialArguments } from '@deepseek-ai/dsh-util-values'
+import { TrajectoryGroupHeader } from '../src/client/TrajectoryGroupHeader.tsx'
+import { TrajectoryTurn } from '../src/client/TrajectoryTurn.tsx'
+import { TrajectoryTurnHeader } from '../src/client/TrajectoryTurnHeader.tsx'
 import {
   appendTrajectoryPartialLayout as appendTrajectoryPartialLayoutWithLocale,
   deriveTrajectoryLayout as deriveTrajectoryLayoutWithLocale,
@@ -30,6 +34,46 @@ interface LegacyConversationSlice {
 
 const EMPTY_LOCATION_DATA_SOURCE = { getSnapshot: () => undefined, subscribe: () => () => {} }
 const EMPTY_LOCATION_DATA = { get: () => undefined, source: () => EMPTY_LOCATION_DATA_SOURCE }
+
+afterEach(cleanup)
+
+describe('TrajectoryTurnHeader', () => {
+  it('renders Turn N and the four metric column labels', () => {
+    render(<TrajectoryTurnHeader turn={1} t={t} />)
+    expect(screen.getByText('Turn 1')).toBeTruthy()
+    expect(screen.getByText('Input')).toBeTruthy()
+    expect(screen.getByText('Output')).toBeTruthy()
+    expect(screen.getByText('Think')).toBeTruthy()
+    expect(screen.getByText('Time')).toBeTruthy()
+  })
+})
+
+describe('TrajectoryGroupHeader', () => {
+  it('renders title and optional description', () => {
+    render(<TrajectoryGroupHeader title="Step 1" description="2.2s skill" />)
+    expect(screen.getByText('Step 1')).toBeTruthy()
+    expect(screen.getByText('2.2s skill')).toBeTruthy()
+  })
+
+  it('omits the description node when absent', () => {
+    const { container } = render(<TrajectoryGroupHeader title="Message" />)
+    expect(screen.getByText('Message')).toBeTruthy()
+    expect(container.querySelectorAll('span')).toHaveLength(1)
+  })
+})
+
+describe('TrajectoryTurn', () => {
+  it('wraps a sticky header and body children', () => {
+    render(
+      <TrajectoryTurn turn={3} t={t}>
+        <TrajectoryGroupHeader title="Message" description="49s" />
+      </TrajectoryTurn>,
+    )
+    expect(screen.getByText('Turn 3')).toBeTruthy()
+    expect(screen.getByText('Message')).toBeTruthy()
+    expect(screen.getByText('49s')).toBeTruthy()
+  })
+})
 
 describe('deriveTrajectoryLayout', () => {
   it('marks an interrupted assistant as failed while retaining its output', () => {
@@ -557,6 +601,32 @@ describe('run_code sub-dispatch cells', () => {
       text: 'bash', previewMarkdown: '{"x":1}', timeSeconds: 1,
     })
     expect(cells[3]).toMatchObject({ timeSeconds: 0.5 })
+  })
+
+  it.each([true, false])('retains every failed sub-call text block with structured error present: %s', (withError) => {
+    const sub = {
+      ...settledSub(1, 'read', 6_300, 7_300),
+      isError: true,
+      ...(withError ? { error: { name: 'ToolError', code: 'ENOENT' } } : {}),
+      content: [{ type: 'text' as const, text: 'missing.txt does not exist' }, { type: 'text' as const, text: 'Check the file path.\n' }],
+    }
+    const turns = deriveTrajectoryLayout({ nodes: withSubCalls([sub]), partial: null, runningCalls: [] })
+    const cell = turns[0]!.groups.flatMap(group => group.cells).find(cell => cell.kind === 'subtool')
+    expect(cell).toMatchObject({
+      isError: true, resultPreviewMarkdown: 'missing.txt does not exist',
+      outputDetail: 'missing.txt does not exist\nCheck the file path.\n',
+      outputBlocks: sub.content.map(block => ({ type: 'text', content: block.text })),
+    })
+  })
+
+  it('keeps structured failure details when an interrupted tool has no output', () => {
+    const sub = {
+      ...settledSub(1, 'read', 6_300, 7_300),
+      isError: true, error: { name: 'Interrupted', code: 'interrupted' }, content: [],
+    }
+    const turns = deriveTrajectoryLayout({ nodes: withSubCalls([sub]), partial: null, runningCalls: [] })
+    expect(turns[0]!.groups.flatMap(group => group.cells).find(cell => cell.kind === 'subtool'))
+      .toMatchObject({ isError: true, result: 'interrupted', outputDetail: 'Interrupted: interrupted' })
   })
 
   it('a running (unsettled) sub-call renders a subtool cell with blank time', () => {

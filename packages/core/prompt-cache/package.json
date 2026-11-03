@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-prompt-cache",
   "description": "Prompt-prefix cache strategy for the DeepSeek Harness system-prompt assembly",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

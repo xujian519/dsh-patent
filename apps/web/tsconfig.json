@@ -23,9 +23,11 @@
   // this client-registered project must not also hold them (one program
   // cannot see both sides of the cordis Context merges).
   "exclude": [
+    "tests/sidebar-drawer.e2e.ts",
     "tests/creation-recommendations.e2e.ts",
     "tests/plugin-recommendations.e2e.ts",
     "tests/japanese-plugin-metadata.e2e.ts",
+    "tests/context-menus.e2e.ts",
     "tests/additional-locales.e2e.ts",
     "tests/rich-text-quotes.e2e.ts",
     "tests/hover-input.e2e.ts",
@@ -65,7 +67,6 @@
     "tests/message-feedback-protocol.snapshot.ts",
     "tests/preset-migration.snapshot.ts",
     "tests/subagent-fork-schedule.snapshot.ts",
-    "tests/video-preset.snapshot.ts",
     "tests/live-interactions.e2e.ts",
     "tests/question-composer.e2e.ts",
     "tests/question-composer-recommended.e2e.ts",
@@ -88,8 +89,8 @@
     "tests/details-session-lifecycle.e2e.ts",
     "tests/sessionless-header.e2e.ts",
     "tests/document-preview.e2e.ts",
-    "tests/video-studio.e2e.ts",
-    "tests/video-bundle-fixture.ts",
+    "tests/file-browser.e2e.ts",
+    "tests/file-browser-composition.e2e.ts",
     "tests/excel-opc.e2e.ts",
     "tests/office-fixture.ts",
     "tests/sidebar-browser.e2e.ts",
@@ -97,6 +98,7 @@
     "tests/plugin-config.e2e.ts",
     "tests/input-plugin-extensions.e2e.ts",
     "tests/plugin-manager.e2e.ts",
+    "tests/plugin-market-toolbar.e2e.ts",
     "tests/plugin-sticky-motion.e2e.ts",
     "tests/entry-customization.e2e.ts",
     "tests/cua-optin.e2e.ts",
@@ -104,6 +106,7 @@
     "tests/cua-permissions.e2e.ts",
     "tests/schedule-header.e2e.ts",
     "tests/schedule-phone.e2e.ts",
+    "tests/schedule-pickers.e2e.ts",
     "tests/worktree-opt-in.e2e.ts",
     "tests/session-inspector.e2e.ts",
     "tests/shared-inspector.e2e.ts",
@@ -116,6 +119,7 @@
     "tests/plugin-hmr-lifecycle.e2e.ts",
     "tests/plugin-install-registry.e2e.ts",
     "tests/plugin-install-github.e2e.ts",
+    "tests/plugin-install-silent-failure.e2e.ts",
     "tests/client-plugin-live.e2e.ts",
     "tests/icon-skin.e2e.ts",
     "tests/draft-initialization.e2e.ts",
@@ -205,11 +209,10 @@
     "tests/permission-policy-context.e2e.ts",
     "tests/access-confirmation.e2e.ts",
     "tests/agent-preset-selection.e2e.ts",
-    "tests/legal-preset.e2e.ts",
-    "tests/legal-preset.snapshot.ts",
     "tests/agent-preset-authoring.e2e.ts",
     "tests/shipped-composition.e2e.ts",
     "tests/schedule-after.e2e.ts",
+    "tests/schedule-manual.e2e.ts",
     "tests/feedback-command.e2e.ts",
     "tests/feedback-release.e2e.ts",
     "tests/agent-team-panel.e2e.ts",
@@ -235,7 +238,6 @@
     "tests/tool-details.e2e.ts",
     "tests/turn-tail-actions.e2e.ts",
     "tests/goal-multi-turn-actions.e2e.ts",
-    "tests/chat-scroll-fixture.ts",
     "tests/chat-scroll-contract.e2e.ts",
     "tests/chat-long-interactions.e2e.ts",
     "tests/chat-continuous-conversation.e2e.ts",
@@ -245,25 +247,20 @@
     "tests/complex-history.perf.ts",
     "tests/pwsh-terminal.e2e.ts",
     "tests/workflow-run.e2e.ts",
+    "tests/video-preset.snapshot.ts",
+    "tests/video-studio.e2e.ts",
+    "tests/video-bundle-fixture.ts",
+    "tests/legal-preset.e2e.ts",
+    "tests/legal-preset.snapshot.ts",
     "tests/patent-teams-panel.e2e.ts",
     "tests/document-studio-panel.e2e.ts"
   ],
   "references": [
     { "path": "../../packages/experimental/auto-review" },
-    {
-      "path": "../../packages/client/store"
-    },
-    {
-      "path": "../../packages/client/web"
-    },
-    {
-      "path": "../../packages/client/modules"
-    },
-    {
-      "path": "../../packages/test-support/client-runtime"
-    },
-    {
-      "path": "../../packages/test-support/remote-mock"
-    }
+    { "path": "../../packages/client/store" },
+    { "path": "../../packages/client/web" },
+    { "path": "../../packages/client/modules" },
+    { "path": "../../packages/test-support/client-runtime" },
+    { "path": "../../packages/test-support/remote-mock" }
   ]
 }

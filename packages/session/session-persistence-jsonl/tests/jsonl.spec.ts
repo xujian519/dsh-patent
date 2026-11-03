@@ -1365,10 +1365,9 @@ describe('JsonlSessionPersistence: immutable format generations', () => {
     })
   })
 
-  it('migrates a v0 source carrying an ignorable external event, dropping it from the v2 log', async () => {
-    const header = meta('released-v0-ignorable-external', '/work')
+  it('leaves v0 unchanged when migration policy refuses an unknown event', async () => {
+    const header = meta('released-v0-refusal', '/work')
     const sourcePath = historicalLogPath(root, header.cwd, header.id)
-    const currentPath = rawLogPath(root, header.cwd, header.id)
     const source = Buffer.from([
       JSON.stringify(releasedV0Header(header)),
       JSON.stringify({ type: 'external/info', seq: 0, time: 1, data: {}, ignorable: true }),
@@ -1377,19 +1376,13 @@ describe('JsonlSessionPersistence: immutable format generations', () => {
     await mkdir(dirname(sourcePath), { recursive: true })
     await writeFile(sourcePath, source)
 
-    const restored = await readAll(ctx.sessionPersistence, header.id)
-    expect(restored.meta).toEqual({ ...header, delegationDepth: 0 })
-    expect(restored.events).toEqual([])
+    const failure = await ctx.sessionPersistence.open(header.id, 'read')
+      .then(() => undefined, (error: unknown) => error)
+    expect(failure).toBeInstanceOf(Error)
+    expect((failure as Error).name).toBe('SessionFormatUnsupportedError')
+    expect((failure as Error).message).toContain('unknown historical event type "external/info" at seq 0')
     expect(await readFile(sourcePath)).toEqual(source)
-    // A migrated historical generation publishes only on an explicit write open.
-    const handle = await ctx.sessionPersistence.open(header.id, 'write')
-    try {
-      expect(handle.header).toMatchObject({ id: header.id, version: SESSION_FORMAT_VERSION })
-    } finally {
-      await handle.close()
-    }
-    expect(JSON.parse((await readFile(currentPath, 'utf8')).split('\n')[0] as string))
-      .toMatchObject({ id: header.id, version: SESSION_FORMAT_VERSION })
+    await expect(stat(rawLogPath(root, header.cwd, header.id))).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
   it('attaches the current path when a direct handle read finds a foreign header', async () => {

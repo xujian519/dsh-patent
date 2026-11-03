@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-goal-round-driver",
   "description": "Race-fenced same-session goal-round driver",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },
@@ -49,12 +49,12 @@
     "@deepseek-ai/dsh-session-projection": "workspace:*",
     "@deepseek-ai/dsh-subagent": "workspace:*"
   },
-  "dependencies": {
-    "@deepseek-ai/dsh-value": "workspace:*"
-  },
   "peerDependenciesMeta": {
     "@deepseek-ai/dsh-subagent": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-value": "workspace:*"
   }
 }

@@ -124,7 +124,7 @@ const validPayloads: Readonly<Record<string, SessionFormatJsonValue>> = {
       blockedBy: [], writeScopes: ['/work'],
     },
   },
-  'todo/write': { todos: [{ content: 'work', status: 'in_progress', tags: ['planning'] }] },
+  'todo/write': { todos: [{ content: 'work', status: 'in_progress' }] },
   'tool-workflow/agent-end': { runId: 'run-1', seq: 1, outcome: 'completed' },
   'tool-workflow/agent-start': { runId: 'run-1', seq: 1, label: 'worker', phase: 'build', childId: 'child-1' },
   'tool-workflow/run-end': { runId: 'run-1', stopReason: 'completed' },
@@ -302,18 +302,6 @@ describe('released event and payload inventory', () => {
     }).not.toThrow()
   })
 
-  it('refuses a todo item whose optional tags are not a non-empty string array', () => {
-    expect(() => {
-      assertPayload('todo/write', { todos: [{ content: 'x', status: 'pending', tags: ['ok'] }] })
-    }).not.toThrow()
-    expect(() => {
-      assertPayload('todo/write', { todos: [{ content: 'x', status: 'pending', tags: 'oops' }] })
-    }).toThrow(/tags must be an array/)
-    expect(() => {
-      assertPayload('todo/write', { todos: [{ content: 'x', status: 'pending', tags: ['a', 1] }] })
-    }).toThrow(/tags\[1\] must be a non-empty string/)
-  })
-
   it('accepts released v0 permission/preset origin values', () => {
     expect(() => { assertPayload('permission/preset', { preset: 'default' }) }).not.toThrow()
     expect(() => { assertPayload('permission/preset', { preset: 'workspace-write', origin: 'default' }) }).not.toThrow()
@@ -388,11 +376,10 @@ describe('released event and payload inventory', () => {
     expect(() => { assertPayload(type, data) }).not.toThrow()
   })
 
-  it('preserves an unknown v0 event marked ignorable across the identity edge', () => {
+  it('refuses unknown v0 events even when the envelope marks them ignorable', () => {
     const row = { type: 'plugin/unknown', seq: 0, time: 1, data: {}, ignorable: true }
-    const restored = restoreV0ToV1(v0Header, [row])
-    expect(restored.header.version).toBe(1)
-    expect(restored.events).toEqual([row])
+    expect(() => restoreV0ToV1(v0Header, [row]))
+      .toThrow(/unknown historical event.*refuses.*ignorable/)
   })
 
   it('exercises each released test validation policy', () => {
@@ -429,7 +416,7 @@ describe('released event and payload inventory', () => {
     expect(() => { assertReleasedV0SourceArtifact({
       ...v0,
       events: [{ type: 'plugin/unknown', seq: 0, time: 1, data: {}, ignorable: true }],
-    }) }).not.toThrow()
+    }) }).toThrow(/unknown historical event/)
   })
 
   it('refuses an unknown non-ignorable historical event in a released v0 source artifact', () => {
@@ -472,6 +459,32 @@ describe('released event and payload inventory', () => {
     expect(() => restoreV0ToV1(v0Header, [event]))
       .toThrow(/capturedFormatVersion/)
     expect(restoreV1(v1Header, [event]).events).toEqual([event])
+  })
+
+  const descriptor = (data: SessionFormatJsonValue) => ({ type: 'subagent/descriptor', seq: 0, time: 1, data })
+
+  it.each([
+    { version: 1, provider: 'spawn', label: 'old child' },
+    { version: 1, provider: 'p', label: '', agentProvider: 'p', persona: 'x', toolFilter: { allow: ['read'] } },
+    { version: 2, mode: 'one-shot', provider: 'p', label: 'child' },
+    { version: 2, mode: 'continuable', provider: 'p', label: 'child', agentProvider: 'p', agentModel: 'm' },
+    { version: 2, mode: 'continuable', provider: 'p', label: '', agentModel: 'm', toolFilter: { deny: [''] } },
+    { version: 3, mode: 'continuable', provider: 'p', label: 'child', agentReasoningEffort: 'high' },
+  ])('migrates format v0 subagent descriptor %j unchanged', (data) => {
+    expect(restoreV0ToV1(v0Header, [descriptor(data)]).events).toEqual([descriptor(data)])
+  })
+
+  it.each([
+    [{ version: 1, mode: 'continuable', provider: 'p', label: 'child' }, 'unexpected member "mode"'],
+    [{ version: 1, provider: 'p' }, 'lacks required member "label"'],
+    [{ version: 1, provider: 'p', label: 'child', agentReasoningEffort: 'high' }, 'unexpected member "agentReasoningEffort"'],
+    [{ version: 2, mode: 'continuable', provider: 'p', label: 'child', agentReasoningEffort: 'high' }, 'unexpected member "agentReasoningEffort"'],
+    [{ version: 2, mode: 'one-shot', provider: 'p', persona: 'x' }, 'unexpected member "persona"'],
+    [{ version: 3, mode: 'continuable', provider: 'p', label: 'child', agentModel: 'm' }, 'agentProvider and agentModel must be paired'],
+  ])('refuses format v0 subagent descriptor %j as malformed', (data, message) => {
+    const restore = () => restoreV0ToV1(v0Header, [descriptor(data)])
+    expect(restore).toThrow(message)
+    expect(restore).not.toThrow(/unsupported descriptor version/)
   })
 
   it('accepts every released nested union variant and optional member', () => {

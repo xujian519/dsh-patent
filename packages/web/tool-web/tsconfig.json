@@ -28,7 +28,7 @@
       "path": "../../core/system-prompt"
     },
     {
-      "path": "../../guard/timeout-guard"
+      "path": "../../guard/timeout-policy"
     },
     {
       "path": "../../util/output-retention"

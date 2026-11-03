@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-document-studio",
   "description": "Document-delivery studio view for the document agent preset: a session-wide produced-file list that follows the newest draft, an HTML/Markdown preview kept in step with the workspace file's version, open and print actions, and auto-switch when the session preset is document",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },

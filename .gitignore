@@ -100,3 +100,6 @@ litho.docs/
 
 # Litho 分组符号链接（临时）
 .litho-groups/
+
+# Trae 临时截图（不应进入版本库）
+.screenshots/

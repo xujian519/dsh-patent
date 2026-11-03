@@ -160,6 +160,20 @@ pnpm run report:structure
 | R-33 | `tests/claim-chart/pin-cite-validator.spec.ts` | `[0032]` 段为“壳体”、`[0034]` 段为“滤芯”；引用 `[0032]`、quote “滤芯” | 拒绝，quote 不属于所引段落 |
 | R-34 | `tests/claim-chart/element-validator.spec.ts` | `claimNo: 5` 的要素文本取自权 1 | 拒绝，claim 5 段不存在 |
 
-## 10. D5 待验证项的处理
+## 10. D5 待验证项的处理结果
 
-R-35–R-40 目前只有源码阅读证据，没有可执行复现。进入 D5 时先各写一个最小复现；无法复现的条目从风险登记册删除，不进入修复排期。
+R-35–R-40 已各写一个最小复现并全部确认为真实缺陷；复现用临时 spec 运行后删除，未合入。契约复核另新增 R-41（重复/跳号权项号被切分静默接受）。
+
+## 11. D5 已确认缺陷的回归测试清单
+
+以下用例在对应修复 PR 中先加、后修；修复前必须是失败用例，修复后转绿。不要把当前错误行为写成期望；R-35 的既有测试已把部分错误行为写成预期，修复时同步修改。
+
+| 风险 | 测试位置 | 输入 | 期望 |
+|---|---|---|---|
+| R-35 | `tests/claim-draft-atom.spec.ts` | 策略表含确定性从权 2、3，专员只返回权 2 | 回退确定性结果，`claims_draft` 保留权 3 |
+| R-36 | `tests/claim-breadth-atom.spec.ts` | 模型记录省略 `parallel_lower_levels` | 判定为未通过或降级，不输出“通过” |
+| R-37 | `tests/claim-chart/chart-atom.spec.ts` | 同一 `(elementId,targetId)` 同时有 `literal` 与 `not-found` 行 | 校验拒绝重复行 |
+| R-38 | `tests/claim-chart/claim-refs.spec.ts` | `根据权利要求1-35所述`、`根据权利要求3-1所述` | 产出引用缺陷，不判 `independent` |
+| R-39 | `tests/claim-chart/invalidity-conclusion.spec.ts` | `primaryTargetId: '产品A'`（accused-product） | 显式报错；渲染不同时出现“无对比文件目标”与“对比文件 1 篇” |
+| R-40 | `tests/claim-chart/chart-atom.spec.ts` | `chart_targets` 含两个 `id: 'D1'` | 解析阶段拒绝重复 id |
+| R-41 | `tests/claim-chart/chart-atom.spec.ts` | 权利要求原文重复 `1.` 或跳号 `1.`、`3.` | 图表输入解析拒绝，不静默丢弃或接受 |

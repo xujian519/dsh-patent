@@ -420,8 +420,6 @@ class TodoWriteArgsTodos(TypedDict):
     content: str
     # pending (not started) | in_progress (now) | completed (done).
     status: Literal["pending", "in_progress", "completed"]
-    # Optional short category labels (1-3, lowercase), e.g. ["docs"].
-    tags: NotRequired[list[str]]
 
 class TodoWriteArgs(TypedDict):
     # The COMPLETE task list, replacing any previous list.
@@ -431,7 +429,6 @@ class TodoWriteArgs(TypedDict):
 class TodoWriteOutputTodos(TypedDict):
     content: str
     status: Literal["pending", "in_progress", "completed"]
-    tags: NotRequired[list[str]]
 
 class TodoWriteOutputCounts(TypedDict):
     pending: int
@@ -578,7 +575,7 @@ class Tools(Protocol):
     async def subagent_fork(self, args: SubagentForkArgs) -> SubagentForkOutput:
         """Delegate a task to a subagent that inherits this conversation: a child agent seeded with all completed turns so far (it does not see the current in-flight turn). Use this when the subtask builds on this conversation's context — a follow-up analysis, a review, a continuation — without consuming this conversation's context for the work itself. You receive its result, not its intermediate steps. This tool starts an independently managed subagent and immediately returns its id. The runtime notifies you when it finishes. The child reports results with `send_message`; use `send_message` to steer it while running or continue its conversation after it finishes."""
     async def todo_write(self, args: TodoWriteArgs) -> TodoWriteOutput:
-        """Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete step before you start. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark a todo `completed` the moment it is done (do not batch completions), and allow no `in_progress` item only once all work is complete. Skip the list for trivial single-step tasks. Statuses: `pending` (not started), `in_progress` (being worked on now), `completed` (finished). Optionally attach short `tags` (1-3 lowercase category or component names, e.g. `docs`, `release`) to tasks that belong to a category; omit them when a tag adds nothing."""
+        """Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete step before you start. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark each todo `completed` as soon as it is done."""
     async def update_goal(self, args: UpdateGoalArgs) -> UpdateGoalOutput1 | UpdateGoalOutput2:
         """Update the current goal."""
     async def web_fetch(self, args: WebFetchArgs) -> WebFetchOutput:

@@ -3,7 +3,7 @@ import { es, pt } from '../src/client/locales.ts'
 // @vitest-environment jsdom
 /** Trajectory ledger selection, details, status, and fold behavior. */
 
-import { afterAll, afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
@@ -108,25 +108,6 @@ afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
   Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo')
-})
-
-/**
- * How long this file waits out the virtual ledger's scroll-idle timer before
- * vitest tears its jsdom down.
- * jsdom fires no `scrollend`, so `@tanstack/react-virtual` falls back to a
- * debounce it re-arms on every scroll event (`isScrollingResetDelay`, 150ms by
- * default) and its unsubscribe removes only the listeners; a virtualized scroll
- * near the end of this file leaves the timer armed, and the re-render it
- * triggers then reads a `window` that is gone. Armed later and with a longer
- * delay than the debounce, this wait always expires after it.
- */
-const SCROLL_IDLE_DRAIN_MS = 400
-
-// Drains the scroll-idle timer the ledger arms on scroll. The drained
-// notification re-renders a table this file has already unmounted, so waiting
-// it out here ends the timer while jsdom still provides its globals.
-afterAll(async () => {
-  await new Promise((resolve) => { setTimeout(resolve, SCROLL_IDLE_DRAIN_MS) })
 })
 
 const TURNS: readonly TrajectoryTurnModel[] = [{

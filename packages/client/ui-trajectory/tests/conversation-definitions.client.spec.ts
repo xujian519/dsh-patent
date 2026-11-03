@@ -146,7 +146,7 @@ function assembler(events: readonly SessionEventLikeEntry[], hasMore = false): C
     new TestViewDefinitions(),
   )
   value.replaceWindow(events, hasMore)
-  value.retainTarget('trajectory')
+  value.activateTarget('trajectory')
   return value
 }
 

@@ -408,7 +408,7 @@
     },
     {
       "name": "todo_write",
-      "description": "Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete step before you start. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark a todo `completed` the moment it is done (do not batch completions), and allow no `in_progress` item only once all work is complete. Skip the list for trivial single-step tasks. Statuses: `pending` (not started), `in_progress` (being worked on now), `completed` (finished). Optionally attach short `tags` (1-3 lowercase category or component names, e.g. `docs`, `release`) to tasks that belong to a category; omit them when a tag adds nothing.",
+      "description": "Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete step before you start. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark each todo `completed` as soon as it is done.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -431,13 +431,6 @@
                     "in_progress",
                     "completed"
                   ]
-                },
-                "tags": {
-                  "type": "array",
-                  "description": "Optional short category labels (1-3, lowercase), e.g. [\"docs\"].",
-                  "items": {
-                    "type": "string"
-                  }
                 }
               },
               "required": [

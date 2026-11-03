@@ -1,8 +1,6 @@
 # PTC mode image overlay: mounts the worker runtime and durable attachment
 # store so a nested read_image result can cross the generic rich-result bridge.
-# The default-model row names the vision route this recording captured; the shipped catalog
-# carries image input on deepseek-flash instead, and replay serves this row from the catalog
-# recorded in cordis.snapshot.yml.
+# The live config selects the shipped vision route for manual use.
 - id: agent-default-model
   name: '@deepseek-ai/dsh-agent-default-model'
   config:

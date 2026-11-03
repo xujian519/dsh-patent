@@ -60,7 +60,10 @@
         "./presets/standard.patch.yml",
         "./presets/ptc.patch.yml",
         "./presets/minimal.patch.yml",
-        "./presets/cordis.patch.yml"
+        "./presets/cordis.patch.yml",
+        "./presets/patent.patch.yml",
+        "./presets/document.patch.yml",
+        "./presets/legal.patch.yml"
       ]
     }
   },

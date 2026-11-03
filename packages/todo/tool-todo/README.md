@@ -80,8 +80,8 @@ The [todo_write tool Agent Note](../../../.agents/notes/archived/feature/2026-06
 
 | File | Role |
 |---|---|
-| [`src/index.ts`](src/index.ts) | Plugin entry: `Config` schema, tool registration, `todos` and `todosLatest` projection units |
-| [`src/types.ts`](src/types.ts) | The one home of the `todos` / `todosLatest` projection-key declarations and their payload types |
+| [`src/index.ts`](src/index.ts) | Plugin entry: `Config` schema, tool registration, `todos` projection unit |
+| [`src/types.ts`](src/types.ts) | The one home of the `todos` projection-key declaration and its payload types |
 | [`src/client.ts`](src/client.ts) | Client-namespace re-export of the types outlet |
 
 ### Export shape
@@ -90,7 +90,7 @@ The plugin is a function/namespace plugin: it exports `name` / `inject` / `apply
 
 ### Session projection
 
-When the composition mounts `ctx.sessionProjections` ([`@deepseek-ai/dsh-session-projection`](../../session/session-projection/README.md)), this package registers two units on an injected child. The `todos` unit is the standing plan — the latest whole `todo/write` list, `null` before the first write, cleared when the next turn starts while `turn/end` keeps the finished checklist visible. The `todosLatest` unit is the whole-log fold — the latest written list, never cleared — feeding cross-session surfaces such as the todo board ([`ui-todo-board`](../../client/ui-todo-board/README.md)). Both keys merge into `SessionProjectionMap` here; carriers serve the values on the history tail page and the `session/projection` push frame. Compositions without the registry are unaffected; see [src/index.ts](src/index.ts) for the unit registrations. The standing-plan lifetime rationale lives in the [todo plan clears on next turn Agent Note](../../../.agents/notes/archived/feature/2026-07-28-todo-plan-clears-on-next-turn.md).
+When the composition mounts `ctx.sessionProjections` ([`@deepseek-ai/dsh-session-projection`](../../session/session-projection/README.md)), this package registers the `todos` unit on an injected child: the projection is the standing plan — the latest whole `todo/write` list, `null` before the first write, cleared when the next turn starts while `turn/end` keeps the finished checklist visible. The key merges into `SessionProjectionMap` here; carriers serve the value on the history tail page and the `session/projection` push frame. Compositions without the registry are unaffected; see [src/index.ts](src/index.ts) for the unit registration.
 
 ### Call mechanics
 
@@ -121,7 +121,7 @@ Read these pages when the package-level contract is not enough. They move from t
 
 #### What the model sees
 
-The model sees the generated [`todo_write` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-todo): an object with one required `todos` array of `{ content, status, tags? }` items, where `status` is `pending`, `in_progress`, or `completed`, and `tags` carries optional short category labels. The `todos` description states that each call replaces the whole list; the tool description is the composed whole-list instruction whose active-status clause follows `allowParallelInProgress`.
+The model sees the generated [`todo_write` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-todo): an object with one required `todos` array of `{ content, status }` items, where `status` is `pending`, `in_progress`, or `completed`. The `todos` description states that each call replaces the whole list; the tool description's active-status clause follows `allowParallelInProgress`.
 
 #### Token effect
 
@@ -153,7 +153,7 @@ Append-only; newly visible content follows the reusable request prefix and does 
 These limits define when the tool is a poor fit. They are current package constraints, not a task backlog.
 
 - **Single-owner scope only** — the list belongs to the one calling agent session; subagent, shared, and swarm scopes are a deliberate cut, and a non-agent caller is rejected.
-- **The item shape stays minimal** — `content`, three-state `status`, and optional model-authored `tags` (trimmed, non-empty, unique per item; the cross-session board's filter). No stable id, priority, or active-form fields.
+- **The item shape is deliberately minimal** — `content` plus three-state `status`; whole-list replacement needs no stable id, priority, or active-form fields.
 - **Whole-list replacement is the only operation** — no partial updates, no read-back tool, and no per-item edits; the model must resend the entire list each call.
 
 <a id="dev-note"></a>

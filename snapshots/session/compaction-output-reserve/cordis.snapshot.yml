@@ -1,8 +1,5 @@
-# With 1,565 tokens of headroom, a 1,000-token output reservation lowers the
-# trigger from 7,017 to 6,017 — midway between this tree's history (6,151) and
-# its condensed replacement (5,883), so exactly one compaction lands. The
-# release's 1,800 put the replacement above the trigger once this tree's longer
-# `todo_write` schema raised the tool-schema budget by 133 tokens.
+# With 1,800 tokens of headroom, a 1,000-token output reservation lowers the
+# trigger from 6,822 to 5,822, between the history and its condensed replacement.
 
 
 - id: agent-instructions
@@ -22,7 +19,7 @@
   name: '@deepseek-ai/dsh-compaction-basic'
   config:
     thresholdRatio: 0.8
-    headroomTokens: 1565
+    headroomTokens: 1800
     retainTokens: 20
     maxTokens: 32
 

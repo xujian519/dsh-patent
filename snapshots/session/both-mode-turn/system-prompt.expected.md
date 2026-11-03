@@ -190,7 +190,7 @@ interface ToolArgsMap {
     /** The task for the subagent. It already sees this conversation's completed turns, so build on them freely and state only what is new. */
     prompt: string;
   } & Record<string, JsonValue>;
-  /** Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete step before you start. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark a todo `completed` the moment it is done (do not batch completions), and allow no `in_progress` item only once all work is complete. Skip the list for trivial single-step tasks. Statuses: `pending` (not started), `in_progress` (being worked on now), `completed` (finished). Optionally attach short `tags` (1-3 lowercase category or component names, e.g. `docs`, `release`) to tasks that belong to a category; omit them when a tag adds nothing. */
+  /** Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete step before you start. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark each todo `completed` as soon as it is done. */
   todo_write: {
     /** The COMPLETE task list, replacing any previous list. */
     todos: ({
@@ -198,8 +198,6 @@ interface ToolArgsMap {
       content: string;
       /** pending (not started) | in_progress (now) | completed (done). */
       status: "pending" | "in_progress" | "completed";
-      /** Optional short category labels (1-3, lowercase), e.g. ["docs"]. */
-      tags?: string[];
     })[];
   } & Record<string, JsonValue>;
   /** Update the current goal. */
@@ -489,7 +487,6 @@ interface ToolOutputMap {
     todos: ({
       content: string;
       status: "pending" | "in_progress" | "completed";
-      tags?: string[];
     })[];
     counts: {
       pending: number;

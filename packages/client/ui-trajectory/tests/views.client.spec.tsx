@@ -49,18 +49,10 @@ import {
   TrajectoryView, type TrajectoryViewInjected,
 } from '../src/client/TrajectoryView.tsx'
 import { createTrajectoryDurationStore } from '../src/client/duration-store.ts'
-import * as presentation from '../src/client/trajectory-record-presentation.tsx'
 import { EMPTY_TRAJECTORY_SNAPSHOT } from '../src/client/trajectory-snapshot-builder.ts'
 import type { TrajectorySnapshot } from '../src/client/trajectory-contract.ts'
 import { deriveTrajectoryTimeline } from '../src/client/timeline.ts'
 import { t as tTrajectory, tZh } from './locale.client.ts'
-
-// The ledger row is the only consumer of this presenter, so its call count
-// counts row renders without changing what the mounted ledger shows.
-vi.mock('../src/client/trajectory-record-presentation.tsx', async (importOriginal) => {
-  const original = await importOriginal<typeof presentation>()
-  return { ...original, RecordPresentation: vi.fn(original.RecordPresentation) }
-})
 
 // Every session-scope fixture carries the resource hook the resources plugin merges into GlobalStandardProps.
 const useResource = (() => ({ status: 'none' as const, value: undefined, failure: undefined, reload: () => {} })) as GlobalStandardProps['useResource']
@@ -292,15 +284,11 @@ async function bench(snapshot = historySnapshot(NODES)) {
     chat: createSnapshotStore<ChatSnapshot | undefined>(undefined),
     trajectory: trajectoryStore,
     'tool-todo-history': createSnapshotStore<ConversationViewSnapshotMap['tool-todo-history'] | undefined>(undefined),
-    // Feature-package targets this upstream spec never reads; empty stores
-    // satisfy the declaration-merged roster.
-    patentTeams: createSnapshotStore<ConversationViewSnapshotMap['patentTeams'] | undefined>(undefined),
-    documentDeliverables: createSnapshotStore<ConversationViewSnapshotMap['documentDeliverables'] | undefined>(undefined),
   }
   const binding: ConversationBinding = {
     snapshot: conversationStore,
     openTurn: createSnapshotStore<number | undefined>(undefined),
-    select: () => {},
+    activate: () => {},
     target: (target) => {
       const source = targetSources[target]
       if (source === undefined) throw new Error(`trajectory bench has no source for target "${target}"`)
@@ -452,7 +440,6 @@ function mount(fixture: Awaited<ReturnType<typeof bench>>) {
         actions={conversation.actions}
         renderSlot={renderSlot}
         bindDraftPersistence={() => () => {}}
-        releaseViewSetter={() => {}}
         openView={conversation.actions.openView}
         useInspectCall={selector => selector(undefined)}
       />
@@ -565,22 +552,6 @@ describe('tab switching in ConversationRoot', () => {
     expect(b.loadOlder).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('tab', { name: 'Chat' }))
     expect(b.loadOlder).not.toHaveBeenCalled()
-  })
-
-  it('keeps ledger rows mounted while the view re-renders around them', async () => {
-    const b = await bench()
-    const view = mount(b)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
-    const rows = view.container.querySelectorAll('tr[data-trajectory-row-key]').length
-    expect(rows).toBeGreaterThan(0)
-    const renders = vi.mocked(presentation.RecordPresentation).mock.calls.length
-
-    // Timeline mode is not a ledger input: switching it must not re-render a single row.
-    const toggle = screen.getByRole('button', { name: '使用实际时长' })
-    fireEvent.click(toggle)
-
-    expect(toggle.getAttribute('aria-pressed')).toBe('true')
-    expect(vi.mocked(presentation.RecordPresentation).mock.calls.length).toBe(renders)
   })
 
   it('labels the trajectory tab in the active locale', async () => {

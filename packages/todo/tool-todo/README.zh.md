@@ -80,8 +80,8 @@ agent 每次更新都发送完整列表；新列表替换旧列表，因此没�
 
 | 文件 | 职责 |
 |---|---|
-| [`src/index.ts`](src/index.ts) | 插件入口：`Config` schema、工具注册、`todos` 与 `todosLatest` 投影单元 |
-| [`src/types.ts`](src/types.ts) | `todos` / `todosLatest` 投影键声明及其载荷类型的唯一归属地 |
+| [`src/index.ts`](src/index.ts) | 插件入口：`Config` schema、工具注册、`todos` 投影单元 |
+| [`src/types.ts`](src/types.ts) | `todos` 投影键声明及其载荷类型的唯一归属地 |
 | [`src/client.ts`](src/client.ts) | 客户端命名空间对类型出口的再导出 |
 
 ### 导出形状
@@ -90,7 +90,7 @@ agent 每次更新都发送完整列表；新列表替换旧列表，因此没�
 
 ### 会话投影
 
-当组合挂载 `ctx.sessionProjections`（[`@deepseek-ai/dsh-session-projection`](../../session/session-projection/README.zh.md)）时，本包在注入的子插件中注册两个单元。`todos` 单元是有效计划——最新的整份 `todo/write` 列表，首次写入前为 `null`，下一轮次开始时清空，而 `turn/end` 保留刚完成的清单。`todosLatest` 单元是整日志折叠——最新写入的列表，永不清空——供跨会话表面（如任务看板 [`ui-todo-board`](../../client/ui-todo-board/README.zh.md)）读取。两个键都在此处合并进 `SessionProjectionMap`；载体通过历史尾页与 `session/projection` 推送帧提供这些值。未挂载注册表的组合不受影响；单元注册见 [src/index.ts](src/index.ts)。有效计划生命周期的理由见 [todo 计划在下一轮次清空 Agent Note](../../../.agents/notes/archived/feature/2026-07-28-todo-plan-clears-on-next-turn.md)。
+当组合挂载 `ctx.sessionProjections`（[`@deepseek-ai/dsh-session-projection`](../../session/session-projection/README.zh.md)）时，本包在注入的子插件中注册 `todos` 单元：投影即有效计划——最新的整份 `todo/write` 列表，首次写入前为 `null`，下一轮次开始时清空，而 `turn/end` 保留刚完成的清单。该键在此处合并进 `SessionProjectionMap`；载体通过历史尾页与 `session/projection` 推送帧提供该值。未挂载注册表的组合不受影响；单元注册见 [src/index.ts](src/index.ts)。
 
 ### 调用机制
 
@@ -121,7 +121,7 @@ agent 每次更新都发送完整列表；新列表替换旧列表，因此没�
 
 #### 模型看到什么
 
-模型会看到生成的 [`todo_write` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-todo)：一个对象，含一个必填的 `todos` 数组，元素为 `{ content, status, tags? }`，其中 `status` 为 `pending`、`in_progress` 或 `completed`，`tags` 为可选的短分类标签。`todos` 描述说明每次调用都会替换整个列表；描述是组合后的整表指令，其活跃状态条款跟随 `allowParallelInProgress`。
+模型会看到生成的 [`todo_write` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-todo)：一个对象，含一个必填的 `todos` 数组，元素为 `{ content, status }`，其中 `status` 为 `pending`、`in_progress` 或 `completed`。`todos` 描述说明每次调用都会替换整个列表；工具描述中的活跃状态条款跟随 `allowParallelInProgress`。
 
 #### Token 影响
 
@@ -153,7 +153,7 @@ token 用量随模型每次提交的完整列表增长，这些调用参数会�
 这些限制说明工具何时不合适。它们是当前包约束，不是任务积压。
 
 - **仅单一所有者作用域**——列表属于唯一调用 agent 会话；subagent、共享与 swarm 作用域是有意设置的限制，非 agent 调用方会被拒绝。
-- **条目形状保持最小**——`content`、三态 `status` 加可选的模型写入 `tags`（已修剪、非空、条目内唯一；供跨会话看板筛选）。无稳定 id、优先级或 active-form 字段。
+- **条目形状刻意保持最小**——`content` 加三态 `status`；整表替换不需要稳定 id、优先级或 active-form 字段。
 - **整表替换是唯一操作**——没有部分更新、没有回读工具、没有逐项编辑；模型每次调用都必须重新发送完整列表。
 
 <a id="dev-note"></a>

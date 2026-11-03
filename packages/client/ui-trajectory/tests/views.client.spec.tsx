@@ -284,11 +284,15 @@ async function bench(snapshot = historySnapshot(NODES)) {
     chat: createSnapshotStore<ChatSnapshot | undefined>(undefined),
     trajectory: trajectoryStore,
     'tool-todo-history': createSnapshotStore<ConversationViewSnapshotMap['tool-todo-history'] | undefined>(undefined),
+    // Feature-package targets this upstream spec never reads; empty stores
+    // satisfy the declaration-merged roster.
+    patentTeams: createSnapshotStore<ConversationViewSnapshotMap['patentTeams'] | undefined>(undefined),
+    documentDeliverables: createSnapshotStore<ConversationViewSnapshotMap['documentDeliverables'] | undefined>(undefined),
   }
   const binding: ConversationBinding = {
     snapshot: conversationStore,
     openTurn: createSnapshotStore<number | undefined>(undefined),
-    activate: () => {},
+    select: () => {},
     target: (target) => {
       const source = targetSources[target]
       if (source === undefined) throw new Error(`trajectory bench has no source for target "${target}"`)
@@ -440,6 +444,7 @@ function mount(fixture: Awaited<ReturnType<typeof bench>>) {
         actions={conversation.actions}
         renderSlot={renderSlot}
         bindDraftPersistence={() => () => {}}
+        releaseViewSetter={() => {}}
         openView={conversation.actions.openView}
         useInspectCall={selector => selector(undefined)}
       />

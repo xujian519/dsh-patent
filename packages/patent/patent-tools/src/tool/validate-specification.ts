@@ -31,6 +31,7 @@ import {
   checkTermConsistency,
   checkTextMedia,
   checkUtilityModelFigureContent,
+  checkUtilityModelSubjectMatter,
 } from './spec-description-extras.ts'
 import {
   checkFigureDescriptionName,
@@ -46,6 +47,7 @@ import {
 import { checkNumericRangeCoverage, formatRange } from './spec-numeric.ts'
 import { checkEmptySections, checkPlaceholderContent, sectionBodies } from './spec-placeholder.ts'
 import { checkSpecProhibitions, checkTitle } from './spec-prohibitions.ts'
+import { checkSoftwareClaimSubjectMatter, checkSoftwareDisclosure, looksLikeComputerProgram } from './spec-software.ts'
 import { checkSpecStyle } from './spec-style.ts'
 import { checkStructure, requiredSections } from './spec-structure.ts'
 import {
@@ -111,6 +113,7 @@ export function validateSpecification(input: ValidateSpecificationInput): Valida
     ...embodimentViolations(text),
     ...effectViolations(text),
     ...chemicalViolations(input, text),
+    ...checkSoftwareDisclosure(text, input.tech_domain),
     ...checkClaimViolations(input, text),
   ]
   const scored = computeSpecScore(violations)
@@ -143,6 +146,13 @@ function notAssessedItems(input: ValidateSpecificationInput, hasDrawings: boolea
   const items: SpecNotAssessed[] = []
   if (input.title !== undefined && input.title.trim().length > 0) {
     items.push({ id: 'title-name-place', label: '发明名称中的人名、地名', reason: '名称是否属于非技术词语需要语义判断' })
+  }
+  if (input.tech_domain !== 'software' && looksLikeComputerProgram(input.text ?? '', input.claims ?? '')) {
+    items.push({
+      id: 'software-domain-rules',
+      label: '软件客体与模型公开充分（A25.1.2、A26.3）',
+      reason: '本文本含算法/模型表述，但本次未声明 tech_domain=software，软件域规则未运行',
+    })
   }
   if (hasDrawings) {
     items.push(
@@ -307,7 +317,10 @@ function chemicalViolations(input: ValidateSpecificationInput, text: string): Sp
 
 /**
  * Claim-feature coverage of the specification (A26.4), then independent-claim
- * unity and the claim-to-embodiment coverage matrix from the structured inputs.
+ * unity and the claim-to-embodiment coverage matrix from the structured inputs,
+ * then the subject-matter rules that read only the claims and the declared
+ * application type or technical domain: the utility-model rule (A2.3) and the
+ * software rules (A25.1.2, A26.4).
  *
  * Exposed for the `spec-check` atom's claims mode, which runs only the claim
  * rules instead of the whole specification rule set.
@@ -333,6 +346,8 @@ export function checkClaimViolations(input: ValidateSpecificationInput, text: st
   }
 
   violations.push(...checkClaimSet(input))
+  violations.push(...checkUtilityModelSubjectMatter(input.claims, input.patent_type))
+  violations.push(...checkSoftwareClaimSubjectMatter(input.claims, input.tech_domain))
   return violations
 }
 
@@ -383,6 +398,8 @@ const DESCRIPTION = [
   '- 权利要求-说明书特征覆盖（A26.4）、数值范围端点与中间值实施例',
   '- 独立权利要求之间的单一性（A31.1，传 claim_units 时）',
   '- 权项—实施例覆盖矩阵（A26.3/A26.4，传 coverage_entries 时；覆盖度由 features 与 embodiment_refs 计算，不接受调用方给定的覆盖度结论）',
+  '- 实用新型客体（A2.3，patent_type=utility_model 且传 claims 时）：权利要求主题名称是方法／工艺，或落在组合物与无固定形状产品上，报 error',
+  '- 软件客体与模型公开（tech_domain=software 时）：算法／程序本身作主题、信号或比特流作载体报 error；技术载体缺失、商业规则词汇、训练数据与模型结构未公开、缩写未定义报 warning',
   '- 效果数据定量性、化学领域产物表征数据（tech_domain=chemical 时）',
   '- 背景技术引证的国别/公开号/日期、有益效果与现有技术的对比、序列表引用、正文图片与表格位置、术语与附图标记一致性、实用新型附图内容（均为 warning，启发式）',
   '',
@@ -414,7 +431,7 @@ export function createValidateSpecificationTool(deps?: ValidateSpecificationDeps
       tech_domain: {
         type: 'string',
         enum: ['mechanical', 'electrical', 'chemical', 'software', 'general'],
-        description: '技术领域（chemical 时附加化学表征数据校验）',
+        description: '技术领域（chemical 时附加化学表征数据校验；software 时附加软件客体与模型公开校验）',
       },
       patent_type: {
         type: 'string',

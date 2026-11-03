@@ -2675,7 +2675,7 @@ subagent_oar 工具在为外部提供方配置的别名之间选择。本目录�
 
 ### `todo_write`
 
-记录并更新当前工作的结构化任务列表。每次调用都要发送**完整列表**，它会**替换**之前的列表，不支持局部更新或逐项编辑。请用它规划多步骤工作并展示进度：开始前为每个具体步骤添加一项 todo。将当前正在处理的每项 todo 标记为 `in_progress`；确实并行运行时（例如并发 subagent 或后台命令）可同时标记多项，顺序工作则标记 1 项。只要工作尚未完成，就应至少有一项任务为 `in_progress`。某项 todo 完成后立即标记为 `completed`，不要批量标记完成；只有全部工作完成后，才可以没有 `in_progress` 项。简单的单步骤任务无需使用列表。状态：`pending`（未开始）、`in_progress`（正在处理）、`completed`（已完成）。可选地为属于某类别的任务附加简短的 `tags`（1-3 个小写类别或组件名，如 `docs`、`release`）；没有增益时省略。
+记录并更新任务列表，用它规划多步骤工作并展示进度；简单的单步骤任务无需使用列表。开始前为每个具体步骤添加一项 todo。只要工作尚未完成，就保持正在处理的 todo 为 `in_progress`，确实并行时可同时有多项。某项 todo 完成后立即标记为 `completed`。
 
 ```json
 {
@@ -2700,13 +2700,6 @@ subagent_oar 工具在为外部提供方配置的别名之间选择。本目录�
               "in_progress",
               "completed"
             ]
-          },
-          "tags": {
-            "type": "array",
-            "description": "Optional short category labels (1-3, lowercase), e.g. [\"docs\"].",
-            "items": {
-              "type": "string"
-            }
           }
         },
         "required": [
@@ -3602,6 +3595,86 @@ The media tool selects an image, video, or speech model through the provider sea
   "required": [
     "expected",
     "analysis"
+  ]
+}
+```
+
+来源：[`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-tools/src/index.ts)
+
+### `domain_check`
+
+按专利领域缺陷清单对一份申请文件跑确定性自检（不调用模型）。当前支持 mechanical（机械域 30 项）与 software（软件/AI 域 28 项）。它把 claim_lint（权利要求形式）与 validate_specification（说明书）的结论按清单项汇总：每项给出 pass（已核干净）、hit（命中，附规则与说明）或 manual（须人工判断，不得视为通过）。manual 有两种来源：判据本身不可机械判定；或规则只覆盖该缺陷的一部分（未命中不等于通过，reason 会说明覆盖到哪）。输入 text 为说明书全文；传 claims 才能跑权项相关项；传 abstract 才能跑摘要项；传 patent_type 才能跑实用新型客体项。software 域会自动按 tech_domain=software 运行软件客体与模型公开规则。passed 只表示已运行的确定性规则未发现 error，不表示符合专利法；manual 项必须由人复核。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "domain": {
+      "type": "string",
+      "description": "领域：mechanical（机械）/ software（软件与 AI）。",
+      "enum": [
+        "mechanical",
+        "software"
+      ]
+    },
+    "text": {
+      "type": "string",
+      "description": "说明书全文（markdown 或纯文本）。"
+    },
+    "claims": {
+      "type": "string",
+      "description": "权利要求书全文（可选）；不传时权项相关清单项报 manual。"
+    },
+    "abstract": {
+      "type": "string",
+      "description": "摘要（可选）；不传时摘要相关清单项报 manual。"
+    },
+    "patent_type": {
+      "type": "string",
+      "description": "专利类型（可选）；实用新型客体项需要它。",
+      "enum": [
+        "invention",
+        "utility_model"
+      ]
+    },
+    "figure_analysis": {
+      "type": "array",
+      "description": "附图分析结果（可选）；提供后 MECH-DC-001/025 的图面标号才能真正核过。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "usable": {
+            "type": "boolean",
+            "description": "分析结果是否可用（组件提取成功）"
+          },
+          "components": {
+            "type": "array",
+            "description": "识别的组件列表",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "refNumber": {
+                  "type": "string",
+                  "description": "附图标记号（与图面标号一致）"
+                }
+              },
+              "required": [
+                "refNumber"
+              ]
+            }
+          }
+        },
+        "required": [
+          "usable"
+        ]
+      }
+    }
+  },
+  "required": [
+    "domain",
+    "text"
   ]
 }
 ```
@@ -6613,7 +6686,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
     },
     "scope": {
       "type": "string",
-      "description": "Rule set scope. Defaults to 'patent' (4 general compliance rules only; choose a job scope for substantive checks). 'patent-drafting' / 'patent-analysis' cover claim/spec drafting and patentability analysis; 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' evaluate the full assets filtered to that job's rule domains. 'pack' loads the layered rule pack declared by .sati/rules.yaml."
+      "description": "Rule set scope. Defaults to 'patent' (4 general compliance rules only; choose a job scope for substantive checks). 'patent-drafting' / 'patent-analysis' cover claim/spec drafting and patentability analysis; 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' evaluate the full assets filtered to that job's rule domains; 'patent-mechanical' adds the mechanical domain pack (structural-equivalence argument completeness) and 'patent-software' the software/AI pack (subject-matter argument completeness) on top of the full assets. 'pack' loads the layered rule pack declared by .sati/rules.yaml."
     },
     "notice": {
       "type": "string",
@@ -6690,6 +6763,8 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 - 权利要求-说明书特征覆盖（A26.4）、数值范围端点与中间值实施例
 - 独立权利要求之间的单一性（A31.1，传 claim_units 时）
 - 权项—实施例覆盖矩阵（A26.3/A26.4，传 coverage_entries 时；覆盖度由 features 与 embodiment_refs 计算，不接受调用方给定的覆盖度结论）
+- 实用新型客体（A2.3，patent_type=utility_model 且传 claims 时）：权利要求主题名称是方法／工艺，或落在组合物与无固定形状产品上，报 error
+- 软件客体与模型公开（tech_domain=software 时）：算法／程序本身作主题、信号或比特流作载体报 error；技术载体缺失、商业规则词汇、训练数据与模型结构未公开、缩写未定义报 warning
 - 效果数据定量性、化学领域产物表征数据（tech_domain=chemical 时）
 - 背景技术引证的国别/公开号/日期、有益效果与现有技术的对比、序列表引用、正文图片与表格位置、术语与附图标记一致性、实用新型附图内容（均为 warning，启发式）
 
@@ -6725,7 +6800,7 @@ passed 只表示已运行的确定性规则未发现 error，不表示符合专�
     },
     "tech_domain": {
       "type": "string",
-      "description": "技术领域（chemical 时附加化学表征数据校验）",
+      "description": "技术领域（chemical 时附加化学表征数据校验；software 时附加软件客体与模型公开校验）",
       "enum": [
         "mechanical",
         "electrical",

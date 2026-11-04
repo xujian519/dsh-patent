@@ -67,11 +67,13 @@
 | C2 | 门禁 spec：正向用例（当前树绿）+ 反向用例（删掉 `draft_review` 一行必须失败）+ 空语料用例 | `scripts/verify-patent-team-stages.spec.ts` | C1 | 三条用例各自独立可失败 |
 | C3 | 接入 `run-gates.ts` 的 quick 组与 `package.json` 脚本 | `scripts/run-gates.ts`、`package.json` | C2 | `pnpm run verify-patent-team-stages` 可单跑；doc-quick 含该门 |
 | C4 | 文档同步：子系统页或工作台任务页记录「团队场景跟 manifest 对齐」的当前态 | `docs/subsystems/patent*.md` 或 `docs/patent-workbench-tasks.md` | C1 | `doc-sync` 相关项通过；中英成对 |
-| C5 | （可选，独立评估）把 `.agents/plans/**` 纳入 `verify-md-wrap` 与 `verify-md-links` | `scripts/verify-md-wrap.ts`、`scripts/verify-md-links.ts` | — | 加入后现存 plans 全绿，否则先修存量 |
+| C5 | 把 `.agents/plans/**` 纳入 `verify-md-wrap` 与 `verify-md-links`，并为两道门的发现集合补回归用例 | `scripts/verify-md-wrap.ts`、`scripts/verify-md-links.ts` + 两个 spec | — | 加入后现存 plans 全绿；删掉 PATTERNS 任一行时 spec 失败 |
 
 ### 2.5 落地状态（2026-11-04）
 
-A1–A6、B1–B2、C1–C3 已实现；A7 不需要改动（preset 指南的技能数与名称未变，只补了执行面说明）；B3 无需要（未新增工具约束）；B4 未写（团队场景语义变化未触及已发布的外部契约面）；C4/C5 留待后续。
+A1–A6、B1–B2、C1–C5 已实现；A7 不需要改动（preset 指南的技能数与名称未变，只补了执行面说明）；B3 无需要（未新增工具约束）；B4 未写（团队场景语义变化未触及已发布的外部契约面）。
+
+C5 落地时发现存量 4 份计划中 1 份含 4 处硬换行，已先修为一段一行再让门通过。`verify-md-wrap` 原本把扫描集合与检查函数都留在模块顶层、无 `import.meta.main` 守卫，无法被 spec 导入，故重构为导出 `markdownWrapSourcePaths` / `findWrapViolations` 并把执行移入守卫——行为不变（3294 文件、0 违规）。
 
 ### 2.4 不做
 

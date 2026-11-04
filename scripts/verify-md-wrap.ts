@@ -15,7 +15,7 @@ import { isArchivedAgentNotePath, uniqueRepoFiles } from './repo-files.ts'
 const root = resolve(import.meta.dirname, '..')
 
 /** Files to check: doc-typecheck's scope, system-prompt expected outputs, and the AGENTS.md pair. */
-const PATTERNS = [
+export const WRAP_PATTERNS = [
   'README.md',
   'README.zh.md',
   '.agents/notes/**/*.md',
@@ -32,11 +32,21 @@ const PATTERNS = [
 ]
 
 /** A located hard-wrap: a prose paragraph spanning more than one source line. */
-interface Violation {
+export interface WrapViolation {
   file: string
   /** 1-based line where the hard-wrapped paragraph starts. */
   line: number
   text: string
+}
+
+/**
+ * Discover the Markdown sources this gate checks under `scanRoot`.
+ * @param scanRoot - absolute repository root.
+ * @returns forward-slash paths relative to `scanRoot`, archived notes excluded.
+ */
+export function markdownWrapSourcePaths(scanRoot: string = root): string[] {
+  return uniqueRepoFiles(scanRoot, WRAP_PATTERNS, isArchivedAgentNotePath)
+    .map(file => relative(scanRoot, file.abs).replaceAll('\\', '/'))
 }
 
 function maskVitePressStructure(source: string): string {
@@ -50,13 +60,18 @@ function maskVitePressStructure(source: string): string {
   return lines.map(line => line.trimStart().startsWith(':::') ? '' : line).join('\n')
 }
 
-/** Find every hard-wrapped prose paragraph in one Markdown file via its AST. */
-function findViolations(absPath: string): Violation[] {
-  const file = relative(root, absPath)
+/**
+ * Find every hard-wrapped prose paragraph in one Markdown file via its AST.
+ * @param absPath - absolute path to the Markdown file.
+ * @param scanRoot - absolute repository root used to report the relative path.
+ * @returns one entry per hard-wrapped paragraph.
+ */
+export function findWrapViolations(absPath: string, scanRoot: string = root): WrapViolation[] {
+  const file = relative(scanRoot, absPath)
   const source = readFileSync(absPath, 'utf8')
   const parsedSource = maskVitePressStructure(source)
   const tree = parseMarkdown(parsedSource)
-  const out: Violation[] = []
+  const out: WrapViolation[] = []
 
   visitMarkdown(tree, (node: Nodes): boolean | void => {
     if (node.type === 'paragraph' && node.position) {
@@ -72,17 +87,19 @@ function findViolations(absPath: string): Violation[] {
   return out
 }
 
-const files = uniqueRepoFiles(root, PATTERNS, isArchivedAgentNotePath)
-const all = files.flatMap(file => findViolations(file.abs))
-const checked = files.length
+if (process.argv[1] && import.meta.filename === resolve(process.argv[1])) {
+  const files = markdownWrapSourcePaths()
+  const all = files.flatMap(file => findWrapViolations(resolve(root, file)))
+  const checked = files.length
 
-if (all.length === 0) {
-  console.log(`verify-md-wrap: ${checked} file(s) checked, no hard-wrapped prose paragraphs.`)
-  process.exit(0)
-}
+  if (all.length === 0) {
+    console.log(`verify-md-wrap: ${checked} file(s) checked, no hard-wrapped prose paragraphs.`)
+    process.exit(0)
+  }
 
-console.error('verify-md-wrap: hard-wrapped prose paragraphs found (write one physical line per paragraph):')
-for (const v of all) {
-  console.error(`  ${v.file}:${v.line}  ${v.text.slice(0, 80)}${v.text.length > 80 ? '…' : ''}`)
+  console.error('verify-md-wrap: hard-wrapped prose paragraphs found (write one physical line per paragraph):')
+  for (const v of all) {
+    console.error(`  ${v.file}:${v.line}  ${v.text.slice(0, 80)}${v.text.length > 80 ? '…' : ''}`)
+  }
+  process.exit(1)
 }
-process.exit(1)

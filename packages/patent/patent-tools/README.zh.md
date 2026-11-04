@@ -91,7 +91,7 @@ Schemastery 配置，所有字段可选。
 | `inkscapeExecutable` | string | 自动探测 | 文字转路径所用的 `inkscape` 可执行路径覆盖；探测顺序：覆盖值 → `DSH_INKSCAPE` → 平台候选路径 → `PATH`。 |
 | `inkscapeRenderTimeoutMs` | number | `30000` | 单次文字转路径的超时（毫秒）。 |
 | `workbenchBaseUrl` | string | 进程内 webServer 端口 | `workbench_link_patent_case` 的工作台 API 基址；显式配置优先，web 组合内自动取 `http://127.0.0.1:<webServer 端口>`；不可用（非 web profile）时工具在执行期以 `setup_required` 失败。 |
-| `workbenchCaseRoot` | string | `<cwd>/patent-workspace` | `workbench_link_patent_case` 的案件根目录：每案位于 `<root>/<案号>/`，内含 `_matter-log.md`。 |
+| `workbenchCaseRoot` | string | 未配置 → `<cwd>/patent-workspace` | `workbench_link_patent_case` 的可配置工作根目录（work root）。每案位于 `<root>/<案号>/`，内含 `_matter-log.md`。应设成本机工作根目录，典型值为 `/Users/xujian/工作`。未配置时的回退不是案卷真源（[ADR-001](../../../docs/adr/ADR-001-matter-folder-index.zh.md)）。 |
 | `dotFont` | string | 平台相关 | DOT 字体名覆盖；默认 Helvetica，label 含 CJK 时按平台候选（PingFang SC / Microsoft YaHei / Noto Sans CJK SC）。 |
 | `figureRenderer` | `'wasm' \| 'cli'` | `wasm` | `generate_patent_figure` 的 Graphviz 渲染器：`wasm` 为内置 `@viz-js/viz`（SVG，无系统依赖）；`cli` 走 `dot` 子进程。未给 `target_office` 时的 png/pdf 路由到 CLI。 |
 | `figureAnalysisMode` | `'single' \| 'two-step'` | `single` | `analyze_patent_figure` 模式：`single` 为一次视觉调用；`two-step` 在同一路由先做结构抽取再做说明生成（模型成本翻倍）。 |

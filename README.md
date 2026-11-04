@@ -47,11 +47,20 @@ pnpm dsh web
 
 1. Start the Web UI from source as above.
 2. Open **Settings → Models**, enter a [DeepSeek API key](https://platform.deepseek.com/), and save it.
-3. Choose the case directory as the workspace.
+3. Open a matter in this same repository, using the New matter steps below.
 4. Create a task and select the **专利模式** agent preset.
 5. Describe the task, for example: "Read the disclosure document in this workspace and list the technical problem, the inventive concept, the key technical features, and the technical effects."
 
-The [patent quick start](docs/user/guide/patent-quickstart.md) covers the full first-run path.
+The [patent quick start](docs/user/guide/patent-quickstart.md) covers the full first-run path. The matter truth source is [ADR-001](docs/adr/ADR-001-matter-folder-index.md).
+
+## New matter
+
+One repository holds many matters. Do not open a separate Cursor or git project for each matter. The work root is configurable; a typical value is `/Users/xujian/工作`.
+
+1. Create the matter folder under the work root, for example `/Users/xujian/工作/<案号>/`, and put `_matter-log.md` in it. Do not create a separate `patent-workspace/<案号>` tree that ignores this root.
+2. Scan the folder into the workbench ledger, the SQLite database under `~/.dsh/workbench`. The ledger row stores metadata and `workspace_path` only. Matter file bodies stay in the folder. They do not go to the cloud or into `knowledge.db`.
+3. Open this same repository and select that matter. The workbench entry points at the matter folder.
+4. Write in that folder. The matter directory and `_matter-log.md` are the truth source. A bridge may read projections. Writing back to the matter folder is not the ledger.
 
 ## Community and support
 

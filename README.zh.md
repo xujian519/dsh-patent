@@ -51,11 +51,20 @@ pnpm dsh web
 
 1. 按上述方式从源码启动 Web UI。
 2. 打开**设置 → 模型**，填入 [DeepSeek API key](https://platform.deepseek.com/) 并保存。
-3. 选择案卷目录作为工作区。
+3. 在同一仓库中打开案卷，按下方「新建案卷」的步骤。
 4. 新建任务，在 Agent 预设中选择**专利模式**。
 5. 描述任务，例如："读取本工作区的交底书，列出技术问题、发明构思、关键技术特征与技术效果。"
 
-完整的首次上手流程见[专利快速开始](docs/user/guide/patent-quickstart.zh.md)。
+完整的首次上手流程见[专利快速开始](docs/user/guide/patent-quickstart.zh.md)。案卷真源见 [ADR-001](docs/adr/ADR-001-matter-folder-index.zh.md)。
+
+## 新建案卷
+
+一个仓库承载多个案卷。不要为每个案卷另开一个 Cursor 或 git 项目。工作根目录（work root）可配置，典型值是 `/Users/xujian/工作`。
+
+1. 在工作根目录下建立案卷文件夹，例如 `/Users/xujian/工作/<案号>/`，并在其中放入 `_matter-log.md`。不要另建一棵忽略该根目录的 `patent-workspace/<案号>` 树。
+2. 把该文件夹扫描进工作台账本，即 `~/.dsh/workbench` 下的 SQLite。账本行只保存元数据与 `workspace_path`。案卷文件正文留在该文件夹，不进云端，也不进 `knowledge.db`。
+3. 打开同一仓库并选中该案卷。工作台条目指向该案卷文件夹。
+4. 在该文件夹中书写。案卷目录与 `_matter-log.md` 是真源。桥接可以读取投影。把内容写回案卷文件夹不是账本。
 
 ## 社区与支持
 

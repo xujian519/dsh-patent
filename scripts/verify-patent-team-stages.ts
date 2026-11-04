@@ -3,7 +3,7 @@
  * the manifests that own those stage sequences.
  *
  * The scenario tables name manifest stages, but nothing held them to the
- * manifests: `verify-patent-team-roster` judges the role table alone, so a
+ * manifests: `verify-patent-team-roster` judges names alone, so a
  * scenario could keep describing a chain that `patent_disclosure_v1` or
  * `patent_oa_response_v1` no longer runs — or keep a stage a rewind no longer
  * revisits. This gate reads each scenario's stage row, compares the cited stage

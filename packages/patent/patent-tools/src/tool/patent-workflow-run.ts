@@ -20,6 +20,7 @@
  */
 
 import { join } from 'node:path'
+import type { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type { JobOutcome, JobRegistry, JobSpec } from '@deepseek-ai/dsh-jobs'
@@ -28,6 +29,7 @@ import {
   DOMAIN_GRAPHS,
   InMemoryCheckpointStore,
   JsonFileCheckpointStore,
+  StageHandlerRegistry,
   grantApproval,
   globalAtomRegistry,
   globalStageHandlerRegistry,
@@ -40,7 +42,6 @@ import {
   type GraphCheckpoint,
   type GraphState,
   type RuleEvaluator,
-  type StageHandlerRegistry,
   type StageProvider,
   type WorkflowContext,
   type WorkflowManifest,
@@ -49,9 +50,9 @@ import {
 import {
   appendWorkflowRunEvents,
   builtinPatentManifests,
-  type PatentAgent,
 } from '@deepseek-ai/dsh-patent-workflow'
 import { PatentToolError } from '../error.ts'
+import { LiveApprovalGateHandler, type ApprovalFace } from './internal/approval-gate.ts'
 import { loggedToolModel } from './internal/model-call-log.ts'
 import {
   buildWorkflowProvider,
@@ -203,6 +204,18 @@ export interface PatentWorkflowRunDeps extends WorkflowProviderDeps {
    * blocking the turn.
    */
   jobs?: () => WorkflowRunJobRegistry | undefined
+  /**
+   * Read the deployment approval service at gate time. A foreground run asks it
+   * before continuing past an `approval-gate` stage; an absent service (or an
+   * absent lookup, as in a bare tool construction) keeps the pause contract.
+   */
+  approval?: () => ApprovalFace | undefined
+  /**
+   * Ask that service at each manifest approval gate. Deployment opt-in: off
+   * keeps the pause-and-`approveStageIds` contract, so an existing composition
+   * never starts blocking on a prompt it did not configure.
+   */
+  approveStageGates?: boolean
 }
 
 /**
@@ -220,7 +233,7 @@ const DESCRIPTION = [
   'For the specification stages, pass title/abstract/patentType/hasDrawings/figureAnalysis/figureFiles/drawingCount/abstractFigureNumber; a utility model without drawings fails the form check, an unfinished draft (placeholder sections) fails spec-check, and omitted items appear in spec_not_assessed.',
   'Pass conflictingApplications (a JSON array) to run the A22.2 second-sentence conflicting-application check; entries need filingDate/publicationDate and a caller-judged sameInvention boolean. Conflicting applications are filed before but published on or after the target date, so the prior-art search cannot find them.',
   'Pass evidence (a JSON array) and evidenceDeadline to run the invalidation/reexamination evidence-check stage; it reports form defects, late submissions without a justification, prior-art dates at or after the cutoff, and evidence not linked to a ground or claim.',
-  'The review gate pauses the run; re-invoke with resumeCheckpointId (graph) or approveStageIds (manifest) to continue. When caseId is provided, run results, the Mermaid diagram, and graph checkpoints are persisted under `<caseDir>/workflow-runs/`. Requires a model port.',
+  'A manifest approval gate either asks the deployment\'s approval service and continues when the user allows it (deployments with approveStageGates on; approveStageIds is refused there, so the decision cannot be self-declared), or — with the switch off, or in a background run — pauses the run for a later re-invoke with approveStageIds; a refusal pauses the run with the decision named. A background run always pauses at the gate, because the approval service only answers inside an open turn. Graph runs pause at their checkpoint and continue with resumeCheckpointId. When caseId is provided, run results, the Mermaid diagram, and graph checkpoints are persisted under `<caseDir>/workflow-runs/`. Requires a model port.',
   'A manifest run holds the turn until it finishes or pauses at an approval gate, so pass run_in_background: true to get a job id at once and keep working (collect with job_output; job_kill stops it at the next stage boundary); graph runs are foreground-only.',
 ].join(' ')
 /** Rule-gate status from the structured `rule_gate` state entry. */
@@ -393,6 +406,15 @@ export function createPatentWorkflowRunTool(deps: PatentWorkflowRunDeps = {}): T
         }
       }
 
+      if (liveGateTarget(deps, input, exec.agent) !== undefined
+        && input.approveStageIds !== undefined
+        && input.approveStageIds.length > 0) {
+        throw new PatentToolError(
+          'invalid_tool_input',
+          'patent_workflow_run: 本部署的审批门直接询问 approval 服务（approveStageGates），approveStageIds 不再作为放行依据；去掉该参数后重跑，让每个审批门自行取用户决策。关闭 approveStageGates 或改用后台运行时才接受该参数。',
+          { tool: 'patent_workflow_run' },
+        )
+      }
       const provider = buildManifestProvider(deps, exec, manifestId, input.caseId)
       // Input parsing happens here, not inside the run: malformed arguments must
       // fail the call, never register a job that then reports its own failure.
@@ -403,6 +425,7 @@ export function createPatentWorkflowRunTool(deps: PatentWorkflowRunDeps = {}): T
         ctx: buildRunContext(input),
         input,
         cwd,
+        callId: exec.callId,
         ...(exec.agent !== undefined ? { agent: exec.agent } : {}),
       }
       if (input.run_in_background !== true) {
@@ -435,8 +458,10 @@ interface ManifestRunInput {
   input: PatentWorkflowRunInput
   /** Working directory the run paths resolve against. */
   cwd: string
+  /** The calling tool call, so a gate approval attaches to the same call. */
+  callId: ToolCallId
   /** Calling agent whose session records the run's evidence ledger, when present. */
-  agent?: PatentAgent
+  agent?: NonNullable<ToolRunContext['agent']>
 }
 
 /**
@@ -468,6 +493,59 @@ function buildManifestProvider(
 }
 
 /**
+ * Resolve the live-gate participants for this call: the deployment opted in,
+ * the approval lookup is wired, a calling agent exists to attribute the
+ * question, and the run stays in the caller's turn (a background job outlives
+ * it, and the service only answers inside an open turn).
+ * @param deps - tool dependencies carrying the opt-in and the approval lookup.
+ * @param input - the tool call arguments.
+ * @param agent - the calling agent, when the call has one.
+ * @returns the approval lookup and agent, or undefined when gates stay pauses.
+ */
+function liveGateTarget(
+  deps: PatentWorkflowRunDeps,
+  input: PatentWorkflowRunInput,
+  agent: ToolRunContext['agent'],
+): { lookup: () => ApprovalFace | undefined; agent: NonNullable<ToolRunContext['agent']> } | undefined {
+  const lookup = deps.approval
+  if (deps.approveStageGates !== true
+    || lookup === undefined
+    || agent === undefined
+    || input.run_in_background === true) {
+    return undefined
+  }
+  return { lookup, agent }
+}
+
+/**
+ * Build the stage-handler registry for one run.
+ *
+ * A foreground call in a deployment that opted into `approveStageGates` swaps
+ * the default `approval-gate` for the live one, so the gate asks the deployment
+ * instead of trusting the caller's `approveStageIds`. A background job keeps
+ * the default gate: the approval service only answers inside an open turn, and
+ * the job outlives the turn that started it.
+ * @param run - the run inputs carrying the agent, call id, and approval lookup.
+ * @param signal - the run's cancellation, forwarded to the approval question.
+ * @returns the base registry or a private copy with the live gate registered.
+ */
+function runHandlerRegistry(run: ManifestRunInput, signal: AbortSignal): StageHandlerRegistry {
+  const base = run.deps.handlers ?? globalStageHandlerRegistry
+  const target = liveGateTarget(run.deps, run.input, run.agent)
+  if (target === undefined) return base
+  const handlers = new StageHandlerRegistry()
+  for (const handler of base.list()) handlers.register(handler)
+  handlers.register(new LiveApprovalGateHandler({
+    agent: target.agent,
+    callId: run.callId,
+    manifestId: run.manifest.id,
+    service: target.lookup,
+    signal,
+  }))
+  return handlers
+}
+
+/**
  * Execute one manifest run and map its result into the tool's canonical value.
  * Foreground calls pass the tool-call signal; a background job passes its own,
  * because the run outlives the call that started it.
@@ -481,10 +559,10 @@ async function runManifest(
   signal: AbortSignal,
   onStage?: (stageId: string, index: number, total: number) => void,
 ): Promise<PatentWorkflowRunOutput> {
-  const { manifest, deps, provider, ctx: workflowCtx, input, cwd } = run
+  const { manifest, provider, ctx: workflowCtx, input, cwd } = run
   const executor = createChainStageExecutor(provider, 'patent_workflow_run')
   const { result, persistTarget } = await runWorkflowWithPersist(manifest, workflowCtx, executor, {
-    handlers: deps.handlers ?? globalStageHandlerRegistry,
+    handlers: runHandlerRegistry(run, signal),
     atoms: globalAtomRegistry,
     provider,
     signal,
@@ -499,9 +577,12 @@ async function runManifest(
   const persistNote = persistTarget
     ? await writeRunArtifacts(persistTarget, manifest, result)
     : '持久化: 未启用（未提供 caseId）'
-  const interruptNote = result.interrupted
-    ? `⏸ 审批门暂停: "${result.interrupted.stageId}"（${result.interrupted.message}）——等待人工确认，后续阶段未执行`
-    : undefined
+  const liveOutcome = result.interrupted?.data['outcome']
+  const interruptNote = result.interrupted === undefined
+    ? undefined
+    : typeof liveOutcome === 'string'
+      ? `⏸ 审批门未放行（${liveOutcome}）: "${result.interrupted.stageId}"（${result.interrupted.message}）——后续阶段未执行；不要用 approveStageIds 绕过本次决定`
+      : `⏸ 审批门暂停: "${result.interrupted.stageId}"（${result.interrupted.message}）——等待人工确认；带 approveStageIds 重跑可继续`
   appendWorkflowRunEvents(run.agent, result, persistTarget?.runId)
 
   return {

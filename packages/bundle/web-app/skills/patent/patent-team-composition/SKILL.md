@@ -70,7 +70,7 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 
 成员：检索员、撰写员、对立审查员、技术专家、申请人代理、制图员、文档专员。目标：新申请文件（权利要求书+说明书+附图与附图标记表）并以正式文书交付。
 
-执行面分工：**captain 用 `patent_workflow_run(manifestId=patent_disclosure_v1)` 一次性执行到 `review_gate` 暂停**；成员不调用该 manifest 的任何单个阶段（工具没有阶段切片入口），只对 captain 产出的阶段结果做复核、互证与验收。表中「责任面」列写 `manifest` 的行只能由 captain 执行，写 `团队` 的行由成员产出。
+执行面分工：**captain 用 `patent_workflow_run(manifestId=patent_disclosure_v1)` 一次性执行到 `review_gate`，门前由用户放行**（本部署打开 `approveStageGates`：前台运行在审批门取用户决策，放行即继续，拒绝即带原因暂停）；成员不调用该 manifest 的任何单个阶段（工具没有阶段切片入口），只对 captain 产出的阶段结果做复核、互证与验收。表中「责任面」列写 `manifest` 的行只能由 captain 执行，写 `团队` 的行由成员产出。
 
 | 任务 | 主题 | 责任面 | 负责人 | 依赖 |
 |---|---|---|---|---|
@@ -86,7 +86,7 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 | t10 | 正式文档输出：权利要求书+说明书（claims-spec 渲染），矫正 + 美化 | 团队 | 文档专员 | t9 |
 | t11 | 交付收口：产物登记 + HITL 放行 | 团队 | captain | t10 |
 
-返工纪律：t8 的返工**只能重跑 manifest**（`approveStageIds` 放行已批准的审批门），成员不得手写替换说明书或权利要求。成员的职责是判断「缺哪一类、由谁解释」，不是代写。
+返工纪律：t8 的返工**只能重跑 manifest**（重跑时审批门再次询问用户；`approveStageIds` 只在关闭 `approveStageGates` 的部署使用，本部署传入会被拒绝），成员不得手写替换说明书或权利要求。成员的职责是判断「缺哪一类、由谁解释」，不是代写。
 
 `slop_clean` 是 warn 级：未通过只报告，不阻断交付，不得据此打回。质量判定由 `spec_check`/`enablement_report`/`claim_breadth` 承担。
 
@@ -207,11 +207,11 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 
 ### 执行面纪律（撰写与答复场景）
 
-`patent_workflow_run` 只有「整 manifest」与「graph」两条路径，`approveStageIds` 只跳过已批准的审批门，没有「只跑某几个阶段」的入口；`flexible_plan` 的 `run` 只执行调用方自定义的 stage，不是内置 manifest 切片。因此：
+`patent_workflow_run` 只有「整 manifest」与「graph」两条路径，`approveStageIds` 只在关闭 `approveStageGates` 的部署用于跳过已批准的审批门（本部署开启时传入会被拒绝），没有「只跑某几个阶段」的入口；`flexible_plan` 的 `run` 只执行调用方自定义的 stage，不是内置 manifest 切片。因此：
 
-- **执行权单向**：captain 用 `patent_workflow_run` 跑完整 manifest 到审批门暂停，成员只读该次运行的阶段产出。成员不得声明「已执行 `claim_strategy`」「已跑 `tighten`」——它没有这个入口，声称执行只会掩盖手写产物。
+- **执行权单向**：captain 用 `patent_workflow_run` 跑完整 manifest 到审批门，前台运行在门前取用户决策（放行继续，拒绝暂停；后台运行仍暂停，需带 `approveStageIds` 重跑），成员只读该次运行的阶段产出。成员不得声明「已执行 `claim_strategy`」「已跑 `tighten`」——它没有这个入口，声称执行只会掩盖手写产物。
 - **成员动作用词**：复核、互证、验收、解释、判定返工类别。不写「代写」「补写」「重排」说明书或权利要求。
-- **返工只能重跑**：需要改写说明书、权利要求或答复正文时，由 captain 重跑 manifest（必要时用 `approveStageIds` 放行已确认的门）。成员手写的替换稿不进交付链，因为它绕过了 `claim_strategy`/`draft_claims` 的确定性渲染与 `spec_check`/`enablement_report` 的判定。
+- **返工只能重跑**：需要改写说明书、权利要求或答复正文时，由 captain 重跑 manifest，重跑时由用户在审批门再次放行。成员手写的替换稿不进交付链，因为它绕过了 `claim_strategy`/`draft_claims` 的确定性渲染与 `spec_check`/`enablement_report` 的判定。
 - **派工「禁止」段的固定末句**：任务派工文本须附「不自行执行或重跑 manifest 阶段；发现缺口即上报类别，不重试、不代写」。
 
 ## 等待纪律
@@ -241,6 +241,7 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 ## 协作纪律
 
 - 单一事实源：团队任务状态只是投影，事件日志与案卷产物落盘（`_matter-log.md`）为唯一事实源；成员完成即回报 captain。
+- 恢复点：captain 在案卷目录维护 `progress.md`，只记「目标、当前阻塞原因、下一步」三项，每轮 `patent_teams_wait` 醒来或重新接管时更新；任务状态与成员名单以 `patent_teams_status` 为准，不复制进台账，台账也不进交付物。
 - 立场配对：复审/无效 = 请求方（申请人代理/无效请求人）× 防御方（专利权人）+ 合议组（裁判）；诉讼 = 专利权人（原告）× 被告代理人（抗辩）+ 裁判（裁决）+ 调查官（技术查明）。每个立场一个成员，不合并；对抗意见冲突由 captain 收口并说明取舍理由。
 - 角色边界：技术专家不评法律论证，代理人/请求人/被告不代写对方文书，裁判不参与任一方策略起草，案件管理员不评技术内容；文档专员**不改实体结论**（权利要求布局、无效理由组合、诉请金额等仍归对应角色与 HITL），只做文本组织、矫正与美化；制图员是图面与标号的唯一权威源，**不改实体结论**（权利要求布局、保护范围、修改方案仍归对应角色与 HITL），也不评新颖性/创造性。
 - 期限与流程：答复期限、复审 3 个月与恢复窗口、补正期限、送达推定日（+15 日）由案件管理员或 captain 核验，禁止心算。
@@ -249,6 +250,4 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 - 撰写与答复的实体判定以 manifest 记录为准：`spec_check`、`enablement_report`（A26.3）、`claim_breadth`（A26.4）、`draft_review`（按类别回退）、`response_check`、`amendment_basis`（A33）的通过状态进交付依据；`slop_clean`（披露链，warn 级）只报告不阻断，`slop_gate`（答复链）未过会回退 `draft` 重写。
 - 文档交付：正式文档按专利文书输出规范（`patent-document-polish` 技能）走场景→模板映射，渲染 html/pdf（或 docx，officecli 可用时），产物登记 `_matter-log.md`；附图以制图员产出的附图附件页随附（`figure-deliverable.md` 列明各图路径与图号），交付说明里写明附图是渲染文档之外的独立附件——`render_patent_document` 的模板只承载附图说明文字，不嵌入图片。
 - 收口必经：每个场景的最终收口任务必须包含 `patent_workflow_run`（按场景 manifest：立案=patent_patentability_v1、撰写=patent_disclosure_v1 并跑到 `review_gate` 放行、答复=patent_oa_response_v1 并跑到 `approval` 放行、复审=patent_reexamination_v1、无效=patent_invalidation_v1、诉讼=patent_infringement_v1）；交付依据是 stage 记录，不是口头结论；补正类无内置 manifest 入口，以替换页逐项核验记录替代。
-- 文档交付：正式文档按专利文书输出规范（`patent-document-polish` 技能）走场景→模板映射，渲染 html/pdf（或 docx，officecli 可用时），产物登记 `_matter-log.md`；附图以制图员产出的附图附件页随附（`figure-deliverable.md` 列明各图路径与图号），交付说明里写明附图是渲染文档之外的独立附件——`render_patent_document` 的模板只承载附图说明文字，不嵌入图片。
-- 收口必经：每个场景的最终收口任务必须包含 `patent_workflow_run`（按场景 manifest：立案=patent_patentability_v1、撰写=patent_disclosure_v1 与 patent_novelty_v1/patent_inventiveness_v1、答复=patent_oa_response_v1、复审=patent_reexamination_v1、无效=patent_invalidation_v1、诉讼=patent_infringement_v1）；交付依据是 stage 记录，不是口头结论；补正类无内置 manifest 入口，以替换页逐项核验记录替代。
 - 收口：全部任务完成后 `patent_teams_delete` 归档团队；归档保留完整成员与任务历史，可随时复查。

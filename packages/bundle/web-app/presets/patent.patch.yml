@@ -296,6 +296,11 @@
               - id: patent-tools
                 name: '@deepseek-ai/dsh-patent-tools'
                 config:
+                  # 审批门是执行点：前台 manifest 运行到达 approval-gate 时向本部署的
+                  # approval 服务取一次用户决策，放行即继续，拒绝/取消/无应答带原因暂停。
+                  # 后台运行保持原「暂停后由 approveStageIds 续跑」契约（审批服务只回答
+                  # 开着的回合，而 job 会活过启动它的回合）。
+                  approveStageGates: true
                   # analyze_patent_figure sends the drawing to this route, so the route's
                   # catalog entry MUST declare image input: the gate reads declared
                   # modalities only, and a model the catalog does not carry (or carries

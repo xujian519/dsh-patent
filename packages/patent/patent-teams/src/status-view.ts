@@ -12,7 +12,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { roleContract, workerDeliverables } from '@deepseek-ai/dsh-patent-workflow'
-import { acknowledgeMailbox, readUnreadMailbox, withMailboxLease } from './mailbox.ts'
+import { acknowledgeMailbox, readMailboxSnapshot, withMailboxLease } from './mailbox.ts'
 import { memberActivity } from './members.ts'
 import type { TeamScheduler } from './scheduler.ts'
 import { CAPTAIN_KEY } from './state.ts'
@@ -115,15 +115,16 @@ export async function buildTeamStatus(
       mailboxWarnings.push(`${agentKey} mailbox line ${lineNumber}`)
     }
   }
-  const captainInbox = identity.kind === 'captain'
-    ? await readUnreadMailbox(
+  const captainSnapshot = identity.kind === 'captain'
+    ? await readMailboxSnapshot(
       stateRoot,
       team.id,
       CAPTAIN_KEY,
       reportMalformed(CAPTAIN_KEY),
       host.deliveryLeaseMs,
     )
-    : []
+    : { unread: [], leased: [] }
+  const captainInbox = captainSnapshot.unread
   const visibleCaptainInbox = captainInbox.slice(-10)
   const memberInboxes: Record<string, PatentTeamsMemberInbox> = {}
   let memberAcknowledged: string[] = []
@@ -131,21 +132,22 @@ export async function buildTeamStatus(
     ? members
     : members.filter(member => member.name === identity.name)
   for (const member of visibleMembers) {
-    const messages = await readUnreadMailbox(
+    const { unread: messages, leased } = await readMailboxSnapshot(
       stateRoot,
       team.id,
       member.name,
       reportMalformed(member.name),
       host.deliveryLeaseMs,
     )
-    if (messages.length === 0) continue
+    if (messages.length === 0 && leased.length === 0) continue
     if (identity.kind === 'captain') {
       // The captain only previews a member's inbox; that member consumes it.
+      const latest = messages[messages.length - 1]
       memberInboxes[member.name] = {
         count: messages.length,
-        omitted: messages.length - 1,
-        /* v8 ignore next -- the empty-mailbox continue above guarantees a last message */
-        latest: messages[messages.length - 1]?.content.slice(0, 200) ?? '',
+        leased: leased.length,
+        omitted: Math.max(messages.length - 1, 0),
+        ...latest === undefined ? {} : { latest: latest.content.slice(0, 200) },
       }
       continue
     }
@@ -155,6 +157,7 @@ export async function buildTeamStatus(
     memberAcknowledged = visible.map(message => message.id)
     memberInboxes[member.name] = {
       count: messages.length,
+      leased: leased.length,
       omitted: messages.length - visible.length,
       messages: visible.map(message => ({
         from: message.from,
@@ -176,6 +179,7 @@ export async function buildTeamStatus(
       ts: message.ts,
     })),
     captain_inbox_omitted: captainInbox.length - visibleCaptainInbox.length,
+    captain_inbox_leased: captainSnapshot.leased.length,
     member_inboxes: memberInboxes,
     mailbox_warnings: mailboxWarnings,
     mailbox_warning_count: mailboxWarningCount,

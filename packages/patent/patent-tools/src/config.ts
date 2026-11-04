@@ -97,6 +97,12 @@ export interface Config {
   inkscapeExecutable?: string
   /** Inkscape 单次文字转路径超时（毫秒）；默认 30000。仅 figureTextToPath 使用。 */
   inkscapeRenderTimeoutMs?: number
+  /**
+   * 在 manifest 审批门处询问本部署的 approval 服务；默认 false 保持「暂停后由
+   * approveStageIds 续跑」的契约。开启后，前台运行在门前取一次用户决策，放行即
+   * 继续，拒绝/取消/无应答则带原因暂停；后台运行仍暂停（审批服务只回答开着的回合）。
+   */
+  approveStageGates?: boolean
   /** 个人工作台 API 基址覆盖；缺省在 web 组合内自动取本进程 webServer 端口。 */
   workbenchBaseUrl?: string
   /** 可配置工作根目录（相对或绝对路径；其下每案一个 <案号>/，内含 _matter-log.md）。未配置时回退 <cwd>/patent-workspace，该回退不是案卷真源。部署应设成本机工作根目录，典型值为 /Users/xujian/工作。 */
@@ -154,6 +160,7 @@ export const Config: z<Config> = z.object({
   figureMinFontMm: z.number().min(Number.MIN_VALUE),
   inkscapeExecutable: z.string(),
   inkscapeRenderTimeoutMs: z.number().step(1).min(1).default(DEFAULT_INKSCAPE_RENDER_TIMEOUT_MS),
+  approveStageGates: z.boolean(),
   workbenchBaseUrl: z.string(),
   workbenchCaseRoot: z.string(),
   dotFont: z.string(),

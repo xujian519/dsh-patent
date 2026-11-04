@@ -88,6 +88,8 @@ interface MemberAdmission {
   memberKey: string
   /** Configured team size cap. */
   maxMembers: number
+  /** Role id the member will carry, when the captain supplied one. */
+  role?: string
 }
 
 /**
@@ -108,7 +110,7 @@ async function freshAdmitted(
   admission: MemberAdmission,
 ): Promise<TeamState> {
   const fresh = await freshCaptainTeam(stateRoot, teamId, captainId)
-  requireAddableMember(fresh, admission.rawName, admission.memberKey, admission.maxMembers)
+  requireAddableMember(fresh, admission.rawName, admission.memberKey, admission.maxMembers, admission.role)
   return fresh
 }
 
@@ -138,7 +140,12 @@ export async function addMember(
   if (memberKey === CAPTAIN_KEY) {
     throw new Error(`member name "${args.name}" is reserved for the captain`)
   }
-  const admission: MemberAdmission = { rawName: args.name, memberKey, maxMembers: host.maxMembers }
+  const admission: MemberAdmission = {
+    rawName: args.name,
+    memberKey,
+    maxMembers: host.maxMembers,
+    ...args.role === undefined ? {} : { role: args.role },
+  }
   // Read-only spawn view: the persona reads immutable team identity; a
   // concurrent task change can only stale the welcome's task count.
   const snapshot = await withTeamLock(

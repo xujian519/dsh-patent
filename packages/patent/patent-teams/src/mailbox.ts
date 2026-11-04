@@ -125,6 +125,49 @@ export async function readMailbox(
   }
 }
 
+/** Unread mailbox messages split by whether a live-delivery lease still holds them. */
+export interface MailboxSnapshot {
+  /** Unread messages no unexpired delivery claim holds; a delivery attempt may take them now. */
+  unread: TeamMessage[]
+  /** Unread messages claimed for live delivery whose lease has not yet expired. */
+  leased: TeamMessage[]
+}
+
+/**
+ * Read one mailbox and split its unread messages by live-delivery lease.
+ *
+ * A leased message is invisible to {@link readUnreadMailbox} until its lease
+ * expires, so status needs both halves to distinguish "nothing arrived" from
+ * "a message is waiting for delivery".
+ * @param stateRoot - resolved absolute state root directory.
+ * @param teamId - the team id.
+ * @param agentKey - `captain` or a member name.
+ * @param onMalformedLine - optional diagnostic hook for malformed records.
+ * @param deliveryLeaseMs - how long a live-delivery claim stays exclusive
+ * before the message is retryable (defaults to
+ * {@link DEFAULT_MAILBOX_DELIVERY_LEASE_MS}).
+ * @returns unread and leased messages, both oldest first and empty when the mailbox does not exist.
+ */
+export async function readMailboxSnapshot(
+  stateRoot: string,
+  teamId: string,
+  agentKey: string,
+  onMalformedLine?: (lineNumber: number, error: unknown) => void,
+  deliveryLeaseMs = DEFAULT_MAILBOX_DELIVERY_LEASE_MS,
+): Promise<MailboxSnapshot> {
+  const now = Date.now()
+  const snapshot: MailboxSnapshot = { unread: [], leased: [] }
+  for (const message of await readMailbox(stateRoot, teamId, agentKey, onMalformedLine)) {
+    if (message.readAt !== undefined) continue
+    if (message.deliveryClaimedAt !== undefined && now - message.deliveryClaimedAt < deliveryLeaseMs) {
+      snapshot.leased.push(message)
+      continue
+    }
+    snapshot.unread.push(message)
+  }
+  return snapshot
+}
+
 /**
  * Read only messages that have not been acknowledged by their recipient,
  * excluding still-claimed deliveries whose lease has not yet expired.
@@ -144,11 +187,7 @@ export async function readUnreadMailbox(
   onMalformedLine?: (lineNumber: number, error: unknown) => void,
   deliveryLeaseMs = DEFAULT_MAILBOX_DELIVERY_LEASE_MS,
 ): Promise<TeamMessage[]> {
-  const now = Date.now()
-  return (await readMailbox(stateRoot, teamId, agentKey, onMalformedLine))
-    .filter(message => message.readAt === undefined
-      && (message.deliveryClaimedAt === undefined
-        || now - message.deliveryClaimedAt >= deliveryLeaseMs))
+  return (await readMailboxSnapshot(stateRoot, teamId, agentKey, onMalformedLine, deliveryLeaseMs)).unread
 }
 
 async function mutateMailbox(

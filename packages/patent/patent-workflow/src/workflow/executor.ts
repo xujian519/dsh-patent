@@ -98,6 +98,9 @@ export async function runStageOnce(
           ...(options.provider !== undefined ? { provider: options.provider } : {}),
           ...(options.signal !== undefined ? { signal: options.signal } : {}),
         })
+        // 审批门在 handler 内取得现场放行时返回同一放行标记；它只表达本次决定，
+        // 因此与预批准一样在这里剥离，绝不写入共享 state。
+        const grantedByHandler = isApprovalGateHandler(handler) && segment[APPROVAL_GRANTED_KEY] === true
         // 降级诊断是阶段局部契约：剥离后不写入共享 state，避免上一轮错误残留；
         // 终态失败直接产出可读原因，临时失败（LLM/检索）按 maxRetries 重试。
         const diagnostic = segment[DEGRADED_ERROR_KEY]
@@ -107,6 +110,7 @@ export async function runStageOnce(
         Reflect.deleteProperty(delta, DEGRADED_ERROR_KEY)
         Reflect.deleteProperty(delta, DEGRADED_RETRYABLE_KEY)
         Reflect.deleteProperty(delta, REVISION_SIGNALS_KEY)
+        Reflect.deleteProperty(delta, APPROVAL_GRANTED_KEY)
         // 主输出键 = atom.outputSchema[0]（对齐 Mady 约定，文本/JSON 均可）；兜底按 stage.id 引用。
         const mainKey = stage.atom !== undefined ? options.atoms.lookup(stage.atom)?.outputSchema[0] : undefined
         const raw = mainKey !== undefined ? delta[mainKey] : undefined
@@ -131,8 +135,9 @@ export async function runStageOnce(
           const fallback = state[stage.id]
           output = typeof fallback === 'string' ? fallback : fallback === undefined ? '' : JSON.stringify(fallback, null, 2)
         }
-        // 已批准审批门放行后无实质输出：占位避免被标记 degraded（语义 = 已人工批准）。
-        if (approvedGate && output.trim().length === 0) {
+        // 审批门放行后无实质输出：占位避免被标记 degraded（语义 = 已人工批准）。
+        // 预批准与 handler 内现场放行共享这一占位。
+        if ((approvedGate || grantedByHandler) && output.trim().length === 0) {
           output = APPROVAL_GRANTED_OUTPUT
         }
         state[stage.id] = output

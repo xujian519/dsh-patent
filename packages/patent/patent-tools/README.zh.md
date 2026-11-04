@@ -78,6 +78,7 @@ Schemastery 配置，所有字段可选。
 | `maxTokens` | number | — | LLM 消费工具的输出 token 上限（可选）；省略时用 provider 默认值。 |
 | `workflowStageBudget` | number | `27` | 单个内置工作流 manifest 允许声明的最大阶段数；超过即插件加载失败。 |
 | `workflowLlmStageBudget` | number | `14` | 单个内置工作流 manifest 允许声明的最大模型调用阶段数：未声明 atom 的阶段与契约标记 `usesModel` 的原子计入；超过即插件加载失败。 |
+| `approveStageGates` | boolean | `false` | 前台 manifest 运行到达 `approval-gate` 时向本部署的 `approval` 服务取一次决策：放行则继续，拒绝、取消、无应答者或 `never` 策略都会带结果名暂停。此类调用会拒绝 `approveStageIds`，模型无法自行声明已放行。后台运行保持「暂停后由 `approveStageIds` 续跑」契约，因为审批服务只在开着的回合内应答。 |
 | `noteDir` | string | `<cwd>/99-知识库` | `knowledge_note_save` 的知识笔记目录（绝对或相对 cwd）。 |
 | `figureIndexFile` | string | `<cwd>/.sati/figures-index.json` | 附图索引文件：`analyze_patent_figure` 写入分析条目、`search_patent_figure` 检索（绝对或相对 cwd）。 |
 | `chemistryIndexFile` | string | `<cwd>/.sati/chemistry-index.json` | `recognize_chemical_structure` 写入的化学索引文件（绝对或相对 cwd）。 |

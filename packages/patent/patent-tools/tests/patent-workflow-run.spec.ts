@@ -20,6 +20,7 @@ import {
 } from '@deepseek-ai/dsh-patent-core'
 import { JobId } from '@deepseek-ai/dsh-jobs'
 import type { JobHooks, JobSpec, JobView } from '@deepseek-ai/dsh-jobs'
+import type { ApprovalRequest } from '@deepseek-ai/dsh-user-approval'
 import { PatentToolError } from '../src/error.ts'
 import { buildWorkflowRunContext } from '../src/tool/internal/workflow-helpers.ts'
 import {
@@ -218,6 +219,117 @@ describe('patent_workflow_run', () => {
     expect(stages.find(stage => stage.stageId === 'extract_problem')?.output).toContain('problem_insight')
   })
 
+  it('asks the approval service at the gate and continues when allowed', async () => {
+    const requests: ApprovalRequest[] = []
+    const tool = createPatentWorkflowRunTool({
+      model: fakeModel(),
+      search: fakeSearch,
+      approveStageGates: true,
+      approval: () => ({
+        policyOf: () => 'ask',
+        request: async (request) => {
+          requests.push(request)
+          return 'allowed-once'
+        },
+      }),
+    })
+    const value = (await tool.execute(
+      { manifestId: 'patent_disclosure_v1', input: 'technical disclosure', approveStageIds: [] },
+      toolExec(true),
+    )) as PatentWorkflowRunOutput
+    expect(value.interruptNote).toBeUndefined()
+    const approval = ((value.stages ?? []) as WorkflowStageResult[]).find(s => s.stageId === 'review_gate')
+    expect(approval?.output).toBe('APPROVED')
+    expect(requests).toHaveLength(1)
+    expect(requests[0]?.toolName).toBe('patent_workflow_run')
+    expect(requests[0]?.reason).toContain('patent_disclosure_v1')
+  })
+
+  it('keeps the pause contract when the switch is on but no approval lookup is wired', async () => {
+    const tool = createPatentWorkflowRunTool({
+      model: fakeModel(),
+      search: fakeSearch,
+      approveStageGates: true,
+    })
+    const value = (await tool.execute(
+      { manifestId: 'patent_disclosure_v1', input: 'technical disclosure' },
+      toolExec(true),
+    )) as PatentWorkflowRunOutput
+    expect(value.interruptNote).toContain('审批门暂停')
+    expect(value.interruptNote).not.toContain('未挂载审批服务')
+  })
+
+  it('keeps the pause contract when the call carries no agent', async () => {
+    const tool = createPatentWorkflowRunTool({
+      model: fakeModel(),
+      search: fakeSearch,
+      approveStageGates: true,
+      approval: () => ({ policyOf: () => 'ask', request: async () => 'allowed-once' }),
+    })
+    const value = (await tool.execute(
+      { manifestId: 'patent_disclosure_v1', input: 'technical disclosure' },
+      exec,
+    )) as PatentWorkflowRunOutput
+    expect(value.interruptNote).toContain('审批门暂停')
+  })
+
+  it('pauses at the gate when the user rejects the approval', async () => {
+    const tool = createPatentWorkflowRunTool({
+      model: fakeModel(),
+      search: fakeSearch,
+      approveStageGates: true,
+      approval: () => ({ policyOf: () => 'ask', request: async () => 'rejected' }),
+    })
+    const value = (await tool.execute(
+      { manifestId: 'patent_disclosure_v1', input: 'technical disclosure' },
+      toolExec(true),
+    )) as PatentWorkflowRunOutput
+    expect(value.completed).toBe(false)
+    expect(value.interruptNote).toContain('未放行（rejected）')
+    expect(value.interruptNote).toContain('review_gate')
+  })
+
+  it('pauses with an unavailable refusal when no approval service is mounted', async () => {
+    const tool = createPatentWorkflowRunTool({
+      model: fakeModel(),
+      search: fakeSearch,
+      approveStageGates: true,
+      approval: () => undefined,
+    })
+    const value = (await tool.execute(
+      { manifestId: 'patent_disclosure_v1', input: 'technical disclosure' },
+      toolExec(true),
+    )) as PatentWorkflowRunOutput
+    expect(value.interruptNote).toContain('未放行（unavailable）')
+    expect(value.interruptNote).toContain('未挂载审批服务')
+  })
+
+  it('refuses approveStageIds while gates run live', async () => {
+    const tool = createPatentWorkflowRunTool({
+      model: fakeModel(),
+      search: fakeSearch,
+      approveStageGates: true,
+      approval: () => ({ policyOf: () => 'ask', request: async () => 'allowed-once' }),
+    })
+    await expect(tool.execute(
+      { manifestId: 'patent_disclosure_v1', input: 'technical disclosure', approveStageIds: ['review_gate'] },
+      toolExec(true),
+    )).rejects.toThrow('approveStageIds 不再作为放行依据')
+  })
+
+  it('keeps approveStageIds working when live gates are off', async () => {
+    const tool = createPatentWorkflowRunTool({
+      model: fakeModel(),
+      search: fakeSearch,
+      approval: () => ({ policyOf: () => 'ask', request: async () => 'rejected' }),
+    })
+    const value = (await tool.execute(
+      { manifestId: 'patent_disclosure_v1', input: 'technical disclosure', approveStageIds: ['review_gate'] },
+      toolExec(true),
+    )) as PatentWorkflowRunOutput
+    expect(value.interruptNote).toBeUndefined()
+  })
+
   it('disclosure manifest: prior-art filtering drops post-cutoff hits before novelty', async () => {
     const model: PatentModelPort = {
       stream: async function* (request) {
@@ -307,6 +419,31 @@ describe('patent_workflow_run', () => {
       exec,
     )
     await expect(done.hooks[0]!.done).resolves.toMatchObject({ status: 'completed', detail: 'completed' })
+  })
+
+  it('a background run pauses at the gate without asking the approval service', async () => {
+    const { jobs, hooks } = fakeJobRegistry()
+    let asked = 0
+    const tool = createPatentWorkflowRunTool({
+      model: fakeModel(),
+      search: fakeSearch,
+      jobs: () => jobs,
+      approveStageGates: true,
+      approval: () => ({
+        policyOf: () => 'ask',
+        request: async () => {
+          asked += 1
+          return 'allowed-once'
+        },
+      }),
+    })
+    await tool.execute(
+      { manifestId: 'patent_disclosure_v1', input: 'technical disclosure', run_in_background: true },
+      toolExec(true),
+    )
+    const outcome = await hooks[0]!.done
+    expect(outcome.detail).toBe('interrupted')
+    expect(asked).toBe(0)
   })
 
   it('a cancelled background job settles killed', async () => {

@@ -12,6 +12,7 @@ import {
   claimMailboxDelivery,
   createMessage,
   readMailbox,
+  readMailboxSnapshot,
   readUnreadMailbox,
   releaseMailboxDelivery,
 } from '../src/mailbox.ts'
@@ -622,6 +623,22 @@ describe('mailbox persistence', () => {
     await writeFile(join(root, 'alpha', 'inbox', 'captain.jsonl'), lines.join('\n'))
     const unread = await readUnreadMailbox(root, 'alpha', CAPTAIN_KEY)
     expect(unread.map(m => m.id)).toEqual(['claimed-expired', 'fresh'])
+  })
+
+  it('splits unread messages from those held by a live-delivery lease', async () => {
+    const root = await tmpRoot()
+    await mkdir(join(root, 'alpha', 'inbox'), { recursive: true })
+    const now = Date.now()
+    const lines = [
+      message('read', { readAt: now }),
+      message('claimed-recent', { deliveryClaimedAt: now }),
+      message('claimed-expired', { deliveryClaimedAt: now - 120_000 }),
+      message('fresh'),
+    ].map(m => JSON.stringify(m))
+    await writeFile(join(root, 'alpha', 'inbox', 'captain.jsonl'), lines.join('\n'))
+    const snapshot = await readMailboxSnapshot(root, 'alpha', CAPTAIN_KEY)
+    expect(snapshot.unread.map(m => m.id)).toEqual(['claimed-expired', 'fresh'])
+    expect(snapshot.leased.map(m => m.id)).toEqual(['claimed-recent'])
   })
 
   it('honors a custom delivery lease', async () => {

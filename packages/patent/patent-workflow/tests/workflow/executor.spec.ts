@@ -124,6 +124,23 @@ describe('runStageOnce', () => {
     expect(outcome.output).toBe('APPROVED')
   })
 
+  it('a handler that grants the gate itself yields APPROVED without leaking the marker', async () => {
+    const { handlers, atoms } = makeRegistry({
+      name: 'approval-gate',
+      category: 'gate',
+      execute: async () => ({ [APPROVAL_GRANTED_KEY]: true }),
+    })
+    const state: Record<string, unknown> = {}
+    const outcome = await runStageOnce(
+      stage({ atom: 'approval-gate' }),
+      state,
+      { ...emptyOptions, handlers, atoms },
+    )
+    expect(outcome.output).toBe('APPROVED')
+    expect(state['s1']).toBe('APPROVED')
+    expect(state[APPROVAL_GRANTED_KEY]).toBeUndefined()
+  })
+
   it('InterruptStageError propagates as interrupted (not degraded)', async () => {
     const { handlers, atoms } = makeRegistry({
       name: 'approval-gate',

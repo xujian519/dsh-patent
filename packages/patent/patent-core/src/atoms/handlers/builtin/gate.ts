@@ -63,12 +63,17 @@ export function isApprovalGateHandler(handler: StageHandler): boolean {
   return handler.name === 'approval-gate'
 }
 
-/** approval-gate 原子：人机审批门。 */
+/**
+ * approval-gate 原子：人机审批门。
+ *
+ * `review_keys` 列出这次放行决定应看到的产出键（如 `['draft']`）：现场取用户决策的审批门
+ * 把这些键的正文摘要附在审批问题上，放行者据此判断待确认内容；预批准路径与自定义门可省略。
+ */
 export const approvalGateAtom: Atom = {
   name: 'approval-gate',
   description: '人机审批门：挂起等待人工确认（返回中断错误，由上层恢复后继续；已批准时放行）',
   category: 'gate',
-  inputSchema: ['review_context', 'guardrail_level'],
+  inputSchema: ['review_context', 'guardrail_level', 'review_keys'],
   outputSchema: [],
 }
 

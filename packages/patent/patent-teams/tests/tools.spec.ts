@@ -73,8 +73,9 @@ function sampleStatus(): PatentTeamsStatus {
       { from: 'alice', content: 'finished the search' + 'y'.repeat(250), ts: 1 },
     ],
     captain_inbox_omitted: 0,
+    captain_inbox_leased: 0,
     member_inboxes: {
-      bob: { count: 1, omitted: 0, latest: 'please review' },
+      bob: { count: 1, leased: 0, omitted: 0, latest: 'please review' },
     },
     mailbox_warnings: ['bob mailbox line 3', 'bob mailbox line 9'],
     mailbox_warning_count: 2,
@@ -250,9 +251,11 @@ describe('registerPatentTeamsTools', () => {
     const status = sampleStatus()
     status.viewer = 'alice'
     status.captain_inbox_omitted = 2
+    status.captain_inbox_leased = 3
     status.member_inboxes = {
       alice: {
         count: 12,
+        leased: 1,
         omitted: 2,
         messages: [
           { from: 'captain', content: 'first', ts: 1 },
@@ -262,10 +265,24 @@ describe('registerPatentTeamsTools', () => {
     }
     const text = tools.get('patent_teams_status')!.output.render({}, status)
       .map(block => block.text).join('\n')
-    expect(text).toContain('Captain inbox (1, 2 older omitted):')
-    expect(text).toContain('Member inbox alice (12, 2 omitted):')
+    expect(text).toContain('Captain inbox (1, 3 in delivery, 2 older omitted):')
+    expect(text).toContain('Member inbox alice (12, 1 in delivery, 2 omitted):')
     expect(text).toContain('  - [captain] first')
     expect(text).toContain('  - [captain] second')
+  })
+
+  it('renders an inbox whose only messages are waiting for delivery', () => {
+    const ctx = new Context()
+    const tools = register(ctx, makeService())
+    const status = sampleStatus()
+    status.captain_inbox = []
+    status.captain_inbox_leased = 2
+    status.member_inboxes = { bob: { count: 0, leased: 1, omitted: 0 } }
+    const text = tools.get('patent_teams_status')!.output.render({}, status)
+      .map(block => block.text).join('\n')
+    expect(text).toContain('Captain inbox (0, 2 in delivery):')
+    expect(text).toContain('Member inbox bob (0, 1 in delivery):')
+    expect(text).not.toContain('latest — ')
   })
 
   it('renders a status without optional fields', async () => {
@@ -275,7 +292,8 @@ describe('registerPatentTeamsTools', () => {
       team_id: 'a', team_name: 'A', description: '', viewer: 'alice',
       members: [{ name: 'alice', role: '', provider: '', model: '', reasoning_effort: '', status: 'idle', activity: 'unspawned' }],
       tasks: [{ id: 't1', subject: 's', status: 'pending', assignee: '', dependencies: [], attempt: 0, attempt_id: '', reassigning: false }],
-      captain_inbox: [], captain_inbox_omitted: 0, member_inboxes: {}, mailbox_warnings: [], mailbox_warning_count: 0,
+      captain_inbox: [], captain_inbox_omitted: 0, captain_inbox_leased: 0,
+      member_inboxes: {}, mailbox_warnings: [], mailbox_warning_count: 0,
     }
     const text = tools.get('patent_teams_status')!.output.render({}, minimal)
       .map(block => block.text).join('\n')
@@ -298,7 +316,8 @@ describe('registerPatentTeamsTools', () => {
         { id: 't1', subject: 'ok', status: 'completed', assignee: 'alice', dependencies: [], attempt: 1, attempt_id: 'a1', reassigning: false, output: 'x', worker: 'patent-search-commander', contract_validation: { valid: true, missing_hard_fields: [], degraded: false } },
         { id: 't2', subject: 'bad', status: 'in_progress', assignee: 'alice', dependencies: [], attempt: 1, attempt_id: 'a2', reassigning: false, output: 'y', worker: 'patent-search-commander', gate_feedback: { score: 0.4, satisfied: false, failures: ['质量评分:0.40/1.0 未达 0.70', '内容充分性(0.10)'], feedback: 'revise' }, gate_rejections: 3 },
       ],
-      captain_inbox: [], captain_inbox_omitted: 0, member_inboxes: {}, mailbox_warnings: [], mailbox_warning_count: 0,
+      captain_inbox: [], captain_inbox_omitted: 0, captain_inbox_leased: 0,
+      member_inboxes: {}, mailbox_warnings: [], mailbox_warning_count: 0,
     }
     const text = tools.get('patent_teams_status')!.output.render({}, status)
       .map(block => block.text).join('\n')
@@ -319,7 +338,8 @@ describe('registerPatentTeamsTools', () => {
         attempt: 1, attempt_id: 'a1', reassigning: false, output: 'x', worker: 'patent-search-commander',
         contract_validation: { valid: false, missing_hard_fields: ['公开日', '对比文件'], degraded: true },
       }],
-      captain_inbox: [], captain_inbox_omitted: 0, member_inboxes: {}, mailbox_warnings: [], mailbox_warning_count: 0,
+      captain_inbox: [], captain_inbox_omitted: 0, captain_inbox_leased: 0,
+      member_inboxes: {}, mailbox_warnings: [], mailbox_warning_count: 0,
     }
     const text = tools.get('patent_teams_status')!.output.render({}, status)
       .map(block => block.text).join('\n')
@@ -337,14 +357,15 @@ describe('registerPatentTeamsTools', () => {
         attempt: 1, attempt_id: 'a1', reassigning: false, output: 'x',
         gate_feedback: { score: 1, satisfied: true, failures: [], feedback: '' },
       }],
-      captain_inbox: [], captain_inbox_omitted: 0,
-      member_inboxes: { bob: { count: 0, omitted: 0 } },
+      captain_inbox: [], captain_inbox_omitted: 0, captain_inbox_leased: 0,
+      member_inboxes: { bob: { count: 0, leased: 0, omitted: 0 } },
       mailbox_warnings: [], mailbox_warning_count: 0,
     }
     const text = tools.get('patent_teams_status')!.output.render({}, status)
       .map(block => block.text).join('\n')
     expect(text).not.toContain('gated')
-    expect(text).toContain('Member inbox bob (0): latest — ')
+    expect(text).toContain('Member inbox bob (0):')
+    expect(text).not.toContain('latest — ')
   })
 
   it('renders a status gate annotation with the default rejection count', () => {
@@ -358,7 +379,8 @@ describe('registerPatentTeamsTools', () => {
         attempt: 1, attempt_id: 'a1', reassigning: false,
         gate_feedback: { score: 0.2, satisfied: false, failures: ['内容充分性'], feedback: 'revise' },
       }],
-      captain_inbox: [], captain_inbox_omitted: 0, member_inboxes: {}, mailbox_warnings: [], mailbox_warning_count: 0,
+      captain_inbox: [], captain_inbox_omitted: 0, captain_inbox_leased: 0,
+      member_inboxes: {}, mailbox_warnings: [], mailbox_warning_count: 0,
     }
     const text = tools.get('patent_teams_status')!.output.render({}, status)
       .map(block => block.text).join('\n')

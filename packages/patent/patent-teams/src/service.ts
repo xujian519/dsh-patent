@@ -622,8 +622,10 @@ export interface PatentTeamsStatusMessage {
 
 /** One member-inbox view: a captain preview or the member's own full page. */
 export interface PatentTeamsMemberInbox {
-  /** Total unread messages in this mailbox. */
+  /** Unread messages available for delivery now. */
   count: number
+  /** Unread messages whose live-delivery lease has not expired, so they are not in `count`. */
+  leased: number
   /** Unread messages not included in this view. */
   omitted: number
   /** Latest-message preview in a captain's cross-member view. */
@@ -643,6 +645,8 @@ export interface PatentTeamsStatus {
   captain_inbox: PatentTeamsStatusMessage[]
   /** Unread captain messages older than the shown page. */
   captain_inbox_omitted: number
+  /** Unread captain messages held by an unexpired live-delivery lease. */
+  captain_inbox_leased: number
   member_inboxes: Record<string, PatentTeamsMemberInbox>
   mailbox_warnings: string[]
   mailbox_warning_count: number

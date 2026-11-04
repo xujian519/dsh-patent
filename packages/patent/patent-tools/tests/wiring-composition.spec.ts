@@ -20,6 +20,9 @@ import { PatentKnowledge } from '@deepseek-ai/dsh-patent-knowledge'
 import { DEFAULT_WORKFLOW_LLM_STAGE_BUDGET, DEFAULT_WORKFLOW_STAGE_BUDGET } from '../src/config.ts'
 import type { Config } from '../src/config.ts'
 import { registerPatentTools } from '../src/wiring.ts'
+import type { PatentWorkflowRunDeps } from '../src/tool/patent-workflow-run.ts'
+// Type-only: makes ctx.provide('approval', …) resolve.
+import type {} from '@deepseek-ai/dsh-user-approval'
 import { normalizeFigureAnalysis } from '../src/tool/analyze-patent-figure.ts'
 import type { GeneratePatentFigureDeps } from '../src/tool/figure-input.ts'
 import type { GenerateStructureFigureDeps } from '../src/tool/generate-structure-figure.ts'
@@ -42,6 +45,7 @@ const mock = vi.hoisted(() => ({
   law: [] as LawSearchDeps[],
   figures: [] as GeneratePatentFigureDeps[],
   structures: [] as GenerateStructureFigureDeps[],
+  workflowRun: [] as PatentWorkflowRunDeps[],
 }))
 
 vi.mock('../src/tool/patent-search.ts', async (importOriginal) => {
@@ -106,6 +110,17 @@ vi.mock('../src/tool/generate-structure-figure.ts', async (importOriginal) => {
     createGenerateStructureFigureTool: (deps: GenerateStructureFigureDeps) => {
       mock.structures.push(deps)
       return actual.createGenerateStructureFigureTool(deps)
+    },
+  }
+})
+
+vi.mock('../src/tool/patent-workflow-run.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/tool/patent-workflow-run.ts')>()
+  return {
+    ...actual,
+    createPatentWorkflowRunTool: (deps: PatentWorkflowRunDeps = {}) => {
+      mock.workflowRun.push(deps)
+      return actual.createPatentWorkflowRunTool(deps)
     },
   }
 })
@@ -319,6 +334,7 @@ describe('registerPatentTools 显式部署配置', () => {
       guidelineRevision: SHIPPED_GUIDELINE_REVISION,
       workflowStageBudget: DEFAULT_WORKFLOW_STAGE_BUDGET,
       workflowLlmStageBudget: DEFAULT_WORKFLOW_LLM_STAGE_BUDGET,
+      approveStageGates: true,
       graphvizRenderTimeoutMs: 12_345,
       freecadRenderTimeoutMs: 23_456,
       inkscapeRenderTimeoutMs: 3_456,
@@ -346,6 +362,20 @@ describe('registerPatentTools 显式部署配置', () => {
       noteDir: join(workspace(), 'notes'),
     }
   }
+
+  it('approveStageGates 打开时把审批门查询闭包接到本部署的 approval 服务', async () => {
+    const ctx = await mount(explicitConfig())
+    const deps = mock.workflowRun.at(-1)
+    expect(deps?.approveStageGates).toBe(true)
+    const service = { policyOf: () => 'ask', request: async () => 'allowed-once' }
+    ctx.provide('approval', service as never)
+    expect(deps?.approval?.()).toBe(service)
+  })
+
+  it('approveStageGates 缺省时保持暂停后 approveStageIds 的契约', async () => {
+    await mount({})
+    expect(mock.workflowRun.at(-1)?.approveStageGates).toBe(false)
+  })
 
   it('显式配置进入各渲染端口，依赖闭包按配置透传', async () => {
     await mount(explicitConfig(), { subprocess: true })

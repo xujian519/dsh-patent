@@ -6500,7 +6500,7 @@ Usage notes:
 
 ### `patent_workflow_run`
 
-自动执行声明式专利工作流（原子阶段）或领域图。Manifest 路径：8 个内置 manifest——patent_disclosure_v1（PFE 抽取 → 在先技术检索 → 逐特征新颖性 → 权利要求策略 → 确定性权利要求草稿 → 说明书与形式检查 → 换位审查（按缺口回退） → 法条缺口 → 审批门）、patent_novelty_v1、patent_inventiveness_v1（三步法）、patent_patentability_v1、patent_oa_response_v1（通知书解析 → 权利要求对照表 → 答复计划 → 草稿撰写 → 按篇幅预算删减 → 反套话门 → 对立复核 → 答复自检 → 审批）、patent_invalidation_v1（无效理由 → 对照表 → 新颖性与创造性）、patent_reexamination_v1（驳回理由 → 对照表 → 新颖性与创造性）、patent_infringement_v1（对照表 → 全面覆盖/等同核验 → 报告）。图路径（graph=novelty|inventiveness|enablement|citation-check）：一次调用运行完整领域图（LLM 节点 + 专利检索 + 确定性规则门）；citation-check 为确定性纯函数图，校验结论文本（inventiveness_conclusion/novelty_report/text）中的每个 `D<id>`/专利号引用均出现在 priorArt（以 JSON 数组传入）中。以 input 提供材料；当权利要求文本不应混入该材料时，另以 claims 单独传入。为说明书阶段传入 title/abstract/patentType/hasDrawings/figureAnalysis/drawingCount/abstractFigureNumber；实用新型无附图会使形式检查失败，未完成草案（含占位章节）会使 spec-check 失败，未传项出现在 spec_not_assessed。传 conflictingApplications（JSON 数组）运行 A22.2 第二句的抵触申请排查；条目需提供 filingDate/publicationDate 与调用方判定的 sameInvention 布尔值。抵触申请在目标申请日以前提出、在申请日以后公布，现有技术检索按定义找不到它们。传 evidence（JSON 数组）与 evidenceDeadline 运行无效/复审的 evidence-check 阶段；它报告形式缺陷、无正当理由的逾期提交、不早于截止日的公开日，以及未关联理由或权项的证据。复核门会暂停运行；再次调用时以 resumeCheckpointId（图路径）或 approveStageIds（manifest 路径）继续。提供 caseId 时，运行结果、Mermaid 图与图检查点持久化于 `<caseDir>/workflow-runs/`。需要模型端口。manifest 运行会占用当前回合直到跑完或在审批门暂停；需要立即拿到 job id 并继续其它工作（用 job_output 收集；job_kill 在下一个阶段边界停止它）时传 run_in_background: true；图路径仅支持前台执行。
+自动执行声明式专利工作流（原子阶段）或领域图。Manifest 路径：8 个内置 manifest——patent_disclosure_v1（PFE 抽取 → 在先技术检索 → 逐特征新颖性 → 权利要求策略 → 确定性权利要求草稿 → 说明书与形式检查 → 换位审查（按缺口回退） → 法条缺口 → 审批门）、patent_novelty_v1、patent_inventiveness_v1（三步法）、patent_patentability_v1、patent_oa_response_v1（通知书解析 → 权利要求对照表 → 答复计划 → 草稿撰写 → 按篇幅预算删减 → 反套话门 → 对立复核 → 答复自检 → 审批）、patent_invalidation_v1（无效理由 → 对照表 → 新颖性与创造性）、patent_reexamination_v1（驳回理由 → 对照表 → 新颖性与创造性）、patent_infringement_v1（对照表 → 全面覆盖/等同核验 → 报告）。图路径（graph=novelty|inventiveness|enablement|citation-check）：一次调用运行完整领域图（LLM 节点 + 专利检索 + 确定性规则门）；citation-check 为确定性纯函数图，校验结论文本（inventiveness_conclusion/novelty_report/text）中的每个 `D<id>`/专利号引用均出现在 priorArt（以 JSON 数组传入）中。以 input 提供材料；当权利要求文本不应混入该材料时，另以 claims 单独传入。为说明书阶段传入 title/abstract/patentType/hasDrawings/figureAnalysis/drawingCount/abstractFigureNumber；实用新型无附图会使形式检查失败，未完成草案（含占位章节）会使 spec-check 失败，未传项出现在 spec_not_assessed。传 conflictingApplications（JSON 数组）运行 A22.2 第二句的抵触申请排查；条目需提供 filingDate/publicationDate 与调用方判定的 sameInvention 布尔值。抵触申请在目标申请日以前提出、在申请日以后公布，现有技术检索按定义找不到它们。传 evidence（JSON 数组）与 evidenceDeadline 运行无效/复审的 evidence-check 阶段；它报告形式缺陷、无正当理由的逾期提交、不早于截止日的公开日，以及未关联理由或权项的证据。manifest 审批门有两种走向：部署打开 approveStageGates 时，前台运行在门前向审批服务取用户决策，放行即继续，拒绝则带结果名暂停（此类调用拒绝 approveStageIds，模型无法自行声明已放行）；未打开（或运行在后台）时暂停，等待再次调用并以 approveStageIds 续跑。后台运行始终暂停，因为审批服务只在开着的回合内应答。图路径在检查点暂停，再次调用时以 resumeCheckpointId 继续。提供 caseId 时，运行结果、Mermaid 图与图检查点持久化于 `<caseDir>/workflow-runs/`。需要模型端口。manifest 运行会占用当前回合直到跑完或在审批门暂停；需要立即拿到 job id 并继续其它工作（用 job_output 收集；job_kill 在下一个阶段边界停止它）时传 run_in_background: true；图路径仅支持前台执行。
 
 ```json
 {
@@ -6530,7 +6530,7 @@ Usage notes:
     },
     "approveStageIds": {
       "type": "array",
-      "description": "Manifest stage ids of already-approved approval gates (e.g. ['review_gate']); skipped on rerun.",
+      "description": "Manifest stage ids of already-approved approval gates (e.g. ['review_gate']); skipped on rerun. Refused on a foreground call when this deployment's approveStageGates is on, because the gate asks the approval service instead.",
       "items": {
         "type": "string"
       }
@@ -7957,7 +7957,7 @@ Add a durable continuable member. By default it snapshots the captain's current 
     },
     "role": {
       "type": "string",
-      "description": "Role of the member (e.g. case-manager, researcher, drafter, technical-expert, adversarial-reviewer, applicant-counsel, formal-examiner, invalidity-petitioner, patentee-defender, adjudicator, defendant-counsel, tech-investigator, illustrator, document-specialist)."
+      "description": "Registered role id for the member (one of: case-manager, researcher, drafter, technical-expert, adversarial-reviewer, applicant-counsel, formal-examiner, invalidity-petitioner, patentee-defender, adjudicator, defendant-counsel, tech-investigator, illustrator, document-specialist). An unregistered id is rejected."
     },
     "provider": {
       "type": "string",

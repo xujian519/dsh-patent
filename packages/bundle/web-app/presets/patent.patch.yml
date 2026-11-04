@@ -68,7 +68,7 @@
                 - 要素级比对：`claim_chart_build`（mode = infringement|invalidity|oa-response|reexamination|patentability）把权利要求拆成编号要素并逐要素映射到对比文件或被控产品；侵权模式另出确定性覆盖结论（缺任一要素即不落入、需等同的要素、等同矛盾）与风险等级——风险等级只由 risk 事实推出，未给 risk 时明写未计算。
                 - 证据形式要件：答复审查意见、无效宣告与复审中要引用的证据（书证、网页公开、使用公开、域外证据、外文证据等，对比文件另走检索链路）在写进意见前用 `evaluate_evidence` 判一次——它按相关性/合法性/真实性给分，并给出该证据类型特有的形式要件（域外证据须公证+认证、外文证据须附中文译本、互联网公开须四要件齐备）。**这是证据进入意见前的必经一步**：跳过后缺要件的证据会不被检查地进交付件；判出缺要件的先补再引。
                 - 程序文书与理由识别：`parse_office_action` 解析审查意见通知书（驳回类型、引用文献与相关性类别、涉及权项、审查员论点，确定性）；无效与复审的法定理由识别走 `patent_workflow_run` 的 grounds 阶段，理由表由 manifest 决定（无效理由表与复审理由表不同，复审另出专利权类型），未识别到理由时不替文书造理由；外观设计无效的 A23 理由表没有内置 manifest 入口，需显式用 `flexible_plan` 声明 grounds 阶段并给 params.ground_program: 'design'。
-                - 分析收口：新颖性/创造性/侵权/无效/复审/OA 答复遵循 preset 内对应技能（patent-novelty-inventiveness / patent-infringement / patent-invalidity / patent-oa-response / patent-reexamination）的分析框架与检查清单；**结论必须用 `patent_workflow` / `patent_workflow_run` 按 manifest 收口**（8 个内置 manifest：novelty、disclosure、inventiveness、patentability、oa_response、invalidation、reexamination、infringement），材料与权利要求分开传（input=程序文书或技术材料，claims=权利要求书；要素级原子读 claims），人工确认门暂停后带上 approveStageIds 重新调用。收口不是可选步骤：captain 的收口任务以 `patent_workflow_run` 的 stage 记录作为交付依据，未收口的分析不得进入文档交付——分析类与撰写类交付已由交付前置门禁强制要求本会话成功跑过一次 `patent_workflow_run`（撰写走 disclosure manifest）；补正（rectification-response）无 manifest 入口，以替换页逐项核验记录替代收口行，不在门禁之内。
+                - 分析收口：新颖性/创造性/侵权/无效/复审/OA 答复遵循 preset 内对应技能（patent-novelty-inventiveness / patent-infringement / patent-invalidity / patent-oa-response / patent-reexamination）的分析框架与检查清单；**结论必须用 `patent_workflow` / `patent_workflow_run` 按 manifest 收口**（8 个内置 manifest：novelty、disclosure、inventiveness、patentability、oa_response、invalidation、reexamination、infringement），材料与权利要求分开传（input=程序文书或技术材料，claims=权利要求书；要素级原子读 claims）；前台运行在审批门直接询问用户（approveStageGates），放行即继续，拒绝则带结果名暂停，此时传入 approveStageIds 会被拒绝，去掉该参数重跑；后台运行仍暂停，并以 approveStageIds 续跑。收口不是可选步骤：captain 的收口任务以 `patent_workflow_run` 的 stage 记录作为交付依据，未收口的分析不得进入文档交付——分析类与撰写类交付已由交付前置门禁强制要求本会话成功跑过一次 `patent_workflow_run`（撰写走 disclosure manifest）；补正（rectification-response）无 manifest 入口，以替换页逐项核验记录替代收口行，不在门禁之内。
                 - 长任务：一个案子注册一个 goal；多阶段作业用 todo 跟踪；需要脚本化流水线时用 workflow。
                 - 团队通道（仅流程一启用团队后适用）：组队与派工按 `patent-team-composition` 技能，组建需用户明确指示（见"作业模式"）。**团队内的派工、汇报、追问、等待一律走 `patent_teams_*` 工具（等成员用 `patent_teams_wait`，不要 sleep、起后台 job 轮询或反复 `patent_teams_status`），不要用通用 `send_message`、`wait_agent` 或官方 agent-team 的团队工具**——本组合未启用它们，那些通道送出的消息既不进团队邮箱，也不进团队事件日志与看板。未建团队时不需要任何 `patent_teams_*` 调用；仅当插件被禁用时回退单会话 + subagent_fork 专家互评。审批未放行导致的建队/收口失败是正常拒绝，不是通道故障：不得重试同一调用绕开用户，应把团队方案或结案陈词交给用户后再决定。
                 - 正式文档交付：正式交付文书（专利性意见/检索报告/OA 答复/权利要求书+说明书/补正书/复审请求书/无效意见/侵权比对意见/诉讼文书）按 preset 技能 `patent-document-polish` 走场景→模板映射与 `render_patent_document` 渲染；需要提交格式的申请文件 docx 用 `build_patent_filing` 成文（与渲染件同一份受控草案结构，项号、图号与表题由工具自动生成，体例由本部署的模板决定、是否写段落编号由 spec 的声明决定——本部署声明不写，不要自己排格式或手写编号），交付前用 `verify_patent_filing` 验收并在交付报告里引用其结论（分节、页眉、行距、字号、说明书名称与内部痕迹）。已经人工改过的 docx 再做修订走 officecli 技能与 tracked changes；不要用 headless Chrome、pandoc、LibreOffice 手工渲染交付件。只改本工作台创建的草稿，不改用户原件。
@@ -296,6 +296,11 @@
               - id: patent-tools
                 name: '@deepseek-ai/dsh-patent-tools'
                 config:
+                  # 审批门是执行点：前台 manifest 运行到达 approval-gate 时向本部署的
+                  # approval 服务取一次用户决策，放行即继续，拒绝/取消/无应答带原因暂停。
+                  # 后台运行保持原「暂停后由 approveStageIds 续跑」契约（审批服务只回答
+                  # 开着的回合，而 job 会活过启动它的回合）。
+                  approveStageGates: true
                   # analyze_patent_figure sends the drawing to this route, so the route's
                   # catalog entry MUST declare image input: the gate reads declared
                   # modalities only, and a model the catalog does not carry (or carries

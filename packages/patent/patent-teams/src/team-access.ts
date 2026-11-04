@@ -10,6 +10,7 @@
  */
 
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import { defaultRoleContracts, roleContract } from '@deepseek-ai/dsh-patent-workflow'
 import { CAPTAIN_KEY, findTeamByCaptain, findTeamByParticipant, readTeam } from './state.ts'
 import { sanitizeKey, stateRootOf, teamLockKey, withTeamLock } from './team-lock.ts'
 import type { TeamMember, TeamState, TeamTask } from './types.ts'
@@ -87,20 +88,40 @@ export function requireTask(team: TeamState, taskId: string): TeamTask {
 }
 
 /**
- * Admit one new member name into fresh state (inside the team lock). Runs
- * before the spawn and again before the persist, so a concurrent winner is
- * still rejected after its loser has already spawned.
+ * Admit one new member name and role into fresh state (inside the team lock).
+ * Runs before the spawn and again before the persist, so a concurrent winner
+ * is still rejected after its loser has already spawned.
+ *
+ * A role is validated here because a member with an unregistered role has no
+ * contract: it is spawned without persona or deliverable checks, and the typo
+ * surfaces only when its first task is accepted. An empty role is refused as
+ * well, so a supplied-but-blank value cannot produce the same member. Failing
+ * the add keeps the roster and `role-contracts.ts` in step.
  * @param team - the fresh team record.
  * @param rawName - the caller-supplied member name, for error text.
  * @param memberKey - the sanitized member key.
  * @param maxMembers - the configured team size cap.
+ * @param role - the optional role id the member will carry.
  */
-export function requireAddableMember(team: TeamState, rawName: string, memberKey: string, maxMembers: number): void {
+export function requireAddableMember(
+  team: TeamState,
+  rawName: string,
+  memberKey: string,
+  maxMembers: number,
+  role?: string,
+): void {
   if (team.members.some(candidate => sanitizeKey(candidate.name) === memberKey)) {
     throw new Error(`member name "${rawName}" has already been used in team "${team.name}"`)
   }
   if (team.members.filter(candidate => candidate.status !== 'removed').length >= maxMembers) {
     throw new Error(`team "${team.name}" is at its member cap (${maxMembers})`)
+  }
+  if (role !== undefined && role.trim() === '') {
+    throw new Error('member role must not be empty — omit the parameter to add a member without a role')
+  }
+  if (role !== undefined && roleContract(role) === undefined) {
+    const known = defaultRoleContracts().map(contract => contract.role).join(', ')
+    throw new Error(`unknown role "${role}" — use a registered role id (${known})`)
   }
 }
 

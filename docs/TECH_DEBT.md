@@ -361,7 +361,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `structure.long-functions` | 184 |
 | `structure.large-files` | 90 |
 | `structure.patent-large-files` | 10 |
-| `lint.v8-ignore` | 1315 |
+| `lint.v8-ignore` | 1314 |
 | `lint.ts-expect-error` | 193 |
 | `packages.patent-directories` | 16 |
 <!-- tech-debt-counters:end -->
@@ -381,8 +381,8 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-tools/src/figure/render-check-findings.ts` | 接受 | 951 | 纯几何判据：30+ 个小谓词 + 109 行编排，无 I/O，无第二消费方 |
 | `packages/patent/patent-tools/src/figure/section-diagram.ts` | 接受 | 918 | 纯几何绘制：146 行主绘制 + 小工具，与 `leader-line` 同类 |
 | `packages/patent/patent-tools/src/figure/leader-line.ts` | 接受 | 908 | 纯几何：稳定在 906→908，无状态、无 I/O |
-| `packages/patent/patent-tools/src/tool/patent-workflow-run.ts` | 接受 | 858 | 单一工具入口同时承载 manifest 与领域图两条执行路径，输入 schema、恢复/审批接线与解析器共享同一输出契约；文件内无 >150 行函数，拆分会把 schema 与分派分离而不减少分支 |
-| `packages/patent/patent-workflow/src/workflow/manifests.ts` | 接受 | 898 | 内置 manifest 目录：每个阶段是一行数据（id/策略/描述/参数），答复链 15 阶段把文件从 782 推到 852、投影消耗说明再推 3 行，披露链的充分公开与概括范围阶段再推 12 行、权利要求策略阶段再推 7 行、撰写链换位审查阶段再推 20 行；切分只是把数据挪到别处，不降复杂度 |
+| `packages/patent/patent-tools/src/tool/patent-workflow-run.ts` | 接受 | 943 | 单一工具入口同时承载 manifest 与领域图两条执行路径，输入 schema、恢复/审批接线与解析器共享同一输出契约；文件内无 >150 行函数，拆分会把 schema 与分派分离而不减少分支。2026-11-04 新增审批门现场决策接线（运行级 handler 注册、`approveStageIds` 拒绝与中断文案）约 85 行，仍无新的长函数 |
+| `packages/patent/patent-workflow/src/workflow/manifests.ts` | 接受 | 903 | 内置 manifest 目录：每个阶段是一行数据（id/策略/描述/参数），答复链 15 阶段把文件从 782 推到 852、投影消耗说明再推 3 行，披露链的充分公开与概括范围阶段再推 12 行、权利要求策略阶段再推 7 行、撰写链换位审查阶段再推 20 行、审批门的 `review_keys` 再推 5 行；切分只是把数据挪到别处，不降复杂度 |
 | `packages/patent/patent-core/src/atoms/handlers/builtin/evidence-check.ts` | 接受 | 842 | 单个 atom handler 的五阶段，最大函数 123 行，仅超阈值 5% |
 | `packages/patent/patent-tools/src/figure/dot-builder.ts` | 接受 | 839 | 单一 DOT 词汇表：五个 builder 各 <60 行，共享头部/标号/转义契约 |
 | `packages/patent/patent-core/src/ipc/ipc-classifier.ts` | 接受 | 807 | 数据表为主：`IPC_DOMAINS` 409 行 + 明细表 260 行，分类函数 <30 行 |
@@ -406,6 +406,8 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-04 团队状态租约计数**:`lint.v8-ignore` 由 1315 降至 **1314**;成员收件箱预览的末条消息改为先取下标再判空,原先「空列表必有一条末消息」的豁免不再需要——只有租约中消息的收件箱确实没有可预览的末条,该路径由 `service.spec.ts` 覆盖;其余计数不变。
+- **2026-11-04 工作流审批门现场决策**:`patent-workflow-run.ts` 由 858 升至 **943** 行、`manifests.ts` 由 898 升至 **903** 行并同步重定接受上限;新增内容是把 `LiveApprovalGateHandler` 装进运行级 handler 注册表、拒绝与现场审批冲突的 `approveStageIds`、记录审批门中断结果名与更新工具描述,并在审批门声明 `review_keys` 供现场询问引用待确认产出,集中在单一工具入口与 manifest 数据,未产生新的 >150 行函数;`structure.large-files`、`structure.long-functions` 与 `lint.v8-ignore` 不变。
 - **2026-11-04 专利域缺陷清单工具**:`validate-specification.ts` 的 `createValidateSpecificationTool` 降至 150 行以下,`structure.long-functions` 由 185 降至 **184**。该函数的 `figure_analysis` 参数 schema 抽到 `internal/figure-schemas.ts`,由 `validate_specification` 与新增的 `domain_check` 共用,同一处抽取也消除了 jscpd 报出的两处克隆;其余计数不变。
 - **2026-11-03 上游 0.2.2-alpha.3 同步复测**:随同步合并按当前 shipped sources 重新实测,`structure.long-functions` 由 186 降至 **185**、`structure.large-files` 由 89 升至 **90**(两向都来自上游对既有文件的增删与拆分,非本仓新债);`lint.v8-ignore`、`lint.ts-expect-error`、`structure.patent-large-files` 与其余计数不变。
 - **2026-11-03 E 撰写链换位审查**:`manifests.ts` 因披露链在 `slop_clean` 与 `legal_gaps` 之间插入 `draft_review` 阶段（含按缺口路由的 `retry.routes`）由 878 升至 **898**,接受上限同步重定;`lint.v8-ignore` 由 1313 升至 **1315**:`draft-review` 的输入组装只复制白名单键,禁用键在构造上不可达,另一处防御未来的 `inputSchema` 编辑;两条守卫均带理由,新原子其余分支由用例覆盖。`structure.long-functions` 与 `structure.large-files` 不变。

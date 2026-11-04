@@ -221,6 +221,26 @@ describe('addMember', () => {
     await expect(addMember(h, captain, 'bob')).rejects.toThrow('team "Alpha" is at its member cap (1)')
   })
 
+  it('rejects an unregistered role before spawning', async () => {
+    const h = await makeService()
+    const captain = fakeAgent('captain-1', h.workspace)
+    await createTeam(h, captain)
+    await expect(addMember(h, captain, 'alice', { role: 'resercher' }))
+      .rejects.toThrow('unknown role "resercher" — use a registered role id (case-manager, researcher')
+    const team = await readTeam(join(h.workspace, h.stateDir), 'alpha')
+    expect(team?.members).toHaveLength(0)
+  })
+
+  it('rejects an empty role instead of persisting a member without a contract', async () => {
+    const h = await makeService()
+    const captain = fakeAgent('captain-1', h.workspace)
+    await createTeam(h, captain)
+    await expect(addMember(h, captain, 'alice', { role: '' }))
+      .rejects.toThrow('member role must not be empty')
+    const team = await readTeam(join(h.workspace, h.stateDir), 'alpha')
+    expect(team?.members).toHaveLength(0)
+  })
+
   it('rejects when the captain LLM route cannot be resolved', async () => {
     const h = await makeService()
     const captain = fakeAgent('captain-1', h.workspace)
@@ -1035,6 +1055,33 @@ describe('status', () => {
     expect(await readUnreadMailbox(join(h.workspace, h.stateDir), 'alpha', 'alice')).toHaveLength(3)
   })
 
+  it('reports messages held by a live-delivery lease', async () => {
+    const h = await makeService()
+    const captain = fakeAgent('captain-1', h.workspace)
+    await createTeam(h, captain)
+    await addMember(h, captain, 'alice')
+    h.agents.set('member-1', fakeAgent('member-1', h.workspace, { status: 'running' }))
+    const now = Date.now()
+    await appendMailbox(
+      join(h.workspace, h.stateDir),
+      'alpha',
+      'captain',
+      { ...createMessage('alice', 'captain', 'in flight'), deliveryClaimedAt: now },
+    )
+    await appendMailbox(
+      join(h.workspace, h.stateDir),
+      'alpha',
+      'alice',
+      { ...createMessage('captain', 'alice', 'queued'), deliveryClaimedAt: now },
+    )
+
+    const status = await h.ctx.patentTeams.status(captain)
+    expect(status.captain_inbox).toEqual([])
+    expect(status.captain_inbox_leased).toBe(1)
+    expect(status.member_inboxes.alice).toMatchObject({ count: 0, leased: 1, omitted: 0 })
+    expect(status.member_inboxes.alice?.latest).toBeUndefined()
+  })
+
   it('reports mailbox warnings and unspawned activity', async () => {
     const h = await makeService()
     const captain = fakeAgent('captain-1', h.workspace)
@@ -1304,7 +1351,7 @@ describe('authorization and edge branches', () => {
     const h = await makeService()
     const captain = fakeAgent('captain-1', h.workspace)
     await createTeam(h, captain)
-    const member = await addMember(h, captain, 'alice', { provider: 'other', model: 'model-x', role: 'eng' })
+    const member = await addMember(h, captain, 'alice', { provider: 'other', model: 'model-x', role: 'drafter' })
     expect(member.provider).toBe('other')
     expect(member.model).toBe('model-x')
   })
@@ -1516,7 +1563,12 @@ describe('role contract and quality gate', () => {
     const captain = fakeAgent('captain-1', h.workspace)
     await createTeam(h, captain)
     await addMember(h, captain, 'alice', { role: 'researcher' })
-    await addMember(h, captain, 'bob', { role: 'ghost-role' })
+    await addMember(h, captain, 'bob', { role: 'researcher' })
+    // Durable state can carry a role the current catalog no longer registers
+    // (older team file, or a role removed later); status must still render it.
+    const team = await readTeam(join(h.workspace, h.stateDir), 'alpha')
+    team!.members[1]!.role = 'ghost-role'
+    await writeTeam(join(h.workspace, h.stateDir), team!)
     await h.ctx.patentTeams.createTask(captain, { subject: 'search', assignee: 'alice', worker: 'patent-search-commander' })
     const claimed = await h.ctx.patentTeams.claimTask(captain, { task_id: 't1', assignee: 'alice' })
     const alice = fakeAgent('member-1', h.workspace)

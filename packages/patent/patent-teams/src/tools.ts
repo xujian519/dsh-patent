@@ -61,18 +61,20 @@ function renderStatus(team: PatentTeamsStatus): string {
         : ''
       return `  - ${task.id} [${task.status}] attempt ${task.attempt}${handoff} ${task.subject} → ${task.assignee || 'unassigned'}${deps}${worker}${validation}${gated}${output}`
     }),
-    `Captain inbox (${team.captain_inbox.length}${team.captain_inbox_omitted > 0 ? `, ${team.captain_inbox_omitted} older omitted` : ''}):`,
+    `Captain inbox (${team.captain_inbox.length}${team.captain_inbox_leased > 0 ? `, ${team.captain_inbox_leased} in delivery` : ''}${team.captain_inbox_omitted > 0 ? `, ${team.captain_inbox_omitted} older omitted` : ''}):`,
     ...team.captain_inbox.map(message => `  - [${message.from}] ${message.content}`),
   ]
   for (const [name, inbox] of Object.entries(team.member_inboxes)) {
+    const leased = inbox.leased > 0 ? `, ${inbox.leased} in delivery` : ''
     const omitted = inbox.omitted > 0 ? `, ${inbox.omitted} omitted` : ''
     if (inbox.messages !== undefined) {
-      lines.push(`Member inbox ${name} (${inbox.count}${omitted}):`)
+      lines.push(`Member inbox ${name} (${inbox.count}${leased}${omitted}):`)
       for (const message of inbox.messages) {
         lines.push(`  - [${message.from}] ${message.content}`)
       }
     } else {
-      lines.push(`Member inbox ${name} (${inbox.count}${omitted}): latest — ${inbox.latest ?? ''}`)
+      const latest = inbox.latest === undefined ? '' : ` latest — ${inbox.latest}`
+      lines.push(`Member inbox ${name} (${inbox.count}${leased}${omitted}):${latest}`)
     }
   }
   if (team.mailbox_warning_count > 0) {
@@ -190,7 +192,7 @@ function registerTeamAndMemberTools(ctx: Context, teams: PatentTeamsService, opt
     description: 'Add a durable continuable member. By default it snapshots the captain\'s current LLM route and effort. Supply provider/model only for an explicitly requested role-specific route; a changed provider or model automatically uses the target model\'s default effort. Set reasoning_effort only to request one of the target model\'s supported ids explicitly (or "default" to force its default). The member waits for messages, works on assigned tasks, and can message the team.',
     parameters: {
       name: { type: 'string', required: true, description: 'Unique member name inside the team.' },
-      role: { type: 'string', description: `Role of the member (e.g. ${defaultRoleContracts().map(contract => contract.role).join(', ')}).` },
+      role: { type: 'string', description: `Registered role id for the member (one of: ${defaultRoleContracts().map(contract => contract.role).join(', ')}). An unregistered id is rejected.` },
       provider: { type: 'string', description: 'Optional LLM provider route. Use only when the user explicitly requests a different provider; requires model.' },
       model: { type: 'string', description: 'Optional model override. Omit for the captain\'s current model (or the configured memberModel default).' },
       reasoning_effort: { type: 'string', description: 'Optional reasoning effort override: one of the target model\'s supported effort ids, or "default" to force its default. When omitted, the captain\'s effort is inherited only for the same provider/model; a changed route uses the target default.' },

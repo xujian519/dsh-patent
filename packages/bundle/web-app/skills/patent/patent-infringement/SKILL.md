@@ -20,7 +20,7 @@ description: 侵权比对分析：全面覆盖原则 + 等同原则（三要素/
 3. 等同认定逐项走三要素（手段/功能/效果基本相同 + 本领域技术人员无需创造性劳动），并把认定记录写进 risk.equivalents，让风险等级出自可复核的输入。
 4. 现有技术抗辩检查：被控方案与申请日前公知技术实质相同则不侵权。
 5. 风险定级只由 claim_chart_build 的 risk 事实推出（defenses / remedyExposureRatio / estoppelApplied / dedicationApplied / equivalents）；工具不接受直接给的分数或等级，未提供 risk 时明写"未计算风险等级"，不得自行编造等级。
-6. 收口必经：用 patent_workflow_run（manifestId=patent_infringement_v1；input=被控产品材料，claims=权利要求书，chartTargets 传目标对象 JSON）一次跑完"对照表 → 全面覆盖/等同核验 → 报告"并留下可复核的 stage 记录：report 阶段同时读到对照表与覆盖核验结论。人工确认门会暂停运行，放行时重新调用并带上 approveStageIds。未收口的比对分析不得进入文档交付。
+6. 收口必经：用 patent_workflow_run（manifestId=patent_infringement_v1；input=被控产品材料，claims=权利要求书，chartTargets 传目标对象 JSON）一次跑完"对照表 → 全面覆盖/等同核验 → 报告"并留下可复核的 stage 记录：report 阶段同时读到对照表与覆盖核验结论。本预设的前台运行在审批门直接询问用户：放行即继续，拒绝则带结果名暂停（此时传入 approveStageIds 会被拒绝）；后台运行仍暂停，并以 approveStageIds 续跑。未收口的比对分析不得进入文档交付。
 
 ## 约束
 

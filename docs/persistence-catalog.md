@@ -1484,7 +1484,7 @@ Source: [`packages/experimental/agent-team/src/types.ts:232`](../packages/experi
 
 Types: [TodoItem](subsystems/todo.md)
 
-Source: [`packages/todo/tool-todo/src/types.ts:40`](../packages/todo/tool-todo/src/types.ts)
+Source: [`packages/todo/tool-todo/src/types.ts:39`](../packages/todo/tool-todo/src/types.ts)
 
 ### `tool/*`
 
@@ -6640,7 +6640,7 @@ Sources: [`packages/llm/llm/src/types.ts:76`](../packages/llm/llm/src/types.ts) 
 
 SHA-256: `b3fd8eff29dbe175858496c4a11fea0ea72dc30d3e573363e4171c074fdacb7b`
 
-Sources: [`packages/todo/tool-todo/src/types.ts:24`](../packages/todo/tool-todo/src/types.ts)
+Sources: [`packages/todo/tool-todo/src/types.ts:23`](../packages/todo/tool-todo/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -10171,7 +10171,7 @@ Sources: [`packages/experimental/agent-team/src/types.ts:232`](../packages/exper
 
 SHA-256: `c998288251ecd3f1a8b3987442eea24b8c5b7bf267f29b0d0bc8dfa4b4b3935b`
 
-Sources: [`packages/todo/tool-todo/src/types.ts:40`](../packages/todo/tool-todo/src/types.ts)
+Sources: [`packages/todo/tool-todo/src/types.ts:39`](../packages/todo/tool-todo/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|

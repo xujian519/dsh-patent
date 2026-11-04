@@ -8490,11 +8490,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'PatentTeamsMemberInbox',
-    declaration: 'export interface PatentTeamsMemberInbox {\n    count: number;\n    omitted: number;\n    latest?: string;\n    messages?: PatentTeamsStatusMessage[];\n}',
+    declaration: 'export interface PatentTeamsMemberInbox {\n    count: number;\n    leased: number;\n    omitted: number;\n    latest?: string;\n    messages?: PatentTeamsStatusMessage[];\n}',
   },
   {
     name: 'PatentTeamsStatus',
-    declaration: 'export interface PatentTeamsStatus {\n    team_id: string;\n    team_name: string;\n    description: string;\n    viewer: string;\n    members: PatentTeamsStatusMember[];\n    tasks: PatentTeamsStatusTask[];\n    captain_inbox: PatentTeamsStatusMessage[];\n    captain_inbox_omitted: number;\n    member_inboxes: Record<string, PatentTeamsMemberInbox>;\n    mailbox_warnings: string[];\n    mailbox_warning_count: number;\n}',
+    declaration: 'export interface PatentTeamsStatus {\n    team_id: string;\n    team_name: string;\n    description: string;\n    viewer: string;\n    members: PatentTeamsStatusMember[];\n    tasks: PatentTeamsStatusTask[];\n    captain_inbox: PatentTeamsStatusMessage[];\n    captain_inbox_omitted: number;\n    captain_inbox_leased: number;\n    member_inboxes: Record<string, PatentTeamsMemberInbox>;\n    mailbox_warnings: string[];\n    mailbox_warning_count: number;\n}',
   },
   {
     name: 'PatentTeamsStatusMember',

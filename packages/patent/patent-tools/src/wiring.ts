@@ -8,6 +8,8 @@
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
+// Declaration merge only: makes ctx.get('approval') resolve to the approval service.
+import type {} from '@deepseek-ai/dsh-user-approval'
 import { createLlmModelPort, globalAtomRegistry, globalStageHandlerRegistry, registerBuiltinAtoms, validateWorkflowBudget, validateWorkflowManifest } from '@deepseek-ai/dsh-patent-core'
 import type { Atom, PatentModelPort, StageHandler } from '@deepseek-ai/dsh-patent-core'
 import type { ImageAttachmentRef, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
@@ -437,6 +439,8 @@ export function registerPatentTools(ctx: Context, config: Config): void {
   ctx.tools.register(createPatentWorkflowRunTool({
     model,
     jobs: () => ctx.get('jobs'),
+    approval: () => ctx.get('approval'),
+    approveStageGates: config.approveStageGates === true,
     ruleEvaluator: createCheckerRuleEvaluator(),
     writingSkillsForStage,
   }))

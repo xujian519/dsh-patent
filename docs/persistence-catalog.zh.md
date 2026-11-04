@@ -1486,7 +1486,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 
 类型：[TodoItem](subsystems/todo.zh.md)
 
-来源：[`packages/todo/tool-todo/src/types.ts:40`](../packages/todo/tool-todo/src/types.ts)
+来源：[`packages/todo/tool-todo/src/types.ts:39`](../packages/todo/tool-todo/src/types.ts)
 
 ### `tool/*`
 
@@ -6642,7 +6642,7 @@ SHA-256: `4e887768586528565381dadbddee6cef555874148089f4579e0b4b1ad096fc9c`
 
 SHA-256: `b3fd8eff29dbe175858496c4a11fea0ea72dc30d3e573363e4171c074fdacb7b`
 
-来源：[`packages/todo/tool-todo/src/types.ts:24`](../packages/todo/tool-todo/src/types.ts)
+来源：[`packages/todo/tool-todo/src/types.ts:23`](../packages/todo/tool-todo/src/types.ts)
 
 | 属性 | 存在性 | 类型 |
 |---|---|---|
@@ -10173,7 +10173,7 @@ SHA-256: `a40d12070f6f4a124f32fb3cc86e7857554702e32f0eda3080a25c4b9ac9b18c`
 
 SHA-256: `c998288251ecd3f1a8b3987442eea24b8c5b7bf267f29b0d0bc8dfa4b4b3935b`
 
-来源：[`packages/todo/tool-todo/src/types.ts:40`](../packages/todo/tool-todo/src/types.ts)
+来源：[`packages/todo/tool-todo/src/types.ts:39`](../packages/todo/tool-todo/src/types.ts)
 
 | 属性 | 存在性 | 类型 |
 |---|---|---|

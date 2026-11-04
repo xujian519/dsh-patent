@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-browser-backend",
   "description": "Browser automation backend cascade (ego lite / BrowserOS neo / browser-use / @playwright/mcp): capability probing, cold-decision routing, and the browser-use link extractor",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

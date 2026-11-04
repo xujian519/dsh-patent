@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-video-studio",
   "description": "Video production studio view: discovers the session's video projects, lists shots, renders, pending tasks, and the CNY ledger, and previews clips and keyframes through the authenticated file route",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

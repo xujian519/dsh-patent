@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-doc-template",
   "description": "Function plugin rendering the shipped Chinese document templates: YAML front-matter templates with a typed variable schema, validated resolution reporting residual placeholders and warnings, Markdown/HTML/DOCX renderers, and the list_doc_templates and render_doc_template tools",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

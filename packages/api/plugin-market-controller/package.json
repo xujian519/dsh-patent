@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-api-plugin-market-controller",
   "description": "Remote owner for the open plugin-catalog discovery surface over the plugin-market seam",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

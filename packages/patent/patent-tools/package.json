@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-patent-tools",
   "description": "Model-facing patent tool set for the DeepSeek Harness: search, metadata, legal status, case/wiki/kg knowledge queries, claim-chart, drafting, evidence judgment, rule check, and the workflow/plan tools, ported from Sati",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

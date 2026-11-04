@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-value",
   "description": "Value primitives for unknown inputs: object guards, key-set validation, fail-loud positive-number assertions, filesystem errno and abort-error tests, thrown-value normalization and rendering (classification, narrowing, validation, and rendering, no I/O); the deep freeze is re-exported from @deepseek-ai/dsh-util-values",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

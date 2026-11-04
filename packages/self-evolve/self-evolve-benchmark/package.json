@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-self-evolve-benchmark",
   "description": "Benchmark-driven target evolution provider for the DeepSeek Harness self-evolve capability",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

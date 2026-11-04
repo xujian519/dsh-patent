@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-patent-filing",
   "description": "Patent filing document assembly for the DeepSeek Harness: renders a CNIPA application document (abstract, abstract drawing, claims, specification, drawings) into DOCX from a shipped template whose formatting is the single source of truth, and asserts the result against that template",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

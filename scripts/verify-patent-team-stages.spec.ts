@@ -88,7 +88,7 @@ describe('scenarioDrift', () => {
 
   it('rejects the disclosure gate when the row cites the office-action gate instead', () => {
     const disclosureStages = STAGES.get(DISCLOSURE) ?? []
-    const row = `| t | \`slop_gate\` → \`draft_review\` |`
+    const row = '| t | `slop_gate` → `draft_review` |'
     const contract = { heading: 'x', manifestId: DISCLOSURE, requiredStages: [] }
     expect(scenarioDrift(contract, row, disclosureStages, KNOWN))
       .toEqual(['"patent_disclosure_v1" 不声明阶段 "slop_gate"（场景表引用了它）'])

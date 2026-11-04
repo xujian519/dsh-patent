@@ -297,18 +297,19 @@ export function readCniprScriptFailure(value: unknown): CniprScriptFailure | und
 
 /**
  * 校验脚本回传的载荷骨架：逐条交给条目映射，条目映射返回 undefined 表示这条不进结果。
- * 两条能力共用同一份骨架，差别只在条目字段。
+ * 三种能力共用同一份骨架，差别只在条目字段；被丢弃的条目单独计数，供调用方判断能否
+ * 把结果当作完整结果（按号对齐的能力会自行把缺号报告成号码级失败，检索不会）。
  * @param payload - 脚本回传的载荷（未校验）。
  * @param readItem - 把一条条目记录映射成结果，或 undefined（缺号、非对象）。
- * @returns 每条的结果，以及脚本级失败（有失败时 items 仍可能带着已完成的条目）。
+ * @returns 每条的结果、被丢弃的条目数，以及脚本级失败（有失败时 items 仍可能带着已完成的条目）。
  */
 function readCniprPayload<T>(
   payload: unknown,
   readItem: (record: Record<string, unknown>) => T | undefined,
-): { items: T[]; failure?: CniprScriptFailure } {
+): { items: T[]; dropped: number; failure?: CniprScriptFailure } {
   const root = asRecord(payload)
   if (root === undefined) {
-    return { items: [], failure: { code: 'page_state', message: 'CNIPR 脚本收据不是对象' } }
+    return { items: [], dropped: 0, failure: { code: 'page_state', message: 'CNIPR 脚本收据不是对象' } }
   }
   const failure = readCniprScriptFailure(root.error)
   const list = root.items
@@ -316,17 +317,26 @@ function readCniprPayload<T>(
     // 收据骨架不合约定时按通道级失败处理；静默当空数组会把脚本故障伪装成号码级缺失。
     return {
       items: [],
+      dropped: 0,
       failure: failure ?? { code: 'page_state', message: 'CNIPR 脚本收据缺少 items 数组' },
     }
   }
   const items: T[] = []
+  let dropped = 0
   for (const entry of list) {
     const record = asRecord(entry)
-    if (record === undefined) continue
+    if (record === undefined) {
+      dropped += 1
+      continue
+    }
     const item = readItem(record)
-    if (item !== undefined) items.push(item)
+    if (item === undefined) {
+      dropped += 1
+      continue
+    }
+    items.push(item)
   }
-  return { items, ...(failure === undefined ? {} : { failure }) }
+  return { items, dropped, ...(failure === undefined ? {} : { failure }) }
 }
 
 /** 映射一条 PDF 直链条目；无号的条目丢弃。 */
@@ -370,7 +380,8 @@ function readLegalItem(record: LegalPayloadItem & Record<string, unknown>): Cnip
  * @returns 每条号的结果，以及脚本级失败（有失败时 items 仍可能带着已完成的条目）。
  */
 export function readCniprPdfLinksPayload(payload: unknown): { items: CniprPdfLinkItem[]; failure?: CniprScriptFailure } {
-  return readCniprPayload(payload, readPdfLinkItem)
+  const { items, failure } = readCniprPayload(payload, readPdfLinkItem)
+  return { items, ...(failure === undefined ? {} : { failure }) }
 }
 
 /**
@@ -379,7 +390,8 @@ export function readCniprPdfLinksPayload(payload: unknown): { items: CniprPdfLin
  * @returns 每条号的结果，以及脚本级失败。
  */
 export function readCniprLegalPayload(payload: unknown): { items: CniprLegalStatusItem[]; failure?: CniprScriptFailure } {
-  return readCniprPayload(payload, readLegalItem)
+  const { items, failure } = readCniprPayload(payload, readLegalItem)
+  return { items, ...(failure === undefined ? {} : { failure }) }
 }
 
 /** 脚本回传的检索条目：公开号与标题是干净的属性，其余字段在行文本里。 */
@@ -406,13 +418,27 @@ function readSearchItem(record: SearchPayloadItem & Record<string, unknown>): Cn
 
 /**
  * 校验并映射脚本回传的检索载荷：脚本回传结果行原文与分类导航文本，字段在这里解析。
+ *
+ * 检索结果不按请求号对齐，被丢弃的行不会像 PDF/法律状态那样变成号码级失败，因此
+ * 这里单独回报丢弃数；通道据此把「行结构变化」报成通道级失败，而不是把残缺结果
+ * 当作完整命中集返回。
  * @param payload - 脚本回传的载荷（未校验）。
- * @returns 总数（分类导航缺失该标记时为 null）、命中，以及脚本级失败。
+ * @returns 总数（分类导航缺失该标记时为 null）、命中、被丢弃的行数，以及脚本级失败。
  */
-export function readCniprSearchPayload(payload: unknown): { total: number | null; hits: CniprSearchHit[]; failure?: CniprScriptFailure } {
+export function readCniprSearchPayload(payload: unknown): {
+  total: number | null
+  hits: CniprSearchHit[]
+  dropped: number
+  failure?: CniprScriptFailure
+} {
   const read = readCniprPayload(payload, readSearchItem)
   const root = asRecord(payload)
   const header = root === undefined ? undefined : asString(root.header)
   const total = header === undefined ? null : parseCniprSearchTotal(header)
-  return { total, hits: read.items, ...(read.failure === undefined ? {} : { failure: read.failure }) }
+  return {
+    total,
+    hits: read.items,
+    dropped: read.dropped,
+    ...(read.failure === undefined ? {} : { failure: read.failure }),
+  }
 }

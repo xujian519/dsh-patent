@@ -311,6 +311,18 @@ describe('readCniprSearchPayload', () => {
     expect(read.hits[1]?.assignee).toBe('')
     expect(read.hits[1]?.publicationDate).toBe('')
     expect(read.hits[1]?.abstract).toBe('')
+    // 丢弃不能静默：通道按这个计数把残缺结果报成页面结构失败。
+    expect(read.dropped).toBe(1)
+  })
+
+  it('counts every row it cannot parse, including non-object entries', () => {
+    const read = readCniprSearchPayload({
+      header: '全部3件专利',
+      items: [{ number: 'CN1A' }, null, { cursor: 2 }],
+    })
+
+    expect(read.hits.map(hit => hit.patent)).toEqual(['CN1A'])
+    expect(read.dropped).toBe(2)
   })
 
   it('keeps a row whose text is missing, taking the number from the attribute alone', () => {
@@ -330,21 +342,23 @@ describe('readCniprSearchPayload', () => {
   it('reports a null total when the page stops publishing it', () => {
     expect(readCniprSearchPayload({ items: [] }).total).toBeNull()
     expect(readCniprSearchPayload({ header: '', items: [] }).total).toBeNull()
-    expect(readCniprSearchPayload({ header: '全部0件专利', items: [] })).toEqual({ total: 0, hits: [] })
+    expect(readCniprSearchPayload({ header: '全部0件专利', items: [] })).toEqual({ total: 0, hits: [], dropped: 0 })
   })
 
   it('treats a malformed receipt as a channel failure and carries a script-level failure', () => {
     expect(readCniprSearchPayload(undefined)).toEqual({
       total: null,
       hits: [],
+      dropped: 0,
       failure: { code: 'page_state', message: 'CNIPR 脚本收据不是对象' },
     })
     expect(readCniprSearchPayload({ items: 'nope' })).toEqual({
       total: null,
       hits: [],
+      dropped: 0,
       failure: { code: 'page_state', message: 'CNIPR 脚本收据缺少 items 数组' },
     })
     expect(readCniprSearchPayload({ header: '全部2件专利', items: [], error: { code: 'login_required', message: '未检测到登录态' } }))
-      .toEqual({ total: 2, hits: [], failure: { code: 'login_required', message: '未检测到登录态' } })
+      .toEqual({ total: 2, hits: [], dropped: 0, failure: { code: 'login_required', message: '未检测到登录态' } })
   })
 })

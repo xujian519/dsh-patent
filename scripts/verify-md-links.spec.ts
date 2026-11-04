@@ -62,6 +62,17 @@ describe('Markdown source discovery', () => {
       join('packages', 'core', 'probe', 'docs', 'DETAIL.md'),
     ])
   })
+
+  it('checks plan documents, which sit outside the notes and docs trees', () => {
+    // Plans carried no link gate until 2026-11-04; a plan is where a later
+    // implementation reads its task list, so a dead cross-reference there
+    // silently removes the evidence a reviewer would follow.
+    const root = layout({ '.agents/plans/2026-01-01-plan.md': '[gone](2025-01-01-plan.md)\n' })
+    const sources = markdownLinkSourcePaths(root)
+    expect(sources).toContain(join('.agents', 'plans', '2026-01-01-plan.md').replaceAll('\\', '/'))
+    const violations = sources.flatMap(file => findViolations(join(root, file), markdownLinkCache(), root))
+    expect(violations.map(({ reason }) => reason)).toEqual(['target'])
+  })
 })
 
 describe('documentAnchors', () => {

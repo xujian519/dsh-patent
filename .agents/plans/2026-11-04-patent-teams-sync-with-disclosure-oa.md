@@ -148,20 +148,20 @@
 
 ### 10.2 原始发现与处置
 
-**(A) 成员无法执行单个 manifest 阶段（P0 级，已处置）。**
-`patent_workflow_run` 只有「整 manifest」与「graph」两条路径，`approveStageIds` 仅跳过审批门，没有「只跑 `claim_strategy`→`draft_claims`」的入口；`flexible_plan` 的 `run` 也只执行调用方自定义的 pending/rolled_back stage，不是内置 manifest 切片。原 §5 让撰写员先跑策略再跑权要，落地后队员只能手写权要。
+**(A) 成员无法执行单个 manifest 阶段（P0 级，已处置）。** `patent_workflow_run` 只有「整 manifest」与「graph」两条路径，`approveStageIds` 仅跳过审批门，没有「只跑 `claim_strategy`→`draft_claims`」的入口；`flexible_plan` 的 `run` 也只执行调用方自定义的 pending/rolled_back stage，不是内置 manifest 切片。原 §5 让撰写员先跑策略再跑权要，落地后队员只能手写权要。
+
 → 已改写为 §3 原则 3「执行权单向：captain 跑 manifest，成员只读阶段产出」，并在 §5/§6 增加「责任面」列区分 manifest 与团队。
 
-**(B) `tighten` / `slop_gate` 派给成员不可执行（P0 级，已处置）。**
-两者是 manifest 内阶段，脱离 manifest 后既无法触发，`slop_gate` 的 `rewindTo: 'draft'` 回退也会失效，只剩自由文本改写。
+**(B) `tighten` / `slop_gate` 派给成员不可执行（P0 级，已处置）。** 两者是 manifest 内阶段，脱离 manifest 后既无法触发，`slop_gate` 的 `rewindTo: 'draft'` 回退也会失效，只剩自由文本改写。
+
 → 已并入 §6 的 manifest 责任列，成员改为「解释计划与对立模型结论、验收篇幅预算与 A33 检查通过」。
 
-**(C) 与既有锚点冲突：「worker 不派发 manifest」（已处置）。**
-`worker-contract.ts` 的 `patent-oa-writer` 注释写明：确定性执行面＝manifest，worker＝团队组装面作业角色，两者并行、互不派发。原文让成员「执行 tighten」违反该锚点。
+**(C) 与既有锚点冲突：「worker 不派发 manifest」（已处置）。** `worker-contract.ts` 的 `patent-oa-writer` 注释写明：确定性执行面＝manifest，worker＝团队组装面作业角色，两者并行、互不派发。原文让成员「执行 tighten」违反该锚点。
+
 → §2.3 已改述为「成员只读 captain 的运行结果」。
 
-**(D) `allowedTools` 不能用作工具约束（已处置）。**
-`workerTools()` 的 JSDoc 明确 `allowedTools` 无运行时消费者，唯一限制路径是 `members.ts` 的 `MEMBER_DENIED_TOOLS` deny 名单。
+**(D) `allowedTools` 不能用作工具约束（已处置）。** `workerTools()` 的 JSDoc 明确 `allowedTools` 无运行时消费者，唯一限制路径是 `members.ts` 的 `MEMBER_DENIED_TOOLS` deny 名单。
+
 → P1-02 已改为「如确需工具约束，改 deny 名单或改派工验收」。
 
 ### 10.3 优先级处置

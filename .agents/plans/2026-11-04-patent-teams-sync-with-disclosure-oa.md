@@ -183,3 +183,7 @@
 2. 触及 `patent-workflow` / `patent-teams` 时的相关单测。
 3. 改 SKILL 场景表时，`packages/bundle/web-app/tests/patent-preset.spec.ts` 的团队路由与确认点断言仍绿。
 4. P2-01 门禁须有一条「删掉 `draft_review` 即失败」的反向用例。
+
+`verify-md-wrap` 与 `verify-md-links` 的扫描集合都不含 `.agents/plans/**`（前者只收 `.agents/notes/**`，后者实测 3240 个文件中 plans 目录占 0 个），因此本目录的排版与相对链接没有机器门禁保护，需人工自查；是否把 plans 纳入这两道门见任务清单 C5。
+
+详细任务与检查清单见 [2026-11-04-patent-teams-sync-tasks-and-checks.md](2026-11-04-patent-teams-sync-tasks-and-checks.md)。

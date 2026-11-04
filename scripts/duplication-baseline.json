@@ -85,7 +85,6 @@
     "packages/patent/patent-tools/src/tool/patent-case-search.ts|packages/patent/patent-tools/src/tool/patent-kg-query.ts",
     "packages/patent/patent-tools/src/tool/patent-case-search.ts|packages/patent/patent-tools/src/tool/patent-wiki-search.ts",
     "packages/patent/patent-tools/src/tool/patent-eval.ts|packages/patent/writing-patterns/src/tool/query-writing-patterns.ts",
-    "packages/patent/patent-tools/src/tool/patent-flexible-plan.ts|packages/patent/patent-tools/src/tool/patent-workflow-run.ts",
     "packages/patent/patent-tools/src/tool/patent-flexible-plan.ts|packages/patent/patent-workflow/src/flexible-plan.ts",
     "packages/patent/patent-tools/src/tool/patent-kg-query.ts|packages/patent/patent-tools/src/tool/patent-kg-query.ts",
     "packages/patent/patent-tools/src/tool/patent-legal-status.ts|packages/patent/patent-tools/src/tool/patent-pdf-download.ts",

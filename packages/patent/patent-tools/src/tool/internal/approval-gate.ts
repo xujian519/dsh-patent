@@ -40,9 +40,46 @@ export interface LiveApprovalGateOptions {
   readonly signal?: AbortSignal
 }
 
-/** The reason text for one gate, from the stage's review context. */
-function gateReason(manifestId: string, reviewContext: string): string {
-  return `工作流 ${manifestId} 到达人工审批门：${reviewContext}。是否放行并继续后续阶段？`
+/** Characters of each pending deliverable quoted in the approval question. */
+const REVIEW_PREVIEW_CHARS = 140
+
+/** Deliverables quoted at most, so the question stays one readable approval headline. */
+const REVIEW_PREVIEW_LIMIT = 2
+
+/**
+ * Read the pending deliverables named by the gate stage's `review_keys` param.
+ * @param state - the gate's execution state, with the stage params merged in.
+ * @returns one single-line preview per key that carries text, at most
+ *   {@link REVIEW_PREVIEW_LIMIT}.
+ */
+function reviewPreviews(state: PipelineState): string[] {
+  const keys = state['review_keys']
+  if (!Array.isArray(keys)) return []
+  const previews: string[] = []
+  for (const key of keys) {
+    if (previews.length >= REVIEW_PREVIEW_LIMIT) break
+    if (typeof key !== 'string') continue
+    const value = state[key]
+    if (typeof value !== 'string') continue
+    const text = value.replace(/\s+/gu, ' ').trim()
+    if (text === '') continue
+    const excerpt = text.slice(0, REVIEW_PREVIEW_CHARS)
+    previews.push(`${key}：${excerpt}${text.length > REVIEW_PREVIEW_CHARS ? '…' : ''}`)
+  }
+  return previews
+}
+
+/**
+ * The reason text for one gate, from the stage's review context and pending deliverables.
+ * @param manifestId - the manifest id named in the question.
+ * @param reviewContext - the stage's review context sentence.
+ * @param state - the gate's execution state.
+ * @returns the approval question with bounded deliverable previews.
+ */
+function gateReason(manifestId: string, reviewContext: string, state: PipelineState): string {
+  const previews = reviewPreviews(state)
+  const pending = previews.length === 0 ? '' : `待确认产出：${previews.join('；')}。`
+  return `工作流 ${manifestId} 到达人工审批门：${reviewContext}。${pending}是否放行并继续后续阶段？`
 }
 
 /**
@@ -74,7 +111,7 @@ export class LiveApprovalGateHandler extends ApprovalGateHandler {
     if (service === undefined) {
       throw new InterruptStageError(
         'approval-gate',
-        `工作流 ${this.options.manifestId} 到达审批门（${reviewContext}）：本部署未挂载审批服务，按拒绝处理；挂载审批服务或改用显式 approveStageIds 后重跑`,
+        `工作流 ${this.options.manifestId} 到达审批门（${reviewContext}）：本部署的审批服务在运行中不可用，按拒绝处理；关闭 approveStageGates 或改用后台运行后重跑`,
         { outcome: 'unavailable' },
       )
     }
@@ -85,12 +122,12 @@ export class LiveApprovalGateHandler extends ApprovalGateHandler {
         agent: this.options.agent,
         toolName: 'patent_workflow_run',
         callId: this.options.callId,
-        reason: gateReason(this.options.manifestId, reviewContext),
+        reason: gateReason(this.options.manifestId, reviewContext, input.state),
         ...(this.options.signal !== undefined ? { signal: this.options.signal } : {}),
       })
     } catch (error) {
-      // A background job's turn has already closed, and an audit failure leaves
-      // no recorded decision; both mean no approval, so the run pauses.
+      // A closed turn (the audit pair cannot commit) or a failed audit append
+      // leaves no recorded decision; both mean no approval, so the run pauses.
       throw new InterruptStageError(
         'approval-gate',
         `工作流 ${this.options.manifestId} 的审批门（${reviewContext}）无法取得审批（${String(error)}），按拒绝处理；后续阶段未执行`,

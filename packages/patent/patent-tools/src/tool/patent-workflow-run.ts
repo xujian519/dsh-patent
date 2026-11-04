@@ -207,7 +207,8 @@ export interface PatentWorkflowRunDeps extends WorkflowProviderDeps {
   /**
    * Read the deployment approval service at gate time. A foreground run asks it
    * before continuing past an `approval-gate` stage; an absent service (or an
-   * absent lookup, as in a bare tool construction) keeps the pause contract.
+   * absent lookup, as in a bare tool construction) keeps the pause contract,
+   * including `approveStageIds`.
    */
   approval?: () => ApprovalFace | undefined
   /**
@@ -315,7 +316,7 @@ export function createPatentWorkflowRunTool(deps: PatentWorkflowRunDeps = {}): T
       approveStageIds: {
         type: 'array',
         items: { type: 'string' },
-        description: "Manifest stage ids of already-approved approval gates (e.g. ['review_gate']); skipped on rerun.",
+        description: "Manifest stage ids of already-approved approval gates (e.g. ['review_gate']); skipped on rerun. Refused on a foreground call when this deployment's approveStageGates is on, because the gate asks the approval service instead.",
       },
       caseId: { type: 'string', description: 'Optional case id enabling run/checkpoint persistence.' },
       input: { type: 'string', required: true, description: 'Initial material consumed by the extract atoms.' },
@@ -494,9 +495,11 @@ function buildManifestProvider(
 
 /**
  * Resolve the live-gate participants for this call: the deployment opted in,
- * the approval lookup is wired, a calling agent exists to attribute the
- * question, and the run stays in the caller's turn (a background job outlives
- * it, and the service only answers inside an open turn).
+ * the approval lookup is wired and resolves a service, a calling agent exists
+ * to attribute the question, and the run stays in the caller's turn (a
+ * background job outlives it, and the service only answers inside an open
+ * turn). A deployment that opted in without mounting the service keeps the
+ * pause-and-`approveStageIds` contract, so that route stays available.
  * @param deps - tool dependencies carrying the opt-in and the approval lookup.
  * @param input - the tool call arguments.
  * @param agent - the calling agent, when the call has one.
@@ -511,7 +514,8 @@ function liveGateTarget(
   if (deps.approveStageGates !== true
     || lookup === undefined
     || agent === undefined
-    || input.run_in_background === true) {
+    || input.run_in_background === true
+    || lookup() === undefined) {
     return undefined
   }
   return { lookup, agent }

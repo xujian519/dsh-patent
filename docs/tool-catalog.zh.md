@@ -6530,7 +6530,7 @@ Usage notes:
     },
     "approveStageIds": {
       "type": "array",
-      "description": "Manifest stage ids of already-approved approval gates (e.g. ['review_gate']); skipped on rerun.",
+      "description": "Manifest stage ids of already-approved approval gates (e.g. ['review_gate']); skipped on rerun. Refused on a foreground call when this deployment's approveStageGates is on, because the gate asks the approval service instead.",
       "items": {
         "type": "string"
       }

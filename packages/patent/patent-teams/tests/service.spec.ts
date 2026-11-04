@@ -231,6 +231,16 @@ describe('addMember', () => {
     expect(team?.members).toHaveLength(0)
   })
 
+  it('rejects an empty role instead of persisting a member without a contract', async () => {
+    const h = await makeService()
+    const captain = fakeAgent('captain-1', h.workspace)
+    await createTeam(h, captain)
+    await expect(addMember(h, captain, 'alice', { role: '' }))
+      .rejects.toThrow('member role must not be empty')
+    const team = await readTeam(join(h.workspace, h.stateDir), 'alpha')
+    expect(team?.members).toHaveLength(0)
+  })
+
   it('rejects when the captain LLM route cannot be resolved', async () => {
     const h = await makeService()
     const captain = fakeAgent('captain-1', h.workspace)

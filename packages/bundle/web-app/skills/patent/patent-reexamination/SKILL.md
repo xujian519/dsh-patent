@@ -10,7 +10,7 @@ description: 复审答复：驳回决定理由识别（复审理由表，含实�
 ## 必查清单（先查再分析）
 
 - 先定复审请求期限：用 patent_deadlines 取该期限——给出 patentType、filingDate、claimsPriority，并把驳回决定放进 notices（{kind: 'rejection-decision', dispatchDate: '…'}）；起算与顺延口径由该工具按现行细则与指南给出，不要口算。
-- 用 patent_workflow_run（manifestId=patent_reexamination_v1；input=驳回决定与复审相关文书正文，claims=权利要求书）跑解析与收口：grounds 阶段按**复审理由表**识别文书援引的理由（新颖性 / 创造性 / 公开不充分 / 权利要求不清楚或得不到支持 / 修改超范围 / 实用新型客体缺陷），并另出专利权类型（invention / utility-model / undetermined）；claim-chart 阶段（mode=reexamination）做要素级映射；novelty 与 inventiveness 收口阶段同时读到理由与对照表。人工确认门会暂停运行，放行时重新调用并带上 approveStageIds。
+- 用 patent_workflow_run（manifestId=patent_reexamination_v1；input=驳回决定与复审相关文书正文，claims=权利要求书）跑解析与收口：grounds 阶段按**复审理由表**识别文书援引的理由（新颖性 / 创造性 / 公开不充分 / 权利要求不清楚或得不到支持 / 修改超范围 / 实用新型客体缺陷），并另出专利权类型（invention / utility-model / undetermined）；claim-chart 阶段（mode=reexamination）做要素级映射；novelty 与 inventiveness 收口阶段同时读到理由与对照表。本预设的前台运行在审批门直接询问用户：放行即继续，拒绝则带结果名暂停（此时传入 approveStageIds 会被拒绝）；后台运行仍暂停，并以 approveStageIds 续跑。
 - 只做要素映射时用 claim_chart_build（mode=reexamination）；理由识别不单独出工具，走上面的工作流阶段，且识别结果只表示正文提到了该条款，不表示该理由已被实质论证。另需结构化解析驳回决定时用 `parse_office_action`（text=驳回决定正文）：同一文献在不同位置的标注不一致时，结果含解析冲突（冲突源/候选值/采用依据），不静默取单一结论，须人工核对。
 - 用 patent_case_search / patent_kg_query 取合议组对同类驳回理由的审查口径与在先复审决定；法条、指南、判例原文按纪律核验后引用。
 

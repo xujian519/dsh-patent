@@ -94,8 +94,9 @@ export function requireTask(team: TeamState, taskId: string): TeamTask {
  *
  * A role is validated here because a member with an unregistered role has no
  * contract: it is spawned without persona or deliverable checks, and the typo
- * surfaces only when its first task is accepted. Failing the add keeps the
- * roster and `role-contracts.ts` in step.
+ * surfaces only when its first task is accepted. An empty role is refused as
+ * well, so a supplied-but-blank value cannot produce the same member. Failing
+ * the add keeps the roster and `role-contracts.ts` in step.
  * @param team - the fresh team record.
  * @param rawName - the caller-supplied member name, for error text.
  * @param memberKey - the sanitized member key.
@@ -115,7 +116,10 @@ export function requireAddableMember(
   if (team.members.filter(candidate => candidate.status !== 'removed').length >= maxMembers) {
     throw new Error(`team "${team.name}" is at its member cap (${maxMembers})`)
   }
-  if (role !== undefined && role !== '' && roleContract(role) === undefined) {
+  if (role !== undefined && role.trim() === '') {
+    throw new Error('member role must not be empty — omit the parameter to add a member without a role')
+  }
+  if (role !== undefined && roleContract(role) === undefined) {
     const known = defaultRoleContracts().map(contract => contract.role).join(', ')
     throw new Error(`unknown role "${role}" — use a registered role id (${known})`)
   }

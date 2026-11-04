@@ -289,7 +289,7 @@ describe('patent_workflow_run', () => {
     expect(value.interruptNote).toContain('review_gate')
   })
 
-  it('pauses with an unavailable refusal when no approval service is mounted', async () => {
+  it('keeps the pause contract when the approval service is absent', async () => {
     const tool = createPatentWorkflowRunTool({
       model: fakeModel(),
       search: fakeSearch,
@@ -300,8 +300,22 @@ describe('patent_workflow_run', () => {
       { manifestId: 'patent_disclosure_v1', input: 'technical disclosure' },
       toolExec(true),
     )) as PatentWorkflowRunOutput
-    expect(value.interruptNote).toContain('未放行（unavailable）')
-    expect(value.interruptNote).toContain('未挂载审批服务')
+    expect(value.interruptNote).toContain('审批门暂停')
+    expect(value.interruptNote).not.toContain('未放行')
+  })
+
+  it('accepts approveStageIds when the approval service is absent', async () => {
+    const tool = createPatentWorkflowRunTool({
+      model: fakeModel(),
+      search: fakeSearch,
+      approveStageGates: true,
+      approval: () => undefined,
+    })
+    const value = (await tool.execute(
+      { manifestId: 'patent_disclosure_v1', input: 'technical disclosure', approveStageIds: ['review_gate'] },
+      toolExec(true),
+    )) as PatentWorkflowRunOutput
+    expect(value.interruptNote).toBeUndefined()
   })
 
   it('refuses approveStageIds while gates run live', async () => {

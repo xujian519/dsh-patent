@@ -180,7 +180,7 @@ export const patentNoveltyManifest: WorkflowManifest = {
       strategy: 'chain',
       description: '人工确认分析结论',
       atom: 'approval-gate',
-      params: { review_context: '新颖性分析结论需人工确认后方可交付' },
+      params: { review_context: '新颖性分析结论需人工确认后方可交付', review_keys: ['conclude'] },
     },
   ],
   validation: { requireAllSteps: true, maxRetries: 2 },
@@ -343,11 +343,13 @@ export const patentDisclosureManifest: WorkflowManifest = {
       // 审批门放在反哺回路之后：legal_gaps 回退会重做报告、权利要求与说明书，
       // 门若在上游，回退就会绕过人工复核。manifest 校验禁止回退跨过审批门。
       // 复核上下文由 draft-claims 写入（含特征表、从权树与权利要求草稿），
-      // 因此本阶段不再用静态 params 覆盖 review_context。
+      // 因此本阶段不用静态 params 覆盖 review_context；review_keys 只点名
+      // 现场取用户决策时要展示的产出，与上下文来源无关。
       id: 'review_gate',
       strategy: 'chain',
       description: '人工复核披露分析报告、权利要求特征表/从权树与说明书草案（中断等待确认）',
       atom: 'approval-gate',
+      params: { review_keys: ['draft_claims', 'specification'] },
     },
   ],
   validation: { requireAllSteps: true, maxRetries: 2 },
@@ -434,7 +436,7 @@ export const patentInventivenessManifest: WorkflowManifest = {
       strategy: 'chain',
       description: '人工确认分析结论（HITL）',
       atom: 'approval-gate',
-      params: { review_context: '创造性分析结论需人工确认后方可交付' },
+      params: { review_context: '创造性分析结论需人工确认后方可交付', review_keys: ['conclude'] },
     },
   ],
   validation: { requireAllSteps: true, maxRetries: 2 },
@@ -501,7 +503,7 @@ export const patentPatentabilityManifest: WorkflowManifest = {
       strategy: 'chain',
       description: '人工确认权利要求布局',
       atom: 'approval-gate',
-      params: { review_context: '权利要求布局需人工确认后方可交付' },
+      params: { review_context: '权利要求布局需人工确认后方可交付', review_keys: ['draft', 'specification'] },
     },
   ],
   validation: { requireAllSteps: true, maxRetries: 2 },
@@ -674,7 +676,7 @@ export const patentOaResponseManifest: WorkflowManifest = {
       strategy: 'chain',
       description: '人工确认答复书',
       atom: 'approval-gate',
-      params: { review_context: '答复书需人工确认后方可交付' },
+      params: { review_context: '答复书需人工确认后方可交付', review_keys: ['draft'] },
     },
   ],
   validation: { requireAllSteps: true, maxRetries: 2 },
@@ -788,7 +790,10 @@ function buildContestedManifest(options: ContestedManifestOptions): WorkflowMani
         strategy: 'chain',
         description: '人工确认分析结论',
         atom: 'approval-gate',
-        params: { review_context: `${options.label}分析结论需人工确认后方可交付` },
+        params: {
+          review_context: `${options.label}分析结论需人工确认后方可交付`,
+          review_keys: ['novelty', 'inventiveness'],
+        },
       },
     ],
     validation: { requireAllSteps: true, maxRetries: 2 },
@@ -879,7 +884,7 @@ export const patentInfringementManifest: WorkflowManifest = {
       strategy: 'chain',
       description: '人工确认比对结论',
       atom: 'approval-gate',
-      params: { review_context: '侵权比对结论需人工确认后方可交付' },
+      params: { review_context: '侵权比对结论需人工确认后方可交付', review_keys: ['report'] },
     },
   ],
   validation: { requireAllSteps: true, maxRetries: 2 },

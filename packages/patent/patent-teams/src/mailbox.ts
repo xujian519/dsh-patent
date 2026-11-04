@@ -133,6 +133,15 @@ export interface MailboxSnapshot {
   leased: TeamMessage[]
 }
 
+/** Positional arguments shared by the mailbox readers below. */
+type MailboxReadArgs = [
+  stateRoot: string,
+  teamId: string,
+  agentKey: string,
+  onMalformedLine?: (lineNumber: number, error: unknown) => void,
+  deliveryLeaseMs?: number,
+]
+
 /**
  * Read one mailbox and split its unread messages by live-delivery lease.
  *
@@ -148,18 +157,14 @@ export interface MailboxSnapshot {
  * {@link DEFAULT_MAILBOX_DELIVERY_LEASE_MS}).
  * @returns unread and leased messages, both oldest first and empty when the mailbox does not exist.
  */
-export async function readMailboxSnapshot(
-  stateRoot: string,
-  teamId: string,
-  agentKey: string,
-  onMalformedLine?: (lineNumber: number, error: unknown) => void,
-  deliveryLeaseMs = DEFAULT_MAILBOX_DELIVERY_LEASE_MS,
-): Promise<MailboxSnapshot> {
+export async function readMailboxSnapshot(...args: MailboxReadArgs): Promise<MailboxSnapshot> {
+  const [stateRoot, teamId, agentKey, onMalformedLine, deliveryLeaseMs] = args
+  const leaseMs = deliveryLeaseMs ?? DEFAULT_MAILBOX_DELIVERY_LEASE_MS
   const now = Date.now()
   const snapshot: MailboxSnapshot = { unread: [], leased: [] }
   for (const message of await readMailbox(stateRoot, teamId, agentKey, onMalformedLine)) {
     if (message.readAt !== undefined) continue
-    if (message.deliveryClaimedAt !== undefined && now - message.deliveryClaimedAt < deliveryLeaseMs) {
+    if (message.deliveryClaimedAt !== undefined && now - message.deliveryClaimedAt < leaseMs) {
       snapshot.leased.push(message)
       continue
     }
@@ -180,14 +185,8 @@ export async function readMailboxSnapshot(
  * {@link DEFAULT_MAILBOX_DELIVERY_LEASE_MS}).
  * @returns the unacknowledged messages, empty when the mailbox does not exist.
  */
-export async function readUnreadMailbox(
-  stateRoot: string,
-  teamId: string,
-  agentKey: string,
-  onMalformedLine?: (lineNumber: number, error: unknown) => void,
-  deliveryLeaseMs = DEFAULT_MAILBOX_DELIVERY_LEASE_MS,
-): Promise<TeamMessage[]> {
-  return (await readMailboxSnapshot(stateRoot, teamId, agentKey, onMalformedLine, deliveryLeaseMs)).unread
+export async function readUnreadMailbox(...args: MailboxReadArgs): Promise<TeamMessage[]> {
+  return (await readMailboxSnapshot(...args)).unread
 }
 
 async function mutateMailbox(

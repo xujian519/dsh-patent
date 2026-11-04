@@ -73,6 +73,47 @@ describe('LiveApprovalGateHandler', () => {
     expect(service.requests[0]?.reason).toContain('该阶段产出需要人工确认')
   })
 
+  it('quotes the pending deliverables named by review_keys', async () => {
+    const service = face('allowed-once')
+    await runGate(() => service, {
+      review_context: '答复书需人工确认',
+      review_keys: ['draft', 'legal_gaps'],
+      draft: '第一段正文。\n第二段正文。',
+      legal_gaps: '缺口：无。',
+    })
+    const reason = service.requests[0]?.reason ?? ''
+    expect(reason).toContain('待确认产出：draft：第一段正文。 第二段正文。；legal_gaps：缺口：无。')
+  })
+
+  it('skips review keys that carry no text', async () => {
+    const service = face('allowed-once')
+    await runGate(() => service, {
+      review_context: '布局需确认',
+      review_keys: [42, 'missing', 'blank', 'draft'],
+      blank: '   ',
+      draft: '正文',
+    })
+    const reason = service.requests[0]?.reason ?? ''
+    expect(reason).toContain('draft：正文')
+    expect(reason).not.toContain('missing')
+    expect(reason).not.toContain('blank')
+  })
+
+  it('caps previews at two keys and truncates a long deliverable', async () => {
+    const service = face('allowed-once')
+    await runGate(() => service, {
+      review_context: '权利要求布局需人工确认',
+      review_keys: ['a', 'b', 'c'],
+      a: 'x'.repeat(200),
+      b: 'y',
+      c: 'z',
+    })
+    const reason = service.requests[0]?.reason ?? ''
+    expect(reason).toContain(`a：${'x'.repeat(140)}…`)
+    expect(reason).toContain('b：y')
+    expect(reason).not.toContain('c：z')
+  })
+
   it('does not ask when the executor already injected the grant marker', async () => {
     const service = face('rejected')
     const delta = await runGate(() => service, { [APPROVAL_GRANTED_KEY]: true })
@@ -94,9 +135,10 @@ describe('LiveApprovalGateHandler', () => {
     expect(error.message).toContain('不要重复调用')
   })
 
-  it('refuses when the deployment mounts no approval service', async () => {
+  it('refuses when the approval service is unavailable at the gate', async () => {
     const error = await refusal(runGate(() => undefined))
-    expect(error.message).toContain('未挂载审批服务')
+    expect(error.message).toContain('审批服务在运行中不可用')
+    expect(error.message).toContain('关闭 approveStageGates')
     expect(error.data).toEqual({ outcome: 'unavailable' })
   })
 

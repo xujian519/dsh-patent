@@ -32,6 +32,7 @@
 - `verify-md-wrap` 的扫描集合含 `docs/**`、`.agents/notes/**`、`packages/*/*.md` 等，**不含 `.agents/plans/**`**。
 - `verify-md-links` 的扫描集合含 `.agents/skills/**`、`.agents/notes/**`，**不含 `.agents/plans/**`**；实测 `markdownLinkSourcePaths()` 返回 3240 个文件中 plans 目录占 0 个。
 - 结论：本目录下的计划文档不受这两道门保护，检查清单里的「文档排版/链接」项对 plans 只能人工自查；若要机器化，见 C5。
+- `builtinPatentManifests`（`packages/patent/patent-workflow/src/workflow/manifests.ts`）已导出全部 8 个内置 manifest，`verify-patent-team-stages` 直接以它作为阶段权威集，无需再读源码文本。
 
 ## 2. 任务清单
 
@@ -67,6 +68,10 @@
 | C3 | 接入 `run-gates.ts` 的 quick 组与 `package.json` 脚本 | `scripts/run-gates.ts`、`package.json` | C2 | `pnpm run verify-patent-team-stages` 可单跑；doc-quick 含该门 |
 | C4 | 文档同步：子系统页或工作台任务页记录「团队场景跟 manifest 对齐」的当前态 | `docs/subsystems/patent*.md` 或 `docs/patent-workbench-tasks.md` | C1 | `doc-sync` 相关项通过；中英成对 |
 | C5 | （可选，独立评估）把 `.agents/plans/**` 纳入 `verify-md-wrap` 与 `verify-md-links` | `scripts/verify-md-wrap.ts`、`scripts/verify-md-links.ts` | — | 加入后现存 plans 全绿，否则先修存量 |
+
+### 2.5 落地状态（2026-11-04）
+
+A1–A6、B1–B2、C1–C3 已实现；A7 不需要改动（preset 指南的技能数与名称未变，只补了执行面说明）；B3 无需要（未新增工具约束）；B4 未写（团队场景语义变化未触及已发布的外部契约面）；C4/C5 留待后续。
 
 ### 2.4 不做
 

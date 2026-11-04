@@ -340,6 +340,9 @@ function prosecutionWorkers(): WorkerContract[] {
        * `patent_oa_response_v1`（`patent_workflow_run` 的阶段记录＝收口依据）；
        * `patent-oa-writer`＝团队组装面作业角色（产出按 requiredFields 校验）。
        * 两者并行、互不派发：worker 不派发 manifest，manifest 不派发 worker。
+       * 因此团队派工时成员只读该次运行产出的 `parse`/`claim-chart`/`response-plan`/
+       * `draft`/`tighten` 等阶段结果做复核与解释，不得声称执行过其中任一阶段，
+       * 也不得用 `allowedTools` 表达这类限制（该字段只进 persona，无运行时消费者）。
        */
       name: 'patent-oa-writer',
       tier: 'work',

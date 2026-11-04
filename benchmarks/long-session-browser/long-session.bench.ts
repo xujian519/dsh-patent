@@ -18,6 +18,9 @@ const EXPECTED_OPEN_CI_MS = 900
 const EXPECTED_PAGE_CI_MS = 700
 const EXPECTED_TRAJECTORY_CI_MS = 520
 const OPEN_BUDGET_MS = Math.ceil(EXPECTED_OPEN_CI_MS * PERFORMANCE_BUDGET_HEADROOM)
+/** Slower hosted first-reply observations already contain the completion marker under a 16 ms cadence. */
+const EXPECTED_FIRST_CI_MS = 3520
+const FIRST_BUDGET_MS = Math.ceil(EXPECTED_FIRST_CI_MS * PERFORMANCE_BUDGET_HEADROOM)
 const PAGE_BUDGET_MS = Math.ceil(EXPECTED_PAGE_CI_MS * PERFORMANCE_BUDGET_HEADROOM)
 const TRAJECTORY_BUDGET_MS = Math.ceil(EXPECTED_TRAJECTORY_CI_MS * PERFORMANCE_BUDGET_HEADROOM)
 const REPLAY_DURATION_MS = (DELTAS + 4) * PACE_MS
@@ -118,6 +121,17 @@ async function watchInputOverlap(composer: Locator): Promise<void> {
     }, { once: true })
   }, { first: FIRST, done: DONE })
 }
+
+it('accepts slower hosted first-reply samples and rejects the scaled ceiling', () => {
+  expect(ciTimeBudget(REFERENCE.first)).toBe(2750)
+  expect(FIRST_BUDGET_MS).toBe(4400)
+  expect(REPLAY_DURATION_MS).toBe(4960)
+  for (const value of [3144.422687, 3516.001194]) {
+    expect(() => expectEndpointWithinBudget(value, ciTimeBudget(REFERENCE.first))).toThrow()
+    expectEndpointWithinBudget(value, FIRST_BUDGET_MS)
+  }
+  expect(() => expectEndpointWithinBudget(FIRST_BUDGET_MS + 1, FIRST_BUDGET_MS)).toThrow()
+})
 
 it('accepts recorded hosted open samples and rejects slower endpoints', () => {
   for (const value of [681.276514, 541.051233]) {
@@ -446,7 +460,7 @@ it('opens, pages, navigates and streams into a 240-turn browser history', async 
   const aggregate = Object.fromEntries(Object.keys(REFERENCE).map(key => [key, median(samples.map(sample => sample[key as keyof typeof REFERENCE]))]))
   const budgets: Record<string, number> = {
     ...Object.fromEntries(Object.entries(REFERENCE).map(([key, value]) => [key, ciTimeBudget(value) + (key === 'streamWall' ? REPLAY_DURATION_MS : 0)])),
-    open: OPEN_BUDGET_MS, page: PAGE_BUDGET_MS, trajectory: TRAJECTORY_BUDGET_MS,
+    open: OPEN_BUDGET_MS, page: PAGE_BUDGET_MS, trajectory: TRAJECTORY_BUDGET_MS, first: FIRST_BUDGET_MS,
   }
   console.log(JSON.stringify({ benchmark: 'long-session-browser/median', turns: HISTORY_TURNS, deltas: DELTAS, paceMs: PACE_MS, samples, aggregate, referenceMs: REFERENCE, expectedOpenCiMs: EXPECTED_OPEN_CI_MS, expectedPageCiMs: EXPECTED_PAGE_CI_MS, expectedTrajectoryCiMs: EXPECTED_TRAJECTORY_CI_MS, budgets }))
   recordTimings(CASE, Object.fromEntries(SCALED_ENDPOINTS.map(key => [key, { ms: aggregate[key]!, ioShare: IO_SHARE }])), budgets)

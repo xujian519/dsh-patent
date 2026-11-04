@@ -768,8 +768,8 @@ hygiene 16/16 PASS、doc-sync 43/43 PASS、duplication 0 clones / 2350 files / 4
 `pnpm run verify-preset-divergence` 在 `fix/patent-preset-writing-patterns-isolate` 上失败，与本轮专利团队改动无关：`git stash` 后同样失败。
 
 - **现象**：`patent-rule: patent.patch.yml changed from d3a46f2141 to 800e54e29d`。
-- **成因**：`9c871389f1`（`fix(preset): 隔离 writingPatterns 服务修复专利模式加载失败`）把 `writing-patterns` 行从 patent preset 顶层移入 patent 组，并在组的 `isolate` 声明 `writingPatterns`。该行落在 `patent-rule` 与下一个 `- id:` 之间的块内，块哈希因此变化；同一提交未重跑 `pnpm run preset-divergence:baseline`。
-- **处置**：重跑基线只改一行哈希（`patent-rule.patent.patch.yml` → `800e54e29d`），`legal.patch.yml` 一侧与其余 30 个发散行 id 不变，说明这是同一处语义修正的记账，不是新增发散。基线分支随后以 `37cbd009bc`（`test(preset): refresh divergence baseline after patent.patch.yml change`）做了完全相同的修复，本分支合并基线后该改动被吸收，不再重复记账。
+- **成因**：PR #724（隔离 `writingPatterns` 服务，修复专利模式加载失败）把 `writing-patterns` 行从 patent preset 顶层移入 patent 组，并在组的 `isolate` 声明 `writingPatterns`。该行落在 `patent-rule` 与下一个 `- id:` 之间的块内，块哈希因此变化；同一变更未重跑 `pnpm run preset-divergence:baseline`。
+- **处置**：重跑基线只改一行哈希（`patent-rule.patent.patch.yml` → `800e54e29d`），`legal.patch.yml` 一侧与其余 30 个发散行 id 不变，说明这是同一处语义修正的记账，不是新增发散。基线侧随后做了完全相同的修复；本分支合入 master 后该改动已被吸收，不再重复记账。
 - **预防**：改 `packages/bundle/web-app/presets/*.patch.yml` 的块内容后，同一次提交内重跑 `pnpm run preset-divergence:baseline` 并检查 diff 只含预期行。
 - **另记**：`.agents/plans/**` 此前不在 `verify-md-wrap` 与 `verify-md-links` 的扫描集合内（`markdownLinkSourcePaths()` 实测 3240 个文件中 plans 目录占 0 个），计划文档的排版与相对链接长期没有机器门；现已把两处 PATTERNS 补上 `.agents/plans/**/*.md`，存量 4 份计划修掉 4 处硬换行后全绿（3294 文件）。
 

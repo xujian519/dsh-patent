@@ -151,20 +151,21 @@ export function checkFigureMarkConsistency(
   if (figureAnalysis.length === 0) return []
   const violations: SpecViolation[] = []
 
-  const unusable = figureAnalysis.filter(f => !f.usable)
+  // 声明可用却没有组件列表，与不可用同义：没有标号可核，不能算「无标号缺陷」。
+  const unusable = figureAnalysis.filter(f => !f.usable || f.components === undefined)
   if (unusable.length > 0) {
     violations.push({
       rule: 'figure_mark_consistency',
       family: 'figures',
       severity: 'warning',
-      message: `附图分析结果不可用（${unusable.length} 张），请人工核对图面标号与附图说明`,
+      message: `附图分析结果不可用或不完整（${unusable.length} 张），请人工核对图面标号与附图说明`,
     })
   }
 
   const figureMarks = new Set<string>()
   for (const f of figureAnalysis) {
     if (!f.usable) continue
-    for (const c of f.components) {
+    for (const c of f.components ?? []) {
       if (/^\d+$/.test(c.refNumber)) figureMarks.add(c.refNumber)
     }
   }

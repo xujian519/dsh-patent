@@ -358,7 +358,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- tech-debt-counters:start -->
 | 计数 | 值 |
 | --- | --- |
-| `structure.long-functions` | 185 |
+| `structure.long-functions` | 184 |
 | `structure.large-files` | 90 |
 | `structure.patent-large-files` | 10 |
 | `lint.v8-ignore` | 1315 |
@@ -406,6 +406,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-04 专利域缺陷清单工具**:`validate-specification.ts` 的 `createValidateSpecificationTool` 降至 150 行以下,`structure.long-functions` 由 185 降至 **184**。该函数的 `figure_analysis` 参数 schema 抽到 `internal/figure-schemas.ts`,由 `validate_specification` 与新增的 `domain_check` 共用,同一处抽取也消除了 jscpd 报出的两处克隆;其余计数不变。
 - **2026-11-03 上游 0.2.2-alpha.3 同步复测**:随同步合并按当前 shipped sources 重新实测,`structure.long-functions` 由 186 降至 **185**、`structure.large-files` 由 89 升至 **90**(两向都来自上游对既有文件的增删与拆分,非本仓新债);`lint.v8-ignore`、`lint.ts-expect-error`、`structure.patent-large-files` 与其余计数不变。
 - **2026-11-03 E 撰写链换位审查**:`manifests.ts` 因披露链在 `slop_clean` 与 `legal_gaps` 之间插入 `draft_review` 阶段（含按缺口路由的 `retry.routes`）由 878 升至 **898**,接受上限同步重定;`lint.v8-ignore` 由 1313 升至 **1315**:`draft-review` 的输入组装只复制白名单键,禁用键在构造上不可达,另一处防御未来的 `inputSchema` 编辑;两条守卫均带理由,新原子其余分支由用例覆盖。`structure.long-functions` 与 `structure.large-files` 不变。
 - **2026-11-02 B2 权利要求策略**:`manifests.ts` 因披露链新增 `claim_strategy` 阶段由 871 升至 **878**,接受上限同步重定;`structure.long-functions`、`structure.large-files` 与 `lint.v8-ignore` 不变,新增分支由用例覆盖。

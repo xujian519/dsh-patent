@@ -11,7 +11,7 @@
 - `@deepseek-ai/dsh-patent-data` — 数据接缝（ctx.patentData：nuo 检索 provider 工厂 + ego-browser 会话运行器 + CNIPR 通道；本 preset 经 `cniprEnabled` 打开该通道，用 ego lite 在 search.cnipr.com 的登录态取中国专利全文与法律状态）。patent_pdf_download 经该服务运行其 ego-browser 下载适配器，中国公开(公告)号走 CNIPR 通道；patent_legal_status 把引擎答不出的号经该通道重查一次。
 - `@deepseek-ai/dsh-patent-knowledge` — knowledge.db 查询服务（ctx.patentKnowledge：caseLawSearch / legalSearch / wikiCards / kgSearch / kgGetNode / kgListByType / ipcClassify）。
 - `@deepseek-ai/dsh-patent-workflow` — 执行管线服务（ctx.patentWorkflow：runWorkflow / runPlantask / approve / reject）。
-- `@deepseek-ai/dsh-patent-tools` — 36 个模型工具：检索、元数据、法律状态、判例/wiki/图谱查询、法条原文检索、权利要求对照表、审查意见解析、TRIZ 矛盾分析、撰写、说明书校验、分析报告、证据判断、规则检查、附图分析与生成、跨图一致性校验、图文比对、化学结构识别、PDF 下载、知识笔记、案卷留档、工作台案件关联，以及工作流/计划状态机（权威清单见 `docs/tool-catalog.md`）。
+- `@deepseek-ai/dsh-patent-tools` — 37 个模型工具：检索、元数据、法律状态、判例/wiki/图谱查询、法条原文检索、权利要求对照表、审查意见解析、TRIZ 矛盾分析、撰写、说明书校验、分析报告、证据判断、规则检查、领域缺陷清单检查、附图分析与生成、跨图一致性校验、图文比对、化学结构识别、PDF 下载、知识笔记、案卷留档、工作台案件关联，以及工作流/计划状态机（权威清单见 `docs/tool-catalog.md`）。
 - `@deepseek-ai/dsh-patent-teams` — 持久多智能体团队服务（ctx.patentTeams），提供十二个 `patent_teams_*` 工具；`qualityGate: true` 时运行组合完成门禁，`approveCreation` / `approveClosure` 打开时把团队的两个案件级决定——建队与收口——交给本部署的 `approval` 服务判定，未获放行时直接拒绝该调用（结果名 `rejected` / `cancelled` / `unavailable`），不会创建或关闭用户未允许的团队。
 - `@deepseek-ai/dsh-patent-rule` — 规则引擎、tools/post-execute 输出门禁、声明式结构门禁与交付前置门禁、EVI-011 证据守卫。
 - `@deepseek-ai/dsh-patent-document` — render_patent_document。

@@ -25,6 +25,7 @@ const BASIS: Readonly<Record<ClaimLintRuleId, string>> = {
   'two-part-form': '《专利法实施细则》第二十四条第一款；审查指南第二部分第二章 3.3.1',
   'functional-limitation': '《专利法》第二十六条第四款；审查指南第二部分第二章 3.2.1',
   'process-feature': '《专利法》第二条第三款；审查指南第二部分第二章 3.2.2',
+  'step-order': '《专利法》第二十六条第四款（清楚）；审查指南第二部分第二章 3.2.2',
   'non-technical-feature': '《专利法实施细则》第二十二条第一款；审查指南第二部分第二章 3.2.2',
   'commercial-language': '《专利法实施细则》第二十二条第一款；审查指南第二部分第二章 3.2.2',
   'external-reference': '《专利法实施细则》第二十二条第三款；审查指南第二部分第二章 3.2.2',
@@ -44,6 +45,15 @@ const FUNCTIONAL_PATTERNS: ReadonlyArray<{ pattern: RegExp; label: string }> = [
 
 /** 工艺方法特征（实用新型不保护方法）。「层叠」是撰写实务认可的替代写法，不入表。 */
 const PROCESS_PATTERN = /(?:冲压|冲裁|叠压|压铸|铸造|锻造|注塑|热处理|机加工|涂覆|焊接|压制|制成|制备|成型|加工(?![孔面]))/
+
+/** 步骤式撰写：「包括步骤」「包括以下处理步骤」「步骤如下」等列举句式。 */
+const STEP_LIST_PATTERN = /(?:包括|包含)(?:以下|下述|如下)?[^，。；]{0,6}步骤|步骤如下/
+
+/** 已声明步骤顺序的用语；出现任一即视为顺序已明确。 */
+const STEP_ORDER_PATTERN = /依次|顺序|先后/
+
+/** 主题名称落在「方法」「工艺」上的权利要求。 */
+const METHOD_SUBJECT_PATTERN = /(?:方法|工艺)$/
 
 /** 不产生技术效果的特征。 */
 const NON_TECHNICAL_PATTERN = /(?:美观|装饰|商标|品牌|型号|广告|价格|销量|市场份额|经济效益)/
@@ -283,6 +293,19 @@ function lintClaim(
     'warning',
     hit => `特征部分出现工艺方法特征「${hit}」；实用新型只保护形状、构造，工艺特征不产生保护作用。`,
   ))
+  // 只查独立权利要求：从属项的主题名称读作「所述方法」，重复的是独权的主题，
+  // 步骤顺序的声明应在独权中作出。
+  const enumeratesSteps = STEP_LIST_PATTERN.test(characteristic)
+  const declaresOrder = STEP_ORDER_PATTERN.test(characteristic)
+  if (claim.independent && METHOD_SUBJECT_PATTERN.test(claim.subject) && enumeratesSteps && !declaresOrder) {
+    findings.push(finding(
+      'step-order',
+      number,
+      'warning',
+      '方法权利要求以「包括步骤」列举操作，但未声明步骤顺序是否构成限定；写明「依次执行」或「可任意顺序执行」，避免侵权判定时对顺序限定的争议。',
+      characteristic,
+    ))
+  }
   findings.push(...scanPattern(
     number,
     characteristic,

@@ -47,6 +47,44 @@ describe('rule_check', () => {
     }
   })
 
+  it('patent-mechanical scope adds the mechanical domain pack on top of the full assets', async () => {
+    const tool = createRuleCheckTool()
+    const ctx = await ctxWith(tool)
+    // 语境锚点在、但缺「作用或技术效果」的分析 → MECH-INV-001 命中
+    const hit = await execute(ctx, 'rule_check', { text: '对比文件1的压板与本申请的结构等效。', scope: 'patent-mechanical' }, 'r-mech-1')
+    expect(hit.isError).toBe(false)
+    if (hit.isError) throw new Error('expected success')
+    expect(JSON.stringify(hit.value)).toContain('MECH-INV-001')
+
+    // 不含等效/等同的文本不评估该规则
+    const clean = await execute(ctx, 'rule_check', { text: '所述壳体设置在底座上，起到支撑作用。', scope: 'patent-mechanical' }, 'r-mech-2')
+    expect(clean.isError).toBe(false)
+    if (clean.isError) throw new Error('expected success')
+    expect(JSON.stringify(clean.value)).not.toContain('MECH-INV-001')
+  })
+
+  it('patent-software scope adds the software domain pack on top of the full assets', async () => {
+    const tool = createRuleCheckTool()
+    const ctx = await ctxWith(tool)
+    // 语境锚点在、但缺「技术效果」→ SOFT-INV-001 命中
+    const hit = await execute(ctx, 'rule_check', { text: '本方案不属于智力活动规则，其技术问题与技术手段如下。', scope: 'patent-software' }, 'r-soft-1')
+    expect(hit.isError).toBe(false)
+    if (hit.isError) throw new Error('expected success')
+    expect(JSON.stringify(hit.value)).toContain('SOFT-INV-001')
+
+    // 三要素齐备 → 不命中
+    const complete = await execute(ctx, 'rule_check', { text: '本方案不属于智力活动规则：技术问题为识别准确率低，技术手段为卷积神经网络，技术效果为准确率提升 3%。', scope: 'patent-software' }, 'r-soft-2')
+    expect(complete.isError).toBe(false)
+    if (complete.isError) throw new Error('expected success')
+    expect(JSON.stringify(complete.value)).not.toContain('SOFT-INV-001')
+
+    // 未讨论客体的文本不评估该规则
+    const unrelated = await execute(ctx, 'rule_check', { text: '所述壳体设置在底座上，起到支撑作用。', scope: 'patent-software' }, 'r-soft-3')
+    expect(unrelated.isError).toBe(false)
+    if (unrelated.isError) throw new Error('expected success')
+    expect(JSON.stringify(unrelated.value)).not.toContain('SOFT-INV-001')
+  })
+
   it('evaluates a keyword blocklist rule', async () => {
     const ruleSet: RuleSet = { rules: [{ id: 'r1', name: '禁止词', severity: 'critical', action: 'block', check: { type: 'keyword_blocklist', keywords: ['禁止词'] } }] }
     const tool = createRuleCheckTool({ loader: () => ruleSet, synonyms: () => new Map() })

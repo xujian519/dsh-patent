@@ -5,9 +5,11 @@
  * @module @deepseek-ai/dsh-patent-tools/tool/rule-check
  */
 
+import { join } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import {
+  assetRulesRoot,
   evaluateDualRule,
   evaluateText,
   isDualInputCheck,
@@ -15,7 +17,9 @@ import {
   loadPatentElectricalRuleSet,
   loadPatentFullRuleSet,
   loadRulePack,
+  loadRuleSetDir,
   loadSynonymsAsset,
+  mergeRuleSets,
   patentCaseDomains,
   summarizeRulePackLayers,
 } from '@deepseek-ai/dsh-patent-rule'
@@ -78,7 +82,13 @@ export type RuleCheckDeps = {
 }
 
 /** rule_check supported scopes (shared by the description and the runtime error). */
-const AVAILABLE_SCOPES = 'patent, patent-electrical, patent-full, patent-drafting, patent-analysis, patent-oa-response, patent-invalidation, patent-invalidation-defense, patent-reexamination, patent-infringement, pack'
+const AVAILABLE_SCOPES = 'patent, patent-electrical, patent-full, patent-mechanical, patent-software, patent-drafting, patent-analysis, patent-oa-response, patent-invalidation, patent-invalidation-defense, patent-reexamination, patent-infringement, pack'
+
+/** Domain pack a `patent-<domain>` scope adds on top of the full assets. */
+const DOMAIN_SCOPES: Readonly<Record<string, string>> = {
+  'patent-mechanical': 'mechanical',
+  'patent-software': 'software',
+}
 
 const DESCRIPTION = [
   'Run deterministic constitutional rule checks (keyword blocklist / pattern / structural / citation range / synonym match / quote repetition)',
@@ -90,6 +100,7 @@ const DESCRIPTION = [
   "'patent-full' (every bundled asset: general compliance + nuo mirrors + hand-written merged rules, activation-reviewed),",
   "a job scope 'patent-drafting' (claim/spec drafting) / 'patent-analysis' (patentability, novelty, inventiveness) / 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement'",
   "(the 'patent-full' assets restricted to that job's rule domains: its own document plus the clauses it must answer or establish),",
+  "a domain scope 'patent-mechanical' or 'patent-software' (the full assets plus that domain's rule pack: argument-completeness rules the general assets do not carry),",
   "or 'pack' (layered rule pack assembled from the project manifest .sati/rules.yaml: base + domains + overrides).",
   'With the office-action notice at hand, a job scope also takes notice=通知书正文: the two dual-input rules (PR-OA-008 驳回理由覆盖 / PR-OA-009 未提条款引用) then run against the response; without notice they are listed as unevaluated.',
   'Every result ends with an 评估输入 line giving the character count and digest of the text this run actually read: keep that line when you transcribe the result, so a later run can show whether it read the same text.',
@@ -173,6 +184,7 @@ export function createRuleCheckTool(deps: RuleCheckDeps = {}): ToolDefinition {
 
   const resolve = (scope: string): { ruleSet: RuleSet; pack: RulePackLoadResult | null } => {
     const isPack = scope === 'pack' && deps.loader === undefined
+    const domainScope = DOMAIN_SCOPES[scope]
     const cached = cache.get(scope)
     if (cached !== undefined) return { ruleSet: cached.ruleSet, pack: cached.pack }
     let ruleSet: RuleSet
@@ -186,6 +198,11 @@ export function createRuleCheckTool(deps: RuleCheckDeps = {}): ToolDefinition {
       ruleSet = loadPatentComplianceRuleSet().ruleSet
     } else if (scope === 'patent-electrical') {
       ruleSet = loadPatentElectricalRuleSet().ruleSet
+    } else if (domainScope !== undefined) {
+      // 专利全量 + 该领域规则包：域包不在 loadPatentFullRuleSet 里，插件层的
+      // additionalRuleDomains 只影响输出门禁（默认仅 keyword_blocklist），够不到本工具。
+      const domainDir = join(assetRulesRoot(), 'domains', domainScope)
+      ruleSet = mergeRuleSets([loadPatentFullRuleSet().ruleSet, ...loadRuleSetDir(domainDir).ruleSets])
     } else if (scope === 'patent-full' || patentCaseDomains(scope) !== undefined) {
       ruleSet = loadPatentFullRuleSet().ruleSet
     } else {
@@ -202,7 +219,7 @@ export function createRuleCheckTool(deps: RuleCheckDeps = {}): ToolDefinition {
     description: DESCRIPTION,
     parameters: {
       text: { type: 'string', required: true, description: 'The text to check.' },
-      scope: { type: 'string', description: "Rule set scope. Defaults to 'patent' (4 general compliance rules only; choose a job scope for substantive checks). 'patent-drafting' / 'patent-analysis' cover claim/spec drafting and patentability analysis; 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' evaluate the full assets filtered to that job's rule domains. 'pack' loads the layered rule pack declared by .sati/rules.yaml." },
+      scope: { type: 'string', description: "Rule set scope. Defaults to 'patent' (4 general compliance rules only; choose a job scope for substantive checks). 'patent-drafting' / 'patent-analysis' cover claim/spec drafting and patentability analysis; 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' evaluate the full assets filtered to that job's rule domains; 'patent-mechanical' adds the mechanical domain pack (structural-equivalence argument completeness) and 'patent-software' the software/AI pack (subject-matter argument completeness) on top of the full assets. 'pack' loads the layered rule pack declared by .sati/rules.yaml." },
       notice: { type: 'string', description: '通知书正文（可选）：提供时就地确定性解析，并评估双输入规则 PR-OA-008/009；未提供时结果中显式列出未评估项。' },
     },
     output: {

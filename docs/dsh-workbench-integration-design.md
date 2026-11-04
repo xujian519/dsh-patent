@@ -7,6 +7,8 @@
 > 2. **半移植路线**：外部插件的**服务器半原样挂载**（`webServer` 路由 + AI 工具 + system-prompt 指南），**客户端经 Phase 1 冒烟实证直接采用**（slot 本地化重写降为二期可选项）。
 > 3. **用户自建任务与案件任务共存**：`case.db` 同时承载用户手动 / 自然语言 / 重复规则创建的个人任务与专利案件映射任务；日历视图是人机共用的统一界面（见「日历视图」节）。
 > 4. 本文档为**可执行的集成设计**：每阶段给出命令与验收清单，逐阶段验收通过再进入下一阶段。
+>
+> 5. **案卷真源**以 [ADR-001](adr/ADR-001-matter-folder-index.md)（Accepted，2026-11-04）为准。案卷正文在可配置工作根目录（典型值 `/Users/xujian/工作`）的 `<案号>/` 与 `_matter-log.md`。工作台 SQLite（`~/.dsh/workbench`，库文件 `case.db`）只做文件夹索引。下文若写 `patent-workspace/<案号>/`，读作 `<工作根目录>/<案号>/`。案卷与根任务双轨、多案卷工作目录不一致、以及只接受相对 `patent-workspace` 的路径检查，留给后续 ADR，本文不扩大产品范围。
 
 ---
 
@@ -18,11 +20,11 @@
 |---|---|---|---|
 | `knowledge.db` | 专利权威知识库：判例全文检索、法规、wiki 卡片、图谱、向量 | **只读**（对集成方案而言） | [patent-knowledge](../packages/patent/patent-knowledge/src/index.ts)（`openKnowledgeDb`，含版本校验 / 压缩 / `vectors.db`） |
 | `case.db`（**新建**） | 作业数据：案件任务、用户个人任务、子任务、计划、日报周报、复盘、任务记忆、会话注册、工作台侧个人沉淀 | 读写 | 外部 workbench 的 SQLite（`dbPath` 指向 `case.db`） |
-| `patent-workspace/<案号>/` | 案件产物文件：七级业务子目录（00-交底书 → 05-答复 → 99-知识库）+ `_case-registry.md` + `_matter-log.md` | 读写（文件） | patent preset 技能（见 [patent-workbench-plan](patent-workbench-plan.md)） |
+| `<工作根目录>/<案号>/` | 案件产物文件：七级业务子目录（00-交底书 → 05-答复 → 99-知识库）+ `_case-registry.md` + `_matter-log.md`。工作根目录可配置，典型值 `/Users/xujian/工作` | 读写（文件） | patent preset 技能（见 [patent-workbench-plan](patent-workbench-plan.md)） |
 
 **边界规则（全文档唯一事实源定义处，后文只引用不重述）**：
 - `_matter-log.md` 是案件级审计的**唯一事实源**；`case.db` 的 `task_events` 只是它的只读投影（方向与触发器见 Phase 5）。
-- `case.db` 只存「索引 / 状态 / 结构化事实与指向」，不存案卷原文；案卷原文只在 `patent-workspace/<案号>/`。
+- `case.db` 只存「索引 / 状态 / 结构化事实与指向」，不存案卷原文；案卷原文在可配置工作根目录下的 `<案号>/`（典型值 `/Users/xujian/工作`）。`knowledge.db` 不是案卷库。桥接可以读投影，把投影写回案卷目录不是账本。
 - 外部 workbench schema 的 `knowledge_entries` / `ideas` / `idea_clusters` 属于**作业侧个人沉淀**，随 `case.db`，不并入专利 `knowledge.db`。
 - 备份：`case.db` 与 `knowledge.db` 同等待遇——本地私有、不进 git 与公共制品仓；`case.db` 每日一份 WAL checkpoint 后的整库备份（外部 README 的「每日 JSON 备份」仍是规划，集成侧以 SQLite 文件备份为准），保留最近 30 份。
 
@@ -130,9 +132,9 @@
 
 沿用外部 schema（`src/db/schema.ts`，SCHEMA_VERSION=11），全部进 `case.db`：字典（`dictionaries`，12 个 kind：type / status / priority / ai_policy / session_role / draft_kind / draft_status / knowledge_kind / idea_kind / recurrence / ai_session_scope / reminder_method）、`tasks`（含 `parent_id`、`workspace_path`、`recurrence_*`）、`task_reminders`、`task_drafts`、`task_sessions`、`ai_session_registry`、`task_events`（只读投影）、`daily_plans`、`task_reports`、`task_reviews`、`task_artifacts`、`task_memories`、`knowledge_entries`（含 `file_link`）、`ideas`、`idea_clusters`、`idea_links`。
 
-### 6.3 与 `patent-workspace/` 的关系
+### 6.3 与案卷目录的关系
 
-`tasks.workspace_path` 指向 `patent-workspace/<案号>/`；根任务 = 案号，子任务 = 流水线阶段（见 §7）。`case.db` 只存指向与状态。
+`tasks.workspace_path` 指向 `<工作根目录>/<案号>/`（工作根目录可配置，典型值 `/Users/xujian/工作`）；根任务 = 案号，子任务 = 流水线阶段（见 §7）。`case.db` 只存指向与状态。案卷与根任务哪一行与 `_matter-log.md` 并列作为权威，留给后续 ADR。
 
 ### 6.4 存量迁移与并发
 
@@ -154,7 +156,7 @@
 
 | 外部 workbench | 专利案件 | 对接方式 |
 |---|---|---|
-| `tasks` 根节点 | 案件（案号） | `title` = 案号，`workspace_path` = `patent-workspace/<案号>/`，`type_code` = `patent_case`，`ai_policy_code` = `execute` |
+| `tasks` 根节点 | 案件（案号） | `title` = 案号，`workspace_path` = `<工作根目录>/<案号>/`，`type_code` = `patent_case`，`ai_policy_code` = `execute` |
 | `tasks` 子节点 | L1 交底书 / L2 检索 / L3 撰写 / L4 答复 / L5 无效·侵权 | `type_code` = `patent_stage_l1`…`l5` |
 | 状态字典（backlog / todo / doing / blocked / done / cancelled） | 流水线阶段 | 显式映射表：backlog→open、todo/doing→对应阶段进行中、blocked→阶段受阻（写 `extra.blocker`）、done/cancelled→closed；不新增状态码，仅用 `extra.stage` 记 L1–L5 |
 | `task_sessions.role_code` | 案件多会话 | **只用出厂五值**（受 `session_role` 字典校验）：clarify=澄清、consult=咨询、breakdown=拆解、execute=执行、review=复盘；检索/撰写/审查会话统一挂 `execute` 并以 `note` 区分 |

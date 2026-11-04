@@ -1,0 +1,25 @@
+# Bilingual-pair consistency record for ADR-001-matter-folder-index.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/adr/ADR-001-matter-folder-index.md
+/adr-001-matter-folder-index:
+  en: f84ebb5fe782280b
+  zh: 196c0be4f98b63f5
+/adr-001-matter-folder-index/summary:
+  en: f371341749772ae4
+  zh: d80c713c8bb6a066
+/adr-001-matter-folder-index/context:
+  en: 1859577a131a6c70
+  zh: 25f8bbabeeb3694a
+/adr-001-matter-folder-index/decision:
+  en: ea66ad4714f6e7be
+  zh: 61593ce666d874e5
+/adr-001-matter-folder-index/consequences:
+  en: 47fa159e0361bdfe
+  zh: adf21629104c2ae2
+/adr-001-matter-folder-index/out-of-scope:
+  en: fb443be99564eff9
+  zh: cbf4e953f72a8987
+/adr-001-matter-folder-index/leftover-risks:
+  en: d73a68974152b3bf
+  zh: 93336aa9b0a8a1b7

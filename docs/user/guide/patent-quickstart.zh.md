@@ -8,7 +8,7 @@
 
 - 从源码构建需要 Node.js >= 24.9 与 pnpm 11.28.5。
 - 一个 DeepSeek API key。
-- 本机上的案卷目录，包含交底书与参考资料。
+- 可配置工作根目录（work root）下的案卷文件夹，包含交底书与参考资料。该根目录的典型值是 `/Users/xujian/工作`。
 
 ## 启动 Web UI
 
@@ -25,7 +25,16 @@ pnpm dsh web
 ## 配置模型与工作区
 
 1. 打开**设置 → 模型**，填入 DeepSeek API key 并保存。
-2. 选择案卷目录作为工作区。
+2. 所有案卷都使用本仓库作为工作区。
+
+## 打开新建案卷
+
+一个仓库承载多个案卷。不要为每个案卷另开一个 Cursor 或 git 项目。决定见 [ADR-001](../../adr/ADR-001-matter-folder-index.zh.md)。
+
+1. 在工作根目录下建立案卷文件夹，例如 `/Users/xujian/工作/<案号>/`，并在其中放入 `_matter-log.md`。工作根目录可配置。不要另建一棵忽略该根目录的 `patent-workspace/<案号>` 树。
+2. 把该文件夹扫描进工作台账本，即 `~/.dsh/workbench` 下的 SQLite。账本行只保存元数据与 `workspace_path`。案卷文件正文留在该文件夹，不进云端，也不进 `knowledge.db`。
+3. 打开同一仓库并选中该案卷。工作台条目指向该案卷文件夹。
+4. 在该文件夹中书写。案卷目录与 `_matter-log.md` 是真源。桥接可以读取投影。把内容写回案卷文件夹不是账本。
 
 ## 选择专利预设
 
@@ -50,3 +59,4 @@ Agent 在动手前会复述任务范围与每个关键取舍并等待确认；�
 - [使用 Web UI](index.zh.md)
 - [配置模型](providers.zh.md)
 - [架构概览](../../architecture.zh.md)
+- [案卷文件夹索引（ADR-001）](../../adr/ADR-001-matter-folder-index.zh.md)

@@ -8,7 +8,7 @@ This guide takes a first patent task from a source checkout to a completed analy
 
 - Node.js >= 24.9 and pnpm 11.28.5 for the source build.
 - A DeepSeek API key.
-- The case directory on this machine, with disclosure documents and any reference material.
+- A matter folder under the configurable work root, with disclosure documents and any reference material. A typical value of that root is `/Users/xujian/工作`.
 
 ## Start the Web UI
 
@@ -25,7 +25,16 @@ Fork capabilities are not part of the published upstream package, so this source
 ## Configure the model and workspace
 
 1. Open **Settings → Models**, enter the DeepSeek API key, and save it.
-2. Choose the case directory as the workspace.
+2. Keep this repository as the workspace for every matter.
+
+## Open a new matter
+
+One repository holds many matters. Do not open a separate Cursor or git project for each matter. The decision is [ADR-001](../../adr/ADR-001-matter-folder-index.md).
+
+1. Create the matter folder under the work root, for example `/Users/xujian/工作/<案号>/`, and put `_matter-log.md` in it. The work root is configurable. Do not create a separate `patent-workspace/<案号>` tree that ignores this root.
+2. Scan the folder into the workbench ledger, the SQLite database under `~/.dsh/workbench`. The ledger row stores metadata and `workspace_path` only. Matter file bodies stay in the folder. They do not go to the cloud or into `knowledge.db`.
+3. Open this same repository and select that matter. The workbench entry points at the matter folder.
+4. Write in that folder. The matter directory and `_matter-log.md` are the truth source. A bridge may read projections. Writing back to the matter folder is not the ledger.
 
 ## Select the patent preset
 
@@ -50,3 +59,4 @@ The agent restates the scope and each key decision for confirmation before draft
 - [Use the Web UI](index.md)
 - [Configure models](providers.md)
 - [Architecture overview](../../architecture.md)
+- [Matter folder index (ADR-001)](../../adr/ADR-001-matter-folder-index.md)

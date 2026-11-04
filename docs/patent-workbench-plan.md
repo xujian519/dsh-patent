@@ -11,6 +11,7 @@
 - 评审修订：workspace 包数 10→9 勘误、规则数口径、G5 缺口表述（规则门禁已实例化，缺口为事实核验闸门与审计链整合）、阶段 1 补技能发现接线、阶段 2 状态机定案、阶段 4 落地边界
 - 调研输入：开源社区专利/法律 AI 项目横向扫描（star 经 GitHub API 核验，2026-08-19）
 - 定位：**在已有插件层基础上，补齐"工作台"缺的五块拼图，分阶段落地为可用的专利律师日常作业环境**
+- 案卷目录口径（2026-11-04）：[ADR-001](adr/ADR-001-matter-folder-index.md) 将案卷真源定为可配置工作根目录（典型值 `/Users/xujian/工作`）下的 `<案号>/` 加 `_matter-log.md`。下文 `patent-workspace/<案号>/` 读作该目录，不要求另建独立 patent-workspace 树，也不要求每个案子一个 Cursor 或 git 项目。案卷与根任务双轨留给后续 ADR。
 
 ---
 
@@ -95,7 +96,7 @@
 **做什么**：借鉴 `dsh-legal-work-bench` 的 `legal-matter`，为专利作业建案件管理技能 + 目录规范；把"事实核验 + 合规审查"双闸门与案件级审计链实例化为 preset 内技能。
 
 **关键动作**：
-1. 新技能 `patent-matter`（preset 内）：案件 = 八级目录（`patent-workspace/<案号>/` 下 00-交底书 → 04-撰写 → 05-答复 → 99-知识库）+ 六列状态机（**按 L1–L5 流水线阶段定案**：open/retrieving/analyzing/drafting/review/closed 仅作展示别名）+ **只追加事件日志**（`_matter-log.md`：每步记录时间/动作/产物/审批人）；
+1. 新技能 `patent-matter`（preset 内）：案件 = 八级目录（可配置工作根目录下的 `<案号>/`，典型值 `/Users/xujian/工作/<案号>/`，其下 00-交底书 → 04-撰写 → 05-答复 → 99-知识库）+ 六列状态机（**按 L1–L5 流水线阶段定案**：open/retrieving/analyzing/drafting/review/closed 仅作展示别名）+ **只追加事件日志**（`_matter-log.md`：每步记录时间/动作/产物/审批人）；
 2. 审计链：事件日志 + 产物文件头元数据（来源/版本/审批/时间戳），与 persona 纪律 5"输出即证据"合并落地；`patent-workflow` 的 `approval` 审计闭环（ApprovalRecord 只增日志）已存在，事件日志与其并轨，不做第二套账本；
 3. 双闸门技能 `patent-fact-check`（法条/判例/对比文件/日期数字核验）+ `patent-compliance-review`（规则检查清单，复用 `dsh-patent-rule` 的 `rule_check` 工具与规则库），Fail-Closed：闸门不过不交付；
 4. 三 HITL 门（检索式/布局/放行）经 `ctx.approval` 接线（`patent-workflow` 已有 plantask approval 接缝，`packages/patent/patent-workflow/src/index.ts`）。

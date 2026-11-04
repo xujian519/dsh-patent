@@ -4,6 +4,8 @@
 >
 > 本文件是 `docs/patent-workbench-plan.md`（母计划）的可执行拆解，二者一一对应；执行时如发现冲突，以母计划为准并向用户提出。
 >
+> **案卷目录口径（2026-11-04）**：案卷真源以 [ADR-001](adr/ADR-001-matter-folder-index.md) 为准。工作根目录可配置，典型值 `/Users/xujian/工作`。下文 `patent-workspace/<案号>/` 读作 `<工作根目录>/<案号>/`，不要求另建独立 patent-workspace 树，也不要求每个案子一个 Cursor 或 git 项目。
+>
 > **收敛记录（2026-08-25）**：本清单的落地对象已由用户级 `~/.dsh/.agent-presets/patent/` 改为仓库**正本 `packages/preset/agent-presets/presets/patent/`**（git 跟踪；桌面打包部署进 `apps/desktop/resources/**`，该目录 gitignore）。原 user 版（含 `patent-matter`/`patent-fact-check`/`patent-compliance-review`、docx 交付与 HITL 放行规则）已并入正本并归档到 `~/.dsh/.agent-presets-archive/patent-*`。团队机制统一为 `dsh-patent-teams` + `patent-team-composition`；废弃泛化 agent-teams + `patent-team-workflow`。目录口径统一为「七级业务子目录（00-交底书/01-检索/02-对比文件/03-分析/04-撰写/05-答复/99-知识库）+ `_case-registry.md` + `_matter-log.md` 两个跟踪文件」。下文建档/修改目标路径如仍写 `~/.dsh/...`，属历史期目标，现均以正本为准。阶段 5 仍为未完成项。
 >
 > **同步记录（2026-09-22，上游 v0.1.7-alpha.1）**：preset 随上游改为声明式。**正本 = `packages/bundle/web-app/presets/patent.patch.yml`**（`dsh-web-app` bundle 内 id `patent` 的 `dsh-agent-preset` 声明，随应用安装交付），`packages/preset/agent-presets/presets/patent/` 与 `$DSH_HOME/.agent-presets` 用户根均不再存在。下文凡写这两处路径，均指该声明；`preset.yml` 的字段（name/description/order）现为声明 `config` 的同名键。
@@ -15,7 +17,7 @@
 **Tech Stack:** DeepSeek Harness（preset 机制：`packages/bundle/web-app/presets/`，挂载强制 `cordis:group` + `isolate`）、`@deepseek-ai/dsh-patent-*` 13 包、`dsh-subagent-fork-in-process`、`ctx.approval`（`patent-workflow` 审批接缝）、用户级技能（`patent-legal` / `officecli` / `document-processing` / `ego-browser`）、知识库（`patent-law-baseline-2024.md` + `99-知识库/` 文件化召回）。
 
 **执行约定（先读）：**
-- 本计划的大部分任务是配置与技能编写，产物在用户级目录（`~/.dsh/`、`~/.agents/skills/`、`patent-workspace/`），不进仓库；阶段 3.2 / 4.2 若决定动 `packages/patent/`，先按 `superpowers:using-git-worktrees` 建分支（当前在 master，未经用户同意不直接在 master 实现），并遵守仓库插件纪律（效果注册、单测、快照、README 契约同步）。
+- 本计划的大部分任务是配置与技能编写，产物在用户级目录（`~/.dsh/`、`~/.agents/skills/`、可配置工作根目录），不进仓库；阶段 3.2 / 4.2 若决定动 `packages/patent/`，先按 `superpowers:using-git-worktrees` 建分支（当前在 master，未经用户同意不直接在 master 实现），并遵守仓库插件纪律（效果注册、单测、快照、README 契约同步）。
 - **preset 锁定**：会话产生内容后不可换 preset，迭代期每次用新会话验证；验证通过后才设默认（写入 `agent-presets.default`）。
 - 每个阶段末尾有**检查清单**，全部勾选才算该阶段完成；检查清单不过不进入下一阶段。
 - 阻塞即停：依赖缺失、指令不清、验证连续失败时停止并向用户说明，不猜测。
@@ -189,7 +191,7 @@ cp ~/.dsh/.agent-presets/liangshen/agent.cordis.yml ~/.dsh/.agent-presets/patent
 **Files:**
 - Create: `~/.dsh/.agent-presets/patent/skills/patent-matter/SKILL.md`
 
-- [ ] **Step 1: 写技能正文**：案件 = 七级业务子目录（`patent-workspace/<案号>/` 下 `00-交底书` → `01-检索` → `02-对比文件` → `03-分析` → `04-撰写` → `05-答复` → `99-知识库` + 根 `_case-registry.md` + `_matter-log.md`，目录名与 `docs/patent-mode-design.md` §5 完全一致）+ 六列状态机（**按 L1–L5 流水线阶段定案**：open/retrieving/analyzing/drafting/review/closed 仅作展示别名）+ **只追加事件日志** `_matter-log.md`（每步记录时间/动作/产物/审批人，追加不覆写）。
+- [ ] **Step 1: 写技能正文**：案件 = 七级业务子目录（可配置工作根目录下的 `<案号>/`，典型值 `/Users/xujian/工作/<案号>/`，其下 `00-交底书` → `01-检索` → `02-对比文件` → `03-分析` → `04-撰写` → `05-答复` → `99-知识库` + 根 `_case-registry.md` + `_matter-log.md`，目录名与 `docs/patent-mode-design.md` §5 完全一致）+ 六列状态机（**按 L1–L5 流水线阶段定案**：open/retrieving/analyzing/drafting/review/closed 仅作展示别名）+ **只追加事件日志** `_matter-log.md`（每步记录时间/动作/产物/审批人，追加不覆写）。
 
 - [ ] **Step 2: 写建案命令**：给出建案动作序列（mkdir 八目录 + 写 `_case-registry.md` 案号行 + 初始化 `_matter-log.md` 首行），作为技能内的可执行步骤。
 
@@ -408,7 +410,7 @@ cp ~/.dsh/.agent-presets/liangshen/agent.cordis.yml ~/.dsh/.agent-presets/patent
 
 ### 名称一致性核对
 
-- 目录名：`patent-workspace/` 八目录与设计文档 §5 一致（00-交底书/01-检索/02-对比文件/03-分析/04-撰写/05-答复/99-知识库 + `_case-registry.md`）
+- 目录名：工作根目录下 `<案号>/` 的子目录与设计文档 §5 一致（00-交底书/01-检索/02-对比文件/03-分析/04-撰写/05-答复/99-知识库 + `_case-registry.md`）
 - 技能名：7 技能与设计文档 §7.2 一致；阶段 2/3 新增 `patent-matter` / `patent-fact-check` / `patent-compliance-review` 与母计划 G2/G5 一致
 - 工具名：验收引用 `patent_search` / `patent_case_search` / `draft_claims` / `render_patent_document` 与 `patent-tools/src/tool/` 实际注册名一致；`rule_check` 与 `patent-rule` 工具一致
 - 状态机：阶段 2 六列展示别名（open/retrieving/analyzing/drafting/review/closed）与 L1–L5 流水线对齐，任务正文只用后者定案

@@ -43,7 +43,7 @@ run 记录是「测量」与「门槛」之间的契约:它只保存逐维度的
 
 每个被测面只判它自己产得出证据的切面。一条 `workflow` 记录必须覆盖的 case,是 `problem-space.yaml` 为该 manifest 声明过工作流的那些——其余 case 没有该工作流可跑,按金标全集要求会让这一面永远落不了基线。`gate.yaml` 的 `surfaces` 还能把该面不评的节点请出判定:被豁免的节点同时退出节点、case 与聚合三层加权,判定输出用一行 `[not-assessed]` 说明豁免了什么。只有当清单结构上不产出该节点的证据时才声明它:分数低不是豁免的理由,把该面全部可评节点豁免掉的配置会被门禁拒绝。这里没有声明任何豁免:`patent_oa_response_v1` 的 `generate_keywords` 阶段生成检索关键词,`draft` 阶段的指导把这套检索方案写进交付物,所以 `prior-art-search` 与 `deliverable-format` 在两个面上都由真实读数得出。
 
-成本口径:一轮工作流把整份 manifest 跑完——`patent_oa_response_v1` 为 15 个阶段、其中 5 个由模型执行,`patent_disclosure_v1` 为 27 个阶段、其中 14 个由模型执行——一次采集的模型调用数比一轮提示词调用高一个量级以上,所以该设置下 `--runs` 缺省 1;`--budget-ms` 仍然限住整次采集,计划行在做任何调用之前就把阶段数打出来。
+成本口径:一轮工作流把整份 manifest 跑完——`patent_oa_response_v1` 为 15 个阶段、其中 5 个由模型执行,`patent_disclosure_v1` 为 27 个阶段、其中 14 个由模型执行——一次采集的模型调用数比一轮提示词调用高一个量级以上,所以该设置下 `--runs` 缺省 1;`--budget-ms` 仍然限住整次采集,计划行在做任何调用之前就把阶段数打出来。`patent_disclosure_v1` 的一轮现在包含 `draft_review`,两次回退可能超过默认的 600000ms 单次调用上限;重录该面时传入 `--timeout-ms 1800000`。
 
 采集到的分数测的是「调用方传入的 profile(缺省 `headless`)下的模型 + 作业规范」;工作流设置测的是工作流阶段与审计链,不含 preset 的人设与技能层——preset 是 agent 平面,只有 `dsh-agent-preset-registry` 能挂它,而 headless 组合不装配该注册器。因此记录之间只在同一 profile、同一被测面下可比——`provider`、`modelId`、`execution` 与 `workflowId` 四个字段就是为这条留的。
 

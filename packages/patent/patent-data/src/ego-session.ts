@@ -138,6 +138,9 @@ export class EgoBrowserSession {
         durationMs: result.durationMs,
       }
     } catch (error) {
+      // 调用方取消是控制流信号，不是启动失败：保留 AbortError 身份，调用方才能把它
+      // 与真正的启动失败区分开，而不是按失败消息去猜。
+      options.signal?.throwIfAborted()
       const message = error instanceof Error ? error.message : String(error)
       throw new Error(`ego-browser failed to start: ${message}`, { cause: error })
     }

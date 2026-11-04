@@ -57,8 +57,9 @@ export interface PatentCacheOptions {
 }
 
 /**
- * CNIPR 通道的失败分类。`setup_required` 与 `timeout` 由通道判定，`receipt_missing`
- * 表示脚本没有回传可解析的收据，`login_required` 与 `page_state` 由脚本自己回传。
+ * CNIPR 通道的失败分类。`setup_required`（含脚本启动失败）、`timeout`、`receipt_missing`
+ * 与畸形收据的 `page_state` 由通道判定；`login_required` 与脚本自报的 `page_state` 由脚本
+ * 回传。调用方取消不属于通道失败：它按 `AbortError` 传播，不占用这里的分类码。
  */
 export const CNIPR_FAILURE_CODES = ['setup_required', 'timeout', 'receipt_missing', 'login_required', 'page_state'] as const
 

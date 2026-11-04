@@ -3,8 +3,9 @@
  *
  * 通道只做三件事——可用性检查、脚本运行、收据映射；页面交互在 `cnipr-script.ts` 生成的
  * 脚本里，解析在 `cnipr-receipt.ts` 的纯函数里。号码级失败（某个号检索不到、解析不出
- * 申请号）按条目回报，不中断同批其余号；通道级失败（ego 不可用、超时、脚本没回执、
- * 登录态失效）抛 {@link CniprChannelError}，由调用方决定是否按号回退到别的通道。
+ * 申请号）按条目回报，不中断同批其余号；通道级失败（ego 不可用、启动失败、超时、
+ * 脚本没回执、登录态失效、页面结构变化）抛 {@link CniprChannelError}，由调用方决定是否
+ * 按号回退到别的通道。调用方取消不是通道失败，统一抛 `AbortError`。
  * @module @deepseek-ai/dsh-patent-data/cnipr-channel
  */
 
@@ -34,6 +35,9 @@ import type {
 /** 脚本没有回传收据时附在原因里的输出长度（诊断用，避免把整段输出塞进错误）。 */
 const OUTPUT_TAIL_LENGTH = 400
 
+/** 一次脚本运行的会话结果；`CniprEgoSession.runScript` 的解析值。 */
+type CniprScriptRun = Awaited<ReturnType<CniprEgoSession['runScript']>>
+
 /** 请求过但脚本没有回报的号：按缺失处理，不静默丢弃。 */
 function cniprPdfMissing(number: string): CniprPdfLinkItem {
   return { number, urls: [], unexamined: false, authorized: false, error: '脚本未回报该号' }
@@ -57,9 +61,10 @@ export class CniprChannelError extends Error {
   /**
    * @param code - 失败分类。
    * @param detail - 原样原因。
+   * @param options - 原始原因（保留为 `cause`，供诊断启动失败这类被包装的错误）。
    */
-  constructor(code: CniprFailureCode, detail: string) {
-    super(`CNIPR 通道失败（${code}）：${detail}`)
+  constructor(code: CniprFailureCode, detail: string, options: { cause?: unknown } = {}) {
+    super(`CNIPR 通道失败（${code}）：${detail}`, options)
     this.name = 'CniprChannelError'
     this.code = code
     this.detail = detail
@@ -130,6 +135,14 @@ export class CniprChannel {
     const payload = await this.run(buildCniprSearchScript(query, request.pages, this.pageBudgets), CNIPR_SEARCH_TAG, options)
     const read = readCniprSearchPayload(payload)
     if (read.failure !== undefined) throw new CniprChannelError(read.failure.code, read.failure.message)
+    // 检索结果不按请求号对齐，被丢弃的行不会出现在 hits 里；把它报成页面结构失败，
+    // 否则结果会被当作完整命中集交给检索阶段。
+    if (read.dropped > 0) {
+      throw new CniprChannelError(
+        'page_state',
+        `CNIPR 检索结果页丢弃了 ${read.dropped} 行无法解析的结果：页面结构可能已变化`,
+      )
+    }
     if (read.total === null) {
       throw new CniprChannelError('page_state', 'CNIPR 检索结果页未给出「全部 N 件专利」总数：页面结构可能已变化')
     }
@@ -146,11 +159,26 @@ export class CniprChannel {
         throw new CniprChannelError('setup_required', availability.reason ?? 'ego-browser 不可用；请先安装 ego lite 并完成首次引导。')
       }
       const timeoutMs = options.timeoutMs ?? this.timeoutMs
-      const result = await this.session.runScript(script, {
-        cwd: this.cwd,
-        ...(timeoutMs === undefined ? {} : { timeoutMs }),
-        ...(options.signal === undefined ? {} : { signal: options.signal }),
-      })
+      let result: CniprScriptRun
+      try {
+        result = await this.session.runScript(script, {
+          cwd: this.cwd,
+          ...(timeoutMs === undefined ? {} : { timeoutMs }),
+          ...(options.signal === undefined ? {} : { signal: options.signal }),
+        })
+      } catch (error) {
+        // 取消优先于启动失败：它仍以 AbortError 传播；其余运行异常按通道错误码分类，
+        // 否则按 code 路由的调用方只能读到一条没有分类的普通 Error。
+        options.signal?.throwIfAborted()
+        throw new CniprChannelError(
+          'setup_required',
+          error instanceof Error ? error.message : String(error),
+          { cause: error },
+        )
+      }
+      // 脚本启动后调用方可能才取消：运行结果已作废，先抛 AbortError，
+      // 既不写回结果，也不把取消误报成超时或收据缺失。
+      options.signal?.throwIfAborted()
       if (result.timedOut) {
         throw new CniprChannelError('timeout', `CNIPR 脚本超出期限（exit ${result.exitCode ?? 'null'}）`)
       }

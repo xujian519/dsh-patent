@@ -394,6 +394,17 @@ describe('findToolRefViolations', () => {
     expect(violations).toEqual(['skills/a/probe/SKILL.md:1: `foo_bar` is not a tool preset a mounts'])
   })
 
+  it('accepts a workflow stage id and still reports an invented stage', () => {
+    // Skill text names stages to say which part of a manifest a member verifies,
+    // so a declared stage is not a tool reference. The set comes from the
+    // manifests, which is what keeps a dropped stage from staying exempt.
+    const declared = findToolRefViolations(CATALOG, [corpusOf('a', FS_PRESET, 'verify `draft_review` next')])
+    expect(declared).toEqual([])
+    expect(findToolRefViolations(CATALOG, [corpusOf('a', FS_PRESET, 'verify `draft_reviw` next')])).toEqual([
+      'skills/a/probe/SKILL.md:1: `draft_reviw` is not a tool preset a mounts',
+    ])
+  })
+
   it('reports a reference to a tool the preset config turned off', () => {
     const presetSource = [
       '- insert:',

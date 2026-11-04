@@ -35,6 +35,7 @@
 import { existsSync, globSync, readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { TEMPLATE_IDS } from '@deepseek-ai/dsh-patent-document'
+import { builtinPatentManifests } from '@deepseek-ai/dsh-patent-workflow'
 import { loadCordisYaml } from './cordis-yaml.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
@@ -86,6 +87,10 @@ const EXEMPT_REFERENCES: ReadonlyMap<string, string> = new Map([
   ['patent_inventiveness_v1', 'workflow manifest id'],
   ['patent_novelty_v1', 'workflow manifest id'],
   ['patent_oa_response_v1', 'workflow manifest id'],
+  ['patent_disclosure_v1', 'workflow manifest id'],
+  ['patent_patentability_v1', 'workflow manifest id'],
+  ['patent_reexamination_v1', 'workflow manifest id'],
+  ['patent_infringement_v1', 'workflow manifest id'],
   ['output_path', 'render_doc_template parameter'],
   ['upsert_shot', 'video_project action value'],
   ['keyframe_path', 'video_project shot field'],
@@ -102,6 +107,28 @@ const EXEMPT_REFERENCES: ReadonlyMap<string, string> = new Map([
   ['spawn_teammate', 'tool of @deepseek-ai/dsh-experimental-tool-agent-team, which no shipped preset mounts; named only to prohibit its use'],
   ['wait_agent', 'tool of @deepseek-ai/dsh-experimental-tool-agent-team, which no shipped preset mounts; named only to prohibit its use'],
 ])
+
+/**
+ * Workflow stage ids the shipped manifests declare.
+ *
+ * Skill text names stages to say which part of a manifest a member verifies or
+ * which stage a rewind revisits, so these names legitimately appear in
+ * backticks without being tools. Deriving the set from the manifests keeps a
+ * renamed or dropped stage from staying exempt, which a hand-kept list would
+ * not catch.
+ */
+const STAGE_IDS: ReadonlySet<string> = new Set(
+  builtinPatentManifests.flatMap(manifest => manifest.stages.map(stage => stage.id)),
+)
+
+/**
+ * Whether a backticked name is a workflow stage id rather than a tool reference.
+ * @param name - the backticked name.
+ * @returns true when a shipped manifest declares it as a stage.
+ */
+export function isStageId(name: string): boolean {
+  return STAGE_IDS.has(name)
+}
 
 /** One corpus file: a preset YAML or one of its skill files. */
 export interface PresetFile {
@@ -640,6 +667,10 @@ export function findToolRefViolations(
     for (const file of [entry.presetFile, ...entry.readmeFiles, ...entry.skillFiles]) {
       for (const reference of toolReferences(file.source)) {
         if (mounted.has(reference.name) || exemptReferences.has(reference.name)) continue
+        // A stage id is not a tool: skill text names stages to say which part of a
+        // manifest a member verifies. Manifests own that vocabulary, so the set is
+        // derived rather than exempted name by name.
+        if (isStageId(reference.name)) continue
         violations.push(
           `${file.path}:${String(reference.line)}: \`${reference.name}\` is not a tool preset ${entry.preset} mounts`,
         )

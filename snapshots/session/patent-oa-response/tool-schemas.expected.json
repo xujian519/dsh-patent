@@ -246,7 +246,7 @@
     },
     {
       "name": "claim_lint",
-      "description": "确定性检查权利要求书的撰写形式（不调用模型），逐条给出《专利法》/《专利法实施细则》/《专利审查指南》依据：编号连续、引用方向（从权只能引用在先权项）、多项从属（择一引用、不得作为另一项多项从属的引用基础）、引用基础（「所述X」须在本项或所引权项中在先引入）、从权主题名称与所引用权项一致、从权须有附加技术特征的限定部分、独权的前序部分+特征部分、功能性/效果性限定、工艺方法特征、不产生技术效果的内容、商业性宣传用语、引用说明书或附图的用语、每项仅一个结尾句号、正文之外不得有标题/表格/说明行。结构化规则是确定性的；用语类规则是词表启发式，命中不等于违规，须人工复核。通过的判据是零 error，出现 warning 时仍需逐条确认。",
+      "description": "确定性检查权利要求书的撰写形式（不调用模型），逐条给出《专利法》/《专利法实施细则》/《专利审查指南》依据：编号连续、引用方向（从权只能引用在先权项）、多项从属（择一引用、不得作为另一项多项从属的引用基础）、引用基础（「所述X」须在本项或所引权项中在先引入）、从权主题名称与所引用权项一致、从权须有附加技术特征的限定部分、独权的前序部分+特征部分、功能性/效果性限定、工艺方法特征、方法权要列举步骤而未声明顺序是否构成限定、不产生技术效果的内容、商业性宣传用语、引用说明书或附图的用语、每项仅一个结尾句号、正文之外不得有标题/表格/说明行。结构化规则是确定性的；用语类规则是词表启发式，命中不等于违规，须人工复核。通过的判据是零 error，出现 warning 时仍需逐条确认。",
       "parameters": {
         "type": "object",
         "properties": {
@@ -362,6 +362,81 @@
         },
         "required": [
           "objective"
+        ]
+      }
+    },
+    {
+      "name": "domain_check",
+      "description": "按专利领域缺陷清单对一份申请文件跑确定性自检（不调用模型）。当前支持 mechanical（机械域 30 项）与 software（软件/AI 域 28 项）。它把 claim_lint（权利要求形式）与 validate_specification（说明书）的结论按清单项汇总：每项给出 pass（已核干净）、hit（命中，附规则与说明）或 manual（须人工判断，不得视为通过）。manual 有两种来源：判据本身不可机械判定；或规则只覆盖该缺陷的一部分（未命中不等于通过，reason 会说明覆盖到哪）。输入 text 为说明书全文；传 claims 才能跑权项相关项；传 abstract 才能跑摘要项；传 patent_type 才能跑实用新型客体项。software 域会自动按 tech_domain=software 运行软件客体与模型公开规则。passed 只表示已运行的确定性规则未发现 error，不表示符合专利法；manual 项必须由人复核。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "领域：mechanical（机械）/ software（软件与 AI）。",
+            "enum": [
+              "mechanical",
+              "software"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "说明书全文（markdown 或纯文本）。"
+          },
+          "claims": {
+            "type": "string",
+            "description": "权利要求书全文（可选）；不传时权项相关清单项报 manual。"
+          },
+          "abstract": {
+            "type": "string",
+            "description": "摘要（可选）；不传时摘要相关清单项报 manual。"
+          },
+          "patent_type": {
+            "type": "string",
+            "description": "专利类型（可选）；实用新型客体项需要它。",
+            "enum": [
+              "invention",
+              "utility_model"
+            ]
+          },
+          "figure_analysis": {
+            "type": "array",
+            "description": "附图分析结果（可选）；提供至少一张可用结果后，MECH-DC-001/025 的图面标号才能真正核过。",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "usable": {
+                  "type": "boolean",
+                  "description": "分析结果是否可用（组件提取成功）"
+                },
+                "components": {
+                  "type": "array",
+                  "description": "识别的组件列表",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "refNumber": {
+                        "type": "string",
+                        "description": "附图标记号（与图面标号一致）"
+                      }
+                    },
+                    "required": [
+                      "refNumber"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "usable"
+              ]
+            }
+          }
+        },
+        "required": [
+          "domain",
+          "text"
         ]
       }
     },
@@ -3580,7 +3655,7 @@
     },
     {
       "name": "rule_check",
-      "description": "Run deterministic constitutional rule checks (keyword blocklist / pattern / structural / citation range / synonym match / quote repetition) against the given text and return violations with severity, action and legal basis. Most rules declare an applicability premise: a rule whose premise does not match the text reports nothing, so a document is only checked against the subjects it actually discusses (an answer that never touches novelty draws no novelty-completeness findings). Use before publishing compliance-sensitive output (e.g. patent conclusions, legal opinions). Scopes: 'patent' (general patent compliance), 'patent-electrical' (H-section electrical rules + general compliance), 'patent-full' (every bundled asset: general compliance + nuo mirrors + hand-written merged rules, activation-reviewed), a job scope 'patent-drafting' (claim/spec drafting) / 'patent-analysis' (patentability, novelty, inventiveness) / 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' (the 'patent-full' assets restricted to that job's rule domains: its own document plus the clauses it must answer or establish), or 'pack' (layered rule pack assembled from the project manifest .sati/rules.yaml: base + domains + overrides). With the office-action notice at hand, a job scope also takes notice=通知书正文: the two dual-input rules (PR-OA-008 驳回理由覆盖 / PR-OA-009 未提条款引用) then run against the response; without notice they are listed as unevaluated. Every result ends with an 评估输入 line giving the character count and digest of the text this run actually read: keep that line when you transcribe the result, so a later run can show whether it read the same text.",
+      "description": "Run deterministic constitutional rule checks (keyword blocklist / pattern / structural / citation range / synonym match / quote repetition) against the given text and return violations with severity, action and legal basis. Most rules declare an applicability premise: a rule whose premise does not match the text reports nothing, so a document is only checked against the subjects it actually discusses (an answer that never touches novelty draws no novelty-completeness findings). Use before publishing compliance-sensitive output (e.g. patent conclusions, legal opinions). Scopes: 'patent' (general patent compliance), 'patent-electrical' (H-section electrical rules + general compliance), 'patent-full' (every bundled asset: general compliance + nuo mirrors + hand-written merged rules, activation-reviewed), a job scope 'patent-drafting' (claim/spec drafting) / 'patent-analysis' (patentability, novelty, inventiveness) / 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' (the 'patent-full' assets restricted to that job's rule domains: its own document plus the clauses it must answer or establish), a domain scope 'patent-mechanical' or 'patent-software' (the full assets plus that domain's rule pack: argument-completeness rules the general assets do not carry), or 'pack' (layered rule pack assembled from the project manifest .sati/rules.yaml: base + domains + overrides). With the office-action notice at hand, a job scope also takes notice=通知书正文: the two dual-input rules (PR-OA-008 驳回理由覆盖 / PR-OA-009 未提条款引用) then run against the response; without notice they are listed as unevaluated. Every result ends with an 评估输入 line giving the character count and digest of the text this run actually read: keep that line when you transcribe the result, so a later run can show whether it read the same text.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -3590,7 +3665,7 @@
           },
           "scope": {
             "type": "string",
-            "description": "Rule set scope. Defaults to 'patent' (4 general compliance rules only; choose a job scope for substantive checks). 'patent-drafting' / 'patent-analysis' cover claim/spec drafting and patentability analysis; 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' evaluate the full assets filtered to that job's rule domains. 'pack' loads the layered rule pack declared by .sati/rules.yaml."
+            "description": "Rule set scope. Defaults to 'patent' (4 general compliance rules only; choose a job scope for substantive checks). 'patent-drafting' / 'patent-analysis' cover claim/spec drafting and patentability analysis; 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' evaluate the full assets filtered to that job's rule domains; 'patent-mechanical' adds the mechanical domain pack (structural-equivalence argument completeness) and 'patent-software' the software/AI pack (subject-matter argument completeness) on top of the full assets. 'pack' loads the layered rule pack declared by .sati/rules.yaml."
           },
           "notice": {
             "type": "string",
@@ -3815,7 +3890,7 @@
     },
     {
       "name": "validate_specification",
-      "description": "验证专利说明书是否符合撰写要求（确定性规则，无 LLM 调用）。\n- 结构完整性：按专利类型与有无附图计算必要章节，且顺序符合《专利法实施细则》第二十条；实用新型必须有附图；占位标记与空章节报 error\n- 标题集合：说明书只允许规定章节标题（正文内的「要解决的技术问题／技术方案／有益效果／实施例一」等一律不是标题）\n- 附图引用形式：说明书记载标记不加括号（指南第二部分第二章 §2.2.6）、图号写作图1、图号连续且不重复、附图说明有图名、正文引用可解析、段落编号提示\n- 发明名称长度（>40 字 error、26–40 字 warning）与摘要长度（≤300 字）、摘要关键词、摘要附图号、摘要不得引用权利要求或使用宣传语\n- 禁止性条款：说明书不得引用权利要求编号，不得使用商业宣传用语或残留内部流程标记（细则第二十条第三款）\n- 模糊表述（按上下文匹配「约 10%」「10% 左右」，不误伤「约束」「左右两侧」）、附图说明与图引用一致性、实施例存在性\n- 权利要求-说明书特征覆盖（A26.4）、数值范围端点与中间值实施例\n- 独立权利要求之间的单一性（A31.1，传 claim_units 时）\n- 权项—实施例覆盖矩阵（A26.3/A26.4，传 coverage_entries 时；覆盖度由 features 与 embodiment_refs 计算，不接受调用方给定的覆盖度结论）\n- 效果数据定量性、化学领域产物表征数据（tech_domain=chemical 时）\n- 背景技术引证的国别/公开号/日期、有益效果与现有技术的对比、序列表引用、正文图片与表格位置、术语与附图标记一致性、实用新型附图内容（均为 warning，启发式）\n\n用法：说明书初稿完成后调用；传入 text（说明书全文）即可，另可传 title / abstract / claims / tech_domain / patent_type / has_drawings / drawing_count / abstract_figure_number / figure_analysis / claim_units / coverage_entries 启用相应校验。\n\npatent_type 未传时按发明检查并给出 warning；has_drawings 未传时从图号与附图分析推断。\n\npassed 只表示已运行的确定性规则未发现 error，不表示符合专利法；not_assessed 列出确定性规则不能判断的事项，需人工或实体审查。\n\n注意：SMILES 合法性抽检依赖 RDKit（本环境未内置），自动跳过，不影响其余规则。\n\n结果末尾的「评估输入」给出本次实际读到的各文本字段的字数与指纹：转述结果时请一并保留，便于与另一次运行对照是否读的是同一份文本。",
+      "description": "验证专利说明书是否符合撰写要求（确定性规则，无 LLM 调用）。\n- 结构完整性：按专利类型与有无附图计算必要章节，且顺序符合《专利法实施细则》第二十条；实用新型必须有附图；占位标记与空章节报 error\n- 标题集合：说明书只允许规定章节标题（正文内的「要解决的技术问题／技术方案／有益效果／实施例一」等一律不是标题）\n- 附图引用形式：说明书记载标记不加括号（指南第二部分第二章 §2.2.6）、图号写作图1、图号连续且不重复、附图说明有图名、正文引用可解析、段落编号提示\n- 发明名称长度（>40 字 error、26–40 字 warning）与摘要长度（≤300 字）、摘要关键词、摘要附图号、摘要不得引用权利要求或使用宣传语\n- 禁止性条款：说明书不得引用权利要求编号，不得使用商业宣传用语或残留内部流程标记（细则第二十条第三款）\n- 模糊表述（按上下文匹配「约 10%」「10% 左右」，不误伤「约束」「左右两侧」）、附图说明与图引用一致性、实施例存在性\n- 权利要求-说明书特征覆盖（A26.4）、数值范围端点与中间值实施例\n- 独立权利要求之间的单一性（A31.1，传 claim_units 时）\n- 权项—实施例覆盖矩阵（A26.3/A26.4，传 coverage_entries 时；覆盖度由 features 与 embodiment_refs 计算，不接受调用方给定的覆盖度结论）\n- 实用新型客体（A2.3，patent_type=utility_model 且传 claims 时）：权利要求主题名称是方法／工艺，或落在组合物与无固定形状产品上，报 error\n- 软件客体与模型公开（tech_domain=software 时）：算法／程序本身作主题、信号或比特流作载体报 error；技术载体缺失、商业规则词汇、训练数据与模型结构未公开、缩写未定义报 warning\n- 效果数据定量性、化学领域产物表征数据（tech_domain=chemical 时）\n- 背景技术引证的国别/公开号/日期、有益效果与现有技术的对比、序列表引用、正文图片与表格位置、术语与附图标记一致性、实用新型附图内容（均为 warning，启发式）\n\n用法：说明书初稿完成后调用；传入 text（说明书全文）即可，另可传 title / abstract / claims / tech_domain / patent_type / has_drawings / drawing_count / abstract_figure_number / figure_analysis / claim_units / coverage_entries 启用相应校验。\n\npatent_type 未传时按发明检查并给出 warning；has_drawings 未传时从图号与附图分析推断。\n\npassed 只表示已运行的确定性规则未发现 error，不表示符合专利法；not_assessed 列出确定性规则不能判断的事项，需人工或实体审查。\n\n注意：SMILES 合法性抽检依赖 RDKit（本环境未内置），自动跳过，不影响其余规则。\n\n结果末尾的「评估输入」给出本次实际读到的各文本字段的字数与指纹：转述结果时请一并保留，便于与另一次运行对照是否读的是同一份文本。",
       "parameters": {
         "type": "object",
         "properties": {
@@ -3837,7 +3912,7 @@
           },
           "tech_domain": {
             "type": "string",
-            "description": "技术领域（chemical 时附加化学表征数据校验）",
+            "description": "技术领域（chemical 时附加化学表征数据校验；software 时附加软件客体与模型公开校验）",
             "enum": [
               "mechanical",
               "electrical",

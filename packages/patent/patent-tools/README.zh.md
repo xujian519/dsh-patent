@@ -39,8 +39,9 @@ kind: "package-reference"
 | `draft_specification` | 撰写 | 确定性 |
 | `validate_specification` | 质量 | 确定性 |
 | `evaluate_evidence` | 证据 | `@deepseek-ai/dsh-patent-core` 证据引擎 |
-| `rule_check` | 质量 | `@deepseek-ai/dsh-patent-rule` 规则引擎 |
+| `rule_check` | 质量 | `@deepseek-ai/dsh-patent-rule` 规则引擎；`scope` 决定规则集，`patent-mechanical` / `patent-software` 在专利全量之上加该域规则包（机械：结构等效性论证完整性；软件/AI：客体答辩三要素论证完整性） |
 | `claim_lint` | 质量 | 确定性 `@deepseek-ai/dsh-patent-core` 权利要求书形式自检（编号、引用方向、多项从属形式、引用基础、主题名称、两段式、用语、标点、正文之外的内容）；结构性规则精确判定，用语类规则是词表启发式 |
+| `domain_check` | 质量 | 跑 `claim_lint` 与 `validate_specification`，把两者的结论按某一领域的撰写缺陷清单归并：每项给出 `pass`、`hit`（附规则与说明）或 `manual`（写明为何仍需人工）。现有两份清单：机械域 30 项、软件/AI 域 28 项（按 `tech_domain: software` 运行，客体规则才会生效）。缺少必需输入（`claims`、`abstract`、`figure_analysis`）或规则只覆盖该缺陷的一部分时均为 `manual`——没读到的输入、只覆盖一部分的规则都不算通过。 |
 | `analyze_patent_figure` | 分析 | 经 `FigureAnalysisEngine` 走视觉 ModelPort（Config.figureAnalysisMode：`single`=一次调用，默认；`two-step`=结构抽取+说明生成两次调用）；按附图模型做图片输入门禁 |
 | `search_patent_figure` | 检索 | 附图索引关键词检索（索引由 `analyze_patent_figure` 写入，见 Config.figureIndexFile） |
 | `check_patent_figure_consistency` | 质量 | 对 `analyze_patent_figure` 的多图识别结果做确定性跨图校验（不调用模型）：同一数字标记在各图中必须同名、图号必须从 1 起连续、`claim_context`（权利要求书或说明书正文）中引用的标记（括号形「(10)」「（10）」或直连形「壳体10」）必须在某张图中识别到。电学符号与网表暂不在范围（电学分析引擎尚未移植）。 |
@@ -147,7 +148,7 @@ Schemastery 配置，所有字段可选。
 - **证据规则资产** — `evaluate_evidence` 经 `@deepseek-ai/dsh-patent-rule` 的资产定位解析 `evidence-rules.yaml`；缺失时引擎降级为默认权重。
 - **TRIZ 分析属发明人侧且有意的窄** — `triz_contradiction_analysis` 一次只读一篇交底书：不构建问题依赖图、不度量幻觉率、不做跨文档合并。它给出的矛盾是工程参数之间的设计层取舍，因此绝不进入审查意见答复或无效论证——三步法第二步的技术问题表述仍归 `checkAtomic` 与创造性子图。证据无法在交底书原文定位的矛盾被丢弃并计数，而不是照报；矩阵中没有推荐原理的格报成空缺，而不是从相邻格补一个。
 
-- **`claim_lint` 读的是权项形式而非实质** — 引用基础规则把「所述」之后的术语按虚词截断并封顶 8 字；中文没有形态学边界，因此整体未被引入的复合词（如已有「转子铁芯」时的「所述转子铁芯外圆」）报 warning 而非 error。用语规则（功能性/效果性限定、方法特征、非技术内容、商业性用语、引用说明书或附图）是词表匹配：命中意味着该处需要人工判读，不等于权项有缺陷。本工具不做权项与说明书的支持性比对（那是 `validate_specification` 的特征覆盖检查），也不评判可专利性。
+- **`claim_lint` 读的是权项形式而非实质** — 引用基础规则把「所述」之后的术语按虚词截断并封顶 8 字；中文没有形态学边界，因此整体未被引入的复合词（如已有「转子铁芯」时的「所述转子铁芯外圆」）报 warning 而非 error。用语规则（功能性/效果性限定、方法特征、方法权要的步骤顺序、非技术内容、商业性用语、引用说明书或附图）是词表匹配：命中意味着该处需要人工判读，不等于权项有缺陷。本工具不做权项与说明书的支持性比对（那是 `validate_specification` 的特征覆盖检查），也不评判可专利性。
 - **违规定位只覆盖字面命中** — `rule_check` 与 `validate_specification` 对**计入本次违规的最早一处命中**回报 `line` 与 `matchedSentence`，使告警可以在原处判读，不必通读全文。开启否定语境或引文豁免的词表检查（`negationContext`、`quoteImmune`）取的是豁免之后剩下最早的那一处，不是该词在文本中的最早出现。缺项类与比例类检查（章节缺失、覆盖率、数值范围端点）、`quote_repetition`（证据带重复次数，不是原文中的连续片段），以及读取独立入参字段的检查（发明名称、摘要、权利要求）不带这两项：那里指向说明书的行号没有对应位置。
 
 - **带 block 级违规的 `rule_check` 不是交付证据** — 任一违规的 `action` 为 `block` 时，结果带 `blocked: true`；patent-rule 的交付台账会忽略声明该标志的前置结果。自检发现硬拦截后必须修订并重跑；只有 `review` 命中的自检仍算数，因为交付时的输出门禁会对渲染件请求审批。`blocked` 覆盖自检自身的结论，尚未证明被检文本与交付件一致。
@@ -155,7 +156,7 @@ Schemastery 配置，所有字段可选。
 
 - **结果携带「评估了什么」的身份** — `rule_check` 与 `validate_specification` 的文本是内联传入的，两个调用方核对「同一份文件」时可能各传一个修订本。实案实测：三个队友重跑同一道门禁分别传了 12164、12166、12177 字符，**没有一个等于磁盘上的 13399 字符**，而结论差异正好落在文本差异处。因此每条结果末尾带一行 `评估输入`，给出本次读到的各文本字段的字数与指纹，使两次运行可直接比对。该行只**报告**差异：目前没有任何东西强制一次运行必须与磁盘产物一致，交付门禁只核对至少评估过一段文本，不把指纹与渲染入参比对。
 
-- **说明书检查区分形式缺陷与实体结论** — `validate_specification` 用 `not_assessed` 列出确定性规则不能判断的事项（附图清晰度与比例、照片适用性、缺附图分析、缺摘要附图号），`passed` 只表示已运行的规则未发现 error。`spec-check` 写出分项判定（`spec_form_check_passed`、`spec_claims_check_passed`、`spec_figure_check_passed`、`spec_prohibitions_check_passed`）与 `spec_not_assessed`；`legal-gaps` 把形式与权项判定映射到对应法条，充分公开与概括范围只有在报告与其判定（`enablement_passed`、`claim_breadth_passed`）同时存在时才可能通过，只有报告不算通过。概括范围保持 warn 级：A26.4 判定未通过会出现在汇总里，但不阻断交付。因此占位草案、引用权利要求、商业宣传语、实用新型无附图、图号断号都会阻断默认工作流，而不是放行。
+- **说明书检查区分形式缺陷与实体结论** — `validate_specification` 用 `not_assessed` 列出确定性规则不能判断的事项（附图清晰度与比例、照片适用性、缺附图分析、缺摘要附图号），`passed` 只表示已运行的规则未发现 error。`spec-check` 写出分项判定（`spec_form_check_passed`、`spec_claims_check_passed`、`spec_figure_check_passed`、`spec_prohibitions_check_passed`）与 `spec_not_assessed`；`legal-gaps` 把形式与权项判定映射到对应法条，充分公开与概括范围只有在报告与其判定（`enablement_passed`、`claim_breadth_passed`）同时存在时才可能通过，只有报告不算通过。概括范围保持 warn 级：A26.4 判定未通过会出现在汇总里，但不阻断交付。因此占位草案、引用权利要求、商业宣传语、实用新型无附图、实用新型含方法主题或组合物主题、图号断号都会阻断默认工作流，而不是放行。
 - **`adversary-review` 是确定性启发式门，不是模型审查** — 读取 `draft_tightened`/`draft`、`claims`、`office_action` 与 `reference_documents`（该键为空时回落到 `oa-parse` 的 citations）。证据缺口按缺口种类与通知书驳回类型归因法条，不再一律写成 A22.3；关键词未命中使用更低的启发式置信度。产出 `adversary_review_passed`（仅论证强度为 `insufficient` 时为 false），`oa-response` 的 `legal-gaps` 清单把它记为 severity `warn`，运行仍可交付，但汇总里看得见该缺口。
 - **后续检查覆盖形式规则看不到的交付物缺口** —— 摘要附图从请求书字段（`abstract_figure_number`）读取，绝不从摘要正文里推断；`draft_specification` 直接生成不超过 300 字、含关键词行的确定性摘要，默认工作流无需另调摘要阶段即可交给 `spec-check`。工作流提供 PFIE 特征与附图标记时，它还会按实施例标题切分具体实施方式，整块丢弃摘录未命中原文的块，并在保留块中标注命中的特征编号（`F1`、`F2`…）与附图标记。背景技术引证（国别、公开号、公开日）、有益效果与现有技术对比、序列表引用、正文图片与表格位置、术语与附图标记一致性、实用新型附图内容均以 warning 报出。`verify_patent_figure` 传 `delivery_review=true` 时，另查位图/照片（`<image>`）、整幅框线、横向摆放与非必需图面词语。
 - **说明书体例校验依赖 markdown 文本能表达的形态** — 必要章节按专利类型与有无附图计算：无附图发明只需四部分，实用新型必须有附图说明，写了附图说明却无图号报 error。标题集合校验放行必要部分标题与 `render_patent_document` 写出的 `说明书` 外层标题，其余标题一律报出，因此模板外层标题不同的部署会看到该标题被报出；括号标记校验读 `名称（数字）` 与 `名称(数字)`，并跳过以列举后缀结尾的名称（`实施例（1）`、`图（2）`），因此恰好在标记某构件的列举式引用不会被报出。段落编号是 warning 而非 error：法条与《专利审查指南》均未要求或禁止段落编号，是否使用取决于提交体例。

@@ -6,7 +6,7 @@ import { globalAtomRegistry, globalStageHandlerRegistry } from '@deepseek-ai/dsh
 import { builtinPatentManifests } from '@deepseek-ai/dsh-patent-workflow'
 import * as tool from '../src/index.ts'
 
-/** The 36 tools registered by patent-tools (render_patent_document is owned by dsh-patent-document). */
+/** The 37 tools registered by patent-tools (render_patent_document is owned by dsh-patent-document). */
 const EXPECTED_TOOLS = [
   'patent_search',
   'patent_metadata',
@@ -21,6 +21,7 @@ const EXPECTED_TOOLS = [
   'validate_specification',
   'rule_check',
   'claim_lint',
+  'domain_check',
   'parse_office_action',
   'patent_worker_validate',
   'patent_plan_task',

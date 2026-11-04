@@ -6,6 +6,7 @@ import {
   checkTermConsistency,
   checkTextMedia,
   checkUtilityModelFigureContent,
+  checkUtilityModelSubjectMatter,
 } from '../src/tool/spec-description-extras.ts'
 
 /** 组合一段带指定小节正文的说明书文本。 */
@@ -108,5 +109,58 @@ describe('checkUtilityModelFigureContent', () => {
     expect(checkUtilityModelFigureContent('## 附图说明\n图1为整体结构图。\n图2为性能曲线图。', 'utility_model')).toEqual([])
     expect(checkUtilityModelFigureContent(text, 'invention')).toEqual([])
     expect(checkUtilityModelFigureContent('## 技术领域\n检测。', 'utility_model')).toEqual([])
+  })
+})
+
+describe('checkUtilityModelSubjectMatter', () => {
+  const methodClaims = '1. 一种螺栓的制造方法，其特征在于：包括依次执行的热镦粗步骤与搓丝步骤。'
+  const compositionClaims = '1. 一种润滑脂组合物，其特征在于：由基础油与稠化剂组成。'
+
+  it('实用新型的方法主题报 error，并点出项号', () => {
+    const found = checkUtilityModelSubjectMatter(methodClaims, 'utility_model')
+    expect(found).toHaveLength(1)
+    expect(found[0]?.rule).toBe('utility_model_method_claim')
+    expect(found[0]?.severity).toBe('error')
+    expect(found[0]?.message).toContain('第 1 项权利要求')
+    expect(found[0]?.message).toContain('螺栓的制造方法')
+  })
+
+  it('实用新型的组合物主题报 error', () => {
+    const found = checkUtilityModelSubjectMatter(compositionClaims, 'utility_model')
+    expect(found[0]?.rule).toBe('utility_model_composition')
+    expect(found[0]?.severity).toBe('error')
+  })
+
+  it('从属项主题读作「所述方法」时不重复报错', () => {
+    const claims = [
+      '1. 一种螺栓的制造方法，其特征在于：包括依次执行的热镦粗步骤与搓丝步骤。',
+      '2. 根据权利要求 1 所述的方法，其特征在于：热镦粗前对坯料进行退火。',
+    ].join('\n')
+    const found = checkUtilityModelSubjectMatter(claims, 'utility_model')
+    expect(found).toHaveLength(1)
+    expect(found[0]?.message).toContain('第 1 项权利要求')
+  })
+
+  it('以工艺命名的产品不误报，发明类型不检查', () => {
+    expect(checkUtilityModelSubjectMatter('1. 一种用于制造螺栓的模具，其特征在于：包括上模与下模。', 'utility_model')).toEqual([])
+    expect(checkUtilityModelSubjectMatter(methodClaims, 'invention')).toEqual([])
+  })
+
+  it('未给权利要求、空白权利要求或无法解析主题时不报', () => {
+    expect(checkUtilityModelSubjectMatter(undefined, 'utility_model')).toEqual([])
+    expect(checkUtilityModelSubjectMatter('   ', 'utility_model')).toEqual([])
+    expect(checkUtilityModelSubjectMatter('权利要求书如下。', 'utility_model')).toEqual([])
+    // 权项能切分但主题名称取不到（句首不是「一种」）时跳过，不误报。
+    expect(checkUtilityModelSubjectMatter('1. 其特征在于：包括壳体。', 'utility_model')).toEqual([])
+  })
+
+  it('多项缺陷按权项顺序各报一条', () => {
+    const claims = [methodClaims, '2. 一种螺母的制造工艺，其特征在于：包括冷镦步骤。', compositionClaims].join('\n')
+    const found = checkUtilityModelSubjectMatter(claims, 'utility_model')
+    expect(found.map(v => v.rule)).toEqual([
+      'utility_model_method_claim',
+      'utility_model_method_claim',
+      'utility_model_composition',
+    ])
   })
 })

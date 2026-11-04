@@ -490,6 +490,25 @@ describe('abstract and claim coverage edge cases', () => {
     expect(ids).not.toContain('claim-support-breadth')
   })
 
+  it('含算法表述但未声明 tech_domain=software 时显式列为未评估', () => {
+    const out = validateSpecification({
+      text: VALID_SPEC,
+      claims: '1. 一种反向传播算法，其特征在于，包括：计算输出误差。',
+    })
+    const ids = out.not_assessed.map(item => item.id)
+    expect(ids).toContain('software-domain-rules')
+    // 声明软件域后不再列为未评估，并实际跑软件规则
+    const scoped = validateSpecification({
+      text: VALID_SPEC,
+      claims: '1. 一种反向传播算法，其特征在于，包括：计算输出误差。',
+      tech_domain: 'software',
+    })
+    expect(scoped.not_assessed.map(item => item.id)).not.toContain('software-domain-rules')
+    expect(scoped.violations.some(violation => violation.rule === 'software_algorithm_subject')).toBe(true)
+    // 无算法表述的机械文本不列入
+    expect(validateSpecification({ text: VALID_SPEC }).not_assessed.map(item => item.id)).not.toContain('software-domain-rules')
+  })
+
   it('records upstream enablement and claim-breadth reports as evaluated inputs', () => {
     const report = '充分公开实体判定（A26.3）：通过'
     const breadth = '权利要求概括范围判定（A26.4）：通过'
@@ -716,5 +735,40 @@ describe('renderSpecification with section and no suggestion', () => {
       evaluated: [],
     })
     expect(out).toContain('模糊表述：约（第 12 行「本实施例中温度约为 60℃。」）')
+  })
+})
+
+describe('validateSpecification: 实用新型客体（A2.3）', () => {
+  const METHOD_CLAIMS = '1. 一种螺栓的制造方法，其特征在于：包括热镦粗与搓丝。'
+
+  it('实用新型 + 方法主题 → error，整体未通过', () => {
+    const out = validateSpecification({ text: VALID_SPEC, claims: METHOD_CLAIMS, patent_type: 'utility_model' })
+    const violation = out.violations.find(v => v.rule === 'utility_model_method_claim')
+    expect(violation?.severity).toBe('error')
+    expect(violation?.family).toBe('claims')
+    expect(violation?.message).toContain('第 1 项权利要求')
+    expect(out.passed).toBe(false)
+  })
+
+  it('同一份方法权要在发明申请下不报', () => {
+    const out = validateSpecification({ text: VALID_SPEC, claims: METHOD_CLAIMS, patent_type: 'invention' })
+    expect(out.violations.find(v => v.rule === 'utility_model_method_claim')).toBeUndefined()
+  })
+
+  it('实用新型 + 产品主题不报，组合物主题报错', () => {
+    const product = validateSpecification({
+      text: VALID_SPEC,
+      claims: '1. 一种螺栓，其特征在于：包括螺栓本体与垫圈。',
+      patent_type: 'utility_model',
+    })
+    expect(product.violations.find(v => v.rule === 'utility_model_method_claim')).toBeUndefined()
+    expect(product.violations.find(v => v.rule === 'utility_model_composition')).toBeUndefined()
+
+    const composition = validateSpecification({
+      text: VALID_SPEC,
+      claims: '1. 一种润滑脂组合物，其特征在于：由基础油与稠化剂组成。',
+      patent_type: 'utility_model',
+    })
+    expect(composition.violations.find(v => v.rule === 'utility_model_composition')?.severity).toBe('error')
   })
 })

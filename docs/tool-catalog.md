@@ -51,7 +51,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-literature` | `paper_download`, `paper_list_sources`, `paper_search` | `ctx.tools` | `tool/call`, `tool/result` | - | paper_list_sources and paper_search are stateless queries over four keyless public sources (arXiv, OpenAlex, Semantic Scholar, Crossref); connector enablement is config and only narrows which `db` ids are valid. |
 | `@deepseek-ai/dsh-document-deliver` | `document_deliver` | `ctx.tools`, `ctx.fs` | `tool/call`, `tool/result` | - | document_deliver records the delivered files (path + format), the P0/P1 quality-gate state, and the brief reference in the session log; it fails loud on a missing file and writes no file itself. It also reads each delivered file and reports its own deterministic findings (residual placeholders, undeclared anchors, empty sections, style forbidden words, declared length budget) on the tool result, and refuses the registration on a blocking finding. The delivery studio folds the logged call and that result metadata into its deliverable list, gate badges, and machine-check badge. |
 | `@deepseek-ai/dsh-experimental-video-mode` | `media`, `video_assemble`, `video_deliver`, `video_project` | `ctx.tools`, `ctx.fs`, `ctx.subprocess` | `tool/call`, `tool/result` | - | The media tool selects an image, video, or speech model through the provider seam and writes the artifact through ctx.fs; video_project owns the durable project document; video_assemble renders an EDL through ffmpeg; video_deliver checks the declared files and refuses incomplete or over-budget work. The synthetic provider makes the whole flow runnable without credentials; the local ComfyUI provider adds Wan 2.2 video and Z-Image images, and the cloud MiniMax-H3 and SiliconFlow Wan2.2 providers add per-second and per-video generation. |
-| `@deepseek-ai/dsh-patent-tools` | `add_patent_figure_references`, `analyze_patent_figure`, `check_patent_figure_consistency`, `claim_chart_build`, `claim_lint`, `compare_patent_figure_analysis`, `draft_claims`, `draft_specification`, `evaluate_evidence`, `flexible_plan`, `generate_patent_figure`, `generate_structure_figure`, `knowledge_note_save`, `law_search`, `matter_log_append`, `parse_office_action`, `patent_analysis_report`, `patent_case_search`, `patent_eval`, `patent_kg_query`, `patent_legal_status`, `patent_metadata`, `patent_pdf_download`, `patent_plan_task`, `patent_search`, `patent_wiki_search`, `patent_worker_validate`, `patent_workflow`, `patent_workflow_run`, `recognize_chemical_structure`, `rule_check`, `search_patent_figure`, `triz_contradiction_analysis`, `validate_specification`, `verify_patent_figure`, `workbench_link_patent_case` | `ctx.tools` | `tool/call`, `tool/result` | - | The Sati patent domain tool set: search/metadata/legal-status/case/wiki/kg knowledge queries, claim-chart, office-action parsing, drafting, specification validation, evidence judgment, rule check, figure analysis, PDF download, chemical recognition, knowledge notes, and the workflow/plan state machines. render_patent_document is owned by @deepseek-ai/dsh-patent-document. |
+| `@deepseek-ai/dsh-patent-tools` | `add_patent_figure_references`, `analyze_patent_figure`, `check_patent_figure_consistency`, `claim_chart_build`, `claim_lint`, `compare_patent_figure_analysis`, `domain_check`, `draft_claims`, `draft_specification`, `evaluate_evidence`, `flexible_plan`, `generate_patent_figure`, `generate_structure_figure`, `knowledge_note_save`, `law_search`, `matter_log_append`, `parse_office_action`, `patent_analysis_report`, `patent_case_search`, `patent_eval`, `patent_kg_query`, `patent_legal_status`, `patent_metadata`, `patent_pdf_download`, `patent_plan_task`, `patent_search`, `patent_wiki_search`, `patent_worker_validate`, `patent_workflow`, `patent_workflow_run`, `recognize_chemical_structure`, `rule_check`, `search_patent_figure`, `triz_contradiction_analysis`, `validate_specification`, `verify_patent_figure`, `workbench_link_patent_case` | `ctx.tools` | `tool/call`, `tool/result` | - | The Sati patent domain tool set: search/metadata/legal-status/case/wiki/kg knowledge queries, claim-chart, office-action parsing, drafting, specification validation, evidence judgment, rule check, figure analysis, PDF download, chemical recognition, knowledge notes, and the workflow/plan state machines. render_patent_document is owned by @deepseek-ai/dsh-patent-document. |
 | `@deepseek-ai/dsh-patent-document` | `render_patent_document`, `verify_deliverable` | `ctx.tools`, `ctx.subprocess` | `tool/call`, `tool/result` | - | render_patent_document renders patent deliverables (claims/specification/search report/OA response/invalidation opinion) from packaged HTML templates, with optional headless-Chrome PDF via ctx.subprocess. |
 | `@deepseek-ai/dsh-patent-filing` | `build_patent_filing`, `verify_patent_filing` | `ctx.tools`, `ctx.subprocess` | `tool/call`, `tool/result` | - | build_patent_filing assembles one CNIPA application document (abstract, abstract drawing, claims, specification, drawings) into a DOCX whose formatting is reverse-derived from the template shipped in the package, with paragraph numbering following the spec's per-section declaration; verify_patent_filing asserts the finished file against that template — section count and headers, spacing, indent, size, non-black text, the five specification parts, the specification title, claim count, numbering continuity where a section declares it, and surviving internal marks. |
 | `@deepseek-ai/dsh-patent-deadline` | `patent_deadlines` | `ctx.tools` | `tool/call`, `tool/result` | - | patent_deadlines reports the statutory and designated deadlines of one Chinese patent case, applying the period and delivery rules of 专利法实施细则 and rolling an end date off a holiday to the next working day; notice-driven periods come back as pending entries naming the missing delivery record. |
@@ -2673,7 +2673,7 @@ All nine tools are scoped to implicit Team Leads and durable teammates. The ship
 
 ### `todo_write`
 
-Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete step before you start. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark a todo `completed` the moment it is done (do not batch completions), and allow no `in_progress` item only once all work is complete. Skip the list for trivial single-step tasks. Statuses: `pending` (not started), `in_progress` (being worked on now), `completed` (finished). Optionally attach short `tags` (1-3 lowercase category or component names, e.g. `docs`, `release`) to tasks that belong to a category; omit them when a tag adds nothing.
+Record and update a task list to plan multi-step work and show progress; skip it for trivial single-step tasks. Add one todo per concrete step before you start. While work remains, keep the todos being worked on `in_progress`, several only when work runs in parallel. Mark each todo `completed` as soon as it is done.
 
 ```json
 {
@@ -2698,13 +2698,6 @@ Record and update a task list to plan multi-step work and show progress; skip it
               "in_progress",
               "completed"
             ]
-          },
-          "tags": {
-            "type": "array",
-            "description": "Optional short category labels (1-3, lowercase), e.g. [\"docs\"].",
-            "items": {
-              "type": "string"
-            }
           }
         },
         "required": [
@@ -3493,7 +3486,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 ### `claim_lint`
 
-确定性检查权利要求书的撰写形式（不调用模型），逐条给出《专利法》/《专利法实施细则》/《专利审查指南》依据：编号连续、引用方向（从权只能引用在先权项）、多项从属（择一引用、不得作为另一项多项从属的引用基础）、引用基础（「所述X」须在本项或所引权项中在先引入）、从权主题名称与所引用权项一致、从权须有附加技术特征的限定部分、独权的前序部分+特征部分、功能性/效果性限定、工艺方法特征、不产生技术效果的内容、商业性宣传用语、引用说明书或附图的用语、每项仅一个结尾句号、正文之外不得有标题/表格/说明行。结构化规则是确定性的；用语类规则是词表启发式，命中不等于违规，须人工复核。通过的判据是零 error，出现 warning 时仍需逐条确认。
+确定性检查权利要求书的撰写形式（不调用模型），逐条给出《专利法》/《专利法实施细则》/《专利审查指南》依据：编号连续、引用方向（从权只能引用在先权项）、多项从属（择一引用、不得作为另一项多项从属的引用基础）、引用基础（「所述X」须在本项或所引权项中在先引入）、从权主题名称与所引用权项一致、从权须有附加技术特征的限定部分、独权的前序部分+特征部分、功能性/效果性限定、工艺方法特征、方法权要列举步骤而未声明顺序是否构成限定、不产生技术效果的内容、商业性宣传用语、引用说明书或附图的用语、每项仅一个结尾句号、正文之外不得有标题/表格/说明行。结构化规则是确定性的；用语类规则是词表启发式，命中不等于违规，须人工复核。通过的判据是零 error，出现 warning 时仍需逐条确认。
 
 ```json
 {
@@ -3596,6 +3589,86 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
   "required": [
     "expected",
     "analysis"
+  ]
+}
+```
+
+Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-tools/src/index.ts)
+
+### `domain_check`
+
+按专利领域缺陷清单对一份申请文件跑确定性自检（不调用模型）。当前支持 mechanical（机械域 30 项）与 software（软件/AI 域 28 项）。它把 claim_lint（权利要求形式）与 validate_specification（说明书）的结论按清单项汇总：每项给出 pass（已核干净）、hit（命中，附规则与说明）或 manual（须人工判断，不得视为通过）。manual 有两种来源：判据本身不可机械判定；或规则只覆盖该缺陷的一部分（未命中不等于通过，reason 会说明覆盖到哪）。输入 text 为说明书全文；传 claims 才能跑权项相关项；传 abstract 才能跑摘要项；传 patent_type 才能跑实用新型客体项。software 域会自动按 tech_domain=software 运行软件客体与模型公开规则。passed 只表示已运行的确定性规则未发现 error，不表示符合专利法；manual 项必须由人复核。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "domain": {
+      "type": "string",
+      "description": "领域：mechanical（机械）/ software（软件与 AI）。",
+      "enum": [
+        "mechanical",
+        "software"
+      ]
+    },
+    "text": {
+      "type": "string",
+      "description": "说明书全文（markdown 或纯文本）。"
+    },
+    "claims": {
+      "type": "string",
+      "description": "权利要求书全文（可选）；不传时权项相关清单项报 manual。"
+    },
+    "abstract": {
+      "type": "string",
+      "description": "摘要（可选）；不传时摘要相关清单项报 manual。"
+    },
+    "patent_type": {
+      "type": "string",
+      "description": "专利类型（可选）；实用新型客体项需要它。",
+      "enum": [
+        "invention",
+        "utility_model"
+      ]
+    },
+    "figure_analysis": {
+      "type": "array",
+      "description": "附图分析结果（可选）；提供至少一张可用结果后，MECH-DC-001/025 的图面标号才能真正核过。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "usable": {
+            "type": "boolean",
+            "description": "分析结果是否可用（组件提取成功）"
+          },
+          "components": {
+            "type": "array",
+            "description": "识别的组件列表",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "refNumber": {
+                  "type": "string",
+                  "description": "附图标记号（与图面标号一致）"
+                }
+              },
+              "required": [
+                "refNumber"
+              ]
+            }
+          }
+        },
+        "required": [
+          "usable"
+        ]
+      }
+    }
+  },
+  "required": [
+    "domain",
+    "text"
   ]
 }
 ```
@@ -6595,7 +6668,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 ### `rule_check`
 
-Run deterministic constitutional rule checks (keyword blocklist / pattern / structural / citation range / synonym match / quote repetition) against the given text and return violations with severity, action and legal basis. Most rules declare an applicability premise: a rule whose premise does not match the text reports nothing, so a document is only checked against the subjects it actually discusses (an answer that never touches novelty draws no novelty-completeness findings). Use before publishing compliance-sensitive output (e.g. patent conclusions, legal opinions). Scopes: 'patent' (general patent compliance), 'patent-electrical' (H-section electrical rules + general compliance), 'patent-full' (every bundled asset: general compliance + nuo mirrors + hand-written merged rules, activation-reviewed), a job scope 'patent-drafting' (claim/spec drafting) / 'patent-analysis' (patentability, novelty, inventiveness) / 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' (the 'patent-full' assets restricted to that job's rule domains: its own document plus the clauses it must answer or establish), or 'pack' (layered rule pack assembled from the project manifest .sati/rules.yaml: base + domains + overrides). With the office-action notice at hand, a job scope also takes notice=通知书正文: the two dual-input rules (PR-OA-008 驳回理由覆盖 / PR-OA-009 未提条款引用) then run against the response; without notice they are listed as unevaluated. Every result ends with an 评估输入 line giving the character count and digest of the text this run actually read: keep that line when you transcribe the result, so a later run can show whether it read the same text.
+Run deterministic constitutional rule checks (keyword blocklist / pattern / structural / citation range / synonym match / quote repetition) against the given text and return violations with severity, action and legal basis. Most rules declare an applicability premise: a rule whose premise does not match the text reports nothing, so a document is only checked against the subjects it actually discusses (an answer that never touches novelty draws no novelty-completeness findings). Use before publishing compliance-sensitive output (e.g. patent conclusions, legal opinions). Scopes: 'patent' (general patent compliance), 'patent-electrical' (H-section electrical rules + general compliance), 'patent-full' (every bundled asset: general compliance + nuo mirrors + hand-written merged rules, activation-reviewed), a job scope 'patent-drafting' (claim/spec drafting) / 'patent-analysis' (patentability, novelty, inventiveness) / 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' (the 'patent-full' assets restricted to that job's rule domains: its own document plus the clauses it must answer or establish), a domain scope 'patent-mechanical' or 'patent-software' (the full assets plus that domain's rule pack: argument-completeness rules the general assets do not carry), or 'pack' (layered rule pack assembled from the project manifest .sati/rules.yaml: base + domains + overrides). With the office-action notice at hand, a job scope also takes notice=通知书正文: the two dual-input rules (PR-OA-008 驳回理由覆盖 / PR-OA-009 未提条款引用) then run against the response; without notice they are listed as unevaluated. Every result ends with an 评估输入 line giving the character count and digest of the text this run actually read: keep that line when you transcribe the result, so a later run can show whether it read the same text.
 
 ```json
 {
@@ -6607,7 +6680,7 @@ Run deterministic constitutional rule checks (keyword blocklist / pattern / stru
     },
     "scope": {
       "type": "string",
-      "description": "Rule set scope. Defaults to 'patent' (4 general compliance rules only; choose a job scope for substantive checks). 'patent-drafting' / 'patent-analysis' cover claim/spec drafting and patentability analysis; 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' evaluate the full assets filtered to that job's rule domains. 'pack' loads the layered rule pack declared by .sati/rules.yaml."
+      "description": "Rule set scope. Defaults to 'patent' (4 general compliance rules only; choose a job scope for substantive checks). 'patent-drafting' / 'patent-analysis' cover claim/spec drafting and patentability analysis; 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' evaluate the full assets filtered to that job's rule domains; 'patent-mechanical' adds the mechanical domain pack (structural-equivalence argument completeness) and 'patent-software' the software/AI pack (subject-matter argument completeness) on top of the full assets. 'pack' loads the layered rule pack declared by .sati/rules.yaml."
     },
     "notice": {
       "type": "string",
@@ -6684,6 +6757,8 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 - 权利要求-说明书特征覆盖（A26.4）、数值范围端点与中间值实施例
 - 独立权利要求之间的单一性（A31.1，传 claim_units 时）
 - 权项—实施例覆盖矩阵（A26.3/A26.4，传 coverage_entries 时；覆盖度由 features 与 embodiment_refs 计算，不接受调用方给定的覆盖度结论）
+- 实用新型客体（A2.3，patent_type=utility_model 且传 claims 时）：权利要求主题名称是方法／工艺，或落在组合物与无固定形状产品上，报 error
+- 软件客体与模型公开（tech_domain=software 时）：算法／程序本身作主题、信号或比特流作载体报 error；技术载体缺失、商业规则词汇、训练数据与模型结构未公开、缩写未定义报 warning
 - 效果数据定量性、化学领域产物表征数据（tech_domain=chemical 时）
 - 背景技术引证的国别/公开号/日期、有益效果与现有技术的对比、序列表引用、正文图片与表格位置、术语与附图标记一致性、实用新型附图内容（均为 warning，启发式）
 
@@ -6719,7 +6794,7 @@ passed 只表示已运行的确定性规则未发现 error，不表示符合专�
     },
     "tech_domain": {
       "type": "string",
-      "description": "技术领域（chemical 时附加化学表征数据校验）",
+      "description": "技术领域（chemical 时附加化学表征数据校验；software 时附加软件客体与模型公开校验）",
       "enum": [
         "mechanical",
         "electrical",

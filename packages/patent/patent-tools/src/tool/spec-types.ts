@@ -144,8 +144,12 @@ export type FigureAnalysisResult = {
   figureNumber?: number
   /** Whether the analysis cleared the usable-confidence threshold. */
   usable: boolean
-  /** Recognized components with their reference marks. */
-  components: FigureComponentRef[]
+  /**
+   * Recognized components with their reference marks. Absent when the analysis
+   * produced no component list; the consistency checker treats such a result as
+   * unusable instead of reading it as "no marks found".
+   */
+  components?: FigureComponentRef[]
 }
 
 /** Injectable dependencies for the `validate_specification` tool. */

@@ -1,7 +1,7 @@
 /**
  * Domain-neutral description heuristics added after the form checks: background
  * citations, effect comparison, sequence listings, media in the text, term/mark
- * consistency, and utility-model drawing content.
+ * consistency, utility-model drawing content, and utility-model subject matter.
  *
  * Each rule is deterministic and reports a warning or error with the legal
  * basis that makes the defect actionable. None of them decides enablement or
@@ -9,6 +9,7 @@
  * @module @deepseek-ai/dsh-patent-tools/tool/spec-description-extras
  */
 
+import { claimSubjects } from './internal/claim-subjects.ts'
 import { drawingEntries, getDrawingSection } from './spec-figure-marks.ts'
 import { sectionBodies } from './spec-placeholder.ts'
 import type { PatentType } from './draft-claims.ts'
@@ -245,4 +246,53 @@ export function checkUtilityModelFigureContent(text: string, patentType: PatentT
     message: '实用新型的附图均为现有技术图或性能曲线图：应提交表示要求保护的产品的形状、构造的附图（《专利审查指南》第一部分第二章 7.3）',
     suggestion: '补充产品的结构视图（主视图、剖视图、爆炸图等），删除或标注现有技术图',
   }]
+}
+
+/** 权利要求主题名称落在末尾的方法或工艺表述（实用新型不含方法主题）。 */
+const METHOD_SUBJECT = /(?:方法|工艺|步骤)$/
+
+/** 权利要求主题名称落在末尾的组合物或无固定形状产品表述。 */
+const COMPOSITION_SUBJECT = /(?:组合物|混合物|配方|涂料|润滑脂|溶液|乳液|悬浮液|粉体|粉末)$/
+
+/**
+ * A utility model protects only a product's shape, structure, or their
+ * combination, so a claim whose subject is a method or a composition is not
+ * admissible subject matter for it. Only independent claims are checked: a
+ * dependent claim's subject is read after「所述」(「所述方法」), so it repeats
+ * the independent claim's subject instead of introducing its own. The subject's
+ * ending alone decides, so a device named for the process it performs
+ * («用于制造螺栓的模具») is not flagged.
+ * @param claims - the claims text; absent or blank input is not checked.
+ * @param patentType - the application type; only `utility_model` is checked.
+ * @returns one error per offending claim, in claim order.
+ */
+export function checkUtilityModelSubjectMatter(
+  claims: string | undefined,
+  patentType: PatentType | undefined,
+): SpecViolation[] {
+  if (patentType !== 'utility_model') return []
+  if (claims === undefined || claims.trim().length === 0) return []
+  const violations: SpecViolation[] = []
+  for (const { number, subject } of claimSubjects(claims)) {
+    if (METHOD_SUBJECT.test(subject)) {
+      violations.push({
+        rule: 'utility_model_method_claim',
+        family: 'claims',
+        severity: 'error',
+        message: `实用新型不得包含方法主题：第 ${number} 项权利要求的主题为「${subject}」，《专利法》第二条第三款只保护产品的形状、构造或者其结合`,
+        suggestion: '方法主题不属于实用新型客体：将方法另案申请发明，本案改写为产品权利要求，或整体改以发明提出申请',
+      })
+      continue
+    }
+    if (COMPOSITION_SUBJECT.test(subject)) {
+      violations.push({
+        rule: 'utility_model_composition',
+        family: 'claims',
+        severity: 'error',
+        message: `实用新型不得保护组合物或无固定形状产品：第 ${number} 项权利要求的主题为「${subject}」，《专利法》第二条第三款只保护产品的形状、构造或者其结合`,
+        suggestion: '组合物与无固定形状的产品不属于实用新型客体：改以发明提出申请，或把主题改写为具有确定形状、构造的产品',
+      })
+    }
+  }
+  return violations
 }

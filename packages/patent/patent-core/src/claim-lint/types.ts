@@ -18,6 +18,7 @@ export type ClaimLintRuleId =
   | 'two-part-form'
   | 'functional-limitation'
   | 'process-feature'
+  | 'step-order'
   | 'non-technical-feature'
   | 'commercial-language'
   | 'external-reference'

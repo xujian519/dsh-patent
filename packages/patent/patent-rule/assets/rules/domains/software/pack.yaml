@@ -1,6 +1,8 @@
-# 软件/AI 领域规则包清单（v1 占位：无规则）
-# AI 场景创新判断要点（画布 §5.3：场景主导的算法实质性调整）待评审后入库。
+# 软件/AI 领域规则包清单
+# 规则文件：inventiveness.yaml（客体答辩论证完整性 SOFT-INV-001）。
+# AI 场景创新判断要点（画布 §5.3：场景主导的算法实质性调整）属实体知识，
+# 确定性检查不适用，以知识条目收录。
 id: sati-rules-domain-software
-version: 0.1.0
+version: 0.2.0
 domain: software
-description: 软件/AI 领域创造性判断规则包（v1 占位，暂无规则）
+description: 软件/AI 领域规则包（客体答辩论证完整性）

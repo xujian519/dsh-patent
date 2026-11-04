@@ -231,6 +231,32 @@ describe('rule pack', () => {
     expect(medicalScoped.violations.some(v => v.ruleId === 'MED-INV-001')).toBe(true)
   })
 
+  it('MECH-INV-001 只在等效性论证语境（premise）下评估', () => {
+    const mech = loadRuleSetDir(join(assetRulesRoot(), 'domains', 'mechanical')).ruleSets
+    const ruleSet = mergeRuleSets(mech)
+    const hit = (text: string): boolean =>
+      evaluateText(text, ruleSet).violations.some(v => v.ruleId === 'MECH-INV-001')
+    // 不含等效/等同的文本根本不评估：此前无 premise，任意说明书都会命中 0/3。
+    expect(hit('所述壳体设置在底座上，起到支撑作用。')).toBe(false)
+    // 语境锚点在，但只给了对应结构、没给作用或技术效果 → 论证不完整。
+    expect(hit('对比文件1的压板与本申请的结构等效。')).toBe(true)
+    // 锚点 + 两要素齐备 → 通过。
+    expect(hit('对比文件1的压板与本申请的结构等效，二者均通过弹性变形产生密封作用，效果相同。')).toBe(false)
+  })
+
+  it('SOFT-INV-001 只在客体论证语境（premise）下评估', () => {
+    const soft = loadRuleSetDir(join(assetRulesRoot(), 'domains', 'software')).ruleSets
+    const ruleSet = mergeRuleSets(soft)
+    const hit = (text: string): boolean =>
+      evaluateText(text, ruleSet).violations.some(v => v.ruleId === 'SOFT-INV-001')
+    // 不讨论客体的文本根本不评估。
+    expect(hit('所述壳体设置在底座上，起到支撑作用。')).toBe(false)
+    // 锚点在，但只写了技术问题与技术手段，未写技术效果 → 三要素不完整。
+    expect(hit('本方案不属于智力活动规则，技术问题为识别准确率低，技术手段为神经网络。')).toBe(true)
+    // 三要素齐备 → 通过。
+    expect(hit('本方案不属于智力活动规则：技术问题为识别准确率低，技术手段为卷积神经网络，技术效果为准确率提升 3%。')).toBe(false)
+  })
+
   it('candidatePackDirs and resolvePackDir resolution semantics', () => {
     const root = assetRulesRoot()
     expect(candidatePackDirs('base')).toEqual([join(root, 'base'), join(root, 'domains', 'base')])

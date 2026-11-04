@@ -1,0 +1,31 @@
+# Bilingual-pair consistency record for 2026-11-04-patent-domain-checklist-decisions.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-11-04-patent-domain-checklist-decisions.md
+/agent-note-patent-domain-checklists-state-what-an-engine-decides-and-what-stays-manual:
+  en: 99ba17ec401354ad
+  zh: d319fdad0d9f9ad6
+/agent-note-patent-domain-checklists-state-what-an-engine-decides-and-what-stays-manual/problem:
+  en: 5b0f0b6d46f370c7
+  zh: ecc484dd9bcf86f7
+/agent-note-patent-domain-checklists-state-what-an-engine-decides-and-what-stays-manual/decision:
+  en: c54acaa24f469388
+  zh: 1e7b9e84b63a179e
+/agent-note-patent-domain-checklists-state-what-an-engine-decides-and-what-stays-manual/decision/the-three-statuses:
+  en: ad17d85f477f55e5
+  zh: 0a06cd2e9ea5c28c
+/agent-note-patent-domain-checklists-state-what-an-engine-decides-and-what-stays-manual/decision/what-each-domain-decides:
+  en: 9e5a6d28428528ca
+  zh: 351e96628a84cb91
+/agent-note-patent-domain-checklists-state-what-an-engine-decides-and-what-stays-manual/decision/domain-scopes-in-rule-check:
+  en: 45202c8040dc16db
+  zh: 5ac886b39c9f129d
+/agent-note-patent-domain-checklists-state-what-an-engine-decides-and-what-stays-manual/alternatives-considered:
+  en: 213a136cea2ff3ee
+  zh: c2fe07cf38e40534
+/agent-note-patent-domain-checklists-state-what-an-engine-decides-and-what-stays-manual/consequences:
+  en: 3baad223775183be
+  zh: d268648726ce4bbe
+/agent-note-patent-domain-checklists-state-what-an-engine-decides-and-what-stays-manual/testing:
+  en: cb4c47651321ab1c
+  zh: 802982638c27cc9c

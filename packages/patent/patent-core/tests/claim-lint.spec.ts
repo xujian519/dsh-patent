@@ -305,6 +305,26 @@ describe('lintClaimText: 用语规则', () => {
     expect(findingsOf(lintClaimText('1. 一种装置，其特征在于，所述铁芯包括沿轴向层叠的冲片。'), 'process-feature')).toEqual([])
   })
 
+  it('方法权要列举步骤而未声明顺序时报 step-order', () => {
+    const ambiguous = '1. 一种螺栓的制造方法，其特征在于，包括步骤：热镦粗、搓丝。'
+    const found = findingsOf(lintClaimText(ambiguous), 'step-order')
+    expect(found).toHaveLength(1)
+    expect(found[0]?.severity).toBe('warning')
+    expect(found[0]?.basis).toContain('第二十六条第四款')
+  })
+
+  it('已声明顺序、产品权要或未列举步骤时不报 step-order', () => {
+    expect(findingsOf(lintClaimText('1. 一种制造方法，其特征在于，依次包括步骤：热镦粗、搓丝。'), 'step-order')).toEqual([])
+    expect(findingsOf(lintClaimText('1. 一种制造方法，其特征在于，包括步骤，步骤顺序不限：热镦粗、搓丝。'), 'step-order')).toEqual([])
+    expect(findingsOf(lintClaimText('1. 一种螺栓，其特征在于，包括步骤式装配的螺栓本体。'), 'step-order')).toEqual([])
+    expect(findingsOf(lintClaimText('1. 一种螺栓的制造方法，其特征在于，热镦粗后搓丝。'), 'step-order')).toEqual([])
+    // 从属项的主题读作「所述方法」，重复的是独权主题：顺序声明只在独权里作出。
+    expect(findingsOf(lintClaimText([
+      '1. 一种制造方法，其特征在于，依次包括步骤：热镦粗、搓丝。',
+      '2. 根据权利要求 1 所述的方法，其特征在于，包括步骤：清洗、烘干。',
+    ].join('\n')), 'step-order')).toEqual([])
+  })
+
   it('不产生技术效果的内容与商业宣传用语分别命中', () => {
     expect(findingsOf(lintClaimText('1. 一种装置，其特征在于，所述外壳设有商标。'), 'non-technical-feature')).toHaveLength(1)
     expect(findingsOf(lintClaimText('1. 一种装置，其特征在于，所述外壳为国内首创的结构。'), 'commercial-language'))

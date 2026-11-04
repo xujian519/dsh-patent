@@ -1,6 +1,6 @@
 {
   "benchmarkId": "patent-oas",
-  "recordedAt": "2026-11-02T07:49:31.899Z",
+  "recordedAt": "2026-11-04T16:14:12.834Z",
   "execution": "workflow",
   "workflowId": "patent_disclosure_v1",
   "runsPerCase": 1,
@@ -19,7 +19,7 @@
           "index": 2,
           "label": "保护范围适中",
           "points": 15,
-          "score": 93
+          "score": 100
         },
         {
           "index": 3,
@@ -31,19 +31,19 @@
           "index": 4,
           "label": "引用关系与层次",
           "points": 10,
-          "score": 80
+          "score": 82
         },
         {
           "index": 5,
           "label": "形式与说明书支持",
           "points": 10,
-          "score": 92
+          "score": 88
         },
         {
           "index": 6,
           "label": "充分公开与可实施",
           "points": 15,
-          "score": 82
+          "score": 85
         },
         {
           "index": 7,
@@ -54,11 +54,11 @@
       ],
       "concision": [
         {
-          "proseChars": 4573,
-          "paragraphs": 40,
-          "sections": 6,
+          "proseChars": 6191,
+          "paragraphs": 55,
+          "sections": 5,
           "emptySections": 0,
-          "repeatedSentences": 2
+          "repeatedSentences": 3
         }
       ]
     }
@@ -66,7 +66,7 @@
   "provider": "deepseek-official",
   "modelId": "deepseek-flash",
   "tokens": {
-    "input": 2744861,
-    "output": 46721
+    "input": 4220332,
+    "output": 58923
   }
 }

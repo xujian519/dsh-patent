@@ -762,3 +762,29 @@ hygiene 16/16 PASS、doc-sync 43/43 PASS、duplication 0 clones / 2350 files / 4
 - 09-12 遗留：非严格插件 schema 静默吞掉拼错配置键、keyless 快照层不在 fork CI 内
 - 09-13 遗留：中英指针集合不变量升格为 quick doc 叶门（#127 follow-up）
 - L5 余项与 M6 四候选保持台账登记不立案（缺独立可评审修复单元 / 缺证成理由）
+
+## 2026-11-04 更新（preset-divergence 基线滞后）
+
+`pnpm run verify-preset-divergence` 在 `fix/patent-preset-writing-patterns-isolate` 上失败，与本轮专利团队改动无关：`git stash` 后同样失败。
+
+- **现象**：`patent-rule: patent.patch.yml changed from d3a46f2141 to 800e54e29d`。
+- **成因**：PR #724（隔离 `writingPatterns` 服务，修复专利模式加载失败）把 `writing-patterns` 行从 patent preset 顶层移入 patent 组，并在组的 `isolate` 声明 `writingPatterns`。该行落在 `patent-rule` 与下一个 `- id:` 之间的块内，块哈希因此变化；同一变更未重跑 `pnpm run preset-divergence:baseline`。
+- **处置**：重跑基线只改一行哈希（`patent-rule.patent.patch.yml` → `800e54e29d`），`legal.patch.yml` 一侧与其余 30 个发散行 id 不变，说明这是同一处语义修正的记账，不是新增发散。基线侧随后做了完全相同的修复；本分支合入 master 后该改动已被吸收，不再重复记账。
+- **预防**：改 `packages/bundle/web-app/presets/*.patch.yml` 的块内容后，同一次提交内重跑 `pnpm run preset-divergence:baseline` 并检查 diff 只含预期行。
+- **另记**：`.agents/plans/**` 此前不在 `verify-md-wrap` 与 `verify-md-links` 的扫描集合内（`markdownLinkSourcePaths()` 实测 3240 个文件中 plans 目录占 0 个），计划文档的排版与相对链接长期没有机器门；现已把两处 PATTERNS 补上 `.agents/plans/**/*.md`，存量 4 份计划修掉 4 处硬换行后全绿（3294 文件）。
+
+## 2026-11-04 更新（scripts 套件并发下的超时不稳定）
+
+`pnpm exec vitest run scripts/` 全量并发跑时，有两例以默认 5 秒预算超时；单独跑、两两合跑、以及只跑这两例都通过。
+
+- **现象**：`Test Files 2 failed | 201 passed`，失败两例均为 `Error: Test timed out in 5000ms.`
+  - `scripts/report-structure.spec.ts > reports the shipped sources with the ledger figures recoverable`——该例对全仓 `packages/` 跑 TypeScript AST，并发时实测耗时约 17 秒。
+  - `scripts/migrate-sessions-to-v4.spec.ts > preserves none parent/child history and catalog with serial or parallel jobs`——该例为 `it.each(['none','zstd'])`，内部对 `jobs` 跑 1 与 2 两轮子进程。
+- **成因方向**：`vitest.config.ts` 只在覆盖率分区路径按 `DSH_COVERAGE_TEST_TIMEOUT_MS` 抬高预算（`coverageTestTimeoutOptions`），非覆盖率运行沿用默认 5 秒；这两个用例的工作量（全仓 AST 扫描、多轮子进程）在并发争抢 CPU 时超过该预算。这不是断言失败，也没有观察到错误结果，属于预算与工作量不匹配。
+- **影响**：`scripts` 目录的全量本地运行会随机出现 1–2 例红；按文件单跑或 `-t` 过滤不受影响。CI 是否复现取决于 runner 与并发预算，本轮未取到 CI 证据。
+- **基线对照**：在 `fix/patent-preset-writing-patterns-isolate` 上用 `git stash` 暂存本次改动后跑同一命令，同样是 `Test Files 1 failed | 202 passed`，失败的是 `report-structure` 那一例；带本次改动时是 2 例（多出 `migrate-sessions-to-v4`）。两例都在基线集合内，故认定为既有不稳定而非本次引入。
+- **建议处置**（按成本从低到高）：
+  1. 给这两例各自声明 `{ timeout: ... }`，与它们已有的 90 秒/180 秒同类用例一致；
+  2. 或把全仓 AST 扫描结果在 spec 内做一次 memo，避免 `it.each` 与相邻用例重复扫描；
+  3. 或对 `scripts` 目录的整体运行也应用同一份 lane 预算。
+- **判据**：处置后应在并发全量下连续跑三次无超时，且单例耗时仍低于其声明预算的一半。

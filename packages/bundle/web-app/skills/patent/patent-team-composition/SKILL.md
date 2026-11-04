@@ -33,11 +33,11 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 |---|---|---|---|---|---|
 | 案件管理员 | `case-manager` | 流程中立 | 立案登记与案卷目录、交底书接收、反馈申请人补充资料循环、期限/节点监控（答复期限、复审 3 个月、年费）、补充合格判定收口 | 立案 | `case-manager`（案卷目录/期限节点/补充清单） |
 | 检索员 | `researcher` | 中立 | 证据/现有技术检索与核实：先产出命名族清单与正交维度计划，再核公开内容、参数数值、来源可得性；覆盖度评估；可专利性初判 | 全部 | `patent-search-commander`（检索式/对比文件/公开日/命名族清单/正交维度） |
-| 撰写员 | `drafter` | 代理人 | 案件理解（PFIE）、文书起草（申请文件/答复稿/补正书/复审请求书/请求书/诉状）、逐特征比对 | 全部 | `patent-technical-analyzer`（技术问题/发明认知/技术特征/技术效果）＋ `patent-oa-writer`（意见陈述/修改对照） |
+| 撰写员 | `drafter` | 代理人 | 案件理解（PFIE）、文书起草（申请文件/答复稿/补正书/复审请求书/请求书/诉状）、逐特征比对；撰写与答复场景中复核 manifest 产出的策略表与确定性权利要求草稿，指出越界或漏特征，不重写 | 全部 | `patent-technical-analyzer`（技术问题/发明认知/技术特征/技术效果）＋ `patent-oa-writer`（意见陈述/修改对照） |
 | 技术专家 | `technical-expert` | 我方立场 | 技术真实性核验：交底书可实施性、实施例与效果数据、参数合理性；识别夸大/虚构技术陈述 | 立案、撰写、答复、复审、无效、诉讼 | `patent-technical-analyzer`（技术问题/发明认知/技术特征/技术效果） |
-| 对立审查员 | `adversarial-reviewer` | 审查方 | 授权审查视角红队评审：区别特征认定、技术启示、效果证据、程序表述、法条核验 | 撰写、答复、复审 | `patent-novelty-analyzer`（新颖性结论/置信度）＋ `patent-inventiveness-analyzer`（最接近的现有技术/区别技术特征/实际解决的技术问题/技术启示/创造性结论/置信度） |
-| 申请人代理 | `applicant-counsel` | 申请人方 | 权利要求范围最大化：扩张机会、从权布局、合并修改备选、争辩策略 | 撰写、答复、复审 | `applicant-counsel`（范围扩张机会/从权布局/争辩策略） |
-| 形式审查员 | `formal-examiner` | 审查方（初步审查） | 形式缺陷清单核验：文件齐全性、格式规范、附图清晰度、著录项目、签字盖章；补正彻底性判定 | 补正 | `formal-examiner`（形式缺陷清单/完善性判定） |
+| 对立审查员 | `adversarial-reviewer` | 审查方 | 授权审查视角红队评审：区别特征认定、技术启示、效果证据、程序表述、法条核验；撰写场景复核换位审查（`draft_review`）与 A26.3/A26.4 判定结论，答复场景复核答复计划的薄弱点（`adversary-model`）与定稿复评（`adversary-review`） | 撰写、答复、复审 | `patent-novelty-analyzer`（新颖性结论/置信度）＋ `patent-inventiveness-analyzer`（最接近的现有技术/区别技术特征/实际解决的技术问题/技术启示/创造性结论/置信度） |
+| 申请人代理 | `applicant-counsel` | 申请人方 | 权利要求范围最大化：扩张机会、从权布局、合并修改备选、争辩策略；撰写场景只读复核 manifest 的策略表与从权树，提出建议交 HITL，不直接改策略表 | 撰写、答复、复审 | `applicant-counsel`（范围扩张机会/从权布局/争辩策略） |
+| 形式审查员 | `formal-examiner` | 审查方（初步审查） | 形式缺陷清单核验：文件齐全性、格式规范、附图清晰度、著录项目、签字盖章；权利要求编号结构核验（`claim_lint`：编号连续、引用方向、多项从属引用基础）；补正彻底性判定 | 补正 | `formal-examiner`（形式缺陷清单/完善性判定） |
 | 无效请求人 | `invalidity-petitioner` | 攻击方 | 无效理由地图（A22.2/22.3/22.4/26.3/26.4/33、A2/A5/A25、细则23.2/49、A9）、证据组合与成功率最大化、预判专利权人应对 | 无效宣告 | `invalidity-petitioner`（无效理由/证据组合/成功率评估） |
 | 专利权人 | `patentee-defender` | 防御/主张 | 无效：质证请求人证据三性、提交反证、修改权利要求缩小范围换维持；诉讼：全面覆盖+等同主张、判赔计算 | 无效宣告、侵权诉讼 | `patentee-defender`（质证意见/反证清单/修改权利要求方案） |
 | 合议组/裁判 | `adjudicator` | 中立裁判 | 程序规则核验（前置审查/口审/庭审/举证期限/证据规则）、双方论点对抗评估、证据采信、结果预判与理由 | 复审、无效宣告、侵权诉讼 | `adjudicator`（程序核验/对抗评估/结果预判） |
@@ -70,19 +70,25 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 
 成员：检索员、撰写员、对立审查员、技术专家、申请人代理、制图员、文档专员。目标：新申请文件（权利要求书+说明书+附图与附图标记表）并以正式文书交付。
 
-| 任务 | 主题 | 负责人 | 依赖 |
-|---|---|---|---|
-| t1 | 交底书理解：PFIE 四元组 + 发明点分级 | 撰写员 | — |
-| t2 | 现有技术检索：对比文件 + 布局依据 | 检索员 | t1 |
-| t3 | 权利要求布局方案（HITL 确认） | 撰写员 | t2 |
-| t4 | 说明书五部分撰写 | 撰写员 | t3 |
-| t4a | 附图与附图标记表：按图面类型出图（`generate_patent_figure`，标号随 `labels[]` 内嵌；三维模型走 `generate_structure_figure`）、外部 SVG 标号回填（`add_patent_figure_references`，仅自绘/外部来源图需要）、图文双向一致性核验（`validate_specification` + `analyze_patent_figure`），产出 `figure-deliverable.md` | 制图员 | t4 |
-| t5 | 对立评审：清楚/支持/充分公开/单一性 | 对立审查员 | t4a |
-| t6 | 技术核验：实施例/效果数据复核 | 技术专家 | t4a（与 t5 并行） |
-| t7 | 范围审视：扩张机会与从权布局 | 申请人代理 | t5 |
-| t8 | 质量门禁 + 收口：`patent_workflow_run(manifestId=patent_disclosure_v1)` 收口交底书理解结论，`patent_novelty_v1`/`patent_inventiveness_v1` 收口检索与三步法结论；再跑 worker 契约 + 充分性 + patent-rule | captain | t6, t7 |
-| t9 | 正式文档输出：权利要求书+说明书（claims-spec 渲染），矫正 + 美化 | 文档专员 | t8 |
-| t10 | 交付收口：产物登记 + HITL 放行 | captain | t9 |
+执行面分工：**captain 用 `patent_workflow_run(manifestId=patent_disclosure_v1)` 一次性执行到 `review_gate` 暂停**；成员不调用该 manifest 的任何单个阶段（工具没有阶段切片入口），只对 captain 产出的阶段结果做复核、互证与验收。表中「责任面」列写 `manifest` 的行只能由 captain 执行，写 `团队` 的行由成员产出。
+
+| 任务 | 主题 | 责任面 | 负责人 | 依赖 |
+|---|---|---|---|---|
+| t1 | 交底书理解：PFIE 四元组 + 发明点分级（成员自读，校验 manifest 的 `merge` 结果） | 团队 | 撰写员 | — |
+| t2 | 现有技术检索：对比文件 + 布局依据（校验 `search`/`prior_art_filter`/`novelty` 结果） | 团队 | 检索员 | t1 |
+| t3 | 附图与附图标记表：按图面类型出图（`generate_patent_figure`，标号随 `labels[]` 内嵌；三维模型走 `generate_structure_figure`）、外部 SVG 标号回填（`add_patent_figure_references`，仅自绘/外部来源图需要）、图文双向一致性核验（`validate_specification` + `analyze_patent_figure`），产出 `figure-deliverable.md` | 团队 | 制图员 | t1 |
+| t4 | 披露链执行：`preprocess` → `eligibility` → `extract_problem/features/effects` → `merge` → `groundedness` → `consistency` → `generate_keywords` → `time_baseline` → `search` → `prior_art_filter` → `novelty` → `citation_check` → `report` → `claim_strategy` → `draft_claims` → `figure_analysis`/`figure_analysis_parse` → `draft_specification` → `spec_check` → `enablement_report` → `claim_breadth` → `slop_clean` → `draft_review` → `legal_gaps`，停在 `review_gate` | manifest | captain | t2, t3 |
+| t5 | 权项复核：只读 `claim_strategy` 策略表与 `draft_claims` 草稿，核对特征编号、原文锚点、多路从权引用方向；指出越界或漏特征，**不重写权项** | 团队 | 申请人代理 | t4 |
+| t6 | 说明书互证：`enablement_report`（A26.3 充分公开）与 `claim_breadth`（A26.4 概括范围）逐条复核，核对实施例摘录与原文锚点 | 团队 | 对立审查员 | t4 |
+| t7 | 技术真实性核验：实施例、效果数据、参数合理性（与 t6 并行，输入不同） | 团队 | 技术专家 | t4 |
+| t8 | `draft_review` 结果处置：按回退类别定位返工面（`draft-review:enablement`/`support`/`amendment`→说明书，`clarity`→权项，`unity`→策略），由 captain 重跑 manifest 对应段；两轮后仍有争议交人工复核 | 团队判定 + manifest 执行 | captain | t5, t6, t7 |
+| t9 | 过 `review_gate`（HITL 确认权项布局与说明书）并重跑收口 | manifest | captain | t8 |
+| t10 | 正式文档输出：权利要求书+说明书（claims-spec 渲染），矫正 + 美化 | 团队 | 文档专员 | t9 |
+| t11 | 交付收口：产物登记 + HITL 放行 | 团队 | captain | t10 |
+
+返工纪律：t8 的返工**只能重跑 manifest**（`approveStageIds` 放行已批准的审批门），成员不得手写替换说明书或权利要求。成员的职责是判断「缺哪一类、由谁解释」，不是代写。
+
+`slop_clean` 是 warn 级：未通过只报告，不阻断交付，不得据此打回。质量判定由 `spec_check`/`enablement_report`/`claim_breadth` 承担。
 
 附图信息的消费侧：附图与附图标记表服务于说明书侧的一致性核验（细则 21.2 双向一致），**不作为权利要求撰写的输入**——附图对权项质量没有增益，却会把说明书的表述带进权项范围；权项范围由交底书技术特征与检索结论决定。
 
@@ -90,18 +96,23 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 
 成员：检索员、撰写员、对立审查员、技术专家、申请人代理、制图员、文档专员。撰写团队可直接延续（同成员不重建）。目标：OA 答复并以正式意见陈述书交付。
 
-| 任务 | 主题 | 负责人 | 依赖 |
-|---|---|---|---|
-| t1 | OA 解析与问题识别（A22.2/22.3/26.3/26.4/33 等） | 撰写员 | — |
-| t2 | 法条与审查标准核验 | 对立审查员 | t1 |
-| t3 | 修改方案与争辩策略（HITL 确认） | 申请人代理 | t2 |
-| t3a | 附图修改执行与标号一致性核验：按已确认的修改方案改图（附图修改同样受 A33 约束）、自绘/外部 SVG 用 `add_patent_figure_references` 回填标号、`figure-deliverable.md` 落盘 | 制图员 | t3 |
-| t4 | 答复意见书起草 | 撰写员 | t3 |
-| t5 | 红队评审交付稿 | 对立审查员 | t4, t3a |
-| t6 | 技术核验 | 技术专家 | t4（与 t5 并行） |
-| t7 | 收口：答复期限核验 + `patent_workflow_run(manifestId=patent_oa_response_v1)`（parse / claim-chart / draft 阶段记录作为交付依据） | captain | t5, t6 |
-| t8 | 正式文档输出：意见陈述书（oa-response 渲染），矫正 + 美化 | 文档专员 | t7 |
-| t9 | 交付收口：产物登记 + HITL 放行 | captain | t8 |
+执行面分工同场景二：`patent_oa_response_v1` 由 captain 一次跑完（`tighten`、`slop_gate`、`adversary-review` 都是 manifest 内阶段，成员的职责是确认方向、解释结论与验收交付稿，不是自行删减或改写）。
+
+| 任务 | 主题 | 责任面 | 负责人 | 依赖 |
+|---|---|---|---|---|
+| t1 | OA 解析与问题识别（A22.2/22.3/26.3/26.4/33 等）：成员自读通知书，核对 manifest `parse` 的驳回类型与引用文献 | 团队 | 撰写员 | — |
+| t2 | 法条与审查标准核验：核对 `claim-chart` 要素对照的引用与结论 | 团队 | 对立审查员 | t1 |
+| t3 | 修改方案与争辩策略（HITL 确认）：确认 `response-plan` 的策略表是否符合本案判断 | 团队 | 申请人代理 | t2 |
+| t3a | 附图修改执行与标号一致性核验：按已确认的修改方案改图（附图修改同样受 A33 约束）、自绘/外部 SVG 用 `add_patent_figure_references` 回填标号、`figure-deliverable.md` 落盘 | 团队 | 制图员 | t3 |
+| t4 | 答复链执行：`dispute-framing` → `parse` → `dispute-framing-refine` → `claim-chart` → `response-plan` → `adversary-model` → `generate_keywords` → `draft` → `tighten` → `slop_gate` → `adversary-review` → `response_check` → `amendment_basis` → `legal_gaps`，停在 `approval` | manifest | captain | t3, t3a |
+| t5 | 计划与对立模型解释：说明 `response-plan` 的逐项策略与 `adversary-model` 列出的薄弱点在定稿中如何回应；未回应的薄弱点列为返工依据 | 团队 | 对立审查员 | t4 |
+| t6 | 技术真实性核验：事实、数据、实施例（与 t5 并行，输入不同） | 团队 | 技术专家 | t4 |
+| t7 | 交付稿验收：篇幅预算（正文 ≤ 4000 字可见字符，去空白、不含表格与权利要求全文）、通知书未提出的争点未设节、`response_check` 与 `amendment_basis` 均通过、`slop_gate` 未回退 | 团队 | 撰写员 | t5, t6 |
+| t8 | 答复期限核验 + 过 `approval`（HITL 放行） | manifest | captain | t7 |
+| t9 | 正式文档输出：意见陈述书（oa-response 渲染），矫正 + 美化 | 团队 | 文档专员 | t8 |
+| t10 | 交付收口：产物登记 + HITL 放行 | 团队 | captain | t9 |
+
+返工纪律：篇幅超预算或存在未回应的薄弱点时，由 captain 重跑 manifest（`draft` 会被 `slop_gate` 回退重写），成员不得在交付稿上手工删改。`slop_gate` 与披露链的 `slop_clean` 不同：前者未过会回退 `draft` 重写，后者只报告。
 
 ### 场景四：补正包（4 成员）
 
@@ -194,6 +205,15 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 - 团队规模宁小勿大：用户已明确要求组队、且「多角色互证能实质降低风险」的案子才组队（全流程撰写、OA 答复、无效／复审、侵权比对）；任务数少、单一技能通路（单纯形式复核、单幅附图重绘）即使用户要求组队也先说明不必建队，用户坚持则按最小角色集建队。本所一次 7 人团队 + 15 任务 + 13 条裁决 + 51 条消息的产出仍被用户否，规模不是质量。
 - 收敛：同一条纪律连续两次被成员违反，先检查任务描述与 `role` 是否错配（角色契约才是纪律的载体），再补派工文本。不要把纪律在派工文本里越写越长。
 
+### 执行面纪律（撰写与答复场景）
+
+`patent_workflow_run` 只有「整 manifest」与「graph」两条路径，`approveStageIds` 只跳过已批准的审批门，没有「只跑某几个阶段」的入口；`flexible_plan` 的 `run` 只执行调用方自定义的 stage，不是内置 manifest 切片。因此：
+
+- **执行权单向**：captain 用 `patent_workflow_run` 跑完整 manifest 到审批门暂停，成员只读该次运行的阶段产出。成员不得声明「已执行 `claim_strategy`」「已跑 `tighten`」——它没有这个入口，声称执行只会掩盖手写产物。
+- **成员动作用词**：复核、互证、验收、解释、判定返工类别。不写「代写」「补写」「重排」说明书或权利要求。
+- **返工只能重跑**：需要改写说明书、权利要求或答复正文时，由 captain 重跑 manifest（必要时用 `approveStageIds` 放行已确认的门）。成员手写的替换稿不进交付链，因为它绕过了 `claim_strategy`/`draft_claims` 的确定性渲染与 `spec_check`/`enablement_report` 的判定。
+- **派工「禁止」段的固定末句**：任务派工文本须附「不自行执行或重跑 manifest 阶段；发现缺口即上报类别，不重试、不代写」。
+
 ## 等待纪律
 
 派活之后**不要**用 `sleep`、后台 job 轮询或反复 `patent_teams_status` 来消磨时间：轮询会把队长的每一次等待都钉死在轮询间隔上，成员干完活在队长发现之前要白等一整个周期。正确循环是**派活 → `patent_teams_wait` → 醒来读 `patent_teams_status` → 再派活**。
@@ -226,6 +246,9 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 - 期限与流程：答复期限、复审 3 个月与恢复窗口、补正期限、送达推定日（+15 日）由案件管理员或 captain 核验，禁止心算。
 - HITL 确认点不可跳过：组队方案、权利要求布局、修改方案、无效理由组合、诉请金额、答复策略按「人工确认点」一节先确认再动手，成员阶段产出在进下一阶段前汇总给用户过目；文档专员交付放行与收口放行合并为一次 ask_user_question，不重复打扰。
 - 质量门禁：契约化任务（创建时指定 worker）完成后须过组合质量门禁（worker 契约字段 + 内容充分性 + patent-rule 规则；`patent_eval` 综合评分仅作反馈提示），未过按 `gate_feedback` 修订后重新提交；反复未过由 captain 用 `patent_teams_reassign_task` 处理。文档专员任务（`patent-document-renderer`）同样按契约验收：交付场景/矫正清单/渲染产物缺一即打回。制图员任务（`patent-illustrator`）按契约验收：附图文件/附图标记表/图文一致性/形式要件核验缺一即打回。
+- 撰写与答复的实体判定以 manifest 记录为准：`spec_check`、`enablement_report`（A26.3）、`claim_breadth`（A26.4）、`draft_review`（按类别回退）、`response_check`、`amendment_basis`（A33）的通过状态进交付依据；`slop_clean`（披露链，warn 级）只报告不阻断，`slop_gate`（答复链）未过会回退 `draft` 重写。
+- 文档交付：正式文档按专利文书输出规范（`patent-document-polish` 技能）走场景→模板映射，渲染 html/pdf（或 docx，officecli 可用时），产物登记 `_matter-log.md`；附图以制图员产出的附图附件页随附（`figure-deliverable.md` 列明各图路径与图号），交付说明里写明附图是渲染文档之外的独立附件——`render_patent_document` 的模板只承载附图说明文字，不嵌入图片。
+- 收口必经：每个场景的最终收口任务必须包含 `patent_workflow_run`（按场景 manifest：立案=patent_patentability_v1、撰写=patent_disclosure_v1 并跑到 `review_gate` 放行、答复=patent_oa_response_v1 并跑到 `approval` 放行、复审=patent_reexamination_v1、无效=patent_invalidation_v1、诉讼=patent_infringement_v1）；交付依据是 stage 记录，不是口头结论；补正类无内置 manifest 入口，以替换页逐项核验记录替代。
 - 文档交付：正式文档按专利文书输出规范（`patent-document-polish` 技能）走场景→模板映射，渲染 html/pdf（或 docx，officecli 可用时），产物登记 `_matter-log.md`；附图以制图员产出的附图附件页随附（`figure-deliverable.md` 列明各图路径与图号），交付说明里写明附图是渲染文档之外的独立附件——`render_patent_document` 的模板只承载附图说明文字，不嵌入图片。
 - 收口必经：每个场景的最终收口任务必须包含 `patent_workflow_run`（按场景 manifest：立案=patent_patentability_v1、撰写=patent_disclosure_v1 与 patent_novelty_v1/patent_inventiveness_v1、答复=patent_oa_response_v1、复审=patent_reexamination_v1、无效=patent_invalidation_v1、诉讼=patent_infringement_v1）；交付依据是 stage 记录，不是口头结论；补正类无内置 manifest 入口，以替换页逐项核验记录替代。
 - 收口：全部任务完成后 `patent_teams_delete` 归档团队；归档保留完整成员与任务历史，可随时复查。

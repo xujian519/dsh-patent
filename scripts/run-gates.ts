@@ -868,6 +868,7 @@ function docSyncLeafGates(options: {
     pnpmScript('preset-divergence', 'verify-preset-divergence', { label: 'preset divergence', quick: true }),
     pnpmScript('preset-mode-baseline', 'verify-preset-mode-baseline', { label: 'preset mode baseline', quick: true }),
     pnpmScript('patent-team-roster', 'verify-patent-team-roster', { label: 'patent team roster', quick: true }),
+    pnpmScript('patent-team-stages', 'verify-patent-team-stages', { label: 'patent team scenario stages', quick: true }),
     pnpmScript('patent-document-output', 'verify-patent-document-output', { label: 'patent document output', quick: true }),
     pnpmScript('package-readme-summaries', 'verify-package-readme-summaries', { label: 'package README Summaries', quick: true }),
     pnpmScript('package-readme-model-experience', 'verify-package-readme-model-experience', { label: 'package README model experience', quick: true }),

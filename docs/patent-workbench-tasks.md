@@ -10,7 +10,7 @@
 
 **Goal:** 在 deepseek-harness 上落地专利律师工作台：patent preset → 案件管理 + 双闸门 → docx 交付 → 专家协作 → 全流程打磨，五阶段各自独立验收。
 
-**Architecture:** 能力全部落在 DSH 原生插件 + preset + 技能层，零 Sati 进程，随包不带 MCP 桥（部署可另挂可选的法条 MCP 客户端，见 `packages/bundle/web-app/presets/patent.md` 的 Prerequisites）。preset（`packages/bundle/web-app/presets/patent.patch.yml`）负责组合与点亮：挂载 11 个 `dsh-patent-*` 插件（`packages/patent/` 下 13 个 `dsh-patent-*` 包中，`patent-core` 与 `patent-index-asset` 是纯库，经依赖引入，不单独挂载；装配清单见 `packages/bundle/web-app/presets/patent.patch.yml`）、注入 persona 与 plan-mode 段落、经技能 provider 接线使 preset 内 15 技能进会话。案件管理、双闸门、审计链是 preset 内技能 + 目录规范，零新代码。阶段 3/4 若动仓库代码（`render_patent_docx`、agent-teams），按插件纪律立项，否则以用户级技能/脚本落地。
+**Architecture:** 能力全部落在 DSH 原生插件 + preset + 技能层，零 Sati 进程，随包不带 MCP 桥（部署可另挂可选的法条 MCP 客户端，见 `packages/bundle/web-app/presets/patent.md` 的 Prerequisites）。preset（`packages/bundle/web-app/presets/patent.patch.yml`）负责组合与点亮：挂载 11 个 `dsh-patent-*` 插件（`packages/patent/` 下 13 个 `dsh-patent-*` 包中，`patent-core` 与 `patent-index-asset` 是纯库，经依赖引入，不单独挂载；装配清单见 `packages/bundle/web-app/presets/patent.patch.yml`）、注入 persona 与 plan-mode 段落、经技能 provider 接线使 preset 内 16 技能进会话。案件管理、双闸门、审计链是 preset 内技能 + 目录规范，零新代码。阶段 3/4 若动仓库代码（`render_patent_docx`、agent-teams），按插件纪律立项，否则以用户级技能/脚本落地。
 
 **Tech Stack:** DeepSeek Harness（preset 机制：`packages/bundle/web-app/presets/`，挂载强制 `cordis:group` + `isolate`）、`@deepseek-ai/dsh-patent-*` 13 包、`dsh-subagent-fork-in-process`、`ctx.approval`（`patent-workflow` 审批接缝）、用户级技能（`patent-legal` / `officecli` / `document-processing` / `ego-browser`）、知识库（`patent-law-baseline-2024.md` + `99-知识库/` 文件化召回）。
 
@@ -422,3 +422,9 @@ cp ~/.dsh/.agent-presets/liangshen/agent.cordis.yml ~/.dsh/.agent-presets/patent
 - 动仓库代码（阶段 3.2 / 4.2 立项路径）前先 `superpowers:using-git-worktrees` 建隔离分支，并取得用户同意；master 上不直接实现。
 - 阻塞即停：向用户说明卡点（依赖缺失 / 指令不清 / 验证连续失败），不猜测。
 - 计划变更（如 fetch 决策、agent-teams 形态）同步回写 `docs/patent-workbench-plan.md` 与本文件，保持两文档一致。
+
+---
+
+## 当前态补充（2026-11-04）
+
+团队场景包的任务序已与 manifest 阶段对齐：撰写包与答复包由 captain 用 `patent_workflow_run` 跑到审批门，成员只读阶段产出做复核与验收，场景表用「责任面」列区分 manifest 执行与团队互证；`scripts/verify-patent-team-stages.ts` 反向校验两个场景的链行与 `builtinPatentManifests` 一致。此前「15 技能」的计数已按目录实际 16 个更正。细节见 `docs/patent-workbench-plan.md` 的「对齐落地（2026-11-04）」条与 `.agents/plans/2026-11-04-patent-teams-sync-with-disclosure-oa.md`。

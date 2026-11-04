@@ -71,9 +71,15 @@
 
 ### 2.5 落地状态（2026-11-04）
 
-A1–A6、B1–B2、C1–C5 已实现；A7 不需要改动（preset 指南的技能数与名称未变，只补了执行面说明）；B3 无需要（未新增工具约束）；B4 未写（团队场景语义变化未触及已发布的外部契约面）。
+A1–A7、B1–B2、C1–C5 已实现并逐条核对完成定义。三项按结论不做，理由如下：
+
+- **B3（改 `MEMBER_DENIED_TOOLS`）**：本次没有新增工具约束需求，场景纪律由技能与角色契约承载；deny 名单保持原样。
+- **B4（升级指南）**：按 `dsh-create-upgrade-guide` 的范围，指南只写仓库外部可观察的破坏（命令/配置键/持久数据/SDK/发布入口）。本次改的是技能文本、角色文案与一个仓库脚本，无外部破坏面；`verify-upgrade-guides` 通过。
+- **快照**：`snapshots/session/patent-*` 不重放团队技能（`rg 'patent-team-composition|专利团队' snapshots/` 无命中），技能文本由 `patent-preset.spec.ts` 的锚点断言与 `verify-patent-team-stages` 覆盖，本次不新增快照。
 
 C5 落地时发现存量 4 份计划中 1 份含 4 处硬换行，已先修为一段一行再让门通过。`verify-md-wrap` 原本把扫描集合与检查函数都留在模块顶层、无 `import.meta.main` 守卫，无法被 spec 导入，故重构为导出 `markdownWrapSourcePaths` / `findWrapViolations` 并把执行移入守卫——行为不变（3294 文件、0 违规）。
+
+附带修正的两处既有问题：`verify-preset-tool-refs` 把技能文本里的阶段 id 当作工具引用（62 处误报，改为从 manifest 派生阶段集合豁免）；`docs/patent-workbench-tasks.md` 的「15 技能」与目录实际 16 个不符。
 
 ### 2.4 不做
 

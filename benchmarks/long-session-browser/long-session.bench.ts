@@ -18,9 +18,12 @@ const EXPECTED_OPEN_CI_MS = 900
 const EXPECTED_PAGE_CI_MS = 700
 const EXPECTED_TRAJECTORY_CI_MS = 520
 const OPEN_BUDGET_MS = Math.ceil(EXPECTED_OPEN_CI_MS * PERFORMANCE_BUDGET_HEADROOM)
-/** Slower hosted first-reply observations already contain the completion marker under a 16 ms cadence. */
+/** Hosted first-reply observations reach 3516 ms, above the shared 2× allowance of 2750 ms. */
 const EXPECTED_FIRST_CI_MS = 3520
 const FIRST_BUDGET_MS = Math.ceil(EXPECTED_FIRST_CI_MS * PERFORMANCE_BUDGET_HEADROOM)
+/** Hosted main-thread task medians during the paced reply reach 4917 ms, above the shared 2× allowance of 4500 ms. */
+const EXPECTED_STREAM_TASK_CI_MS = 5000
+const STREAM_TASK_BUDGET_MS = Math.ceil(EXPECTED_STREAM_TASK_CI_MS * PERFORMANCE_BUDGET_HEADROOM)
 const PAGE_BUDGET_MS = Math.ceil(EXPECTED_PAGE_CI_MS * PERFORMANCE_BUDGET_HEADROOM)
 const TRAJECTORY_BUDGET_MS = Math.ceil(EXPECTED_TRAJECTORY_CI_MS * PERFORMANCE_BUDGET_HEADROOM)
 const REPLAY_DURATION_MS = (DELTAS + 4) * PACE_MS
@@ -131,6 +134,16 @@ it('accepts slower hosted first-reply samples and rejects the scaled ceiling', (
     expectEndpointWithinBudget(value, FIRST_BUDGET_MS)
   }
   expect(() => expectEndpointWithinBudget(FIRST_BUDGET_MS + 1, FIRST_BUDGET_MS)).toThrow()
+})
+
+it('accepts hosted stream main-thread task samples and rejects the scaled ceiling', () => {
+  expect(ciTimeBudget(REFERENCE.streamTask)).toBe(4500)
+  expect(STREAM_TASK_BUDGET_MS).toBe(6250)
+  for (const value of [4674.501, 4846.843, 4916.619]) {
+    expect(() => expectEndpointWithinBudget(value, ciTimeBudget(REFERENCE.streamTask))).toThrow()
+    expectEndpointWithinBudget(value, STREAM_TASK_BUDGET_MS)
+  }
+  expect(() => expectEndpointWithinBudget(STREAM_TASK_BUDGET_MS + 1, STREAM_TASK_BUDGET_MS)).toThrow()
 })
 
 it('accepts recorded hosted open samples and rejects slower endpoints', () => {
@@ -460,9 +473,9 @@ it('opens, pages, navigates and streams into a 240-turn browser history', async 
   const aggregate = Object.fromEntries(Object.keys(REFERENCE).map(key => [key, median(samples.map(sample => sample[key as keyof typeof REFERENCE]))]))
   const budgets: Record<string, number> = {
     ...Object.fromEntries(Object.entries(REFERENCE).map(([key, value]) => [key, ciTimeBudget(value) + (key === 'streamWall' ? REPLAY_DURATION_MS : 0)])),
-    open: OPEN_BUDGET_MS, page: PAGE_BUDGET_MS, trajectory: TRAJECTORY_BUDGET_MS, first: FIRST_BUDGET_MS,
+    open: OPEN_BUDGET_MS, page: PAGE_BUDGET_MS, trajectory: TRAJECTORY_BUDGET_MS, first: FIRST_BUDGET_MS, streamTask: STREAM_TASK_BUDGET_MS,
   }
-  console.log(JSON.stringify({ benchmark: 'long-session-browser/median', turns: HISTORY_TURNS, deltas: DELTAS, paceMs: PACE_MS, samples, aggregate, referenceMs: REFERENCE, expectedOpenCiMs: EXPECTED_OPEN_CI_MS, expectedPageCiMs: EXPECTED_PAGE_CI_MS, expectedTrajectoryCiMs: EXPECTED_TRAJECTORY_CI_MS, budgets }))
+  console.log(JSON.stringify({ benchmark: 'long-session-browser/median', turns: HISTORY_TURNS, deltas: DELTAS, paceMs: PACE_MS, samples, aggregate, referenceMs: REFERENCE, expectedOpenCiMs: EXPECTED_OPEN_CI_MS, expectedPageCiMs: EXPECTED_PAGE_CI_MS, expectedTrajectoryCiMs: EXPECTED_TRAJECTORY_CI_MS, expectedStreamTaskCiMs: EXPECTED_STREAM_TASK_CI_MS, budgets }))
   recordTimings(CASE, Object.fromEntries(SCALED_ENDPOINTS.map(key => [key, { ms: aggregate[key]!, ioShare: IO_SHARE }])), budgets)
   for (const [key, value] of Object.entries(aggregate)) expectEndpointWithinBudget(value, budgets[key]!)
 })

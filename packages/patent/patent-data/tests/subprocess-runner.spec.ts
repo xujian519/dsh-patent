@@ -116,6 +116,15 @@ describe('SubprocessEgoSpawnRunner.spawn', () => {
     expect(result.exitCode).toBeNull()
   })
 
+  it('propagates a process that fails to start instead of reporting a settled run', async () => {
+    const failure = new Error('spawn EACCES')
+    const { runtime } = fakeRuntime(() => makeHandle({ done: Promise.reject(failure) }))
+    const runner = new SubprocessEgoSpawnRunner(runtime)
+
+    await expect(runner.spawn({ argv: ['ego-browser', 'nodejs'], cwd: '/tmp', timeoutMs: 1_000 }))
+      .rejects.toBe(failure)
+  })
+
   it('aborts the internal controller when the caller signal is already fired', async () => {
     const caller = new AbortController()
     caller.abort()

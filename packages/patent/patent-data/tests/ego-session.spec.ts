@@ -170,12 +170,29 @@ describe('EgoBrowserSession.runScript', () => {
     expect(result.exitCode).toBe(0)
   })
 
-  it('wraps non-Error spawn failures in a start error', async () => {
+  it('wraps non-Error spawn failures in a start error that keeps the original cause', async () => {
     const throwingRunner: EgoSpawnRunner = { async spawn() { throw 'ego-browser missing' } }
     const session = new EgoBrowserSession({ runner: throwingRunner, platform: 'darwin' })
-    await expect(session.runScript("cliLog('x')", { cwd: '/tmp' })).rejects.toThrow(
-      'ego-browser failed to start: ego-browser missing',
-    )
+
+    const error = await session.runScript("cliLog('x')", { cwd: '/tmp' }).catch((reason: unknown) => reason)
+
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toBe('ego-browser failed to start: ego-browser missing')
+    expect(error.cause).toBe('ego-browser missing')
+  })
+
+  it('keeps a caller abort instead of wrapping it as a start failure', async () => {
+    const controller = new AbortController()
+    const abortingRunner: EgoSpawnRunner = {
+      async spawn() {
+        controller.abort()
+        throw new DOMException('This operation was aborted', 'AbortError')
+      },
+    }
+    const session = new EgoBrowserSession({ runner: abortingRunner, platform: 'darwin' })
+
+    await expect(session.runScript("cliLog('x')", { cwd: '/tmp', signal: controller.signal }))
+      .rejects.toMatchObject({ name: 'AbortError' })
   })
 
   it('creates nested output directories on demand', () => {

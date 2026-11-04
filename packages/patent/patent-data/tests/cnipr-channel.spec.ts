@@ -185,6 +185,69 @@ describe('CniprChannel run gating', () => {
     })
   })
 
+  it('classifies a script that fails to start as a channel error with its original cause', async () => {
+    const failure = new Error('ego-browser failed to start: spawn EACCES')
+    const { session } = fakeSession('', { runScript: async () => { throw failure } })
+    const channel = new CniprChannel({ session })
+
+    const error = await channel.pdfLinks(['CN122072823A']).catch((reason: unknown) => reason)
+
+    if (!(error instanceof CniprChannelError)) throw error
+    expect(error.code).toBe('setup_required')
+    expect(error.detail).toBe('ego-browser failed to start: spawn EACCES')
+    expect(error.cause).toBe(failure)
+
+    const nonError = fakeSession('', { runScript: async () => { throw 'spawn EACCES' } })
+    const reported = await new CniprChannel({ session: nonError.session }).pdfLinks(['CN122072823A'])
+      .catch((reason: unknown) => reason)
+    if (!(reported instanceof CniprChannelError)) throw reported
+    expect(reported.detail).toBe('spawn EACCES')
+    expect(reported.cause).toBe('spawn EACCES')
+  })
+
+  it('reports a run the caller cancelled as an abort instead of a missing receipt', async () => {
+    const controller = new AbortController()
+    const { session } = fakeSession('', {
+      runScript: async () => {
+        controller.abort()
+        return { output: '', exitCode: null, timedOut: false }
+      },
+    })
+
+    await expect(new CniprChannel({ session }).pdfLinks(['CN122072823A'], { signal: controller.signal }))
+      .rejects.toMatchObject({ name: 'AbortError' })
+  })
+
+  it('does not return results from a run the caller cancelled after it finished', async () => {
+    const controller = new AbortController()
+    const { session } = fakeSession('', {
+      runScript: async () => {
+        controller.abort()
+        return {
+          output: tagged('CNIPR_PDFLINKS', { items: [{ number: 'CN122072823A', matches: ['pic.cnipr.com/pdfcn/a/x.PDF'] }] }),
+          exitCode: 0,
+          timedOut: false,
+        }
+      },
+    })
+
+    await expect(new CniprChannel({ session }).pdfLinks(['CN122072823A'], { signal: controller.signal }))
+      .rejects.toMatchObject({ name: 'AbortError' })
+  })
+
+  it('keeps an abort that surfaces as a rejected run', async () => {
+    const controller = new AbortController()
+    const { session } = fakeSession('', {
+      runScript: async () => {
+        controller.abort()
+        throw new DOMException('This operation was aborted', 'AbortError')
+      },
+    })
+
+    await expect(new CniprChannel({ session }).pdfLinks(['CN122072823A'], { signal: controller.signal }))
+      .rejects.toMatchObject({ name: 'AbortError' })
+  })
+
   it('passes the configured directory, deadline, and cancellation signal through', async () => {
     const { session, runs } = fakeSession(tagged('CNIPR_PDFLINKS', { items: [] }))
     const channel = new CniprChannel({ session, cwd: '/tmp/cnipr', timeoutMs: 123_000 })
@@ -405,6 +468,21 @@ describe('CniprChannel.search', () => {
 
     await channel.search('石墨烯电池', { limit: 25 })
     expect(runs[1]?.script).toContain('const pages = 3')
+  })
+
+  it('fails loud when a result row loses its publication number', async () => {
+    const { session } = fakeSession(tagged('CNIPR_SEARCH', {
+      header: '全部2件专利',
+      items: [
+        { cursor: 0, number: 'CN211350734U', title: '一种稳定性高的石墨烯电池', text: rowText },
+        { cursor: 1 },
+      ],
+    }))
+
+    await expect(new CniprChannel({ session }).search('石墨烯电池')).rejects.toMatchObject({
+      code: 'page_state',
+      detail: 'CNIPR 检索结果页丢弃了 1 行无法解析的结果：页面结构可能已变化',
+    })
   })
 
   it('fails loud when the page stops publishing the result total', async () => {

@@ -46,10 +46,15 @@ function readParagraphs(value: unknown, fail: AssetFail, article: number): { par
 
 /**
  * Read the topics of one indexed entry.
+ *
+ * A topic is a match keyword, so it is returned trimmed: `topics: [" 新颖性 "]`
+ * would otherwise never match a proposition, which compares the declared strings
+ * as written. Surrounding whitespace is the only change; the keyword itself is
+ * kept verbatim.
  * @param value - the raw `topics` field.
  * @param fail - the caller's error factory.
  * @param where - the entry's label, used in the error message.
- * @returns the topic keywords.
+ * @returns the topic keywords, trimmed.
  */
 export function readEntryTopics(value: unknown, fail: AssetFail, where: string): string[] {
   if (!Array.isArray(value) || value.length === 0) {
@@ -59,7 +64,7 @@ export function readEntryTopics(value: unknown, fail: AssetFail, where: string):
     if (typeof topic !== 'string' || topic.trim() === '') {
       throw fail(`${where} 的 topics 只能包含非空字符串`)
     }
-    return topic
+    return topic.trim()
   })
 }
 

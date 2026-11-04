@@ -18,6 +18,7 @@
 import { type StatementSync } from 'node:sqlite'
 import { KnowledgeFtsSearchBase, type KnowledgeSearchEngineOptions } from '../shared/knowledge-fts.ts'
 import { escapeFtsPhrase, joinFtsOrTerms } from '../shared/fts.ts'
+import { resolveResultLimit } from '@deepseek-ai/dsh-patent-core'
 import { decompressChunk } from '../shared/chunk-compression.ts'
 import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { LawCategory, LawLookupOptions, LawRecord, LawSearchResult, LegalSearchSource } from './types.ts'
@@ -40,7 +41,7 @@ export type KnowledgeLawSearchEngineOptions = KnowledgeSearchEngineOptions & {
 
 /** 法规全文搜索选项。 */
 export type KnowledgeLawSearchOptions = {
-  /** 返回条数上限（默认 10）。 */
+  /** 返回条数上限（默认 10；小数截断、非有限值回退默认、下限 1）。 */
   limit?: number
   /** 按法律层级过滤（法律/行政法规/司法解释/部门规章…）。 */
   level?: string
@@ -270,7 +271,7 @@ export class KnowledgeLawSearch extends KnowledgeFtsSearchBase<KnowledgeLawSearc
 
   /** 法规全文搜索：FTS5 BM25 优先，短查询/无 FTS 时降级 LIKE；按文档去重。 */
   search(keyword: string, options: KnowledgeLawSearchOptions = {}): LawSearchResult[] {
-    const limit = options.limit ?? 10
+    const limit = resolveResultLimit(options.limit, 10, Number.MAX_SAFE_INTEGER)
     const { asOf, includeUnverified } = this.visibility(options)
     // SQL 已按时间效力过滤（在 LIMIT 之前），JS 再按规范化日期兜底：SQL 日期函数
     // 会把部分非法日期归一化，最终可见性以 resolveLawValidity 为准。

@@ -622,7 +622,8 @@ export {
 export { getStateString, getStateArray } from './atoms/handler.ts'
 
 // Knowledge-search primitives shared by the SQLite knowledge databases.
-export { escapeFtsPhrase, FTS_MIN_RUNES, joinFtsOrTerms, sqliteHasFts5 } from './knowledge/fts.ts'
+export { escapeFtsPhrase, FTS_MIN_RUNES, joinFtsOrTerms, sanitizeSearchText, sqliteHasFts5 } from './knowledge/fts.ts'
+export { resolveResultLimit } from './knowledge/result-limit.ts'
 export { createFtsLadder, runFtsSearch } from './knowledge/fts-search.ts'
 export type { FtsSearchLadder, FtsSearchOps } from './knowledge/fts-search.ts'
 export { extractLawKeywords } from './knowledge/keywords.ts'

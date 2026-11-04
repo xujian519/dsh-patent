@@ -48,7 +48,10 @@ export type CaseLawChunk = {
 
 /** Case-law search request options. */
 export type CaseLawSearchOptions = {
-  /** Result cap (default 5, engine maximum 50). */
+  /**
+   * Result cap (default 5, engine maximum 50). A fractional value is truncated
+   * and a non-finite value falls back to the default rather than reaching SQLite.
+   */
   limit?: number
   /** Filter by document kind. */
   docType?: CaseLawDocType

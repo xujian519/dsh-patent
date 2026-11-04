@@ -174,6 +174,21 @@ describe('KgStore unified schema', () => {
     expect(store.searchByKeyword('   ')).toEqual([])
   })
 
+  it('normalizes the result cap and strips NUL before querying', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'kg-query-input-'))
+    cleanups.push(() => { rmSync(dir, { recursive: true, force: true }) })
+    const store = withStore(makeUnifiedDb(dir, true))
+    // Two content-only matches reach the LIKE fallback; the cap keeps one.
+    expect(store.searchByKeyword('现有技术', 10)).toHaveLength(2)
+    expect(store.searchByKeyword('现有技术', 1.5)).toHaveLength(1)
+    expect(store.searchByKeyword('现有技术', -1)).toHaveLength(1)
+    expect(store.searchByKeyword('现有技术', Number.NaN)).toHaveLength(2)
+    // A NUL used to reach FTS5 as an unterminated phrase and surface as a raw
+    // SQLite error; it is never part of a searchable term.
+    expect(store.searchByKeyword('\u0000')).toEqual([])
+    expect(store.searchByKeyword('创造性\u0000').map(node => node.id)).toContain('n1')
+  })
+
   it('searches without FTS via LIKE and escapes wildcards', () => {
     const dir = mkdtempSync(join(tmpdir(), 'kg-like-'))
     cleanups.push(() => { rmSync(dir, { recursive: true, force: true }) })

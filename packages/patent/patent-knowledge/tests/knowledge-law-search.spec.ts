@@ -578,3 +578,22 @@ describe('KnowledgeLawSearch 时间效力过滤', () => {
     expect(hit?.expired).toBeUndefined()
   })
 })
+
+describe('KnowledgeLawSearch query input', () => {
+  it('normalizes the result cap before binding it to SQLite', () => {
+    const s = withStore()
+    expect(s.search('专利法', { limit: 2.5 })).toHaveLength(2)
+    expect(s.search('专利法', { limit: 0 })).toHaveLength(1)
+    expect(s.search('专利法', { limit: -1 })).toHaveLength(1)
+    expect(s.search('专利法', { limit: Number.NaN })).toHaveLength(2)
+    // A rejected LIMIT used to escape the ladder as a sticky FTS degradation.
+    expect(s.ftsAvailable).toBe(true)
+  })
+
+  it('strips NUL from the search text instead of degrading FTS', () => {
+    const s = withStore()
+    expect(s.search('第二十六条\u0000').map(hit => hit.name)).toEqual(['中华人民共和国专利法'])
+    expect(s.ftsAvailable).toBe(true)
+    expect(s.search('\u0000')).toEqual([])
+  })
+})

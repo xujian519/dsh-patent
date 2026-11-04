@@ -583,3 +583,23 @@ describe('CaseLawSearchEngine edge paths', () => {
     expect(hits[0]).toMatchObject({ documentId: 'D', ftsRank: null })
   })
 })
+
+describe('CaseLawSearchEngine query input', () => {
+  it('normalizes the result cap before binding it to SQLite', () => {
+    const engine = withEngine()
+    expect(engine.search('创造性', { limit: 2.5 })).toHaveLength(2)
+    expect(engine.search('创造性', { limit: 0 })).toHaveLength(1)
+    expect(engine.search('创造性', { limit: -1 })).toHaveLength(1)
+    expect(engine.search('创造性', { limit: Number.NaN })).toHaveLength(3)
+    expect(engine.search('创造性', { limit: Number.POSITIVE_INFINITY })).toHaveLength(3)
+    // A rejected LIMIT used to escape the ladder as a sticky FTS degradation.
+    expect(engine.ftsAvailable).toBe(true)
+  })
+
+  it('strips NUL from the search text instead of degrading FTS', () => {
+    const engine = withEngine()
+    expect(engine.search('创造性\u0000')).toHaveLength(3)
+    expect(engine.ftsAvailable).toBe(true)
+    expect(engine.search('\u0000')).toEqual([])
+  })
+})

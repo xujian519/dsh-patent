@@ -39,6 +39,19 @@ export function escapeFtsPhrase(phrase: string): string {
 }
 
 /**
+ * 去掉 SQLite 文本无法承载的字符。
+ *
+ * NUL 在 SQLite 的 C API 边界终止文本值：包含它的 FTS5 phrase 会报
+ * "unterminated string"，LIKE 模式也会不可预期地匹配。它不是可检索词的一部分，
+ * 去掉后其余查询保持不变。检索入口在绑定参数前调用。
+ * @param value - 调用方的检索文本。
+ * @returns 去掉 NUL 后的文本。
+ */
+export function sanitizeSearchText(value: string): string {
+  return value.replaceAll('\u0000', '')
+}
+
+/**
  * 把多个词条构建为 FTS5 OR 查询表达式。
  * @param terms - 词条列表。
  * @returns FTS5 OR 查询表达式。

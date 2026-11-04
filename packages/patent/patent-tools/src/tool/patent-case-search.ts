@@ -157,7 +157,7 @@ export function createPatentCaseSearchTool(deps: PatentCaseSearchDeps): ToolDefi
       if (deps.dbPath !== undefined && !existsSync(deps.dbPath)) {
         throw new PatentToolError('setup_required', INSTALL_GUIDANCE, { tool: 'patent_case_search' })
       }
-      const limit = resolveResultLimit(args.limit)
+      const limit = resolveResultLimit(args.limit, 5, 10)
       const includeContent = args.include_content ?? true
       let hits: CaseLawHit[]
       try {

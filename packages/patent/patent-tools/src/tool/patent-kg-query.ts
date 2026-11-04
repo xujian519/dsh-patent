@@ -244,7 +244,7 @@ export function createPatentKgQueryTool(deps: PatentKgQueryDeps): ToolDefinition
       if (deps.dbPath !== undefined && !existsSync(deps.dbPath)) {
         throw new PatentToolError('setup_required', INSTALL_GUIDANCE, { tool: 'patent_kg_query' })
       }
-      const limit = resolveResultLimit(args.limit)
+      const limit = resolveResultLimit(args.limit, 5, 10)
       const includeContent = args.include_content === true
       let output: PatentKgQueryOutput
       if (args.id?.trim()) {

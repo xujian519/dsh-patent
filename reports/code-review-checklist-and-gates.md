@@ -263,3 +263,50 @@ D7 范围：`subprocess-runner.ts`（80 行）、`ego-session.ts`（251 行）�
 - **不内置自动重试**：当前没有消费者按错误码选择重试；先由调用方按 §16 的“可重试性”决策，避免在通道内隐藏重试预算。
 - **不把排队等待改成可取消**：`CniprCallOptions` 已声明取消不会跳过前序调用；改动会破坏顺序保证，换来的只是缩短等待。
 - **不包装 Nuo 搜索异常为 `CniprChannelError`**：两者是不同通道、不同错误面；等出现统一路由的消费者再抽公共错误层。
+
+## 19. D8 复核结果
+
+D8 范围：`patent-knowledge`（法规/判例 FTS 引擎、KG 关键词检索、知识库打开协议）与 `patent-index-asset`（字段读取器、条目录入、来源记录、索引资产格式）。基线测试：两包 21 个测试文件 / 220 条用例全部通过；`patent-index-asset` 测试比 0.27（103 / 376）。
+
+| 风险 | 复现输入 | 实际结果 | 处理 |
+|---|---|---|---|
+| R-47 | `search('专利审查', { limit: 2.5 })`；`search(kw, { limit: Number.NaN })`；`limit: -1` | 前两者抛 SQLite `datatype mismatch`；NaN 还使 `ftsAvailable` 变 false（粘性降级）；`-1` 绑定为 `LIMIT -1` | 已修：上限归一到 patent-core 的 `resolveResultLimit`，工具层与三个检索入口共用；四个 spec 补小数/0/负数/NaN 用例 |
+| R-48 | `search('创造性\u0000判断')`；`KgStore.searchByKeyword('创造性\u0000判断')`；`searchByKeyword('\u0000')` | 法规/判例引擎 FTS5 抛 `unterminated string` 后永久降级；KG 把原始错误抛给调用方；NUL-only 在 LIKE 下返回 1 条 | 已修：`sanitizeSearchText` 进入 patent-core 的 FTS 工具并经 shim 再导出；检索入口去 NUL，三处补 NUL 用例 |
+| R-49 | 资产 `topics: [" 新颖性 "]` + `text: null`，命题「该方案具备新颖性」 | `topicOverlap` 按原文比较，判 `unmatched` | 已修：`readEntryTopics` 返回 trim 后的关键词；双语 README 同步 |
+| R-50 | `decideArticleCitation({ article: 33, paragraph: 99 }, cnPatentLaw, entry33)` | 第 33 条已转录、无 `paragraphs`，判定 `valid` 并附官方来源；对照第 22 条第 9 款正确报 `mismatch` | 未修：跨域判定语义与资产补录，留 D18–D19 |
+
+结论：FTS 检索入口不再把调用方的错误输入当成 FTS 故障；索引读取的转录记录、重复条号与 YAML 结构边界有测试固定。R-50 是数据完整性 + 判定语义问题，D8 只登记，不在本日改判定。
+
+## 20. D8 索引读取边界测试矩阵
+
+| 输入 | 期望 | 覆盖 |
+|---|---|---|
+| `articles` 缺失 / null | 空列表 | `entries.spec.ts` |
+| `articles` 非数组 / 条目非映射 | 拒绝并点名 `articles` | 同上 |
+| article 缺失 / 0 / 小数 / 字符串 / 重复 | 拒绝；重复报 `article 重复：N` | 同上 |
+| `paragraphs` 缺失 / null | 不产生该字段（保持未核验） | 同上 |
+| `paragraphs` 空数组 / 标量 / 0 / 小数 / 字符串 | 拒绝并点名第 N 条 | 同上 |
+| `topics` 缺失 / 空 / 含非字符串 / 含空白项 | 拒绝 | 同上 |
+| `topics` 带首尾空白 | 返回 trim 后的关键词 | 同上 |
+| `text` 与 `sourceDoc`/`verifiedOn` 只出现一部分 | 拒绝（全有或全无） | 同上 |
+| YAML 重复键 / 多文档 | 拒绝（不静默取其一） | 同上 |
+| FTS limit 小数 / 0 / 负数 / NaN / Infinity | 取整并夹在 `[1, max]`；非法值回退默认；`ftsAvailable` 不变 | `knowledge-law-search.spec.ts`、`case-law-search.spec.ts`、`kg-store.spec.ts` |
+| FTS 检索词含 NUL / 仅 NUL | 去掉 NUL 后检索；仅 NUL 返回空；不降级、不抛原始错误 | 同上 |
+| 共享上限/清洗函数直接边界 | 小数截断、非有限值回退、负值夹到 1、上限夹到 max；NUL 去掉 | `patent-core/tests/knowledge-query.spec.ts` |
+
+测试增量：`patent-index-asset` 测试行 103 → 263（测试比 0.27 → 0.69，源码 381 行），新增 6 个 describe 级分组；`patent-knowledge` 新增 5 条用例。
+
+## 21. D8 精简候选
+
+| ID | 位置 | 候选动作 | 优先级 | 预期收益 | 等价性验证 |
+|---|---|---|---|---|---|
+| C-07 | `knowledge-law-search.ts:422-427` | `searchLike` 在 `!options.level` 早返回后仍有 `if (options.level)` 复查（带 `v8 ignore`），删除复查与忽略注释，直接把 level 视为已定义 | P3 | 去掉一段不可达分支与一处覆盖率逃逸 | `typecheck`；等级过滤与降级用例不变 |
+| C-08 | `patent-core/src/knowledge/fts.ts:37,50` | NUL 清洗已共享到 patent-core，但 `legal-knowledge` 的引擎入口还没有调用；把它并进 `escapeFtsPhrase` 或两条 legal 引擎入口，与 R-10/D19 的共享 FTS 核心一起做 | P2 | 两域共享一处查询清洗，不再依赖各引擎入口自觉 | `fts.spec` 与 `legal-knowledge` 的 `sqlite-search.spec` 同时通过；NUL 用例在 legal 侧同样成立 |
+| C-09 | `wiki-card-loader.ts`、`graph-traversal.ts` | 把 `normalizeResultLimit` 同样用到 `list/search/byConcept/byDomain/getNeighbors/listByType`：负值目前经 `Array.slice(0, -1)` 丢掉末条，图谱入口直接绑定 `LIMIT -1` | P3 | 非 FTS 检索入口的上限语义与 FTS 一致 | 各方法补负值/小数为 `[1, ∞)` 的用例；现有正常路径不变 |
+
+## 22. D8 范围校正与不做项
+
+- **不给索引资产加未知键校验**：`readArticleEntries` 现在忽略未知键，是 `patent-index-asset` README 已声明的限制；收紧需按每个消费方声明允许键集合。`legal-law` 的 7,911 个资产文件与 `patent-fees` 的 `effectiveFrom` 扩展字段都依赖当前兼容性，留 D19/D20 与 R-10 一起评估。
+- **不改款号窄化语义（R-50）**：跳过 `paragraphs` 缺失的条目是 `patent-law/tests/verify.spec.ts:156` 固定的行为；改成 `unverified` 会同时影响 `legal-law` 的判定与策略配置，属于跨域产品决策，不在 D8 落地。
+- **不合并 `patent-knowledge` 与 `legal-knowledge`**：两包仍各自持有同构引擎（R-10）；D19 先做查询行为对比，再决定共享核心，避免在 D8 顺手移动 600+ 行。
+- **不在本日清洗全部控制字符**：只处理在 SQLite 边界上会截断查询的 NUL；换行、制表符在短语内可正常匹配，扩大清洗面没有失败证据。

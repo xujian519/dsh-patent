@@ -18,6 +18,7 @@
 import { type StatementSync } from 'node:sqlite'
 import { KnowledgeFtsSearchBase, type KnowledgeSearchEngineOptions } from '../shared/knowledge-fts.ts'
 import { escapeFtsPhrase, joinFtsOrTerms } from '../shared/fts.ts'
+import { resolveResultLimit } from '@deepseek-ai/dsh-patent-core'
 import { decompressChunk } from '../shared/chunk-compression.ts'
 import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { CaseLawChunk, CaseLawHit, CaseLawSearchOptions } from './types.ts'
@@ -214,7 +215,7 @@ export class CaseLawSearchEngine extends KnowledgeFtsSearchBase<CaseLawSearchOpt
    * @returns 匹配的判例命中列表（按文档去重，一文档一行）。
    */
   search(keyword: string, options: CaseLawSearchOptions = {}): CaseLawHit[] {
-    const limit = Math.min(Math.max(options.limit ?? 5, 1), MAX_LIMIT)
+    const limit = resolveResultLimit(options.limit, 5, MAX_LIMIT)
     return this.runSearch(keyword, options, limit)
   }
 

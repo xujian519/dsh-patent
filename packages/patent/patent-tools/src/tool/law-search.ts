@@ -189,7 +189,7 @@ export function createLawSearchTool(deps: LawSearchDeps): ToolDefinition {
       if (deps.dbPath !== undefined && !existsSync(deps.dbPath)) {
         throw new PatentToolError('setup_required', INSTALL_GUIDANCE, { tool: 'law_search', scope })
       }
-      const limit = resolveResultLimit(args.limit)
+      const limit = resolveResultLimit(args.limit, 5, 10)
       const includeContent = args.include_content ?? true
       let asOf: string
       try {

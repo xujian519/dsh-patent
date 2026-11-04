@@ -32,6 +32,8 @@ Each reader either returns the value the asset declared or refuses the file with
 
 `readOptional*` returns null for an absent field rather than a default, so a caller keeps the three states apart: absent, present-and-empty, and present. An amount or an article number that nobody has transcribed stays absent until someone records it.
 
+`readEntryTopics` returns each topic keyword trimmed. A topic is matched against a proposition as written, so `[" 新颖性 "]` would never match; the keyword itself keeps its spelling.
+
 <a id="recorded-source"></a>
 ## Recorded source
 

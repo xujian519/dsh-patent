@@ -9,7 +9,7 @@
 import type { DatabaseSync } from 'node:sqlite'
 import { openKnowledgeDb } from './db-version.ts'
 import { KNOWLEDGE_DB } from './schema-versions.ts'
-import { sqliteHasFts5 } from './fts.ts'
+import { sanitizeSearchText, sqliteHasFts5 } from './fts.ts'
 import { registerChunkUncompress } from './chunk-compression.ts'
 import { runFtsSearch } from './fts-search.ts'
 import { createFtsLadder } from '@deepseek-ai/dsh-patent-core'
@@ -68,7 +68,9 @@ export abstract class KnowledgeFtsSearchBase<TOptions, THit> {
 
   /** 执行一次 FTS 优先、LIKE 兜底的检索（trim + 空词短路 + runFtsSearch 阶梯）。 */
   protected runSearch(keyword: string, options: TOptions, limit: number): THit[] {
-    const trimmed = keyword.trim()
+    // 检索词先去掉 SQLite 文本无法承载的 NUL：FTS5 会报 "unterminated string"，
+    // 再被阶梯当作 FTS 故障粘性降级；LIKE 对含 NUL 的模式匹配也不可预期。
+    const trimmed = sanitizeSearchText(keyword).trim()
     if (!trimmed) return []
     return runFtsSearch(createFtsLadder(
       { keyword: trimmed, hasFts: this.hasFts, ftsDegraded: this.ftsDegraded },

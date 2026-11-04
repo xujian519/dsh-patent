@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DatabaseSync } from 'node:sqlite'
-import { escapeFtsPhrase, joinFtsOrTerms, sqliteHasFts5 } from '@deepseek-ai/dsh-patent-knowledge/src/shared/fts.ts'
+import { escapeFtsPhrase, joinFtsOrTerms, sanitizeSearchText, sqliteHasFts5 } from '@deepseek-ai/dsh-patent-knowledge/src/shared/fts.ts'
 
 describe('fts helpers', () => {
   it('detects FTS5 support on a real database', () => {
@@ -25,5 +25,9 @@ describe('fts helpers', () => {
 
   it('joins multiple terms as quoted OR expressions', () => {
     expect(joinFtsOrTerms(['创造性', '新颖性'])).toBe('"创造性" OR "新颖性"')
+  })
+
+  it('drops the NUL that would terminate an FTS phrase', () => {
+    expect(sanitizeSearchText('创造性\u0000判断')).toBe('创造性判断')
   })
 })

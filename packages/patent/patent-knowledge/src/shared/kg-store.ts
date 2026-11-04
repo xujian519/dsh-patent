@@ -1,6 +1,7 @@
 import { DatabaseSync, type StatementSync } from 'node:sqlite'
 import type { KgNode } from '../patent/types.ts'
-import { escapeFtsPhrase, FTS_MIN_RUNES, joinFtsOrTerms } from './fts.ts'
+import { escapeFtsPhrase, FTS_MIN_RUNES, joinFtsOrTerms, sanitizeSearchText } from './fts.ts'
+import { resolveResultLimit } from '@deepseek-ai/dsh-patent-core'
 import { LruCache } from './lru-cache.ts'
 import { openKnowledgeDb } from './db-version.ts'
 import { KNOWLEDGE_DB } from './schema-versions.ts'
@@ -170,31 +171,34 @@ export class KgStore {
   /**
    * 按关键词搜索节点（FTS5 MATCH；短查询或缺失 FTS 时降级 LIKE）。
    * @param keyword 搜索关键词。
-   * @param limit 返回数量上限。
+   * @param limit 返回数量上限（默认 10；小数截断、非有限值回退默认、下限 1）。
    * @param options 关键词搜索选项（phrase/or 模式）。
    * @returns 匹配的节点列表。
    */
   searchByKeyword(keyword: string, limit = 10, options: KgSearchOptions = {}): KgNode[] {
-    const trimmed = keyword.trim()
+    // NUL 在 SQLite 文本边界截断查询：FTS5 报 "unterminated string"，LIKE 匹配
+    // 不可预期；先去 NUL 再限定条数，避免原始 SQLite 错误与无界扫描。
+    const trimmed = sanitizeSearchText(keyword).trim()
     if (!trimmed) return []
-    if (options.mode === 'or') return this.searchByKeywordOr(trimmed, limit)
+    const capped = resolveResultLimit(limit, 10, Number.MAX_SAFE_INTEGER)
+    if (options.mode === 'or') return this.searchByKeywordOr(trimmed, capped)
 
     const runes = Array.from(trimmed)
 
     let ids: string[]
     const ftsSearch = this.stmtFtsSearch
     if (ftsSearch !== null && runes.length >= FTS_MIN_RUNES) {
-      const rows = ftsSearch.all(escapeFtsPhrase(trimmed), limit) as FtsHit[]
+      const rows = ftsSearch.all(escapeFtsPhrase(trimmed), capped) as FtsHit[]
       ids = rows.map(r => r.id)
       // FTS 词级匹配未命中且无分隔符时降级 LIKE 子串：unicode61 下长句/短语常无完整 token，
       // 子串匹配比 token 完全匹配宽松（如 "以说明书为依据" 作为 token 不存在时仍可命中正文）。
       // 带分隔符短语的 LIKE（%创造性 三步法%）召回率趋近于零，跳过以避免无谓全表扫描。
       // trigram 索引覆盖正文时整句 MATCH 已具备子串语义，未命中直接返回，跳过 66 ms 级全表扫描。
       if (ids.length === 0 && !this.contentIndexComplete && !OR_SEPARATOR_RE.test(trimmed)) {
-        ids = this.likeSearch(trimmed, limit).map(row => row.id)
+        ids = this.likeSearch(trimmed, capped).map(row => row.id)
       }
     } else {
-      ids = this.likeSearch(trimmed, limit).map(row => row.id)
+      ids = this.likeSearch(trimmed, capped).map(row => row.id)
     }
 
     return ids.map(id => this.getNode(id)).filter((n): n is KgNode => n !== undefined)

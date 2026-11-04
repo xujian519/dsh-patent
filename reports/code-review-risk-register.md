@@ -9,8 +9,8 @@
 |---|---:|---|
 | P0 | 2 | 法律引用门与证据引擎的同构分叉 |
 | P1 | 14 | 超长文件、类型逃逸、测试缺口、并发语义、A33/无附图/月级日期误判、证据门缺口 |
-| P2 | 15 | 跨域依赖、环境版本、通知书自指、IPC 误分类、文献号与黑板别名、claim-chart 校验缺口、模板草案未知键、CNIPR 取消映射 |
-| P3 | 15 | TODO 归并、报告换行、项号/年份/日期边界、引用区间与目标配置回退、权项编号切分、必填字段双报、检索行静默丢弃、启动失败无错误码 |
+| P2 | 18 | 跨域依赖、环境版本、通知书自指、IPC 误分类、文献号与黑板别名、claim-chart 校验缺口、模板草案未知键、CNIPR 取消映射、检索上限与 NUL 检索词、款数未核验 |
+| P3 | 16 | TODO 归并、报告换行、项号/年份/日期边界、引用区间与目标配置回退、权项编号切分、必填字段双报、检索行静默丢弃、启动失败无错误码、主题词空白 |
 
 ## 2. 明细
 
@@ -491,6 +491,50 @@
 - **负责人**：A
 - **状态**：已关闭
 
+### R-47 FTS 检索条数上限未规范化（P2）
+
+- **域**：patent-knowledge
+- **证据**：`knowledge-law-search.ts:271-274`（修复前 `options.limit ?? 10`）；`case-law-search.ts:216-218` 的 `Math.min(Math.max(...))` 既不取整也不挡 NaN/Infinity；`kg-store.ts:180-183` 的 `searchByKeyword` 把 limit 直接绑进 SQL。工具层原本另有一份同构实现 `patent-tools/src/tool/internal/query-limit.ts`。
+- **最小复现**：`KnowledgeLawSearch.search('专利审查', { limit: 2.5 })` 与 `CaseLawSearchEngine.search('创造性', { limit: 2.5 })` 均抛 SQLite 原始错误 `datatype mismatch`；`KnowledgeLawSearch.search(kw, { limit: Number.NaN })` 抛同一错误并把 `ftsAvailable` 从 true 变成 false（检索阶梯把输入错误当作 FTS 故障粘性降级，后续检索全部走 LIKE）；`limit: -1` 绑定为 `LIMIT -1`（SQLite 语义为不限制），KG 关键词检索直接返回全表命中。
+- **风险**：小数/NaN 传入时调用方收到原始 SQLite 错误而不是限定结果；一次 NaN 让长生命周期服务永久失去 FTS；负值让“上限”失效。
+- **动作**：把工具层已有的上限归一上移到 `patent-core/src/knowledge/result-limit.ts` 的 `resolveResultLimit`（非有限值回退默认值、小数截断、夹在 `[1, max]`），参数显式传入；`patent-tools` 的 `query-limit.ts` 改为再导出，法规、判例、KG 三个检索入口改用共享实现；判例保留引擎上限 50，法规/KG 不设上限。
+- **验证**：`knowledge-law-search.spec.ts`、`case-law-search.spec.ts`、`kg-store.spec.ts` 新增小数、0、负数、NaN 用例，均返回限定条数且 `ftsAvailable` 保持 true；`patent-core/tests/knowledge-query.spec.ts` 直接固定共享函数的边界；`duplication-gate.spec.ts` 不再出现 `query-input.ts|query-limit.ts` 克隆对。
+- **负责人**：A
+- **状态**：已关闭
+
+### R-48 FTS 检索词含 NUL 触发粘性降级或原始错误（P2）
+
+- **域**：patent-knowledge
+- **证据**：`knowledge-fts.ts:71-73`（修复前只 `keyword.trim()`）；`kg-store.ts:180-181` 同样只 trim；`patent-core/src/knowledge/fts.ts:37` 的 `escapeFtsPhrase` 只转义双引号，不处理 NUL。
+- **最小复现**：`search('创造性\u0000判断')` 在法规与判例引擎中令 FTS5 抛 `unterminated string`，被阶梯捕获后 `ftsAvailable=false`；`KgStore.searchByKeyword('创造性\u0000判断')` 把 `unterminated string` 直接抛给调用方；`KgStore.searchByKeyword('\u0000')` 走 LIKE 返回 1 条（NUL 模式在 LIKE 下匹配到首行）。
+- **风险**：一个含 NUL 的检索词让整个服务实例永久降级到 LIKE；KG 路径把原始 SQLite 错误暴露给工具层。
+- **动作**：在 `patent-core/src/knowledge/fts.ts:50` 新增 `sanitizeSearchText` 去掉 NUL（经 `patent-knowledge/src/shared/fts.ts` 再导出），在 `KnowledgeFtsSearchBase.runSearch` 与 `KgStore.searchByKeyword` 入口应用；NUL-only 查询归一为空词，返回空结果。
+- **验证**：三个 spec 新增 NUL 用例，断言不降级、不抛原始错误、后续正常查询仍走 FTS；`patent-core/tests/knowledge-query.spec.ts` 直接固定清洗函数。
+- **负责人**：A
+- **状态**：已关闭
+
+### R-49 主题词首尾空白导致永不命中（P3）
+
+- **域**：patent-index-asset
+- **证据**：`entries.ts:59-68` 原先返回 `topic` 原值；`patent-core/src/knowledge/text-overlap.ts:95-99` 的 `topicOverlap` 用原文 `includes`，不做空白归一。
+- **最小复现**：资产条目写 `topics: [" 新颖性 "]`、`text: null`，命题「该方案具备新颖性」→ `topicOverlap` 为 false，引用被判 `unmatched`，而它本应命中主题词。
+- **风险**：手工编辑的 YAML 带首尾空白时主题词永不生效，且错误信息不指向索引格式。
+- **动作**：`readEntryTopics` 返回 `topic.trim()`；英文与中文 README 同步说明。
+- **验证**：`entries.spec.ts` 断言 `[' 创造性 ', '新颖性']` → `['创造性', '新颖性']`。
+- **负责人**：A
+- **状态**：已关闭
+
+### R-50 款数未声明的条目跳过款号窄化（P2）
+
+- **域**：patent-index-asset + patent-core（消费方）
+- **证据**：`entries.ts:21,33-45` 的 `paragraphs` 是可选字段；`article-decision.ts:174-178` 在 `entry.paragraphs === undefined` 时直接返回 null（跳过窄化）；`patent-law/assets/law/cn-patent-law.yaml` 中 13 条已转录条目（第 13、32、33、34、37、38、39、40、43、45、62、67、77 条）没有 `paragraphs`。
+- **最小复现**：`decideArticleCitation({ article: 33, paragraph: 99 }, baseline, entry)` → `valid`，理由为「与《专利法》第 33 条一致（来源：…官方全文）」；同一索引第 22 条第 9 款 → `mismatch`（载明共 5 款，不含第 9 款）。
+- **风险**：款号窄化门对约三分之一的已转录法条静默失效；不存在的款号被判 `valid` 并附来源，读者会当成已核对。
+- **动作**：先对照官方文本补录这 13 条的款数（数据动作）；或让判定在 `paragraphs` 缺失时返回 `unverified`（跨 patent-core / patent-law / legal-law 的语义决策，`patent-law/tests/verify.spec.ts:156` 现固定了“跳过”行为）。本条只登记，留 D18/D19 决策。
+- **验证**：补录后第 33 条第 99 款应报 `mismatch`；未补录时若改判定，应报 `unverified` 而非 `valid`。
+- **负责人**：A
+- **状态**：已确认
+
 ## 3. 处理顺序
 
 1. **先验证后动手**：R-01、R-02 先做行为对比；R-03、R-06 先补边界/并发测试。
@@ -522,3 +566,5 @@
 | R-42 | D6 |
 | R-43 | D6 |
 | R-44 / R-45 / R-46 | D7 |
+| R-47 / R-48 / R-49 | D8 |
+| R-50 | D18–D19 |

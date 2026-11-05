@@ -310,3 +310,119 @@ D8 范围：`patent-knowledge`（法规/判例 FTS 引擎、KG 关键词检索�
 - **不改款号窄化语义（R-50）**：跳过 `paragraphs` 缺失的条目是 `patent-law/tests/verify.spec.ts:156` 固定的行为；改成 `unverified` 会同时影响 `legal-law` 的判定与策略配置，属于跨域产品决策，不在 D8 落地。
 - **不合并 `patent-knowledge` 与 `legal-knowledge`**：两包仍各自持有同构引擎（R-10）；D19 先做查询行为对比，再决定共享核心，避免在 D8 顺手移动 600+ 行。
 - **不在本日清洗全部控制字符**：只处理在 SQLite 边界上会截断查询的 NUL；换行、制表符在短语内可正常匹配，扩大清洗面没有失败证据。
+
+## 23. D9 复核结果
+
+D9 范围：`patent-law`（13 个源码文件 / 2,838 行）与 `patent-fees`（7 / 1,516 行），复核三个判定面：引用判定（`reference.ts`、`verify.ts`、`citator.ts`、`rule-lock.ts`）、费用档位与滞纳金（`fees.ts`、`compute.ts`、`assets/fees/cn-fees.yaml`）、减缴（`compute.ts` 与同一资产）。基线：两包 19 个测试文件 / 386 条用例全部通过（patent-law 13 / 273；patent-fees 6 / 113）。复核后两包 20 个测试文件 / 405 条通过（patent-law 13 / 281；patent-fees 7 / 124），`patent-index-asset` 54 条（新增 1 条重复款号用例）。
+
+| 风险 | 复现输入 | 修复前实际结果 | 处理 |
+|---|---|---|---|
+| R-51 | `computeFees(loadFeeTable(), { patentType: 'invention', triggers: ['annual-fee'] })`；`triggers: ['filing'], specificationPages: 20` | 前者 `amount: '0.00', complete: true`；后者 `'950.00', complete: true`，而 `pending` 仍列着缺 `claims`/`priorityClaims` 的费种 | 已修：待补项进入 `unverifiedIds` 并使 `complete: false`；严格策略扣住合计 |
+| R-52 | 年费条目有金额与 `verifiedOn`、无 `latePayment`；`annuityYears: [4], lateMonths: 3` | 只报年费一行，`total: { amount: '900.00', complete: true }` | 已修：追加未定价滞纳金行（`unrecorded`），合计 withheld |
+| R-53 | `lockProvisions(['专利法第22条第9款'], testBaselines())` | `validityStatus: 'active'`、`unverified: []`（第 22 条只载明 3 款） | 已修：citator 在普通与沿革 `active` 路径检查款号；缺款判 `unverified` |
+| R-54 | `queryValidity({ provision: '审查指南第二部分第四章3.2', revision: '2025 年修订版' }, shipped)` | 按基线文本 + `supersededBy` 判 `revised` | 已修：显式未知修订版判 `unverified`，与 `law_verify` 一致 |
+| R-55 | `parseLawReference('专利法第22条第十十款')`；同形的 `第十十项`、`第（十十）项` | 降级为条级引用，`verifyCitation` 判 `valid`，`unrecognized` 为空 | 未修：共享解析器同时服务 legal-law，随 R-01 在 D18 收敛；D9 只登记失败用例 |
+| R-56 | 减缴项目 `requiresFiling: false`、请求 `filed: false` | `notes` 含“本次减缴请求未办理费减备案。”，同时应付已按 85% 计算 | 已修：提示只在 `requiresFiling === true` 时输出 |
+| R-57 | `paragraphs: [1, 1, 2]` | 载入成功，`law_verify` 报“共 3 款” | 已修：`readParagraphs` 拒绝重复款号 |
+
+结论：费用侧的两处“未知当零”（待补输入、滞纳金规则缺失）已改为扣住合计；引用侧的 rule-lock 与 `law_verify` 对缺款、未知修订版的判定已一致。R-55 是解析器级的降级，改动会同时影响 legal-law 的引用语法，按 D18 的两域收敛处理，不在 D9 夹带。
+
+## 24. D9 判定用例矩阵
+
+### 24.1 引用判定
+
+| 判定面 | 输入 | 期望 | 覆盖 |
+|---|---|---|---|
+| 条已转录、无命题 | `专利法第22条` | `valid` | `verify.spec.ts` “passes an article whose text is verified” |
+| 主题词支撑 | `第22条` + 命题“不具备创造性” | `valid` | `verify.spec.ts` “passes a proposition the entry carries…” |
+| 正文逐字支撑、主题词未命中 | 第 47 条 + “宣告无效的专利权视为自始即不存在” | `valid` | `verify.spec.ts` “accepts a verbatim clause…” |
+| 命题落在别条 | 第 22 条 + “说明书充分公开” | `mismatch` 并点名第 26 条 | 同上 |
+| 款号不存在（law_verify） | `第22条第9款`，条目载明 [1,2,3] | `mismatch`，理由含“共 3 款” | `verify.spec.ts` “reports a cited paragraph…” |
+| 款号不存在（rule-lock） | 同上，走 citator | `unverified`，不进 `rule_lock_locked` 的 active | `citator.spec.ts:107`、`rule-lock.spec.ts:83`（R-53） |
+| 条目未登记款号 | 条目无 `paragraphs`、引用第 9 款 | 跳过款号窄化、判 `valid`（R-50，待 D18） | `verify.spec.ts` “skips the paragraph check…” |
+| 条目已索引未转录 | 细则第 5 条 | `unverified` | `verify.spec.ts` “reports an indexed article…” |
+| 超出已核验上限 | 第 99 条，上限 82 | `out-of-range` | 同上 |
+| 超出未核验上限 | 上限 82、`maxVerifiedOn: null` | `unverified` | 同上 |
+| 条不在索引 | 第 78 条 | `not-indexed` | 同上 |
+| 法律未随包 | 空索引 | `not-indexed` | 同上 |
+| 指南节正文 | `第二部分第四章3.2` | `valid` | `verify.spec.ts` “passes a verified section…” |
+| 指南容器由子节承载 | `第四部分第三章4.4` + 子节命题 | `valid`，理由点名 4.4.1 | `verify.spec.ts` “decides a section by what its subsections say” |
+| 指南节被新版取代 | 2023 文本 + `staleSections` | `unverified`，点名取代版本 | `verify.spec.ts` “reports a citation to the stale section…” |
+| 指南版本覆盖 | 指定 2026 覆盖版本 | `valid`，来源为 2026 修改对照表 | `verify.spec.ts` “decides against the named revision” |
+| 指定未知版本 | `revision: '2025 年修订版'` | `verify` 与 `citator` 均 `unverified` | `verify.spec.ts` “reports a revision the index does not carry…”；`citator.spec.ts:122`（R-54） |
+| 指南节不在索引 | `第九部分第九章9.9` | `not-indexed` | 同上 |
+| 未识别片段 | “另见第99条” | `unrecognized` 含 `第99条` | `reference.spec.ts` “reports fragments…” |
+| 条号数字非法 | `专利法第十十条` | 无引用 | `reference.spec.ts` “skips a statute reference…” |
+| 款/项数字非法 | `专利法第22条第十十款` | 期望无引用并把片段列入 `unrecognized`；当前降级为条级 | 复现见 R-55（未修） |
+| 续指继承 | `第22条、第23条第3款第（二）项` | 两条引用，后者 23/3/2 | `reference.spec.ts` “carries the context through a narrowing chain” |
+| 政策映射 | 六个判定 × block/warn/allow | `valid` 恒 `allow`，其余按配置 | `verify.spec.ts` “maps each decision to its policy…” |
+| 沿革覆盖 | lineage `active` / `repealed` | 状态取沿革；生效日取最近修订 | `rule-lock.spec.ts` “沿革快照接入” |
+| 沿革 active + 缺款 | lineage active、第 22 条第 9 款 | `unverified`，仍带修订历史 | `citator.spec.ts:226`（R-53） |
+
+### 24.2 费用档位、滞纳金与减缴
+
+| 判定面 | 输入 | 期望 | 覆盖 |
+|---|---|---|---|
+| 金额已核验 | `amount` + `verifiedOn` | `verified`，计入合计 | `compute.spec.ts` “totals a fully transcribed item” |
+| 金额已记录未核验 | `verifiedOn: null` | `unverified`，扣合计 | 同上 |
+| 金额未转录 | `amount: null` | `unrecorded`，扣合计 | 同上 |
+| 零数量未转录行 | 说明书 20 页（免费基数 30） | 不扣合计 | `compute.spec.ts` “does not withhold the total…” |
+| 待补输入 | 缺 `claims`、`annuityYears`、`priorityClaims` 等 | `pending` + 扣合计 + `unverifiedIds` 列该 id | `compute.spec.ts:188,271`；`tool.spec.ts:107`（R-51） |
+| 环节未收录 | `grant-registration` | `uncoveredTriggers` + 扣合计 | `compute.spec.ts` “withholds the total when a named trigger…” |
+| 按类型排除 | design + `substantive-examination` | 不当作未收录 | `compute.spec.ts` “does not treat a trigger with items excluded…” |
+| 分档命中 | 第 2、5 年度 | 900 / 1200 | `compute.spec.ts` “prices each requested patent year…” |
+| 分档未覆盖 | 仅 1–3 档、查询第 9 年度 | 无金额 + “未落在已转录的分档内” | `compute.spec.ts` “flags a year the transcribed tiers do not cover” |
+| 无分档时用单价 | `amount: '900'`、无 tiers | 900 | 同上 |
+| 滞纳金窗口内 | 第 5 年度 1200、`lateMonths: 1` | 60/月，累计 60 | `compute.spec.ts` “takes the surcharge base from the year tier” |
+| 滞纳金超窗 | `lateMonths: 8`、`maxMonths: 6` | 不给金额 + 终止说明 + 扣合计 | `compute.spec.ts` “refuses the surcharge once the payment window…” |
+| 滞纳金规则缺失 | 无 `latePayment`、`lateMonths: 3` | `unrecorded` 行 + 扣合计 | `compute.spec.ts:384`（R-52） |
+| 无超期 | `lateMonths: 0` | 不追加滞纳金行 | `compute.spec.ts` “adds no surcharge without a delay” |
+| 减缴 85% 已备案 | individual / filed | 应付 15% | `compute.spec.ts` “applies a reduction…” |
+| 未备案 | filed false、需备案 | 全额 + 提示 | `compute.spec.ts` “keeps the full amount…” |
+| 不要求备案 | `requiresFiling: false`、filed false | 减缴照算且无未备案提示 | `compute.spec.ts:456`（R-56） |
+| 减缴范围未登记 | `reducible: null` | 全额 + 提示 | `compute.spec.ts` “reports an unrecorded reduction scope…” |
+| 比例未转录 | `reductionPercent: null` | 不给应付 + 扣合计 | `compute.spec.ts` “refuses a reduced figure…” |
+| 减缴未登记 | 索引无该 programme | 不给应付 + 说明 | `compute.spec.ts` “reports a reduction programme the index does not carry” |
+| 年费减缴年度上限 | 第 7 年度、`reductionMaxYears: 6` | 全额 + 提示 | `compute.spec.ts` “stops the reduction at the year cap…” |
+| 金额算术 | `parseYuan` / `formatFen` / `applyPercent` | 整数分；百分比半值向上 | `money.spec.ts` |
+| 索引非法 | 重复 id、坏金额、分档重叠、缺 `freeUnits`、迟到规则挂在非年费项 | `FeeTableError` | `fees.spec.ts` “rejects …” |
+| 款号列表重复 | `paragraphs: [1,1,2]` | 拒绝加载 | `entries.spec.ts:96`（R-57） |
+
+## 25. D9 来源记录检查
+
+| 记录 | 检查结果 | 证据 |
+|---|---|---|
+| 费用收费标准的文书、版本、核验日期 | `document`、`revision: 2026 年 8 月版`、`sourceDoc`、`verifiedOn: 2026-09-26` 均已记录 | `source-records.spec.ts:18` |
+| 已定价费种的金额来源 | 17 个有金额或分档的条目全部有 `sourceDoc` + `verifiedOn` | `source-records.spec.ts:25` |
+| 未定价费种 | `specification-surcharge`、`extension-fee` 有规则来源、`amount: null`、`verifiedOn: null`（没有金额就没有金额核验） | `source-records.spec.ts:34` |
+| 法条依据 | 19 条 `legalBasis` 均非空；每条引用经 `patent-law` 索引判定为 `valid`（条、款均存在且已转录） | `source-records.spec.ts:82` |
+| 年费档位 | 3 个年费条目：`amount: null`、tiers 从第 1 年连续、`reducible: true`、`reductionMaxYears: 10`、`latePayment: 5%/6 个月` 且来源与核验日期齐全 | `source-records.spec.ts:47,63` |
+| 减缴 | 个人 85% / 企业 70%，均 `requiresFiling: true`，来源与核验日期齐全 | `source-records.spec.ts:72` |
+| 费用生效日 | 全表 `effectiveFrom: null`：官方缴费指南未印生效日，资产不重复抄录发布日期；已由 `fees.spec.ts` 固定 | `fees.spec.ts` “loads the packaged index…” |
+| 法条与指南的转录记录 | 37 条《专利法》、45 条《实施细则》全部有 `text` + `sourceDoc` + `verifiedOn`；两个上限均有 `maxSource` + `maxVerifiedOn` | `baseline.spec.ts:451,462` |
+| 款号列表 | 随包每条法条的 `paragraphs` 无重复款号；加载器也会拒绝重复 | `baseline.spec.ts:472`、`entries.spec.ts` |
+| 指南 | 83 条（65 条带正文 + 18 条容器）；3 条 2026 覆盖、3 条 stale 记录均指向已索引节 | `baseline.spec.ts:443`、`baseline.spec.ts` 的 stale/version 用例 |
+| 沿革 | 37 条法条 × 5 个修订；每条历史的 `revision` 都在 `revisions` 目录中、日期与目录一致且按时间升序 | `lineage.spec.ts:79` |
+
+结论：费用侧的金额、规则、减缴三类记录与法条依据均可逐项追到来源；法条/指南/沿革的转录记录仍由加载器的 all-or-nothing 规则兜底。两项已知内容缺口不在本轮修：R-50 的 13 条《专利法》条文未登记款数（D18/D19），以及指南 2026 年合订全文未随包（README 已声明 64 条基础节仍为 2023 文本）。
+
+## 26. D9 精简候选
+
+| ID | 位置 | 候选动作 | 优先级 | 预期收益 | 等价性验证 |
+|---|---|---|---|---|---|
+| C-10 | `compute.ts` 的 `annuityLine` 与 `annualFeeAmount` | 两处都在做 “year 落在哪个 tier” 的同一查找，抽 `tierAmount(item, year)`；`annuityLine` 额外保留“未覆盖”的说明分支 | P3 | 分档查找只有一处，滞纳金基数与年费行不会漂移 | `compute.spec.ts` 全部年费用例零改动通过 |
+| C-11 | `citator.ts` 的 `resolveGuidelineView` 与 `verify.ts` 的 `buildGuidelineView` | 两份版本合并实现已发生漂移（R-54 即其一）；抽 `guideline-view.ts`，两边共用并各自保留缓存 | P2 | 同一 baseline + revision 在两个入口得到同一视图 | 对随包指南与 3 个构造 baseline 做逐节深比较；`verify.spec.ts`/`citator.spec.ts` 全绿 |
+| C-12 | `patent-core/knowledge/article-decision.ts` 的 `checkNarrowing` 与 `citator.ts` 的 `paragraphGap` | 缺款判断现在有两份文案（`mismatch` / `unverified`）；抽一个纯谓词，状态映射留在各入口 | P3 | 款号存在性只有一处实现，两个判定面的文案不会再次分叉 | `verify.spec.ts` 缺款用例与 `citator.spec.ts` 新增用例同时通过 |
+| C-13 | `rule-lock.ts` 的 `RuleLockEntry` | `ValidityResult.reason` 在 `lockOneProvision` 之后被丢弃，报告只有四态标签；给条目加 `reason` 并仅在非 active 时渲染 | P3 | 规则锁定门能说明“为什么未判定”，不必再调 `law_verify` | 现有 `rule-lock.spec.ts` 的 `toMatchObject` 用例不回归；新增一条缺款理由断言 |
+
+## 27. D9 范围校正与不做项
+
+- **不改 R-50 的款数语义**：`entry.paragraphs === undefined` 时跳过款号窄化是 `patent-law/tests/verify.spec.ts` 固定的行为，改成 `unverified` 会影响 `legal-law` 与规则资产，留 D18/D19 的跨域决策。
+- **不在 D9 改共享引用解析器（R-55）**：`readStatuteArticleCandidate` 同时被 `patent-law` 与 `legal-law` 使用；把不可解析的款/项从“静默降级”改为“整条拒绝”会同时改变两域语法，应随 R-01 的解析器收敛一次完成。
+- **不合并 `patent-law` 与 `legal-law`**：同构实现的分叉仍是 R-01/R-10；D18 先做行为等价矩阵，再抽共享核心。
+- **不把指南 2026 全文补进索引**：本地只有官方修改对照表，没有 2026 合订全文；README 已声明 64 条基础节仍按 2023 文本判定，且 3 条已确认改动已用 `versions` 覆盖。
+- **不检查项号（`第X项`）**：索引只登记到款，项号只回显、不判定；要拒绝错项需要项级索引（README 已列为限制）。
+- **不给 `asOf` 加时间感知判定**：`rule_lock_as_of` 已读取但沿革数据没有 repealed/修订生效的时间语义；`ValidityQuery.asOf` 仍为预留字段。
+- **不裁决 `amount` 与 `tiers` 并存**：加载器允许条目同时声明两者，`compute` 在 `tiers` 非空时只用分档；这是“先录单价、后补分档”的迁移形态，`fees.spec.ts` 的 complete-table 用例也按此形态写。是否拒绝留待分档价格字段真正扩展时决定。
+- **不为库调用补整数校验**：`lateMonths` 等数量在工具层已要求非负整数；`computeFees` 是类型化同进程 API，按仓库规则不在该边界加运行期校验。非整数 `lateMonths` 经直接库调用会产生不足一分的金额，属调用方违约，D9 不扩大公开面。
+- **不把 `grant-registration` 映射到授权当年年费**：需要授权年度，查询不带；索引保持未收录并扣合计（README 已声明）。

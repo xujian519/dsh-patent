@@ -8,9 +8,9 @@
 | 级别 | 数量 | 主题 |
 |---|---:|---|
 | P0 | 2 | 法律引用门与证据引擎的同构分叉 |
-| P1 | 14 | 超长文件、类型逃逸、测试缺口、并发语义、A33/无附图/月级日期误判、证据门缺口 |
-| P2 | 18 | 跨域依赖、环境版本、通知书自指、IPC 误分类、文献号与黑板别名、claim-chart 校验缺口、模板草案未知键、CNIPR 取消映射、检索上限与 NUL 检索词、款数未核验 |
-| P3 | 16 | TODO 归并、报告换行、项号/年份/日期边界、引用区间与目标配置回退、权项编号切分、必填字段双报、检索行静默丢弃、启动失败无错误码、主题词空白 |
+| P1 | 16 | 超长文件、类型逃逸、测试缺口、并发语义、A33/无附图/月级日期误判、证据门缺口、待补输入仍给合计、缺款判有效 |
+| P2 | 21 | 跨域依赖、环境版本、通知书自指、IPC 误分类、文献号与黑板别名、claim-chart 校验缺口、模板草案未知键、CNIPR 取消映射、检索上限与 NUL 检索词、款数未核验、滞纳金规则缺失、未知修订版回退、款/项数字降级 |
+| P3 | 18 | TODO 归并、报告换行、项号/年份/日期边界、引用区间与目标配置回退、权项编号切分、必填字段双报、检索行静默丢弃、启动失败无错误码、主题词空白、减缴备案提示、重复款号 |
 
 ## 2. 明细
 
@@ -535,6 +535,83 @@
 - **负责人**：A
 - **状态**：已确认
 
+### R-51 待补输入不参与合计完整性（P1）
+
+- **域**：patent-fees
+- **证据**：`compute.ts:388-415` 的 `totalOf` 只读 `lines`，`compute.ts:86-104` 收集的 `pending` 从未参与 `complete`；`types.ts:236-247` 的 `complete` 文案却声称“every applicable line”。修复前 `computeFees(loadFeeTable(), { patentType: 'invention', triggers: ['annual-fee'] }, { policy: DEFAULT_FEE_POLICY })` 返回 `amount: '0.00', complete: true`，而同一报告的 `pending` 正列着 `annual-fee`；`triggers: ['filing'], specificationPages: 20` 返回 `amount: '950.00', complete: true`，而 `claims-surcharge`、`priority-claim-fee` 都在待补输入里。
+- **最小复现**：上一年费查询 → 期望合计 withheld、`complete: false`，实际 `0.00` 且 `complete: true`。
+- **风险**：模型或用户把“合计（全部已核验）”读成案件总价，缺失的费种被当成零；这正是本包拒绝未核验金额要防的失败。
+- **动作**：`totalOf` 接收待补项 id，`complete` 同时要求无待补项；`unverifiedIds` 同时列出待补项；README、`FeeTotal` JSDoc 与工具描述同步。
+- **验证**：`compute.spec.ts` “keeps the total incomplete for a pending item beside verified lines”“asks for the patent years…”；`tool.spec.ts` “withholds the total while an applicable item is waiting for a case fact”。
+- **负责人**：A
+- **状态**：已关闭
+
+### R-52 年费滞纳金规则缺失时按零处理（P2）
+
+- **域**：patent-fees
+- **证据**：`compute.ts:237-240`（修复前 `rule === undefined` 直接 `return []`）；`FeeItem.latePayment` 是可选字段，`fees.ts` 只禁止非年费条目携带它，不要求年费条目必须携带。
+- **最小复现**：年费条目 `amount: '900'`、`verifiedOn: '2026-01-01'`、无 `latePayment`；查询 `annuityYears: [4], lateMonths: 3` → 修复前只有年费一行，`total: { amount: '900.00', complete: true }`。修复后追加 `annual-fee-4-late-payment` 行，`status: 'unrecorded'`、无金额，合计 withheld。
+- **风险**：已超期的年费按按时缴纳报价，法定滞纳金被静默省略；未转录的规则被当成零。
+- **动作**：规则缺失时输出“比例未登记”的未定价滞纳金行；严格策略扣住合计，宽松策略只给已核验部分并标 incomplete。
+- **验证**：`compute.spec.ts` “reports a surcharge the index has no rule for as unpriced and withholds the total”。
+- **负责人**：A
+- **状态**：已关闭
+
+### R-53 rule-lock 对不存在的款号判现行有效（P1）
+
+- **域**：patent-law
+- **证据**：`citator.ts:108-172`（修复前找到条目后直接返回 `active` 或沿革状态，不比对 `entry.paragraphs`）；同包的 `patent-core/src/knowledge/article-decision.ts:173-178` 已在 `law_verify` 路径按 `entry.paragraphs` 判 `mismatch`。
+- **最小复现**：`lockProvisions(['专利法第22条第9款'], testBaselines())`，第 22 条载明 3 款 → 修复前 `validityStatus: 'active'`、`unverified: []`；修复后 `unverified` 并给出“共 3 款，不含第 9 款”。随包索引第 22 条载明 5 款，结果相同。
+- **风险**：工作流规则锁定门把一个不存在的款当成现行有效条款，与 `law_verify` 对同一输入的 `mismatch` 判定相反；下游据此认为该款已核对。
+- **动作**：普通路径与沿革 `active` 路径都先做款号存在性检查，缺款返回 `unverified`；非 `active` 的沿革状态（`repealed`/`revised`）仍优先。`RuleLockEntry` 结构与工作流输入不变。
+- **验证**：`citator.spec.ts` 新增 2 条；`rule-lock.spec.ts` 新增 1 条；`verify.spec.ts` 的 `mismatch` 行为不变。
+- **负责人**：A
+- **状态**：已关闭
+
+### R-54 citator 对显式未知修订版回退基线（P2）
+
+- **域**：patent-law
+- **证据**：`citator.ts:286-294`（修复前 `targetIndex < 0` 无条件返回 `baseline`）；`verify.ts:246-280` 的 `buildGuidelineView` 对显式未知版本返回 `null`，随后判 `unverified`。
+- **最小复现**：`queryValidity({ provision: '审查指南第二部分第四章3.2', revision: '2025 年修订版' }, shippedBaselines())` → 修复前按基线文本 + `supersededBy` 判 `revised`；修复后 `unverified`，理由点名该版本。
+- **风险**：同一条引用在 `law_verify` 与 rule-lock/citator 下结论不同；按一个索引没有的版本给出有效性状态。
+- **动作**：显式命名且未收录的版本返回 `null` 并由 `decideSectionValidity` 判 `unverified`；未命名版本仍按“最新已转录覆盖”或 `supersededBy` 回退，保持原行为。
+- **验证**：`citator.spec.ts` “returns unverified for a named revision the index does not carry”；`verify.spec.ts` 的同名行为已有用例。
+- **负责人**：A
+- **状态**：已关闭
+
+### R-55 款/项数字不可解析时引用被静默降级为条级（P2）
+
+- **域**：patent-core（patent-law / legal-law 共用解析器）
+- **证据**：`patent-core/src/knowledge/citation-extract.ts:34-53` 的 `readStatuteArticleCandidate` 只用 `parseCnNumber` 校验条号；`patent-core/src/knowledge/citation-text.ts:72-82` 的 `narrowed` 对不可解析的款/项直接省略字段。
+- **最小复现**：`parseLawReference('专利法第22条第十十款')` 返回第 22 条且无款号，`verifyCitation` 判 `valid`，`scanUnrecognizedCitations` 为空（识别到的 `raw` 覆盖了该片段）。`专利法第22条第3款第十十项` 与 `专利法第22条第3款第（十十）项` 同样降级为款级/条级引用。
+- **风险**：款号或项号写错时引用仍显示已核验，读者以为该款被核对过；与 README“malformed numeral is rejected, not guessed”的承诺不符。
+- **动作**：共享解析器应在款/项数字不可解析时拒绝整条引用，让片段进入 `unrecognized`。该函数同时服务 legal-law，属两域共享语法面；D9 只登记，随 R-01 的解析器收敛在 D18 一起改。
+- **验证**：新增失败用例：`parseLawReference` 返回 null，`scanUnrecognizedCitations` 列出片段；当前实现不满足。
+- **负责人**：A
+- **状态**：已确认
+
+### R-56 不要求备案的减缴仍提示未备案（P3）
+
+- **域**：patent-fees
+- **证据**：`compute.ts:350-356`（修复前 `if (!request.filed)` 无条件提示，不看 `rule.requiresFiling`）。
+- **最小复现**：减缴项目 `requiresFiling: false`、请求 `filed: false` → 修复前 `notes` 含“本次减缴请求未办理费减备案。”，同时 `payable` 已按 85% 减缴、结论为“已按减缴 85% 计算适用费种”。
+- **风险**：报告自相矛盾，模型会据此要求用户补办一个并不存在的备案前提。
+- **动作**：只有 `requiresFiling === true` 时才输出未备案提示。
+- **验证**：`compute.spec.ts` “does not report a missing filing for a programme that does not require one”。
+- **负责人**：A
+- **状态**：已关闭
+
+### R-57 法条款号列表允许重复（P3）
+
+- **域**：patent-index-asset
+- **证据**：`entries.ts:33-45`（修复前只校验正整数，不查重）。
+- **最小复现**：`paragraphs: [1, 1, 2]` 修复前载入成功；`law_verify` 报“共 3 款”，实际只有 2 个不同款号。修复后加载失败并点名“有重复款号”。
+- **风险**：手工编辑索引时重复款号让款数断言失真，缺款判断的标准被悄悄放宽。
+- **动作**：读取时拒绝重复款号。
+- **验证**：`entries.spec.ts` 参数化新增“a repeated paragraph”；随包两个法条资产无重复，加载不受影响。
+- **负责人**：A
+- **状态**：已关闭
+
 ## 3. 处理顺序
 
 1. **先验证后动手**：R-01、R-02 先做行为对比；R-03、R-06 先补边界/并发测试。
@@ -568,3 +645,6 @@
 | R-44 / R-45 / R-46 | D7 |
 | R-47 / R-48 / R-49 | D8 |
 | R-50 | D18–D19 |
+| R-51 / R-52 / R-56 / R-57 | D9 |
+| R-53 / R-54 | D9 |
+| R-55 | D9 登记，D18 随 R-01 修复 |

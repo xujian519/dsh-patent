@@ -63,10 +63,10 @@ export function queryValidity(
  *
  * | State       | Rule |
  * |-------------|------|
- * | `active`    | Entry found, transcribed, not stale, not superseded. |
+ * | `active`    | Entry found, transcribed, not stale, not superseded, and its listed paragraphs contain the cited paragraph. |
  * | `revised`   | Entry found but in `staleSections`, or baseline `supersededBy` covers it, or a later version overrides it. |
  * | `repealed`  | Explicit repeal record (reserved; no current data path). |
- * | `unverified`| Entry missing, not transcribed, out of range, or law not indexed. |
+ * | `unverified`| Entry missing, untranscribed, out of range, law not indexed, unknown revision, or an absent paragraph. |
  *
  * @param reference - the parsed law reference.
  * @param baselines - the loaded law index, keyed by law name.
@@ -140,15 +140,20 @@ function decideArticleValidity(
   if (lineage !== undefined) {
     const articleLineage = queryArticleLineage(lineage, reference.article)
     if (articleLineage !== null) {
+      const revisionHistory = articleLineage.revisionHistory.map(r => ({
+        revision: r.revision,
+        effectiveDate: r.effectiveDate,
+      }))
+      // An active article still cannot vouch for a paragraph the index knows does
+      // not exist; the other lineage states already answer for the article.
+      const gap = articleLineage.currentStatus === 'active' ? paragraphGap(reference, entry, baseline.law) : null
+      if (gap !== null) return { reference, state: 'unverified', reason: gap, entry, revisionHistory }
       return {
         reference,
         state: articleLineage.currentStatus,
         reason: buildLineageReason(baseline.law, reference.article, articleLineage.currentStatus),
         entry,
-        revisionHistory: articleLineage.revisionHistory.map(r => ({
-          revision: r.revision,
-          effectiveDate: r.effectiveDate,
-        })),
+        revisionHistory,
       }
     }
   }
@@ -160,6 +165,8 @@ function decideArticleValidity(
       entry,
     }
   }
+  const gap = paragraphGap(reference, entry, baseline.law)
+  if (gap !== null) return { reference, state: 'unverified', reason: gap, entry }
 
   return {
     reference,
@@ -167,6 +174,24 @@ function decideArticleValidity(
     reason: `《${baseline.law}》第 ${reference.article} 条现行有效（来源：${entry.sourceDoc}）`,
     entry,
   }
+}
+
+/**
+ * The reason a cited paragraph the entry knows to be absent cannot be accepted,
+ * or null when the paragraph exists or the entry does not list its paragraphs.
+ * @param reference - the parsed article reference.
+ * @param entry - the indexed article.
+ * @param law - the law name, as the reason states it.
+ * @returns the reason, or null.
+ */
+function paragraphGap(
+  reference: { paragraph?: number },
+  entry: { article: number; paragraphs?: number[] },
+  law: string,
+): string | null {
+  if (reference.paragraph === undefined || entry.paragraphs === undefined) return null
+  if (entry.paragraphs.includes(reference.paragraph)) return null
+  return `《${law}》第 ${entry.article} 条索引载明共 ${String(entry.paragraphs.length)} 款，不含第 ${String(reference.paragraph)} 款`
 }
 
 /**
@@ -186,6 +211,13 @@ function decideSectionValidity(
   // so the stale-section and supersededBy checks see the same sections the
   // verifier would see.
   const view = resolveGuidelineView(baseline, query.revision)
+  if (view === null) {
+    return {
+      reference,
+      state: 'unverified',
+      reason: `索引中没有《专利审查指南》${query.revision} 的节正文，无法按该版本核验`,
+    }
+  }
   const entry = findSection(view, reference.path)
 
   // A section covered by staleSections is revised, regardless of whether the
@@ -246,15 +278,18 @@ function decideSectionValidity(
  * When no revision is specified, the latest transcribed override is applied
  * automatically, matching the verifier's default behaviour. When the current
  * revision is transcribed, every version up to it is merged; when it is not,
- * the superseded revision is targeted instead.
+ * the superseded revision is targeted instead. A revision the caller names but
+ * the index does not carry selects nothing, so the citation is reported as
+ * unverified rather than decided against the base text.
+ * @returns the merged view, the base baseline, or null when the named revision is unknown.
  */
-function resolveGuidelineView(baseline: LawBaseline, revision: string | undefined): LawBaseline {
+function resolveGuidelineView(baseline: LawBaseline, revision: string | undefined): LawBaseline | null {
   const current = baseline.supersededBy
   const transcribed = current === null || baseline.versions.some(v => v.revision === current)
   const target = revision ?? (transcribed ? baseline.versions.at(-1)?.revision : current) ?? null
   if (target === null || target === baseline.revision) return baseline
   const targetIndex = baseline.versions.findIndex(v => v.revision === target)
-  if (targetIndex < 0) return baseline
+  if (targetIndex < 0) return revision === undefined ? baseline : null
   const applied = baseline.versions.slice(0, targetIndex + 1)
   const overridden = new Map<string, SectionEntry>()
   const added = new Map<string, SectionEntry>()

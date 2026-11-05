@@ -99,9 +99,23 @@ describe('patent_fees tool', () => {
     expect(text).toContain('| 说明书附加费 |')
     expect(text).toContain('金额未转录')
     expect(text).toContain('本次未给出合计')
-    expect(text).toContain('索引未转录的金额是未知，不是零')
+    expect(text).toContain('缺少的金额或案件事实是未知，不是零')
     expect(text).toContain('**待补输入**')
     expect(text).toContain('- 权利要求附加费（claims-surcharge）：需要 claims——')
+  })
+
+  it('withholds the total while an applicable item is waiting for a case fact', async () => {
+    const claims = tableOf('claims-surcharge', '权利要求附加费', 'filing', {
+      basis: 'per-claim-beyond',
+      freeUnits: 10,
+      amount: '150',
+    })
+    const result = await execute(await host(claims), { patentType: 'invention', triggers: ['filing'] })
+    const value = result.value as PatentFeesOutput
+    expect(value.total).toEqual({ complete: false, unverifiedIds: ['claims-surcharge'] })
+    expect(value.total.amount).toBeUndefined()
+    expect(rendered(result)).toContain('本次未给出合计')
+    expect(rendered(result)).toContain('- 权利要求附加费（claims-surcharge）：需要 claims——')
   })
 
   it('withholds the total and names a trigger the index does not carry', async () => {

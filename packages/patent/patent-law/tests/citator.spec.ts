@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { decideValidity, queryValidity } from '../src/citator.ts'
-import type { LawBaseline, LawName } from '../src/types.ts'
+import type { LawBaseline, LawLineageSnapshot, LawName } from '../src/types.ts'
 import {
   UNVERIFIED_ARTICLE_5,
+  VERIFIED_ARTICLE_22,
   VERIFIED_SECTION,
   UNVERIFIED_SECTION,
   statuteBaseline as statute,
@@ -103,6 +104,30 @@ describe('queryValidity — unverified', () => {
     expect(result.reason).toContain('共 82 条')
   })
 
+  it('returns unverified for a paragraph the indexed article does not have', () => {
+    const result = queryValidity({ provision: '专利法第22条第9款' }, baselines())
+    expect(result.state).toBe('unverified')
+    expect(result.reason).toContain('共 3 款')
+    expect(result.reason).toContain('不含第 9 款')
+    const entry = result.entry
+    expect(entry !== undefined && 'article' in entry ? entry.article : undefined).toBe(22)
+  })
+
+  it('keeps an article verifiable when the entry does not list its paragraphs', () => {
+    const withoutParagraphs = { ...VERIFIED_ARTICLE_22 }
+    delete withoutParagraphs.paragraphs
+    const index = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [withoutParagraphs],
+    })]])
+    expect(queryValidity({ provision: '专利法第22条第9款' }, index).state).toBe('active')
+  })
+
+  it('returns unverified for a named revision the index does not carry', () => {
+    const result = queryValidity({ provision: '审查指南第二部分第四章3.2', revision: '2025 年修订版' }, baselines())
+    expect(result.state).toBe('unverified')
+    expect(result.reason).toContain('2025 年修订版')
+  })
+
   it('returns unverified for an article not in the index', () => {
     const result = queryValidity({ provision: '专利法第78条' }, baselines())
     expect(result.state).toBe('unverified')
@@ -179,5 +204,48 @@ describe('queryValidity — revision history', () => {
     expect(result.revisionHistory).toBeDefined()
     expect(result.revisionHistory).toHaveLength(1)
     expect(result.revisionHistory?.[0]?.effectiveDate).toBe('2026-01-01')
+  })
+})
+
+describe('decideValidity — lineage narrowing', () => {
+  const lineage: LawLineageSnapshot = {
+    law: '专利法',
+    document: '中华人民共和国专利法',
+    lineageVersion: '1.0.0',
+    revisions: [],
+    articles: [{
+      articleId: 22,
+      title: null,
+      currentStatus: 'active',
+      revisionHistory: [{
+        revision: '2020-amendment',
+        effectiveDate: '2021-06-01',
+        text: null,
+        changed: false,
+      }],
+    }],
+  }
+
+  it('does not let an active lineage record vouch for a paragraph the article lacks', () => {
+    const result = decideValidity(
+      { kind: 'law-article', law: '专利法', article: 22, paragraph: 9, raw: '专利法第22条第9款' },
+      baselines(),
+      {},
+      lineage,
+    )
+    expect(result.state).toBe('unverified')
+    expect(result.reason).toContain('不含第 9 款')
+    expect(result.revisionHistory).toHaveLength(1)
+  })
+
+  it('keeps an existing paragraph active through the lineage record', () => {
+    const result = decideValidity(
+      { kind: 'law-article', law: '专利法', article: 22, paragraph: 2, raw: '专利法第22条第2款' },
+      baselines(),
+      {},
+      lineage,
+    )
+    expect(result.state).toBe('active')
+    expect(result.reason).toContain('沿革数据确认现行有效')
   })
 })

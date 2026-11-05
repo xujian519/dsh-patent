@@ -93,6 +93,7 @@ describe('reading the paragraph list', () => {
     ['a zero paragraph', [0], /第22条的 paragraphs 只能是正整数/],
     ['a fractional paragraph', [1.5], /第22条的 paragraphs 只能是正整数/],
     ['a textual paragraph', ['1'], /第22条的 paragraphs 只能是正整数/],
+    ['a repeated paragraph', [1, 1, 2], /第22条的 paragraphs 有重复款号/],
   ])('rejects %s', (_case, paragraphs, message) => {
     expect(() => readArticleEntries([article({ article: 22, paragraphs })], fail)).toThrow(message)
   })

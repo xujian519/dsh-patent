@@ -26,7 +26,7 @@ Function plugin pricing a Chinese patent case's official fees from the fee index
 <a id="fee-tool"></a>
 ## patent_fees tool
 
-patent_fees prices one case: it takes the patent type and the steps the case is at, counts each indexed fee item by its basis, applies the case's fee reduction where the index records one, and reports every line with the statutory basis it came from. Each line states whether its amount is verified, and the total is withheld while any applicable line is not.
+patent_fees prices one case: it takes the patent type and the steps the case is at, counts each indexed fee item by its basis, applies the case's fee reduction where the index records one, and reports every line with the statutory basis it came from. Each line states whether its amount is verified, and the total is withheld while any applicable line is not verified or any applicable item still needs a case fact.
 
 The tool exists because the patent discipline required fee amounts to be computed by a tool while no tool owned them: the persona and the quality gate both said 费用用工具计算, and the model had nothing to call. It also exists to make a refusal usable: an amount that has not been transcribed is unknown, so the tool hands back the item checklist and names what withholds the sum instead of returning a partial figure that reads as the price.
 
@@ -57,6 +57,8 @@ An item's amount and the dates that support it are transcription content: `amoun
 | `unverified` | The amount is recorded, its verification date is not. The line shows the figure and says it is unverified. |
 | `unrecorded` | No amount is recorded. The line carries applicability and counts and no figure. |
 
+An applicable item whose quantity needs a case fact the call omitted is not a line; it is reported under `pending`, and it keeps the total incomplete just like an unverified line, because summing without it would read as the price of the case.
+
 Most shipped items are `verified`: their amounts come from the fee standard in the National Intellectual Property Administration's payment guide (附件2), each recorded with the document it was copied from and the date of that copy. Fees whose price or rule differs by patent type are separate items — `application-fee` and its `-utility-design` sibling, one annual-fee item per type — because an item states one amount, so a difference by type is a difference between items rather than an amount that drifts with the query.
 
 Two items ship without an amount because the item model cannot state their price: the specification surcharge is charged by page band (50 per page from page 31, 100 per page from page 301) and the extension fee by occurrence (300 per month for a first extension, 2000 for a repeat). They stay `unrecorded` and withhold the total rather than apply one band's price to every unit.
@@ -69,7 +71,7 @@ Two items ship without an amount because the item model cannot state their price
 <a id="annual-fees-and-the-surcharge"></a>
 ## Annual fees and the surcharge
 
-Annual fees are priced one line per patent year. The years come from the caller — `patent_deadlines` owns the dates and reports which years are due — and the amount comes from the item's `tiers` (a year outside the transcribed tiers is reported rather than guessed). A delay on a year adds a surcharge line: `latePayment.monthlyPercent` of that year's full annual fee per started month, up to `latePayment.maxMonths`; past that window the line says so and states no amount, because the fee is no longer payable.
+Annual fees are priced one line per patent year. The years come from the caller — `patent_deadlines` owns the dates and reports which years are due — and the amount comes from the item's `tiers` (a year outside the transcribed tiers is reported rather than guessed). A delay on a year adds a surcharge line: `latePayment.monthlyPercent` of that year's full annual fee per started month, up to `latePayment.maxMonths`; past that window the line says so and states no amount, because the fee is no longer payable. When the delayed item records no `latePayment` rule at all, the surcharge line carries no figure and withholds the total, because a missing rule is unknown, not zero.
 
 <a id="library-api"></a>
 ## Library API
@@ -89,7 +91,7 @@ Schemastery configuration; both fields have a default.
 | Key | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | feeTablePath | string | packaged asset | Path of the fee-index YAML file. A missing or malformed file fails the plugin load. |
-| failOnUnverified | boolean | `true` | Withhold the total while any applicable line lacks a verified amount. Turning it off reports a sum over the verified lines only, labelled as partial. |
+| failOnUnverified | boolean | `true` | Withhold the total while any applicable line lacks a verified amount or any applicable item is still pending. Turning it off reports a sum over the verified lines only, labelled as partial. |
 
 <a id="model-experience"></a>
 ## Model Experience
@@ -98,7 +100,7 @@ Schemastery configuration; both fields have a default.
 
 #### What the model sees
 
-One registered tool named `patent_fees` with `patentType` and `triggers` required, and `claims`, `specificationPages`, `priorityClaims`, `annuityYears`, `extensionMonths`, `lateMonths`, and `reduction` optional. The result is the priced lines — id, name, basis, quantity with the basis it was counted from, unit amount, subtotal, payable, status, reduction, legal basis, recorded source, and notes — plus the pending items, the reduction outcome, the total, and the report notes, rendered as a Markdown table followed by the total, the reduction, the pending inputs, and the notes. The tool description states that money is reported only from transcribed amounts, that the total is withheld while any applicable line is not verified, and that an omitted step is not priced.
+One registered tool named `patent_fees` with `patentType` and `triggers` required, and `claims`, `specificationPages`, `priorityClaims`, `annuityYears`, `extensionMonths`, `lateMonths`, and `reduction` optional. The result is the priced lines — id, name, basis, quantity with the basis it was counted from, unit amount, subtotal, payable, status, reduction, legal basis, recorded source, and notes — plus the pending items, the reduction outcome, the total, and the report notes, rendered as a Markdown table followed by the total, the reduction, the pending inputs, and the notes. The tool description states that money is reported only from transcribed amounts, that the total is withheld while any applicable line is not verified or an applicable item is pending, and that an omitted step is not priced.
 
 #### Token effect
 

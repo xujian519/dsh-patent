@@ -76,6 +76,20 @@ describe('parseLawLineage — shipped asset', () => {
     expect(snapshot.articles.length).toBeGreaterThan(0)
   })
 
+  it('records every history revision in the catalogue, with its date, in order', () => {
+    const snapshot = loadShippedLineage()
+    const revisions = new Map(snapshot.revisions.map(entry => [entry.id, entry]))
+    for (const article of snapshot.articles) {
+      const dates = article.revisionHistory.map(entry => entry.effectiveDate)
+      expect(dates, `第${article.articleId}条`).toEqual([...dates].sort())
+      for (const entry of article.revisionHistory) {
+        const declared = revisions.get(entry.revision)
+        expect(declared, `第${article.articleId}条：${entry.revision}`).toBeDefined()
+        expect(entry.effectiveDate, `第${article.articleId}条：${entry.revision}`).toBe(declared?.effectiveDate)
+      }
+    }
+  })
+
   it('rejects malformed YAML', () => {
     expect(() => parseLawLineage('not: [valid: yaml: {', 'test.yaml')).toThrow(LawLineageError)
   })

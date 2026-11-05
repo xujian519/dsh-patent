@@ -117,7 +117,7 @@ export function computeFees(table: FeeTable, query: FeeQuery, options: ComputeOp
     lines: lines.map(computed => computed.line),
     pending,
     reduction: reduction === null ? null : reductionOutcome(reduction, lines),
-    total: totalOf(lines, options.policy, uncoveredTriggers),
+    total: totalOf(lines, options.policy, uncoveredTriggers, pending.map(entry => entry.id)),
     notes,
   }
 }
@@ -236,7 +236,25 @@ function annuityLine(item: FeeItem, year: number, reduction: ReductionContext | 
 /** Price the surcharge on a late annual fee, when the case reports a delay. */
 function latePaymentLine(item: FeeItem, year: number, lateMonths: number | undefined): ComputedLine[] {
   const rule = item.latePayment
-  if (rule === undefined || lateMonths === undefined || lateMonths <= 0) return []
+  if (lateMonths === undefined || lateMonths <= 0) return []
+  // A delay the index carries no surcharge rule for is unpriced, not free: report
+  // the line without a figure so the total is withheld rather than omitting it.
+  if (rule === undefined) {
+    return [{
+      line: {
+        ...latePaymentBase(item, year, lateMonths, `超期 ${String(lateMonths)} 个月，每月加收比例未登记`),
+        unitAmount: null,
+        subtotal: null,
+        payable: null,
+        status: 'unrecorded',
+        reduction: null,
+        legalBasis: null,
+        valueSource: valueSourceOf(item),
+        notes: ['费用索引未登记该年费条目的滞纳金规则：每月加收比例未知，本次不给滞纳金金额。'],
+      },
+      payableFen: null,
+    }]
+  }
   const notes: string[] = []
   const amount = amountFen(annualFeeAmount(item, year))
   if (lateMonths > rule.maxMonths) {
@@ -247,11 +265,7 @@ function latePaymentLine(item: FeeItem, year: number, lateMonths: number | undef
   const surchargeFen = monthly === null || !withinWindow ? null : monthly * lateMonths
   return [{
     line: {
-      id: `${item.id}-${String(year)}-late-payment`,
-      name: `年费滞纳金（第 ${String(year)} 年度）`,
-      basis: 'per-month',
-      quantity: lateMonths,
-      quantityBasis: `超期 ${String(lateMonths)} 个月，每月加收当年全额年费的 ${String(rule.monthlyPercent)}%`,
+      ...latePaymentBase(item, year, lateMonths, `超期 ${String(lateMonths)} 个月，每月加收当年全额年费的 ${String(rule.monthlyPercent)}%`),
       unitAmount: monthly === null ? null : formatFen(monthly),
       subtotal: surchargeFen === null ? null : formatFen(surchargeFen),
       payable: surchargeFen === null ? null : formatFen(surchargeFen),
@@ -267,6 +281,22 @@ function latePaymentLine(item: FeeItem, year: number, lateMonths: number | undef
     },
     payableFen: surchargeFen,
   }]
+}
+
+/** The identity and count every late-payment line shares. */
+function latePaymentBase(
+  item: FeeItem,
+  year: number,
+  lateMonths: number,
+  quantityBasis: string,
+): Pick<FeeLine, 'id' | 'name' | 'basis' | 'quantity' | 'quantityBasis'> {
+  return {
+    id: `${item.id}-${String(year)}-late-payment`,
+    name: `年费滞纳金（第 ${String(year)} 年度）`,
+    basis: 'per-month',
+    quantity: lateMonths,
+    quantityBasis,
+  }
 }
 
 /** The amount an annual-fee item charges for one year. */
@@ -329,7 +359,7 @@ function resolveReduction(
   if (rule === undefined) {
     notes.push(`费用索引没有登记「${request.kind}」减缴：本次不按减缴计算。`)
   }
-  if (!request.filed) {
+  if (rule !== undefined && rule.requiresFiling && !request.filed) {
     notes.push('本次减缴请求未办理费减备案。')
   }
   return { request, rule, blocked: rule === undefined ? `未登记 ${request.kind} 减缴` : null }
@@ -362,8 +392,13 @@ function reductionReason(reduction: ReductionContext, applied: boolean): string 
     : '本案没有落在减缴范围内的费用项。'
 }
 
-/** Sum the verified payable amounts, or refuse when one is missing or a named stage is unindexed. */
-function totalOf(lines: ComputedLine[], policy: FeePolicy, uncoveredTriggers: readonly string[]): FeeTotal {
+/** Sum the verified payable amounts, or refuse when one is missing, an item is pending, or a named stage is unindexed. */
+function totalOf(
+  lines: ComputedLine[],
+  policy: FeePolicy,
+  uncoveredTriggers: readonly string[],
+  pendingIds: readonly string[],
+): FeeTotal {
   // A zero-quantity line owes nothing, so an unrecorded unit price for it cannot
   // make the case total incomplete (specification pages ≤ 30, claims ≤ 10).
   const incomplete = lines.filter(line =>
@@ -371,7 +406,9 @@ function totalOf(lines: ComputedLine[], policy: FeePolicy, uncoveredTriggers: re
   const verified = lines.filter((line): line is ComputedLine & { payableFen: number } =>
     line.line.status === 'verified' && line.payableFen !== null)
   const verifiedFen = sumFen(verified.map(line => line.payableFen))
-  const complete = incomplete.length === 0 && uncoveredTriggers.length === 0
+  // An applicable item waiting for a case input is unpriced for the same reason an
+  // unverified line is: the sum would read as the price of the case without it.
+  const complete = incomplete.length === 0 && pendingIds.length === 0 && uncoveredTriggers.length === 0
   const amount = uncoveredTriggers.length > 0
     ? null
     : complete
@@ -382,7 +419,7 @@ function totalOf(lines: ComputedLine[], policy: FeePolicy, uncoveredTriggers: re
   return {
     amount,
     complete,
-    unverifiedIds: incomplete.map(line => line.line.id),
+    unverifiedIds: [...incomplete.map(line => line.line.id), ...pendingIds],
     ...uncoveredTriggers.length === 0 ? {} : { uncoveredTriggers: [...uncoveredTriggers] },
   }
 }

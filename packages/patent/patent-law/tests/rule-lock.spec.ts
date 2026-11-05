@@ -79,6 +79,14 @@ describe('lockProvisions — 单条法条判定', () => {
     expect(result.locked[0]!.validityStatus).toBe('unverified')
     expect(result.unverified).toEqual(['专利法实施细则第5条'])
   })
+
+  it('unverified：引用了条文未载明的款号时不再判现行有效', () => {
+    const result = lockProvisions(['专利法第22条第9款'], testBaselines())
+    expect(result.locked).toHaveLength(1)
+    expect(result.locked[0]!.validityStatus).toBe('unverified')
+    expect(result.locked[0]!.level).toBe('section')
+    expect(result.unverified).toEqual(['专利法第22条第9款'])
+  })
 })
 
 describe('lockProvisions — 粒度级别推断', () => {

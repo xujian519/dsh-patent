@@ -5397,6 +5397,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'payload', description: '.status - the status just entered (the transition\'s destination). Scope-filtered dispatch (`@deepseek-ai/dsh-scope`): agent-scoped listeners receive only that agent.' }],
   },
   {
+    name: 'agent/steered',
+    mode: 'emit',
+    signature: '\'agent/steered\'(this: Scoped<Agent>, payload: { agent: Agent; message: UserMessage }): void',
+    summary: 'Steering input entered the live next-step inbox.',
+    description: 'Steering input entered the live next-step inbox. Only the steering delivery operation raises it; a queued turn (`followup`) and injected context (`inject`) do not, whatever their message source says. A blocking wait ends early on this signal so the input reaches the next step boundary instead of waiting out the tool call.',
+    parameters: [{ name: 'payload', description: '.message - the steered message now pending for the next step. Scope-filtered dispatch (`@deepseek-ai/dsh-scope`): agent-scoped listeners receive only that agent.' }],
+  },
+  {
     name: 'agent/turn-stopping',
     mode: 'serial',
     signature: '\'agent/turn-stopping\'(this: Scoped<Agent>, payload: { agent: Agent; turn: number; signal: AbortSignal }): Promise<void> | void',

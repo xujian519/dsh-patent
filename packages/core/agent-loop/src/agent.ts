@@ -185,6 +185,9 @@ export class ReactLoopAgent implements Agent {
     const wakingAfterAbort = wakeup && this.phase.kind !== 'idle' && this.phase.abort.signal.aborted
     const resolvedTarget = wakingAfterAbort ? 'next-turn' : target
     this.inbox.splice(resolvedTarget, Infinity, 0, [message])
+    // Steering is the delivery operation's decision, not a message-source
+    // property: only next-step input that also wakes the driver announces it.
+    if (resolvedTarget === 'next-step' && wakeup) this.dispatch.emit('agent/steered', { message })
     if (wakeup) this.wakeDriver(wakingAfterAbort)
   }
 

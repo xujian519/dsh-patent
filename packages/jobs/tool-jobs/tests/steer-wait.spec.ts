@@ -8,7 +8,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { defineContentToolFixture, executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
-import AgentRegistry from '@deepseek-ai/dsh-agent'
+import AgentRegistry, { emitAgentEvent } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import LocalJobRegistry from '@deepseek-ai/dsh-jobs-local'
 import type { JobId, JobOutcome } from '@deepseek-ai/dsh-jobs'
@@ -93,7 +93,7 @@ describe('next-step input during a background result wait', () => {
       await h.registered.promise
       expect(h.ctx.jobs.get(h.id, h.agent.id).status).toBe('running')
       expect(h.adapter.requests).toHaveLength(1)
-      const steer = message('UNIQUE_STEER_5965')
+      const steer = message('UNIQUE_STEER')
       h.agent.steer(steer)
       let released = false
       void h.released.promise.then(() => { released = true })
@@ -103,8 +103,8 @@ describe('next-step input during a background result wait', () => {
       expect(h.ctx.jobs.get(h.id, h.agent.id).status).toBe('running')
       expect(h.cancel).not.toHaveBeenCalled()
       expect(h.adapter.requests).toHaveLength(2)
-      expect(JSON.stringify(h.adapter.requests[1]?.messages)).toContain('UNIQUE_STEER_5965')
-      expect(JSON.stringify(h.adapter.requests[1]?.messages)).toContain('ready output\\n[status: running, user steered]')
+      expect(JSON.stringify(h.adapter.requests[1]?.messages)).toContain('UNIQUE_STEER')
+      expect(JSON.stringify(h.adapter.requests[1]?.messages)).toContain('ready output\\n[status: running, steered]')
       const events = h.agent.session.snapshotEvents()
       const receipt = events.find(e => e.type === 'agent/inbox/spliced' && e.data.inserted.some(m => m.id === steer.id))!
       const result = events.find(e => e.type === 'tool/result')!
@@ -136,7 +136,7 @@ describe('next-step input during a background result wait', () => {
     try {
       h.agent.followup(message('start'))
       await h.registered.promise
-      h.agent.followup(message('UNIQUE_QUEUE_5965'))
+      h.agent.followup(message('UNIQUE_QUEUE'))
       let released = false
       void h.released.promise.then(() => { released = true })
       await setImmediate()
@@ -144,8 +144,8 @@ describe('next-step input during a background result wait', () => {
       expect(h.adapter.requests).toHaveLength(1)
       h.done.resolve({ status: 'completed' })
       await h.agent.whenIdle()
-      expect(JSON.stringify(h.adapter.requests[1]?.messages)).not.toContain('UNIQUE_QUEUE_5965')
-      expect(JSON.stringify(h.adapter.requests[2]?.messages)).toContain('UNIQUE_QUEUE_5965')
+      expect(JSON.stringify(h.adapter.requests[1]?.messages)).not.toContain('UNIQUE_QUEUE')
+      expect(JSON.stringify(h.adapter.requests[2]?.messages)).toContain('UNIQUE_QUEUE')
       expect(h.agent.session.snapshotEvents().filter(e => e.type === 'turn/start')).toHaveLength(2)
       expect(h.cancel).not.toHaveBeenCalled()
     } finally { await h.dispose() }
@@ -154,10 +154,12 @@ describe('next-step input during a background result wait', () => {
   it('releases for already-pending input without waiting for another insertion', async () => {
     const h = await setup()
     try {
-      h.agent.inbox.append('next-step', message('ALREADY_PENDING'))
+      const pending = message('ALREADY_PENDING')
+      h.agent.inbox.append('next-step', pending)
+      emitAgentEvent(h.ctx, h.agent, 'agent/steered', { message: pending })
       const result = await executeToolFixture(h.ctx, { name: 'job_output', callId: ToolCallId('pending'), arguments: { job_id: h.id, wait: true }, agent: h.agent, signal: new AbortController().signal })
       expect(result.isError).not.toBe(true)
-      expect(JSON.stringify(result.content)).toContain('[status: running, user steered]')
+      expect(JSON.stringify(result.content)).toContain('[status: running, steered]')
       expect(h.agent.inbox.nextStep).toHaveLength(1)
       expect(h.cancel).not.toHaveBeenCalled()
     } finally { await h.dispose() }
@@ -169,12 +171,14 @@ describe('next-step input during a background result wait', () => {
       const waitSpy = vi.spyOn(h.ctx.jobs, 'wait')
       const originalWait = waitSpy.getMockImplementation()!
       waitSpy.mockImplementation((...args) => {
-        h.agent.inbox.append('next-step', message('REGISTRATION_RACE'))
+        const raced = message('REGISTRATION_RACE')
+        h.agent.inbox.append('next-step', raced)
+        emitAgentEvent(h.ctx, h.agent, 'agent/steered', { message: raced })
         return originalWait(...args)
       })
       const result = await executeToolFixture(h.ctx, { name: 'job_output', callId: ToolCallId('race'), arguments: { job_id: h.id, wait: true }, agent: h.agent, signal: new AbortController().signal })
       expect(result.isError).not.toBe(true)
-      expect(JSON.stringify(result.content)).toContain('[status: running, user steered]')
+      expect(JSON.stringify(result.content)).toContain('[status: running, steered]')
       expect(h.cancel).not.toHaveBeenCalled()
     } finally { await h.dispose() }
   })
@@ -256,9 +260,11 @@ describe('next-step input during a background result wait', () => {
       expect(h.agent.inbox.nextStep).toHaveLength(0)
       expect(h.cancel).not.toHaveBeenCalled()
       expect(JSON.stringify(h.agent.session.snapshotEvents())).toContain('wait aborted')
-      // A queued input after the cancel must not reopen a claim on this job: a
-      // leaked listener would open one here and suppress the notice below.
-      h.agent.inbox.append('next-step', message('AFTER_CANCEL'))
+      // A steering insertion after the cancel must not reopen a claim on this
+      // job: a leaked listener would open one here and suppress the notice below.
+      const afterCancel = message('AFTER_CANCEL')
+      h.agent.inbox.append('next-step', afterCancel)
+      emitAgentEvent(h.ctx, h.agent, 'agent/steered', { message: afterCancel })
       expect(h.ctx.jobs.get(h.id, h.agent.id).status).toBe('running')
       h.done.resolve({ status: 'completed' })
       await setImmediate()

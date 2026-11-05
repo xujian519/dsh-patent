@@ -2,7 +2,8 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import type { Agent } from '@deepseek-ai/dsh-agent'
+import { createSteeringSignal } from '@deepseek-ai/dsh-agent'
+import type { Agent, SteeringSignal } from '@deepseek-ai/dsh-agent'
 import { TeamTaskId } from '@deepseek-ai/dsh-experimental-agent-team'
 import type { TeamMemberView } from '@deepseek-ai/dsh-experimental-agent-team'
 import { defineTool } from '@deepseek-ai/dsh-tools'
@@ -43,6 +44,8 @@ Use the target returned by spawn_teammate or list_agents for send_message${inter
 
 const ACTIVE_WAIT_STATUSES: ReadonlySet<TeamMemberView['status']> = new Set(['running', 'provisioning'])
 const NO_ACTIVE_PEER_MESSAGE = 'No other Team member is running or provisioning. wait_agent cannot make progress or wake inactive teammates. Re-list with list_agents and team_task_list, then use send_message to wake each required inactive teammate before waiting again.'
+/** A user steer ends the wait so the next step consumes the new input. */
+const STEERED_WAIT = { timedOut: false, steered: true } as const
 
 /**
  * One model-facing roster row. The Lead pseudo-row omits the
@@ -106,12 +109,13 @@ const SEND_VALUE_SCHEMA = {
   },
 } as const
 
-/** `noProgress` is present only on the model-only shortcut that skips the wait. */
+/** `noProgress` marks the model-only shortcut; `steered` marks a user steer ending the wait. */
 const WAIT_VALUE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: {
     timedOut: { type: 'boolean', required: true },
+    steered: { type: 'boolean', const: true },
     noProgress: {
       type: 'object',
       additionalProperties: false,
@@ -165,7 +169,7 @@ function callingAgent(agent: Agent | undefined, toolName: string): Agent {
 }
 
 /** Register the complete Team tool set in one exact Agent scope. */
-function install(agent: Agent, ctx: Context, config: Required<Config>): () => void {
+function install(agent: Agent, ctx: Context, config: Required<Config>, steering: SteeringSignal): () => void {
   const scoped = agent.ctx
   const disposers: Array<() => unknown> = []
   const register = (disposer: () => unknown): void => { disposers.push(disposer) }
@@ -248,7 +252,7 @@ To message another teammate, use send_message({ target: "<teammate name>", messa
 
     register(scoped.tools.register(defineTool({
       name: 'wait_agent',
-      description: 'Wait for the next teammate status, message, or shared-task change after this call starts. This never wakes inactive members and returns noProgress immediately when no other member is running or provisioning. Re-list after wakeup or timeout instead of polling.',
+      description: 'Wait for the next teammate status, message, or shared-task change after this call starts. A user steer ends the wait with steered: true so the new input is handled at the next step. This never wakes inactive members and returns noProgress immediately when no other member is running or provisioning. Re-list after wakeup or timeout instead of polling.',
       parameters: {
         timeout_ms: {
           type: 'integer',
@@ -264,6 +268,8 @@ To message another teammate, use send_message({ target: "<teammate name>", messa
         if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 10_000 || timeoutMs > 3_600_000) {
           return await ctx.agentTeams.waitForChange(caller, timeoutMs, exec.signal)
         }
+        // Steering delivered before this call still ends the wait at once.
+        if (steering.isPending(caller)) return STEERED_WAIT
         // The active-peer read and waiter registration must remain one synchronous
         // span; awaiting between them can lose the only peer-status edge.
         const hasActivePeer = ctx.agentTeams.listMembers(caller).some(member =>
@@ -277,7 +283,18 @@ To message another teammate, use send_message({ target: "<teammate name>", messa
             },
           }
         }
-        return await ctx.agentTeams.waitForChange(caller, timeoutMs, exec.signal)
+        // A steer is new input the next step must handle, so it ends the wait
+        // like a Team change; the Team wait is cancelled and cleaned up.
+        const interrupted = new AbortController()
+        const unsubscribe = steering.subscribe(caller, () => { interrupted.abort() })
+        try {
+          return await ctx.agentTeams.waitForChange(caller, timeoutMs, AbortSignal.any([exec.signal, interrupted.signal]))
+        } catch (error: unknown) {
+          if (exec.signal.aborted || !interrupted.signal.aborted) throw error
+          return STEERED_WAIT
+        } finally {
+          unsubscribe()
+        }
       },
     })))
 
@@ -415,9 +432,12 @@ export function apply(ctx: Context, config: Config = {}): void {
     forkProvider: config.forkProvider ?? 'fork',
   }
   const installed = new Map<Agent, () => void>()
+  // Steering releases wait_agent like a Team change; the producer of the input
+  // decides that it is a steer, not the message source.
+  const steering = createSteeringSignal(ctx)
   const maybeInstall = (agent: Agent): void => {
     if (installed.has(agent) || ctx.agentTeams.tryMembership(agent) === undefined) return
-    installed.set(agent, install(agent, ctx, resolved))
+    installed.set(agent, install(agent, ctx, resolved, steering))
   }
   for (const agent of ctx.agents.list()) maybeInstall(agent)
   ctx.on('agent/created', ({ agent }) => { maybeInstall(agent) })

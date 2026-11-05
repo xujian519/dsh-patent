@@ -336,6 +336,18 @@ declare module '@deepseek-ai/cordis' {
      * @mode emit
      */
     'agent/inbox/discarded'(this: Scoped<Agent>, payload: { agent: Agent; message: UserMessage }): void
+    /**
+     * Steering input entered the live next-step inbox. Only the steering
+     * delivery operation raises it; a queued turn (`followup`) and injected
+     * context (`inject`) do not, whatever their message source says. A
+     * blocking wait ends early on this signal so the input reaches the next
+     * step boundary instead of waiting out the tool call.
+     * @param payload.agent - the agent that received steering input.
+     * @param payload.message - the steered message now pending for the next step.
+     * Scope-filtered dispatch (`@deepseek-ai/dsh-scope`): agent-scoped listeners receive only that agent.
+     * @mode emit
+     */
+    'agent/steered'(this: Scoped<Agent>, payload: { agent: Agent; message: UserMessage }): void
     // ---- the machine's extension points ----
     /**
      * Reject a proposed step or replace the messages that enter it. Calling

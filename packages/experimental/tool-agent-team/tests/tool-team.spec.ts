@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import { emitAgentEvent } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { ToolCallId, createUserMessage } from '@deepseek-ai/dsh-llm'
@@ -488,6 +489,28 @@ describe('dsh-tool-team', () => {
     expect(text(aborted)).toBe("Error: wait_agent aborted: { kind: 'user' }")
     await execute(activeSetup.ctx, activeSetup.lead, 'interrupt_agent', { target: 'active-worker' })
     await waitNoAgent(activeSetup.ctx, activeId)
+  })
+
+  it('ends wait_agent on steering input so the next step handles it', async () => {
+    const { ctx, lead } = await setup(['hang'])
+    const spawned = await execute(ctx, lead, 'spawn_teammate', {
+      name: 'steer-worker', description: 'stay active', prompt: 'wait',
+    })
+    const childId = spawnedChildId(ctx, lead, spawned)
+    await waitRunning(ctx, childId)
+    const waiting = execute(ctx, lead, 'wait_agent', { timeout_ms: 10_000 })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const steer = createUserMessage({ content: [{ type: 'text', text: 'STOP_WAITING' }], source: { kind: 'user' } })
+    lead.inbox.append('next-step', steer)
+    emitAgentEvent(ctx, lead, 'agent/steered', { message: steer })
+    const steered = await waiting
+    expect(steered.isError).toBe(false)
+    expect(JSON.parse(text(steered))).toEqual({ timedOut: false, steered: true })
+    // The steer is still pending for the next step, so a new wait ends at once.
+    const again = await execute(ctx, lead, 'wait_agent', { timeout_ms: 10_000 })
+    expect(JSON.parse(text(again))).toEqual({ timedOut: false, steered: true })
+    await execute(ctx, lead, 'interrupt_agent', { target: 'steer-worker' })
+    await waitNoAgent(ctx, childId)
   })
 
   it('adapts roster, mailbox, wait, and task CAS operations to canonical JSON', async () => {

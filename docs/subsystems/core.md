@@ -1110,6 +1110,31 @@ Types: [Scoped](scope.md)
 
 Source: [`packages/core/agent/src/runtime-types.ts`](../../packages/core/agent/src/runtime-types.ts)
 
+<a id="agentsteered--emit"></a>
+
+#### `agent/steered` — emit
+
+Steering input entered the live next-step inbox. Only the steering delivery operation raises it; a queued turn (`followup`) and injected context (`inject`) do not, whatever their message source says. A blocking wait ends early on this signal so the input reaches the next step boundary instead of waiting out the tool call.
+
+```ts cordis-catalog
+/**
+ * Steering input entered the live next-step inbox. Only the steering
+ * delivery operation raises it; a queued turn (`followup`) and injected
+ * context (`inject`) do not, whatever their message source says. A
+ * blocking wait ends early on this signal so the input reaches the next
+ * step boundary instead of waiting out the tool call.
+ * @param payload.agent - the agent that received steering input.
+ * @param payload.message - the steered message now pending for the next step.
+ * Scope-filtered dispatch (`@deepseek-ai/dsh-scope`): agent-scoped listeners receive only that agent.
+ * @mode emit
+ */
+'agent/steered'(this: Scoped<Agent>, payload: { agent: Agent; message: UserMessage }): void
+```
+
+Types: [Scoped](scope.md) · [UserMessage](session.md)
+
+Source: [`packages/core/agent/src/runtime-types.ts`](../../packages/core/agent/src/runtime-types.ts)
+
 <a id="agentturn-stopping--serial"></a>
 
 #### `agent/turn-stopping` — serial

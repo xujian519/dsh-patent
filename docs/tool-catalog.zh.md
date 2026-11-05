@@ -2651,7 +2651,7 @@ subagent_oar 工具在为外部提供方配置的别名之间选择。本目录�
 
 ### `wait_agent`
 
-等待本次调用开始后下一次 teammate 状态、mailbox 或共享任务变更。它绝不会唤醒 inactive member；若没有其他 member 正在 running 或 provisioning，则立即返回 noProgress。唤醒或超时后应重新列出状态，而不是轮询。
+等待本次调用开始后下一次 teammate 状态、mailbox 或共享任务变更。用户 steer 会结束等待并返回 steered: true，以便新输入在下一步处理。它绝不会唤醒 inactive member；若没有其他 member 正在 running 或 provisioning，则立即返回 noProgress。唤醒或超时后应重新列出状态，而不是轮询。
 
 ```json
 {
@@ -7443,7 +7443,7 @@ patent_deadlines 报告一件中国专利案件的法定与指定期限，适用
 - 传入索引据此计数的案件事实（claims / specificationPages / priorityClaims / extensionMonths / annuityYears / lateMonths）。被计价的费种需要而本次调用未给的事实会以待补项返回并点名该输入，而不是被猜。
 - 在 triggers 里列全本案的环节。未点名的环节完全不计价，因此漏掉授权或某个程序环节会被读成"无费用"——这份清单是报告的覆盖范围，不是提示。
 - 金额只来自已转录的数据。每行带 status：verified（金额与其核验日期都已记录）、unverified（金额已记录，核验日期没有）、unrecorded（尚无金额）。随包索引的 19 个费种中 17 个已转录并核验；说明书附加费与延长期限费因分档计价无法落到单一单价而保持 unrecorded，这两行没有数字并会挡住合计。
-- 任一适用行未核验时不给合计，并列出挡住合计的 id。索引未收录的收费阶段会列在 total.uncoveredTriggers 并同样扣留合计。不要自己补一个缺失的金额或未收录的阶段，也不要引用本工具拒绝给出的合计：未转录的金额是未知，不是免费。
+- 任一适用行未核验，或任一适用费种仍需 pending 列表中的案件事实时，不给合计，并列出挡住合计的 id。索引未收录的收费阶段会列在 total.uncoveredTriggers 并同样扣留合计。不要自己补一个缺失的金额或未收录的阶段，也不要引用本工具拒绝给出的合计：未转录的金额是未知，不是免费。
 - annuityYears 是要计价的专利年度，来自 patent_deadlines（日期归它）；lateMonths 是已开始的超期月数，同样来自该工具。
 - 这是基于索引的算术，不是报价：索引含费种的结构与已转录金额，并记录核验日期。给客户开票前请对照公告确认每一项金额。
 

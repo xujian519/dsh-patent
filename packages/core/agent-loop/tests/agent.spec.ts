@@ -124,6 +124,26 @@ describe('Agent', () => {
     expect(adapter.requests).toHaveLength(1)
   })
 
+  it('announces steering delivery but not queued or injected input', async () => {
+    const ctx = await harness(new MockAdapter([textResponse('ok'), textResponse('ok')]))
+    const agent = await ctx.agentLoop.create(SessionId('steering-events'), { provider: 'mock', model: 'mock' })
+    const steered: unknown[] = []
+    ctx.on('agent/steered', ({ agent: subject, message }) => {
+      if (subject === agent) steered.push(message)
+    })
+    const injected = createUserMessage({ content: [{ type: 'text', text: 'context' }], source: { kind: 'user' } })
+    const queued = createUserMessage({ content: [{ type: 'text', text: 'queued' }], source: { kind: 'user' } })
+    const steering = createUserMessage({ content: [{ type: 'text', text: 'steer' }], source: { kind: 'test' } })
+
+    agent.inject(injected)
+    agent.followup(queued)
+    await agent.whenIdle()
+    agent.steer(steering)
+    await agent.whenIdle()
+
+    expect(steered).toEqual([steering])
+  })
+
   it('emits one running and idle transition for one completed turn', async () => {
     const ctx = await harness(new MockAdapter([textResponse('ok')]))
     const agent = await ctx.agentLoop.create(SessionId('a1'), { provider: 'mock', model: 'mock' })

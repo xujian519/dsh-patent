@@ -102,8 +102,18 @@ async function fakeAgent(ctx: Context, sessionId: string, delivery: FakeDelivery
   return agent
 }
 
-/** Durably queue one next-step message and publish its live insertion, as `ReactLoopInbox` does. */
+/** Durably queue one next-step message and announce it as steering, as the steer delivery operation does. */
 function insertNextStep(ctx: Context, owner: Agent, text: string): void {
+  const message = createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } })
+  const nextStep = fakeInboxes.get(owner)
+  if (nextStep === undefined) throw new Error(`fake agent "${owner.id}" has no next-step inbox`)
+  nextStep.push(message)
+  emitAgentEvent(ctx, owner, 'agent/inbox/inserted', { message })
+  emitAgentEvent(ctx, owner, 'agent/steered', { message })
+}
+
+/** Durably queue one user-authored next-step context that is not steering. */
+function insertInjectedContext(ctx: Context, owner: Agent, text: string): void {
   const message = createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } })
   const nextStep = fakeInboxes.get(owner)
   if (nextStep === undefined) throw new Error(`fake agent "${owner.id}" has no next-step inbox`)
@@ -1569,7 +1579,7 @@ describe('released waits crossed by a settlement', () => {
       // The release wins this ordering, so the read commits against a live job
       // and only the later settlement is an event the model has not seen.
       insertNextStep(ctx, owner, 'RELEASE_INPUT')
-      expect(text(await pending)).toBe('partial\n[status: running, user steered]')
+      expect(text(await pending)).toBe('partial\n[status: running, steered]')
       expect(inject).not.toHaveBeenCalled()
       p.settle({ status: 'completed', detail: 'exit code: 0' })
       await tick()
@@ -1611,8 +1621,8 @@ describe('released waits crossed by a settlement', () => {
       insertNextStep(ctx, owner, 'RELEASE_INPUT')
       // Both released reads commit in the same microtask drain, so the shared
       // claim ends with the last one; the later settlement notifies once.
-      expect(text(await first)).toBe('partial\n[status: running, user steered]')
-      expect(text(await second)).toBe('(no new output)\n[status: running, user steered]')
+      expect(text(await first)).toBe('partial\n[status: running, steered]')
+      expect(text(await second)).toBe('(no new output)\n[status: running, steered]')
       expect(inject).not.toHaveBeenCalled()
       p.settle({ status: 'completed' })
       await tick()
@@ -1709,7 +1719,28 @@ describe('released waits crossed by a settlement', () => {
     } finally { await ctx.fiber.dispose() }
   })
 
-  it('releases for a user steer even while a plugin notice is queued', async () => {
+  it('keeps waiting through user-sourced injected context that is not steering', async () => {
+    const { ctx, owner, inject } = await releaseSetup()
+    try {
+      const { p, pending } = await awaitingRead(ctx, owner)
+      try {
+        p.progress('3/10 files')
+        // The source only says who authored the message. Input injected for
+        // the next step stays queued instead of interrupting the wait.
+        insertInjectedContext(ctx, owner, 'USER_CONTEXT')
+        const raced = await Promise.race([
+          pending.then(() => 'resolved' as const),
+          tick().then(() => 'waiting' as const),
+        ])
+        expect(raced).toBe('waiting')
+        p.settle({ status: 'completed', detail: 'exit code: 0', result: 'final output' })
+        expect(text(await pending)).toBe('partial\nfinal output\n[status: completed, exit code: 0]')
+        expect(inject).not.toHaveBeenCalled()
+      } finally { p.settle({ status: 'completed' }) }
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('releases for steering input even while a plugin notice is queued', async () => {
     const { ctx, owner, inject } = await releaseSetup()
     try {
       const { p, pending } = await awaitingRead(ctx, owner)
@@ -1717,7 +1748,7 @@ describe('released waits crossed by a settlement', () => {
         p.progress('3/10 files')
         insertNotice(ctx, owner, 'another job finished')
         insertNextStep(ctx, owner, 'RELEASE_INPUT')
-        expect(text(await pending)).toBe('partial\n[status: running, 3/10 files; user steered]')
+        expect(text(await pending)).toBe('partial\n[status: running, 3/10 files; steered]')
         expect(inject).not.toHaveBeenCalled()
       } finally { p.settle({ status: 'completed' }) }
     } finally { await ctx.fiber.dispose() }

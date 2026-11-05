@@ -19,6 +19,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView, ToolDefinition, ToolExecution } from '@deepseek-ai/dsh-tools'
 import { JobId } from '@deepseek-ai/dsh-jobs'
 import type { JobEvent, JobView, JobRead } from '@deepseek-ai/dsh-jobs'
+import { createSteeringSignal } from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent'
 import { publicJob, renderModelDelta, statusLine } from './render.ts'
@@ -253,6 +254,10 @@ export function apply(ctx: Context, config: Config): void {
   const delivery = config.completionDelivery ?? 'wakeup'
   const wakeBudget = config.maxConsecutiveWakes
   const inlineBytes = config.inlineOutputBytes ?? 2048
+  // Steering input releases a blocking wait; the producer of the input decides
+  // that it is a steer, not the message source. The latched pending state also
+  // releases a wait that starts after the steer was delivered.
+  const steering = createSteeringSignal(ctx)
 
   // Turns this plugin opened on each owner since that owner last consumed
   // human input. Keyed by the exact Agent, so a same-session replacement
@@ -480,34 +485,20 @@ export function apply(ctx: Context, config: Config): void {
       try {
         if (args.wait === true) {
           const input = new AbortController()
-          // FIXME: this treats an inbox insertion whose source is `user` as a
-          // user steer, but the source only says who authored the message: hooks,
-          // subagents, and future hosts also deliver current-step input, and a
-          // plugin may label its own context as `user`. The decision to stop
-          // waiting belongs to the operation that delivered the input, not to
-          // this consumer; a shared steer signal (a broadcast or AbortSignal
-          // raised by the user-input entry points) should let waiters subscribe
-          // and decide locally instead. Tracked in #5965.
           const checkInput = (): void => {
-            // Only a user-authored message releases the wait. Other current-step
-            // inputs — completion notices and injected context — stay queued for
-            // the next step instead of interrupting a wait the user did not.
-            if (agent === undefined || !agent.inbox.nextStep.some(message => message.source.kind === 'user')) return
+            // Only a steering delivery releases the wait. Queued turns, plugin
+            // completion notices, and injected context — whatever their message
+            // source — stay queued for the next step instead.
+            if (agent === undefined || !steering.isPending(agent)) return
             if (endReleasedRead === undefined) {
               endReleasedRead = beginReleasedRead(id)
-              releasedBy = 'user steered'
+              releasedBy = 'steered'
             }
             input.abort()
           }
           // Subscribe before reading pending input; each parallel wait owns its
-          // listener. The notification follows the durable insertion commit.
-          // FIXME: only this wait stops on the signal. Other blocking waits
-          // (`wait_agent`, future subagent waits) keep waiting for the same
-          // input and need the shared steer signal rather than their own copy of
-          // this release logic. Tracked in #5965.
-          const unsubscribe = agent === undefined ? () => {} : ctx.on('agent/inbox/inserted', ({ agent: subject }) => {
-            if (subject === agent) checkInput()
-          })
+          // listener. The broadcast follows the durable insertion commit.
+          const unsubscribe = agent === undefined ? () => {} : steering.subscribe(agent, checkInput)
           try {
             checkInput()
             await jobs.wait(id, Math.min(args.timeout_ms ?? waitDefault, waitCap), agent?.id, AbortSignal.any([exec.signal, input.signal]))

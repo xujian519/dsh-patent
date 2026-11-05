@@ -26,6 +26,8 @@ export type * from './projection.ts'
 export * from './consumed-work.ts'
 export { agentCarrier, agentEvents, assembleContextFor, emitAgentEvent } from './dispatch.ts'
 export type { AgentEventDispatch, AgentSubjectEvent } from './dispatch.ts'
+export { createSteeringSignal } from './steering.ts'
+export type { SteeringSignal } from './steering.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {

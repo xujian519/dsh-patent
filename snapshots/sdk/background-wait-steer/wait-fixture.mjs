@@ -12,7 +12,7 @@ export const inject = ['jobs', 'tools']
 
 const STEER_TEXT = 'STEER_WHILE_WAITING'
 const PRODUCER_OUTPUT = 'producer ready'
-const STEERED_RESULT = 'producer ready\n[status: running, user steered]'
+const STEERED_RESULT = 'producer ready\n[status: running, steered]'
 
 /** @param {import('@deepseek-ai/cordis').Context} ctx - Scenario-owned runtime. */
 export function apply(ctx) {

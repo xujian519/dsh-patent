@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-legal-evidence",
   "description": "Legal evidence triple-attribute assessment for the DeepSeek Harness: deterministic scoring of relevance, legality, and authenticity for the eight statutory evidence types under PRC Civil Procedure Law Art. 66, with the evaluate_legal_evidence tool",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

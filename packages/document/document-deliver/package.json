@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-document-deliver",
   "description": "Structured deliverable registration for the document agent: document_deliver records the produced files, formats, and quality-gate state in the session log",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

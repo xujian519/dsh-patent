@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-patent-document",
   "description": "Patent document rendering for the DeepSeek Harness: template resolution, brand injection, and headless-Chrome PDF rendering via ctx.subprocess",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

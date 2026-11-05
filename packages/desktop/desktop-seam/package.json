@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-desktop-seam",
   "description": "Service Definition for the ctx.desktop capability seam: OS-level desktop integration for the DeepSeek Harness desktop shell",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

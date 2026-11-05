@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-macos-tools",
   "description": "Model-facing macOS native tools (open/reveal, browser URLs, clipboard read/write, notifications, speech, app control) driven through system CLIs",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-methodology",
   "description": "TRIZ reasoning methodology for the DeepSeek Harness: the 40 inventive principles, the 39x39 contradiction matrix, and separation principles as a model-facing tool and data API",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

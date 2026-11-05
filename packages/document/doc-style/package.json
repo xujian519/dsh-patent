@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-doc-style",
   "description": "Pure TypeScript library (no `ctx` dependency) holding the document writing-style model: the DocumentStyle vocabulary of tone, voice, anti-patterns, disclaimers, and citation conventions, its loader over shipped Chinese style assets, and the system-prompt, template-context, and render-style projections",
-  "version": "0.2.2-alpha.3",
+  "version": "0.2.2-rc.1",
   "publishConfig": {
     "access": "public"
   },

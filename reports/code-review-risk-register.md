@@ -37,12 +37,12 @@
 ### R-03 `statutes.ts` 超长且内部重复（P1）
 
 - **域**：patent-deadline
-- **证据**：单文件 1,304 行；重复基线中存在 `statutes.ts|statutes.ts` 自配对。
+- **证据**：D1 基线为单文件 1,304 行，重复基线中存在 `statutes.ts|statutes.ts` 自配对。D10 后拆为 `types.ts`（192 行）、`statutes-data.ts`（132 行）、`deadline-entries.ts`（737 行）、`statutes.ts`（230 行），最大文件 737 行；该自配对已从 `scripts/duplication-baseline.json` 移除，仓库级 `duplication` 0 克隆。
 - **风险**：法规数据、期限计算与查询混排，修改一处易漏另一处；边界测试难以定位。
 - **动作**：D10 拆为「数据 / 计算 / 查询」三层，先消除文件内重复块；数据改动必须附来源。
 - **验证**：月末、闰年、节假日顺延、送达日边界测试；文件行数 ≤ 800。
 - **负责人**：A
-- **状态**：待验证
+- **状态**：已关闭
 
 ### R-04 `adversary` 模块以骨架实现承载「完整版」语义（P1）
 

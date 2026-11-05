@@ -25,7 +25,7 @@ Status: implemented
 
 ## Consequences
 
-fork master 现在以 `dsh-v0.2.2-rc.1` 为合并父提交，后续 release tag 与 fork 共享可达的 merge base，无需再做一次 ours 合并。全部 431 个受跟踪 manifest 报告 `0.2.2-rc.1`；vendor manifest 报告 release 版本，源码仍是 alpha.3 的 pin。下一个上游 tag 可以正常合并。
+fork master 以 `dsh-v0.2.2-rc.1` 为合并父提交，后续 release tag 与 fork 共享可达的 merge base，无需再做一次 ours 合并。同步 PR 本身以 squash 落地，压平了分支上的合并提交；随后一次内容相同的 ours 合并把 tag 记录到 master。全部 431 个受跟踪 manifest 报告 `0.2.2-rc.1`；vendor manifest 报告 release 版本，源码仍是 alpha.3 的 pin。下一个上游 tag 可以正常合并。
 
 ## Testing
 

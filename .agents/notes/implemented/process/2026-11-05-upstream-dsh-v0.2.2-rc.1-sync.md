@@ -25,7 +25,7 @@ Upstream published `dsh-v0.2.2-rc.1` as the first release candidate of the 0.2.2
 
 ## Consequences
 
-The fork's master now has `dsh-v0.2.2-rc.1` as a merge parent, so later release tags share a reachable merge base with the fork without another ours merge. All 431 tracked manifests report `0.2.2-rc.1`; vendor manifests report the release versions while their source remains the alpha.3 pin. The next upstream tag can be merged normally.
+The fork's master has `dsh-v0.2.2-rc.1` as a merge parent, so later release tags share a reachable merge base with the fork without another ours merge. The sync pull request itself landed as a squash, which flattened the branch's merge commit; a follow-up ours merge with an identical tree records the tag on master. All 431 tracked manifests report `0.2.2-rc.1`; vendor manifests report the release versions while their source remains the alpha.3 pin. The next upstream tag can be merged normally.
 
 ## Testing
 

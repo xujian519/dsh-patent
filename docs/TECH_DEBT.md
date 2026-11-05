@@ -359,8 +359,8 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | 计数 | 值 |
 | --- | --- |
 | `structure.long-functions` | 184 |
-| `structure.large-files` | 90 |
-| `structure.patent-large-files` | 10 |
+| `structure.large-files` | 89 |
+| `structure.patent-large-files` | 9 |
 | `lint.v8-ignore` | 1314 |
 | `lint.ts-expect-error` | 193 |
 | `packages.patent-directories` | 16 |
@@ -368,7 +368,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 ### 专利域 >800 行文件裁定（2026-11-01 复测）
 
-`packages/patent` 当前有 10 个 >800 行源文件，全部保留为「接受」；另有 3 个拆分目标已降到 800 行。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，本轮附图说明校验把 `validate.ts` 再推过 800 行后升至 10 个，全仓 >800 行文件为 89 个（2026-11-01 移除 better-sidebar 包与未用 locale 后结构债回落，再加本轮 `validate.ts`）。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
+`packages/patent` 当前有 9 个 >800 行源文件，全部保留为「接受」；另有 4 个拆分目标已降到 800 行（2026-11-05 D10 把 `statutes.ts` 拆为数据/计算/查询三层，最大文件 737 行）。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，2026-11-01 附图说明校验把 `validate.ts` 推过 800 行后升至 10 个，本轮拆分后回落至 9 个；全仓 >800 行文件相应为 89 个。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
 
 拆分落点：`generate-patent-figure.ts` 拆出 `figure-panels.ts`（多面板路径）、`figure-delivery.ts`（落版/复核/转路径/导出）与 `figure-run.ts`（共享运行参数与标号）；`evidence/engine.ts` 拆出 `signals.ts`、`judgment.ts`、`public-use.ts`、`conditions.ts` 与 `proof-standard.ts`；`generate-structure-figure.ts` 拆出 `structure-types.ts`、`structure-model.ts` 与 `structure-render.ts`。
 
@@ -377,7 +377,6 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- structure-baseline:start -->
 | 文件 | 裁定 | 上限 | 理由 |
 | --- | --- | ---: | --- |
-| `packages/patent/patent-deadline/src/statutes.ts` | 接受 | 1304 | 法定期限条目集：每个期限与法条同址，28 个函数 3–87 行，装配共享；拆分会把法条引用与期限计算拆散 |
 | `packages/patent/patent-tools/src/figure/render-check-findings.ts` | 接受 | 951 | 纯几何判据：30+ 个小谓词 + 109 行编排，无 I/O，无第二消费方 |
 | `packages/patent/patent-tools/src/figure/section-diagram.ts` | 接受 | 918 | 纯几何绘制：146 行主绘制 + 小工具，与 `leader-line` 同类 |
 | `packages/patent/patent-tools/src/figure/leader-line.ts` | 接受 | 908 | 纯几何：稳定在 906→908，无状态、无 I/O |
@@ -390,6 +389,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-tools/src/tool/generate-patent-figure.ts` | 拆分 | 800 | 多面板路径与交付链已分拆；入口保留 schema 与单图编排 |
 | `packages/patent/patent-core/src/evidence/engine.ts` | 拆分 | 800 | 三性、类型特定、使用公开、证明标准已分模块；类只保留编排 |
 | `packages/patent/patent-tools/src/tool/generate-structure-figure.ts` | 拆分 | 800 | 类型、模型 I/O、渲染收尾已分模块；入口保留 schema 与工具装配 |
+| `packages/patent/patent-deadline/src/statutes.ts` | 拆分 | 800 | D10 已拆为 `types.ts`（词表）、`statutes-data.ts`（法规表）、`deadline-entries.ts`（期限计算）与查询层 `statutes.ts`；四个文件均 ≤ 800 行，最大 737 行 |
 <!-- structure-baseline:end -->
 
 ### 客户端与实验域大文件裁定（2026-11-02，Issue #654）
@@ -406,6 +406,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-05 D10 patent-deadline 拆分**:`statutes.ts` 由 1,304 行拆为 `types.ts`（192）、`statutes-data.ts`（132）、`deadline-entries.ts`（737）与查询层 `statutes.ts`（230），四个文件均 ≤ 800 行，最大 737 行；`structure.large-files` 由 90 降至 **89**、`structure.patent-large-files` 由 10 降至 **9**，`structure.long-functions` 与 `lint.v8-ignore`（两条豁免随代码迁移）均不变。
 - **2026-11-04 团队状态租约计数**:`lint.v8-ignore` 由 1315 降至 **1314**;成员收件箱预览的末条消息改为先取下标再判空,原先「空列表必有一条末消息」的豁免不再需要——只有租约中消息的收件箱确实没有可预览的末条,该路径由 `service.spec.ts` 覆盖;其余计数不变。
 - **2026-11-04 工作流审批门现场决策**:`patent-workflow-run.ts` 由 858 升至 **943** 行、`manifests.ts` 由 898 升至 **903** 行并同步重定接受上限;新增内容是把 `LiveApprovalGateHandler` 装进运行级 handler 注册表、拒绝与现场审批冲突的 `approveStageIds`、记录审批门中断结果名与更新工具描述,并在审批门声明 `review_keys` 供现场询问引用待确认产出,集中在单一工具入口与 manifest 数据,未产生新的 >150 行函数;`structure.large-files`、`structure.long-functions` 与 `lint.v8-ignore` 不变。
 - **2026-11-04 专利域缺陷清单工具**:`validate-specification.ts` 的 `createValidateSpecificationTool` 降至 150 行以下,`structure.long-functions` 由 185 降至 **184**。该函数的 `figure_analysis` 参数 schema 抽到 `internal/figure-schemas.ts`,由 `validate_specification` 与新增的 `domain_check` 共用,同一处抽取也消除了 jscpd 报出的两处克隆;其余计数不变。

@@ -41,7 +41,6 @@
     "packages/patent/patent-core/src/notice/grounds.ts|packages/patent/patent-core/src/notice/grounds.ts",
     "packages/patent/patent-data/src/ego-session.ts|packages/patent/patent-tools/src/tool/patent-pdf-download.ts",
     "packages/patent/patent-data/src/subprocess-runner.ts|packages/patent/patent-tools/src/figure/subprocess-render.ts",
-    "packages/patent/patent-deadline/src/statutes.ts|packages/patent/patent-deadline/src/statutes.ts",
     "packages/patent/patent-deadline/src/tool/patent-deadlines.ts|packages/patent/patent-deadline/src/tool/patent-deadlines.ts",
     "packages/patent/patent-deadline/src/tool/patent-deadlines.ts|packages/patent/patent-fees/src/tool/patent-fees.ts",
     "packages/patent/patent-deadline/src/tool/patent-deadlines.ts|packages/patent/patent-tools/src/tool/figure-tool-schemas.ts",

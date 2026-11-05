@@ -517,9 +517,10 @@ describe('tool-bash-persistent', () => {
     await call(ctx, owner, 'warm up')
     stub.sessions[0]!.mode = 'wait-for-abort'
     const result = await call(ctx, owner, 'hang')
-    expect(text(result)).toContain('Your command timed out after 0 seconds. Below is partial output:')
+    expect(text(result)).toContain('Your command timed out after 0 seconds.')
     expect(text(result)).toContain('[Command timed out]')
     expect(text(result)).not.toContain('OOM')
+    expect(text(result)).not.toContain('partial output')
     expect(text(result)).toContain('next bash call starts from the workspace')
     expect(stub.sessions[0]?.closed).toContain('persistent bash command timed out')
   })

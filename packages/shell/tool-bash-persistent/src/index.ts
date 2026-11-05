@@ -126,10 +126,8 @@ function partialOutput(
 ): CapturedOutput {
   const startMarker = snapshot.text.lastIndexOf(marker.start)
   if (startMarker >= 0) {
-    const afterStart = snapshot.text.slice(startMarker + marker.start.length).replace(/^\r?\n/, '')
-    const endMarker = afterStart.lastIndexOf(marker.end)
     return {
-      text: trimTrailingNewline(endMarker < 0 ? afterStart : afterStart.slice(0, endMarker)),
+      text: trimTrailingNewline(snapshot.text.slice(startMarker + marker.start.length).replace(/^\r?\n/, '')),
       incomplete: false,
     }
   }
@@ -363,15 +361,12 @@ async function executeCommand(
     const latest = ctx.terminals.read(owner, id, { offset: 0, count: SCROLLBACK_PAGE_LINES })
     const timedOut = timeoutOf(commandDeadline.signal, TIMEOUT_CODE)
     if (timedOut !== undefined) {
-      const snapshot = retainedScrollback(ctx, owner, id, latest)
-      const partial = renderCaptured(
-        partialOutput(snapshot, marker, fallback, fallbackTruncated),
-        config.maxOutputChars,
-      )
+      // The shell resets here, so its scrollback mixes interrupted output with
+      // backend prompt chrome in an order that differs by platform and timing.
       await shells.reset(owner, 'persistent bash command timed out')
       return [
         timeoutNotice(timedOut.timeoutMs),
-        appendStatusMarker(partial, TIMEOUT_STATUS_MARKER),
+        TIMEOUT_STATUS_MARKER,
         SHELL_RESET_MESSAGE,
       ].join('\n')
     }

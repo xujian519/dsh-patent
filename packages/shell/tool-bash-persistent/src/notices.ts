@@ -17,9 +17,9 @@ export const LOST_PREFIX_NOTICE = '<response clipped><NOTE>The beginning of this
 /**
  * Report a command that ran into its configured wall-clock limit.
  * @param timeoutMs - Wall-clock limit configured for the command.
- * @returns The first line of the timeout result.
+ * @returns The model-facing timeout line.
  */
 export function timeoutNotice(timeoutMs: number): string {
-  return `Your command timed out after ${Math.round(timeoutMs / 1000)} seconds. Below is partial output:`
+  return `Your command timed out after ${Math.round(timeoutMs / 1000)} seconds.`
 }
 /* jscpd:ignore-end */

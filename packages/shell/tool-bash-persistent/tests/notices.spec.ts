@@ -11,8 +11,8 @@ import {
 
 describe('persistent shell notices', () => {
   it('reports the elapsed timeout without claiming memory exhaustion', () => {
-    expect(timeoutNotice(10)).toBe('Your command timed out after 0 seconds. Below is partial output:')
-    expect(timeoutNotice(300_000)).toBe('Your command timed out after 300 seconds. Below is partial output:')
+    expect(timeoutNotice(10)).toBe('Your command timed out after 0 seconds.')
+    expect(timeoutNotice(300_000)).toBe('Your command timed out after 300 seconds.')
   })
 
   it('attributes clipping to command output and terminal scrollback', () => {

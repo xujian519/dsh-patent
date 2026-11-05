@@ -15,6 +15,9 @@
       "path": "../../../vendor/schemastery"
     },
     {
+      "path": "../../law/law-core"
+    },
+    {
       "path": "../patent-core"
     },
     {

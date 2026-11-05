@@ -20,6 +20,7 @@ export const GROUPS_WITHOUT_SUBSYSTEM_PAGE: Readonly<Record<string, string>> = {
   sdk: 'Out-of-process protocol and client packages whose package READMEs own the SDK contracts.',
   'test-support': 'Repository test harnesses; docs/testing.md owns the testing policy they serve.',
   util: 'Low-level primitives whose business semantics remain with their consuming subsystems.',
+  law: 'Domain-neutral statute-citation primitives; the legal and patent subsystem pages own the consuming domain contracts.',
   browser: 'Browser automation backends behind one seam whose probing and routing contracts live in the browser package READMEs.',
   memory: 'External memory integrations (OpenViking) whose integration contract lives in the openviking package README.',
 }

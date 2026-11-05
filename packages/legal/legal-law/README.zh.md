@@ -23,7 +23,7 @@ DeepSeek Harness 的随包中国法条索引：法条引用解析、逐法记录
 <a id="why-it-exists"></a>
 ## 为什么有这个包
 
-一条引用《民法典》第 143 条的法律结论，其质量取决于这个条号背后的条文。索引随部署分发，使引用可以离线核验：先解析引用，再查条文，判定会区分"条文存在"与"条文不存在"，也区分"已转录"与"无人核验过"。引用解析器、条目读取器与命题比对机制通过 `@deepseek-ai/dsh-patent-core` 与 `@deepseek-ai/dsh-patent-index-asset` 与 `@deepseek-ai/dsh-patent-law` 共用；本包负责法律域的语法、资产与文案。
+一条引用《民法典》第 143 条的法律结论，其质量取决于这个条号背后的条文。索引随部署分发，使引用可以离线核验：先解析引用，再查条文，判定会区分"条文存在"与"条文不存在"，也区分"已转录"与"无人核验过"。引用解析器、条目读取器与命题比对机制通过 `@deepseek-ai/dsh-law-core` 与 `@deepseek-ai/dsh-patent-index-asset` 与 `@deepseek-ai/dsh-patent-law` 共用；本包负责法律域的语法、资产与文案。
 
 <a id="shipped-index"></a>
 ## 随包索引

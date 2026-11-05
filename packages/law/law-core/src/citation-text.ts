@@ -4,10 +4,10 @@
  * 专利域与法律域的引用语法不同（专利法还有审查指南与 `A22.3` 紧凑形式），
  * 但「全角转 ASCII」「书名号/标点剥离」「中文数字渲染」「款/项窄化」这些
  * 文本步骤相同，收拢在这里避免两份实现漂移。
- * @module @deepseek-ai/dsh-patent-core/knowledge/citation-text
+ * @module @deepseek-ai/dsh-law-core/citation-text
  */
 
-import { parseCnNumber } from '../rule/text-utils.ts'
+import { parseCnNumber } from './cn-number.ts'
 
 /** Chinese numeral digits, indexed by value; used for rendering. */
 const CN_DIGITS = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九']

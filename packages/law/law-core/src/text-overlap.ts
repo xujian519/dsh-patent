@@ -12,7 +12,7 @@
  * Both signals are deliberately lexical. A proposition reworded around a synonym
  * neither signal lists reaches neither, and the caller reports that as an
  * undecided citation rather than as a contradiction.
- * @module @deepseek-ai/dsh-patent-core/knowledge/text-overlap
+ * @module @deepseek-ai/dsh-law-core/text-overlap
  */
 
 /** One entry a proposition can be matched against, with the label a reason names it by. */

@@ -4,10 +4,10 @@
  * 一段文字里的后续引用会继承前面的上下文：`专利法第22条、第23条`、
  * `第22条第2款、第3款`、或者链式的 `、第26条第4款`。识别规则与领域无关，
  * 专利表与法律表共用；调用方只提供基准匹配与扫描边界。
- * @module @deepseek-ai/dsh-patent-core/knowledge/continuation
+ * @module @deepseek-ai/dsh-law-core/continuation
  */
 
-import { parseCnNumber } from '../rule/text-utils.ts'
+import { parseCnNumber } from './cn-number.ts'
 
 /** Number written in Chinese numerals or Arabic digits. */
 const NUMBER = '[〇零一二三四五六七八九十百0-9]{1,6}'

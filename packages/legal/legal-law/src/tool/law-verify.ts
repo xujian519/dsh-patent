@@ -15,7 +15,7 @@ import {
   citationReportLines,
   citationVerifyReport,
   citationVerifyToolOptions,
-} from '@deepseek-ai/dsh-patent-core'
+} from '@deepseek-ai/dsh-law-core'
 import { extractLegalLawReferences, formatLegalLawReference, parseLegalLawReference, scanUnrecognizedLegalCitations } from '../reference.ts'
 import { renderLegalCitationRows, resolveLegalCitationPolicy, verifyLegalCitation } from '../verify.ts'
 import type { LegalVerifyOptions } from '../verify.ts'

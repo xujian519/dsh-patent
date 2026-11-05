@@ -30,6 +30,8 @@ The 14 cross-domain pairs are accepted for three reasons:
 | `legal-knowledge/src/types.ts` ↔ `patent-knowledge/src/types.ts` | Both declare a data directory and search result types; the stores, paths, and record fields differ. |
 | `legal-law/src/{asset-location,baseline,index,verify,types,tool/law-verify}.ts` ↔ `patent-law/src/{asset-location,baseline,index,verify,types,tool/law-verify}.ts`; `legal-law/src/types.ts` ↔ `patent-core/src/knowledge/article-decision.ts` | Mirrored seam scaffolding over different corpora. Legal-law reads a 7,910-file corpus through a manifest and parses only the laws a citation names; patent-law runs a fixed baseline. The shared lines are directory resolution, error construction, and tool registration. |
 
+2026-11-06 update: the `legal-law/src/types.ts` ↔ `patent-core/src/knowledge/article-decision.ts` pair dissolved when the citation decision rule moved to `@deepseek-ai/dsh-law-core` (see the law-core note); the cross-domain list now carries 13 pairs.
+
 ## Alternatives considered
 
 **Extract shared modules for the legal-law/patent-law mirror.** Rejected: the two seams already diverge in corpus access, verification decisions, and types (427 vs 236 lines in `baseline.ts`, 196 vs 487 in `verify.ts`). A shared package would have to carry both policies, coupling a 7,910-law lazy index to a fixed patent baseline for about 200 lines of scaffolding.

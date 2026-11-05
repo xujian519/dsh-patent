@@ -30,6 +30,8 @@ Status: implemented
 | `legal-knowledge/src/types.ts` ↔ `patent-knowledge/src/types.ts` | 两者都声明数据目录与检索结果类型;存储、路径与记录字段不同。 |
 | `legal-law/src/{asset-location,baseline,index,verify,types,tool/law-verify}.ts` ↔ `patent-law/src/{asset-location,baseline,index,verify,types,tool/law-verify}.ts`;`legal-law/src/types.ts` ↔ `patent-core/src/knowledge/article-decision.ts` | 同一能力缝在不同语料上的镜像脚手架。legal-law 经清单读取 7,910 个文件的语料,只解析引用点名的法律;patent-law 跑固定基线。重合的是目录解析、错误构造与工具注册。 |
 
+2026-11-06 更新：`legal-law/src/types.ts` ↔ `patent-core/src/knowledge/article-decision.ts` 对因引用判定规则迁入 `@deepseek-ai/dsh-law-core` 而消失（见 law-core 说明）；跨域清单现为 13 对。
+
 ## Alternatives considered
 
 **为 legal-law/patent-law 镜像抽取共享模块。** 否决:两条能力缝在语料访问、核验判定与类型上已经分叉(`baseline.ts` 427 对 236 行,`verify.ts` 196 对 487 行)。共享包必须同时承载两套策略,把 7,910 部法律的惰性索引与固定专利基线绑在一起,换来的只是约 200 行脚手架。

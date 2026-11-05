@@ -4,10 +4,10 @@
  * 专利域与法律域各自提供法条正则，但「把一个正则匹配构造成候选」「按出现
  * 位置排序、展开续指、按条文身份去重」「报告未识别的引用片段」这三步相同，
  * 收拢在这里，让两个域的 `reference` 模块只保留各自的语法。
- * @module @deepseek-ai/dsh-patent-core/knowledge/citation-extract
+ * @module @deepseek-ai/dsh-law-core/citation-extract
  */
 
-import { parseCnNumber } from '../rule/text-utils.ts'
+import { parseCnNumber } from './cn-number.ts'
 import type { ArticleCandidate } from './continuation.ts'
 import {
   compactCitation,

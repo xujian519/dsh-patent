@@ -180,6 +180,27 @@ describe('pricing a case', () => {
       requiredInput: 'claims',
       reason: '未给出权利要求总项数。',
     }])
+    // An item waiting for its count is unknown, not zero: it must keep the total
+    // from reading as the price of the case.
+    expect(report.total).toEqual({ amount: null, complete: false, unverifiedIds: ['claims-surcharge'] })
+  })
+
+  it('keeps the total incomplete for a pending item beside verified lines', () => {
+    const items = [
+      transcribed,
+      item({ id: 'claims-surcharge', name: '权利要求附加费', trigger: 'filing', basis: 'per-claim-beyond', freeUnits: 10, amount: '150', verifiedOn: '2026-01-01' }),
+    ]
+    expect(computeFees(table(items), query(), POLICY).total).toEqual({
+      amount: null,
+      complete: false,
+      unverifiedIds: ['claims-surcharge'],
+    })
+    // The permissive policy may report a partial sum, still labelled incomplete.
+    expect(computeFees(table(items), query(), PERMISSIVE).total).toEqual({
+      amount: '900.00',
+      complete: false,
+      unverifiedIds: ['claims-surcharge'],
+    })
   })
 
   it.each([
@@ -249,12 +270,14 @@ describe('pricing a case', () => {
 
   it('asks for the patent years when the query names none', () => {
     const annual = item({ id: 'annual-fee', name: '年费', trigger: 'annual-fee', basis: 'per-annuity-year' })
-    expect(computeFees(table([annual]), query({ triggers: ['annual-fee'] }), POLICY).pending).toEqual([{
+    const report = computeFees(table([annual]), query({ triggers: ['annual-fee'] }), POLICY)
+    expect(report.pending).toEqual([{
       id: 'annual-fee',
       name: '年费',
       requiredInput: 'annuityYears',
       reason: '未给出要计算年费的专利年度：年度序号由 patent_deadlines 的年费条目给出，本工具不自行推算。',
     }])
+    expect(report.total).toEqual({ amount: null, complete: false, unverifiedIds: ['annual-fee'] })
     expect(computeFees(table([annual]), query({ triggers: ['annual-fee'], annuityYears: [] }), POLICY).pending).toHaveLength(1)
   })
 
@@ -343,7 +366,7 @@ describe('pricing a case', () => {
     expect(uncovered.lines[1]?.notes).toEqual([])
   })
 
-  it('adds no surcharge without a delay or a surcharge rule', () => {
+  it('adds no surcharge without a delay', () => {
     const withRule = item({
       id: 'annual-fee',
       name: '年费',
@@ -353,6 +376,12 @@ describe('pricing a case', () => {
       verifiedOn: '2026-01-01',
       latePayment: { monthlyPercent: 5, maxMonths: 6, legalBasis: null, sourceDoc: null, effectiveFrom: null, verifiedOn: null },
     })
+    const onTime = computeFees(table([withRule]), query({ triggers: ['annual-fee'], annuityYears: [4], lateMonths: 0 }), POLICY)
+    expect(onTime.lines).toHaveLength(1)
+    expect(onTime.total).toEqual({ amount: '900.00', complete: true, unverifiedIds: [] })
+  })
+
+  it('reports a surcharge the index has no rule for as unpriced and withholds the total', () => {
     const withoutRule = item({
       id: 'annual-fee',
       name: '年费',
@@ -361,10 +390,38 @@ describe('pricing a case', () => {
       amount: '900',
       verifiedOn: '2026-01-01',
     })
-    const onTime = computeFees(table([withRule]), query({ triggers: ['annual-fee'], annuityYears: [4], lateMonths: 0 }), POLICY)
-    expect(onTime.lines).toHaveLength(1)
-    const noRule = computeFees(table([withoutRule]), query({ triggers: ['annual-fee'], annuityYears: [4], lateMonths: 3 }), POLICY)
-    expect(noRule.lines).toHaveLength(1)
+    const report = computeFees(
+      table([withoutRule]),
+      query({ triggers: ['annual-fee'], annuityYears: [4], lateMonths: 3 }),
+      POLICY,
+    )
+    expect(report.lines).toHaveLength(2)
+    expect(report.lines[1]).toMatchObject({
+      id: 'annual-fee-4-late-payment',
+      name: '年费滞纳金（第 4 年度）',
+      quantity: 3,
+      quantityBasis: '超期 3 个月，每月加收比例未登记',
+      unitAmount: null,
+      subtotal: null,
+      payable: null,
+      status: 'unrecorded',
+      notes: ['费用索引未登记该年费条目的滞纳金规则：每月加收比例未知，本次不给滞纳金金额。'],
+    })
+    expect(report.total).toEqual({
+      amount: null,
+      complete: false,
+      unverifiedIds: ['annual-fee-4-late-payment'],
+    })
+    // The permissive policy may state the annual fee alone, still incomplete.
+    expect(computeFees(
+      table([withoutRule]),
+      query({ triggers: ['annual-fee'], annuityYears: [4], lateMonths: 3 }),
+      PERMISSIVE,
+    ).total).toEqual({
+      amount: '900.00',
+      complete: false,
+      unverifiedIds: ['annual-fee-4-late-payment'],
+    })
   })
 
   it('applies a reduction to the items that fall under it', () => {
@@ -394,6 +451,17 @@ describe('pricing a case', () => {
     expect(report.lines[0]?.notes).toEqual(['未办理费减备案：不得按减缴计算，本项按全额计。'])
     expect(report.reduction?.reason).toBe('未办理费减备案：仅对不以此为前提的费种适用。')
     expect(report.notes).toContain('本次减缴请求未办理费减备案。')
+  })
+
+  it('does not report a missing filing for a programme that does not require one', () => {
+    const report = computeFees(
+      table([transcribed], [{ ...RATIO_85, requiresFiling: false }]),
+      query({ reduction: { kind: 'individual', filed: false } }),
+      POLICY,
+    )
+    expect(report.lines[0]).toMatchObject({ payable: '135.00', reduction: '减缴 85%' })
+    expect(report.notes).not.toContain('本次减缴请求未办理费减备案。')
+    expect(report.reduction?.reason).toBe('已按减缴 85% 计算适用费种。')
   })
 
   it('reports an unrecorded reduction scope rather than assuming it', () => {
@@ -509,10 +577,13 @@ describe('pricing a case', () => {
   it('does not charge claims or specification surcharges to a design case', () => {
     const report = computeFees(
       loadFeeTable(),
-      query({ patentType: 'design', triggers: ['filing'], claims: 15, specificationPages: 40 }),
+      query({ patentType: 'design', triggers: ['filing'], claims: 15, specificationPages: 40, priorityClaims: 0 }),
       POLICY,
     )
-    expect(report.lines.map(line => line.id)).toEqual(['application-fee-utility-design'])
+    // The priority-claim fee applies to every type at a zero count; the claim and
+    // page surcharges do not apply to a design application at all.
+    expect(report.lines.map(line => line.id)).toEqual(['application-fee-utility-design', 'priority-claim-fee'])
+    expect(report.lines.find(line => line.id === 'priority-claim-fee')).toMatchObject({ quantity: 0, subtotal: '0.00' })
     expect(report.total.amount).toBe('500.00')
     expect(report.notes.some(note => note.includes('权利要求附加费') && note.includes('说明书附加费'))).toBe(true)
   })
@@ -520,7 +591,7 @@ describe('pricing a case', () => {
   it('does not withhold the total for an unrecorded surcharge with zero units', () => {
     const report = computeFees(
       loadFeeTable(),
-      query({ triggers: ['filing'], claims: 5, specificationPages: 20 }),
+      query({ triggers: ['filing'], claims: 5, specificationPages: 20, priorityClaims: 0 }),
       POLICY,
     )
     expect(report.lines.find(line => line.id === 'specification-surcharge')).toMatchObject({

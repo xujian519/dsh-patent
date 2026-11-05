@@ -180,7 +180,7 @@ export function renderRuleLockReport(output: RuleLockOutput): string {
   if (unverified.length > 0) {
     lines.push('')
     lines.push(`未判定法条（${unverified.length} 条）：${unverified.join('、')}`)
-    lines.push('说明：以上法条在随包索引中未找到对应条目，有效性无法判定。')
+    lines.push('说明：以上法条在随包索引中未找到对应条目或款号，有效性无法判定。')
   }
 
   lines.push('')

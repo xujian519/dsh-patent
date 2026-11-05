@@ -15381,6 +15381,9 @@ importers:
       '@deepseek-ai/dsh-patent-deadline':
         specifier: workspace:*
         version: link:../patent-deadline
+      '@deepseek-ai/dsh-patent-law':
+        specifier: workspace:*
+        version: link:../patent-law
       '@deepseek-ai/dsh-tool-testkit':
         specifier: workspace:*
         version: link:../../test-support/tool-testkit

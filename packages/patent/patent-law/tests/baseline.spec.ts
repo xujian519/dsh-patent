@@ -459,12 +459,25 @@ describe('loadLawBaselines', () => {
     expect(articles.every(entry => entry.sourceDoc !== null && entry.verifiedOn !== null)).toBe(true)
   })
 
-  it('verifies the article ceiling of both statutes', () => {
+  it('verifies the article ceiling of both statutes and records where it came from', () => {
     const baselines = loadLawBaselines()
     expect(baselines.get('专利法')).toMatchObject({ maxArticle: 82 })
     expect(baselines.get('专利法实施细则')).toMatchObject({ maxArticle: 149 })
     expect(baselines.get('专利法')?.maxVerifiedOn).not.toBeNull()
     expect(baselines.get('专利法实施细则')?.maxVerifiedOn).not.toBeNull()
+    expect(baselines.get('专利法')?.maxSource).not.toBeNull()
+    expect(baselines.get('专利法实施细则')?.maxSource).not.toBeNull()
+  })
+
+  it('lists each article paragraph once, so the stated count is the paragraph count', () => {
+    const baselines = loadLawBaselines()
+    for (const name of ['专利法', '专利法实施细则'] as const) {
+      for (const article of baselines.get(name)?.articles ?? []) {
+        const paragraphs = article.paragraphs
+        if (paragraphs === undefined) continue
+        expect(new Set(paragraphs).size, `《${name}》第${article.article}条`).toBe(paragraphs.length)
+      }
+    }
   })
 
   it('loads an override directory that mirrors the packaged layout', () => {

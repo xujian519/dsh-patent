@@ -41,6 +41,9 @@ function readParagraphs(value: unknown, fail: AssetFail, article: number): { par
     }
     return item
   })
+  if (new Set(paragraphs).size !== paragraphs.length) {
+    throw fail(`第${article}条的 paragraphs 有重复款号`)
+  }
   return { paragraphs }
 }
 

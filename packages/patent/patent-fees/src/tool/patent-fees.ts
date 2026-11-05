@@ -103,7 +103,7 @@ const DESCRIPTION = [
   '- Report the case facts the index counts with (claims / specificationPages / priorityClaims / extensionMonths / annuityYears / lateMonths). A fact the priced items need but the call omits comes back under pending, naming the input, rather than being guessed.',
   '- Announce every step of the case in triggers. A step you do not name is not priced at all, so a grant or a procedure left out reads as "no fee" — this list is the report\'s coverage, not a hint.',
   '- Money is reported only from transcribed amounts. Each line carries status: verified (amount and its verification date are recorded), unverified (amount recorded, verification date is not), or unrecorded (no amount yet). With the shipped index 17 of 19 items carry transcribed, verified amounts; specification-surcharge and extension-fee stay unrecorded because their tiered pricing does not fit one unit amount, so those two lines carry no figures and withhold the total.',
-  '- The total is withheld while any applicable line is not verified, and the ids that withhold it are listed. A trigger the index carries no item for is reported under total.uncoveredTriggers and also withholds the total. Never fill in a missing amount or an unindexed stage yourself, and never quote a total this tool refused: an amount that is not transcribed is unknown, not free.',
+  '- The total is withheld while any applicable line is not verified or any applicable item still needs a case fact from the pending list, and the ids that withhold it are listed. A trigger the index carries no item for is reported under total.uncoveredTriggers and also withholds the total. Never fill in a missing amount, a missing case fact, or an unindexed stage yourself, and never quote a total this tool refused: an amount that is not transcribed is unknown, not free.',
   '- annuityYears is the list of patent years to price; it comes from patent_deadlines, which owns the dates. lateMonths is the number of started months of delay, likewise from that tool.',
   '- This is arithmetic over an index, not a fee quote: the index carries a fee item\'s structure and transcribed amount with its verification date. Confirm any amount against the official announcement before invoicing a client.',
   '',
@@ -393,6 +393,6 @@ function renderTotal(report: PatentFeesOutput): string {
   }
   const withheld = report.total.unverifiedIds.join('、')
   return report.total.amount === undefined
-    ? `**本次未给出合计**：${String(report.total.unverifiedIds.length)} 项适用费用没有已核验金额（${withheld}）。索引未转录的金额是未知，不是零；须按官方收费标准公告补录或另行核价。`
+    ? `**本次未给出合计**：${String(report.total.unverifiedIds.length)} 项适用费用没有已核验金额（${withheld}）。缺少的金额或案件事实是未知，不是零；请补齐待补输入，或按官方收费标准公告补录金额后再核价。`
     : `**部分合计**：${report.total.amount} ${report.currency}（仅含已核验项；${withheld} 未计入）`
 }

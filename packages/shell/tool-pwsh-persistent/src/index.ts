@@ -14,10 +14,8 @@ import { truncateWithoutSplittingSurrogatePair } from '@deepseek-ai/dsh-output-r
 import type { TerminalReadResult, TerminalSessionId } from '@deepseek-ai/dsh-terminal'
 import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { LOST_PREFIX_NOTICE, TRUNCATED_NOTICE, timeoutNotice } from './notices.ts'
 
-// TODO: Replace the file-search advice; arbitrary command output need not come from a searchable file.
-const TRUNCATED_MESSAGE = '<response clipped><NOTE>To save on context only part of this file has been shown to you. You should retry this tool after you have searched inside the file with Select-String in order to find the line numbers of what you are looking for.</NOTE>'
-const LOST_PREFIX_MESSAGE = '<response clipped><NOTE>The beginning of this command output was dropped by the terminal scrollback limit. The following text is the earliest retained output.</NOTE>\n'
 const SHELL_RESET_MESSAGE = 'The persistent pwsh shell was reset; the next pwsh call starts from the workspace with a fresh current directory and environment.'
 const TIMEOUT_CODE = 'PERSISTENT_PWSH_TIMEOUT'
 // One page is enough to find a just-emitted completion marker; the full
@@ -79,8 +77,8 @@ interface PersistentShells {
 function maybeTruncate(content: string, maxOutputChars: number, incomplete = false): string {
   if (content.length <= maxOutputChars && !incomplete) return content
   return content.length <= maxOutputChars
-    ? content + TRUNCATED_MESSAGE
-    : truncateWithoutSplittingSurrogatePair(content, maxOutputChars) + TRUNCATED_MESSAGE
+    ? content + TRUNCATED_NOTICE
+    : truncateWithoutSplittingSurrogatePair(content, maxOutputChars) + TRUNCATED_NOTICE
 }
 
 function markers(): CommandMarkers {
@@ -250,7 +248,7 @@ function retainedScrollback(
 function renderCaptured(output: CapturedOutput, maxOutputChars: number): string {
   const rendered = maybeTruncate(output.text, maxOutputChars, output.incomplete)
   const withPrefix = output.incomplete && output.text.length > 0
-    ? LOST_PREFIX_MESSAGE + rendered
+    ? LOST_PREFIX_NOTICE + rendered
     : rendered
   const marker = output.exitCode !== undefined && output.exitCode !== 0
     ? `[exit code: ${output.exitCode}]`
@@ -424,16 +422,11 @@ async function executeCommand(
     const latest = ctx.terminals.read(owner, id, { offset: 0, count: SCROLLBACK_PAGE_LINES })
     const timedOut = timeoutOf(commandDeadline.signal, TIMEOUT_CODE)
     if (timedOut !== undefined) {
-      const snapshot = retainedScrollback(ctx, owner, id, latest)
-      const partial = renderCaptured(
-        partialOutput(snapshot, marker, wrapped, fallback, fallbackTruncated),
-        config.maxOutputChars,
-      )
+      // The shell resets here, so its scrollback mixes interrupted output with
+      // backend prompt chrome in an order that differs by platform and timing.
       await shells.reset(owner, 'persistent pwsh command timed out')
       return [
-        // TODO: Report a timeout only; this signal does not establish an OOM.
-        `Your command timed out after ${Math.round(timedOut.timeoutMs / 1000)} seconds or experienced an OOM error. Below is partial output:`,
-        partial,
+        timeoutNotice(timedOut.timeoutMs),
         SHELL_RESET_MESSAGE,
       ].join('\n')
     }

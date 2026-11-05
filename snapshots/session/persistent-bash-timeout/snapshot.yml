@@ -1,0 +1,15 @@
+version: 1
+scenario: persistent-bash-timeout
+profile: headless
+composition: persistent-bash-timeout
+recording: live
+header:
+  class: persistent-bash-timeout
+  pin: true
+platform: posix
+input:
+  task: |
+    用 bash 工具执行两次命令，每次单独一个 bash 调用，不要使用其它工具。
+    第 1 次：执行 seq 1 500
+    第 2 次：执行 sleep 10
+    完成后用一句话说明两次结果的区别，然后停止。

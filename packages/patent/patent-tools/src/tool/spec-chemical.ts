@@ -122,7 +122,7 @@ export function checkChemicalClaimSubjectMatter(
         rule: 'chem_second_use_form',
         family: 'claims',
         severity: 'warning',
-        message: `第 ${number} 项用途权利要求直接限定「${subject}」的治病效果，未写成制备药物的用途：可能被认定为疾病的治疗方法（《专利法》第二十五条第一款第三项；《专利审查指南》第二部分第三章 4.5、第二部分第十章 9.2）`,
+        message: `第 ${number} 项用途权利要求直接限定「${subject}」的治病效果，未写成制备药物的用途：可能被认定为疾病的治疗方法（《专利法》第二十五条第一款第三项；《专利审查指南》第二部分第一章 4.3）`,
         suggestion: '改写为「化合物 X 在制备治疗 Y 的药物中的用途」，或写成「用于治疗 Y 的药物组合物」产品权利要求',
       })
     }
@@ -142,7 +142,7 @@ export function checkChemicalClaimSubjectMatter(
         rule: 'chem_markush_optional_undefined',
         family: 'claims',
         severity: 'warning',
-        message: `第 ${number} 项权利要求出现「任选取代」但未限定可取代基的种类与位置：马库什通式的保护范围不清楚（《专利法》第二十六条第四款；《专利审查指南》第二部分第十章 8.1）`,
+        message: `第 ${number} 项权利要求出现「任选取代」但未限定可取代基的种类与位置：马库什通式的保护范围不清楚（《专利法》第二十六条第四款；《专利审查指南》第二部分第十章）`,
         suggestion: '逐一列出可选的取代基（如「各自独立地选自氢、C1–C6 烷基、卤素、羟基、氨基」），并说明取代位置与取代数量',
       })
     }
@@ -185,7 +185,7 @@ function compositionTotalViolation(number: number, subject: string, text: string
     rule: 'chem_composition_total',
     family: 'claims',
     severity: 'warning',
-    message: `第 ${number} 项组合物权利要求的各组分上限合计 ${maximum}%，超过 100%：组分含量范围不清楚（《专利法》第二十六条第四款；《专利审查指南》第二部分第十章 4.2）`,
+    message: `第 ${number} 项组合物权利要求的各组分上限合计 ${maximum}%，超过 100%：组分含量范围不清楚（《专利法》第二十六条第四款；《专利审查指南》第二部分第十章）`,
     suggestion: '把上限合计收敛到 100% 以内，或用「余量」「补足至 100%」限定平衡组分，并检查各范围的端点组合是否都可实施',
   }
 }
@@ -278,7 +278,7 @@ function embodimentNumberingViolations(text: string): SpecViolation[] {
     family: 'description',
     severity: 'warning',
     section: '具体实施方式',
-    message: `实施例编号不连续或重复（${detail}）：实施例顺序影响对范围支持的认定（《专利审查指南》第二部分第十章 3.4）`,
+    message: `实施例编号不连续或重复（${detail}）：实施例顺序影响对范围支持的认定（《专利审查指南》第二部分第十章）`,
     suggestion: '按出现顺序连续编号实施例，删除重复编号；仅在确有对比意义时使用「对比例」编号，并单独成组',
   }]
 }
@@ -318,7 +318,7 @@ function markushDisclosureViolations(text: string): SpecViolation[] {
     family: 'description',
     severity: 'warning',
     section: '发明内容',
-    message: '说明书使用马库什通式并声明「任选取代」，但未限定可选的取代基种类与位置：通式公开不充分（《专利法》第二十六条第三款、第四款；《专利审查指南》第二部分第十章 8.1）',
+    message: '说明书使用马库什通式并声明「任选取代」，但未限定可选的取代基种类与位置：通式公开不充分（《专利法》第二十六条第三款、第四款；《专利审查指南》第二部分第十章）',
     suggestion: '为通式中的每个 R 基列出可选取代基清单、取代位置与数量，并给出至少一个落入通式范围的具体化合物实施例',
     line: location.line,
     matchedSentence: location.matchedSentence,
@@ -342,7 +342,7 @@ function herbSourceViolations(text: string): SpecViolation[] {
     family: 'description',
     severity: 'warning',
     section: '具体实施方式',
-    message: '中药处方的药材只写名称与用量，未记载基源（植物学名与药用部位）：药材来源不确定，方案无法重复实施（《专利法》第二十六条第三款；《专利审查指南》第二部分第十章 7.1）',
+    message: '中药处方的药材只写名称与用量，未记载基源（植物学名与药用部位）：药材来源不确定，方案无法重复实施（《专利法》第二十六条第三款；《专利审查指南》第二部分第十章）',
     suggestion: '为每味药材补写基源（如「黄芪，豆科植物蒙古黄芪 Astragalus membranaceus var. mongholicus 的干燥根」）、药用部位与炮制方法',
     line: location.line,
     matchedSentence: location.matchedSentence,
@@ -366,7 +366,7 @@ function depositViolations(text: string, claims: string): SpecViolation[] {
     rule: 'chem_biological_deposit',
     family: 'description',
     severity: 'warning',
-    message: `申请涉及生物材料「${material}」，但说明书与权利要求书均未记载保藏信息：公众可能无法获得该材料（《专利法》第二十六条第三款；《专利法实施细则》第二十七条）`,
+    message: `申请涉及生物材料「${material}」，但说明书与权利要求书均未记载保藏信息：公众可能无法获得该材料（《专利法》第二十六条第三款）`,
     suggestion: '若该材料公众不能得到，补写保藏单位名称、地址、保藏日期与保藏编号（如「CCTCC NO: C2024123」），并在请求书中声明；已有公开来源的，写明来源与获取方式',
   }]
 }
@@ -386,7 +386,7 @@ function comparativeExampleViolations(text: string): SpecViolation[] {
     family: 'description',
     severity: 'warning',
     section: '具体实施方式',
-    message: '说明书主张协同或复配效果，但未记载对比例：无法确认该效果相对于单组分是否成立（《专利法》第二十六条第三款；《专利审查指南》第二部分第十章 3.4、4.2）',
+    message: '说明书主张协同或复配效果，但未记载对比例：无法确认该效果相对于单组分是否成立（《专利法》第二十六条第三款；《专利审查指南》第二部分第十章）',
     suggestion: '补充单组分对照与不含该组分的空白对照，给出同一测试条件下的定量结果，并把效果数据与区别技术特征对应',
     line: location.line,
     matchedSentence: location.matchedSentence,

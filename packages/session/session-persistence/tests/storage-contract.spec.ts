@@ -20,6 +20,7 @@ import {
   assertStoredId,
   assertVersion,
   materializeAppendBatch,
+  materializeCreateHeader,
   sessionFormatVersionRefusal,
   validateStoredEvents,
 } from '../src/index.ts'
@@ -251,6 +252,59 @@ describe('materializeAppendBatch', () => {
       expect(() => materializeAppendBatch(events)).toThrow(TypeError)
       expect(() => materializeAppendBatch(events)).toThrow(/losslessly JSON-serializable/)
     }
+  })
+})
+
+describe('materializeCreateHeader', () => {
+  it('returns a detached lossless-JSON snapshot of the header', () => {
+    const original = meta('ok')
+    const snapshot = materializeCreateHeader(original)
+    expect(snapshot).not.toBe(original)
+    expect(snapshot).toEqual(original)
+    // The snapshot is detached: mutating the caller's header afterwards cannot
+    // change what a backend persists.
+    ;(original as Record<string, unknown>).createdAt = 99
+    expect(snapshot.createdAt).toBe(1000)
+  })
+
+  it('rejects non-JSON-serializable metadata', () => {
+    const badValues: unknown[] = [
+      1n,                  // BigInt
+      undefined,           // dropped by JSON.stringify
+      () => 0,             // function
+      Symbol('s'),         // symbol
+      new Map(),           // exotic object
+    ]
+    for (const bad of badValues) {
+      const header = { ...meta('non-json'), extra: bad } as unknown as Parameters<typeof materializeCreateHeader>[0]
+      expect(() => materializeCreateHeader(header)).toThrow(TypeError)
+      expect(() => materializeCreateHeader(header)).toThrow(/losslessly JSON-serializable/)
+    }
+  })
+
+  it('rejects createdAt that is not a non-negative safe integer', () => {
+    // Values that survive JSON serialization but fail createdAt validation.
+    const badCreatedAts: unknown[] = [
+      -1,                 // negative
+      1.5,                // fractional
+      Number.MAX_SAFE_INTEGER + 1, // outside safe range
+      '2024-01-01T00:00:00Z',  // string instead of number
+    ]
+    for (const bad of badCreatedAts) {
+      const header = { ...meta('bad-created-at'), createdAt: bad } as unknown as Parameters<typeof materializeCreateHeader>[0]
+      expect(() => materializeCreateHeader(header)).toThrow(TypeError)
+      expect(() => materializeCreateHeader(header)).toThrow(/createdAt must be a non-negative safe integer/)
+    }
+  })
+
+  it('accepts createdAt = 0 and the maximum safe integer as valid values', () => {
+    const zero = { ...meta('zero-time'), createdAt: 0 } as unknown as Parameters<typeof materializeCreateHeader>[0]
+    expect(() => materializeCreateHeader(zero)).not.toThrow()
+    expect(materializeCreateHeader(zero).createdAt).toBe(0)
+
+    const max = { ...meta('max-time'), createdAt: Number.MAX_SAFE_INTEGER } as unknown as Parameters<typeof materializeCreateHeader>[0]
+    expect(() => materializeCreateHeader(max)).not.toThrow()
+    expect(materializeCreateHeader(max).createdAt).toBe(Number.MAX_SAFE_INTEGER)
   })
 })
 

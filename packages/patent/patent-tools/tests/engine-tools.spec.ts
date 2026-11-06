@@ -85,6 +85,31 @@ describe('rule_check', () => {
     expect(JSON.stringify(unrelated.value)).not.toContain('SOFT-INV-001')
   })
 
+  it('patent-chemical scope adds the chemistry domain pack on top of the full assets', async () => {
+    const tool = createRuleCheckTool()
+    const ctx = await ctxWith(tool)
+    // 保藏语境在，但缺保藏单位、日期与分类命名 → CHEM-DIS-001 命中
+    const hit = await execute(ctx, 'rule_check', { text: '菌株已保藏，保藏编号为 CCTCC NO: C2024123。', scope: 'patent-chemical' }, 'r-chem-1')
+    expect(hit.isError).toBe(false)
+    if (hit.isError) throw new Error('expected success')
+    expect(JSON.stringify(hit.value)).toContain('CHEM-DIS-001')
+
+    // 四要素齐备 → 不命中
+    const complete = await execute(ctx, 'rule_check', {
+      text: '菌株保藏于中国典型培养物保藏中心，保藏日期 2024-01-01，保藏编号 CCTCC NO: C2024123，分类命名为 Escherichia coli。',
+      scope: 'patent-chemical',
+    }, 'r-chem-2')
+    expect(complete.isError).toBe(false)
+    if (complete.isError) throw new Error('expected success')
+    expect(JSON.stringify(complete.value)).not.toContain('CHEM-DIS-001')
+
+    // 未讨论保藏的文本不评估该规则
+    const unrelated = await execute(ctx, 'rule_check', { text: '本发明涉及一种化合物的制备方法。', scope: 'patent-chemical' }, 'r-chem-3')
+    expect(unrelated.isError).toBe(false)
+    if (unrelated.isError) throw new Error('expected success')
+    expect(JSON.stringify(unrelated.value)).not.toContain('CHEM-DIS-001')
+  })
+
   it('evaluates a keyword blocklist rule', async () => {
     const ruleSet: RuleSet = { rules: [{ id: 'r1', name: '禁止词', severity: 'critical', action: 'block', check: { type: 'keyword_blocklist', keywords: ['禁止词'] } }] }
     const tool = createRuleCheckTool({ loader: () => ruleSet, synonyms: () => new Map() })

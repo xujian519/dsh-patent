@@ -82,6 +82,9 @@ export function packageFiles(accepts: (name: string) => boolean): string[] {
   const found: string[] = []
   const walk = (dir: string): void => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      // Concurrent specs create dot-prefixed scratch roots inside packages/ and
+      // delete them mid-run; hidden entries are never shipped package source.
+      if (entry.name.startsWith('.')) continue
       const path = join(dir, entry.name)
       if (entry.isDirectory()) {
         if (entry.name !== 'node_modules' && entry.name !== 'lib' && entry.name !== 'dist') walk(path)

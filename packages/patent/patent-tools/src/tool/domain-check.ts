@@ -19,7 +19,7 @@ import type { ValidateSpecificationInput } from './spec-types.ts'
 import type { PatentType } from './draft-claims.ts'
 
 /** Domain whose defect checklist is executable today. */
-export type DomainCheckDomain = 'mechanical' | 'software'
+export type DomainCheckDomain = 'mechanical' | 'software' | 'chemical'
 
 /** Submission fields a checklist item's rules read; without them the item stays open. */
 type ChecklistInput = 'claims' | 'abstract' | 'figure_analysis' | 'patent_type'
@@ -113,14 +113,59 @@ const SOFTWARE_CHECKLIST: readonly ChecklistItem[] = [
   { id: 'SOFT-DC-028', title: '背景技术自认陷阱', rules: ['background_citation'], partial: '规则只核背景技术引证是否给出国别、公开号与公开日；是否构成技术问题自认需人工判断' },
 ]
 
+/**
+ * Chemistry domain drafting defects, in checklist order, from the
+ * `patent-drafting-chemical` defect list (CHEM-DC-001…033). Rules come from
+ * `claim_lint`, `validate_specification`, and the chemical rules in
+ * `spec-chemical.ts`; the latter run only with `tech_domain: chemical`, which
+ * this checklist supplies. Items whose judgement needs the request form (for
+ * example the genetic-resource disclosure sheet) stay `manual`.
+ */
+const CHEMICAL_CHECKLIST: readonly ChecklistItem[] = [
+  { id: 'CHEM-DC-001', title: '法条/实施细则条号未更新', rules: [] },
+  { id: 'CHEM-DC-002', title: '相对词滥用（厚/薄/高温/宽范围）', rules: ['chem_relative_term'], needs: ['claims'], partial: '规则只命中独立权利要求中带程度副词的相对表述（较高、很大、较小…）；未带副词但缺少可比基准的「高温」「宽范围」需人工判断' },
+  { id: 'CHEM-DC-003', title: '参数缺单位或使用非 SI 单位', rules: ['chem_unit_missing'], partial: '规则只命中参数关键词后直接跟数值而无单位的情况；单位是否属于 SI 或本领域公认单位需人工判断' },
+  { id: 'CHEM-DC-004', title: '实施例编号断裂或重复', rules: ['chem_embodiment_numbering'] },
+  { id: 'CHEM-DC-005', title: '摘要超长或含宣传语', rules: ['abstract_length', 'abstract_commercial_advertising'], needs: ['abstract'] },
+  { id: 'CHEM-DC-006', title: '化合物表征数据不完整', rules: ['chemical_characterization'], partial: '规则只在该领域全部表征手段都缺席时命中；表征手段是否覆盖结构确证所需（NMR/MS/IR/元素分析）需人工判断' },
+  { id: 'CHEM-DC-007', title: '表征优先级错误', rules: [] },
+  { id: 'CHEM-DC-008', title: '马库什「任选取代」未限定', rules: ['chem_markush_optional_undefined'], needs: ['claims'] },
+  { id: 'CHEM-DC-009', title: '马库什共同结构仅属现有技术', rules: [] },
+  { id: 'CHEM-DC-010', title: '实施例不足以支持通式范围', rules: ['embodiments'], partial: '规则只在完全没有实施例时命中；实施例数量与通式覆盖面的匹配需人工判断' },
+  { id: 'CHEM-DC-011', title: '数值范围端点无实施例', rules: ['numeric_range_endpoints', 'numeric_range_midpoint'] },
+  { id: 'CHEM-DC-012', title: '高分子分子量范围端点无实施例', rules: ['numeric_range_endpoints', 'numeric_range_midpoint'], partial: '规则只核数值范围端点与中间值是否在实施例出现；分子量范围本身是否过宽需人工判断' },
+  { id: 'CHEM-DC-013', title: '分子量分布范围过宽', rules: ['numeric_range_endpoints', 'numeric_range_midpoint'], partial: '规则只核范围端点与中间值的实施例覆盖；分布宽度（如 PDI 上限）是否合理需人工判断' },
+  { id: 'CHEM-DC-014', title: '组合物百分含量合计不等于 100%', rules: ['chem_composition_total'], needs: ['claims'], partial: '规则只对权利要求中以百分比表述且未写「余量」的组合物求和，判定下限合计超过 100% 或封闭式组合物上限不足 100%；重量份配方与端点组合的可实施性需人工判断' },
+  { id: 'CHEM-DC-015', title: '组分上位概念过宽', rules: [] },
+  { id: 'CHEM-DC-016', title: '性能参数无法客观测定', rules: [] },
+  { id: 'CHEM-DC-017', title: '缺对比例', rules: ['chem_comparative_example_missing'], partial: '规则只在说明书主张协同/复配且全文无对比例时提示；该效果是否必须用对比例证明需人工判断' },
+  { id: 'CHEM-DC-018', title: '药品适应症未明确', rules: ['chem_indication_missing'], needs: ['claims'], partial: '规则只核药物主题的独立权利要求是否出现适应症表述；适应症是否得到药效数据支持需人工判断' },
+  { id: 'CHEM-DC-019', title: '药效数据缺失或与适应症不对应', rules: ['effect_data_quantified'], partial: '规则只核效果表述是否带定量数据；数据与所主张适应症是否对应需人工判断' },
+  { id: 'CHEM-DC-020', title: '未办理 CPCA 登记', rules: [] },
+  { id: 'CHEM-DC-021', title: '中药药材基源未公开', rules: ['chem_herb_source'], partial: '规则只核中药处方是否给出拉丁学名；同名异源与基源是否正确需人工判断' },
+  { id: 'CHEM-DC-022', title: '炮制方法未公开', rules: [] },
+  { id: 'CHEM-DC-023', title: '遗传资源披露表未提交', rules: [] },
+  { id: 'CHEM-DC-024', title: '生物材料未保藏', rules: ['chem_biological_deposit'], needs: ['claims'], partial: '规则只核提及生物材料时是否出现保藏信息；该材料是否属于「公众不能得到」而必须保藏需人工判断' },
+  { id: 'CHEM-DC-025', title: '保藏信息不完整', rules: ['chem_biological_deposit'], needs: ['claims'], partial: '规则只核保藏信息是否出现；保藏单位、日期、编号三要素是否齐全及三处文本是否一致需人工核对' },
+  { id: 'CHEM-DC-026', title: '序列表不符合 ST.26', rules: ['sequence_listing'], partial: '规则只核是否提及独立序列表；提交文件是否为 ST.26 XML 需检查附件' },
+  { id: 'CHEM-DC-027', title: '抗体 CDR 层级不清', rules: [] },
+  { id: 'CHEM-DC-028', title: '化学方法步骤顺序未明确', rules: ['step-order'], needs: ['claims'], partial: '规则只在方法权利要求用「包括步骤」句式列举操作时检查；S1/S2 式列举或未用该句式的不触发' },
+  { id: 'CHEM-DC-029', title: '参数依赖关系未公开', rules: [] },
+  { id: 'CHEM-DC-030', title: '医药用途写成治疗方法', rules: ['chem_medical_use_method'], needs: ['claims'] },
+  { id: 'CHEM-DC-031', title: '第二医药用途未采用制备药物的用途形式', rules: ['chem_second_use_form'], needs: ['claims'], partial: '规则只核主题为用途/应用且正文含治疗/预防表述的独立权利要求；其他撰写形式是否落入 A25.1.3 需人工判断' },
+  { id: 'CHEM-DC-032', title: '多用途合案（单一性）', rules: [] },
+  { id: 'CHEM-DC-033', title: '修改超范围或单一性', rules: [] },
+]
+
 /** Checklists by domain; adding a domain means adding its table. */
 const CHECKLISTS: Readonly<Record<DomainCheckDomain, readonly ChecklistItem[]>> = {
   mechanical: MECHANICAL_CHECKLIST,
   software: SOFTWARE_CHECKLIST,
+  chemical: CHEMICAL_CHECKLIST,
 }
 
 /** Domains the tool accepts. */
-export const DOMAIN_CHECK_DOMAINS: readonly DomainCheckDomain[] = ['mechanical', 'software']
+export const DOMAIN_CHECK_DOMAINS: readonly DomainCheckDomain[] = ['mechanical', 'software', 'chemical']
 
 /** One violation as the tool reports it. */
 export type DomainCheckFinding = {
@@ -242,14 +287,15 @@ function evaluateItems(
 ): DomainCheckItemResult[] {
   const hitRules = new Set(findings.map(finding => finding.rule))
   return items.map((item) => {
+    const hitRulesOfItem = item.rules.filter(rule => hitRules.has(rule))
     const missing = item.needs?.find(input => !available.has(input))
     if (missing !== undefined) {
-      return { id: item.id, title: item.title, status: 'manual', rules: [], reason: MISSING_INPUT_REASON[missing] }
+      const hitNote = hitRulesOfItem.length > 0 ? `；但已命中规则：${hitRulesOfItem.join('、')}` : ''
+      return { id: item.id, title: item.title, status: 'manual', rules: [], reason: `${MISSING_INPUT_REASON[missing]}${hitNote}` }
     }
     if (item.rules.length === 0) {
       return { id: item.id, title: item.title, status: 'manual', rules: [], reason: MANUAL_REASON }
     }
-    const hitRulesOfItem = item.rules.filter(rule => hitRules.has(rule))
     if (hitRulesOfItem.length > 0) {
       return { id: item.id, title: item.title, status: 'hit', rules: [...item.rules], reason: `命中规则：${hitRulesOfItem.join('、')}` }
     }
@@ -304,14 +350,14 @@ export function createDomainCheckTool(): ToolDefinition {
   return defineTool({
     name: 'domain_check',
     description: [
-      '按专利领域缺陷清单对一份申请文件跑确定性自检（不调用模型）。当前支持 mechanical（机械域 30 项）与 software（软件/AI 域 28 项）。',
+      '按专利领域缺陷清单对一份申请文件跑确定性自检（不调用模型）。当前支持 mechanical（机械域 30 项）、software（软件/AI 域 28 项）与 chemical（化学域 33 项）。',
       '它把 claim_lint（权利要求形式）与 validate_specification（说明书）的结论按清单项汇总：每项给出 pass（已核干净）、hit（命中，附规则与说明）或 manual（须人工判断，不得视为通过）。',
       'manual 有两种来源：判据本身不可机械判定；或规则只覆盖该缺陷的一部分（未命中不等于通过，reason 会说明覆盖到哪）。',
-      '输入 text 为说明书全文；传 claims 才能跑权项相关项；传 abstract 才能跑摘要项；传 patent_type 才能跑实用新型客体项。software 域会自动按 tech_domain=software 运行软件客体与模型公开规则。',
+      '输入 text 为说明书全文；传 claims 才能跑权项相关项；传 abstract 才能跑摘要项；传 patent_type 才能跑实用新型客体项。software 域会自动按 tech_domain=software 运行软件客体与模型公开规则；chemical 域会自动按 tech_domain=chemical 运行化学撰写与公开规则。',
       'passed 只表示已运行的确定性规则未发现 error，不表示符合专利法；manual 项必须由人复核。',
     ].join(''),
     parameters: {
-      domain: { type: 'string', required: true, enum: [...DOMAIN_CHECK_DOMAINS], description: '领域：mechanical（机械）/ software（软件与 AI）。' },
+      domain: { type: 'string', required: true, enum: [...DOMAIN_CHECK_DOMAINS], description: '领域：mechanical（机械）/ software（软件与 AI）/ chemical（化学）。' },
       text: { type: 'string', required: true, description: '说明书全文（markdown 或纯文本）。' },
       claims: { type: 'string', description: '权利要求书全文（可选）；不传时权项相关清单项报 manual。' },
       abstract: { type: 'string', description: '摘要（可选）；不传时摘要相关清单项报 manual。' },

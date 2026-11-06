@@ -1,0 +1,31 @@
+id: "wp-spec-tcm-prescription"
+name: "中药处方——药材、基源、炮制与制法四件套"
+category: "spec_drafting"
+summary: "中药发明以药材为单元，说明书要写清每味药材的基源（拉丁学名与药用部位）、用量、炮制方法，以及可重复的制备工艺与对应用途的药效数据。"
+context: "适用于中药处方、中药制剂与中药制法发明的说明书撰写。"
+keywords: ["化学", "中药", "处方", "药材", "基源", "炮制"]
+source_ref: "专利法第26条第3款；审查指南第二部分第十章"
+quality: 0.87
+version: 1
+steps:
+  - order: 1
+    name: "写处方与用量"
+    instruction: "按重量份列出每味药材及范围，处方总量与君臣佐使的组方依据要能对应；不要只写方剂名。"
+  - order: 2
+    name: "补基源与药用部位"
+    instruction: "每味药材写原植/矿物名、拉丁学名与药用部位，如「黄芪，豆科植物蒙古黄芪 Astragalus membranaceus var. mongholicus 的干燥根」；同名异源的要注明选用哪一种。"
+  - order: 3
+    name: "写明炮制与制法"
+    instruction: "非药典常规的炮制方法要公开；制法写提取溶剂、温度、时间、浓缩与干燥方式，设备条件只要影响产物就必须写。"
+  - order: 4
+    name: "补药效与临床数据"
+    instruction: "给出与适应症对应的体内或体外试验；有临床数据的写清样本、给药方案与评价指标，避免只写「疗效显著」。"
+examples:
+  - context: "中药制剂"
+    text: "一种中药制剂，由以下重量份的原料药制成：黄芪 20-30 份、当归 10-15 份；黄芪为豆科植物蒙古黄芪 Astragalus membranaceus var. mongholicus 的干燥根，当归为伞形科植物当归 Angelica sinensis 的干燥根；上述药材经水煎煮两次，每次 1.5 h。"
+dos:
+  - rule: "每味药材都有拉丁学名与药用部位"
+  - rule: "炮制与制法参数足以让本领域技术人员重复"
+donts:
+  - rule: "不要只写药材商品名或地方名"
+  - rule: "不要用「疗效显著」代替可评价的药效数据"

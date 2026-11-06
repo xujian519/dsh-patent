@@ -257,6 +257,32 @@ describe('rule pack', () => {
     expect(hit('本方案不属于智力活动规则：技术问题为识别准确率低，技术手段为卷积神经网络，技术效果为准确率提升 3%。')).toBe(false)
   })
 
+  it('CHEM-INV-001 只在马库什论证语境（premise）下评估', () => {
+    const chemical = loadRuleSetDir(join(assetRulesRoot(), 'domains', 'chemical')).ruleSets
+    const ruleSet = mergeRuleSets(chemical)
+    const hit = (text: string): boolean =>
+      evaluateText(text, ruleSet).violations.some(v => v.ruleId === 'CHEM-INV-001')
+    // 不讨论马库什/通式/共同结构的文本根本不评估。
+    expect(hit('所述壳体设置在底座上，起到支撑作用。')).toBe(false)
+    // 锚点在，但既没写共同结构的区别，也没写取代基变化的效果 → 论证不完整。
+    expect(hit('本申请的通式化合物具备创造性。')).toBe(true)
+    // 共同结构的区别与取代基变化的效果齐备 → 通过。
+    expect(hit('本申请的通式化合物与对比文件的共同结构存在区别技术特征，取代基变化带来活性提升的技术效果。')).toBe(false)
+  })
+
+  it('CHEM-DIS-001 只在保藏语境（premise）下评估，四要素齐备才通过', () => {
+    const chemical = loadRuleSetDir(join(assetRulesRoot(), 'domains', 'chemical')).ruleSets
+    const ruleSet = mergeRuleSets(chemical)
+    const hit = (text: string): boolean =>
+      evaluateText(text, ruleSet).violations.some(v => v.ruleId === 'CHEM-DIS-001')
+    // 没有保藏字样或保藏机构编号的文本不评估。
+    expect(hit('本发明涉及一种化合物及其制备方法。')).toBe(false)
+    // 只在正文提「已保藏」并给编号，缺保藏单位、日期与分类命名 → 命中。
+    expect(hit('菌株已保藏，保藏编号为 CCTCC NO: C2024123。')).toBe(true)
+    // 四要素齐备 → 通过。
+    expect(hit('菌株保藏于中国典型培养物保藏中心，保藏日期 2024-01-01，保藏编号 CCTCC NO: C2024123，分类命名为 Escherichia coli。')).toBe(false)
+  })
+
   it('candidatePackDirs and resolvePackDir resolution semantics', () => {
     const root = assetRulesRoot()
     expect(candidatePackDirs('base')).toEqual([join(root, 'base'), join(root, 'domains', 'base')])

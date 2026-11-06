@@ -77,7 +77,7 @@ describe('writing-patterns real Loader composition through cordis.yml', () => {
     expect(result.isError).toBe(false)
     if (result.isError) throw new Error('expected success')
     const value = result.value as { patterns: { id: string }[]; librarySize: number }
-    expect(value.librarySize).toBe(18)
+    expect(value.librarySize).toBe(24)
     expect(value.patterns.length).toBeLessThanOrEqual(value.librarySize)
     expect(value.patterns[0]?.id).toBe('wp-oa-inventiveness-3step')
   }, 30_000)

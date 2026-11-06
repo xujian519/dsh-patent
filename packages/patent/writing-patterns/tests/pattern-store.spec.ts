@@ -59,9 +59,13 @@ describe('packaged pattern corpus', () => {
     expect(store.size).toBe(new Set(store.all().map(pattern => pattern.id)).size)
     expect(store.all().map(pattern => pattern.id)).toEqual([
       'wp-claim-3step-prior-art-check',
+      'wp-claim-chemical-characterization',
+      'wp-claim-chemical-markush-scope',
+      'wp-claim-composition-closed-form',
       'wp-claim-dependent-layering',
       'wp-claim-functional-limitation',
       'wp-claim-markush-equivalents',
+      'wp-claim-medical-use-form',
       'wp-claim-software-trio',
       'wp-claim-unity-special-feature',
       'wp-claim-utility-model',
@@ -74,8 +78,10 @@ describe('packaged pattern corpus', () => {
       'wp-oa-novelty-separate',
       'wp-spec-amendment-reserve',
       'wp-spec-background',
+      'wp-spec-biotech-deposit-sequence',
       'wp-spec-invention-content',
       'wp-spec-numeric-range-fallback',
+      'wp-spec-tcm-prescription',
     ])
   })
 
@@ -96,7 +102,7 @@ describe('packaged pattern corpus', () => {
   it('indexes patterns by category and by sub-category', () => {
     const store = loadPatternStore()
     expect(store.byCategory('oa_inventiveness').map(pattern => pattern.id)).toEqual(['wp-oa-inventiveness-3step'])
-    expect(store.byCategory('claim_drafting')).toHaveLength(7)
+    expect(store.byCategory('claim_drafting')).toHaveLength(11)
     expect(store.byCategory('background').map(pattern => pattern.id)).toEqual(['wp-spec-background'])
     expect(store.byCategory('invalidation')).toEqual([])
     expect(store.get('no-such-pattern')).toBeUndefined()
@@ -163,15 +169,15 @@ describe('lexical search', () => {
     const store = loadPatternStore()
     expect(store.search('', { limit: 3 }).map(pattern => pattern.id)).toEqual([
       'wp-claim-3step-prior-art-check',
-      'wp-claim-dependent-layering',
-      'wp-claim-functional-limitation',
+      'wp-claim-chemical-characterization',
+      'wp-claim-chemical-markush-scope',
     ])
     expect(store.search('   ', { category: 'claim_drafting', limit: 5 }).map(pattern => pattern.id)).toEqual([
       'wp-claim-3step-prior-art-check',
+      'wp-claim-chemical-characterization',
+      'wp-claim-chemical-markush-scope',
+      'wp-claim-composition-closed-form',
       'wp-claim-dependent-layering',
-      'wp-claim-functional-limitation',
-      'wp-claim-markush-equivalents',
-      'wp-claim-software-trio',
     ])
   })
 
@@ -180,7 +186,8 @@ describe('lexical search', () => {
     expect(store.search('权利要求', { limit: 2 })).toHaveLength(2)
     expect(store.search('权利要求', { category: 'oa_novelty', limit: 5 }).map(pattern => pattern.id))
       .toEqual(['wp-oa-novelty-separate'])
-    expect(store.search('权利要求', { category: 'disclosure', limit: 5 })).toEqual([])
+    expect(store.search('权利要求', { category: 'disclosure', limit: 5 }).map(pattern => pattern.id))
+      .toEqual(['wp-spec-biotech-deposit-sequence'])
   })
 
   it('returns nothing when no term is contained anywhere', () => {

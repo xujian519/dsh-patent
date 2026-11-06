@@ -85,7 +85,7 @@ Call query_writing_patterns with the case category, the case features, or search
 
 #### Token 影响
 
-每次请求承担两行指令的固定成本，加上注入类目的紧凑索引，该索引仅在压缩前重复占用上下文；`sectionCategories` 为空时只剩两行指令，`registerSection: false` 则整个 section 消失。随包语料下索引为 1,819 字符，而把原先十条模式全量编译为 17,461 字符。
+每次请求承担两行指令的固定成本，加上注入类目的紧凑索引，该索引仅在压缩前重复占用上下文；`sectionCategories` 为空时只剩两行指令，`registerSection: false` 则整个 section 消失。随包语料下索引为 2,467 字符，而把原先十条模式全量编译为 17,461 字符。
 
 #### KV Cache 影响
 
@@ -94,12 +94,12 @@ section 文本、其位置与索引不变时前缀稳定；改动 `sectionCatego
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与暂缓事项
 
-- **随包语料共十八条模式** —— 十条来自移植项目的种子模式，另加八条撰写期模式。把 `patternDir` 指向部署自备目录即可替换；其中每个文件仍须满足同一套字段规则，否则插件加载失败。
+- **随包语料共二十四条模式** —— 十条来自移植项目的种子模式，八条撰写期模式，另加六条化学模式，覆盖化合物与高分子表征、马库什范围、组合物百分含量、医药用途权项形式、中药处方与生物材料保藏及序列表。把 `patternDir` 指向部署自备目录即可替换；其中每个文件仍须满足同一套字段规则，否则插件加载失败。
 - **选择只是词法匹配，从不做语义理解** —— 中文串通过相邻二字组与著录 `keywords` 匹配，故同一场景换个说法仍可能命中不到。工具结果最后一段给出模式库规模，使模型能区分「库窄」与「查询窄」。
 - **`quality` 是检索相关性，不是法律正确性** —— 它只乘在词法得分上且不进入工具结果，不证明模式中的规则或引用正确。
 - **`source_ref` 在测试期校验，不在加载期校验** —— 编译器不把它写入提示词。`tests/source-ref.spec.ts` 将每条引用（含款号与审查指南节号）对照随包法律索引解析，但加载器仍会接受引用无法解析的语料。
 - **`query` 与 `features` 计分方式不同且不叠加** —— 两者同时给出时按关键词检索，忽略特征匹配；特征匹配服务于已知特征、却不知如何措辞的案件。
-- **提示词 section 只带索引，不带模式正文** —— 随包语料把 18 条模式索引为 1,819 字符；把 18 条全部编译则需 27,234 字符。模型要先调用 `query_writing_patterns` 才能按某条模式撰写，比原先的常驻全量块多一次工具往返。`system-prompt.expected.md` 快照逐字节固定了索引，语料改动使其变化时必须有意重录该 fixture。
+- **提示词 section 只带索引，不带模式正文** —— 随包语料把 24 条模式索引为 2,467 字符；把 24 条全部编译则需 34,553 字符。模型要先调用 `query_writing_patterns` 才能按某条模式撰写，比原先的常驻全量块多一次工具往返。`system-prompt.expected.md` 快照逐字节固定了索引，语料改动使其变化时必须有意重录该 fixture。
 - **`examples` 与应遵循/应避免规则的 `example` 只被解析、从不参与编译，`sub_category` 参与选择但不进入编译块** —— 编译块携带每个模式的摘要、步骤（含步骤自身的 `example`）、应遵循规则与应避免规则，与移植的编译器一致，且种子语料未设置顶层或规则级示例。`sub_category` 只参与类目查找。需要渲染示例的调用方自行从 store 读取。
 - **工具只读且无状态** —— 它读取插件加载时读入的语料，自身不写入任何持久状态或会话事件；其结果仅作为普通工具结果进入日志。
 - **阶段模式只有原子索取时才进入模型提示词** —— `stagePatterns` 仍只把 id 解析到 `writingPatterns`，不改工作流 manifest。工作流宿主把 `compiledForStage` 接到 `StageProvider.writingSkillsForStage`。`claim-strategy`、`draft-claims`、`enablement-report` 与 `claim-breadth` 在回调返回文本时把它追加进提示词。未声明的阶段不返回文本，提示词仍走模式索引与 `query_writing_patterns`。直接对未声明阶段调用 `compiledForStage` 仍会抛错。

@@ -276,7 +276,7 @@ describe('materializeCreateHeader', () => {
       new Map(),           // exotic object
     ]
     for (const bad of badValues) {
-      const header = { ...meta('non-json'), extra: bad } as unknown as Parameters<typeof materializeCreateHeader>[0]
+      const header = Object.assign(meta('non-json'), { extra: bad })
       expect(() => materializeCreateHeader(header)).toThrow(TypeError)
       expect(() => materializeCreateHeader(header)).toThrow(/losslessly JSON-serializable/)
     }
@@ -291,18 +291,18 @@ describe('materializeCreateHeader', () => {
       '2024-01-01T00:00:00Z',  // string instead of number
     ]
     for (const bad of badCreatedAts) {
-      const header = { ...meta('bad-created-at'), createdAt: bad } as unknown as Parameters<typeof materializeCreateHeader>[0]
+      const header = Object.assign(meta('bad-created-at'), { createdAt: bad })
       expect(() => materializeCreateHeader(header)).toThrow(TypeError)
       expect(() => materializeCreateHeader(header)).toThrow(/createdAt must be a non-negative safe integer/)
     }
   })
 
   it('accepts createdAt = 0 and the maximum safe integer as valid values', () => {
-    const zero = { ...meta('zero-time'), createdAt: 0 } as unknown as Parameters<typeof materializeCreateHeader>[0]
+    const zero = { ...meta('zero-time'), createdAt: 0 }
     expect(() => materializeCreateHeader(zero)).not.toThrow()
     expect(materializeCreateHeader(zero).createdAt).toBe(0)
 
-    const max = { ...meta('max-time'), createdAt: Number.MAX_SAFE_INTEGER } as unknown as Parameters<typeof materializeCreateHeader>[0]
+    const max = { ...meta('max-time'), createdAt: Number.MAX_SAFE_INTEGER }
     expect(() => materializeCreateHeader(max)).not.toThrow()
     expect(materializeCreateHeader(max).createdAt).toBe(Number.MAX_SAFE_INTEGER)
   })

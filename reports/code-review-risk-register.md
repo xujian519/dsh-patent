@@ -9,8 +9,8 @@
 |---|---:|---|
 | P0 | 2 | 法律引用门与证据引擎的同构分叉 |
 | P1 | 16 | 超长文件、类型逃逸、测试缺口、并发语义、A33/无附图/月级日期误判、证据门缺口、待补输入仍给合计、缺款判有效 |
-| P2 | 21 | 跨域依赖、环境版本、通知书自指、IPC 误分类、文献号与黑板别名、claim-chart 校验缺口、模板草案未知键、CNIPR 取消映射、检索上限与 NUL 检索词、款数未核验、滞纳金规则缺失、未知修订版回退、款/项数字降级 |
-| P3 | 18 | TODO 归并、报告换行、项号/年份/日期边界、引用区间与目标配置回退、权项编号切分、必填字段双报、检索行静默丢弃、启动失败无错误码、主题词空白、减缴备案提示、重复款号 |
+| P2 | 25 | 跨域依赖、环境版本、通知书自指、IPC 误分类、文献号与黑板别名、claim-chart 校验缺口、模板草案未知键、CNIPR 取消映射、检索上限与 NUL 检索词、款数未核验、滞纳金规则缺失、未知修订版回退、款/项数字降级、工具检索错误码误映射、上游抛错无稳定码、`total` 语义漂移、`json` 输出契约 |
+| P3 | 23 | TODO 归并、报告换行、项号/年份/日期边界、引用区间与目标配置回退、权项编号切分、必填字段双报、检索行静默丢弃、启动失败无错误码、主题词空白、减缴备案提示、重复款号、limit 截断静默、上下文截断、未知 `node_type`、空 `patents` 成功、数值参数未校验 |
 
 ## 2. 明细
 
@@ -57,12 +57,12 @@
 ### R-05 源码类型逃逸集中在 `patent-tools`（P1）
 
 - **域**：patent-tools（其余为长尾）
-- **证据**：源码 `as unknown` 65 处，其中 51 处在 `patent-tools`；`tool-literature` 4、`patent-teams` 4、`patent-core` 4、`document-deliver` 2。源码 `: any` 3 处。
+- **证据**：源码 `as unknown` 65 处，其中 51 处在 `patent-tools`；`tool-literature` 4、`patent-teams` 4、`patent-core` 4、`document-deliver` 2。源码 `: any` 3 处。D11 复核 `patent-tools` 的 51 处：11 处是 render 取值、28 处是输出值转 `JsonValue`、5 处是入参断言、7 处是 render 内部的域类型转换；前两类共 39 处与 R-61 的 `type:'json'` 输出同根。
 - **风险**：工具参数、JSON 边界与持久化读取失去类型保护；违反仓库「不新增 unknown 断言」规则。
-- **动作**：D11 按边界分类：工具参数、外部 JSON、持久化、子进程输出；用 schema 或类型守卫替换，优先处理公共导出与模型可见路径。
-- **验证**：源码 `as unknown` 计数下降；`typecheck` 通过。
+- **动作**：D11 已按边界分类；按 C-16 先给固定结构输出写具体 schema（R-61），再删 28+11 处断言；入参 5 处按 `defineTool` 已校验的类型直接收窄。
+- **验证**：源码 `as unknown` 计数下降；`typecheck` 通过；模型可见渲染零差异。
 - **负责人**：B
-- **状态**：待验证
+- **状态**：已确认
 
 ### R-06 视频预算门不是预留（P1）
 
@@ -97,12 +97,12 @@
 ### R-09 `patent-tools` 公共面过宽（P1）
 
 - **域**：patent-tools
-- **证据**：`src/index.ts` 129 个导出；`patent-core` 89 个。
-- **风险**：审查面过大；无消费者导出增加维护成本与误用面。
-- **动作**：D11 做导出审计：删除无当前消费者的导出，内部模块改为包内引用；公共 API 变更按仓库 pre-stable 规则同步更新消费者。
-- **验证**：全仓引用搜索 + `change-scope` + `typecheck`。
+- **证据**：`src/index.ts` 131 条 `export` 语句、373 个导出名（含类型）；D11 按包外引用扫描（`packages/`、`apps/`、`scripts/`、`snapshots/`，排除本包与 `lib/`）得 352 个无引用、9 个单消费者、12 个多消费者。`wiring.ts:2` 写「35 个工具」、`index.ts:2` 写「36 个」，实际注册 37 个 `create*Tool` 工厂。`patent-core` 89 个。
+- **风险**：审查面过大；无当前消费者的导出增加维护成本与误用面；注释计数与工厂数漂移。
+- **动作**：D11 已给导出审计与候选清单（C-17）；删除/降级另立 PR，需 owner 决策与 `change-scope`，不与工具契约修复混做。
+- **验证**：全仓引用搜索 + `change-scope` + `typecheck`；下游集成方清单人工确认。
 - **负责人**：B
-- **状态**：待验证
+- **状态**：已确认
 
 ### R-10 legal 域依赖 patent-core（P2）
 
@@ -612,6 +612,105 @@
 - **负责人**：A
 - **状态**：已关闭
 
+### R-58 检索异常被统一映射为 `setup_required`（P2）
+
+- **域**：patent-tools（`law_search`、`patent_case_search`）
+- **证据**：`law-search.ts:210-216` 与 `patent-case-search.ts:165-171` 的 catch 直接把 `deps.search` / `deps.searchLaw` 抛出的任意错误改写成 `PatentToolError('setup_required', INSTALL_GUIDANCE)`。服务缺失与 `dbPath` 不存在已有前置检查（`law-search.ts:186-191`、`patent-case-search.ts:154-159`），catch 分支只会接到检索期错误。
+- **最小复现**：注入 `searchLaw: () => { throw new Error('SQLITE_BUSY: database is locked') }`（判例侧同理）→ 实际抛 `setup_required`，消息为「本地规范库不可用：knowledge.db 缺失或版本不符。请先运行 patent-knowledge-install…」。
+- **风险**：瞬时锁、SQL 错误、程序错误都被读成「未安装」；模型会重复安装而不是重试或上报，按 `code` 路由的调用方也把可重试失败当配置问题。
+- **动作**：只把「服务未注入 / dbPath 不存在」映射 `setup_required`；检索函数异常改抛 `tool_execution_failed` 并在 `details.cause` 保留原始错误；不新增错误码。
+- **验证**：见执行卡 §31 的 R-58 行；新增「检索期异常不报安装指引」用例。
+- **负责人**：B
+- **状态**：已确认
+
+### R-59 上游抛错绕过稳定错误码与有界重试（P2）
+
+- **域**：patent-tools（`patent_search`、`patent_metadata`）
+- **证据**：`patent-search.ts:305-328` 与 `patent-metadata.ts:361-382` 只把「返回结果里的可重试告警」交给 `retryBounded`（`internal/bounded-retry.ts:22-37`）；`attempt()` 抛错时直接跳出，工具在 `settled === undefined` 时原样 `throw thrown`。工具描述却承诺「瞬时上游失败重试两次；失败的报错点名通道、上游错误与尝试次数」。
+- **最小复现**：`search` / `scrape` 抛 `new Error('socket hang up')`，`searchRetryDelaysMs` / `scrapeRetryDelaysMs` 为 `[1,1]` → 实际只调用 1 次，抛出裸 `Error`（无 `code`、无 channel、无 attempts）。`patent_metadata` 的 `timeout: 0` 也会原样传给抓取。
+- **风险**：模型与调用方拿不到可路由的失败类别；瞬时网络栈异常没有重试；描述与实现不一致，回归测试已把裸抛写成期望（`data-tools.spec.ts` 的 “rethrows the original…”）。
+- **动作**：在调用处把抛错归一为 `PatentToolError`（建议 `tool_execution_failed`，`details` 带 channel/attempts/cause）；决定可识别的网络错误是否进入同一重试预算；同步工具描述与既有用例。若保留裸抛，则删掉描述中的重试/点名承诺并注明理由，二选一。
+- **验证**：见执行卡 §31 的 R-59 行；`data-tools.spec.ts` 的裸抛用例按选定行为改写。
+- **负责人**：B
+- **状态**：已确认
+
+### R-60 查询工具的 `total` 语义不一致（P2）
+
+- **域**：patent-tools（查询族）
+- **证据**：`patent-search.ts:341` 返回上游 `settled.result.total`（可远大于 `hits.length`）；`patent-wiki-search.ts:153`、`patent-kg-query.ts:144,161`、`law-search.ts:234`、`patent-case-search.ts:184`、`search-patent-figure.ts:319` 返回截断后的 `results.length` / `hits.length` / `nodes.length`。`search-patent-figure` 另有 `indexedCount`，其余没有命中总数。
+- **最小复现**：`patent_kg_query` 3 条 keyword 命中、`limit: 2` → `total: 2`；`patent_search` 50 条命中、上游返回 `total: 120` → `total: 120`；`patent_wiki_search` 12 张候选卡、`limit: 5` → `total: 5`。
+- **风险**：模型可能把 `total` 读成「命中总数」而漏报检索完整性；同一字段在不同工具里含义相反，跨工具汇总与快照断言会漂移。
+- **动作**：统一一种语义。建议 `total` 保持「命中总数」，另加 `returned`（或 `returnedCount`）表示截断后返回条数；被截断的工具要能报告总数。涉及输出 schema 与渲染，单独 PR，并更新使用方断言。
+- **验证**：见执行卡 §31 的 R-60 行；查询族各补一条「命中数 > limit」用例。
+- **负责人**：B
+- **状态**：已确认
+
+### R-61 固定结构输出被声明为 `type: 'json'`（P2）
+
+- **域**：patent-tools（输出契约）
+- **证据**：12 个工具文件、26 个输出字段用 `{ type: 'json' }`，包括 `evaluate-evidence.ts:174-175` 的 `judgment`/`burden`、`patent-analysis-report.ts:180-186` 的 6 个结构、`patent-eval.ts:329` 的 `details`、`claim-chart-build.ts:297` 的 `chart`、`patent-workflow-run.ts:359-361` 的 `evidenceLedger`/`graphState`、`law-search.ts:177` 与 `patent-case-search.ts:147` 的 `searchStrategy`、`parse-office-action.ts:90` 的 `parsed`、`patent-metadata.ts:334` 的 `data`、`patent-flexible-plan.ts:384-385` 的 `plan`/`run`、`patent-workflow.ts:176` 的 `interrupted`、`triz-contradiction-analysis.ts:244-246` 的三个数组项。
+- **最小复现**：输出 schema 校验（`packages/core/tools/src/pipeline.ts:539` 的 `validateJsonSchemaValue`）只检查到 `type: 'json'` 这一层；把 `judgment` 换成任意对象仍通过。28 处 `as unknown as JsonValue` 因此存在（R-05）。
+- **风险**：输出 schema 名存实亡；字段缺失、类型漂移只能在 render 或消费方暴露；工具契约审查无法从 schema 看出结果结构。
+- **动作**：按 C-16 先给固定结构 DTO 写具体 schema（优先 `judgment`、`scores`、`details`、`searchStrategy`、`evidenceLedger`、`graphState`、`chart` 的顶层字段），再删对应输出断言；动态键映射保留 `json` 并在字段说明里写明「键由输入决定」。
+- **验证**：见执行卡 §31 的 R-61 行；`typecheck`、schema 断言与模型可见渲染快照零差异。
+- **负责人**：B
+- **状态**：已确认
+
+### R-62 工具层 limit 归一不统一且超限静默（P3）
+
+- **域**：patent-tools（查询族）
+- **证据**：`patent-search.ts:299` 用 `Math.min(Math.max(Math.floor(args.limit ?? 10), 1), 50)`；`patent-wiki-search.ts:148` 与 `search-patent-figure.ts:290` 用 `Math.min(Math.max(args.limit ?? d, 1), 10)`，不取整；`law_search`、`patent_case_search`、`patent_kg_query` 已用 `resolveResultLimit`（`law-search.ts:192` 等）。
+- **最小复现**：`patent_search` `limit: 100` → 实际 50 条命中、`warnings: []`（CNIPR 第二通道在同类截断时会写告警）；`patent_wiki_search` `limit: 2.5` → 直接进入 `Array.slice(0, 2.5)`。
+- **风险**：模型不知道结果被截断，可能把前 50 条当作全部；同一工具层的上限行为继续分叉，R-47 的归一没有覆盖这里。
+- **动作**：C-14：三个入口改用 `resolveResultLimit`；`patent_search` 的超限截断补一条 warnings（与 CNIPR 分支同口径）；小数按 `Math.trunc`。
+- **验证**：见执行卡 §31 的 R-62 行；新增 100 / 2.5 / 0 / 负值用例。
+- **负责人**：B
+- **状态**：已确认
+
+### R-63 `analyze_patent_figure` 静默截断权利要求上下文（P3）
+
+- **域**：patent-tools（`analyze_patent_figure`）
+- **证据**：`analyze-patent-figure.ts:369` 的 `formatContext` 对 `claimContext.trim().slice(0, 4000)` 后再拼进提示词；参数说明（`:575`）只写「权利要求或技术方案文本」，没有上限或截断提示。
+- **最小复现**：`claim_context` 为 5000 个字符 → 实际提示词 4033 字符（4000 正文 + 固定模板），没有「截断」标记。
+- **风险**：图文对齐上下文无声丢失最后约 20%；模型无法从参数说明预估，可能以为完整上下文已参与识别。
+- **动作**：截断时在提示词或 warnings 里显式标注，并把 4000 字上限写进参数说明；或在 schema 层拒绝超过上限的输入。不要静默。
+- **验证**：见执行卡 §31 的 R-63 行；`formatContext` 单测覆盖 3999 / 4000 / 4001 字。
+- **负责人**：B
+- **状态**：已确认
+
+### R-64 `patent_kg_query.node_type` 未知值静默返回空结果（P3）
+
+- **域**：patent-tools（`patent_kg_query`）
+- **证据**：`patent-kg-query.ts:254-255` 把 `node_type.trim()` 交给 `queryByType`；`resolveNodeTypes` 对未知值原样返回 `[trimmed]`（`patent-kg-query.ts:148-161` 随后 `listByType` 得空），description 与参数说明却逐一列出支持的类型（`patent-kg-query.ts:164,222`）。
+- **最小复现**：`node_type: 'Case_typo'` → `total: 0`、`hits: []`，不抛错。
+- **风险**：拼写错误被读成「库里没有该类型节点」，与真实空结果不可区分；模型会据此下「无相关节点」结论。
+- **动作**：工具层维护可用类型集合（含别名），未知值抛 `invalid_tool_input` 并列出可用类型；或在 schema 用 enum。不要把未知值直接当表名查询。
+- **验证**：见执行卡 §31 的 R-64 行。
+- **负责人**：B
+- **状态**：已确认
+
+### R-65 `patent_legal_status` 接受空号列表并返回成功空批（P3）
+
+- **域**：patent-tools（`patent_legal_status`）
+- **证据**：`patent-legal-status.ts:233-236` 直接对 `args.patents` 求 `dropped` 与 `slice(0, 20)`，没有下界检查；参数说明写「Patent numbers (1-20)」（`:196`）。
+- **最小复现**：`patents: []` → `{ results: [], warnings: [] }`，渲染 `patent_legal_status: 0 result(s)`，`isError: false`。
+- **风险**：上游抽取失败、模型漏填号时得到「成功 0 条」，没有 invalid-input 信号；与 `patent_pdf_download` 对空列表抛 `invalid_tool_input` 的行为不一致。
+- **动作**：空数组（或去空后为空）抛 `invalid_tool_input`，并提示至少 1 个专利号。
+- **验证**：见执行卡 §31 的 R-65 行。
+- **负责人**：B
+- **状态**：已确认
+
+### R-66 数值参数缺少范围校验，非法值变成超时或静默夹取（P3）
+
+- **域**：patent-tools（`patent_metadata`、`patent_legal_status`）
+- **证据**：`patent-metadata.ts:363` 把 `args.timeout ?? 30000` 原样传给 `scrape`，无整数/范围检查；`patent-legal-status.ts:236` 对 `maxConcurrency` 做 `Math.floor` + 夹取，不告知调用方。对照 `patent-pdf-download.ts:238-242,504-508` 的 `requireIntRange` 会显式拒绝非法值。
+- **最小复现**：`patent_metadata({ patent, timeout: 0 })` → `scrape` 收到 `timeout: 0`（上游按 0ms 起超时，最终报 `tool_timeout`）；`patent_legal_status({ patents: [...], maxConcurrency: 0 / 2.5 })` → 实际按 1 / 2 执行，输出无提示。
+- **风险**：非法输入被读成上游超时或静默夹取，模型可能用同一非法值重试；同一工具层的数值校验口径不一致。
+- **动作**：工具层对 `timeout`、`maxConcurrency` 做整数与范围校验（或夹取并写 warnings），沿用 `requireIntRange` 的风格。
+- **验证**：见执行卡 §31 的 R-66 行。
+- **负责人**：B
+- **状态**：已确认
+
 ## 3. 处理顺序
 
 1. **先验证后动手**：R-01、R-02 先做行为对比；R-03、R-06 先补边界/并发测试。
@@ -648,3 +747,6 @@
 | R-51 / R-52 / R-56 / R-57 | D9 |
 | R-53 / R-54 | D9 |
 | R-55 | D9 登记，D18 随 R-01 修复 |
+| R-58 / R-59 | D11 登记，随错误码修复 PR |
+| R-60 / R-61 | D11 登记，独立 PR（输出契约） |
+| R-62 / R-63 / R-64 / R-65 / R-66 | D11 登记，随工具层修复 PR |

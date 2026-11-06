@@ -426,3 +426,105 @@ D9 范围：`patent-law`（13 个源码文件 / 2,838 行）与 `patent-fees`（
 - **不裁决 `amount` 与 `tiers` 并存**：加载器允许条目同时声明两者，`compute` 在 `tiers` 非空时只用分档；这是“先录单价、后补分档”的迁移形态，`fees.spec.ts` 的 complete-table 用例也按此形态写。是否拒绝留待分档价格字段真正扩展时决定。
 - **不为库调用补整数校验**：`lateMonths` 等数量在工具层已要求非负整数；`computeFees` 是类型化同进程 API，按仓库规则不在该边界加运行期校验。非整数 `lateMonths` 经直接库调用会产生不足一分的金额，属调用方违约，D9 不扩大公开面。
 - **不把 `grant-registration` 映射到授权当年年费**：需要授权年度，查询不带；索引保持未收录并扣合计（README 已声明）。
+
+## 28. D11 工具层抽样结果
+
+D11 范围：`patent-tools` 的工具层（schema、结果结构、错误码、结果上限）。源码基线 145 个文件 / 37,012 行；`index.ts` 131 条 `export` 语句、373 个导出名（含类型）；`wiring.ts` 实际注册 37 个 `create*Tool` 工厂。模块注释写「36 个工具」（`index.ts:2`）与「35 个工具」（`wiring.ts:2`），两处计数与 37 个工厂不一致，属文档漂移，随 R-09 记录，不单列风险。
+
+抽检 27 个入口：查询 8（`patent_search`、`patent_metadata`、`patent_legal_status`、`law_search`、`patent_case_search`、`patent_wiki_search`、`patent_kg_query`、`search_patent_figure`）、判定/校验 7（`evaluate_evidence`、`rule_check`、`claim_lint`、`domain_check`、`validate_specification`、`patent_eval`、`parse_office_action`）、状态机/写盘 7（`patent_plan_task`、`flexible_plan`、`patent_workflow_run`、`patent_workflow`、`knowledge_note_save`、`matter_log_append`、`workbench_link_patent_case`）、报告/下载/图形/契约校验 5（`patent_analysis_report`、`claim_chart_build`、`patent_pdf_download`、`analyze_patent_figure`、`patent_worker_validate`）。另读 `tool/internal/` 的 `tool-input.ts`、`tool-output.ts`、`query-limit.ts`、`bounded-retry.ts`、`approval-gate.ts`、`knowledge.ts`、`upstream-channel.ts`。`generate_patent_figure` / `generate_structure_figure` 的几何与渲染路径留 D12，只核对 schema 与错误映射。
+
+方法：逐入口读参数 schema、execute 的边界读取、输出 schema 与 render 的取值；可疑路径写临时 spec 直接执行，并用 `executeToolFixture` 校验输出 schema。复现 spec 11 组（10 组契约输入 + 1 组空白输入阴性对照）运行后删除，未进入产品测试。
+
+## 29. D11 工具契约问题清单
+
+以下 9 项均已用最小输入、schema 检查或代码路径确认，详情见风险登记册 R-58–R-66。级别按第 3 节标准判定。
+
+| 风险 | 类别 | 证据 | 最小复现 / 实际结果 | 级别 |
+|---|---|---|---|---|
+| R-58 | 错误码 | `law-search.ts:210-216`、`patent-case-search.ts:165-171` | 注入的检索函数抛 `SQLITE_BUSY: database is locked` → `setup_required`，文案要求重装 knowledge.db | P2 |
+| R-59 | 错误码 | `patent-search.ts:305-328`、`patent-metadata.ts:361-382` | 上游抛 `socket hang up` → 只尝试 1 次，抛出裸 `Error`（无 `code`、无 channel、无 attempts） | P2 |
+| R-60 | 结果结构 | `patent-search.ts:341` 对照 `patent-wiki-search.ts:153`、`patent-kg-query.ts:144,161`、`law-search.ts:234`、`patent-case-search.ts:184`、`search-patent-figure.ts:319` | 3 条命中、limit 2 → `total: 2`；`patent_search` 50 条命中、上游 total 120 → `total: 120`；同名 `total` 两种语义 | P2 |
+| R-61 | schema | 12 个工具文件的 26 个输出字段；如 `evaluate-evidence.ts:174`、`patent-analysis-report.ts:180-186`、`claim-chart-build.ts:297` | `{type:'json'}` 不做字段校验，28 处 `as unknown as JsonValue` 因此存在 | P2 |
+| R-62 | 结果上限 | `patent-search.ts:299`、`patent-wiki-search.ts:148`、`search-patent-figure.ts:290` | `limit: 100` → 50 条命中、`warnings: []`；`limit: 2.5` 直接进入 `Array.slice`，未按 `resolveResultLimit` 取整 | P3 |
+| R-63 | 结果上限 | `analyze-patent-figure.ts:369` | 5000 字 `claim_context` → 提示词 4033 字，无截断标记，参数说明未给上限 | P3 |
+| R-64 | schema | `patent-kg-query.ts:148-161,254-255` | `node_type: 'Case_typo'` → `total: 0`、无错误；schema 未把类型列为 enum | P3 |
+| R-65 | schema / 结果 | `patent-legal-status.ts:233-236` | `patents: []` → 成功返回 `{results: [], warnings: []}`，渲染“0 result(s)”；参数声明 1–20 条 | P3 |
+| R-66 | schema | `patent-metadata.ts:363`、`patent-legal-status.ts:236` | `timeout: 0` 原样传给抓取（上游按 0ms 超时）；`maxConcurrency: 0` → 1、`2.5` → 2，均无提示 | P3 |
+
+## 30. D11 结果上限与错误码矩阵
+
+### 30.1 查询工具的 limit 归一
+
+| 工具 | 归一实现 | 默认 / 上限 | 超限 | 小数 |
+|---|---|---|---|---|
+| `patent_search` | `Math.floor` + 夹取（`patent-search.ts:299`） | 10 / 50 | 静默截到 50，无告警 | 向下取整 |
+| `patent_wiki_search` | `Math.max/min`（`patent-wiki-search.ts:148`） | 5 / 10 | 静默截到 10 | 原样传入 loader，`slice` 再截 |
+| `search_patent_figure` | `Math.max/min`（`search-patent-figure.ts:290`） | 5 / 10 | 静默截到 10 | 原样传入检索，`slice` 再截 |
+| `law_search` | `resolveResultLimit`（`law-search.ts:192`） | 5 / 10 | 截到 10 | `Math.trunc` |
+| `patent_case_search` | `resolveResultLimit`（`patent-case-search.ts:160`） | 5 / 10 | 截到 10 | `Math.trunc` |
+| `patent_kg_query` | `resolveResultLimit`（`patent-kg-query.ts:247`） | 5 / 10 | 截到 10 | `Math.trunc` |
+
+结论：同一工具层存在两套上限实现；R-47 已把 FTS 的上限归一到 `resolveResultLimit`，工具层还剩 3 个入口使用各自的夹取。`patent_search` 是唯一按 50 条截断的查询工具，且不像 CNIPR 第二通道那样写截断告警。
+
+### 30.2 错误码映射
+
+| 场景 | 工具 | 当前 code | 结论 |
+|---|---|---|---|
+| 服务未注入 / dbPath 不存在 | 查询工具 | `setup_required` | 正常 |
+| `asOf` 非法 | `law_search` | `invalid_tool_input` | 正常 |
+| 检索函数抛任意异常 | `law_search`、`patent_case_search` | `setup_required` | R-58：瞬时锁、SQL 错误、程序错误都被读成“未安装” |
+| 上游检索 / 抓取抛异常 | `patent_search`、`patent_metadata` | 无（裸 `Error`） | R-59：绕开稳定 code 与重试；与工具描述“重试两次并点名通道”不一致 |
+| 图索引读取抛非 `setup_required` | `search_patent_figure` | `tool_execution_failed` | 正常（保留 `setup_required`） |
+| 写盘 / 审批 / 取消 | `knowledge_note_save`、`patent_workflow_run`、`workbench_link_patent_case` | `tool_execution_failed` / `tool_aborted` | 正常 |
+
+结论：20 个 `PatentToolErrorCode` 中 `patent-tools` 实际只用到 7 个（`invalid_tool_input`、`tool_execution_failed`、`setup_required`、`file_not_found`、`tool_aborted`、`tool_timeout`、`model_cannot_accept_image`）；未使用的 13 个多数是 Sati 协议遗留，D11 不删（可能被下游按码路由），但 R-58/R-59 说明“按码路由”本身还不完整。
+
+### 30.3 输出 schema 的 `type: 'json'` 字段
+
+| 工具 | 字段 |
+|---|---|
+| `patent_analysis_report` | `ipc`、`technicalFeatures`、`featureStatistics`、`scores`、`innovationInsights`、`expertConsiderations`、`searchStrategy` |
+| `claim_chart_build` | `chart`、`infringement_conclusion`、`invalidity_conclusion` |
+| `triz_contradiction_analysis` | `contradictions`、`parameter_gaps`、`unmapped` |
+| `evaluate_evidence` | `judgment`、`burden` |
+| `patent_workflow_run` | `evidenceLedger`、`graphState` |
+| `patent_eval`、`patent_flexible_plan`、`patent_metadata`、`patent_workflow` | 各 2 / 2 / 1 / 1（`details`+`searchStrategy`、`plan`+`run`、`data`、`interrupted`） |
+| `law_search`、`patent_case_search`、`parse_office_action` | 各 1（`searchStrategy`、`searchStrategy`、`parsed`） |
+
+共 12 个文件、26 个字段。固定结构的 DTO（如 `judgment` 的四个分项、`scores`、`details`）应先换成具体 schema；动态键映射可以保留 `json` 并在字段说明里写明。
+
+## 31. D11 已确认缺陷的回归测试清单
+
+以下用例在对应修复 PR 中先加、后修；修复前必须是失败用例，修复后转绿。不要把当前错误行为写成期望。
+
+| 风险 | 测试位置 | 输入 | 期望 |
+|---|---|---|---|
+| R-58 | `tests/law-search.spec.ts`、`tests/data-knowledge.spec.ts` | 注入的 `searchLaw` / `search` 抛 `SQLITE_BUSY: database is locked` | 抛 `tool_execution_failed`，消息保留原始错误；不得出现安装指引 |
+| R-59 | `tests/data-tools.spec.ts` | `search` / `scrape` 抛 `socket hang up` | `PatentToolError`，code 为 `tool_execution_failed`，消息含通道与尝试次数；若决定保留裸抛，则同步改工具描述并加注释，不保留两者不一致 |
+| R-60 | `tests/data-knowledge.spec.ts`、`tests/knowledge-tools.spec.ts` | 12 条命中、limit 5；3 条命中、limit 2 | `total` 语义按选定方案固定：保留“返回条数”则改名/补 `matchedTotal`，保留“命中总数”则被截断的工具返回未截断计数 |
+| R-61 | 新增工具 schema 断言（可用 `executeToolFixture`） | 固定结构输出少一个必填字段 | 输出校验失败；固定结构字段不再声明为 `type:'json'` |
+| R-62 | `tests/data-tools.spec.ts` | `limit: 100`、`limit: 2.5` | 超限有告警或 `invalid_tool_input`；小数按 `resolveResultLimit` 取整，行为与 FTS 入口一致 |
+| R-63 | `tests/analyze-patent-figure.spec.ts` | 5000 字 `claim_context` | 有截断标记或工具先报明确上限；参数说明与实际上限一致 |
+| R-64 | `tests/knowledge-tools.spec.ts` | `node_type: 'Case_typo'` | 抛 `invalid_tool_input` 并列出可用类型，或 schema 用 enum 直接拒绝 |
+| R-65 | `tests/data-tools.spec.ts` | `patents: []` | 抛 `invalid_tool_input`（至少 1 条），不返回成功空批 |
+| R-66 | `tests/data-tools.spec.ts` | `timeout: 0`、`maxConcurrency: 0` / `2.5` | 抛 `invalid_tool_input`；若要夹取，写告警，与 `patent_pdf_download` 的 `requireIntRange` 一致 |
+
+## 32. D11 精简候选
+
+| ID | 位置 | 候选动作 | 优先级 | 预期收益 | 等价性验证 |
+|---|---|---|---|---|---|
+| C-14 | `patent-search.ts:299`、`patent-wiki-search.ts:148`、`search-patent-figure.ts:290` | 三个入口改用 `resolveResultLimit`；`patent_search` 的超限截断补一条 warnings | P3 | 工具层与 FTS 入口共用一套上限语义，R-62 不再漂移 | 现有查询用例零改动通过；新增 100 / 2.5 / 0 / 负数用例 |
+| C-15 | `patent-search.ts:305-328`、`patent-metadata.ts:361-382` | 把抛错路径收进 `internal/upstream-channel.ts` 的统一映射：`asUpstreamFailure(error, channel, attempts)`，再由两工具决定是否重试 | P3 | 抛错也有稳定 code 与通道名，R-59 的两份重复逻辑只剩一处 | 现有“rethrow original”用例改为断言包装后的 message/code；新增两次重试用例 |
+| C-16 | `evaluate-evidence.ts:174-175`、`patent-analysis-report.ts:180-186`、`patent-eval.ts:329`、`patent-workflow-run.ts:359-361` | 先为固定结构 DTO 写具体输出 schema，替换 `type:'json'`；动态键映射（`scores` 的分项、`plan`/`run` 快照）保留并注明原因 | P2 | 输出契约真正校验字段；删除约 39 处 `as unknown as`（R-05 的 51 处中 11 render + 28 JsonValue） | schema 断言用例；`typecheck`；模型可见渲染零差异 |
+| C-17 | `index.ts` 全文件 | 按包外引用把 352 个无引用导出分成“公共 API 保留 / 降为包内 / 删除”三类，另立 PR 处理，不与工具契约混做 | P2 | 公共面从 373 收敛到有当前消费者的集合；R-09 有可执行清单 | `change-scope` + 全仓引用搜索 + `typecheck`；外部集成方清单需人工确认 |
+
+## 33. D11 范围校正与不做项
+
+- **R-05（类型逃逸）只分类不改代码**：51 处 `as unknown as` 中 11 处是 render 取值、28 处是输出值转 `JsonValue`、5 处是入参断言、7 处是 render 内部的域类型转换。前两类共 39 处与 R-61 同根，按 C-16 先补 schema 再删断言；入参断言可直接按 `defineTool` 已校验的类型收窄。D11 的方案是后续 PR 的输入，不在本次一并改 51 处。
+- **R-09（导出面）只审计不删除**：`index.ts` 373 个导出名中，352 个在 `packages/`、`apps/`、`scripts/`、`snapshots/`（排除本包与 `lib/`）没有引用，9 个只有一个消费者，12 个有多个消费者。该计数不覆盖文档与下游仓库，二进制/外部集成方仍可能依赖；删除需要 owner 决策与 `change-scope`，D11 只给候选清单（C-17）。
+- **不在 D11 改 `total` 语义（R-60）**：`patent_search` 的 `total` 是上游命中总数，其余检索工具是截断后的返回条数。改名或新增 `matchedTotal` 会改模型可见输出与使用方断言，需产品决策；D11 先固定现状并登记。
+- **不把 R-58/R-59 的错误码改动夹带进文档 PR**：两处都会改变模型可见错误与既有测试（`data-tools.spec.ts` 已把裸抛写成期望），应与对应回归测试同一 PR。
+- **不给 `patent-tools` 的库调用补运行期校验**：`resolveResultLimit`、`computeFees` 等同进程类型化 API 按仓库规则不重复校验；只在工具边界处理模型输入。
+- **不覆盖 `figure/` 的几何与渲染实现**：`render-check-*`、`section-diagram`、`leader-line`、FreeCAD/Graphviz/Inkscape 的数值确定性与退化输入留 D12。
+- **不启动真实 knowledge.db、网络或浏览器通道**：D11 的复现全部用注入的 fake 依赖，覆盖契约分支；真实 provider 的端到端覆盖仍由 CI 与 D7 的通道测试负责。
+- **不把 20 个错误码裁到已用集合**：`PatentToolErrorCode` 是 Sati 协议面，可能被下游按码路由；R-58/R-59 暴露的是映射缺口，不是码表冗余。

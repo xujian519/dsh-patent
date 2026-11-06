@@ -253,7 +253,8 @@ function unitViolations(text: string): SpecViolation[] {
 function embodimentNumberingViolations(text: string): SpecViolation[] {
   const numbers: number[] = []
   for (const match of text.matchAll(EMBODIMENT)) {
-    const value = parseEmbodimentNumber(match[1] ?? '')
+    // oxlint-disable-next-line typescript/no-non-null-assertion -- the pattern's only capture group always participates
+    const value = parseEmbodimentNumber(match[1]!)
     if (value === undefined) return []
     numbers.push(value)
   }

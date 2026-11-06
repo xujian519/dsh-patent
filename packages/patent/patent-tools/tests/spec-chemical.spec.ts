@@ -107,6 +107,9 @@ describe('checkChemicalDisclosure', () => {
     const chinese = checkChemicalDisclosure('实施例一：方案甲。实施例三：方案乙。', undefined, 'chemical')
     expect(chinese[0]?.message).toContain('缺号：2')
 
+    const duplicateWithGap = checkChemicalDisclosure('实施例1：甲。实施例2：乙。实施例4：丙。实施例2：丁。', undefined, 'chemical')
+    expect(duplicateWithGap[0]?.message).toContain('缺号：3')
+
     const sequential = checkChemicalDisclosure('实施例1：方案甲。实施例2：方案乙。', undefined, 'chemical')
     expect(sequential).toEqual([])
 
@@ -123,12 +126,15 @@ describe('checkChemicalDisclosure', () => {
 
     expect(checkChemicalDisclosure('实施例甲：方案。实施例乙：方案。', undefined, 'chemical')).toEqual([])
     expect(checkChemicalDisclosure('实施例一百：方案。实施例一百零一：方案。', undefined, 'chemical')).toEqual([])
+    expect(checkChemicalDisclosure('实施例十百：方案。', undefined, 'chemical')).toEqual([])
+    expect(checkChemicalDisclosure('实施例百十：方案。', undefined, 'chemical')).toEqual([])
   })
 
   it('说明书声明任选取代但未限定取代基时报 warning', () => {
     const violations = checkChemicalDisclosure('本发明公开通式（I）化合物，其中 R1 任选取代。', undefined, 'chemical')
     expect(rulesOf(violations)).toEqual(['chem_markush_optional_undefined'])
 
+    expect(checkChemicalDisclosure('本发明公开通式（I）化合物，其中 R1 任选取代，取代基选自氢、C1–C6 烷基。', undefined, 'chemical')).toEqual([])
     expect(checkChemicalDisclosure('本发明公开通式（I）化合物，其中 R1 选自氢、C1–C6 烷基。', undefined, 'chemical')).toEqual([])
     expect(checkChemicalDisclosure('本发明公开一种化合物。', undefined, 'chemical')).toEqual([])
     expect(checkChemicalDisclosure('本发明公开通式（I）化合物。', undefined, 'chemical')).toEqual([])
@@ -142,6 +148,7 @@ describe('checkChemicalDisclosure', () => {
     expect(sourced).toEqual([])
 
     expect(checkChemicalDisclosure('处方：黄芪，当归。', undefined, 'chemical')).toEqual([])
+    expect(checkChemicalDisclosure('本发明涉及一种中药组合物。', undefined, 'chemical')).toEqual([])
     expect(checkChemicalDisclosure('一种化合物 30 g。', undefined, 'chemical')).toEqual([])
   })
 

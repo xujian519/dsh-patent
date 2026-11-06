@@ -93,6 +93,7 @@
     "packages/patent/patent-tools/src/tool/patent-plan-task.ts|packages/patent/patent-tools/src/tool/workbench-link-patent-case.ts",
     "packages/patent/patent-tools/src/tool/patent-search.ts|packages/patent/patent-tools/src/tool/search-patent-figure.ts",
     "packages/patent/patent-tools/src/tool/patent-workflow-run.ts|packages/patent/patent-tools/src/tool/patent-workflow.ts",
+    "packages/patent/patent-tools/src/tool/spec-chemical.ts|packages/patent/patent-tools/src/tool/spec-software.ts",
     "packages/patent/tool-literature/src/tool/paper-download.ts|packages/patent/tool-literature/src/tool/paper-search.ts",
     "packages/patent/writing-patterns/src/pattern-store.ts|packages/patent/writing-patterns/src/pattern-store.ts"
   ],

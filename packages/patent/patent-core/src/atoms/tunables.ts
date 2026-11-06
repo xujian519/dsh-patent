@@ -206,6 +206,30 @@ export function readChartSourceRoots(state: PipelineState): ChartSourceRootsResu
   return { ok: true, roots }
 }
 
+/** Outcome of reading the claim-chart source working directory. */
+type ChartSourceCwdResult =
+  | { ok: true; cwd: string }
+  | { ok: false; reason: string }
+
+/**
+ * Read the base directory that relative claim-chart source paths resolve against.
+ *
+ * An absent key keeps `process.cwd()`, which in a packaged app is the launch
+ * directory rather than the user's case workspace; deployments that pass
+ * relative `source_path` values must set it. Allowed roots resolve against the
+ * same directory, so specifying one never widens the readable set by itself.
+ * @param state - stage state, including merged params.
+ * @returns the resolved directory, or a degradation reason for a malformed value.
+ */
+export function readChartSourceCwd(state: PipelineState): ChartSourceCwdResult {
+  const raw = state['chart_source_cwd']
+  if (raw === undefined) return { ok: true, cwd: process.cwd() }
+  if (typeof raw !== 'string' || raw.trim() === '') {
+    return { ok: false, reason: 'params.chart_source_cwd 必须是非空字符串' }
+  }
+  return { ok: true, cwd: raw }
+}
+
 /**
  * Read the size limit for one claim-chart source file.
  * @param state - stage state, including merged params.

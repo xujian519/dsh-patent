@@ -565,6 +565,63 @@ it('未配置根时只读取 cwd 内的相对源路径', async () => {
   }
 })
 
+it('chart_source_cwd 让相对 sourcePath 按工作根解析，而不是进程 cwd', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cc-src-workroot-'))
+  writeFileSync(join(dir, 'd1.txt'), SOURCE_TEXT, 'utf8')
+  try {
+    const state = await new ClaimChartHandler().execute({
+      state: {
+        claim: CLAIM,
+        chart_source_cwd: dir,
+        chart_targets: JSON.stringify([{ id: 'D1', kind: 'prior-art', sourcePath: 'd1.txt' }]),
+        chart_mode: 'invalidity',
+      },
+      provider: { callLLM: async () => JSON.stringify(goodChart()) },
+    })
+    expect(state._error).toBeUndefined()
+    expect(typeof state.claim_chart_doc).toBe('string')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+it('设置工作根不会放宽已配置的允许根', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cc-src-workroot-roots-'))
+  const root = join(dir, 'allowed')
+  mkdirSync(root)
+  writeFileSync(join(dir, 'outside.txt'), SOURCE_TEXT, 'utf8')
+  try {
+    const state = await new ClaimChartHandler().execute({
+      state: {
+        claim: CLAIM,
+        chart_source_cwd: dir,
+        chart_source_roots: [root],
+        chart_targets: JSON.stringify([{ id: 'D1', kind: 'prior-art', sourcePath: 'outside.txt' }]),
+        chart_mode: 'invalidity',
+      },
+      provider: { callLLM: async () => JSON.stringify(goodChart()) },
+    })
+    expect(state._error as string).toContain('不在允许目录')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+it('非法 chart_source_cwd 在读取源文前降级', async () => {
+  let calls = 0
+  const state = await new ClaimChartHandler().execute({
+    state: { claim: CLAIM, chart_source_cwd: '  ', chart_mode: 'invalidity' },
+    provider: {
+      callLLM: async () => {
+        calls += 1
+        return JSON.stringify(goodChart())
+      },
+    },
+  })
+  expect(state._error as string).toContain('chart_source_cwd')
+  expect(calls).toBe(0)
+})
+
 it('chart_source_max_bytes 生效：超过上限的源文件在调用模型前中止', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'cc-src-size-'))
   const sourcePath = join(dir, 'd1.txt')

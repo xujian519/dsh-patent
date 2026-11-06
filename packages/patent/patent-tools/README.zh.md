@@ -39,9 +39,9 @@ kind: "package-reference"
 | `draft_specification` | 撰写 | 确定性 |
 | `validate_specification` | 质量 | 确定性 |
 | `evaluate_evidence` | 证据 | `@deepseek-ai/dsh-patent-core` 证据引擎 |
-| `rule_check` | 质量 | `@deepseek-ai/dsh-patent-rule` 规则引擎；`scope` 决定规则集，`patent-mechanical` / `patent-software` 在专利全量之上加该域规则包（机械：结构等效性论证完整性；软件/AI：客体答辩三要素论证完整性） |
+| `rule_check` | 质量 | `@deepseek-ai/dsh-patent-rule` 规则引擎；`scope` 决定规则集，`patent-mechanical` / `patent-chemical` / `patent-software` 在专利全量之上加该域规则包（机械：结构等效性论证完整性；化学：马库什创造性论证与生物材料保藏完整性；软件/AI：客体答辩三要素论证完整性） |
 | `claim_lint` | 质量 | 确定性 `@deepseek-ai/dsh-patent-core` 权利要求书形式自检（编号、引用方向、多项从属形式、引用基础、主题名称、两段式、用语、标点、正文之外的内容）；结构性规则精确判定，用语类规则是词表启发式 |
-| `domain_check` | 质量 | 跑 `claim_lint` 与 `validate_specification`，把两者的结论按某一领域的撰写缺陷清单归并：每项给出 `pass`、`hit`（附规则与说明）或 `manual`（写明为何仍需人工）。现有两份清单：机械域 30 项、软件/AI 域 28 项（按 `tech_domain: software` 运行，客体规则才会生效）。缺少必需输入（`claims`、`abstract`、`figure_analysis`）或规则只覆盖该缺陷的一部分时均为 `manual`——没读到的输入、只覆盖一部分的规则都不算通过。 |
+| `domain_check` | 质量 | 跑 `claim_lint` 与 `validate_specification`，把两者的结论按某一领域的撰写缺陷清单归并：每项给出 `pass`、`hit`（附规则与说明）或 `manual`（写明为何仍需人工）。现有三份清单：机械域 30 项、软件/AI 域 28 项（按 `tech_domain: software` 运行，客体规则才会生效）、化学域 33 项（按 `tech_domain: chemical` 运行，化学权项形式与公开规则才会生效）。缺少必需输入（`claims`、`abstract`、`figure_analysis`）或规则只覆盖该缺陷的一部分时均为 `manual`——没读到的输入、只覆盖一部分的规则都不算通过。 |
 | `analyze_patent_figure` | 分析 | 经 `FigureAnalysisEngine` 走视觉 ModelPort（Config.figureAnalysisMode：`single`=一次调用，默认；`two-step`=结构抽取+说明生成两次调用）；按附图模型做图片输入门禁 |
 | `search_patent_figure` | 检索 | 附图索引关键词检索（索引由 `analyze_patent_figure` 写入，见 Config.figureIndexFile） |
 | `check_patent_figure_consistency` | 质量 | 对 `analyze_patent_figure` 的多图识别结果做确定性跨图校验（不调用模型）：同一数字标记在各图中必须同名、图号必须从 1 起连续、`claim_context`（权利要求书或说明书正文）中引用的标记（括号形「(10)」「（10）」或直连形「壳体10」）必须在某张图中识别到。电学符号与网表暂不在范围（电学分析引擎尚未移植）。 |

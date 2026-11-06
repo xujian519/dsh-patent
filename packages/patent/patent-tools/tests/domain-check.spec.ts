@@ -146,7 +146,7 @@ describe('domain_check: 机械域清单', () => {
 
   it('不支持的领域与空文本直接报错', async () => {
     const tool = createDomainCheckTool()
-    await expect(tool.execute({ domain: 'chemical', text: SPEC }, {} as never)).rejects.toThrow(/domain.*must be one of/)
+    await expect(tool.execute({ domain: 'electrical', text: SPEC }, {} as never)).rejects.toThrow(/domain.*must be one of/)
     await expect(tool.execute({ domain: 'mechanical', text: '  ' }, {} as never)).rejects.toThrow(/text 为空/)
   })
 })
@@ -232,5 +232,73 @@ describe('domain_check: 软件域清单', () => {
   it('软件域不套用机械域清单项', async () => {
     const value = await run({ domain: 'software', text: SOFTWARE_SPEC, claims: SOFTWARE_CLAIMS })
     expect(value.items.some(item => item.id.startsWith('MECH-DC-'))).toBe(false)
+  })
+})
+
+/** 化学域说明书：表征、单位、实施例编号与适应症齐备。 */
+const CHEMICAL_SPEC = [
+  '## 技术领域',
+  '本发明涉及一种药物组合物。',
+  '## 背景技术',
+  '现有药物组合物的稳定性不足。',
+  '## 发明内容',
+  '本发明提供一种药物组合物，用于治疗糖尿病。',
+  '## 具体实施方式',
+  '实施例1：称取化合物 A 20 g 与辅料 80 g，混合制粒；产物经核磁共振氢谱（1H NMR）确证。',
+  '实施例2：称取化合物 A 30 g 与辅料 70 g，混合压片。',
+].join('\n')
+
+/** 成分合计 100%、写明适应症的化学产品权要。 */
+const CHEMICAL_CLAIMS = '1. 一种药物组合物，其特征在于，包含化合物 A 20% 和辅料 80%，用于治疗糖尿病。'
+
+describe('domain_check: 化学域清单', () => {
+  it('列出全部 33 项，化学规则按 tech_domain=chemical 运行', async () => {
+    const value = await run({ domain: 'chemical', text: CHEMICAL_SPEC, claims: CHEMICAL_CLAIMS })
+    expect(value.items).toHaveLength(33)
+    expect(value.items.some(item => item.id.startsWith('CHEM-DC-'))).toBe(true)
+    expect(value.items.some(item => item.id.startsWith('MECH-DC-') || item.id.startsWith('SOFT-DC-'))).toBe(false)
+    expect(value.passed).toBe(true)
+    expect(itemOf(value, 'CHEM-DC-004')?.status).toBe('pass')
+    expect(itemOf(value, 'CHEM-DC-008')?.status).toBe('pass')
+    expect(itemOf(value, 'CHEM-DC-030')?.status).toBe('pass')
+    // 只覆盖缺陷一部分的项：未命中也不能判通过
+    expect(itemOf(value, 'CHEM-DC-002')?.status).toBe('manual')
+    expect(itemOf(value, 'CHEM-DC-031')?.status).toBe('manual')
+    expect(itemOf(value, 'CHEM-DC-023')?.status).toBe('manual')
+  })
+
+  it('治疗方法主题命中 CHEM-DC-030 并判定未通过', async () => {
+    const claims = '1. 一种治疗糖尿病的方法，其特征在于，向患者给予化合物 A。'
+    const value = await run({ domain: 'chemical', text: CHEMICAL_SPEC, claims })
+    expect(itemOf(value, 'CHEM-DC-030')?.status).toBe('hit')
+    expect(value.passed).toBe(false)
+    expect(value.findings.find(finding => finding.rule === 'chem_medical_use_method')?.severity).toBe('error')
+  })
+
+  it('组合物上限合计超过 100% 命中 CHEM-DC-014', async () => {
+    const claims = '1. 一种组合物，其特征在于，包含组分 A 60-80% 和组分 B 30-50%。'
+    const value = await run({ domain: 'chemical', text: CHEMICAL_SPEC, claims })
+    expect(itemOf(value, 'CHEM-DC-014')?.status).toBe('hit')
+    expect(value.findings.find(finding => finding.rule === 'chem_composition_total')?.message).toContain('130%')
+  })
+
+  it('马库什「任选取代」未限定取代基命中 CHEM-DC-008', async () => {
+    const claims = '1. 一种通式（I）所示的化合物，其特征在于，R1 任选取代。'
+    const value = await run({ domain: 'chemical', text: CHEMICAL_SPEC, claims })
+    expect(itemOf(value, 'CHEM-DC-008')?.status).toBe('hit')
+  })
+
+  it('未提供 abstract 时摘要项报 manual，提供后才核', async () => {
+    const withoutAbstract = await run({ domain: 'chemical', text: CHEMICAL_SPEC, claims: CHEMICAL_CLAIMS })
+    expect(itemOf(withoutAbstract, 'CHEM-DC-005')?.status).toBe('manual')
+    expect(itemOf(withoutAbstract, 'CHEM-DC-005')?.reason).toContain('未提供 abstract')
+
+    const withAbstract = await run({
+      domain: 'chemical',
+      text: CHEMICAL_SPEC,
+      claims: CHEMICAL_CLAIMS,
+      abstract: '本发明提供一种药物组合物，用于治疗糖尿病，稳定性好。',
+    })
+    expect(itemOf(withAbstract, 'CHEM-DC-005')?.status).toBe('pass')
   })
 })

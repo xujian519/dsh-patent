@@ -3603,7 +3603,7 @@ The media tool selects an image, video, or speech model through the provider sea
 
 ### `domain_check`
 
-按专利领域缺陷清单对一份申请文件跑确定性自检（不调用模型）。当前支持 mechanical（机械域 30 项）与 software（软件/AI 域 28 项）。它把 claim_lint（权利要求形式）与 validate_specification（说明书）的结论按清单项汇总：每项给出 pass（已核干净）、hit（命中，附规则与说明）或 manual（须人工判断，不得视为通过）。manual 有两种来源：判据本身不可机械判定；或规则只覆盖该缺陷的一部分（未命中不等于通过，reason 会说明覆盖到哪）。输入 text 为说明书全文；传 claims 才能跑权项相关项；传 abstract 才能跑摘要项；传 patent_type 才能跑实用新型客体项。software 域会自动按 tech_domain=software 运行软件客体与模型公开规则。passed 只表示已运行的确定性规则未发现 error，不表示符合专利法；manual 项必须由人复核。
+按专利领域缺陷清单对一份申请文件跑确定性自检（不调用模型）。当前支持 mechanical（机械域 30 项）、software（软件/AI 域 28 项）与 chemical（化学域 33 项）。它把 claim_lint（权利要求形式）与 validate_specification（说明书）的结论按清单项汇总：每项给出 pass（已核干净）、hit（命中，附规则与说明）或 manual（须人工判断，不得视为通过）。manual 有两种来源：判据本身不可机械判定；或规则只覆盖该缺陷的一部分（未命中不等于通过，reason 会说明覆盖到哪）。输入 text 为说明书全文；传 claims 才能跑权项相关项；传 abstract 才能跑摘要项；传 patent_type 才能跑实用新型客体项。software 域会自动按 tech_domain=software 运行软件客体与模型公开规则；chemical 域会自动按 tech_domain=chemical 运行化学撰写与公开规则。passed 只表示已运行的确定性规则未发现 error，不表示符合专利法；manual 项必须由人复核。
 
 ```json
 {
@@ -3611,10 +3611,11 @@ The media tool selects an image, video, or speech model through the provider sea
   "properties": {
     "domain": {
       "type": "string",
-      "description": "领域：mechanical（机械）/ software（软件与 AI）。",
+      "description": "领域：mechanical（机械）/ software（软件与 AI）/ chemical（化学）。",
       "enum": [
         "mechanical",
-        "software"
+        "software",
+        "chemical"
       ]
     },
     "text": {
@@ -6674,7 +6675,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 ### `rule_check`
 
-对给定文本运行确定性成文规则检查（关键词黑名单 / 模式 / 结构 / 引用范围 / 同义词匹配 / 引文重复），返回带严重级别、处置建议与法条依据的违规项。多数规则声明适用前提：前提不命中的规则不产生任何结果，文本只按其实际讨论的主题接受检查（未触及新颖性的答复不会收到新颖性完整性命中）。在发布合规敏感输出（如专利结论、法律意见）前使用。范围：patent（通用专利合规）、patent-electrical（H 部电学规则 + 通用合规）、patent-full（全部随包资产：通用合规 + nuo 镜像 + 手写并入规则，需激活评审）、撰写 scope patent-drafting（权利要求/说明书撰写）、分析 scope patent-analysis（专利性/新颖性/创造性）、作业 scope patent-oa-response / patent-invalidation / patent-invalidation-defense / patent-reexamination / patent-infringement（把 patent-full 资产按该作业的规则域收窄：本作业的文书域加上它必须答复或论证的条款所在的域；无效作业分请求人侧与答辩侧两个入口，答辩侧含答复实践域），或 pack（由项目 manifest .sati/rules.yaml 组装的分层规则包：base + domains + overrides）。手头已有通知书正文时，作业 scope 还可传 notice=通知书正文：两条双输入规则（PR-OA-008 驳回理由覆盖 / PR-OA-009 未提条款引用）随该通知书一并评估答复；未提供 notice 时，这两条在结果中显式列为未评估。每条结果末尾的「评估输入」给出本次实际读到的文本的字数与指纹：转述结果时请一并保留，便于与另一次运行对照是否读的是同一份文本。
+对给定文本运行确定性成文规则检查（关键词黑名单 / 模式 / 结构 / 引用范围 / 同义词匹配 / 引文重复），返回带严重级别、处置建议与法条依据的违规项。多数规则声明适用前提：前提不命中的规则不产生任何结果，文本只按其实际讨论的主题接受检查（未触及新颖性的答复不会收到新颖性完整性命中）。在发布合规敏感输出（如专利结论、法律意见）前使用。范围：patent（通用专利合规）、patent-electrical（H 部电学规则 + 通用合规）、patent-full（全部随包资产：通用合规 + nuo 镜像 + 手写并入规则，需激活评审）、撰写 scope patent-drafting（权利要求/说明书撰写）、分析 scope patent-analysis（专利性/新颖性/创造性）、作业 scope patent-oa-response / patent-invalidation / patent-invalidation-defense / patent-reexamination / patent-infringement（把 patent-full 资产按该作业的规则域收窄：本作业的文书域加上它必须答复或论证的条款所在的域；无效作业分请求人侧与答辩侧两个入口，答辩侧含答复实践域），域 scope patent-mechanical / patent-chemical / patent-software（patent-full 资产加上该领域的规则包：通用资产未覆盖的论证完整性规则），或 pack（由项目 manifest .sati/rules.yaml 组装的分层规则包：base + domains + overrides）。手头已有通知书正文时，作业 scope 还可传 notice=通知书正文：两条双输入规则（PR-OA-008 驳回理由覆盖 / PR-OA-009 未提条款引用）随该通知书一并评估答复；未提供 notice 时，这两条在结果中显式列为未评估。每条结果末尾的「评估输入」给出本次实际读到的文本的字数与指纹：转述结果时请一并保留，便于与另一次运行对照是否读的是同一份文本。
 
 ```json
 {
@@ -6686,7 +6687,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
     },
     "scope": {
       "type": "string",
-      "description": "Rule set scope. Defaults to 'patent' (4 general compliance rules only; choose a job scope for substantive checks). 'patent-drafting' / 'patent-analysis' cover claim/spec drafting and patentability analysis; 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' evaluate the full assets filtered to that job's rule domains; 'patent-mechanical' adds the mechanical domain pack (structural-equivalence argument completeness) and 'patent-software' the software/AI pack (subject-matter argument completeness) on top of the full assets. 'pack' loads the layered rule pack declared by .sati/rules.yaml."
+      "description": "Rule set scope. Defaults to 'patent' (4 general compliance rules only; choose a job scope for substantive checks). 'patent-drafting' / 'patent-analysis' cover claim/spec drafting and patentability analysis; 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' evaluate the full assets filtered to that job's rule domains; 'patent-mechanical' adds the mechanical domain pack (structural-equivalence argument completeness), 'patent-chemical' the chemistry pack (Markush inventiveness argument and biological-deposit completeness) and 'patent-software' the software/AI pack (subject-matter argument completeness) on top of the full assets. 'pack' loads the layered rule pack declared by .sati/rules.yaml."
     },
     "notice": {
       "type": "string",
@@ -6765,7 +6766,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 - 权项—实施例覆盖矩阵（A26.3/A26.4，传 coverage_entries 时；覆盖度由 features 与 embodiment_refs 计算，不接受调用方给定的覆盖度结论）
 - 实用新型客体（A2.3，patent_type=utility_model 且传 claims 时）：权利要求主题名称是方法／工艺，或落在组合物与无固定形状产品上，报 error
 - 软件客体与模型公开（tech_domain=software 时）：算法／程序本身作主题、信号或比特流作载体报 error；技术载体缺失、商业规则词汇、训练数据与模型结构未公开、缩写未定义报 warning
-- 效果数据定量性、化学领域产物表征数据（tech_domain=chemical 时）
+- 化学领域（tech_domain=chemical 时）：产物表征数据缺失、参数缺单位、实施例编号断裂或重复、马库什「任选取代」未限定取代基、组合物百分含量上限合计超过 100%、药物权项缺适应症、中药缺基源、生物材料缺保藏信息、协同效果缺对比例；权利要求主题写成疾病的治疗/诊断方法报 error，第二医药用途未采用制备药物的用途形式报 warning
 - 背景技术引证的国别/公开号/日期、有益效果与现有技术的对比、序列表引用、正文图片与表格位置、术语与附图标记一致性、实用新型附图内容（均为 warning，启发式）
 
 用法：说明书初稿完成后调用；传入 text（说明书全文）即可，另可传 title / abstract / claims / tech_domain / patent_type / has_drawings / drawing_count / abstract_figure_number / figure_analysis / claim_units / coverage_entries 启用相应校验。
@@ -6800,7 +6801,7 @@ passed 只表示已运行的确定性规则未发现 error，不表示符合专�
     },
     "tech_domain": {
       "type": "string",
-      "description": "技术领域（chemical 时附加化学表征数据校验；software 时附加软件客体与模型公开校验）",
+      "description": "技术领域（chemical 时附加化学撰写与公开校验；software 时附加软件客体与模型公开校验）",
       "enum": [
         "mechanical",
         "electrical",

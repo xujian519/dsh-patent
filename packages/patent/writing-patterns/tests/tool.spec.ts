@@ -119,14 +119,17 @@ describe('query_writing_patterns execution', () => {
     expect(value.mode).toBe('category')
     expect(value.patterns.map(pattern => pattern.id)).toEqual([
       'wp-claim-3step-prior-art-check',
+      'wp-claim-chemical-characterization',
+      'wp-claim-chemical-markush-scope',
+      'wp-claim-composition-closed-form',
       'wp-claim-dependent-layering',
       'wp-claim-functional-limitation',
       'wp-claim-markush-equivalents',
+      'wp-claim-medical-use-form',
       'wp-claim-software-trio',
       'wp-claim-unity-special-feature',
-      'wp-claim-utility-model',
     ])
-    expect(value.skills).toContain('<skill id="wp-claim-utility-model">')
+    expect(value.skills).toContain('<skill id="wp-claim-unity-special-feature">')
     expect(value.skills).not.toContain('wp-spec-background')
   })
 

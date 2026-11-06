@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest'
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { claimChartAtom, ClaimChartHandler } from '@deepseek-ai/dsh-patent-core'
+import { claimChartAtom, ClaimChartHandler, DEGRADED_CODE_KEY } from '@deepseek-ai/dsh-patent-core'
 import type { StageProvider } from '@deepseek-ai/dsh-patent-core'
 import type { ClaimChart } from '@deepseek-ai/dsh-patent-core'
 import { loadClaimChart } from '@deepseek-ai/dsh-patent-core'
@@ -381,12 +381,16 @@ it('引用完整性：行引用了不存在的 elementId/targetId → 打回重�
   expect(typeof state.claim_chart_doc).toBe('string') // 第二次好输出成功
 })
 
-it('sourcePath 文件不存在 → 错误消息含目标路径（重做超限降级）', async () => {
+it('sourcePath 文件不存在 → 调用模型前中止（不消耗重做），错误码归调用方输入', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'cc-src-'))
   const sourcePath = join(dir, 'missing.txt') // 不存在
+  let calls = 0
   try {
     const provider: StageProvider = {
-      callLLM: async () => JSON.stringify(goodChart()),
+      callLLM: async () => {
+        calls += 1
+        return JSON.stringify(goodChart())
+      },
     }
     const handler = new ClaimChartHandler()
     const state = await handler.execute({
@@ -400,6 +404,42 @@ it('sourcePath 文件不存在 → 错误消息含目标路径（重做超限降
     })
     expect(typeof state._error).toBe('string')
     expect((state._error as string).includes(sourcePath)).toBeTruthy() // 降级错误含目标路径
+    expect(state[DEGRADED_CODE_KEY]).toBe('invalid_tool_input')
+    // 源文不可读不是模型能修的错误：一次模型调用都不该发生。
+    expect(calls).toBe(0)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+it('多个目标中一个源文不可读 → 整次中止，不产出部分图表', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cc-src-partial-'))
+  const readable = join(dir, 'd1.txt')
+  const missing = join(dir, 'missing.txt')
+  writeFileSync(readable, SOURCE_TEXT, 'utf8')
+  let calls = 0
+  try {
+    const state = await new ClaimChartHandler().execute({
+      state: {
+        claim: CLAIM,
+        chart_source_roots: [dir],
+        chart_targets: JSON.stringify([
+          { id: 'D1', kind: 'prior-art', sourcePath: readable },
+          { id: 'D2', kind: 'prior-art', sourcePath: missing },
+        ]),
+        chart_mode: 'invalidity',
+      },
+      provider: {
+        callLLM: async () => {
+          calls += 1
+          return JSON.stringify(goodChart())
+        },
+      },
+    })
+    expect(state.claim_chart_doc).toBeUndefined()
+    expect(state[DEGRADED_CODE_KEY]).toBe('invalid_tool_input')
+    expect(state._error as string).toContain(missing)
+    expect(calls).toBe(0)
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -442,7 +482,7 @@ it('多个目标共享同一 sourcePath 时只读取一次源文件', async () =
   }
 })
 
-it('sourcePath 不在 chart_source_roots → 行级报原因并降级，内容不进入提示词', async () => {
+it('sourcePath 不在 chart_source_roots → 调用模型前中止，内容不进入提示词', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'cc-src-denied-'))
   const root = join(dir, 'allowed')
   mkdirSync(root)
@@ -467,7 +507,8 @@ it('sourcePath 不在 chart_source_roots → 行级报原因并降级，内容�
     expect(typeof state._error).toBe('string')
     expect(state._error as string).toContain('不在允许目录')
     expect(state._error as string).toContain(outside)
-    expect(prompts[0]).not.toContain(SOURCE_TEXT)
+    expect(state[DEGRADED_CODE_KEY]).toBe('invalid_tool_input')
+    expect(prompts).toEqual([])
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -489,6 +530,7 @@ it('空 chart_source_roots 拒绝所有源文件，不表示任意路径', async
     })
     expect(typeof state._error).toBe('string')
     expect(state._error as string).toContain('不在允许目录')
+    expect(state[DEGRADED_CODE_KEY]).toBe('invalid_tool_input')
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -523,7 +565,7 @@ it('未配置根时只读取 cwd 内的相对源路径', async () => {
   }
 })
 
-it('chart_source_max_bytes 生效：超过上限的源文件按行报错', async () => {
+it('chart_source_max_bytes 生效：超过上限的源文件在调用模型前中止', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'cc-src-size-'))
   const sourcePath = join(dir, 'd1.txt')
   writeFileSync(sourcePath, SOURCE_TEXT, 'utf8')
@@ -540,6 +582,7 @@ it('chart_source_max_bytes 生效：超过上限的源文件按行报错', async
     })
     expect(typeof state._error).toBe('string')
     expect(state._error as string).toContain('超过大小上限（5 字节）')
+    expect(state[DEGRADED_CODE_KEY]).toBe('invalid_tool_input')
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

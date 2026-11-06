@@ -30,6 +30,16 @@ export const DEGRADED_ERROR_KEY = '_error'
 export const DEGRADED_RETRYABLE_KEY = '_retryable'
 
 /**
+ * 降级错误码键：与 {@link DEGRADED_ERROR_KEY} 同时出现时，标记失败的归属，
+ * 供工具层选择稳定的 `PatentToolError` 码。调用方可在入参修正的问题（路径不可读、
+ * 配置越界）报 `invalid_tool_input`，缺省表示执行失败。
+ */
+export const DEGRADED_CODE_KEY = '_error_code'
+
+/** 降级片段可携带的失败归属；工具层据此选择错误码。 */
+export type DegradedCode = 'invalid_tool_input' | 'tool_execution_failed'
+
+/**
  * 结构化回退信号键：handler 返回该键表示本阶段要求上游重做；值须为
  * `RetrySignal[]`。执行器把它作为阶段局部结果读取（不写入共享 state），
  * 由工作流按阶段的 `retry.whenRevisionRequested` 决定是否回退。

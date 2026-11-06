@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-rc.1/claim-chart-unreadable-source/guide.md
+/:
+  en: edefc52f43b62a0a
+  zh: 2a8167c873f888cb
+/claim-chart-build-validates-sources-before-generating:
+  en: 7eb33e1bfde8718c
+  zh: 8f3b66148092c3d8
+/claim-chart-build-validates-sources-before-generating/change:
+  en: 09be8a670cf68227
+  zh: d83618902eec126b
+/claim-chart-build-validates-sources-before-generating/migration:
+  en: 887f757629f817db
+  zh: 07bbb6ae6f9dbe43

@@ -267,4 +267,26 @@ describe('claim_chart_build', () => {
     const result = await execute(ctx, 'claim_chart_build', { mode: 'invalidity', claim_text: '  ', targets: [] }, 'cc-2')
     expect(result.isError).toBe(true)
   })
+
+  it('reports an unreadable source as invalid_tool_input, not an execution failure', async () => {
+    let calls = 0
+    const tool = createClaimChartBuildTool({
+      model: {
+        stream: async function* () {
+          calls += 1
+          yield { type: 'done' as const }
+        },
+      },
+    })
+    await expect(tool.execute({
+      mode: 'invalidity',
+      claim_text: '1. 一种装置，包括壳体。',
+      targets: [{ id: 'D1', kind: 'prior-art', source_path: '/nonexistent/dsh-claim-chart/d1.txt' }],
+    }, { signal } as never)).rejects.toMatchObject({
+      name: 'PatentToolError',
+      code: 'invalid_tool_input',
+    })
+    // 源文不可读在读文件阶段就已中止，模型端口一次都没被调用。
+    expect(calls).toBe(0)
+  })
 })

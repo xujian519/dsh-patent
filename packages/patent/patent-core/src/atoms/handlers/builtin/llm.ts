@@ -9,35 +9,43 @@
 import { isAbortError } from '@deepseek-ai/dsh-value'
 import type { PipelineState } from '../../handler.ts'
 import {
+  DEGRADED_CODE_KEY,
   DEGRADED_ERROR_KEY,
   DEGRADED_RETRYABLE_KEY,
   StageCancelledError,
   getStateArray,
   getStateString,
   isStageCancelledError,
+  type DegradedCode,
 } from '../../handler.ts'
 import type { StageProvider } from '../../../types.ts'
 import { collectPortText } from '../../../model-port.ts'
 import { tryParseJson } from '../../../llm-json.ts'
 
-/** 降级选项：`retryable` 标记 LLM/检索等临时故障，供执行器重试。 */
+/**
+ * 降级选项：`retryable` 标记 LLM/检索等临时故障，供执行器重试；
+ * `code` 标记失败归属，供工具层选择稳定错误码。
+ */
 export type DegradedOptions = {
   /** `true` 表示失败可重试；缺省为终态失败。 */
   retryable?: boolean
+  /** 失败归属；缺省按执行失败上报。 */
+  code?: DegradedCode
 }
 
 /**
  * 返回包含降级诊断的状态片段。
  * @param atom - 发生降级的原子名称。
  * @param reason - 降级原因。
- * @param options - 可选重试标记；终态失败省略。
+ * @param options - 可选重试标记与失败归属；终态执行失败省略。
  * @returns 携带 {@link DEGRADED_ERROR_KEY} 的状态片段，可重试时另带
- *   {@link DEGRADED_RETRYABLE_KEY}。
+ *   {@link DEGRADED_RETRYABLE_KEY}，声明归属时另带 {@link DEGRADED_CODE_KEY}。
  */
 export function degraded(atom: string, reason: string, options: DegradedOptions = {}): PipelineState {
   return {
     [DEGRADED_ERROR_KEY]: `[${atom}] ${reason}`,
     ...(options.retryable === true ? { [DEGRADED_RETRYABLE_KEY]: true } : {}),
+    ...(options.code === undefined ? {} : { [DEGRADED_CODE_KEY]: options.code }),
   }
 }
 

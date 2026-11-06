@@ -252,7 +252,8 @@ function checkChartShape(elements: unknown[], rows: unknown[]): string[] {
 
 /**
  * 三关校验：返回错误列表（空 = 全部通过）。sources 由 execute 预读一次并在重做
- * attempt 间复用；声明了 sourcePath 的目标携带文本或失败原因，失败统一报"源文件不可读"。
+ * attempt 间复用；源文不可读在进入本函数前就已中止（见 {@link readTargetSources}），
+ * 因此这里的每个 source 都携带已读到的文本。
  */
 function validateChart(
   elements: ClaimElement[],
@@ -292,13 +293,8 @@ function validateChart(
     if (!pinFormat.ok) errors.push(`行 [${row.elementId}→${row.targetId}] ${pinFormat.reason}`)
     const target = targetById.get(row.targetId)
     errors.push(...validateRowMapping(row, target?.target, mode))
-    if (target?.source !== undefined) {
-      const { path, result } = target.source
-      if (!result.ok) {
-        errors.push(`行 [${row.elementId}→${row.targetId}] 源文件不可读: ${path}（${result.reason}）`)
-        continue
-      }
-      const sourceText = result.text
+    if (target?.sourceText !== undefined) {
+      const sourceText = target.sourceText
       const pin = validatePinCite(row.pinCite, sourceText)
       if (!pin.ok) errors.push(`行 [${row.elementId}→${row.targetId}] ${pin.reason}`)
       const quote = verifyQuoteInSource(row.quote, sourceText)
@@ -308,16 +304,16 @@ function validateChart(
   return errors
 }
 
-/** 目标及其源文读取结果；仅在目标声明 sourcePath 时携带 source。 */
+/** 目标及其已读到的源文；仅在目标声明 sourcePath 且读取成功时携带 sourceText。 */
 type SourcedTarget = {
   target: ChartTarget
-  source?: {
-    /** 目标声明的路径，用于行级错误归因。 */
-    path: string
-    /** 预读成功返回文本，失败返回原因。 */
-    result: ChartSourceReadResult
-  }
+  sourceText?: string
 }
+
+/** 预读结果：任一目标源文不可读即整体失败，失败原因按路径归因。 */
+type TargetSourcesResult =
+  | { ok: true; sources: readonly SourcedTarget[] }
+  | { ok: false; failures: readonly { path: string; reason: string }[] }
 
 /** 未显式提供目标时，按场景模式从上一阶段产出派生。 */
 function deriveModeTargets(mode: ChartMode, state: PipelineState): ChartTarget[] {
@@ -328,22 +324,55 @@ function deriveModeTargets(mode: ChartMode, state: PipelineState): ChartTarget[]
 
 /**
  * 预读目标源文件一次（重做 attempt 间复用）：同一路径只读一次，不同路径并行读取。
- * 失败结果同样随目标返回，由 validateChart 对引用该源的每行报出具体原因。
+ *
+ * 任一源文不可读即整体失败：模型无法通过改写输出来修复读不到的文件，继续生成只会
+ * 静默跳过该目标的引用校验（fail-open），并让重做循环空转。调用方据此在进入模型
+ * 循环前中止，把失败归因到具体路径。
  */
 async function readTargetSources(
   targets: readonly ChartTarget[],
   policy: ChartSourcePolicy,
-): Promise<SourcedTarget[]> {
+): Promise<TargetSourcesResult> {
   const reads = new Map<string, Promise<ChartSourceReadResult>>()
-  return Promise.all(targets.map(async (target) => {
-    if (target.sourcePath === undefined) return { target }
+  const entries = await Promise.all(targets.map(async (target) => {
+    if (target.sourcePath === undefined) return { target } as const
     let read = reads.get(target.sourcePath)
     if (read === undefined) {
       read = readChartSource(target.sourcePath, policy)
       reads.set(target.sourcePath, read)
     }
-    return { target, source: { path: target.sourcePath, result: await read } }
+    const result = await read
+    return result.ok
+      ? { target, sourceText: result.text } as const
+      : { target, failure: { path: target.sourcePath, reason: result.reason } } as const
   }))
+  const failures = entries.flatMap(entry => 'failure' in entry ? [entry.failure] : [])
+  if (failures.length > 0) return { ok: false, failures }
+  return {
+    ok: true,
+    sources: entries.map(entry => ('sourceText' in entry
+      ? { target: entry.target, sourceText: entry.sourceText }
+      : { target: entry.target })),
+  }
+}
+
+/**
+ * 源文预读失败的降级片段：进入模型循环前中止，避免把读不到的文件当成模型输出问题重做。
+ * @param failures - 读取失败的目标路径与原因。
+ * @param cwd - 相对路径的解析基准，写进消息供调用方修正。
+ * @returns 归因为 `invalid_tool_input` 的降级状态。
+ */
+function unreadableSources(
+  failures: readonly { path: string; reason: string }[],
+  cwd: string,
+): PipelineState {
+  const detail = failures.map(f => `${f.path}（${f.reason}）`).join('；')
+  return degraded(
+    'claim-chart',
+    `源文不可读，已中止且未调用模型: ${detail}。`
+    + `相对路径按 ${cwd} 解析；路径、扩展名、允许目录与大小上限均可修正后重试。`,
+    { code: 'invalid_tool_input' },
+  )
 }
 
 /** 渲染提示词中的目标清单。 */
@@ -423,7 +452,9 @@ export class ClaimChartHandler implements StageHandler {
     // 显式传入的目标优先；OA 答复由解析产出派生，可专利性由过滤后的检索命中派生。
     const targets = targetsRes.targets.length > 0 ? targetsRes.targets : deriveModeTargets(mode, state)
 
-    const sources = await readTargetSources(targets, policyResult.policy)
+    const sourcesResult = await readTargetSources(targets, policyResult.policy)
+    if (!sourcesResult.ok) return unreadableSources(sourcesResult.failures, policyResult.policy.cwd)
+    const sources = sourcesResult.sources
     const targetLines = renderTargetLines(targets)
     const basePrompt = [
       '你是专利权利要求分析专家。把权利要求拆分为编号要素，并逐要素映射到目标对象。',

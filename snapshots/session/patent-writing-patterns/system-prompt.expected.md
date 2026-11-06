@@ -15,9 +15,13 @@ Call query_writing_patterns with the case category, the case features, or search
   <pattern id="wp-oa-novelty-separate" category="oa_novelty">新颖性单独对比 OA 答复</pattern>
   <pattern id="wp-oa-clarity-support" category="oa_clarity">不清楚/不支持 OA 答复——区分 26.3 与 26.4</pattern>
   <pattern id="wp-claim-3step-prior-art-check" category="claim_drafting">撰写期三步法自检——用最接近现有技术反打独权</pattern>
+  <pattern id="wp-claim-chemical-characterization" category="claim_drafting">化合物与高分子表征——四选一优先化学名与化学式</pattern>
+  <pattern id="wp-claim-chemical-markush-scope" category="claim_drafting">马库什通式范围——每个变量都用「选自」闭合定义</pattern>
+  <pattern id="wp-claim-composition-closed-form" category="claim_drafting">组合物组分与含量——闭式表达并把上限收敛到 100%</pattern>
   <pattern id="wp-claim-dependent-layering" category="claim_drafting">从属权利要求分层策略——三层保护纵深</pattern>
   <pattern id="wp-claim-functional-limitation" category="claim_drafting">功能性限定——说明书中给出足够实施方式</pattern>
   <pattern id="wp-claim-markush-equivalents" category="claim_drafting">化学通式与马库什——并列下位都能达到同一效果</pattern>
+  <pattern id="wp-claim-medical-use-form" category="claim_drafting">医药用途——第一用途写产品，第二用途写 Swiss 型</pattern>
   <pattern id="wp-claim-software-trio" category="claim_drafting">软件三件套——方法、装置与存储介质共享同一发明构思</pattern>
   <pattern id="wp-claim-unity-special-feature" category="claim_drafting">单一性检查——标出特定技术特征，核对各类独权是否共享</pattern>
   <pattern id="wp-claim-utility-model" category="claim_drafting">实用新型独立权利要求撰写——前序+特征两段式</pattern>
@@ -25,7 +29,9 @@ Call query_writing_patterns with the case category, the case features, or search
   <pattern id="wp-spec-background" category="spec_drafting">说明书背景技术撰写——问题层次化+对比表</pattern>
   <pattern id="wp-spec-invention-content" category="spec_drafting">发明内容三要素——技术问题、技术方案、有益效果（内容要素，不是标题）</pattern>
   <pattern id="wp-spec-numeric-range-fallback" category="spec_drafting">数值范围退路——端点与中值都写进实施例</pattern>
+  <pattern id="wp-spec-tcm-prescription" category="spec_drafting">中药处方——药材、基源、炮制与制法四件套</pattern>
   <pattern id="wp-disclosure-pfe" category="disclosure">技术交底书撰写——PFE 三元组提取法</pattern>
+  <pattern id="wp-spec-biotech-deposit-sequence" category="disclosure">生物材料保藏与序列表——申请日前保藏、三处一致、ST.26 提交</pattern>
   <pattern id="wp-ipc-strategy" category="ipc_strategy">IPC 分类辅助撰写——检索与审查领域定位</pattern>
   <pattern id="wp-embodiment-enablement-matrix" category="embodiment">26.3 实施例矩阵——每个独权特征至少一条可实施实施例</pattern>
   <pattern id="wp-embodiment-writing" category="embodiment">说明书具体实施方式撰写——至少一个完整实施例</pattern>

@@ -1,6 +1,7 @@
 # Agent Note: Extracting the trajectory ledger's row (Issue #86)
 
 Status: implemented
+Archived: 2026-11-07
 
 English | [中文](2026-09-15-trajectory-row-extraction.zh.md)
 

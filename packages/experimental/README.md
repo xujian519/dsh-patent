@@ -45,6 +45,7 @@ Promotion requires a named product role, documented public behavior and limitati
 | [`personalized-recommendations`](personalized-recommendations/README.md) | Default-disabled bundle of personalized pages, plugin recommendations and their action cards | — |
 | [`tool-session-query`](tool-session-query/README.md) | Workspace-authorized model session search, trace, and event reads | — |
 | [`video-mode`](video-mode/README.md) | Video production: media provider seam, project and EDL contracts, generation/assembly/delivery tools, synthetic, local ComfyUI, cloud MiniMax-H3, and SiliconFlow Wan2.2 providers | `ctx.media` |
+| [`video-bundle`](video-bundle/README.md) | Optional bundle composing the video preset, its production skills, the media tools, and the Web Video studio | — |
 | [`session-search`](session-search/README.md) | Optional experimental global session search tools | — |
 | [`ralph-bundle`](ralph-bundle/README.md) | Optional repeated delegation with an isolated workflow engine | — |
 | [`terminal-bundle`](terminal-bundle/README.md) | Optional global persistent terminal tools | — |

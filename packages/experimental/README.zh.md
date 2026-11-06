@@ -45,6 +45,7 @@ kind: "package-group"
 | [`personalized-recommendations`](personalized-recommendations/README.zh.md) | 默认禁用的个性化页面、插件推荐及其操作卡片组合 | — |
 | [`tool-session-query`](tool-session-query/README.zh.md) | 按工作区授权的模型会话搜索、追踪与事件读取 | — |
 | [`video-mode`](video-mode/README.zh.md) | 视频生产：媒体 provider 能力缝、项目与 EDL 契约、生成/合成/交付工具、合成、本地 ComfyUI、云端 MiniMax-H3 与 SiliconFlow Wan2.2 provider | `ctx.media` |
+| [`video-bundle`](video-bundle/README.zh.md) | 组合 video 预设、其制作技能、媒体工具与 Web 视频工作室的可选组合包 | — |
 | [`session-search`](session-search/README.zh.md) | 可选实验性全局会话搜索工具 | — |
 | [`ralph-bundle`](ralph-bundle/README.zh.md) | 带隔离 workflow 引擎的可选重复委派 | — |
 | [`terminal-bundle`](terminal-bundle/README.zh.md) | 可选全局持久终端工具 | — |

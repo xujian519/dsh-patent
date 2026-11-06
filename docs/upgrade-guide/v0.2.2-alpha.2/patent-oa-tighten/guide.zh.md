@@ -11,7 +11,7 @@ description: "OA 链路在 `draft` 与 `slop_gate` 之间新增模型阶段 `tig
 
 `patent_oa_response_v1` 由 14 个阶段增至 15 个：`tighten` 紧跟 `draft`、排在 `slop_gate` 之前；它调用模型，故模型阶段由四个增至五个。
 
-```ts
+```ts ignore-check
 { id: 'tighten', atom: 'tighten',
   params: { text_key: 'draft', plan_key: 'response-plan', char_budget: OA_RESPONSE_DRAFT_BUDGET.total } }
 ```

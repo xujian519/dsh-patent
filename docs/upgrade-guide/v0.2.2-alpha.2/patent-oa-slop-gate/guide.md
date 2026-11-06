@@ -11,7 +11,7 @@ English | [中文](guide.zh.md)
 
 `patent_oa_response_v1` goes from 13 to 14 stages: `slop_gate` follows `draft`, and the model-backed count stays at four: the gate is deterministic. A later `tighten` makes it 15 stages, five model-backed.
 
-```ts
+```ts ignore-check
 { id: 'slop_gate', atom: 'slop-gate',
   params: { text_keys: ['draft'], char_budget: OA_RESPONSE_DRAFT_BUDGET.total },
   retry: { whenOutputMatches: '需修订', rewindTo: 'draft', maxRetries: 1 } }

@@ -247,7 +247,7 @@ HTML：`.html` 改用 `readFileTextComplete`（host 完整读，上限 `maxFileB
 
 标题栏显示 `成品 N · 工作稿 M · 章节 K`。`outline.md` 存在时解析其中的 H2 数量作为目标章节数，否则只显示已写数量；解析失败退化为计数，不影响列表。不引入持久化字段，全部从 `produced` 派生。
 
-实现：在 `packages/client/ui-document-studio/src/client/grouping.ts` 增加纯函数 `groupProduced(produced)` 与 `chapterProgress(produced, outline?)`；列表渲染为两个分区，选中仍用完整列表的路径；空状态区分“没有工作稿”与“有工作稿但没有成品”。
+实现：在与 `packages/client/ui-document-studio/src/client/index.ts` 同目录的新文件 `grouping.ts` 中增加纯函数 `groupProduced(produced)` 与 `chapterProgress(produced, outline?)`；列表渲染为两个分区，选中仍用完整列表的路径；空状态区分“没有工作稿”与“有工作稿但没有成品”。
 
 测试：纯函数覆盖 brief / outline / chapters / 最终成品 / 混合 / 重复路径；视图测试覆盖两个分区、章节计数与分组变化后选中不丢失。
 

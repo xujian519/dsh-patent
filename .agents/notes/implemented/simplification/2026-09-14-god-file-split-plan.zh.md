@@ -17,8 +17,8 @@ Issue #86 要求拆分 `packages/` 下体量过大的文件。它的清单列了
 | `packages/core/session/src/index.ts` | 488 | store：发布协议、生命周期与 fork 路径 | 在 |
 | `packages/core/tool-executor-ptc/src/ptc.ts` | 372 | 单个工具工厂，调度车道已抽出 | 在 |
 | `packages/acp/acp/src/index.ts` | 503 | 单个 341 行的 `apply` | 在 |
-| `packages/client/better-sidebar/src/client/state.ts` | 1900 | 克隆中心 | 不在 |
-| `packages/client/better-sidebar/src/client/Sidebar.tsx` | 1775 | 克隆中心 | 不在 |
+| `state.ts`（better-sidebar，已删除） | 1900 | 克隆中心 | 不在 |
+| `Sidebar.tsx`（better-sidebar，已删除） | 1775 | 克隆中心 | 不在 |
 | `packages/core/tools/src/index.ts` | 1913 | ToolRuntime 加五个职责 | 不在 |
 | `packages/self-evolve/self-evolve-basic/src/index.ts` | 1857 | 自审计以来持平 | 不在 |
 | `packages/subagent/subagent/src/manager.ts` | 1475 | 上游的托管 activation 重写替换了这个 fork 模块 | 不在——issue 自行销案 |
@@ -63,7 +63,7 @@ Issue #86 要求拆分 `packages/` 下体量过大的文件。它的清单列了
 ### 批次 2 —— 需要先把接口定形的切割
 
 - `code-runtime-python`：fd-3 帧读取器[已落地](../../implemented/simplification/2026-09-14-code-runtime-python-frame-reader.zh.md)，其帧回调只携带重建后的帧——没有任何消费者读取帧的原始字节长度，因此本条原本预计需要的协议并未建立；台账与 `log` 帧分支之间的契约是双向的，因为该分支要回报「已发生截断」。
-- `ui-trajectory`：inspector `<aside>`[已落地](../../implemented/simplification/2026-09-14-trajectory-record-inspector-extraction.zh.md)为 `RecordInspector`（~550 行，约 10 个值 + 4 个回调），其 pointer-capture 拖拽抽成 `useResizeHandle`。
+- `ui-trajectory`：inspector `<aside>`[已落地](../../archived/simplification/2026-09-14-trajectory-record-inspector-extraction.md)为 `RecordInspector`（~550 行，约 10 个值 + 4 个回调），其 pointer-capture 拖拽抽成 `useResizeHandle`。
 - `core/tools` 的 `ptc.ts` 与 `acp/acp`：批次 1 的提取把它们缩短之后，那两个超大方法剩下的主体。`ptc.ts` 的那部分成为下面批次 3 的调度池切口；`acp` 的 `apply` 仍为 341 行。
 - `fixture.ts`：历史脚本 `buildAlphaLog` 与投影 fold 家族均已[落地](../../implemented/simplification/2026-09-14-fixture-history-module-extraction.zh.md)。内存文件系统也已[落地](../../implemented/simplification/2026-09-14-fixture-file-system-module-extraction.zh.md)，并为该文件定下了本批次那个接口问题的答案：一个簇把世界的值作为参数收进来，自己持有它改动的状态。各自捕获一个世界状态绑定的三个 remote 簇，也依那个模板[落地](../../implemented/simplification/2026-09-14-fixture-configuration-remotes-extraction.zh.md)了，而该模板的退化情形是零参数工厂。`rpc` 派发表则[落地](../../implemented/simplification/2026-09-14-fixture-rpc-dispatch-extraction.zh.md)在一份 `FixtureRpcDeps` 清单之后，该清单位于其成员类型所在之处；`fixture.ts` 为 2288 行。
 
@@ -74,7 +74,7 @@ Issue #86 要求拆分 `packages/` 下体量过大的文件。它的清单列了
 - `ptc.ts` 调度池：有序提交车道、独占屏障、背压、唤醒顺序防御全是行为，不是结构。[已落地](../../implemented/simplification/2026-09-15-ptc-dispatch-pool-extraction.zh.md)至 `src/ptc-dispatch-pool.ts`——`DispatchPool` 接收 `{ maxParallel, isRunOver }`，传输层负责提交、登记附带工作与排空，`tests/ptc-dispatch-pool.spec.ts` 用八个用例直接驱动该车道；`ptc.ts` 为 372 行。
 - `core/session`：三个增量折叠已[落地](../../implemented/simplification/2026-09-14-session-folds-extraction.zh.md)到 `src/folds.ts`——`SessionFolds` 按引用接收日志数组与 surface，`Session` 保留三个一行委派，`index.ts` 为 904 行。`Session` 类已[落地](../../implemented/simplification/2026-09-15-session-object-extraction.zh.md)到 `src/session.ts`，并带上必须与它同址的 `attachments`/`SessionEntry` 对；两条发布路径都要用的两个监听器分发 helper 落 `src/observers.ts`。`@typert object` 类型字符串在 store 的注册里逐字不变，`index.ts` 为 488 行。
 - `code-runtime-python`：配置门禁[已落地](../../implemented/simplification/2026-09-15-python-config-gates-extraction.zh.md)到 `src/config.ts`——`Config`、门禁所检查的上限、`resolveRuntimeConfig`、`resolveInterpreter`、`resolvePythonBin`、`hostFrameParseCeiling` 与 `pythonEnvironment`——进程监管器[已落地](../../implemented/simplification/2026-09-15-python-child-supervisor-extraction.zh.md)到 `src/supervisor.ts`：`superviseChildRun` 经 `ChildRunDeps` 接收单次运行的入参，掌管 spawn、fd-3 帧、回复通道、定时与中止接线、信号升级与结算。`index.ts` 为 364 行，接线块的 `jscpd` 标记在这里经实测撤除（它们没有压制任何克隆）。
-- `ui-trajectory`：行渲染器[已落地](../../implemented/simplification/2026-09-15-trajectory-row-extraction.zh.md)为 `src/client/trajectory-row.tsx`——`TrajectoryRow` 是 memo 组件，其选中、节与时间线聚焦标记都是账本算好的原语，三条用例数行渲染次数以钉住本条点名的那个风险边界；`TrajectoryTable.tsx` 为 693 行。
+- `ui-trajectory`：行渲染器[已落地](../../archived/simplification/2026-09-15-trajectory-row-extraction.md)为 memo 组件 `TrajectoryRow`，其选中、节与时间线聚焦标记都是账本算好的原语，三条用例数行渲染次数以钉住本条点名的那个风险边界。该模块已随 2026-11-04 的上游同步删除；行渲染现在位于 `TrajectoryTable.tsx` 内。
 - `analyzer`：`Remote`/RPC 分析器与类型建模器在批次 2 待过一阵后回到批次 3，而把它们搬回来的那次阅读就是它们此前缺的证据。`allocateNodeId` 造出的是 `type:<文件>:<行>:<列>#<序号>`，序号是按位置计数的计数器，每次调用加一，因此一个 id 是**某个源码位置上的访问次序**的函数，而不是那个类型的函数。有两处让这个次序难以预测：`resolvedRemoteCodecType` 在它自己的 `convert` 闭包内、对着自己的 `completed`/`active` 两份缓存做分配——同一个书写位置会按缓存未命中的次序产出 `#1`、`#2`、`#3`；`convertType` 在递归之前就分配，于是共享 `getStart()` 的一个 union 及其首个成员，其次序由调用次序而非结构决定。两个簇写的是同一批五个 Map（`nodes`、`declarations`、`declarationStates`、`crossFaceLinks`、`nodeOrdinals`），而 `ensureDeclaration` 跨调用重入，靠 `declarationStates` 一道守卫挡着。`tests/__snapshots__/type-model.spec.ts.snap` 记录了这些 id 的 578 处出现，其中 282 个互不相同，因此一次重排会重命名 id，并以快照 diff 而非失败的形式出现。在补上一个钉住 `allocateNodeId` 的 id 稳定性、且覆盖它必须经受的那种重排的测试之前，这一刀不开始。已[钉住](../../implemented/testing/2026-09-15-node-id-stability.zh.md)：`tests/node-id-stability.spec.ts` 手写钉住两个 fixture 里每一处同址位置，并写出「哪个类型拿到了该序号」。[已落地](../../implemented/simplification/2026-09-15-analyzer-type-graph-extraction.zh.md)：类型建模器现在是 `src/type-graph.ts`（`class TypeGraph`，875 行），它拥有 `nodes`、`declarations`、`declarationStates` 与 `nodeOrdinals`，对外经 `declarationModels()`、`nodeModels()`、`setNode()` 与 `setDeclaration()` 暴露，并持有 id 分配以及两处原本直接够到这些 map 的 codec 侧写入。[已落地](../../implemented/simplification/2026-09-15-analyzer-remote-analyzer-extraction.zh.md)：Remote/RPC 分析器落 `src/remote-analyzer.ts`（`class RemoteAnalyzer`，1025 行），依赖清单 `RemoteAnalyzerDeps` 接 checker、face 程序、类型图、`registrationForFile` 与程序的已解析源文件；`validateInvocationIdentity` 成为「face + 已分析出的包」的导出函数，正是它让这道校验无需整个工作区即可测试。`analyzer.ts` 为 1253 行，出文件去写类型图状态的三处调用即 codec 的 `allocateNodeId`、`setNode` 与 `setDeclaration`。
 
 ## Alternatives considered
@@ -103,7 +103,7 @@ Issue #86 要求拆分 `packages/` 下体量过大的文件。它的清单列了
 - [提取会话的增量折叠](2026-09-14-session-folds-extraction.zh.md)（批次 3 首刀落地）
 - [提取 `run_code` 的子分发车道](2026-09-15-ptc-dispatch-pool-extraction.zh.md)（批次 3 第二刀落地）
 - [提取 `Session` 对象与发布观察者](2026-09-15-session-object-extraction.zh.md)（批次 3 第三刀落地）
-- [提取轨迹账本的行组件](2026-09-15-trajectory-row-extraction.zh.md)（批次 3 第四刀落地）
+- [提取轨迹账本的行组件](../../archived/simplification/2026-09-15-trajectory-row-extraction.md)（批次 3 第四刀落地）
 - [提取 analyzer 的类型图](2026-09-15-analyzer-type-graph-extraction.zh.md)（批次 3 第五刀落地）
 - [提取 python 后端的加载期门禁](2026-09-15-python-config-gates-extraction.zh.md)（批次 3 第六刀落地）
 - [提取 python 后端的子进程监管器](2026-09-15-python-child-supervisor-extraction.zh.md)（批次 3 第七刀落地）

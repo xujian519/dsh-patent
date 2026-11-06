@@ -1,6 +1,7 @@
 # Agent Note：提取轨迹账本的行组件（Issue #86）
 
 Status: implemented
+Archived: 2026-11-07
 
 [English](2026-09-15-trajectory-row-extraction.md) | 中文
 

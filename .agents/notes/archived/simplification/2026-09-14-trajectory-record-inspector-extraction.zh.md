@@ -1,6 +1,7 @@
 # Agent Note: Extracting the trajectory ledger's record inspector and resize handle (Issue #86)
 
 Status: implemented
+Archived: 2026-11-07
 
 [English](2026-09-14-trajectory-record-inspector-extraction.md) | 中文
 

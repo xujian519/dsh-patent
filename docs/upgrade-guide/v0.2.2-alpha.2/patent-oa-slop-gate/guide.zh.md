@@ -11,7 +11,7 @@ description: "OA 链路新增 `slop_gate` 阶段并带一次改写回路；门�
 
 `patent_oa_response_v1` 由 13 个阶段增至 14 个：`slop_gate` 紧跟在 `draft` 之后。模型阶段数不变（仍为四个）——门是确定性的。本版本稍后的 `tighten` 再把链路推到 15 个阶段、5 个模型阶段。
 
-```ts
+```ts ignore-check
 { id: 'slop_gate', atom: 'slop-gate',
   params: { text_keys: ['draft'], char_budget: OA_RESPONSE_DRAFT_BUDGET.total },
   retry: { whenOutputMatches: '需修订', rewindTo: 'draft', maxRetries: 1 } }

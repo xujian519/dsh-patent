@@ -215,7 +215,8 @@
   margin-top: -12px;
 }
 
-/* Logo row: 8px vertical and leading padding, with no trailing padding or
+/* Logo row: 8px vertical and 12px leading padding (the leading inset lands the
+   mark's left edge on the panel rows' 20px icon line), with no trailing padding or
    bottom margin. Expanded keeps the panel toggle at the
    right edge; the rail gives every control the same base left anchor before
    the shared entry translation is applied. macOS hiddenInset titlebar: the row
@@ -234,7 +235,7 @@
   justify-content: flex-end;
   gap: 8px;
   height: 60px;
-  padding: 8px 0 8px 8px;
+  padding: 8px 0 8px 12px;
   margin-bottom: 0;
   box-sizing: border-box;
   overflow: hidden;
@@ -278,8 +279,8 @@
 .brandIdentity {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 24px;
+  gap: 10px;
+  height: 30px;
   min-width: 0;
 }
 
@@ -295,7 +296,7 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  height: 24px;
+  height: 30px;
   font-size: 18px;
   font-weight: 600;
   line-height: 24px;

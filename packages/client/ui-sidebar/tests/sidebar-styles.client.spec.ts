@@ -49,7 +49,7 @@ describe('SidebarRoot.module.css', () => {
   })
 
   it('keeps the reviewed expanded spacing separate from rail and caption controls', () => {
-    expect(declarations('.logoRow')?.get('padding')).toBe('8px 0 8px 8px')
+    expect(declarations('.logoRow')?.get('padding')).toBe('8px 0 8px 12px')
     expect(declarations('.logoRow')?.get('margin-bottom')).toBe('0')
     expect(declarations('.newSession')?.get('margin')).toBe('0 calc(var(--dsh-sidebar-paint-inset) + 1px) 10px')
     expect(declarations('.newSessionContent')?.get('justify-content')).toBe('center')
@@ -84,10 +84,10 @@ describe('SidebarRoot.module.css', () => {
     expect(declarations('.collapsed .newSession')?.get('width')).toBe('36px')
   })
 
-  it('keeps full-size brand artwork with a compact mark-to-name gap', () => {
-    expect(declarations('.brandIdentity')?.get('gap')).toBe('5px')
-    expect(declarations('.brandIdentity')?.get('height')).toBe('24px')
-    expect(declarations('.brandName')?.get('height')).toBe('24px')
+  it('sizes the brand identity for the 30px mark and its 10px mark-to-name gap', () => {
+    expect(declarations('.brandIdentity')?.get('gap')).toBe('10px')
+    expect(declarations('.brandIdentity')?.get('height')).toBe('30px')
+    expect(declarations('.brandName')?.get('height')).toBe('30px')
     expect(declarations('.brandName')?.get('line-height')).toBe('24px')
     expect(declarations('.brandName')?.get('font-size')).toBe('18px')
     expect(declarations('.fallbackBrandName')?.get('font-size')).toBe('17px')

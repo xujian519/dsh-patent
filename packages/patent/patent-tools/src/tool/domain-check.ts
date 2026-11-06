@@ -135,7 +135,7 @@ const CHEMICAL_CHECKLIST: readonly ChecklistItem[] = [
   { id: 'CHEM-DC-011', title: '数值范围端点无实施例', rules: ['numeric_range_endpoints', 'numeric_range_midpoint'] },
   { id: 'CHEM-DC-012', title: '高分子分子量范围端点无实施例', rules: ['numeric_range_endpoints', 'numeric_range_midpoint'], partial: '规则只核数值范围端点与中间值是否在实施例出现；分子量范围本身是否过宽需人工判断' },
   { id: 'CHEM-DC-013', title: '分子量分布范围过宽', rules: ['numeric_range_endpoints', 'numeric_range_midpoint'], partial: '规则只核范围端点与中间值的实施例覆盖；分布宽度（如 PDI 上限）是否合理需人工判断' },
-  { id: 'CHEM-DC-014', title: '组合物百分含量合计不等于 100%', rules: ['chem_composition_total'], needs: ['claims'], partial: '规则只对权利要求中以百分比表述且未写「余量」的组合物求和；重量份配方与端点组合的可实施性需人工判断' },
+  { id: 'CHEM-DC-014', title: '组合物百分含量合计不等于 100%', rules: ['chem_composition_total'], needs: ['claims'], partial: '规则只对权利要求中以百分比表述且未写「余量」的组合物求和，判定下限合计超过 100% 或封闭式组合物上限不足 100%；重量份配方与端点组合的可实施性需人工判断' },
   { id: 'CHEM-DC-015', title: '组分上位概念过宽', rules: [] },
   { id: 'CHEM-DC-016', title: '性能参数无法客观测定', rules: [] },
   { id: 'CHEM-DC-017', title: '缺对比例', rules: ['chem_comparative_example_missing'], partial: '规则只在说明书主张协同/复配且全文无对比例时提示；该效果是否必须用对比例证明需人工判断' },
@@ -287,14 +287,15 @@ function evaluateItems(
 ): DomainCheckItemResult[] {
   const hitRules = new Set(findings.map(finding => finding.rule))
   return items.map((item) => {
+    const hitRulesOfItem = item.rules.filter(rule => hitRules.has(rule))
     const missing = item.needs?.find(input => !available.has(input))
     if (missing !== undefined) {
-      return { id: item.id, title: item.title, status: 'manual', rules: [], reason: MISSING_INPUT_REASON[missing] }
+      const hitNote = hitRulesOfItem.length > 0 ? `；但已命中规则：${hitRulesOfItem.join('、')}` : ''
+      return { id: item.id, title: item.title, status: 'manual', rules: [], reason: `${MISSING_INPUT_REASON[missing]}${hitNote}` }
     }
     if (item.rules.length === 0) {
       return { id: item.id, title: item.title, status: 'manual', rules: [], reason: MANUAL_REASON }
     }
-    const hitRulesOfItem = item.rules.filter(rule => hitRules.has(rule))
     if (hitRulesOfItem.length > 0) {
       return { id: item.id, title: item.title, status: 'hit', rules: [...item.rules], reason: `命中规则：${hitRulesOfItem.join('、')}` }
     }

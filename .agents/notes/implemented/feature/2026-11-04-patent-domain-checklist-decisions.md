@@ -14,7 +14,7 @@ Two checklists carry the last review before a patent application leaves the draf
 
 ### The three statuses
 
-`manual` has two sources, and neither is a pass. An item with no engine rule is `manual` because its criterion is legal or factual: `MECH-DC-003` (a missing reference number) needs the component list before a mark can be judged missing. An item whose rule covers only part of the defect is `manual` even when the rule fired nothing, and `reason` names the covered part: `MECH-DC-002` compares only `名称（标号）` pairs, so a component called two ways without marks stays open. A missing input produces `manual` naming that field, so a caller who passed only `text` sees why 25 mechanical items stayed open.
+`manual` has two sources, and neither is a pass. An item with no engine rule is `manual` because its criterion is legal or factual: `MECH-DC-003` (a missing reference number) needs the component list before a mark can be judged missing. An item whose rule covers only part of the defect is `manual` even when the rule fired nothing, and `reason` names the covered part: `MECH-DC-002` compares only `名称（标号）` pairs, so a component called two ways without marks stays open. A missing input produces `manual` naming that field, so a caller who passed only `text` sees why 25 mechanical items stayed open; when a mapped rule fired from another input anyway, `reason` also names it, so the finding is not hidden behind the missing field.
 
 ### What each domain decides
 

@@ -275,17 +275,25 @@ describe('domain_check: 化学域清单', () => {
     expect(value.findings.find(finding => finding.rule === 'chem_medical_use_method')?.severity).toBe('error')
   })
 
-  it('组合物上限合计超过 100% 命中 CHEM-DC-014', async () => {
-    const claims = '1. 一种组合物，其特征在于，包含组分 A 60-80% 和组分 B 30-50%。'
+  it('组合物下限合计超过 100% 命中 CHEM-DC-014', async () => {
+    const claims = '1. 一种组合物，其特征在于，包含组分 A 60-80% 和组分 B 50-70%。'
     const value = await run({ domain: 'chemical', text: CHEMICAL_SPEC, claims })
     expect(itemOf(value, 'CHEM-DC-014')?.status).toBe('hit')
-    expect(value.findings.find(finding => finding.rule === 'chem_composition_total')?.message).toContain('130%')
+    expect(value.findings.find(finding => finding.rule === 'chem_composition_total')?.message).toContain('110%')
   })
 
   it('马库什「任选取代」未限定取代基命中 CHEM-DC-008', async () => {
     const claims = '1. 一种通式（I）所示的化合物，其特征在于，R1 任选取代。'
     const value = await run({ domain: 'chemical', text: CHEMICAL_SPEC, claims })
     expect(itemOf(value, 'CHEM-DC-008')?.status).toBe('hit')
+  })
+
+  it('只传说明书时，缺输入的原因里点明说明书侧的命中', async () => {
+    const value = await run({ domain: 'chemical', text: '本发明公开通式（I）化合物，其中 R1 任选取代。' })
+    expect(itemOf(value, 'CHEM-DC-008')?.status).toBe('manual')
+    expect(itemOf(value, 'CHEM-DC-008')?.reason).toContain('未提供 claims')
+    expect(itemOf(value, 'CHEM-DC-008')?.reason).toContain('已命中规则：chem_markush_optional_undefined')
+    expect(value.findings.find(finding => finding.rule === 'chem_markush_optional_undefined')?.severity).toBe('warning')
   })
 
   it('未提供 abstract 时摘要项报 manual，提供后才核', async () => {

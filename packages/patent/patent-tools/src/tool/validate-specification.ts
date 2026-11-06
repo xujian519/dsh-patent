@@ -405,7 +405,7 @@ const DESCRIPTION = [
   '- 权项—实施例覆盖矩阵（A26.3/A26.4，传 coverage_entries 时；覆盖度由 features 与 embodiment_refs 计算，不接受调用方给定的覆盖度结论）',
   '- 实用新型客体（A2.3，patent_type=utility_model 且传 claims 时）：权利要求主题名称是方法／工艺，或落在组合物与无固定形状产品上，报 error',
   '- 软件客体与模型公开（tech_domain=software 时）：算法／程序本身作主题、信号或比特流作载体报 error；技术载体缺失、商业规则词汇、训练数据与模型结构未公开、缩写未定义报 warning',
-  '- 化学领域（tech_domain=chemical 时）：产物表征数据缺失、参数缺单位、实施例编号断裂或重复、马库什「任选取代」未限定取代基、组合物百分含量上限合计超过 100%、药物权项缺适应症、中药缺基源、生物材料缺保藏信息、协同效果缺对比例；权利要求主题写成疾病的治疗/诊断方法报 error，第二医药用途未采用制备药物的用途形式报 warning',
+  '- 化学领域（tech_domain=chemical 时）：产物表征数据缺失、参数缺单位、实施例编号断裂或重复、马库什「任选取代」未限定取代基、组合物百分含量无法配平（下限合计超过 100%，或封闭式组合物上限合计不足 100%）、药物权项缺适应症、中药缺基源、生物材料缺保藏信息、协同效果缺对比例；权利要求主题写成疾病的治疗/诊断方法报 error，第二医药用途未采用制备药物的用途形式报 warning',
   '- 背景技术引证的国别/公开号/日期、有益效果与现有技术的对比、序列表引用、正文图片与表格位置、术语与附图标记一致性、实用新型附图内容（均为 warning，启发式）',
   '',
   '用法：说明书初稿完成后调用；传入 text（说明书全文）即可，另可传 title / abstract / claims / tech_domain / patent_type / has_drawings / drawing_count / abstract_figure_number / figure_analysis / claim_units / coverage_entries 启用相应校验。',

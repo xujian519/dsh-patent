@@ -12,17 +12,21 @@ function rulesOf(violations: Array<{ rule: string }>): string[] {
 }
 
 describe('checkChemicalClaimSubjectMatter', () => {
-  it('非化学域、缺权项与空白权项都不检查', () => {
+  it('非化学域、缺权项、空白权项与取不到主题的权项都不检查', () => {
     expect(checkChemicalClaimSubjectMatter(claim('一种药物组合物'), 'software')).toEqual([])
     expect(checkChemicalClaimSubjectMatter(undefined, 'chemical')).toEqual([])
     expect(checkChemicalClaimSubjectMatter('   ', 'chemical')).toEqual([])
+    expect(checkChemicalClaimSubjectMatter('1. ，其特征在于，向患者给药。', 'chemical')).toEqual([])
   })
 
-  it('治疗/诊断方法主题报 error', () => {
+  it('治疗/诊断方法主题报 error，未写「一种」的权项同样检查', () => {
     const violations = checkChemicalClaimSubjectMatter(claim('一种治疗糖尿病的方法，其特征在于，向患者给予化合物 A。'), 'chemical')
     expect(rulesOf(violations)).toEqual(['chem_medical_use_method'])
     expect(violations[0]?.severity).toBe('error')
     expect(violations[0]?.message).toContain('第二十五条第一款第三项')
+
+    const withoutYizhong = checkChemicalClaimSubjectMatter(claim('治疗糖尿病的方法，其特征在于，向患者给予化合物 A。'), 'chemical')
+    expect(rulesOf(withoutYizhong)).toEqual(['chem_medical_use_method'])
   })
 
   it('用途权项未写成制备药物用途时报 warning，Swiss 型不报', () => {
@@ -47,10 +51,25 @@ describe('checkChemicalClaimSubjectMatter', () => {
     expect(rulesOf(defined)).not.toContain('chem_markush_optional_undefined')
   })
 
-  it('组合物百分含量上限合计超过 100% 时报 warning', () => {
-    const violations = checkChemicalClaimSubjectMatter(claim('一种组合物，其特征在于，包含组分 A 60-80% 和组分 B 30-50%。'), 'chemical')
-    expect(rulesOf(violations)).toEqual(['chem_composition_total'])
-    expect(violations[0]?.message).toContain('130%')
+  it('组合物下限合计超过 100% 时报 warning，范围上限超过 100% 不报', () => {
+    const impossible = checkChemicalClaimSubjectMatter(claim('一种组合物，其特征在于，包含组分 A 60-80% 和组分 B 50-70%。'), 'chemical')
+    expect(rulesOf(impossible)).toEqual(['chem_composition_total'])
+    expect(impossible[0]?.message).toContain('下限合计 110%')
+
+    const percentForm = checkChemicalClaimSubjectMatter(claim('一种组合物，其特征在于，包含组分 A 60%-80% 和组分 B 50%-70%。'), 'chemical')
+    expect(percentForm[0]?.message).toContain('下限合计 110%')
+
+    const overlapping = checkChemicalClaimSubjectMatter(claim('一种组合物，其特征在于，包含组分 A 10-60% 和组分 B 40-80%。'), 'chemical')
+    expect(rulesOf(overlapping)).not.toContain('chem_composition_total')
+  })
+
+  it('封闭式组合物上限合计不足 100% 时报 warning，开放式组合物不报', () => {
+    const closed = checkChemicalClaimSubjectMatter(claim('一种组合物，其特征在于，由组分 A 10-20% 和组分 B 20-30% 组成。'), 'chemical')
+    expect(rulesOf(closed)).toEqual(['chem_composition_total'])
+    expect(closed[0]?.message).toContain('上限合计 50%')
+
+    const open = checkChemicalClaimSubjectMatter(claim('一种组合物，其特征在于，包括组分 A 10-20% 和组分 B 20-30%。'), 'chemical')
+    expect(rulesOf(open)).not.toContain('chem_composition_total')
   })
 
   it('组合物写明「余量」、只有一个百分数或不是组合物时不报', () => {
@@ -147,6 +166,12 @@ describe('checkChemicalDisclosure', () => {
     const sourced = checkChemicalDisclosure('中药处方：黄芪（Astragalus membranaceus）30 g。', undefined, 'chemical')
     expect(sourced).toEqual([])
 
+    const taxonomic = checkChemicalDisclosure('中药处方：黄芪 30 g。黄芪为豆科黄芪属植物 Astragalus membranaceus 的干燥根。', undefined, 'chemical')
+    expect(taxonomic).toEqual([])
+
+    const reagent = checkChemicalDisclosure('中药处方：黄芪 30 g，另含 Sodium chloride 5 g。', undefined, 'chemical')
+    expect(rulesOf(reagent)).toEqual(['chem_herb_source'])
+
     expect(checkChemicalDisclosure('处方：黄芪，当归。', undefined, 'chemical')).toEqual([])
     expect(checkChemicalDisclosure('本发明涉及一种中药组合物。', undefined, 'chemical')).toEqual([])
     expect(checkChemicalDisclosure('一种化合物 30 g。', undefined, 'chemical')).toEqual([])
@@ -155,6 +180,8 @@ describe('checkChemicalDisclosure', () => {
   it('生物材料缺保藏信息时报 warning，有保藏编号后不报', () => {
     const missing = checkChemicalDisclosure('本发明使用大肠杆菌菌株。', undefined, 'chemical')
     expect(rulesOf(missing)).toEqual(['chem_biological_deposit'])
+    expect(missing[0]?.section).toBe('具体实施方式')
+    expect(missing[0]?.line).toBe(1)
 
     const deposited = checkChemicalDisclosure('本发明使用大肠杆菌菌株，保藏编号 CCTCC NO: C2024123。', undefined, 'chemical')
     expect(deposited).toEqual([])
@@ -165,6 +192,7 @@ describe('checkChemicalDisclosure', () => {
   it('生物材料只出现在权项时也检查', () => {
     const violations = checkChemicalDisclosure('本发明涉及一种发酵方法。', claim('一种工程菌，其特征在于，过表达基因 X。'), 'chemical')
     expect(rulesOf(violations)).toEqual(['chem_biological_deposit'])
+    expect(violations[0]?.section).toBe('权利要求书')
   })
 
   it('主张协同但无对比例时报 warning', () => {

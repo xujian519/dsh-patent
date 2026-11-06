@@ -57,13 +57,17 @@ const MEDICAL_METHOD_SUBJECT = /(?:治疗|预防|诊断)[^，。；]{0,20}方法
 const USE_SUBJECT = /(?:用途|应用)$/
 
 /** The Swiss-type form that keeps a second medical use outside A25.1.3. */
-const PREPARATION_USE = /在制备[^。；]{0,40}(?:药物| medicament)[^。；]{0,20}(?:中|中的)?(?:的)?(?:用途|应用)/
+const PREPARATION_USE = /在制备[^。；]{0,40}药物[^。；]{0,20}(?:中|中的)?(?:的)?(?:用途|应用)/
 
 /** A percentage, optionally a range, as written in a composition claim. */
-const PERCENTAGE = /(\d+(?:\.\d+)?)\s*(?:%|％|wt\s*%|重量\s*%)(?:\s*(?:-|~|～|至|到)\s*(\d+(?:\.\d+)?)\s*(?:%|％|wt\s*%|重量\s*%)?)?/g
+// oxlint-disable-next-line @stylistic/max-len -- one alternation keeps the range and single-value forms visibly parallel
+const PERCENTAGE = /(\d+(?:\.\d+)?)\s*(?:(?:%|％|wt\s*%|重量\s*%)(?:\s*(?:-|~|～|至|到)\s*(\d+(?:\.\d+)?)\s*(?:%|％|wt\s*%|重量\s*%))?|(?:-|~|～|至|到)\s*(\d+(?:\.\d+)?)\s*(?:%|％|wt\s*%|重量\s*%))/g
 
 /** Wording that gives the balance of a composition, so range maxima may legitimately exceed 100. */
 const BALANCE_TERM = /(?:余量|余下|补足|加至|加水至)/
+
+/** A closed composition, whose stated components must account for the whole. */
+const CLOSED_FORM = /(?:由|基本上由)[^。；]{0,60}(?:组成|构成)/
 
 /** A Markush or generic-structure mention. */
 const MARKUSH_TERM = /(?:通式|马库什|Markush)/
@@ -82,8 +86,12 @@ const HERB_PRESCRIPTION = /(?:中药|中药材|药材|饮片)/
 /** A measured herb amount, which a traditional-medicine prescription states in mass. */
 const HERB_AMOUNT = /\d+(?:\.\d+)?\s*(?:g|克|kg|千克|mg|毫克|重量份|份)/
 
-/** A Latin binomial, the form a pharmacopoeia uses for a herb's botanical source. */
-const LATIN_BINOMIAL = /\b[A-Z][a-z]{2,}\s+[a-z]{2,}\b/
+/**
+ * A Latin binomial in a botanical context: a parenthesized name after a herb,
+ * or a taxonomic marker within the clause. A capitalized English phrase on its
+ * own ("Sodium chloride", "Sigma Aldrich") is a reagent or vendor, not a source.
+ */
+const LATIN_BINOMIAL = /[（(]\s*[A-Z][a-z]{2,}\s+[a-z]{2,}|(?:学名|拉丁名|拉丁学名|植物|属|种|科)[^。；]{0,20}[A-Z][a-z]{2,}\s+[a-z]{2,}/
 
 /** Wording that claims a combined effect, which normally needs a comparative example. */
 const SYNERGY_TERM = /(?:协同|复配|协同增效|复配增效)/
@@ -95,7 +103,7 @@ const COMPARATIVE_EXAMPLE = /(?:对比例|比较例|对照例|对比实验|对�
  * Subject-matter and form rules that read the claims.
  * @param claims - the claims text; absent or blank input is not checked.
  * @param techDomain - the declared technical domain; only `chemical` is checked.
- * @returns one violation per offending independent claim, in claim order.
+ * @returns one violation per matched rule, in claim order; a claim may match several rules.
  */
 export function checkChemicalClaimSubjectMatter(
   claims: string | undefined,
@@ -162,31 +170,47 @@ export function checkChemicalClaimSubjectMatter(
 }
 
 /**
- * Composition percentages whose upper bounds add up past 100%. The rule reads
- * one claim at a time and only when at least two percentages are stated; a
- * composition that states「余量」is skipped because its ranges may overlap on
- * purpose.
+ * Composition percentages that cannot add up to 100%. The rule reads one claim
+ * at a time and only when at least two percentages are stated; a composition
+ * that states「余量」is skipped because the balance component absorbs the rest.
+ *
+ * The criterion is satisfiability, not the sum of the maxima: ranges whose
+ * maxima exceed 100% are ordinary (「A 10–60%，B 40–80%」allows 40% + 60%). The
+ * claim is unclear when the minima already exceed 100% — no selection works —
+ * or when a closed composition's maxima stay below 100%.
  * @param number - the claim number, for the message.
  * @param subject - the claim subject.
  * @param text - the claim text.
- * @returns the violation, or `undefined` when the percentages are consistent or absent.
+ * @returns the violation, or `undefined` when the percentages can be combined to 100% or are absent.
  */
 function compositionTotalViolation(number: number, subject: string, text: string): SpecViolation | undefined {
   if (!/(?:组合物|组合|配方|重量份)/.test(subject) && !/(?:组合物|组合|配方)/.test(text)) return undefined
   if (BALANCE_TERM.test(text)) return undefined
+  let minimum = 0
   let maximum = 0
   let count = 0
   for (const match of text.matchAll(PERCENTAGE)) {
     count += 1
-    maximum += Number(match[2] ?? match[1])
+    minimum += Number(match[1])
+    maximum += Number(match[2] ?? match[3] ?? match[1])
   }
-  if (count < 2 || maximum <= 100) return undefined
+  if (count < 2) return undefined
+  if (minimum > 100) {
+    return {
+      rule: 'chem_composition_total',
+      family: 'claims',
+      severity: 'warning',
+      message: `第 ${number} 项组合物权利要求的各组分下限合计 ${minimum}%，任何取值都超过 100%：组分含量范围无法实施（《专利法》第二十六条第四款；《专利审查指南》第二部分第十章）`,
+      suggestion: '把各组分下限收敛到合计不超过 100%，或用「余量」「补足至 100%」限定平衡组分，并检查各范围的端点组合是否都可实施',
+    }
+  }
+  if (maximum >= 100 || !CLOSED_FORM.test(text)) return undefined
   return {
     rule: 'chem_composition_total',
     family: 'claims',
     severity: 'warning',
-    message: `第 ${number} 项组合物权利要求的各组分上限合计 ${maximum}%，超过 100%：组分含量范围不清楚（《专利法》第二十六条第四款；《专利审查指南》第二部分第十章）`,
-    suggestion: '把上限合计收敛到 100% 以内，或用「余量」「补足至 100%」限定平衡组分，并检查各范围的端点组合是否都可实施',
+    message: `第 ${number} 项封闭式组合物权利要求的各组分上限合计 ${maximum}%，不足 100%：组分含量无法配平（《专利法》第二十六条第四款；《专利审查指南》第二部分第十章）`,
+    suggestion: '补齐组分使上限合计达到 100%，或改写为开放式「包括」并增设余量组分，避免因含量无法配平导致方案不可实施',
   }
 }
 
@@ -363,12 +387,18 @@ function depositViolations(text: string, claims: string): SpecViolation[] {
   const material = BIOLOGICAL_MATERIAL.exec(combined)?.[0]
   if (material === undefined) return []
   if (DEPOSIT_MARKER.test(combined)) return []
+  const inSpecification = locateMatch(text, [material])
+  // oxlint-disable-next-line typescript/no-non-null-assertion -- the material is a substring of one of the two texts
+  const location = (inSpecification ?? locateMatch(claims, [material]))!
   return [{
     rule: 'chem_biological_deposit',
     family: 'description',
     severity: 'warning',
+    section: inSpecification === undefined ? '权利要求书' : '具体实施方式',
     message: `申请涉及生物材料「${material}」，但说明书与权利要求书均未记载保藏信息：公众可能无法获得该材料（《专利法》第二十六条第三款）`,
     suggestion: '若该材料公众不能得到，补写保藏单位名称、地址、保藏日期与保藏编号（如「CCTCC NO: C2024123」），并在请求书中声明；已有公开来源的，写明来源与获取方式',
+    line: location.line,
+    matchedSentence: location.matchedSentence,
   }]
 }
 

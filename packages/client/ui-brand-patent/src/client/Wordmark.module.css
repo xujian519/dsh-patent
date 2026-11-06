@@ -8,8 +8,8 @@
 }
 
 .title {
-  font-size: 12px;
-  line-height: 13px;
+  font-size: 16px;
+  line-height: 24px;
   letter-spacing: 0;
   color: var(--dsw-alias-label-primary);
 }

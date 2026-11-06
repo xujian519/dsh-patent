@@ -1,5 +1,6 @@
 /** Hover capability checks for client stylesheets. */
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect, it } from 'vitest'
 import { atRuleBlock, packageFiles, packageStylesheets } from './stylesheet-scan.ts'
 
@@ -33,6 +34,16 @@ it('rejects unguarded hover and queries that also match devices without hover', 
       }
     }
   `)).toEqual([])
+})
+
+it('leaves scratch roots beside package sources out of the scan', () => {
+  const scratch = mkdtempSync(join(import.meta.dirname, '.package-scan-'))
+  try {
+    writeFileSync(join(scratch, 'package.json'), '{ "name": "scratch" }\n')
+    expect(packageFiles(name => name === 'package.json').some(file => file.startsWith(scratch))).toBe(false)
+  } finally {
+    rmSync(scratch, { recursive: true, force: true })
+  }
 })
 
 it('limits every client hover selector to hover-capable primary input', () => {

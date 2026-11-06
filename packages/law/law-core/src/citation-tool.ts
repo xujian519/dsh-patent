@@ -4,7 +4,7 @@
  * 专利表与法律表的核验工具接受同样的三个输入、报告同样的六种判定，并在开头
  * 渲染同一张「引用 / 判定 / 处置 / 说明」表。这些片段不依赖工具框架，因此
  * 留在核心库里；两个域只提供各自的说明、finding 投影与解析器。
- * @module @deepseek-ai/dsh-patent-core/knowledge/citation-tool
+ * @module @deepseek-ai/dsh-law-core/citation-tool
  */
 
 /** The input shape both citation-verify tools accept. */

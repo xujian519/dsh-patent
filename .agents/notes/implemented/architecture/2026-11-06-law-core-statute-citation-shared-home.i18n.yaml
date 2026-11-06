@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-11-06-law-core-statute-citation-shared-home.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-06-law-core-statute-citation-shared-home.md
+/agent-note-statute-citation-decision-rule-moves-to-dsh-law-core:
+  en: 6eb2b717061b7ce8
+  zh: 42d2d496c4959fc7
+/agent-note-statute-citation-decision-rule-moves-to-dsh-law-core/problem:
+  en: cb95a48988fd0cf3
+  zh: 4c67d75bafba2a75
+/agent-note-statute-citation-decision-rule-moves-to-dsh-law-core/decision:
+  en: 30a95c9dfd461ca8
+  zh: 567bddd303486b07
+/agent-note-statute-citation-decision-rule-moves-to-dsh-law-core/alternatives-considered:
+  en: 5d33b4c177cb626a
+  zh: 5fbf3f5da6d17658
+/agent-note-statute-citation-decision-rule-moves-to-dsh-law-core/consequences:
+  en: 913e189b734fbb23
+  zh: b2a378b65f864b60

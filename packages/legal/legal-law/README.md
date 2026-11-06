@@ -23,7 +23,7 @@ Shipped Chinese legal-law index for the DeepSeek Harness: law-article reference 
 <a id="why-it-exists"></a>
 ## Why it exists
 
-A legal conclusion that cites 《民法典》第 143 条 is only as good as the text behind that number. The index ships with the deployment so the citation can be checked offline: the reference is parsed, the article is looked up, and the decision distinguishes an article that exists from one that does not, and a transcribed article from one nobody has verified. The reference parser, the entry reader, and the proposition test share their mechanics with `@deepseek-ai/dsh-patent-law` through `@deepseek-ai/dsh-patent-core` and `@deepseek-ai/dsh-patent-index-asset`; this package owns the legal-domain grammar, assets, and messages.
+A legal conclusion that cites 《民法典》第 143 条 is only as good as the text behind that number. The index ships with the deployment so the citation can be checked offline: the reference is parsed, the article is looked up, and the decision distinguishes an article that exists from one that does not, and a transcribed article from one nobody has verified. The reference parser, the entry reader, and the proposition test share their mechanics with `@deepseek-ai/dsh-patent-law` through `@deepseek-ai/dsh-law-core` and `@deepseek-ai/dsh-patent-index-asset`; this package owns the legal-domain grammar, assets, and messages.
 
 <a id="shipped-index"></a>
 ## Shipped index

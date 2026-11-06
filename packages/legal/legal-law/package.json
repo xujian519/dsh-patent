@@ -30,7 +30,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/dsh-patent-core": "workspace:*",
+    "@deepseek-ai/dsh-law-core": "workspace:*",
     "@deepseek-ai/dsh-patent-index-asset": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~"
   },

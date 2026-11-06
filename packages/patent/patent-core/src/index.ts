@@ -110,10 +110,69 @@ export {
   hasNegationContext,
   locateMatch,
   locationAt,
-  parseCnNumber,
   runeSlice,
 } from './rule/text-utils.ts'
 export type { MatchLocation, NegationContextOptions } from './rule/text-utils.ts'
+
+// Statute-citation machinery (text normalization, reference extraction,
+// proposition-overlap scoring, the per-article citation decision, and the
+// citation-verify tool scaffolding) lives in dsh-law-core so the legal domain
+// consumes it without depending on this package; re-exported here so existing
+// patent-domain consumers keep one import surface.
+export {
+  articleComparableEntries,
+  articleReferenceIdentity,
+  ARTICLE_CONTINUATION_PATTERN,
+  CITATION_FINDING_DECISION_PROPERTIES,
+  CITATION_REPORT_PROPERTIES,
+  citationFindingSchema,
+  citationInputProblem,
+  citationReportLines,
+  citationVerifyExecute,
+  citationVerifyOutputSchema,
+  citationVerifyParameters,
+  citationVerifyRender,
+  citationVerifyReport,
+  citationVerifyToolOptions,
+  collectReferences,
+  compactCitation,
+  createOverlapIndex,
+  decideArticleCitation,
+  findCompetingLabels,
+  formatArticleCitation,
+  formatCitationNumber,
+  formatCnNumber,
+  formatPercent,
+  narrowed,
+  normalizeCitationText,
+  parseCnNumber,
+  PROPOSITION_SUPPORT_DEFAULT,
+  readArticleContinuations,
+  readStatuteArticleCandidate,
+  scanUnrecognizedReferences,
+  stripBookMarks,
+  supportMismatchReason,
+  textOverlap,
+  topicOverlap,
+  transcribedText,
+  trimPunctuation,
+  truncateProposition,
+} from '@deepseek-ai/dsh-law-core'
+export type {
+  ArticleBaseline,
+  ArticleCandidate,
+  ArticleDecision,
+  ArticleProposition,
+  ArticleReferenceLike,
+  ArticleVerdict,
+  CitationInputProblem,
+  CitationReportRow,
+  CitationVerifyArgs,
+  ComparableEntry,
+  DecisionArticle,
+  OverlapIndex,
+  StatuteArticleGroups,
+} from '@deepseek-ai/dsh-law-core'
 
 // Atoms: the StageProvider/StageHandler vocabulary and the builtin handlers.
 export type * from './atoms/index.ts'
@@ -635,66 +694,6 @@ export {
   formatGigabytes,
   prepareTempSibling,
 } from './knowledge/install-fs.ts'
-export {
-  articleReferenceIdentity,
-  compactCitation,
-  formatArticleCitation,
-  formatCitationNumber,
-  formatCnNumber,
-  narrowed,
-  normalizeCitationText,
-  stripBookMarks,
-  trimPunctuation,
-} from './knowledge/citation-text.ts'
-export { ARTICLE_CONTINUATION_PATTERN, readArticleContinuations } from './knowledge/continuation.ts'
-export type { ArticleCandidate, ArticleReferenceLike } from './knowledge/continuation.ts'
-export {
-  collectReferences,
-  readStatuteArticleCandidate,
-  scanUnrecognizedReferences,
-} from './knowledge/citation-extract.ts'
-export type { StatuteArticleGroups } from './knowledge/citation-extract.ts'
-export {
-  createOverlapIndex,
-  PROPOSITION_SUPPORT_DEFAULT,
-  textOverlap,
-  topicOverlap,
-} from './knowledge/text-overlap.ts'
-export type { ComparableEntry, OverlapIndex } from './knowledge/text-overlap.ts'
-export {
-  articleComparableEntries,
-  decideArticleCitation,
-  findCompetingLabels,
-  formatPercent,
-  supportMismatchReason,
-  transcribedText,
-  truncateProposition,
-} from './knowledge/article-decision.ts'
-export type {
-  ArticleBaseline,
-  ArticleDecision,
-  ArticleProposition,
-  ArticleVerdict,
-  DecisionArticle,
-} from './knowledge/article-decision.ts'
-export {
-  CITATION_FINDING_DECISION_PROPERTIES,
-  CITATION_REPORT_PROPERTIES,
-  citationFindingSchema,
-  citationInputProblem,
-  citationReportLines,
-  citationVerifyExecute,
-  citationVerifyOutputSchema,
-  citationVerifyParameters,
-  citationVerifyRender,
-  citationVerifyReport,
-  citationVerifyToolOptions,
-} from './knowledge/citation-tool.ts'
-export type {
-  CitationInputProblem,
-  CitationReportRow,
-  CitationVerifyArgs,
-} from './knowledge/citation-tool.ts'
 
 // Workflow manifest contract, pre-positioned so the graph adapter (manifestToGraph)
 // has no dependency on the P3.1 workflow executor. The runWorkflow executor and

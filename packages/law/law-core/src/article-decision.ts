@@ -4,7 +4,7 @@
  * 专利表与法律表各自的索引结构不同，但一条法条引用能得到的判定是同一组：
  * 未索引、超出上限、未转录、款号不符、命题有支撑、命题在别处、无法判定。
  * 判定与理由文案收拢在这里，两个域只负责取出本域的条目和渲染自己的 finding。
- * @module @deepseek-ai/dsh-patent-core/knowledge/article-decision
+ * @module @deepseek-ai/dsh-law-core/article-decision
  */
 
 import {

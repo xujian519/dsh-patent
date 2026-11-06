@@ -4,7 +4,7 @@
  * Chinese legal citations arrive in mixed forms: `民法典第143条`, `民法典第一百四十三条`,
  * `民事诉讼法第66条第2款`. Everything downstream compares one normalized reference,
  * so the reference grammar lives here and nowhere else; the numeral reader
- * and the citation text helpers are shared with the patent-domain library.
+ * and the citation text helpers are shared through `@deepseek-ai/dsh-law-core`.
  * @module @deepseek-ai/dsh-legal-law/reference
  */
 
@@ -20,7 +20,7 @@ import {
   scanUnrecognizedReferences,
   stripBookMarks,
   trimPunctuation,
-} from '@deepseek-ai/dsh-patent-core'
+} from '@deepseek-ai/dsh-law-core'
 import type { LegalLawName, LegalLawReference } from './types.ts'
 
 export { formatCnNumber, parseCnNumber }

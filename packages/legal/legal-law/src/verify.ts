@@ -7,7 +7,7 @@
  * @module @deepseek-ai/dsh-legal-law/verify
  */
 
-import { decideArticleCitation } from '@deepseek-ai/dsh-patent-core'
+import { decideArticleCitation } from '@deepseek-ai/dsh-law-core'
 import { findLegalArticle } from './baseline.ts'
 import { extractLegalLawReferences, formatLegalLawReference } from './reference.ts'
 import type {

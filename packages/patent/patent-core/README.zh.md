@@ -140,7 +140,7 @@ Stage params 可调整这些 handler。缺省键保留各原子默认值；畸�
 <a id="rule-protocol--ipc"></a>
 ## 规则协议 + IPC
 
-宪法规则引擎协议类型（`RuleSeverity`/`RuleAction`/`RuleCheck`/`ConstitutionalRule`/...）与 `hasNegationContext`/`parseCnNumber` 文本工具在此落地，供 P3.1/P4.1 规则门禁使用。IPC 分类器（`classifyIpc`/`classifyIpcTop`）与 `ipc-standards.yaml` 审查标准加载器以纯查表形式随包分发。
+宪法规则引擎协议类型（`RuleSeverity`/`RuleAction`/`RuleCheck`/`ConstitutionalRule`/...）与 `hasNegationContext` 文本工具在此落地，供 P3.1/P4.1 规则门禁使用。法条引用机制（`parseCnNumber`、引用抽取、命题重合度、逐条引用判定与 citation-verify 工具脚手架）收拢在 `@deepseek-ai/dsh-law-core`，使法律域无需依赖本包即可复用；本包转导出该面，专利域消费方保持单一导入面。IPC 分类器（`classifyIpc`/`classifyIpcTop`）与 `ipc-standards.yaml` 审查标准加载器以纯查表形式随包分发。
 
 <a id="draft-model-controlled-drafts"></a>
 ## 受控草案模型

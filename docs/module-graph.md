@@ -394,6 +394,9 @@ flowchart TD
     pkg_jobs_local["jobs-local"]
     pkg_tool_jobs["tool-jobs"]
   end
+  subgraph group_law["packages/law"]
+    pkg_law_core["law-core"]
+  end
   subgraph group_legal["packages/legal"]
     pkg_legal_evidence["legal-evidence"]
     pkg_legal_knowledge["legal-knowledge"]
@@ -1846,6 +1849,7 @@ flowchart TD
 | [`host-directory-picker-native`](../packages/host/directory-picker-native) | `host` | — |
 | [`host-open-in-app`](../packages/host/open-in-app) | `host` | — |
 | [`host-webserver`](../packages/host/webserver) | `host` | — |
+| [`law-core`](../packages/law/law-core) | `law` | — |
 | [`patent-index-asset`](../packages/patent/patent-index-asset) | `patent` | — |
 | [`message-quotes`](../packages/session/message-quotes) | `session` | — |
 | [`session-format`](../packages/session/session-format) | `session` | — |

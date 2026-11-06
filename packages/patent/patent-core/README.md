@@ -122,7 +122,7 @@ The evidence layer records tool receipts (`Ledger`/`receiptFromToolExecution`), 
 
 ## Rule protocol + IPC
 
-The constitutional rule engine protocol types (`RuleSeverity`/`RuleAction`/`RuleCheck`/`ConstitutionalRule`/...) and the `hasNegationContext`/`parseCnNumber` text utilities ship here for the P3.1/P4.1 rule gates. The IPC classifier (`classifyIpc`/`classifyIpcTop`) and the `ipc-standards.yaml` examination-standard loader ship as pure lookups.
+The constitutional rule engine protocol types (`RuleSeverity`/`RuleAction`/`RuleCheck`/`ConstitutionalRule`/...) and the `hasNegationContext` text utility ship here for the P3.1/P4.1 rule gates. The statute-citation machinery (`parseCnNumber`, reference extraction, proposition-overlap scoring, the per-article citation decision, and the citation-verify tool scaffolding) lives in `@deepseek-ai/dsh-law-core` so the legal domain consumes it without depending on this package, and is re-exported here so patent-domain consumers keep one import surface. The IPC classifier (`classifyIpc`/`classifyIpcTop`) and the `ipc-standards.yaml` examination-standard loader ship as pure lookups.
 
 ## Draft model (controlled drafts)
 

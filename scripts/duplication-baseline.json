@@ -109,7 +109,6 @@
     "packages/legal/legal-law/src/baseline.ts|packages/patent/patent-law/src/baseline.ts",
     "packages/legal/legal-law/src/index.ts|packages/patent/patent-law/src/index.ts",
     "packages/legal/legal-law/src/tool/law-verify.ts|packages/patent/patent-law/src/tool/law-verify.ts",
-    "packages/legal/legal-law/src/types.ts|packages/patent/patent-core/src/knowledge/article-decision.ts",
     "packages/legal/legal-law/src/verify.ts|packages/patent/patent-law/src/verify.ts"
   ]
 }

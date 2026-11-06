@@ -1,0 +1,43 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/law/law-core/README.md
+/:
+  en: 9e2cb5ac61ef7251
+  zh: 22750dc83d393e2b
+/deepseek-ai-dsh-law-core:
+  en: a29424f135ee63c2
+  zh: 506a2bdae5344171
+/deepseek-ai-dsh-law-core/summary:
+  en: 5e8df4fa4a401051
+  zh: 1934487f053d2372
+/deepseek-ai-dsh-law-core/table-of-contents:
+  en: d721c09787c7d78d
+  zh: 4464469db6e74219
+/deepseek-ai-dsh-law-core/why-it-exists:
+  en: 9839924d62c7cb96
+  zh: eeecfac66d34e4f5
+/deepseek-ai-dsh-law-core/citation-text:
+  en: a010b99fecfcf8e4
+  zh: e865b1096efa7c06
+/deepseek-ai-dsh-law-core/reference-extraction:
+  en: 3c42629f10e132c8
+  zh: b656d0876edc8632
+/deepseek-ai-dsh-law-core/proposition-overlap:
+  en: fc044d68d08a93b8
+  zh: 8599314ddaa08654
+/deepseek-ai-dsh-law-core/article-decision:
+  en: 573d789a45b9a8ce
+  zh: ebab433d145947b5
+/deepseek-ai-dsh-law-core/tool-scaffolding:
+  en: 97488d68a937d94c
+  zh: fea34cee18ec9a5b
+/deepseek-ai-dsh-law-core/consumers:
+  en: 59fdca97208599f0
+  zh: 2c6626a8e4f63014
+/deepseek-ai-dsh-law-core/known-limitations-and-deferred-work:
+  en: 0b6b33f2939e866d
+  zh: 4de6a1135686a9cc
+/deepseek-ai-dsh-law-core/known-limitations-and-deferred-work/dev-note:
+  en: 0a1253c6f7b5e8b9
+  zh: 9f56528562c7c914

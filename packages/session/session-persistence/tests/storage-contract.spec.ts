@@ -263,7 +263,7 @@ describe('materializeCreateHeader', () => {
     expect(snapshot).toEqual(original)
     // The snapshot is detached: mutating the caller's header afterwards cannot
     // change what a backend persists.
-    ;(original as Record<string, unknown>).createdAt = 99
+    Reflect.set(original, 'createdAt', 99)
     expect(snapshot.createdAt).toBe(1000)
   })
 

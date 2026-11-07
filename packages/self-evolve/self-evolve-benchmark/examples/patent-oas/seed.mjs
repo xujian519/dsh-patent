@@ -10,7 +10,9 @@
  *   ├── claim-drafting/statement|rubric
  *   ├── disclosure-drafting/statement|rubric
  *   ├── infringement-comparison/statement|rubric
- *   └── novelty-creative/statement|rubric
+ *   ├── invalidation-analysis/statement|rubric
+ *   ├── novelty-creative/statement|rubric
+ *   └── reexamination-request/statement|rubric
  *
  * and the initial agent state seed:
  *

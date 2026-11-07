@@ -264,6 +264,9 @@ describe('legal-gaps 原子', () => {
     const out = await new LegalGapsHandler().execute({
       state: {
         profile: 'invalidation',
+        admissibility_report: '受理条件核对（无效宣告）：通过（阻断 0 项，提示 0 项，待核 0 项）',
+        admissibility_passed: true,
+        admissibility_pending: [],
         evidence_check_report: '证据审查（无效/复审）：未通过（1 条阻断）',
         evidence_check_passed: false,
         evidence_check_pending: [],
@@ -287,6 +290,9 @@ describe('legal-gaps 原子', () => {
     const out = await new LegalGapsHandler().execute({
       state: {
         profile: 'invalidation',
+        admissibility_report: '受理条件核对（无效宣告）：通过（阻断 0 项，提示 0 项，待核 0 项）',
+        admissibility_passed: true,
+        admissibility_pending: [],
         evidence_check_report: '证据审查（无效/复审）：未执行（未提供证据清单）',
         evidence_check_passed: true,
         evidence_check_pending: [],
@@ -298,6 +304,49 @@ describe('legal-gaps 原子', () => {
     expect(out['legal_gaps_unassessed']).toEqual(['evidence'])
     const items = out['legal_gaps_items'] as LegalGapItem[]
     expect(items.find(item => item.id === 'evidence')?.evidence).toContain('本次未执行')
+  })
+
+  it('无效/复审清单：受理条件阻断形成阻断项，未执行记为未评估', async () => {
+    const failed = await new LegalGapsHandler().execute({
+      state: {
+        profile: 'invalidation',
+        admissibility_report: '受理条件核对（无效宣告）：不通过（阻断 1 项，提示 0 项，待核 0 项）',
+        admissibility_passed: false,
+        admissibility_pending: [],
+      },
+    })
+    const failedItems = failed['legal_gaps_items'] as LegalGapItem[]
+    expect(failedItems.find(item => item.id === 'admissibility')).toMatchObject({
+      status: 'failed',
+      severity: 'block',
+      provision: '专利法第41条第1款、实施细则第69条第2款；审查指南第四部分第三章2.1、3.3',
+    })
+    expect(failed['legal_gaps_passed']).toBe(false)
+
+    const skipped = await new LegalGapsHandler().execute({
+      state: {
+        profile: 'reexamination',
+        admissibility_report: '受理条件核对（复审）：未执行（未识别程序理由）',
+        admissibility_passed: true,
+        admissibility_pending: [],
+      },
+    })
+    const skippedItems = skipped['legal_gaps_items'] as LegalGapItem[]
+    expect(skippedItems.find(item => item.id === 'admissibility')?.status).toBe('not-assessed')
+  })
+
+  it('受理条件有未决项时记为未评估，即使 passed 为 true', async () => {
+    const out = await new LegalGapsHandler().execute({
+      state: {
+        profile: 'invalidation',
+        admissibility_report: '受理条件核对（无效宣告）：通过（阻断 0 项，提示 0 项，待核 1 项）',
+        admissibility_passed: true,
+        admissibility_pending: [{ code: 'ADM-RES-JUDICATA', message: '未提供在先决定' }],
+      },
+    })
+    const item = (out['legal_gaps_items'] as LegalGapItem[]).find(entry => entry.id === 'admissibility')
+    expect(item?.status).toBe('not-assessed')
+    expect(item?.evidence).toContain('1 项待核')
   })
 
   it('无效清单：降级输出不算已评估', async () => {

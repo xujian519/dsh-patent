@@ -27,6 +27,14 @@
       "atom": "grounds"
     },
     {
+      "stageId": "admissibility",
+      "strategy": "chain",
+      "output": "",
+      "degraded": true,
+      "retries": 3,
+      "atom": "admissibility"
+    },
+    {
       "stageId": "dispute-framing-refine",
       "strategy": "chain",
       "output": "",
@@ -73,6 +81,21 @@
       "atom": "citation-check"
     },
     {
+      "stageId": "draft",
+      "strategy": "chain",
+      "output": "",
+      "degraded": true,
+      "retries": 3
+    },
+    {
+      "stageId": "slop_gate",
+      "strategy": "chain",
+      "output": "",
+      "degraded": true,
+      "retries": 3,
+      "atom": "slop-gate"
+    },
+    {
       "stageId": "legal_gaps",
       "strategy": "chain",
       "output": "法条缺口汇总结论：新颖性理由证据充分可立，创造性理由中区别特征的技术启示论证偏弱，建议补充对比文件3与区别特征对应关系的具体段落证据。",
@@ -91,7 +114,10 @@
   ],
   "degradedSteps": [
     "dispute-framing",
-    "dispute-framing-refine"
+    "admissibility",
+    "dispute-framing-refine",
+    "draft",
+    "slop_gate"
   ],
-  "summary": "工作流 patent_invalidation_v1（无效宣告分析）: 9/11 阶段完成，降级阶段: dispute-framing、dispute-framing-refine"
+  "summary": "工作流 patent_invalidation_v1（无效宣告分析）: 9/14 阶段完成，降级阶段: dispute-framing、admissibility、dispute-framing-refine、draft、slop_gate"
 }

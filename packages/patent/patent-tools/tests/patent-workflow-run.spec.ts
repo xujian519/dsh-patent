@@ -37,6 +37,7 @@ import { specCheckAtom, SpecCheckHandler } from '../src/atoms/spec-check.ts'
 import { responseCheckAtom, ResponseCheckHandler } from '../src/atoms/response-check.ts'
 import { eligibilityAtom, EligibilityHandler } from '../src/atoms/eligibility.ts'
 import { legalGapsAtom, LegalGapsHandler } from '../src/atoms/legal-gaps.ts'
+import { admissibilityAtom, AdmissibilityHandler } from '../src/atoms/admissibility.ts'
 import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 registerBuiltinAtoms()
@@ -58,6 +59,8 @@ globalAtomRegistry.register(eligibilityAtom)
 globalStageHandlerRegistry.register(new EligibilityHandler())
 globalAtomRegistry.register(legalGapsAtom)
 globalStageHandlerRegistry.register(new LegalGapsHandler())
+globalAtomRegistry.register(admissibilityAtom)
+globalStageHandlerRegistry.register(new AdmissibilityHandler())
 
 /** 图模式规则门评估器替身；规则语料的 conformance 由 patent-rule 自身测试覆盖。 */
 const stubRuleEvaluator: RuleEvaluator = {
@@ -1043,6 +1046,122 @@ describe('patent_workflow_run', () => {
     expect(inTime).toBeDefined()
     expect(inTime!.degraded).toBe(false)
     expect(inTime!.output).toContain('通过')
+  })
+
+  it('invalidation manifest: admissibility blocks a request repeating the earlier decision and drafts the request text', async () => {
+    const runWith = async (prior: unknown): Promise<{
+      admissibility: WorkflowStageResult | undefined
+      draft: WorkflowStageResult | undefined
+    }> => {
+      const tool = createPatentWorkflowRunTool({ model: fakeModel(), search: async () => [] })
+      const value = (await tool.execute(
+        {
+          manifestId: 'patent_invalidation_v1',
+          input: '请求人主张权利要求 1 不具备新颖性（专利法第22条第2款）。',
+          evidence: JSON.stringify([
+            { id: 'D1', title: '对比文件1', type: '现有技术', publicationDate: '2023-01-01', grounds: ['新颖性'], claimRefs: ['1'] },
+          ]),
+          priorInvalidationDecision: JSON.stringify(prior),
+        },
+        exec,
+      )) as PatentWorkflowRunOutput
+      expect(value.ok).toBe(true)
+      const stages = (value.stages ?? []) as WorkflowStageResult[]
+      return {
+        admissibility: stages.find(stage => stage.stageId === 'admissibility'),
+        draft: stages.find(stage => stage.stageId === 'draft'),
+      }
+    }
+
+    const repeated = await runWith({ grounds: ['novelty'], evidenceIds: ['D1'] })
+    expect(repeated.admissibility).toBeDefined()
+    expect(repeated.admissibility!.degraded).toBe(false)
+    expect(repeated.admissibility!.output).toContain('ADM-RES-JUDICATA')
+    expect(repeated.draft).toBeDefined()
+    expect(repeated.draft!.degraded).toBe(false)
+    expect(repeated.draft!.output.trim().length).toBeGreaterThan(0)
+
+    const fresh = await runWith({ grounds: ['inventiveness'], evidenceIds: ['D1'] })
+    expect(fresh.admissibility!.output).not.toContain('ADM-RES-JUDICATA')
+
+    const withoutIds = await runWith({ grounds: ['novelty'] })
+    expect(withoutIds.admissibility!.output).toContain('未载明证据标识')
+
+    // 空串按「未提供」处理，与原子侧一致，不当作非法 JSON 拒绝。
+    const blankTool = createPatentWorkflowRunTool({ model: fakeModel(), search: async () => [] })
+    const blankValue = (await blankTool.execute(
+      {
+        manifestId: 'patent_invalidation_v1',
+        input: '请求人主张权利要求 1 不具备新颖性（专利法第22条第2款）。',
+        evidence: JSON.stringify([{ id: 'D1', title: '对比文件1' }]),
+        priorInvalidationDecision: '',
+      },
+      exec,
+    )) as PatentWorkflowRunOutput
+    const blank = ((blankValue.stages ?? []) as WorkflowStageResult[])
+      .find(stage => stage.stageId === 'admissibility')
+    expect(blank!.degraded).toBe(false)
+    expect(blank!.output).toContain('未评估（缺在先决定）')
+
+    for (const malformed of ['{坏', '[]', '{"grounds":"x"}', '{"grounds":["a"],"evidenceIds":"D1"}']) {
+      await expect(
+        blankTool.execute(
+          {
+            manifestId: 'patent_invalidation_v1',
+            input: '请求人主张权利要求 1 不具备新颖性（专利法第22条第2款）。',
+            priorInvalidationDecision: malformed,
+          },
+          exec,
+        ),
+        malformed,
+      ).rejects.toThrow(/priorInvalidationDecision/u)
+    }
+  })
+
+  it('reexamination manifest: admissibility measures the three-month request period', async () => {
+    const runWith = async (requestDate: string): Promise<WorkflowStageResult | undefined> => {
+      const tool = createPatentWorkflowRunTool({ model: fakeModel(), search: async () => [] })
+      const value = (await tool.execute(
+        {
+          manifestId: 'patent_reexamination_v1',
+          input: '驳回决定认为权利要求 1 不具备创造性（专利法第22条第3款）。',
+          rejectionDecisionDate: '2026-03-01',
+          requestDate,
+          requester: '甲公司',
+          patentee: '乙公司',
+        },
+        exec,
+      )) as PatentWorkflowRunOutput
+      expect(value.ok).toBe(true)
+      return ((value.stages ?? []) as WorkflowStageResult[])
+        .find(stage => stage.stageId === 'admissibility')
+    }
+
+    const inTime = await runWith('2026-06-01')
+    expect(inTime).toBeDefined()
+    expect(inTime!.degraded).toBe(false)
+    expect(inTime!.output).toContain('期限内')
+    expect(inTime!.output).not.toContain('ADM-TIME-REQUEST')
+    // requester / patentee 传入后主体资格检查才可达。
+    expect(inTime!.output).toContain('ADM-PARTY')
+
+    const late = await runWith('2026-06-02')
+    expect(late!.output).toContain('ADM-TIME-REQUEST')
+
+    const recoveredTool = createPatentWorkflowRunTool({ model: fakeModel(), search: async () => [] })
+    const recoveredValue = (await recoveredTool.execute(
+      {
+        manifestId: 'patent_reexamination_v1',
+        input: '驳回决定认为权利要求 1 不具备创造性（专利法第22条第3款）。',
+        rejectionDecisionDate: '2026-03-01',
+        requestDate: '2026-06-02',
+        recoveryRequested: true,
+      },
+      exec,
+    )) as PatentWorkflowRunOutput
+    const recovered = ((recoveredValue.stages ?? []) as WorkflowStageResult[])
+      .find(stage => stage.stageId === 'admissibility')
+    expect(recovered!.output).toContain('已办恢复手续')
   })
 
   it('invalidation manifest: citation_check grounds D labels from the novelty and inventiveness stages', async () => {

@@ -401,8 +401,8 @@ describe('凭据信号', () => {
 describe('编排', () => {
   it('每个 case 一次执行者、每维度一次评估者,记录与金标维度一一对应', async () => {
     const { record, calls } = await collect({})
-    expect(calls.length).toBe(5 + 28 + 7)
-    expect(record.cases.length).toBe(5)
+    expect(calls.length).toBe(7 + 39 + 7)
+    expect(record.cases.length).toBe(7)
     expect(record.benchmarkId).toBe('patent-oas')
     expect(record.runsPerCase).toBe(1)
     expect(validateRunRecord(record, space, gold, 'collected')).toEqual([])
@@ -422,8 +422,8 @@ describe('编排', () => {
 
   it('计划给出逐 case 维度数与调用总数,重复 case 被拒', () => {
     const plan = planRun({ space, gold })
-    expect(plan.cases.length).toBe(5)
-    expect(plan.calls).toBe(40)
+    expect(plan.cases.length).toBe(7)
+    expect(plan.calls).toBe(53)
     expect(plan.cases.find(entry => entry.caseId === 'oa-answer')?.dimensions).toBe(6)
     expect(plan.cases.find(entry => entry.caseId === 'oa-answer')?.retrieval).toBe('oracle')
     expect(plan.cases.find(entry => entry.caseId === 'claim-drafting')?.retrieval).toBe('none')
@@ -431,12 +431,14 @@ describe('编排', () => {
       expect(plan.cases.find(entry => entry.caseId === caseId)?.dimensions).toBe(5)
     }
     expect(plan.cases.find(entry => entry.caseId === 'disclosure-drafting')?.dimensions).toBe(7)
+    expect(plan.cases.find(entry => entry.caseId === 'invalidation-analysis')?.dimensions).toBe(6)
+    expect(plan.cases.find(entry => entry.caseId === 'reexamination-request')?.dimensions).toBe(5)
     expect(() => planRun({ space, gold, caseIds: ['oa-answer', 'oa-answer'] })).toThrow('被选中多次')
   })
 
   it('计划摘要列出逐 case 维度、总轮次与 profile', () => {
     const single = formatRunPlan(planRun({ space, gold: singleRoundGold() }), 'headless')
-    expect(single).toContain('计划 5 case × 1 次运行,共 5 轮 = 33 次 agent 调用')
+    expect(single).toContain('计划 7 case × 1 次运行,共 7 轮 = 46 次 agent 调用')
     expect(single).toContain('oa-answer:6')
     expect(single).toContain('claim-drafting:5')
     expect(single).toContain('oa-answer:6/oracle')
@@ -445,7 +447,7 @@ describe('编排', () => {
 
     const multi = formatRunPlan(planRun({ space, gold }), 'headless')
     expect(multi).toContain('oa-answer:6×2轮')
-    expect(multi).toContain('共 6 轮 = 40 次 agent 调用')
+    expect(multi).toContain('共 8 轮 = 53 次 agent 调用')
   })
 
   it('--dry-run 打印计划、总预算与单次调用上限', async () => {
@@ -459,7 +461,7 @@ describe('编排', () => {
       log.mockRestore()
     }
     const output = lines.join('\n')
-    expect(output).toContain('计划 5 case × 2 次运行')
+    expect(output).toContain('计划 7 case × 2 次运行')
     expect(output).toContain('总预算 2000ms,单次调用上限 1000ms')
   })
 
@@ -590,7 +592,7 @@ describe('多轮编排', () => {
   it('计划把轮次计入调用总数', () => {
     const plan = planRun({ space, gold })
     expect(plan.cases.find(entry => entry.caseId === 'oa-answer')?.rounds).toBe(2)
-    expect(plan.calls).toBe(40)
+    expect(plan.calls).toBe(53)
   })
 
   it('两轮各自执行与评分,终局取第 2 轮并记录权项版本', async () => {
@@ -598,7 +600,7 @@ describe('多轮编排', () => {
       scoreFor: label => label.includes('oa-answer') && label.includes('第 1 轮') ? 60 : 90,
       deliverableFor: label => label.includes('oa-answer') && label.includes('第 1 轮') ? '第 1 轮答复' : '第 2 轮答复',
     })
-    expect(calls.length).toBe(40)
+    expect(calls.length).toBe(53)
     const runCase = record.cases.find(entry => entry.caseId === 'oa-answer')
     expect(runCase).toBeDefined()
     if (runCase === undefined) return

@@ -27,6 +27,14 @@
       "atom": "grounds"
     },
     {
+      "stageId": "admissibility",
+      "strategy": "chain",
+      "output": "",
+      "degraded": true,
+      "retries": 3,
+      "atom": "admissibility"
+    },
+    {
       "stageId": "dispute-framing-refine",
       "strategy": "chain",
       "output": "",
@@ -73,6 +81,21 @@
       "atom": "citation-check"
     },
     {
+      "stageId": "draft",
+      "strategy": "chain",
+      "output": "",
+      "degraded": true,
+      "retries": 3
+    },
+    {
+      "stageId": "slop_gate",
+      "strategy": "chain",
+      "output": "",
+      "degraded": true,
+      "retries": 3,
+      "atom": "slop-gate"
+    },
+    {
       "stageId": "legal_gaps",
       "strategy": "chain",
       "output": "法条缺口汇总：创造性（第22条第3款）论证存在技术启示缺失，不清楚（第26条第4款）与修改超范围（第33条）的认定缺乏事实与记载依据，应予纠正。",
@@ -91,7 +114,10 @@
   ],
   "degradedSteps": [
     "dispute-framing",
-    "dispute-framing-refine"
+    "admissibility",
+    "dispute-framing-refine",
+    "draft",
+    "slop_gate"
   ],
-  "summary": "工作流 patent_reexamination_v1（复审答复）: 9/11 阶段完成，降级阶段: dispute-framing、dispute-framing-refine"
+  "summary": "工作流 patent_reexamination_v1（复审答复）: 9/14 阶段完成，降级阶段: dispute-framing、admissibility、dispute-framing-refine、draft、slop_gate"
 }

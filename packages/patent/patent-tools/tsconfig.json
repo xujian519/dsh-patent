@@ -30,6 +30,9 @@
       "path": "../patent-data"
     },
     {
+      "path": "../patent-deadline"
+    },
+    {
       "path": "../patent-knowledge"
     },
     {

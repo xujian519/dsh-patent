@@ -14,8 +14,10 @@ import {
   GATE_FILE,
   PATENT_OAS_EXAMPLE_DIR,
   PROBLEM_SPACE_FILE,
+  aggregateScoresByRun,
   caseScores,
   caseScoresByRun,
+  deltaStandardError,
   caseRoundScores,
   baselineDeclarationFor,
   comparisonSettingProblems,
@@ -1187,6 +1189,66 @@ describe('逐次观测的离散度', () => {
   it('报告渲染极差与样本标准差', () => {
     const text = formatVerdict(evaluateRun(space, config, recordWithScores([70, 80]), undefined))
     expect(text).toContain('逐次 70.0–80.0 σ7.07')
+  })
+})
+
+describe('噪声容限', () => {
+  /** 派生一份门槛策略,按需带上或去掉噪声容限倍数。 */
+  function withNoise(multiple?: number): GateConfig {
+    const thresholds = { ...config.thresholds }
+    delete thresholds.noiseMultiple
+    return { ...config, thresholds: multiple === undefined ? thresholds : { ...thresholds, noiseMultiple: multiple } }
+  }
+
+  it('两侧都留逐次观测时,差的标准误合并本次与基线的波动', () => {
+    // [70,80] 的样本标准差是 10/√2,均值标准误是 10/2 = 5;两侧相同时差的标准误是 5√2。
+    expect(deltaStandardError([70, 80], [70, 80])).toBeCloseTo(5 * Math.SQRT2, 10)
+  })
+
+  it('任一侧缺逐次观测时不报标准误', () => {
+    expect(deltaStandardError([70], [70, 80])).toBeUndefined()
+    expect(deltaStandardError([70, 80], [90])).toBeUndefined()
+    expect(deltaStandardError([], [70, 80])).toBeUndefined()
+  })
+
+  it('回退超过 maxDrop 但落在噪声内时判通过,并报出生效容限', () => {
+    const baseline = recordWithScores([90, 90])
+    const run = recordWithScores([76, 84])
+    // 逐次标准差 5.657,两侧标准误合计 4.0,容限取 2.5 × 4.0 = 10.0。
+    const tolerated = evaluateRun(space, withNoise(2.5), run, baseline)
+    expect(tolerated.aggregateVerdict).toBe('pass')
+    expect(verdictPassed(tolerated)).toBe(true)
+    const node = first(tolerated.nodes.filter(entry => entry.id === 'claim-essential-features'))
+    expect(node.delta).toBeCloseTo(-10, 10)
+    expect(node.allowedDrop).toBeCloseTo(10, 10)
+    expect(formatVerdict(tolerated)).toContain('容限 10.0')
+  })
+
+  it('去掉噪声容限后同一份读数判为回退', () => {
+    const verdict = evaluateRun(space, withNoise(), recordWithScores([76, 84]), recordWithScores([90, 90]))
+    expect(verdictPassed(verdict)).toBe(false)
+    expect(first(verdict.nodes.filter(entry => entry.id === 'claim-essential-features')).verdict).toBe('regressed')
+    expect(formatVerdict(verdict)).not.toContain('容限')
+  })
+
+  it('零方差拿不到额外容限,仍按 maxDrop 判定', () => {
+    const verdict = evaluateRun(space, withNoise(2.5), recordWithScores([80, 80]), recordWithScores([90, 90]))
+    const node = first(verdict.nodes.filter(entry => entry.id === 'claim-essential-features'))
+    expect(node.verdict).toBe('regressed')
+    expect(node.allowedDrop).toBeUndefined()
+  })
+
+  it('聚合分的逐次取值只在每个 case 都留观测时成立', () => {
+    expect(aggregateScoresByRun(recordFrom(gold, () => 90))).toEqual([])
+    expect(aggregateScoresByRun(recordWithScores([70, 80]))).toEqual([70, 80])
+    const partial = recordWithScores([70, 80])
+    delete first(first(partial.cases).dimensions).scores
+    expect(aggregateScoresByRun(partial)).toEqual([])
+  })
+
+  it('负数倍数被拒绝', () => {
+    const problems = validateGateConfig(withNoise(-1), space, gold, [])
+    expect(problems.join('\n')).toContain('thresholds.noiseMultiple -1 不能为负')
   })
 })
 

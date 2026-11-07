@@ -89,6 +89,37 @@ cases:
       3: { nodes: { technical-problem: 15 } }
       4: { nodes: { technical-teaching: 20 } }
       5: { nodes: { conclusion-and-statute: 20 } }
+  invalidation-analysis:
+    label: 无效宣告请求
+    # 证据由请求人给定,不依赖检索——与真实无效宣告程序一致。
+    retrieval: none
+    # 工作流面跑无效宣告 manifest:请求书正文由 `draft` 阶段产出。该面尚未录基线
+    # (见 README 的录制缺口),声明在此是为了让采集器能按 manifest 计划并跑这一面。
+    workflow: patent_invalidation_v1
+    workflowDeliverable:
+      artifact: invalidation-request
+      stages: [draft]
+    dimensions:
+      1: { nodes: { invalidity-grounds-scope: 20 } }
+      2: { nodes: { invalidity-grounds-scope: 15 } }
+      3: { nodes: { invalidity-evidence-link: 20 } }
+      4: { nodes: { invalidity-evidence-link: 10 } }
+      5: { nodes: { admissibility-determined: 20 } }
+      6: { nodes: { request-deliverable-format: 15 } }
+  reexamination-request:
+    label: 复审请求
+    retrieval: none
+    # 工作流面跑复审 manifest:请求书正文由 `draft` 阶段产出。
+    workflow: patent_reexamination_v1
+    workflowDeliverable:
+      artifact: reexamination-request
+      stages: [draft]
+    dimensions:
+      1: { nodes: { reexamination-grounds-response: 25 } }
+      2: { nodes: { reexamination-amendment-strategy: 20 } }
+      3: { nodes: { reexamination-amendment-strategy: 20 } }
+      4: { nodes: { admissibility-determined: 20 } }
+      5: { nodes: { request-deliverable-format: 15 } }
 
 nodes:
   prior-art-search:
@@ -191,3 +222,33 @@ nodes:
     label: 侵权判定法律依据
     observable: 正确引用全面覆盖原则与等同原则的法律依据(专利法及司法解释)
     dependsOn: [infringement-conclusion]
+  invalidity-grounds-scope:
+    domain: invalidity
+    label: 无效请求范围与法定理由
+    observable: 逐项列明被请求无效的权项与理由,理由限于专利法实施细则第六十九条第二款列举的范围,并指明最接近的对比文件与对比方式
+    dependsOn: []
+  invalidity-evidence-link:
+    domain: invalidity
+    label: 证据接地与具体比较
+    observable: 每项理由指明所依据的证据,对涉案专利与对比文件的相关技术方案作具体描述与比较,证据清单与形式记载完备
+    dependsOn: [invalidity-grounds-scope]
+  admissibility-determined:
+    domain: procedure
+    label: 受理条件判定
+    observable: 逐项判定请求期限、理由是否法定、是否构成一事不再理与主体资格,并给出应否受理的结论
+    dependsOn: []
+  request-deliverable-format:
+    domain: deliverable
+    label: 程序请求书结构与请求事项
+    observable: 请求书含著录项、请求范围、逐项理由、证据清单、请求事项与落款,可直接提交
+    dependsOn: []
+  reexamination-grounds-response:
+    domain: reexamination
+    label: 逐条回应驳回理由
+    observable: 复审理由按驳回决定援引的理由逐条回应,不合并、不遗漏,审查范围限于驳回所依据的理由和证据
+    dependsOn: []
+  reexamination-amendment-strategy:
+    domain: reexamination
+    label: 复审修改的针对性与依据
+    observable: 修改只针对驳回理由指出的缺陷,逐处给出原申请文件依据,不引入原申请文件没有记载的内容
+    dependsOn: [reexamination-grounds-response]

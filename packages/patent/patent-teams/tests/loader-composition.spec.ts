@@ -25,7 +25,7 @@ import ToolRuntime from '@deepseek-ai/dsh-tools'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import * as ToolSubagentControl from '@deepseek-ai/dsh-tool-subagent-control'
 import * as plugin from '../src/index.ts'
-import { MEMBER_DENIED_TOOLS } from '../src/members.ts'
+import { MEMBER_DENIED_TOOLS, memberToolAllowList } from '../src/members.ts'
 import { PATENT_TEAMS_TOOL_NAMES } from '../src/tools.ts'
 import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import { defineTool } from '@deepseek-ai/dsh-tools'
@@ -120,5 +120,41 @@ describe('dsh-patent-teams real Loader composition', () => {
     expect(() => scope.ctx.tools.restrict({ deny: [...MEMBER_DENIED_TOOLS] })).not.toThrow()
     expect(ctx.tools.get('send_message', key)).toBeUndefined()
     expect(ctx.tools.get('patent_teams_send_message', key)).toBeDefined()
+  })
+
+  it('trims a role-scoped member to its role tools plus the shared baseline', async () => {
+    const ctx = await boot()
+    const standIn = (name: string) => defineTool({
+      name,
+      description: 'test stand-in',
+      parameters: {},
+      output: { schema: { type: 'json' }, render: () => [] },
+      async execute() { return null },
+    })
+    for (const name of ['patent_search', 'patent_eval', 'mcp__cnlaw__search', 'unrelated_tool', 'send_message']) {
+      ctx.tools.register(standIn(name))
+    }
+
+    // The allow list is built from the real registry: declared role tools and
+    // baseline entries the composition does not carry are dropped, not passed
+    // to `restrict()`, which rejects unknown names.
+    const allow = memberToolAllowList(ctx, 'researcher')
+    expect(allow).toBeDefined()
+    expect(allow).toContain('patent_search')
+    expect(allow).toContain('patent_eval')
+    expect(allow).toContain('mcp__cnlaw__search')
+    expect(allow).not.toContain('unrelated_tool')
+    expect(allow).not.toContain('web_search')
+
+    const key = { id: 'trimmed-member' as SessionId } as Agent
+    let scope!: Scope
+    await ctx.plugin(Object.assign((inner: Context) => { scope = createScope(inner, key) },
+      { inject: ['tools', 'systemPrompt'] }))
+    scope.ctx.tools.restrict({ allow: allow!, deny: [...MEMBER_DENIED_TOOLS] })
+
+    expect(ctx.tools.get('patent_search', key)).toBeDefined()
+    expect(ctx.tools.get('patent_teams_send_message', key)).toBeDefined()
+    expect(ctx.tools.get('unrelated_tool', key)).toBeUndefined()
+    expect(ctx.tools.get('send_message', key)).toBeUndefined()
   })
 })

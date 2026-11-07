@@ -278,6 +278,32 @@ describe('memberPersona and memberWelcome', () => {
     expect(persona).toContain('HITL: deliverables can be completed directly')
   })
 
+  it('separates the role tools from the full granted surface when it was trimmed', () => {
+    const persona = memberPersona(
+      makeTeam({ id: 'team1', members: [validMember] }),
+      validMember,
+      '.patent-teams',
+      roleContract('researcher'),
+      ['read', 'bash', 'mcp__cnlaw__search', 'patent_search'],
+    )
+    // The contract block names only what the role adds; shared and MCP tools are listed once.
+    expect(persona).toContain('Tools: patent_search')
+    expect(persona).toContain('Granted tools: read、bash、mcp__cnlaw__search、patent_search')
+    expect(persona).not.toContain('web_fetch')
+  })
+
+  it('omits the role tools line when the role adds nothing beyond the baseline', () => {
+    const persona = memberPersona(
+      makeTeam({ id: 'team1', members: [validMember] }),
+      validMember,
+      '.patent-teams',
+      roleContract('researcher'),
+      ['read', 'bash'],
+    )
+    expect(persona).not.toContain('- Tools: ')
+    expect(persona).toContain('Granted tools: read、bash')
+  })
+
   it('marks an HITL role contract as needing confirmation', () => {
     const drafter = { ...validMember, role: 'drafter' }
     const persona = memberPersona(makeTeam(), drafter, 'state', roleContract('drafter'))
@@ -348,6 +374,33 @@ describe('spawnMember', () => {
     expect(spec.request.agentOptions).toEqual({ provider: 'p', model: 'm', reasoningEffort: 'high' })
     expect(spec.request.prompt).toHaveLength(1)
     expect(spec.request.maxDepth).toBeUndefined()
+  })
+
+  it('grants a role-scoped member only its role tools and the shared baseline', async () => {
+    const ctx = new Context()
+    let captured: { request: { toolFilter: { allow?: string[]; deny: string[] }; persona: string } } | undefined
+    ctx.provide('tools', {
+      restrictableNames: () => new Set(['read', 'bash', 'patent_search', 'patent_metadata', 'mcp__cnlaw__search']),
+    } as never)
+    ctx.provide('subagents', makeSubagentsStub({
+      getProvider: () => provider(),
+      startActivation: async (spec: never) => {
+        captured = spec
+        return { childId: SessionId('child-1'), messageId: 'msg-1' }
+      },
+    }) as never)
+    const member: TeamMember = { ...validMember, id: '' }
+    await spawnMember(ctx, config, { provider: 'p', model: 'm' }, makeCaptain('captain-1'), makeTeam(), member, 'state', new AbortController().signal)
+
+    expect(captured?.request.toolFilter.allow).toEqual([
+      'read',
+      'bash',
+      'mcp__cnlaw__search',
+      'patent_search',
+      'patent_metadata',
+    ])
+    // The deny list still applies on top of the allow list.
+    expect(captured?.request.toolFilter.deny).toContain('patent_teams_create')
   })
 
   it('passes the configured maxDepth through', async () => {

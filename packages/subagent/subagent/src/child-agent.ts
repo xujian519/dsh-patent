@@ -161,6 +161,14 @@ export interface ChildComposition {
   readonly persona?: string | undefined
   /** Historical descriptor tool restriction reapplied only during cold resume. */
   readonly toolFilter?: ToolRestriction | undefined
+  /**
+   * Whether this composition restores a historical child. A restore may meet a
+   * tool surface that changed since the descriptor was written (an MCP server
+   * that is down, renamed, or removed), so a filter name the child no longer
+   * carries narrows the mask instead of failing the restore. A fresh spawn
+   * keeps failing loud on unknown names.
+   */
+  readonly restoring?: boolean | undefined
 }
 
 /**
@@ -214,7 +222,25 @@ function applyChildOverrides(childCtx: Context, composition: ChildComposition): 
       text: composition.persona,
     })
   }
-  if (composition.toolFilter !== undefined) childCtx.tools.restrict(composition.toolFilter)
+  if (composition.toolFilter !== undefined) {
+    // A persisted filter outlives the composition that wrote it — an MCP server
+    // may be down, renamed, or removed on the next start — so a name the child
+    // no longer carries must narrow the mask rather than fail the restore. A
+    // fresh spawn still fails loud, because its composition just produced it.
+    const known = composition.restoring === true ? childCtx.tools.restrictableNames() : undefined
+    const narrow = (names?: readonly string[]): string[] | undefined =>
+      known === undefined ? (names === undefined ? undefined : [...names]) : names?.filter(name => known.has(name))
+    const allow = narrow(composition.toolFilter.allow)
+    const deny = narrow(composition.toolFilter.deny)
+    // An allow list whose every name vanished would hide the whole inherited
+    // surface; fail open to no restriction instead of stranding the child.
+    if (allow === undefined || allow.length > 0) {
+      childCtx.tools.restrict({
+        ...(allow === undefined ? {} : { allow }),
+        ...(deny === undefined ? {} : { deny }),
+      })
+    }
+  }
 }
 
 /** Policy seeded onto a child session's log at the delegation boundary. */

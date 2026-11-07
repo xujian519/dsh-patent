@@ -1398,7 +1398,12 @@ class SubagentManager {
             ? { reasoningEffort: ReasoningEffortId(descriptor.agentReasoningEffort) }
             : {},
         },
-        composition: { agentPreset: agentPreset ?? undefined, persona: descriptor.persona, toolFilter: descriptor.toolFilter },
+        composition: {
+          agentPreset: agentPreset ?? undefined,
+          persona: descriptor.persona,
+          toolFilter: descriptor.toolFilter,
+          restoring: true,
+        },
         signal: options.signal,
       })
     } catch (error: unknown) {

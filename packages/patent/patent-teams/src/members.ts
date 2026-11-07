@@ -17,7 +17,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 // Declaration merge only: makes ctx.subagents visible.
 import { SubagentError } from '@deepseek-ai/dsh-subagent'
 import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
-import { workerDeliverables, workerTools, type RoleContract } from '@deepseek-ai/dsh-patent-workflow'
+import { workerDeliverables, workerToolList, type RoleContract } from '@deepseek-ai/dsh-patent-workflow'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { join } from 'node:path'
 import { readRetiredMemberIds } from './state.ts'
@@ -52,6 +52,71 @@ export const MEMBER_DENIED_TOOLS = [
   'patent_teams_delete',
   'send_message',
 ] as const
+
+/**
+ * Tools every member keeps regardless of role: file access, the shell, skill
+ * loading, image reads, background jobs, delegation, the member-side team
+ * channel, and the self-check validators the persona requires.
+ *
+ * The list is grounded in recorded member sessions rather than in the role
+ * contracts: `bash` was the most-used tool for every role, and each role used
+ * at least one tool its contract does not name.
+ */
+export const BASELINE_MEMBER_TOOLS = [
+  'read',
+  'write',
+  'edit',
+  'glob',
+  'grep',
+  'bash',
+  'read_image',
+  'skill',
+  'todo_write',
+  'job_list',
+  'job_output',
+  'job_kill',
+  'subagent_fork',
+  'patent_teams_claim_task',
+  'patent_teams_update_task',
+  'patent_teams_send_message',
+  'patent_teams_status',
+  'patent_worker_validate',
+  'rule_check',
+  'validate_specification',
+  // The persona instructs every member to price deadlines and annuities with
+  // these, and no role contract declares them.
+  'patent_deadlines',
+  'patent_fees',
+] as const
+
+/**
+ * Resolve the tool allow-list for one member, or `undefined` to keep the
+ * deny-only surface.
+ *
+ * Trimming fails open. A member without a role, an unregistered role, or a
+ * composition without the cnlaw MCP tools the persona requires all fall back
+ * to deny-only. Names absent from the composition are dropped rather than
+ * passed to `tools.restrict()`, which rejects unknown names at member creation.
+ * @param ctx - registrant context carrying the tools service.
+ * @param role - the member's registered role id, when it has one.
+ * @returns the granted tool names, or `undefined` for the deny-only fallback.
+ */
+export function memberToolAllowList(ctx: Context, role: string | undefined): string[] | undefined {
+  if (role === undefined) return undefined
+  const declared = workerToolList(role)
+  if (declared.length === 0) return undefined
+  // Optional read: a composition without the tools service keeps the deny-only surface.
+  const tools = ctx.get('tools')
+  if (tools === undefined) return undefined
+  const restrictable = tools.restrictableNames()
+  // The persona requires verifying statutes through cnlaw before citing them;
+  // without that MCP surface a trimmed member would be told to use a tool it lacks.
+  const lawTools = [...restrictable].filter(name => name.startsWith('mcp__cnlaw__'))
+  if (lawTools.length === 0) return undefined
+  const baseline = BASELINE_MEMBER_TOOLS.filter(name => restrictable.has(name))
+  const roleTools = declared.filter(name => restrictable.has(name))
+  return [...new Set([...baseline, ...lawTools, ...roleTools])]
+}
 
 /**
  * Restore the SessionId brand on a value that round-tripped through the
@@ -190,6 +255,9 @@ export async function resolveMemberLlmSelection(
  * @param stateDir - configured state directory, so the member can locate the
  *   team files with its own file tools.
  * @param roleContract - the team role's contract, when the member carries a role.
+ * @param grantedTools - the tools this member was actually granted, when the
+ *   team runtime trimmed its surface; the role section then names them instead
+ *   of the contract's declaration.
  * @returns the member's system prompt (persona).
  */
 export function memberPersona(
@@ -197,9 +265,15 @@ export function memberPersona(
   member: TeamMember,
   stateDir: string,
   roleContract?: RoleContract,
+  grantedTools?: readonly string[],
 ): string {
   const roleLine = member.role ? ` with the role: ${member.role}` : ''
-  const contractBlock = roleContract === undefined ? '' : roleSection(roleContract)
+  // The role section names only what the role adds; the shared baseline and the
+  // MCP law tools are listed once below, so the contract block stays readable.
+  const roleTools = grantedTools?.filter(name =>
+    !BASELINE_MEMBER_TOOLS.includes(name as (typeof BASELINE_MEMBER_TOOLS)[number]) && !name.startsWith('mcp__'))
+  const contractBlock = roleContract === undefined ? '' : roleSection(roleContract, roleTools)
+  const grantedBlock = grantedTools === undefined ? '' : `\nGranted tools: ${grantedTools.join('、')}\n`
   return `You are ${member.name}, a member of the multi-agent team "${team.name}" running inside DeepSeek Harness PatentTeams. The captain leads the team; you are a worker member${roleLine}.
 
 Team context:
@@ -207,7 +281,7 @@ Team context:
 - Your name inside the team (use it as \`from\`/identity): ${member.name}
 - The team state lives under ${stateDir}/${team.id}/ (team.json and inbox/*.jsonl). You may inspect these files read-only for diagnostics, but never edit them directly; use the patent_teams_* tools so JSON escaping and concurrent updates stay safe.
 - The captain and your teammates reach you through messages. Each message you receive is a new turn: act on it and end your turn with a concise reply.
-${contractBlock}
+${contractBlock}${grantedBlock}
 Domain discipline (non-negotiable; a short task brief does not suspend it):
 - 检索先于结论：新颖性/创造性判断必须先有检索证据与对比文件，禁止凭记忆断言某方案是或不是现有技术。
 - 无来源即撤回：法条、判例、对比文件、日期、数字一律给出 source_path（文件路径 / URL / 对比文件号+段落）；拿不出来源就删除该断言。
@@ -228,10 +302,17 @@ Working rules:
 9. Self-check before you submit: run the validators your role contract names (patent_worker_validate / validate_specification / rule_check and any task-specific check), fix what they report, and put the self-check conclusion into \`output\`. An unself-checked deliverable is not finished.`
 }
 
-/** Render one team role's contract as a guide section for the persona. */
-function roleSection(contract: RoleContract): string {
+/**
+ * Render one team role's contract as a guide section for the persona.
+ * @param contract - the role's contract.
+ * @param grantedTools - the granted surface, when it was trimmed; otherwise the
+ *   contract's declared tools are shown.
+ * @returns the rendered section.
+ */
+function roleSection(contract: RoleContract, grantedTools?: readonly string[]): string {
   const deliverables = workerDeliverables(contract.role)
-  const tools = workerTools(contract.role)
+  const tools = grantedTools === undefined ? workerToolList(contract.role).join('、') : grantedTools.join('、')
+  const toolsLine = tools === '' ? '' : `\n- Tools: ${tools}`
   const forbidden = contract.forbiddenActions.join('、')
   const hitl = contract.triggersHITL
     ? 'deliverables need human confirmation before the final output'
@@ -239,8 +320,7 @@ function roleSection(contract: RoleContract): string {
   return `Role contract:
 - Role: ${contract.name} (${contract.role})
 - Stance: [${contract.stance}] ${contract.description}
-- Required deliverables: ${deliverables}
-- Tools: ${tools}
+- Required deliverables: ${deliverables}${toolsLine}
 - Forbidden: ${forbidden}
 - HITL: ${hitl}`
 }
@@ -298,6 +378,9 @@ export async function spawnMember(
     throw new Error(`patent-teams: provider "${config.provider}" cannot restrict captain-only tools for members`)
   }
   const label = `${MEMBER_LABEL_PREFIX}${team.id}:${member.name}`
+  // A role-scoped member gets only its role tools plus the shared baseline; an
+  // unqualified or unregistered role keeps the deny-only surface it had before.
+  const grantedTools = memberToolAllowList(ctx, member.role)
   // The route rides the creation request: the manager seeds it into the
   // child's durable descriptor, so fresh composition and cold resume both
   // restore provider/model without a per-child setup hook.
@@ -308,8 +391,10 @@ export async function spawnMember(
     request: {
       prompt: [{ type: 'text', text: memberWelcome(team) }],
       parent: captain,
-      persona: memberPersona(team, member, stateDir, roleContract),
-      toolFilter: { deny: [...MEMBER_DENIED_TOOLS] },
+      persona: memberPersona(team, member, stateDir, roleContract, grantedTools),
+      toolFilter: grantedTools === undefined
+        ? { deny: [...MEMBER_DENIED_TOOLS] }
+        : { allow: grantedTools, deny: [...MEMBER_DENIED_TOOLS] },
       agentOptions: {
         provider: llmSelection.provider,
         model: llmSelection.model,

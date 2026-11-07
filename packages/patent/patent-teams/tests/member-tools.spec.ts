@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { Context } from '@deepseek-ai/cordis'
+import { Context } from '@deepseek-ai/cordis'
 import { BASELINE_MEMBER_TOOLS, memberToolAllowList } from '../src/members.ts'
 
-/** Context stub exposing exactly the given restrictable names, or no tools service. */
+/** A context whose `tools` service reports exactly the given restrictable names. */
 function ctxWith(names: readonly string[] | undefined): Context {
-  const tools = names === undefined ? undefined : { restrictableNames: () => new Set(names) }
-  return { get: (name: string) => (name === 'tools' ? tools : undefined) } as unknown as Context
+  const ctx = new Context()
+  if (names !== undefined) ctx.provide('tools', { restrictableNames: () => new Set(names) } as never)
+  return ctx
 }
 
 describe('memberToolAllowList', () => {

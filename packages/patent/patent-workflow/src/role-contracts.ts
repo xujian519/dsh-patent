@@ -218,18 +218,27 @@ export function workerDeliverables(role: string): string {
 }
 
 /**
- * Join the tools a role's workers declare, deduplicated in declaration order.
+ * Tools a role's workers declare, deduplicated in declaration order.
  *
- * The member persona renders this list, so a member learns which tools its role
- * owns. Nothing enforces it: `allowedTools` has no runtime consumer, and the
- * only restriction path is the `deny` filter that hides captain-only team tools.
+ * The team runtime intersects this list with the current composition's
+ * restrictable names before granting it, and the member persona renders the
+ * granted result, so a member sees exactly the role tools it can call.
  * @param role - SKILL.md role id.
- * @returns the '、'-joined tool list, or '' when the role is unregistered or its
- *   workers declare no tools.
+ * @returns the declared tool names, empty when the role is unregistered or its
+ *   workers declare none.
+ */
+export function workerToolList(role: string): string[] {
+  /* v8 ignore next -- every registered worker declares allowedTools; the field is optional only for external contracts */
+  return [...new Set(roleWorkers(role).flatMap(worker => worker.allowedTools ?? []))]
+}
+
+/**
+ * Join the tools a role's workers declare for display.
+ * @param role - SKILL.md role id.
+ * @returns the '、'-joined tool list, or '' when the role declares none.
  */
 export function workerTools(role: string): string {
-  /* v8 ignore next -- every registered worker declares allowedTools; the field is optional only for external contracts */
-  return [...new Set(roleWorkers(role).flatMap(worker => worker.allowedTools ?? []))].join('、')
+  return workerToolList(role).join('、')
 }
 
 /**

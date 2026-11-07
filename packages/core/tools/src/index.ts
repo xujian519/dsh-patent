@@ -153,6 +153,18 @@ export class ToolsService extends Service {
   }
 
   /**
+   * Names the calling scope may pass to {@link restrict}: inherited global and
+   * ancestor registrations, excluding the scope's own. Callers that build a
+   * filter from a static list intersect it with this set, so a name absent from
+   * the current composition cannot turn a restriction into a registration
+   * failure. Outside a scoped context it reports the global registrations.
+   * @returns the restrictable tool names.
+   */
+  restrictableNames(): ReadonlySet<string> {
+    return this.view(scopeOf(this.ctx)).restrictableNames
+  }
+
+  /**
    * Restrict global tools for the calling agent scope. Empty filters, unknown
    * names, scope-local names, and reserved transport names fail. Restrictions
    * intersect; scoped registrations remain visible.

@@ -251,6 +251,59 @@ describe('continuable child presets', () => {
       .toContain('Historical child persona.')
   })
 
+  it('narrows a persisted filter that names a tool the current composition no longer carries', async () => {
+    const { ctx, parent, adapter } = await setup()
+    parkParent(ctx, parent)
+    const childId = SessionId('stale-filter-child')
+    const historical = await ctx.agents.create({
+      sessionId: childId,
+      parentAgent: parent,
+      meta: { parentSession: parent.id, origin: 'subagent', delegationDepth: 1 },
+      setup: (childCtx, child) => {
+        child.session.append('subagent/descriptor', snapshotSubagentDescriptor({
+          mode: 'continuable', provider: 'separate', label: 'stale-filter',
+          agentProvider: 'mock', agentModel: 'mock',
+          // `gone_tool` was registered when this child was parked (an MCP server,
+          // say) and is absent now. Throwing here would make the child permanently
+          // unresumable.
+          toolFilter: { allow: ['preset_only', 'gone_tool'] },
+        }))
+        ctx.agentPresets.composeFrom(childCtx, parent.ctx)
+      },
+    })
+    await historical.dispose()
+
+    await continueChild(ctx, parent, childId)
+    await settled(ctx, childId)
+    expect((adapter.requests[0]?.tools ?? []).map(tool => tool.name)).toEqual(['preset_only'])
+  })
+
+  it('fails open when a persisted allow-list names nothing the child still carries', async () => {
+    const { ctx, parent, adapter } = await setup()
+    parkParent(ctx, parent)
+    const childId = SessionId('vanished-filter-child')
+    const historical = await ctx.agents.create({
+      sessionId: childId,
+      parentAgent: parent,
+      meta: { parentSession: parent.id, origin: 'subagent', delegationDepth: 1 },
+      setup: (childCtx, child) => {
+        child.session.append('subagent/descriptor', snapshotSubagentDescriptor({
+          mode: 'continuable', provider: 'separate', label: 'vanished-filter',
+          agentProvider: 'mock', agentModel: 'mock',
+          // Every name came from an MCP server that is not running now. Applying
+          // the mask as written would hide the child's whole inherited surface.
+          toolFilter: { allow: ['gone_tool', 'also_gone'] },
+        }))
+        ctx.agentPresets.composeFrom(childCtx, parent.ctx)
+      },
+    })
+    await historical.dispose()
+
+    await continueChild(ctx, parent, childId)
+    await settled(ctx, childId)
+    expect((adapter.requests[0]?.tools ?? []).map(tool => tool.name)).toEqual(['preset_only'])
+  })
+
   it('keeps an empty-history fork on the parent composition when its own selection follows the descriptor', async () => {
     const { ctx, parent, adapter } = await setup()
     parkParent(ctx, parent)

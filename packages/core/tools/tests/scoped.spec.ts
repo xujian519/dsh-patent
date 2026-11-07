@@ -121,6 +121,19 @@ describe('scoped tool registration', () => {
 })
 
 describe('restrict()', () => {
+  it('reports the names a scope may restrict, excluding its own registrations', async () => {
+    const ctx = await mount()
+    const { scope } = await mintAgentScope(ctx, 'a')
+    ctx.tools.register(tool('read'))
+    ctx.tools.register(tool('bash'))
+    scope.ctx.tools.register(tool('capture'))
+
+    // A caller building an allow-list from a static table intersects with this
+    // set: a scope-local name would make `restrict()` throw at creation.
+    expect([...scope.ctx.tools.restrictableNames()].sort()).toEqual(['bash', 'read'])
+    expect([...ctx.tools.restrictableNames()].sort()).toEqual(['bash', 'read'])
+  })
+
   it('masks global tools, merges scope-local tools afterward, and keeps assembly with execution', async () => {
     const ctx = await mount()
     const { scope, key } = await mintAgentScope(ctx, 'a')

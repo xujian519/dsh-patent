@@ -3575,7 +3575,11 @@ export interface Config {
   approveStageGates?: boolean
   /** 个人工作台 API 基址覆盖；缺省在 web 组合内自动取本进程 webServer 端口。 */
   workbenchBaseUrl?: string
-  /** 可配置工作根目录（相对或绝对路径；其下每案一个 <案号>/，内含 _matter-log.md）。未配置时回退 <cwd>/patent-workspace，该回退不是案卷真源。部署应设成本机工作根目录，典型值为 /Users/xujian/工作。 */
+  /**
+   * 可配置工作根目录（相对或绝对路径；其下每案一个 <案号>/，内含 _matter-log.md），
+   * 同时作为证据源相对路径的解析基准。未配置时回退 <cwd>/patent-workspace，该回退
+   * 不是案卷真源。部署应设成本机工作根目录，典型值为 /Users/xujian/工作。
+   */
   workbenchCaseRoot?: string
   /** DOT 字体名覆盖；默认 Helvetica，含 CJK 文本时按平台候选（PingFang SC / Microsoft YaHei / Noto Sans CJK SC）。 */
   dotFont?: string

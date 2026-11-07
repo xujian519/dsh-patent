@@ -49,6 +49,7 @@ export function loggedPatentModel(
     async *stream(request, signal) {
       calls += 1
       const callSequence = calls
+      const startedAt = performance.now()
       let output = ''
       let usage: PatentModelUsage | undefined
       for await (const event of target.stream(request, signal)) {
@@ -63,6 +64,7 @@ export function loggedPatentModel(
         output,
         callSequence,
         ...(usage === undefined ? {} : { usage }),
+        durationMs: Math.round(performance.now() - startedAt),
         llmStreamCall: true,
       })
     },

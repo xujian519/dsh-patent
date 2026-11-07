@@ -83,6 +83,17 @@ export interface PatentModelCallEvent {
   callSequence?: number
   /** Provider-reported token usage, when the port surfaced any. */
   usage?: PatentModelUsage
+  /**
+   * Wall-clock milliseconds the stream took, measured from the first pull to
+   * its end and rounded to a whole millisecond: `0` means it measured under
+   * one, not that it went unmeasured.
+   *
+   * Covers provider queueing and any transport retry inside the adapter; the
+   * wait for a concurrency slot before `stream()` is outside it. Absent on
+   * records written before the field existed. Not model-visible, so replay
+   * normalization drops it.
+   */
+  durationMs?: number
   /** Identifies exactly one call through this context's `ctx.llm.stream()`. */
   llmStreamCall: true
 }

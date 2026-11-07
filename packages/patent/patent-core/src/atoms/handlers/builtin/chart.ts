@@ -37,6 +37,7 @@ import { dataBlock } from '../../../prompt-hygiene.ts'
 import { callLlm, degraded, parseLlmJson, requireLlm, resolveInputText } from './llm.ts'
 import {
   readAtomTunables,
+  readChartSourceCwd,
   readChartSourceMaxBytes,
   readChartSourceRoots,
 } from '../../tunables.ts'
@@ -375,6 +376,24 @@ function unreadableSources(
   )
 }
 
+/**
+ * 解析源文件读取策略：允许根、大小上限与相对路径基准缺一不可，任一非法即降级。
+ * 根与基准同源解析，单独放宽基准不会扩大可读范围。
+ * @param state - 阶段状态，含合并后的参数。
+ * @returns 读取策略，或首个非法配置的降级原因。
+ */
+async function resolveSourcePolicy(
+  state: PipelineState,
+): Promise<{ ok: true; policy: ChartSourcePolicy } | { ok: false; reason: string }> {
+  const rootsResult = readChartSourceRoots(state)
+  if (!rootsResult.ok) return { ok: false, reason: rootsResult.reason }
+  const maxBytes = readChartSourceMaxBytes(state)
+  if (!maxBytes.ok) return { ok: false, reason: maxBytes.reason }
+  const cwdResult = readChartSourceCwd(state)
+  if (!cwdResult.ok) return { ok: false, reason: cwdResult.reason }
+  return resolveChartSourcePolicy(rootsResult.roots, maxBytes.value, cwdResult.cwd)
+}
+
 /** 渲染提示词中的目标清单。 */
 function renderTargetLines(targets: readonly ChartTarget[]): string {
   if (targets.length === 0) return '（无目标对象 —— 只拆分要素，逐行映射留待后续补充）'
@@ -422,15 +441,7 @@ export class ClaimChartHandler implements StageHandler {
     })
     if (!tuned.ok) return degraded('claim-chart', tuned.reason)
     const { temperature, promptLimit, maxRetries } = tuned.tunables
-    const rootsResult = readChartSourceRoots(state)
-    if (!rootsResult.ok) return degraded('claim-chart', rootsResult.reason)
-    const sourceMaxBytes = readChartSourceMaxBytes(state)
-    if (!sourceMaxBytes.ok) return degraded('claim-chart', sourceMaxBytes.reason)
-    const policyResult = await resolveChartSourcePolicy(
-      rootsResult.roots,
-      sourceMaxBytes.value,
-      process.cwd(),
-    )
+    const policyResult = await resolveSourcePolicy(state)
     if (!policyResult.ok) return degraded('claim-chart', policyResult.reason)
     const missing = requireLlm(provider, 'claim-chart')
     if (missing) return missing

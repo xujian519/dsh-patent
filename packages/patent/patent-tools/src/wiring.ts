@@ -428,7 +428,12 @@ export function registerPatentTools(ctx: Context, config: Config): void {
 
   // LLM-consuming tools.
   ctx.tools.register(createPatentAnalysisReportTool({ model }))
-  ctx.tools.register(createClaimChartBuildTool({ model }))
+  ctx.tools.register(createClaimChartBuildTool({
+    model,
+    // 证据源相对路径按部署的工作根解析；缺省时内核回落到进程 cwd，
+    // 打包应用里那不是用户的案卷目录。
+    ...(config.workbenchCaseRoot === undefined ? {} : { cwd: config.workbenchCaseRoot }),
+  }))
   ctx.tools.register(createTrizContradictionAnalysisTool({ model }))
   // ctx.jobs backs `run_in_background`: read lazily, because the job registry
   // may load after this plugin; absent means the tool fails loud on that flag.

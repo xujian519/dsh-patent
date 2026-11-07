@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
@@ -288,5 +291,31 @@ describe('claim_chart_build', () => {
     })
     // 源文不可读在读文件阶段就已中止，模型端口一次都没被调用。
     expect(calls).toBe(0)
+  })
+
+  it('resolves a relative source_path against the injected cwd', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-cc-cwd-'))
+    writeFileSync(join(dir, 'd1.txt'), '[0032]\n壳体\n', 'utf8')
+    try {
+      const tool = createClaimChartBuildTool({
+        cwd: dir,
+        model: {
+          stream: async function* () {
+            throw new Error('reached-model')
+          },
+        },
+      })
+      // 源文读到才会走到模型；模型侧失败属执行失败，不是输入错误。
+      await expect(tool.execute({
+        mode: 'invalidity',
+        claim_text: '1. 一种装置，包括壳体。',
+        targets: [{ id: 'D1', kind: 'prior-art', source_path: 'd1.txt' }],
+      }, { signal } as never)).rejects.toMatchObject({
+        name: 'PatentToolError',
+        code: 'tool_execution_failed',
+      })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })

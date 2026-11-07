@@ -531,10 +531,22 @@ describe('normalizeSessionLog', () => {
     expect(out).toContain('"time0":0')
   })
 
-  it('leaves a non-hook event durationMs untouched (only hook/result is scrubbed)', () => {
+  it('leaves an unrelated event durationMs untouched', () => {
     const ev = JSON.stringify({ type: 'tool/result', seq: 2, time: 5, data: { durationMs: 88 } })
     const out = normalizeSessionLog(`${header({})}\n${ev}\n`, ctx)
     expect(out).toContain('"durationMs":88')
+  })
+
+  it('drops a patent/model-call durationMs so a replay matches its recorded golden', () => {
+    const ev = JSON.stringify({
+      type: 'patent/model-call',
+      seq: 2,
+      time: 5,
+      data: { callSite: 'claim_chart_build', output: 'x', durationMs: 88, llmStreamCall: true },
+    })
+    const out = normalizeSessionLog(`${header({})}\n${ev}\n`, ctx)
+    expect(out).not.toContain('durationMs')
+    expect(out).toContain('"output":"x"')
   })
 
   it('normalizes goal lifecycle clocks without scrubbing unrelated payload timestamps', () => {

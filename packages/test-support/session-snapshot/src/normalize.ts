@@ -427,9 +427,12 @@ export function normalizeSessionLog(
         }
       }
     }
-    if (record.type === 'hook/result' && record.data !== null && typeof record.data === 'object') {
+    if (record.data !== null && typeof record.data === 'object') {
       const data = record.data as Record<string, unknown>
-      if ('durationMs' in data) data.durationMs = 0
+      if (record.type === 'hook/result' && 'durationMs' in data) data.durationMs = 0
+      // Wall-clock only, never model-visible: drop it entirely so a replay's real
+      // timing compares equal to the recorded golden instead of drifting per run.
+      if (record.type === 'patent/model-call') delete data.durationMs
     }
     normalizeFeedbackClocks(record)
     if ((record.type === 'job/registered' || record.type === 'job/settled')

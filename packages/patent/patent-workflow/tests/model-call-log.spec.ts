@@ -29,6 +29,13 @@ function portStub(
   }
 }
 
+/** Read one appended record, failing the test when the call appended none. */
+function recordAt(appended: readonly PatentModelCallEvent[], index: number): PatentModelCallEvent {
+  const record = appended[index]
+  if (record === undefined) throw new Error(`expected model-call record ${String(index)}`)
+  return record
+}
+
 /** Consume one wrapped port completely and return the forwarded events. */
 async function drain(port: PatentModelPort): Promise<PatentModelEvent[]> {
   const seen: PatentModelEvent[] = []
@@ -57,7 +64,9 @@ describe('loggedPatentModel', () => {
       { type: 'delta', text: '成果' },
       { type: 'done', usage: { inputTokens: 12, outputTokens: 2 } },
     ])
-    expect(appended).toEqual([{
+    // Timing is asserted separately so the remaining payload stays exact.
+    const { durationMs, ...payload } = recordAt(appended, 0)
+    expect(payload).toEqual({
       callSite: 'patent_workflow_run',
       manifestId: 'patent_oa_response_v1',
       provider: 'deepseek-official',
@@ -66,7 +75,8 @@ describe('loggedPatentModel', () => {
       callSequence: 1,
       usage: { inputTokens: 12, outputTokens: 2 },
       llmStreamCall: true,
-    }])
+    })
+    expect(typeof durationMs).toBe('number')
   })
 
   it('keeps the declared route on the wrapper and omits route fields the port does not declare', async () => {
@@ -81,7 +91,28 @@ describe('loggedPatentModel', () => {
     const unrouted = loggedPatentModel(portStub([]), agent, { callSite: 'claim_chart_build' })
     expect(unrouted.route).toBeUndefined()
     await drain(unrouted)
-    expect(appended[1]).toEqual({ callSite: 'claim_chart_build', output: '', callSequence: 1, llmStreamCall: true })
+    const { durationMs, ...payload } = recordAt(appended, 1)
+    expect(payload).toEqual({ callSite: 'claim_chart_build', output: '', callSequence: 1, llmStreamCall: true })
+    expect(typeof durationMs).toBe('number')
+  })
+
+  it('measures the stream to its last event, in whole milliseconds', async () => {
+    const { agent, appended } = agentStub()
+    const delayed: PatentModelPort = {
+      async *stream() {
+        await new Promise<void>(resolve => setTimeout(resolve, 20))
+        yield { type: 'delta' as const, text: 'a' }
+        await new Promise<void>(resolve => setTimeout(resolve, 20))
+        yield { type: 'done' as const }
+      },
+    }
+
+    await drain(loggedPatentModel(delayed, agent, { callSite: 'patent_workflow_run' }))
+
+    // Two 20 ms waits: stopping at the first event would report about half this.
+    const { durationMs } = recordAt(appended, 0)
+    expect(durationMs).toBeGreaterThanOrEqual(35)
+    expect(Number.isInteger(durationMs)).toBe(true)
   })
 
   it('numbers the calls one wrapper serves in start order, even when they finish out of order', async () => {

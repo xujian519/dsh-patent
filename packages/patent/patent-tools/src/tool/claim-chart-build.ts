@@ -19,6 +19,7 @@ import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import {
   ClaimChartHandler,
+  DEGRADED_CODE_KEY,
   assertSafePathSegment,
   deriveInfringementConclusion,
   renderInvalidityConclusion,
@@ -339,7 +340,12 @@ export function createClaimChartBuildTool(deps: ClaimChartBuildDeps = {}): ToolD
         provider,
       })
       if (typeof state._error === 'string') {
-        throw new PatentToolError('tool_execution_failed', state._error, { tool: 'claim_chart_build' })
+        // 调用方可在入参修正的失败（如源文不可读）带独立错误码，避免模型把
+        // 「路径写错」当成「工具坏了」或「输出不合格」反复重试。
+        const code = state[DEGRADED_CODE_KEY] === 'invalid_tool_input'
+          ? 'invalid_tool_input'
+          : 'tool_execution_failed'
+        throw new PatentToolError(code, state._error, { tool: 'claim_chart_build' })
       }
       /* v8 ignore next -- the success state always carries a string claim_chart_doc (degraded states carry _error). */
       const doc = typeof state.claim_chart_doc === 'string' ? state.claim_chart_doc : '{}'

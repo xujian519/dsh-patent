@@ -36,6 +36,7 @@ export {
   type PipelineState,
   type StageExecuteInput,
   type StageHandler,
+  DEGRADED_CODE_KEY,
   DEGRADED_ERROR_KEY,
   DEGRADED_RETRYABLE_KEY,
   REVISION_SIGNALS_KEY,

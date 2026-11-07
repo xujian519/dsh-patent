@@ -1322,6 +1322,9 @@ describe('patent_workflow_run', () => {
       exec,
     )) as PatentWorkflowRunOutput
     expect(paused.interruptNote).toBeDefined()
+    // A gate pauses for a decision: the note must name the approving parameter,
+    // or the caller resumes straight back into the same gate.
+    expect(paused.interruptNote).toContain('approveCheckpointId')
     expect((paused.graphDegraded ?? []).length).toBeGreaterThan(0)
     expect(paused.checkpointId).toBeDefined()
 

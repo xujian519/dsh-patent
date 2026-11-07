@@ -915,7 +915,7 @@ async function executeGraphRun(
     ? `检查点: ${checkpointId}${result.interrupted !== undefined ? '（中断可续跑）' : ''}`
     : /* v8 ignore next -- every graph run starts at least one superstep, so a checkpoint id is always produced. */ '检查点: 无'
   const interruptNote = result.interrupted !== undefined
-    ? `⏸ 审批门暂停: "${result.interrupted.node}"（${result.interrupted.message}）——可用 resumeCheckpointId 续跑`
+    ? `⏸ 审批门暂停: "${result.interrupted.node}"（${result.interrupted.message}）——用 approveCheckpointId 授权并续跑（resumeCheckpointId 不授权）`
     : undefined
   // A degraded node left a missing output behind, exactly like a degraded
   // manifest stage; the manifest path reports such a run as incomplete, so the

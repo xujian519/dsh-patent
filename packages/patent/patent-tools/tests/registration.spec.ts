@@ -54,6 +54,7 @@ const EXPECTED_TOOLS = [
  * registerBuiltinAtoms).
  */
 const REGISTERED_ATOMS = [
+  'admissibility',
   'adversary-model',
   'adversary-review',
   'amendment-basis',

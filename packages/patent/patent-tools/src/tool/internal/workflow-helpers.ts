@@ -329,6 +329,18 @@ interface BuildWorkflowRunContextOptions extends SpecificationRunOptions {
   evidence?: unknown[]
   /** Evidence submission deadline (mapped to evidence_deadline). */
   evidenceDeadline?: string
+  /** Delivery date of the rejection decision (mapped to rejection_decision_date; the reexamination-request period starts from it). */
+  rejectionDecisionDate?: string
+  /** Date the reexamination request was filed (mapped to request_date). */
+  requestDate?: string
+  /** Whether a right-recovery procedure was filed (mapped to recovery_requested). */
+  recoveryRequested?: boolean
+  /** The earlier invalidation decision the current request may repeat (mapped to prior_invalidation_decision). */
+  priorInvalidationDecision?: unknown
+  /** Party filing the request (mapped to requester; read by the admissibility party check). */
+  requester?: string
+  /** Applicant of the rejected application or patentee (mapped to patentee). */
+  patentee?: string
 }
 
 /**
@@ -377,6 +389,14 @@ export function buildWorkflowRunContext(opts: BuildWorkflowRunContextOptions): W
       : {}),
     ...(opts.evidence !== undefined ? { evidence: opts.evidence } : {}),
     ...(opts.evidenceDeadline !== undefined ? { evidence_deadline: opts.evidenceDeadline } : {}),
+    ...(opts.rejectionDecisionDate !== undefined ? { rejection_decision_date: opts.rejectionDecisionDate } : {}),
+    ...(opts.requestDate !== undefined ? { request_date: opts.requestDate } : {}),
+    ...(opts.recoveryRequested !== undefined ? { recovery_requested: opts.recoveryRequested } : {}),
+    ...(opts.priorInvalidationDecision !== undefined
+      ? { prior_invalidation_decision: opts.priorInvalidationDecision }
+      : {}),
+    ...(opts.requester !== undefined ? { requester: opts.requester } : {}),
+    ...(opts.patentee !== undefined ? { patentee: opts.patentee } : {}),
   }
 }
 

@@ -78,6 +78,7 @@ import { specCheckAtom, SpecCheckHandler } from './atoms/spec-check.ts'
 import { responseCheckAtom, ResponseCheckHandler } from './atoms/response-check.ts'
 import { eligibilityAtom, EligibilityHandler } from './atoms/eligibility.ts'
 import { legalGapsAtom, LegalGapsHandler } from './atoms/legal-gaps.ts'
+import { admissibilityAtom, AdmissibilityHandler } from './atoms/admissibility.ts'
 
 
 import { DEFAULT_WORKFLOW_LLM_STAGE_BUDGET, DEFAULT_WORKFLOW_STAGE_BUDGET } from './config.ts'
@@ -307,8 +308,8 @@ export function registerPatentTools(ctx: Context, config: Config): void {
   registerBuiltinAtoms()
   // slop-gate 依赖本包的 slop 引擎，tighten 依赖同一引擎的可见字符口径与
   // patent-core 的 LLM 骨架，spec-check 依赖本包的说明书校验器，
-  // response-check 与 eligibility 复用 patent-rule 的规则资产，legal-gaps 汇总这些检查；
-  // 均按依赖方向注册在 patent-core 内置之外。
+  // response-check 与 eligibility 复用 patent-rule 的规则资产，legal-gaps 汇总这些检查，
+  // admissibility 复用 patent-deadline 的期限起算；均按依赖方向注册在 patent-core 内置之外。
   registerPackageAtoms(ctx, [
     { atom: slopGateAtom, handler: new SlopGateHandler() },
     { atom: tightenAtom, handler: new TightenHandler() },
@@ -318,6 +319,7 @@ export function registerPatentTools(ctx: Context, config: Config): void {
     { atom: responseCheckAtom, handler: new ResponseCheckHandler() },
     { atom: eligibilityAtom, handler: new EligibilityHandler() },
     { atom: legalGapsAtom, handler: new LegalGapsHandler() },
+    { atom: admissibilityAtom, handler: new AdmissibilityHandler() },
   ])
   // Budgets are deployment configuration: a manifest that grows past them fails
   // the load instead of quietly multiplying model calls at run time.

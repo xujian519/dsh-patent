@@ -1294,7 +1294,10 @@ describe('headless recorded-session snapshots', () => {
       || mode === 'record' && scenario.manifest.sessionFormat !== undefined
     const scenarioTest = skipped ? it.skip : mode === 'replay' ? it.concurrent : it
     const inputLabel = retainedToolInput === undefined ? '' : ' from retained V3 input'
-    const scenarioTestTimeoutMs = (mode === 'record' ? 14 : scenario.name === 'provider-cwd' ? 3 : 1) * LOADER_SMOKE_TEST_TIMEOUT_MS
+    // Record must outlast the process cap it sets below (1_800_000 ms): the
+    // scenario test wraps every live run, so a shorter cap aborts the test
+    // before the process's own timeout can report what stalled.
+    const scenarioTestTimeoutMs = (mode === 'record' ? 48 : scenario.name === 'provider-cwd' ? 3 : 1) * LOADER_SMOKE_TEST_TIMEOUT_MS
     scenarioTest(`${mode}s ${scenario.name}${inputLabel} through dsh --profile headless`, async () => {
       let fixtureFiles = retainedToolInput === undefined
         ? recordingFixtureNames(await readdir(scenario.dir), mode) : [retainedToolInput]
@@ -1341,8 +1344,12 @@ describe('headless recorded-session snapshots', () => {
           label: `${scenario.name} headless snapshot`,
           tempDirPrefix: 'dsh-log-snap-',
           // Recording drives live model calls through multi-stage chains; the
-          // 30s replay process cap only fits replay.
-          ...(mode === 'record' ? { processTimeoutMs: 600_000 } : {}),
+          // 30s replay process cap only fits replay. A contested chain now runs
+          // 14-15 stages, one of them drafting a full request document, and each
+          // of these scenarios invokes it twice (pause, then resume past the
+          // approval gate): 28-30 stage runs, of which 8-10 call the model. The
+          // reexamination chain measured past 20 minutes, so the cap is 30.
+          ...(mode === 'record' ? { processTimeoutMs: 1_800_000 } : {}),
           ...(scenario.name === 'compaction-recovery' ? await compactionWorkspaceOptions() : {}),
           ...(scenario.manifest.workspace?.parent === 'outside-temp' ? { tempDirParent: outsideTempWorkspaceParent() } : {}),
           binScript: dshBin,

@@ -183,6 +183,37 @@ const EVIDENCE_CHECK: LegalGapCheckpoint = {
   },
 }
 
+/**
+ * 受理条件：无效与复审共用。程序事实（期限、理由援引、一事不再理、主体资格）
+ * 由 admissibility 原子核对；采集阶段补提事实解决不了，故不作反哺目标。
+ */
+const ADMISSIBILITY_CHECK: LegalGapCheckpoint = {
+  id: 'admissibility',
+  provision: '专利法第41条第1款、实施细则第69条第2款；审查指南第四部分第三章2.1、3.3',
+  label: '程序受理条件（期限、理由援引、一事不再理、主体资格）',
+  severity: 'block',
+  assessKeys: ['admissibility_report'],
+  failureKey: 'admissibility_passed',
+  pendingKey: 'admissibility_pending',
+  notAssessed: (state) => {
+    const report = state['admissibility_report']
+    return typeof report === 'string' && report.includes('未执行')
+  },
+  revisionTarget: false,
+}
+
+/** 修改依据检查：答复链与复审链共用；未检测到修改后权利要求时记不适用。 */
+const AMENDMENT_BASIS_CHECK: LegalGapCheckpoint = {
+  id: 'amendment-basis',
+  provision: '专利法第33条',
+  label: '修改依据（修改不得超出原说明书和权利要求书记载的范围）',
+  severity: 'block',
+  assessKeys: ['amendment_basis_report'],
+  failureKey: 'amendment_basis_passed',
+  notApplicable: state => state['amendment_basis_scope'] === '未检测到修改后权利要求',
+  scopeKey: 'amendment_basis_scope',
+}
+
 /** 各案件类型的法条检查清单；顺序即报告顺序。 */
 export const LEGAL_GAP_CHECKS: Record<LegalGapProfile, readonly LegalGapCheckpoint[]> = {
   novelty: [
@@ -271,16 +302,7 @@ export const LEGAL_GAP_CHECKS: Record<LegalGapProfile, readonly LegalGapCheckpoi
       // 未评估时不给反哺清单：表达质量没跑起来该重跑检查，不是让模型补提事实。
       revisionTarget: false,
     },
-    {
-      id: 'amendment-basis',
-      provision: '专利法第33条',
-      label: '修改依据（修改不得超出原说明书和权利要求书记载的范围）',
-      severity: 'block',
-      assessKeys: ['amendment_basis_report'],
-      failureKey: 'amendment_basis_passed',
-      notApplicable: state => state['amendment_basis_scope'] === '未检测到修改后权利要求',
-      scopeKey: 'amendment_basis_scope',
-    },
+    AMENDMENT_BASIS_CHECK,
     {
       // 换位审查：确定性骨架可假阳性，故 severity 记 warn——不翻转 legal_gaps_passed，
       // 但失败会出现在汇总里，避免「gate 从不拒绝」的空跑。反哺目标关掉：关键词缺口
@@ -295,6 +317,7 @@ export const LEGAL_GAP_CHECKS: Record<LegalGapProfile, readonly LegalGapCheckpoi
     },
   ],
   invalidation: [
+    ADMISSIBILITY_CHECK,
     EVIDENCE_CHECK,
     {
       id: 'novelty',
@@ -312,6 +335,7 @@ export const LEGAL_GAP_CHECKS: Record<LegalGapProfile, readonly LegalGapCheckpoi
     },
   ],
   reexamination: [
+    ADMISSIBILITY_CHECK,
     EVIDENCE_CHECK,
     {
       id: 'novelty',

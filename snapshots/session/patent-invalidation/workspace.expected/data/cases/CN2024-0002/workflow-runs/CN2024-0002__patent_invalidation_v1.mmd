@@ -2,21 +2,27 @@ flowchart TD
   dispute-framing["争议粗定位（确定性）：从程序文书/已解析通知书/程序理由收集候选法条与涉及权项，不判断实体结论"]
   parse["解析无效宣告程序文书与权利要求（按争议粗定位只提取相关事实）"]
   grounds["识别请求援引的法定理由（确定性，无效理由表）"]
+  admissibility["核对受理条件（确定性，无效宣告程序）：请求期限、法定理由是否被实质援引、一事不再理、主体资格"]
   dispute-framing-refine["争议定位修正（确定性）：读取已确定的时间基准/程序理由，标注候选法条的时间依据，不改写已锁定的时间基准"]
   claim-chart["权利要求要素级映射到证据组合（mode=invalidity）"]
   novelty["新颖性单独对比（单篇全覆盖）"]
   inventiveness["三步法创造性分析"]
   evidence-check["证据审查（形式/期限/关联性）：举证期限内提交、外文/域外证据形式完备、公开日早于现有技术截止日、与理由或权项关联"]
   citation-check["引用真实性校验（确定性）：新颖性/创造性结论引用的 D 标号与专利号须在证据清单中接地"]
+  draft["撰写无效宣告请求书正文（模型）：逐项理由的四段式论证、证据结合方式与请求事项，只写实际主张的理由"]
+  slop_gate["反套话评分门（请求书正文；未通过只报告，不回退——请求书重写成本高于答复）"]
   legal_gaps["法条缺口汇总：证据审查、新颖性与创造性理由对应法条的通过/未通过/未评估状态"]
   approval["人工确认分析结论"]
   dispute-framing --> parse
   parse --> grounds
-  grounds --> dispute-framing-refine
+  grounds --> admissibility
+  admissibility --> dispute-framing-refine
   dispute-framing-refine --> claim-chart
   claim-chart --> novelty
   novelty --> inventiveness
   inventiveness --> evidence-check
   evidence-check --> citation-check
-  citation-check --> legal_gaps
+  citation-check --> draft
+  draft --> slop_gate
+  slop_gate --> legal_gaps
   legal_gaps --> approval

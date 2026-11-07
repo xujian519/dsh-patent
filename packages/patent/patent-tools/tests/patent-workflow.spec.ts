@@ -24,6 +24,7 @@ import { specCheckAtom, SpecCheckHandler } from '../src/atoms/spec-check.ts'
 import { responseCheckAtom, ResponseCheckHandler } from '../src/atoms/response-check.ts'
 import { eligibilityAtom, EligibilityHandler } from '../src/atoms/eligibility.ts'
 import { legalGapsAtom, LegalGapsHandler } from '../src/atoms/legal-gaps.ts'
+import { admissibilityAtom, AdmissibilityHandler } from '../src/atoms/admissibility.ts'
 import {
   createPatentWorkflowTool,
   renderPatentWorkflow,
@@ -58,6 +59,8 @@ globalAtomRegistry.register(eligibilityAtom)
 globalStageHandlerRegistry.register(new EligibilityHandler())
 globalAtomRegistry.register(legalGapsAtom)
 globalStageHandlerRegistry.register(new LegalGapsHandler())
+globalAtomRegistry.register(admissibilityAtom)
+globalStageHandlerRegistry.register(new AdmissibilityHandler())
 
 const exec = { signal: new AbortController().signal } as unknown as Parameters<ToolDefinition['execute']>[1]
 

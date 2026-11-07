@@ -700,6 +700,10 @@ type ContestedManifestOptions = {
   groundsDescription: string
   /** legal-gaps 清单：与程序一一对应，新增程序时须显式给出。 */
   legalGapProfile: 'invalidation' | 'reexamination'
+  /** `draft` 阶段描述：请求书正文的文体（复审请求书／无效宣告请求书）。 */
+  draftDescription: string
+  /** `draft` 阶段的写作结构：两种程序的请求书骨架不同，各自给全。 */
+  draftGuidance: string
 }
 
 /**
@@ -729,6 +733,17 @@ function buildContestedManifest(options: ContestedManifestOptions): WorkflowMani
         description: options.groundsDescription,
         atom: 'grounds',
         params: { ground_program: options.program },
+      },
+      {
+        // 受理条件只依赖理由识别产出与工具入参（evidence/日期/在先决定），不依赖后续
+        // 分析，因此排在 grounds 之后：根本不该受理的请求在两轮模型分析之前就被拦下，
+        // 也让 citation-check 的失败不至于掩盖更根本的受理缺陷。
+        id: 'admissibility',
+        strategy: 'chain',
+        description: `核对受理条件（确定性，${options.label}程序）：请求期限、法定理由是否被实质援引、一事不再理、主体资格`,
+        atom: 'admissibility',
+        // 程序口径由 program 派生，不另设参数类型：理由表与图表模式已按同一口径分派。
+        params: { case_type: options.program },
       },
       disputeFramingRefineStage(),
       {
@@ -779,6 +794,24 @@ function buildContestedManifest(options: ContestedManifestOptions): WorkflowMani
         params: { ref_text_keys: ['novelty', 'inventiveness'] },
       },
       {
+        id: 'draft',
+        strategy: 'chain',
+        description: options.draftDescription,
+        // 结构化上游只取投影：对照表全文四千余字，撰写需要的是结论行与要素原文。
+        consumes: ['dispute-framing-refine', 'parse', 'grounds', 'claim-chart#rows', 'novelty', 'inventiveness'],
+        guidance: options.draftGuidance,
+      },
+      // 复审的 A33 修改依据检查不在本链：amendment-basis 从答复正文里提取修改后权项，
+      // 而请求书正文同时承载理由与修改对照表，实测会把「权利要求 3 删除」这类程序表述
+      // 读成新增技术特征、报出不存在的超范围。等有结构化的修改后权利要求输入再接。
+      {
+        id: 'slop_gate',
+        strategy: 'chain',
+        description: '反套话评分门（请求书正文；未通过只报告，不回退——请求书重写成本高于答复）',
+        atom: 'slop-gate',
+        params: { text_keys: ['draft'] },
+      },
+      {
         id: 'legal_gaps',
         strategy: 'chain',
         description: '法条缺口汇总：证据审查、新颖性与创造性理由对应法条的通过/未通过/未评估状态',
@@ -810,6 +843,15 @@ export const patentInvalidationManifest: WorkflowManifest = buildContestedManife
   chartMode: 'invalidity',
   groundsDescription: '识别请求援引的法定理由（确定性，无效理由表）',
   legalGapProfile: 'invalidation',
+  draftDescription: '撰写无效宣告请求书正文（模型）：逐项理由的四段式论证、证据结合方式与请求事项，只写实际主张的理由',
+  draftGuidance: [
+    '请求书结构：请求人信息与涉案专利著录项 → 无效宣告请求的范围（逐项列明被主张的权利要求、理由与证据）→ 逐项无效理由 → 证据清单与结合方式说明 → 请求事项 → 落款。',
+    '每项理由必须指明所依据的证据；以结合对比主张的，须指明最接近的对比文件与结合方式（专利审查指南第四部分第三章3.3）。未被主张的理由不写入本件。',
+    '逐项理由按四段式组织：法条与理由 → 被主张的权项 → 事实认定 → 证据分析 → 结论。事实只陈述并注明出处，证据分析按要素对应到对照表结论行，不复述整张对照表。',
+    '证据用清单标识（D1…），正文引用与清单编号一致并逐处 pin-cite；不得编造文献号、公开日或公开内容。',
+    '创造性理由按三步法组织：第二步的实际解决的技术问题不得包含指向区别技术特征本身的指引；从属权利要求与所引用权利要求使用同一法条路径，结论写「在引用权利要求不具备创造性的基础上」。',
+    '结论只写逐项请求（请求宣告哪几项权利要求无效），不复述论证过程；不写入内部评估结论、风险等级、成功率分档或缺口披露。',
+  ].join('\n'),
 })
 
 /**
@@ -828,6 +870,14 @@ export const patentReexaminationManifest: WorkflowManifest = buildContestedManif
   chartMode: 'reexamination',
   groundsDescription: '识别驳回决定援引的理由（确定性，复审理由表含实用新型客体缺陷）',
   legalGapProfile: 'reexamination',
+  draftDescription: '撰写复审请求书正文（模型）：逐条回应驳回理由、修改对照与依据、法律依据与请求事项',
+  draftGuidance: [
+    '请求书结构：请求人信息 → 复审请求的理由（逐条：驳回决定的理由 → 请求人的意见 → 依据）→ 修改对照表（未修改的写明未修改）→ 法律依据 → 请求事项 → 落款。',
+    '复审理由必须逐条对应驳回决定援引的理由：一条驳回理由对应一节，不得合并或挑选；未针对的理由须在结论中写明保留意见并说明理由。',
+    '修改应针对驳回决定指出的缺陷（专利审查指南第四部分第二章）：修改后权利要求全文写入修改对照表，并在意见中说明修改依据（法条或原申请文件的记载）；不得引入原申请文件没有记载的内容。',
+    '论证按「事实 → 规则 → 论证」三层组织；事实只陈述并注明出处（权项号／说明书节次／对比文件段落），不复述对照表逐行内容。',
+    '引用对比文件用证据清单的 D 标号，不得编造文献号或公开日；结论与请求事项呼应，不重复论证过程。',
+  ].join('\n'),
 })
 
 /**

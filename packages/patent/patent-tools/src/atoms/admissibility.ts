@@ -17,6 +17,7 @@
 
 import {
   degraded,
+  isJsonRecord,
   isMonthOnlyDate,
   parseDateFlexible,
   type Atom,
@@ -33,7 +34,6 @@ import {
   type WorkCalendar,
 } from '@deepseek-ai/dsh-patent-deadline'
 
-/** 本原子适用的程序类型（与 contested manifest 的 `program` 取值一致）。 */
 /** 本原子适用的程序类型（与 contested manifest 的 `program` 取值一致）。 */
 type AdmissibilityCaseType = 'invalidation' | 'reexamination'
 
@@ -123,15 +123,6 @@ type GroundEntry = {
 }
 
 /**
- * 判断值是否为普通对象。
- * @param value - 待判定的值。
- * @returns 是否为非数组对象。
- */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-/**
  * 解析程序类型。
  * @param state - 阶段执行态。
  * @returns 程序类型；取值未知时为 undefined。
@@ -163,7 +154,7 @@ function parseGrounds(raw: unknown): { grounds: GroundEntry[] } | { error: strin
   }
   const grounds: GroundEntry[] = []
   for (const [index, item] of value.entries()) {
-    if (!isRecord(item) || typeof item['ground'] !== 'string') {
+    if (!isJsonRecord(item) || typeof item['ground'] !== 'string') {
       return { error: `state.${DEFAULT_ADMISSIBILITY_GROUNDS_KEY}[${index}] 缺少 ground 字段` }
     }
     grounds.push({ ground: item['ground'], negated: item['negated'] === true })
@@ -239,7 +230,7 @@ function parsePriorDecision(raw: unknown): PriorDecision {
       return { unusable: `state.${DEFAULT_ADMISSIBILITY_PRIOR_KEY} 不是合法 JSON` }
     }
   }
-  if (!isRecord(value)) return { unusable: `state.${DEFAULT_ADMISSIBILITY_PRIOR_KEY} 不是对象` }
+  if (!isJsonRecord(value)) return { unusable: `state.${DEFAULT_ADMISSIBILITY_PRIOR_KEY} 不是对象` }
   const groundsRaw = value['grounds']
   if (!Array.isArray(groundsRaw) || !groundsRaw.every(item => typeof item === 'string')) {
     return { unusable: `state.${DEFAULT_ADMISSIBILITY_PRIOR_KEY}.grounds 必须是字符串数组` }
@@ -275,7 +266,7 @@ function evidenceIds(state: PipelineState): string[] | undefined {
   if (!Array.isArray(raw)) return undefined
   const ids: string[] = []
   for (const item of raw) {
-    if (!isRecord(item)) continue
+    if (!isJsonRecord(item)) continue
     for (const field of EVIDENCE_ID_FIELDS) {
       const value = item[field]
       if (typeof value === 'string' && value.trim().length > 0) {

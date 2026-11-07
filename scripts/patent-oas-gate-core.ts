@@ -146,6 +146,11 @@ export interface GateConfig {
     case: Required<GateThreshold>
     aggregate: Required<GateThreshold>
     nodes: Record<string, GateThreshold>
+    /**
+     * 噪声容限的倍数 k:实际允许的回退量取 `max(maxDrop, k × SE_Δ)`,其中 SE_Δ 是本次与
+     * 基线两次均值的差的标准误,由两侧记录的逐次观测算出。省略时只按 `maxDrop` 判定。
+     */
+    noiseMultiple?: number
   }
 }
 
@@ -321,6 +326,8 @@ export interface UnitOutcome {
   delta?: number
   /** 逐次运行的离散度;记录没有逐次观测时省略。 */
   spread?: ScoreSpread
+  /** 实际生效的回退容限;与配置的 `maxDrop` 相同时省略。 */
+  allowedDrop?: number
   /** 判定。 */
   verdict: NodeVerdict
 }
@@ -342,6 +349,8 @@ export interface GateVerdict {
   aggregateBaselineScore?: number
   /** 聚合判定。 */
   aggregateVerdict: NodeVerdict
+  /** 聚合实际生效的回退容限;与配置的 `maxDrop` 相同时省略。 */
+  aggregateAllowedDrop?: number
   /** 逐节点判定,按问题域与节点 id 排序,失败的在前。 */
   nodes: NodeOutcome[]
   /** 逐 case 判定,按 case id 排序。 */
@@ -804,6 +813,7 @@ export async function loadGateConfig(path: string): Promise<GateConfig> {
   }
   const digest = optionalString(root, 'goldDigest', path) ?? null
   const rawThresholds = requireRecord(root, 'thresholds', path)
+  const noiseMultiple = optionalNumber(rawThresholds, 'noiseMultiple', `${path}: thresholds`)
   const readThreshold = (value: unknown, where: string): Required<GateThreshold> => {
     if (!isRecord(value)) throw new Error(`${where}: 必须是对象`)
     return { minScore: requireNumber(value, 'minScore', where), maxDrop: requireNumber(value, 'maxDrop', where) }
@@ -828,6 +838,7 @@ export async function loadGateConfig(path: string): Promise<GateConfig> {
       case: readThreshold(rawThresholds.case, `${path}: thresholds.case`),
       aggregate: readThreshold(rawThresholds.aggregate, `${path}: thresholds.aggregate`),
       nodes,
+      ...noiseMultiple === undefined ? {} : { noiseMultiple },
     },
   }
 }
@@ -1608,6 +1619,9 @@ export function validateGateConfig(
       problems.push(`gate: ${where}.maxDrop ${threshold.maxDrop} 不能为负`)
     }
   }
+  if (config.thresholds.noiseMultiple !== undefined && config.thresholds.noiseMultiple < 0) {
+    problems.push(`gate: thresholds.noiseMultiple ${config.thresholds.noiseMultiple} 不能为负`)
+  }
   for (const nodeId of Object.keys(config.thresholds.nodes)) {
     if (space.nodes[nodeId] === undefined) problems.push(`gate: thresholds.nodes 指向不存在的节点 "${nodeId}"`)
   }
@@ -1673,10 +1687,15 @@ function nodeThreshold(config: GateConfig, nodeId: string): Required<GateThresho
   }
 }
 
-/** 按门槛判定一个分数。 */
-function judge(score: number, baseline: number | undefined, threshold: Required<GateThreshold>): NodeVerdict {
+/** 按门槛判定一个分数;`limit` 是实际生效的回退容限,省略时取门槛自身的 `maxDrop`。 */
+function judge(
+  score: number,
+  baseline: number | undefined,
+  threshold: Required<GateThreshold>,
+  limit: number = threshold.maxDrop,
+): NodeVerdict {
   if (score < threshold.minScore) return 'below-floor'
-  if (baseline !== undefined && baseline - score > threshold.maxDrop) return 'regressed'
+  if (baseline !== undefined && baseline - score > limit) return 'regressed'
   return 'pass'
 }
 
@@ -1730,6 +1749,25 @@ export function caseScoresByRun(run: RunRecord): Map<string, number[]> {
 }
 
 /**
+ * 由逐次观测算出聚合分在每次运行上的取值。
+ *
+ * 聚合分是该面的 case 均值,所以只有每个 case 都带完整逐次观测时才成立:少一个 case 的
+ * 均值与整面聚合不是同一个量,不能拿来算聚合的噪声。
+ *
+ * @param run run 记录。
+ * @returns 按运行顺序排列的聚合分;旧记录、单次运行或逐次观测不全时为空表。
+ */
+export function aggregateScoresByRun(run: RunRecord): number[] {
+  const scores = caseScoresByRun(run)
+  if (scores.size === 0 || scores.size !== run.cases.length) return []
+  const totals = Array.from({ length: run.runsPerCase }, () => 0)
+  for (const perRun of scores.values()) {
+    for (const [index, score] of perRun.entries()) totals[index] = (totals[index] ?? 0) + score
+  }
+  return totals.map(total => total / scores.size)
+}
+
+/**
  * 计算一组逐次运行分数的离散度。
  *
  * @param values 按运行顺序排列的分数。
@@ -1740,6 +1778,50 @@ export function scoreSpread(values: readonly number[]): ScoreSpread | undefined 
   const average = mean(values)
   const variance = values.reduce((sum, value) => sum + (value - average) ** 2, 0) / (values.length - 1)
   return { min: Math.min(...values), max: Math.max(...values), stdev: Math.sqrt(variance) }
+}
+
+/** 一组逐次分数的均值标准误;少于两次观测时为 undefined。 */
+function standardError(values: readonly number[]): number | undefined {
+  const spread = scoreSpread(values)
+  return spread === undefined ? undefined : spread.stdev / Math.sqrt(values.length)
+}
+
+/**
+ * 本次均值和基线均值之差的标准误。
+ *
+ * 基线本身也是一次抽样,所以两侧都要算:只取本次的波动会在基线恰好偏高的场次里把
+ * 同一份抖动放大成回退。任一侧没有逐次观测时返回 undefined,判定退回 `maxDrop`。
+ */
+export function deltaStandardError(current: readonly number[], baseline: readonly number[]): number | undefined {
+  const currentError = standardError(current)
+  const baselineError = standardError(baseline)
+  if (currentError === undefined || baselineError === undefined) return undefined
+  return Math.sqrt(currentError ** 2 + baselineError ** 2)
+}
+
+/**
+ * 一个观测单元实际生效的回退容限:`maxDrop` 与 `k × SE_Δ` 取大者。
+ *
+ * 逐次观测的离散度达到门槛的量级时,固定的 `maxDrop` 判不出「掉分」和「抖动」的区别:
+ * 逐场次漂移会随机让某个单元越过门槛。容限随噪声放大,门槛仍然只报告它能分辨的退化;
+ * 零方差的单元拿不到额外容限。
+ *
+ * @param config 门禁策略;`thresholds.noiseMultiple` 省略时不启用噪声容限。
+ * @param threshold 该单元的门槛。
+ * @param current 本次运行的逐次分数。
+ * @param baseline 基线运行的逐次分数。
+ * @returns 实际生效的回退容限。
+ */
+function effectiveMaxDrop(
+  config: GateConfig,
+  threshold: Required<GateThreshold>,
+  current: readonly number[],
+  baseline: readonly number[],
+): number {
+  const multiple = config.thresholds.noiseMultiple
+  if (multiple === undefined) return threshold.maxDrop
+  const error = deltaStandardError(current, baseline)
+  return error === undefined ? threshold.maxDrop : Math.max(threshold.maxDrop, multiple * error)
 }
 
 /**
@@ -1981,16 +2063,25 @@ export function evaluateRun(
   const scores = nodeScores(scope.space, scope.run)
   const baselineScores = baselineScope === undefined ? undefined : nodeScores(baselineScope.space, baselineScope.run)
   const nodeScoresPerRun = nodeScoresByRun(scope.space, scope.run)
+  const baselineNodeScoresPerRun = baselineScope === undefined ? undefined : nodeScoresByRun(baselineScope.space, baselineScope.run)
   const nodes: NodeOutcome[] = [...scores]
     .map(([nodeId, score]) => {
       const baselineScore = baselineScores?.get(nodeId)
       const spread = scoreSpread(nodeScoresPerRun.get(nodeId) ?? [])
+      const threshold = nodeThreshold(config, nodeId)
+      const limit = effectiveMaxDrop(
+        config,
+        threshold,
+        nodeScoresPerRun.get(nodeId) ?? [],
+        baselineNodeScoresPerRun?.get(nodeId) ?? [],
+      )
       return {
         id: nodeId,
         score,
         ...baselineScore === undefined ? {} : { baselineScore, delta: score - baselineScore },
         ...spread === undefined ? {} : { spread },
-        verdict: judge(score, baselineScore, nodeThreshold(config, nodeId)),
+        ...limit === threshold.maxDrop ? {} : { allowedDrop: limit },
+        verdict: judge(score, baselineScore, threshold, limit),
       }
     })
     .sort((a, b) => {
@@ -2002,26 +2093,41 @@ export function evaluateRun(
   const caseList = caseScores(scope.run)
   const baselineCaseList = baselineScope === undefined ? undefined : caseScores(baselineScope.run)
   const caseScoresPerRun = caseScoresByRun(scope.run)
+  const baselineCaseScoresPerRun = baselineScope === undefined ? undefined : caseScoresByRun(baselineScope.run)
   const caseRounds = caseRoundScores(scope.run)
   const cases: CaseOutcome[] = caseList.map((entry) => {
     const baselineScore = baselineCaseList?.find(candidate => candidate.caseId === entry.caseId)?.score
     const spread = scoreSpread(caseScoresPerRun.get(entry.caseId) ?? [])
     const rounds = caseRounds.get(entry.caseId)
+    const limit = effectiveMaxDrop(
+      config,
+      config.thresholds.case,
+      caseScoresPerRun.get(entry.caseId) ?? [],
+      baselineCaseScoresPerRun?.get(entry.caseId) ?? [],
+    )
     return {
       id: entry.caseId,
       score: entry.score,
       ...baselineScore === undefined ? {} : { baselineScore, delta: entry.score - baselineScore },
       ...spread === undefined ? {} : { spread },
       ...rounds === undefined ? {} : { rounds },
-      verdict: judge(entry.score, baselineScore, config.thresholds.case),
+      ...limit === config.thresholds.case.maxDrop ? {} : { allowedDrop: limit },
+      verdict: judge(entry.score, baselineScore, config.thresholds.case, limit),
     }
   })
   const aggregateScore = mean(caseList.map(entry => entry.score))
   const aggregateBaseline = baselineCaseList === undefined ? undefined : mean(baselineCaseList.map(entry => entry.score))
+  const aggregateLimit = effectiveMaxDrop(
+    config,
+    config.thresholds.aggregate,
+    aggregateScoresByRun(scope.run),
+    baselineScope === undefined ? [] : aggregateScoresByRun(baselineScope.run),
+  )
   return {
     aggregateScore,
     ...aggregateBaseline === undefined ? {} : { aggregateBaselineScore: aggregateBaseline },
-    aggregateVerdict: judge(aggregateScore, aggregateBaseline, config.thresholds.aggregate),
+    aggregateVerdict: judge(aggregateScore, aggregateBaseline, config.thresholds.aggregate, aggregateLimit),
+    ...aggregateLimit === config.thresholds.aggregate.maxDrop ? {} : { aggregateAllowedDrop: aggregateLimit },
     nodes,
     cases,
     ...scope.notAssessed.length === 0 ? {} : { notAssessed: scope.notAssessed },
@@ -2054,7 +2160,8 @@ export function verdictPassed(verdict: GateVerdict): boolean {
 export function formatVerdict(verdict: GateVerdict): string {
   const lines: string[] = []
   const baseline = verdict.aggregateBaselineScore === undefined ? '' : `基线 ${verdict.aggregateBaselineScore.toFixed(2)}, `
-  lines.push(`聚合:${verdict.aggregateScore.toFixed(2)}(${baseline}判定 ${verdict.aggregateVerdict})`)
+  const limit = verdict.aggregateAllowedDrop === undefined ? '' : `,容限 ${verdict.aggregateAllowedDrop.toFixed(1)}`
+  lines.push(`聚合:${verdict.aggregateScore.toFixed(2)}(${baseline}判定 ${verdict.aggregateVerdict}${limit})`)
   for (const entry of verdict.cases) {
     lines.push(`[${entry.verdict}] case ${describeOutcome(entry)}${describeRounds(entry.rounds)}${describeSpread(entry.spread)}`)
   }
@@ -2066,7 +2173,8 @@ export function formatVerdict(verdict: GateVerdict): string {
 /** 渲染一个观测单元的分数与基线对比。 */
 function describeOutcome(outcome: UnitOutcome): string {
   const baseline = outcome.baselineScore === undefined ? '' : ` 基线 ${outcome.baselineScore.toFixed(1)} Δ${outcome.delta?.toFixed(1)}`
-  return `= ${outcome.score.toFixed(1)}${baseline}`
+  const limit = outcome.allowedDrop === undefined ? '' : ` 容限 ${outcome.allowedDrop.toFixed(1)}`
+  return `= ${outcome.score.toFixed(1)}${baseline}${limit}`
 }
 
 /** 渲染逐次运行的极差与标准差。 */

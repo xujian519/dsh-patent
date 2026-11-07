@@ -13,6 +13,8 @@
 | `disclosure-drafting` | 交底书→权利要求书+说明书(五部分与摘要),交底书刻意留有未展开内容,供 A26.3/A26.4 判定 | 必要技术特征、保护范围、从权布局、引用层次、形式支持、充分公开、概括得到支持 |
 | `infringement-comparison` | 侵权比对:全面覆盖原则+等同原则,逐特征比对+风险定级 | 比对完整性、等同运用、结论明确性、风险定级、法律依据 |
 | `novelty-creative` | 新颖性/创造性分析:A22.2 单独对比 + A22.3 三步法 | 单独对比、区别特征、技术问题、结合启示、结论与法条 |
+| `invalidation-analysis` | 无效宣告请求:请求范围与法定理由→最接近的现有技术与对比方式→技术方案比较→证据清单→受理条件核对→请求书 | 请求范围与理由、最接近对比文件、技术比较、证据形式、受理条件、请求书结构 |
+| `reexamination-request` | 复审请求:逐条回应驳回理由→修改策略→修改依据(A33)→受理条件核对→请求书 | 逐条回应、修改策略与依据、受理条件、请求书结构 |
 
 每个 case 目录必须含 `statement` 与 `rubric`;多轮 case 额外有一个 `rounds/02/statement` 文件:
 
@@ -25,6 +27,8 @@ cases/<case-id>/
 
 `disclosure-drafting` 是唯一给 A26.3 与 A26.4 打分(对应节点 `enablement-implementable` 与 `claim-breadth-supported`)的 case。它的交底书刻意留了一条不可实施的路线(只有"深度学习模型"的说法,没有结构、训练数据与标注口径),同时为权利要求的概括给出两条具体路线;把不可实施的路线写进独权,就会丢掉充分公开维度的分。随仓样本是合成的:计划中的 15 件语料(10 件去法律化授权文本 + 5 件真实交底与代理师改稿)不在仓库里。真实案卷材料不能提交,伪造"真实"样本又会歪曲读数,因此这里记录缺口而不是补假样本。合成交底会高估"写专利腔",低估"从残缺交底挖保护范围";这个 case 的分数不能替代那批语料的读数。
 
+`invalidation-analysis` 与 `reexamination-request` 同样是合成案:涉案专利、证据清单、驳回决定与原申请文件段落都是为本基准编写的,不涉及客户材料,分数不能替代真实案卷的读数。两个 case 都要求交付程序请求书正文本身,并把程序性受理条件核对与实体论证分成不同维度打分——这与 `patent_invalidation_v1`、`patent_reexamination_v1` 两条 manifest 的切分一致。两个 case 都在 statement 里给定了唯一的证据组合与程序经历,受理条件维度因此有确定答案而不是判断题:无效 case 没有请求期限、此前也无审查决定;复审 case 写明收到驳回决定的日期,三个月期限的届满日是确定的。
+
 多轮 case 固定为两轮:执行者先作答,再收到作为新公开输入的脚本化审查意见,并修订上一轮交付物——运行器以 `previous-deliverable.md` 把它交给执行者。两轮用同一份 rubric 评分,门禁只判最后一轮。把审查意见写进 case 使第二回合可复现,而不是引入一个会变动的第二审查模型。
 
 `patent-state/guidance.md` 是初始 agent state 种子:一份 model-visible 的专利作业规范(checklist),executor 按它完成交付物,optimize loop 以它为编辑对象。它只含通用作业方法,不含任何 case 的答案,不破坏 rubric 隔离。
@@ -33,7 +37,7 @@ cases/<case-id>/
 
 `problem-space.yaml` 把这份金标覆盖的专利实务问题空间建成一张有向无环图:节点是交付物会被判定的切面,`dependsOn` 记录先决关系(检索先于区别特征认定,区别特征先于实际解决的技术问题,逐特征比对先于等同分析),每个 rubric 维度按自己的满分拆到它观测的节点上。`gate.yaml` 钉住金标内容摘要与分数门槛。
 
-`pnpm run verify-patent-oas-gold`(CI,无需 key)校验:金标与 DAG 互相钉住(维度全部有映射、映射权重等于 rubric 满分、节点都有观测面、先决边无环)、已记录的金标摘要相符、已记录的基线能满足自己的门槛。`--run <record.json>` 按门槛判定一次实测记录,并把失败归因到问题空间节点;记录带逐次观测时,输出同时给出逐 case 与逐节点的极差和样本标准差;`--accept <record.json>` 把校验通过的实测记录提升为基线,并要求每个 case 都带 `retrieval`,防止旧格式记录把基线悄悄退回未标注状态;金标被有意修改后用 `--write` 重录摘要。
+`pnpm run verify-patent-oas-gold`(CI,无需 key)校验:金标与 DAG 互相钉住(维度全部有映射、映射权重等于 rubric 满分、节点都有观测面、先决边无环)、已记录的金标摘要相符、已记录的基线能满足自己的门槛。`--run <record.json>` 按门槛判定一次实测记录,并把失败归因到问题空间节点;记录带逐次观测时,输出同时给出逐 case 与逐节点的极差和样本标准差;`--accept <record.json>` 把校验通过的实测记录提升为基线,并要求每个 case 都带 `retrieval`,防止旧格式记录把基线悄悄退回未标注状态;金标被有意修改后用 `--write` 重录摘要。`gate.yaml` 的 `thresholds.noiseMultiple` 把允许的回退量放宽到 `max(maxDrop, k × SE_Δ)`:`SE_Δ` 是两次均值之差的标准误,由两侧记录的逐次分数算出——与 `maxDrop` 同量级的重复测量抖动因此不会被读成回退;逐次分数完全一致的单元仍按固定门槛判,缺逐次观测的记录也一样;生效容限超过 `maxDrop` 时判定行会把它打印出来。
 
 run 记录是「测量」与「门槛」之间的契约:它只保存逐维度的原始观测分,case 分与节点分由 DAG 现算,因此不存在第二份会漂移的副本。字段为 `{ benchmarkId, recordedAt, execution?, workflowId?, runsPerCase, provider?, modelId?, cost?, tokens?: { input, output }, cases: [{ caseId, retrieval, dimensions: [{ index, label, points, score, scores? }], rounds?: [{ round, statementDigest?, dimensions: [{ index, score, scores? }], deliverableDigests, claimVersions?, concision? }], concision? }] }`。`retrieval` 是该 case 的检索设置:`oracle` 把对比文件放进 statement(`oa-answer`、`novelty-creative`),`none` 表示该 case 不依赖现有技术检索(`claim-drafting`、`disclosure-drafting`、`infringement-comparison`),`simulation` 留给受控语料运行。门禁拒绝与基线逐 case 设置不同的比对:检索质量分与 oracle 答复分不能共用一套阈值;没有该字段的旧记录只与同样没有该字段的基线比较。采集器遇到与基线不同的设置时仍写出记录,但跳过判定并以非 0 退出;仓库尚未收录 simulation 语料,因此 `simulation` 运行没有可比的基线。`execution` 是被测面:`prompt` 是 profile 的提示词调用,`workflow` 跑 `workflowId` 点名的 manifest。被测面按整次采集记录,因为一次采集只起一类进程;工作流设置落地之前写下的记录没有该字段,读作 `prompt`——那时采集器只有这一条路径。`workflow` 记录必须带 `workflowId`,且它观测的每个 case 都要在 `problem-space.yaml` 里声明同一 manifest。`runsPerCase > 1` 时,`scores` 保留每次运行的原始分数,读者可据此复算方差与区间,而不必只信一个均值;`tokens` 与 `cost` 累计整次采集的每次调用(`tokens.input` 是计费输入,含缓存命中与缓存写入):每次调用都报告成本时取 provider 报告值,否则在 token 合计完整时按调用方给出的每百万 token 单价换算;只有部分调用报告用量时省略合计,不写部分值。单一输入单价统一适用于含缓存在内的计费输入;需要区分缓存价格时由接缝直接报告成本。多轮 case 的 `dimensions` 是终局维度,`rounds` 则保留每一轮的逐维度观测、开启该轮的脚本化审查意见摘要(`statementDigest`;第 1 轮没有)、该轮每次运行的交付物摘要,以及——工作流设置下——每次运行的 `claimVersions`:该轮交付物在 `_matter-log.md` 取代链上的深度,由日志复算而不是执行者自报。链每轮必须前进一格;某轮的留档没有取代任何在档产物,读出的就是两轮同一版权项。门禁仍只判终局,并打印逐轮总分,因此修订是进步还是回退一目了然,而判定规则不变。`concision` 记录每份交付物有多长——`{ proseChars, budget?, overBudget?, paragraphs, sections, emptySections, repeatedSentences }`,每次运行一条——而且**只记录、不计分**:没有任何维度分、节点分、case 分或聚合分读它,写得长在这一轴上仍然不付出代价。多轮 case 挂在逐轮观测上,单轮 case 挂在 case 上,与其他逐次观测同处。`proseChars` 与 `slop-gate`、`tighten` 数同一批可见字符,但先剔除表格行:答复正文的篇幅预算不含表格与权利要求全文,把表格算进去会把每一份合规答复都判成超预算;`budget` 是该 case 自己声明的预算(`oa-answer` 取 manifest 的 4000);门禁只核对 `overBudget` 是否等于 `max(0, proseChars - budget)`——手写的数不照单全收。`gate.yaml` 在 `baselines` 下按被测面各声明一条基线,以 `execution` 与 `workflowId` 为键;`--accept` 与 `--run` 把记录路由到它自己那条基线,没有声明该被测面时拒绝落基线,工作流分数因此不会用提示词门槛来判。提示词基线落在 `packages/self-evolve/evaluation/patent-oas-baseline.json`;已声明的基线文件不存在时门禁以非 0 退出并打印记录基线的命令——「没比对过」与「比对通过」不能共用一个退出码;本 fork 的必过 CI 车道会运行该门禁,退出码因此能拦住 PR。
 
@@ -47,7 +51,9 @@ run 记录是「测量」与「门槛」之间的契约:它只保存逐维度的
 
 采集到的分数测的是「调用方传入的 profile(缺省 `headless`)下的模型 + 作业规范」;工作流设置测的是工作流阶段与审计链,不含 preset 的人设与技能层——preset 是 agent 平面,只有 `dsh-agent-preset-registry` 能挂它,而 headless 组合不装配该注册器。因此记录之间只在同一 profile、同一被测面下可比——`provider`、`modelId`、`execution` 与 `workflowId` 四个字段就是为这条留的。
 
-随仓提交的提示词面基线是 2026-11-02 的一次 keyed 实测:`headless` profile 并传入 `--provider deepseek-official --model deepseek-flash`、5 个 case 各三次运行。聚合 96.14,五个 case 分别为 98.0、93.4、97.8、98.1、93.3。每个 case 记录检索设置:`oa-answer` 与 `novelty-creative` 为 `oracle`,其余三个为 `none`。记录保留每个维度的 `scores`(每次运行一条原始分)、`provider`、`modelId` 与 `tokens`——120 次调用合计输入 26,985,964(含缓存读写)、输出 648,753;`cost` 仍为空,因为 provider 不报告成本且调用方没有传每百万 token 单价。`oa-answer` 是多轮 case:终局轮 93.3 对第 1 轮 95.5,「修改接地与幅度」为 79.0;`technical-teaching` 为 93.0。新案的 26.3 与 26.4 节点分别为 89.0 与 87.7,保护范围节点为 96.8。本次实测按 B7 测量协议预注册的 `--runs=3` 执行。除模型调用之外的一切另有覆盖:采集接缝可注入,spec 用桩把整条链路跑通并写出那两种产物,覆盖提示词、产物契约、逐维度聚合、两轮交接、真实启动参数,以及记录能被门禁接受。工作流设置按同样方式覆盖——桩写出运行记录、交付物与留档条目,spec 钉住提示词契约、链深复算,以及工作流降级或中断时的失败。该设置按 manifest 各有一条 keyed 基线。第一条是清单补上 `generate_keywords` 阶段后于 2026-10-25T17:54Z 重录的:`oa-answer` 单 case、每 case 一次运行、两轮,聚合 94.76,case 94.8(逐轮 92.3 → 94.8),逐轮权项版本 1 → 2,第 5 维 100.0——正是首次采集不得不豁免的那个切面;`_matter-log.md` 里建案与修订两条条目的时间戳连续,第 2 轮的工作目录是第 1 轮的整份副本,取代链因此没有断在两轮之间。该次采集早于泛化后的执行者提示词:OA 任务文本不含申请日,新增的 `filingDate` 指令对它不生效;按轮区分的权项摘录措辞未变,因此没有重录基线。工作流面另有 `patent_disclosure_v1` 的基线:`disclosure-drafting` 单 case、一次运行,2026-11-04 采集,聚合 93.00,七个维度依次为 100、100、95、82、88、85、90,记录 4,220,332 计费输入与 58,923 输出 token;一轮执行 27 个阶段、其中 14 个由模型执行,该面因此保持 `--runs` 为 1。
+随仓提交的提示词面基线是 2026-11-07 的一次 keyed 实测:`headless` profile 并传入 `--provider deepseek-official --model deepseek-flash`、7 个 case 各三次运行。聚合 96.43,七个 case 分别为 94.7、95.1、98.7、97.5、97.5、93.3、98.2。每个 case 记录检索设置:`oa-answer` 与 `novelty-creative` 为 `oracle`,其余五个为 `none`。记录保留每个维度的 `scores`(每次运行一条原始分)、`provider`、`modelId` 与 `tokens`——159 次调用合计输入 35,839,850(含缓存读写)、输出 976,367;`cost` 仍为空,因为 provider 不报告成本且调用方没有传每百万 token 单价。`oa-answer` 是多轮 case:终局轮 93.3 对第 1 轮 92.2。`disclosure-drafting` 的 26.3 与 26.4 节点分别为 91.0 与 94.0。新增的无效与复审两个 case 分别为 97.5 与 98.2;它们的六个新节点按上表顺序为 99.4、92.4、100.0、99.2、95.3、99.0。本次实测按 B7 测量协议预注册的 `--runs=3` 执行。除模型调用之外的一切另有覆盖:采集接缝可注入,spec 用桩把整条链路跑通并写出那两种产物,覆盖提示词、产物契约、逐维度聚合、两轮交接、真实启动参数,以及记录能被门禁接受。工作流设置按同样方式覆盖——桩写出运行记录、交付物与留档条目,spec 钉住提示词契约、链深复算,以及工作流降级或中断时的失败。该设置按 manifest 各有一条 keyed 基线。第一条是清单补上 `generate_keywords` 阶段后于 2026-10-25T17:54Z 重录的:`oa-answer` 单 case、每 case 一次运行、两轮,聚合 94.76,case 94.8(逐轮 92.3 → 94.8),逐轮权项版本 1 → 2,第 5 维 100.0——正是首次采集不得不豁免的那个切面;`_matter-log.md` 里建案与修订两条条目的时间戳连续,第 2 轮的工作目录是第 1 轮的整份副本,取代链因此没有断在两轮之间。该次采集早于泛化后的执行者提示词:OA 任务文本不含申请日,新增的 `filingDate` 指令对它不生效;按轮区分的权项摘录措辞未变,因此没有重录基线。工作流面另有 `patent_disclosure_v1` 的基线:`disclosure-drafting` 单 case、一次运行,2026-11-04 采集,聚合 93.00,七个维度依次为 100、100、95、82、88、85、90,记录 4,220,332 计费输入与 58,923 输出 token;一轮执行 27 个阶段、其中 14 个由模型执行,该面因此保持 `--runs` 为 1。`patent_invalidation_v1` 与 `patent_reexamination_v1` 两条工作流面已在 `problem-space.yaml` 里接好但尚未录基线:`gate.yaml` 没有为这两条 manifest 声明基线,它们的采集因此还不能落盘,无效与复审的维度目前只由提示词面判定。
+
+本次采集替换了 2026-11-02 的 5 case 基线(96.14)。对上那条记录,`claim-form-and-support` 读到 88.7(−5.5)、`technical-problem` 读到 91.8(−5.3),都被固定的 `maxDrop = 5` 判为回退;而同一维度在相隔数日的三次采集中分别测得 80、94、86.7——重复测量本身就说明门槛落在噪声里,而且 2026-11-02 的记录在若干维度上是 `[100, 100, 100]`,本次在同样的维度上是 `[100, 100, 88]`。门禁因此改取 `max(maxDrop, noiseMultiple × SE_Δ)`,倍数的实测依据记在 `gate.yaml` 里它旁边。重录而不是豁免这两个节点,也让下一次比对拿到一条方差可测的参照;从那么吵的记录借来的容限会宽过它本该分辨的差异。
 
 ## 播种
 
@@ -66,7 +72,9 @@ node seed.mjs [baseDir]
 ├── claim-drafting/statement|rubric
 ├── disclosure-drafting/statement|rubric
 ├── infringement-comparison/statement|rubric
-└── novelty-creative/statement|rubric
+├── invalidation-analysis/statement|rubric
+├── novelty-creative/statement|rubric
+└── reexamination-request/statement|rubric
 <baseDir>/patent-state/
 └── guidance.md   # 初始 agent state 种子
 ```

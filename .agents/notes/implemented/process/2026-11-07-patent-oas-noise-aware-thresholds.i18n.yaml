@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-11-07-patent-oas-noise-aware-thresholds.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-11-07-patent-oas-noise-aware-thresholds.md
+/agent-note-noise-aware-thresholds-for-the-patent-oas-regression-gate:
+  en: fa79f707d11c9f2b
+  zh: 0827409529c2eb22
+/agent-note-noise-aware-thresholds-for-the-patent-oas-regression-gate/problem:
+  en: 104089c3e4314d91
+  zh: b12f78995f067826
+/agent-note-noise-aware-thresholds-for-the-patent-oas-regression-gate/decision:
+  en: 11fa988f628f4c27
+  zh: 2b0492b9af3b3b56
+/agent-note-noise-aware-thresholds-for-the-patent-oas-regression-gate/alternatives-considered:
+  en: 8f2755ae52c638ce
+  zh: 847b2d2991af48e6
+/agent-note-noise-aware-thresholds-for-the-patent-oas-regression-gate/consequences:
+  en: 727e1b4f233e1fe1
+  zh: 4813f11ae5ecaf37

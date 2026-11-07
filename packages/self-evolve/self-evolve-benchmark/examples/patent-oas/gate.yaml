@@ -22,7 +22,7 @@
 
 benchmarkId: patent-oas
 
-goldDigest: "sha256:738d5304d036294e0507b40e5865b9dff9b73449fe6073a83243661c36d53a4e"
+goldDigest: "sha256:429e7cf6eb7c3728d6bee9e6a80eefc012e5574cdb0e473e11947b0ce15509ba"
 
 # 基线按被测面各一条:提示词调用(`prompt`)与工作流调用(`workflow`)测的不是同一能力面,
 # 读数不能互比,所以 `--accept` 按记录自己的 `execution`/`workflowId` 找落点,找不到就拒绝。
@@ -43,6 +43,13 @@ baselines:
     path: packages/self-evolve/evaluation/patent-oas-disclosure-workflow-baseline.json
 
 thresholds:
+  # 噪声容限:实际允许的回退量取 max(maxDrop, noiseMultiple × SE_Δ),SE_Δ 由本次与基线
+  # 两侧的逐次分数算出。定 2.5 倍,是因为实测的场次级漂移与 maxDrop 同量级:同一个
+  # claim-drafting 的「形式与说明书支持」维度,四次场次的均值落在 80–94,单场 3 次运行的
+  # 样本标准差到 9。固定的 5 分门槛在这个噪声下判不出「掉分」和「抖动」,会让门禁每隔
+  # 一次采集就随机报一次回退。容限只跟着噪声走:零方差的单元(多数维度每次都是 100)
+  # 拿不到额外容限,仍按 maxDrop 判。
+  noiseMultiple: 2.5
   node: { minScore: 70, maxDrop: 5 }
   case: { minScore: 70, maxDrop: 3 }
   aggregate: { minScore: 75, maxDrop: 3 }

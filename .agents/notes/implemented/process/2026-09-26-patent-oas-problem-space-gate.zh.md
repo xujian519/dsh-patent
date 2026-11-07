@@ -47,6 +47,7 @@ Status: implemented
 ## Consequences
 
 - `pnpm run verify-patent-oas-gold` 现在会因下列情形失败:rubric 维度没有映射、映射权重不等于该维度满分、映射到未声明的节点或没有观测面的节点、先决关系成环、rubric 满分合计不为 100、金标摘要过期或未记录、门槛取值越界、逐节点覆盖指向不存在的节点、基线无法满足自己的门槛、run 记录的维度与金标不符,以及——基线记录之后——任何节点、case 或聚合超过各自门槛。
-- 与基线的回归比对跑在一次已记录的 keyed 实测上:2026-10-10、`headless` profile、24 次 agent 调用、聚合 97.95,记录落在 `packages/self-evolve/evaluation/patent-oas-baseline.json`。记录里没有 `provider`/`modelId`(采集器只在调用方传参时才写),因此换模型后的运行只能在 profile 层面可比。
+- 与基线的回归比对跑在一次已记录的 keyed 实测上:2026-11-07、`headless` profile 并传入 `--provider deepseek-official --model deepseek-flash`、7 个 case 各三次运行、聚合 96.43,记录落在 `packages/self-evolve/evaluation/patent-oas-baseline.json`。
+- 固定的 `maxDrop` 现在是下限而不是全部规则:[2026-11-07 的记录](2026-11-07-patent-oas-noise-aware-thresholds.zh.md)在实测噪声更大时把允许回退量抬到噪声上,因为同一批 case 的重复测量摆动超过了这些门槛。
 - 验证:`scripts/patent-oas-gate.spec.ts` 跑 63 条用例、`scripts/patent-oas-run.spec.ts` 跑 52 条,合起来覆盖每条拒绝路径各一条负例、CLI 退出码、经桩接缝驱动的整条采集链路,以及真实子进程接缝的超时与非零退出路径;门禁挂在 `ciSharedStaticGates`,因此进入 `ci-primary`、`ci-static` 与 `hygiene`,而本 fork 承载静态门禁的那条必过车道 `node-checks` 直接运行 `pnpm run verify-patent-oas-gold`——那些聚合没有任何工作流调用。
 - case 层门槛来自实测到的摊薄效应,不是为了对称:spec 里那一幕在 case 层失败、在每个节点上通过,正是只有节点层的门禁会漏掉的形状。

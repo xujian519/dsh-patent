@@ -131,6 +131,22 @@ export type PatentWorkflowRunInput = SpecificationRunOptions & {
   evidence?: string
   /** Evidence submission deadline (parseable date); evidence-check rejects late entries without a reason. */
   evidenceDeadline?: string
+  /** Delivery date of the rejection decision (parseable date); the reexamination-request period runs three months from it. */
+  rejectionDecisionDate?: string
+  /** Date the reexamination request was filed (parseable date); admissibility compares it with that period. */
+  requestDate?: string
+  /** Whether a right-recovery procedure was filed for a late reexamination request. */
+  recoveryRequested?: boolean
+  /** Party filing the request; the admissibility stage compares it with `patentee`. */
+  requester?: string
+  /** Applicant of the rejected application (reexamination) or patentee (invalidation). */
+  patentee?: string
+  /**
+   * The earlier invalidation decision this request may repeat, as JSON:
+   * `{ grounds: string[], evidenceIds?: string[] }`. admissibility blocks a
+   * request whose grounds and evidence both match it.
+   */
+  priorInvalidationDecision?: string
   /**
    * Register the manifest run as a background job and return its id at once
    * (collect with `job_output`, stop with `job_kill`) instead of holding the
@@ -234,6 +250,7 @@ const DESCRIPTION = [
   'For the specification stages, pass title/abstract/patentType/hasDrawings/figureAnalysis/figureFiles/drawingCount/abstractFigureNumber; a utility model without drawings fails the form check, an unfinished draft (placeholder sections) fails spec-check, and omitted items appear in spec_not_assessed.',
   'Pass conflictingApplications (a JSON array) to run the A22.2 second-sentence conflicting-application check; entries need filingDate/publicationDate and a caller-judged sameInvention boolean. Conflicting applications are filed before but published on or after the target date, so the prior-art search cannot find them.',
   'Pass evidence (a JSON array) and evidenceDeadline to run the invalidation/reexamination evidence-check stage; it reports form defects, late submissions without a justification, prior-art dates at or after the cutoff, and evidence not linked to a ground or claim.',
+  'Pass rejectionDecisionDate and requestDate to run the reexamination admissibility period check, recoveryRequested when a right-recovery procedure was filed, requester and patentee to run its party check, and priorInvalidationDecision (`{grounds, evidenceIds}`) to run the res-judicata check on an invalidation manifest.',
   'A manifest approval gate either asks the deployment\'s approval service and continues when the user allows it (deployments with approveStageGates on; approveStageIds is refused there, so the decision cannot be self-declared), or — with the switch off, or in a background run — pauses the run for a later re-invoke with approveStageIds; a refusal pauses the run with the decision named. A background run always pauses at the gate, because the approval service only answers inside an open turn. Graph runs pause at their checkpoint and continue with resumeCheckpointId. When caseId is provided, run results, the Mermaid diagram, and graph checkpoints are persisted under `<caseDir>/workflow-runs/`. Requires a model port.',
   'A manifest run holds the turn until it finishes or pauses at an approval gate, so pass run_in_background: true to get a job id at once and keep working (collect with job_output; job_kill stops it at the next stage boundary); graph runs are foreground-only.',
 ].join(' ')
@@ -293,6 +310,19 @@ export function renderWorkflowRun(value: PatentWorkflowRunOutput): string {
 }
 
 /**
+ * Inputs of the contested-program (invalidation / reexamination) stages, grouped
+ * so the request-period and res-judicata inputs stay beside each other.
+ */
+const ADMISSIBILITY_PARAMETERS = {
+  rejectionDecisionDate: { type: 'string', description: 'Delivery date of the rejection decision (parseable date). The admissibility stage measures the three-month reexamination-request period from it.' },
+  requestDate: { type: 'string', description: 'Date the reexamination request was filed (parseable date). admissibility reports a request filed after the period as blocking, or as a warning when recoveryRequested is true.' },
+  recoveryRequested: { type: 'boolean', description: 'Whether a right-recovery procedure was filed for a late reexamination request.' },
+  priorInvalidationDecision: { type: 'string', description: 'The earlier invalidation decision this request may repeat, as JSON `{ grounds: string[], evidenceIds?: string[] }`; ground ids are the grounds stage vocabulary (novelty, inventiveness, disclosure, claim-clarity, amendment, utility-model-subject-matter), and evidenceIds use each evidence entry id (id, evidenceId, publication number, patent number, title, or name, in that order). admissibility blocks a request whose grounds and evidence both match it, and warns when only one side matches.' },
+  requester: { type: 'string', description: 'Party filing the request. admissibility compares it with patentee on a reexamination manifest and warns when they differ (复审请求应由被驳回申请的申请人提出).' },
+  patentee: { type: 'string', description: 'Applicant of the rejected application (复审) or patentee (无效). admissibility compares it with requester.' },
+} as const
+
+/**
  * Build the `patent_workflow_run` tool.
  * @param deps - model port, search, working directory, and handler registry.
  * @returns a registry-ready tool definition.
@@ -338,6 +368,7 @@ export function createPatentWorkflowRunTool(deps: PatentWorkflowRunDeps = {}): T
       conflictingApplications: { type: 'string', description: 'Conflicting-application candidates as a JSON array. Each entry carries filingDate and publicationDate (yyyy-MM-dd), optional priorityDate, and sameInvention (boolean, judged by the caller). The conflicting-application stage applies A22.2 second sentence: filed before the target date, published on or after it, same invention.' },
       evidence: { type: 'string', description: 'Evidence entries as a JSON array for the invalidation/reexamination evidence-check stage. Entries may carry title/name, type (现有技术/外文证据/域外证据/证人证言...), sourceUri, submittedAt, publicationDate, translated, notarized, legalized, witness, grounds/claimRefs, contentHash+snippet. Late entries without lateJustification are blocking findings.' },
       evidenceDeadline: { type: 'string', description: 'Evidence submission deadline (parseable date). evidence-check compares each entry submittedAt against it and reports late entries without a justification as blocking.' },
+      ...ADMISSIBILITY_PARAMETERS,
       run_in_background: { type: 'boolean', description: 'Manifest path only: register the run as a background job and return its id immediately (collect with job_output, stop with job_kill) instead of holding the turn until every stage finishes. Defaults to false.' },
     },
     output: {
@@ -714,6 +745,48 @@ function parseEvidence(raw: string): unknown[] {
 }
 
 /**
+ * 解析工具输入的在先无效宣告审查决定。
+ *
+ * 只做形状校验：`grounds` 必填、`evidenceIds` 可选，二者都须为字符串数组。
+ * 判定不了「实质相同」，那部分留给 admissibility 输出提示。
+ * @param raw - 工具输入的 JSON 字符串。
+ * @returns 解析出的在先决定。
+ */
+function parsePriorInvalidationDecision(raw: string): { grounds: string[]; evidenceIds?: string[] } {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new PatentToolError('invalid_tool_input', 'priorInvalidationDecision 必须是合法 JSON。', {
+      tool: 'patent_workflow_run',
+    })
+  }
+  const isStringArray = (value: unknown): value is string[] =>
+    Array.isArray(value) && value.every(item => typeof item === 'string')
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new PatentToolError('invalid_tool_input', 'priorInvalidationDecision 必须是 JSON 对象。', {
+      tool: 'patent_workflow_run',
+    })
+  }
+  const record = parsed as Record<string, unknown>
+  if (!isStringArray(record['grounds'])) {
+    throw new PatentToolError('invalid_tool_input', 'priorInvalidationDecision.grounds 必须是字符串数组。', {
+      tool: 'patent_workflow_run',
+    })
+  }
+  const evidenceIds = record['evidenceIds']
+  if (evidenceIds !== undefined && !isStringArray(evidenceIds)) {
+    throw new PatentToolError('invalid_tool_input', 'priorInvalidationDecision.evidenceIds 必须是字符串数组。', {
+      tool: 'patent_workflow_run',
+    })
+  }
+  return {
+    grounds: record['grounds'],
+    ...(evidenceIds === undefined ? {} : { evidenceIds }),
+  }
+}
+
+/**
  * Validate figure-analysis entries at the tool input boundary. The state is read
  * by the specification checker as typed entries, so a malformed entry must fail
  * the call instead of reaching the checker as a bare value.
@@ -806,6 +879,8 @@ function buildRunContext(input: PatentWorkflowRunInput): WorkflowContext {
   const filingDate = parseOptionalDate(input.filingDate, 'filingDate')
   const priorityDate = parseOptionalDate(input.priorityDate, 'priorityDate')
   const evidenceDeadline = parseOptionalDate(input.evidenceDeadline, 'evidenceDeadline')
+  const rejectionDecisionDate = parseOptionalDate(input.rejectionDecisionDate, 'rejectionDecisionDate')
+  const requestDate = parseOptionalDate(input.requestDate, 'requestDate')
   return buildWorkflowRunContext({
     ...(input.caseId !== undefined ? { caseId: input.caseId } : {}),
     input: input.input,
@@ -831,6 +906,16 @@ function buildRunContext(input: PatentWorkflowRunInput): WorkflowContext {
       : {}),
     ...(input.evidence !== undefined ? { evidence: parseEvidence(input.evidence) } : {}),
     ...(evidenceDeadline !== undefined ? { evidenceDeadline } : {}),
+    ...(rejectionDecisionDate !== undefined ? { rejectionDecisionDate } : {}),
+    ...(requestDate !== undefined ? { requestDate } : {}),
+    ...(input.recoveryRequested !== undefined ? { recoveryRequested: input.recoveryRequested } : {}),
+    // 空串按「未提供」处理，与 admissibility 原子自身的解析一致；两者的权威解析
+    // 都在原子侧，这里只拦形状错误，让调用方尽早拿到 invalid_tool_input。
+    ...(input.priorInvalidationDecision !== undefined && input.priorInvalidationDecision.trim() !== ''
+      ? { priorInvalidationDecision: parsePriorInvalidationDecision(input.priorInvalidationDecision) }
+      : {}),
+    ...(input.requester !== undefined ? { requester: input.requester } : {}),
+    ...(input.patentee !== undefined ? { patentee: input.patentee } : {}),
   })
 }
 

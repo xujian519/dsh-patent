@@ -28,7 +28,7 @@ const indexOf = (manifestId: string, stageId: string): number =>
   manifestOf(manifestId).stages.findIndex(s => s.id === stageId)
 
 describe('内置 manifest 的跨包原子归属', () => {
-  it('声明的原子与核心注册表的差集恰好是 patent-tools 提供的八个（本文件不导入 patent-tools，避免依赖倒置）', () => {
+  it('声明的原子与核心注册表的差集恰好是 patent-tools 提供的九个（本文件不导入 patent-tools，避免依赖倒置）', () => {
     registerBuiltinAtoms()
     const declared = new Set(
       builtinPatentManifests.flatMap(manifest =>
@@ -38,6 +38,7 @@ describe('内置 manifest 的跨包原子归属', () => {
     const coreAtoms = new Set(globalAtomRegistry.list().map(atom => atom.name))
     const providedByTools = [...declared].filter(name => !coreAtoms.has(name)).sort()
     expect(providedByTools).toEqual([
+      'admissibility',
       'draft-specification',
       'eligibility',
       'figure-analysis',
@@ -104,8 +105,8 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
       patent_inventiveness_v1: 16,
       patent_patentability_v1: 16,
       patent_oa_response_v1: 15,
-      patent_invalidation_v1: 11,
-      patent_reexamination_v1: 11,
+      patent_invalidation_v1: 14,
+      patent_reexamination_v1: 14,
       patent_infringement_v1: 8,
     }
     for (const manifest of builtinPatentManifests) {
@@ -117,7 +118,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
   it('默认预算（27/14）下全部内置 manifest 通过，模型阶段数不因确定性定位增加', () => {
     registerBuiltinAtoms()
     // patent-tools 的确定性原子在预算统计里只需契约（usesModel 标记），此处注册同名 stub。
-    for (const name of ['draft-specification', 'eligibility', 'figure-analysis', 'legal-gaps', 'response-check', 'slop-gate', 'spec-check']) {
+    for (const name of ['admissibility', 'draft-specification', 'eligibility', 'figure-analysis', 'legal-gaps', 'response-check', 'slop-gate', 'spec-check']) {
       globalAtomRegistry.register({ name, category: 'gate', description: 'test stub', inputSchema: [], outputSchema: [] })
     }
     // tighten 是模型阶段：stub 必须带 usesModel，否则预算统计会漏计它的模型调用。
@@ -135,8 +136,8 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
       patent_inventiveness_v1: 7,
       patent_patentability_v1: 5,
       patent_oa_response_v1: 5,
-      patent_invalidation_v1: 4,
-      patent_reexamination_v1: 4,
+      patent_invalidation_v1: 5,
+      patent_reexamination_v1: 5,
       patent_infringement_v1: 3,
     }
     for (const manifest of builtinPatentManifests) {

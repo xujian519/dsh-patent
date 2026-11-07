@@ -135,10 +135,15 @@ export interface MailboxSnapshot {
 
 /** Positional arguments shared by the mailbox readers below. */
 type MailboxReadArgs = [
+  /** Resolved absolute state root directory. */
   stateRoot: string,
+  /** The team id. */
   teamId: string,
+  /** `captain` or a member name. */
   agentKey: string,
+  /** Optional diagnostic hook for malformed records. */
   onMalformedLine?: (lineNumber: number, error: unknown) => void,
+  /** How long a live-delivery claim stays exclusive before the message is retryable. */
   deliveryLeaseMs?: number,
 ]
 
@@ -148,13 +153,7 @@ type MailboxReadArgs = [
  * A leased message is invisible to {@link readUnreadMailbox} until its lease
  * expires, so status needs both halves to distinguish "nothing arrived" from
  * "a message is waiting for delivery".
- * @param stateRoot - resolved absolute state root directory.
- * @param teamId - the team id.
- * @param agentKey - `captain` or a member name.
- * @param onMalformedLine - optional diagnostic hook for malformed records.
- * @param deliveryLeaseMs - how long a live-delivery claim stays exclusive
- * before the message is retryable (defaults to
- * {@link DEFAULT_MAILBOX_DELIVERY_LEASE_MS}).
+ * @param args - the positional arguments documented by {@link MailboxReadArgs}.
  * @returns unread and leased messages, both oldest first and empty when the mailbox does not exist.
  */
 export async function readMailboxSnapshot(...args: MailboxReadArgs): Promise<MailboxSnapshot> {
@@ -176,13 +175,7 @@ export async function readMailboxSnapshot(...args: MailboxReadArgs): Promise<Mai
 /**
  * Read only messages that have not been acknowledged by their recipient,
  * excluding still-claimed deliveries whose lease has not yet expired.
- * @param stateRoot - resolved absolute state root directory.
- * @param teamId - the team id.
- * @param agentKey - `captain` or a member name.
- * @param onMalformedLine - optional diagnostic hook for malformed records.
- * @param deliveryLeaseMs - how long a live-delivery claim stays exclusive
- * before the message is retryable (defaults to
- * {@link DEFAULT_MAILBOX_DELIVERY_LEASE_MS}).
+ * @param args - the positional arguments documented by {@link MailboxReadArgs}.
  * @returns the unacknowledged messages, empty when the mailbox does not exist.
  */
 export async function readUnreadMailbox(...args: MailboxReadArgs): Promise<TeamMessage[]> {

@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-11-07-drop-sidechat-source.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-11-07-drop-sidechat-source.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-11-07-drop-sidechat-source:
+  en: 598416ba63daab4f
+  zh: 3207eb62916707cf
+/2026-11-07-drop-sidechat-source/summary:
+  en: bbace8cc745850be
+  zh: 153b290410f9f0d1
+/2026-11-07-drop-sidechat-source/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-11-07-drop-sidechat-source/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-11-07-drop-sidechat-source/compatibility:
+  en: cc4d9b25459785d8
+  zh: de3621f204d84429
+/2026-11-07-drop-sidechat-source/verification:
+  en: cb091c37b0de360f
+  zh: 8fcc7717eaad8808
+/2026-11-07-drop-sidechat-source/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

@@ -88,6 +88,17 @@ export class SandboxedFileSystem extends LocalFileSystem {
     return super.writeText(await this.checkedTarget(target, sandboxPolicy), content, expected, signal)
   }
 
+  /**
+   * Fence the write by the per-call policy, then delegate to the inherited
+   * atomic write. See {@link checkedTarget}.
+   * @param target - the resolved target to write.
+   * @param bytes - the full new file content.
+   * @param expected - the write intent guarding the write; omit for unconditional.
+   * @param signal - aborts before atomic publication takes effect.
+   * @param sandboxPolicy - the per-call mode and workspace root; omit to use
+   *   the deployment fallback.
+   * @returns the write outcome from the inherited backend.
+   */
   override async writeBytes(
     target: FsTarget,
     bytes: Uint8Array,

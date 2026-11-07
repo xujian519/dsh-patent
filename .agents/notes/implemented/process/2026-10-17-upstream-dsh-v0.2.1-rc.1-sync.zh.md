@@ -14,7 +14,7 @@ fork 从上游的 `dsh-v0.2.1-alpha.5` tag 前进到 `dsh-v0.2.1-rc.1`：4 个�
 
 - **本同步分支对 release tag 做 merge-forward。** `sync/upstream-dsh-v0.2.1-rc.1` 承载这次合并；以 first parent 为 fork `master` 的 merge commit 落地，既把上游提交保留在 fork 的提交图中，也把该 tag 保留为下次同步的 merge base。squash 两点都做不到。
 - **唯一冲突按类别解决。** `packages/lsp/tool-lsp/package.json` 取 fork 的 manifest，保留 description 中的字面 em dash，仅把版本提到 `0.2.1-rc.1`；发布侧提供的是转义 dash 和新版本号。
-- **版本在 fork 自有面上统一钉住。** 根 manifest、47 份 fork 独有 manifest，以及 `packages/client/better-sidebar/src/client/service.ts` 中的 `SIDEBAR_SERVICE_VERSION` 一并前进到 `0.2.1-rc.1`。`pnpm exec tsx scripts/release/verify.ts --family dsh` 在该版本下解析出 388 个家族成员，无未排序的 peer 声明；`pnpm install --lockfile-only` 报「Already up to date」，未触碰 `pnpm-lock.yaml`。
+- **版本在 fork 自有面上统一钉住。** 根 manifest、47 份 fork 独有 manifest，以及 已随 PR #677 删除的 better-sidebar 包的 `service.ts` 中的 `SIDEBAR_SERVICE_VERSION` 一并前进到 `0.2.1-rc.1`。`pnpm exec tsx scripts/release/verify.ts --family dsh` 在该版本下解析出 388 个家族成员，无未排序的 peer 声明；`pnpm install --lockfile-only` 报「Already up to date」，未触碰 `pnpm-lock.yaml`。
 - **九份 ACP golden 重新钉住 `agentInfo.version`。** `snapshots/acp/*/stdout.expected.jsonl` 的握手响应以字面字符串携带发布版本，因此期望文件随 manifest 一起更新，而不是等回放报出漂移。
 
 ## Consequences

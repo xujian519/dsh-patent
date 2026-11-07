@@ -394,14 +394,13 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 ### 客户端与实验域大文件裁定（2026-11-02，Issue #654）
 
-#654 点名的六个文件里，`better-sidebar` 的 `Sidebar.tsx` 与 `state.ts` 已随该包在 PR #677 整体删除；其余五个保留为「接受」。当前全仓计数为 185 个 >150 行函数、90 个 >800 行文件，与上方计数表一致。裁定按 #86 的「能说出切割换来什么」作出：五个文件都已是所在界面的组合根，可独立命名的子面已拆成兄弟模块，余下的是同一次渲染的状态、事件与 JSX；再切会把同一组 props 与草稿状态原样转交，行数下降而调用面不变。上限是裁定当日的行数，出现第二个消费方或新增职责时须重新定性。该表不在 `verify-tech-debt-counters` 的审计域内，由人工复审维护；审计域（`packages/patent`、`packages/legal`、`packages/document`）仍由上方结构裁定表机检。
+#654 点名的六个文件里，`better-sidebar` 的 `Sidebar.tsx` 与 `state.ts` 已随该包在 PR #677 整体删除，`ui-trajectory` 的 `trajectory-record-inspector.tsx` 已随上游 v0.2.2-alpha.3 的轨迹界面重构删除；其余四个保留为「接受」。当前全仓计数为 185 个 >150 行函数、90 个 >800 行文件，与上方计数表一致。裁定按 #86 的「能说出切割换来什么」作出：四个文件都已是所在界面的组合根，可独立命名的子面已拆成兄弟模块，余下的是同一次渲染的状态、事件与 JSX；再切会把同一组 props 与草稿状态原样转交，行数下降而调用面不变。上限是裁定当日的行数，出现第二个消费方或新增职责时须重新定性。该表不在 `verify-tech-debt-counters` 的审计域内，由人工复审维护；审计域（`packages/patent`、`packages/legal`、`packages/document`）仍由上方结构裁定表机检。
 
 | 文件 | 行数 | 裁定 | 上限 | 理由 |
 | --- | ---: | --- | ---: | --- |
 | `packages/client/ui-schedule/src/client/TaskDetail.tsx` | 2231 | 接受 | 2231 | 单个保留任务的详情页：时间、cron、频率格式化、时区、历史与菜单已分别在 `task-timing.ts`、`task-cron.ts`、`schedule-format.ts`、`recent-time-zones.ts`、`DeliveryHistory.tsx`、`TaskMenu.tsx`。余下是规则/记录两个标签的页面编排；`RuleCard`（392 行）与 `CronRows`（227 行）共用同一份草稿、权威记录与保存回调，拆出只会把草稿的读取与回写分到两个文件 |
 | `packages/client/ui-plugin-manager/src/client/PluginManagerPage.tsx` | 1887 | 接受 | 1887 | 插件管理页的组合根：状态机在 `manager-store.ts`（1527 行），文案投影在 `presentation.ts`，版本区与 bundle 详情已拆成 `versions.tsx`、`BundleDetailSection.tsx`。余下是目录卡片、详情页与安装向导；`InstallDialog`（489 行）只被本页调用，带 12 个回调与共享的 `InstallState`，抽出只改变文件归属，不减少回调或状态 |
 | `packages/client/ui-workspace/src/client/rows/WorkspaceBrowser.tsx` | 1579 | 接受 | 1579 | 工作区/会话浏览区的组合根：行渲染在 `Rows.tsx`（813 行），树投影在 `tree.ts`，持久化在 `stores.ts`，目录流在 `WorkspacePicker.tsx`。`WorkspaceBrowser`（671 行）与 `SessionTree`（375 行）共享同一组 store 选择器、会话状态与搜索请求；拆成兄弟文件要把三十余个选择器与回调逐层传递 |
-| `packages/client/ui-trajectory/src/client/trajectory-record-inspector.tsx` | 1003 | 接受 | 1003 | 记录检查器的组合根：payload/schema、timing、usage、markdown、prompt diff、detail tabs 与 presentation 已是同目录模块。`RecordInspector`（684 行）按标签把这些面板装进详情栏；再拆只是把已有的二十余个 props 转交一层 |
 | `packages/experimental/ptc-runtime-python/src/supervisor.ts` | 902 | 接受 | 902 | Python 子进程单次运行的生命周期：`superviseChildRun`（766 行）与其内部匿名阶段（704 行）共享子进程句柄、三路流、abort、帧上限与输出台账，边界由进程事件而非职责划分。拆函数需要把运行期状态装进更大的 deps 对象并跨模块传递，正好是 2026-09-15 从 `index.ts` 收拢到本文件的反向操作 |
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。

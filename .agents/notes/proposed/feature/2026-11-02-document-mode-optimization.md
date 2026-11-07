@@ -247,7 +247,7 @@ Grouping does not need a new protocol.
 
 The title bar shows `deliverables N · working drafts M · chapters K`. When `outline.md` exists, parse its H2 count as the target chapter count; otherwise show the written count only. A parse failure degrades to the count and never breaks the list. Nothing is persisted; everything derives from `produced`.
 
-Implementation: add pure functions `groupProduced(produced)` and `chapterProgress(produced, outline?)` in `packages/client/ui-document-studio/src/client/grouping.ts`; render two sections, keeping selection by path across the full list; distinguish "no working drafts" from "working drafts but no deliverables" in the empty state.
+Implementation: add pure functions `groupProduced(produced)` and `chapterProgress(produced, outline?)` in a new `grouping.ts` beside `packages/client/ui-document-studio/src/client/index.ts`; render two sections, keeping selection by path across the full list; distinguish "no working drafts" from "working drafts but no deliverables" in the empty state.
 
 Tests: pure-function cases for brief / outline / chapters / final deliverables / mixed / duplicate paths; view tests for both sections, chapter counts, and selection surviving grouping.
 

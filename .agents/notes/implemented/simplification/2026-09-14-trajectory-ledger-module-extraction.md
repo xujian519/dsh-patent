@@ -39,7 +39,7 @@ The first version of this cut moved `DetailTabItem`, `SYSTEM_PROMPT_TABS`, `SYST
 
 All five declarations are back in the entry. The check that settles it is mechanical: the three tables are referenced only by `detailTabs`, `detailTabs` is referenced only by `TrajectoryTable`, and `REQUEST_TABS` is referenced by `TrajectoryTable` directly. Nothing outside the entry names any of them, so keeping them costs no import edge, and moving them would have put a constant in a module named for presentation helpers.
 
-Batch 2 moved all five into `trajectory-detail-tabs.ts`. The inspector's tab-strip JSX left the entry in that cut, so both readers of all three tables sit in the new module and batch 1's no-constant-moves rule no longer applies. [That note](2026-09-14-trajectory-record-inspector-extraction.md) records the move.
+Batch 2 moved all five into `trajectory-detail-tabs.ts`. The inspector's tab-strip JSX left the entry in that cut, so both readers of all three tables sit in the new module and batch 1's no-constant-moves rule no longer applies. [That note](../../archived/simplification/2026-09-14-trajectory-record-inspector-extraction.md) records the move.
 
 ### Why the shared vocabulary went to `src/types.ts`
 
@@ -89,7 +89,7 @@ The per-file coverage gate does not apply here: `vitest.config.ts` lists `packag
 
 `TrajectoryTable.tsx` came out 1440 lines shorter, and this cut left it holding the view plus the 38 declarations the view owns directly. The cost is the accounting: 1387 lines moved, 1662 lines in the eight new files, and ten lines of import wiring in the entry — nine imports and the two-name re-export — replacing the imports the entry no longer needs. The 275-line growth is module headers, imports, and the JSDoc `verify-export-jsdoc` requires of the two `.ts` modules' exports. Nothing was deleted or rewritten.
 
-The move made the batch-2 cuts measurable. The inspector `<aside>` the plan wants as `RecordInspector` was then the only large JSX region left in the entry, and the six presentation modules it renders through were already separate files, so the interface that cut had to settle was visible without reading the virtualizer. That cut has landed: [the inspector extraction note](2026-09-14-trajectory-record-inspector-extraction.md) records the 18-member `RecordInspectorProps` it settled and the `useResizeHandle` that replaced the drag.
+The move made the batch-2 cuts measurable. The inspector `<aside>` the plan wants as `RecordInspector` was then the only large JSX region left in the entry, and the six presentation modules it renders through were already separate files, so the interface that cut had to settle was visible without reading the virtualizer. That cut has landed: [the inspector extraction note](../../archived/simplification/2026-09-14-trajectory-record-inspector-extraction.md) records the 18-member `RecordInspectorProps` it settled and the `useResizeHandle` that replaced the drag.
 
 One asymmetry the cut preserves rather than creates: `trajectory-record-presentation.tsx` holds both the record-to-text readers (`markdownSource`, `recordDisplayText`, `recordResultText`) and the React components that render them (`RecordPresentation`, `RecordListText`). Separating the readers into a `.ts` module would have triggered `verify-export-jsdoc` for them and made them importable without the components; that is a shape choice for a later cut, not a boundary this one had to settle.
 

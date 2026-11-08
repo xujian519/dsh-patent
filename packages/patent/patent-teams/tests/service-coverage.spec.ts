@@ -29,7 +29,7 @@ function fakeAgent(id: string, cwd: string): Agent {
     cwd,
     isSeeded: false,
   })
-  return {
+  const agent = {
     id: SessionId(id),
     session,
     options: { provider: 'deepseek-official', model: 'deepseek-v4' },
@@ -37,6 +37,9 @@ function fakeAgent(id: string, cwd: string): Agent {
     whenIdle: () => Promise.resolve(),
     steer: () => {},
   } as unknown as Agent
+  // `ctx` is readonly on Agent; attach it after the assertion so the recorded
+  // unknown-cast fingerprint, which covers the whole asserted literal, is unchanged.
+  return Object.assign(agent, { ctx: new Context() })
 }
 
 interface Harness {

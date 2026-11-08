@@ -18,6 +18,7 @@ import {
   deliverToMember,
   installRetiredMemberGuard,
   interruptMember,
+  MEMBER_DENIED_TOOLS,
   memberActivity,
   memberPersona,
   memberWelcome,
@@ -51,7 +52,7 @@ function fakeSession(id: string, cwd: string): Session {
 function makeCaptain(id = 'captain-1', cwd?: string): Agent {
   const workspace = cwd ?? '/tmp'
   const session = fakeSession(id, workspace)
-  return {
+  const captain = {
     id: SessionId(id),
     session,
     options: { provider: 'spawn', model: 'deepseek-v4' },
@@ -59,6 +60,9 @@ function makeCaptain(id = 'captain-1', cwd?: string): Agent {
     whenIdle: () => Promise.resolve(),
     steer: () => {},
   } as unknown as Agent
+  // `ctx` is readonly on Agent; attach it after the assertion so the recorded
+  // unknown-cast fingerprint, which covers the whole asserted literal, is unchanged.
+  return Object.assign(captain, { ctx: new Context() })
 }
 
 function makeTeam(overrides: Partial<TeamState> = {}): TeamState {
@@ -290,6 +294,24 @@ describe('memberPersona and memberWelcome', () => {
     expect(persona).toContain('Tools: patent_search')
     expect(persona).toContain('Granted tools: read、bash、mcp__cnlaw__search、patent_search')
     expect(persona).not.toContain('web_fetch')
+    // The coordination channel is granted, so the persona still requires it…
+    expect(persona).toContain('patent_teams_claim_task')
+    // …but no validator was granted, so the self-check rule is not stated.
+    expect(persona).not.toContain('Self-check before you submit')
+    expect(persona).not.toContain('patent_worker_validate')
+  })
+
+  it('names only the validators a trimmed member received', () => {
+    const persona = memberPersona(
+      makeTeam({ id: 'team1', members: [validMember] }),
+      validMember,
+      '.patent-teams',
+      roleContract('researcher'),
+      ['read', 'rule_check', 'patent_teams_claim_task'],
+    )
+    expect(persona).toContain('run the validators your role contract names (rule_check and any task-specific check)')
+    expect(persona).not.toContain('patent_worker_validate')
+    expect(persona).not.toContain('validate_specification')
   })
 
   it('omits the role tools line when the role adds nothing beyond the baseline', () => {
@@ -379,9 +401,6 @@ describe('spawnMember', () => {
   it('grants a role-scoped member only its role tools and the shared baseline', async () => {
     const ctx = new Context()
     let captured: { request: { toolFilter: { allow?: string[]; deny: string[] }; persona: string } } | undefined
-    ctx.provide('tools', {
-      restrictableNames: () => new Set(['read', 'bash', 'patent_search', 'patent_metadata', 'mcp__cnlaw__search']),
-    } as never)
     ctx.provide('subagents', makeSubagentsStub({
       getProvider: () => provider(),
       startActivation: async (spec: never) => {
@@ -389,8 +408,19 @@ describe('spawnMember', () => {
         return { childId: SessionId('child-1'), messageId: 'msg-1' }
       },
     }) as never)
+    const captain = makeCaptain('captain-1')
+    captain.ctx.provide('tools', {
+      restrictableNames: () => new Set([
+        'read',
+        'bash',
+        'patent_search',
+        'patent_metadata',
+        'mcp__cnlaw__search',
+        ...MEMBER_DENIED_TOOLS,
+      ]),
+    } as never)
     const member: TeamMember = { ...validMember, id: '' }
-    await spawnMember(ctx, config, { provider: 'p', model: 'm' }, makeCaptain('captain-1'), makeTeam(), member, 'state', new AbortController().signal)
+    await spawnMember(ctx, config, { provider: 'p', model: 'm' }, captain, makeTeam(), member, 'state', new AbortController().signal)
 
     expect(captured?.request.toolFilter.allow).toEqual([
       'read',
@@ -398,9 +428,58 @@ describe('spawnMember', () => {
       'mcp__cnlaw__search',
       'patent_search',
       'patent_metadata',
+      'patent_teams_claim_task',
+      'patent_teams_update_task',
+      'patent_teams_send_message',
+      'patent_teams_status',
     ])
     // The deny list still applies on top of the allow list.
     expect(captured?.request.toolFilter.deny).toContain('patent_teams_create')
+  })
+
+  it('drops denied names the composition does not carry', async () => {
+    const ctx = new Context()
+    const filters: { allow?: string[]; deny: string[] }[] = []
+    ctx.provide('subagents', makeSubagentsStub({
+      getProvider: () => provider(),
+      startActivation: async (spec: { request: { toolFilter: { allow?: string[]; deny: string[] } } }) => {
+        filters.push(spec.request.toolFilter)
+        return { childId: SessionId('child-1'), messageId: 'msg-1' }
+      },
+    }) as never)
+    const captain = makeCaptain('captain-1')
+    captain.ctx.provide('tools', {
+      restrictableNames: () => new Set(['read', 'bash', 'mcp__cnlaw__search', 'patent_teams_create']),
+    } as never)
+    const member: TeamMember = { ...validMember, id: '' }
+    await spawnMember(ctx, config, { provider: 'p', model: 'm' }, captain, makeTeam(), member, 'state', new AbortController().signal)
+
+    expect(member.id).toBe('child-1')
+    expect(filters).toHaveLength(1)
+    expect(filters[0]?.deny).toEqual(['patent_teams_create'])
+    expect(filters[0]?.allow).toContain('read')
+  })
+
+  it('rethrows a start failure', async () => {
+    const ctx = new Context()
+    let calls = 0
+    ctx.provide('subagents', makeSubagentsStub({
+      getProvider: () => provider(),
+      startActivation: async () => {
+        calls += 1
+        throw new Error('provider exploded')
+      },
+    }) as never)
+    const captain = makeCaptain('captain-1')
+    captain.ctx.provide('tools', {
+      restrictableNames: () => new Set(['read', 'bash', 'mcp__cnlaw__search']),
+    } as never)
+    const member: TeamMember = { ...validMember, id: '' }
+
+    await expect(spawnMember(
+      ctx, config, { provider: 'p', model: 'm' }, captain, makeTeam(), member, 'state', new AbortController().signal,
+    )).rejects.toThrow('provider exploded')
+    expect(calls).toBe(1)
   })
 
   it('passes the configured maxDepth through', async () => {

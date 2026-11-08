@@ -112,6 +112,12 @@ export type GeneratePatentFigureDeps = {
    */
   failOnRenderFindings?: boolean
   /**
+   * 版面利用率内控下限（0–1，Config.figureMinSheetFillRatio）：渲染复核按
+   * 「内容包围盒 ÷ 该图自己的画布」判，低于下限只记一条提示级发现
+   * （`sheet-underfill`），不阻断交付。缺省或 0 关闭该判据。
+   */
+  minSheetFillRatio?: number
+  /**
    * 部署的图面文字字号（毫米，Config.figureFontMm）：直绘图型的图面字号与 DOT 的
    * fontsize 由它定，落版核算的字高也用它；模型显式给的字号优先。缺省时不改历史默认。
    */

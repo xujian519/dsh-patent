@@ -16,6 +16,7 @@ import type {
   StructureCalloutInput,
   StructureDetailInput,
   StructureManifest,
+  StructureManifestView,
   StructureViewName,
 } from './structure-types.ts'
 import type { StructureDetail } from '../figure/freecad-structure-script.ts'
@@ -28,6 +29,8 @@ import type { StructureDetail } from '../figure/freecad-structure-script.ts'
 export function normalizeCallouts(callouts: readonly StructureCalloutInput[] | undefined): StructureCalloutInput[] {
   return (callouts ?? []).map((callout, index) => {
     const point = callout.point3d
+    // 省略 point3d 表示由渲染脚本在该零件上自动选锚点，没有可校验的坐标。
+    if (point === undefined) return callout
     // oxlint-disable-next-line typescript/no-unnecessary-condition -- 声明类型是三元组，但模型实参只经 schema 校验为 number[]，长度必须运行时复核
     if (point.length !== 3 || point.some(n => !Number.isFinite(n))) {
       throw new PatentToolError('invalid_tool_input', `callouts[${index}].point3d 必须是恰好三个有限数 [x,y,z]`, { tool: 'generate_structure_figure' })
@@ -207,7 +210,50 @@ export async function readManifest(manifestPath: string): Promise<StructureManif
   if (!Array.isArray(parsed.views) || parsed.views.length === 0) {
     throw new PatentToolError('tool_execution_failed', 'manifest 未包含任何视图（渲染可能未产生投影几何）', { tool: 'generate_structure_figure' })
   }
+  for (const view of parsed.views) assertManifestParts(view, parsed.modelPaths)
+  for (const view of parsed.views) {
+    if (view.warnings === undefined) continue
+    if (!Array.isArray(view.warnings) || !view.warnings.every(note => typeof note === 'string')) {
+      throw new PatentToolError('tool_execution_failed', `manifest 视图 ${view.name} 的 warnings 必须是字符串数组`, { tool: 'generate_structure_figure' })
+    }
+  }
   return parsed
+}
+
+/** 有限数判断（manifest 是脚本产物，数值合法性只在读回时核对一次）。 */
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+/**
+ * 核对一个视图的逐零件几何事实。
+ *
+ * `parts` 是渲染脚本写出、随 FreeCAD 版本与模型变化的产物，索引越界或数值非法
+ * 都会让下游引线布局算错位置，故在读回这一处 fail-loud。旧版 manifest 没有
+ * `parts` 字段，缺失即跳过（调用方据 `assembly` 是否给出决定可用性）。
+ * @param view - 待核对视图。
+ * @param modelPaths - 本次渲染的模型文件列表（`index` 的合法上界）。
+ */
+function assertManifestParts(view: StructureManifestView, modelPaths: readonly string[]): void {
+  if (view.parts === undefined) return
+  const where = `manifest 视图 ${view.name} 的 parts`
+  if (!Array.isArray(view.parts)) {
+    throw new PatentToolError('tool_execution_failed', `${where} 不是数组`, { tool: 'generate_structure_figure' })
+  }
+  for (const part of view.parts) {
+    if (!Number.isInteger(part.index) || part.index < 0 || part.index >= modelPaths.length) {
+      throw new PatentToolError('tool_execution_failed', `${where} 含非法零件下标 ${String(part.index)}（模型共 ${String(modelPaths.length)} 个）`, { tool: 'generate_structure_figure' })
+    }
+    if (!Array.isArray(part.bbox3d) || part.bbox3d.length !== 6 || !part.bbox3d.every(isFiniteNumber)) {
+      throw new PatentToolError('tool_execution_failed', `${where} 的零件 ${String(part.index)} bbox3d 必须是六个有限数`, { tool: 'generate_structure_figure' })
+    }
+    if (!isFiniteNumber(part.volume)) {
+      throw new PatentToolError('tool_execution_failed', `${where} 的零件 ${String(part.index)} volume 不是有限数`, { tool: 'generate_structure_figure' })
+    }
+    if (part.bounds !== null && (!Array.isArray(part.bounds) || part.bounds.length !== 4 || !part.bounds.every(isFiniteNumber))) {
+      throw new PatentToolError('tool_execution_failed', `${where} 的零件 ${String(part.index)} bounds 必须是 null 或四个有限数`, { tool: 'generate_structure_figure' })
+    }
+  }
 }
 
 /**

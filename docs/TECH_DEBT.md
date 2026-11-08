@@ -359,16 +359,16 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | 计数 | 值 |
 | --- | --- |
 | `structure.long-functions` | 184 |
-| `structure.large-files` | 89 |
-| `structure.patent-large-files` | 9 |
-| `lint.v8-ignore` | 1314 |
+| `structure.large-files` | 90 |
+| `structure.patent-large-files` | 10 |
+| `lint.v8-ignore` | 1315 |
 | `lint.ts-expect-error` | 193 |
 | `packages.patent-directories` | 16 |
 <!-- tech-debt-counters:end -->
 
 ### 专利域 >800 行文件裁定（2026-11-01 复测）
 
-`packages/patent` 当前有 9 个 >800 行源文件，全部保留为「接受」；另有 4 个拆分目标已降到 800 行（2026-11-05 D10 把 `statutes.ts` 拆为数据/计算/查询三层，最大文件 737 行）。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，2026-11-01 附图说明校验把 `validate.ts` 推过 800 行后升至 10 个，本轮拆分后回落至 9 个；全仓 >800 行文件相应为 89 个。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
+`packages/patent` 当前有 10 个 >800 行源文件，全部保留为「接受」；另有 4 个拆分目标已降到 800 行（2026-11-05 D10 把 `statutes.ts` 拆为数据/计算/查询三层，最大文件 737 行）。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，2026-11-01 附图说明校验把 `validate.ts` 推过 800 行后升至 10 个，2026-11-05 拆分后回落至 9 个，2026-11-08 结构线稿每零件投影占位把 `freecad-structure-script.ts` 从 762 推到 826 后回到 10 个；全仓 >800 行文件相应为 90 个。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
 
 拆分落点：`generate-patent-figure.ts` 拆出 `figure-panels.ts`（多面板路径）、`figure-delivery.ts`（落版/复核/转路径/导出）与 `figure-run.ts`（共享运行参数与标号）；`evidence/engine.ts` 拆出 `signals.ts`、`judgment.ts`、`public-use.ts`、`conditions.ts` 与 `proof-standard.ts`；`generate-structure-figure.ts` 拆出 `structure-types.ts`、`structure-model.ts` 与 `structure-render.ts`。
 
@@ -377,7 +377,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- structure-baseline:start -->
 | 文件 | 裁定 | 上限 | 理由 |
 | --- | --- | ---: | --- |
-| `packages/patent/patent-tools/src/figure/render-check-findings.ts` | 接受 | 951 | 纯几何判据：30+ 个小谓词 + 109 行编排，无 I/O，无第二消费方 |
+| `packages/patent/patent-tools/src/figure/render-check-findings.ts` | 接受 | 988 | 纯几何判据：30+ 个小谓词 + 109 行编排，无 I/O，无第二消费方。2026-11-08 版面利用率判据（`sheet-underfill`，内容包围盒占该图画布比）加了 37 行，判据本身只读已量测的墨迹包围盒与画布尺寸 |
 | `packages/patent/patent-tools/src/figure/section-diagram.ts` | 接受 | 918 | 纯几何绘制：146 行主绘制 + 小工具，与 `leader-line` 同类 |
 | `packages/patent/patent-tools/src/figure/leader-line.ts` | 接受 | 908 | 纯几何：稳定在 906→908，无状态、无 I/O |
 | `packages/patent/patent-tools/src/tool/patent-workflow-run.ts` | 接受 | 1028 | 单一工具入口同时承载 manifest 与领域图两条执行路径，输入 schema、恢复/审批接线与解析器共享同一输出契约；文件内无 >150 行函数，拆分会把 schema 与分派分离而不减少分支。2026-11-04 新增审批门现场决策接线（运行级 handler 注册、`approveStageIds` 拒绝与中断文案）约 85 行，仍无新的长函数 |
@@ -386,6 +386,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-tools/src/figure/dot-builder.ts` | 接受 | 839 | 单一 DOT 词汇表：五个 builder 各 <60 行，共享头部/标号/转义契约 |
 | `packages/patent/patent-core/src/ipc/ipc-classifier.ts` | 接受 | 807 | 数据表为主：`IPC_DOMAINS` 409 行 + 明细表 260 行，分类函数 <30 行 |
 | `packages/patent/patent-core/src/draft/validate.ts` | 接受 | 811 | 受控草案校验入口：按部分聚合违规；本轮附图说明列表项禁图号/句末标点把文件从 776 推到 811，最大新增函数 <40 行，拆分会把 SpecDraft 窄化与违规聚合拆散 |
+| `packages/patent/patent-tools/src/figure/freecad-structure-script.ts` | 接受 | 1233 | 脚本构建器与内嵌 Python 模板同处一模块：模板必须与 payload 字段逐名对应，拆成两个文件会让「改 payload 忘改模板」失去同文件可读性；而模板本身已超过 800 行，按文件切开只会多出一个同样超限的文件。2026-11-08 的推进依次为：每零件投影占位 762 → 826；自动锚点 826 → 884；标号候选布局 884 → 985；分解图（`principal_axis` 幂迭代主轴、`exploded_part_offsets` 逐段累加排布、`build_exploded_view_svg`）985 → 1217；评审修正（装配轴改用协方差列作幂迭代种子、包围盒元组统一为一个顺序）1217 → 1233。新增函数各 <50 行。下一次增长前须把模板按「标号布局」「分解图」切成分段常量分文件拼接，否则单文件继续膨胀 |
 | `packages/patent/patent-tools/src/tool/generate-patent-figure.ts` | 拆分 | 800 | 多面板路径与交付链已分拆；入口保留 schema 与单图编排 |
 | `packages/patent/patent-core/src/evidence/engine.ts` | 拆分 | 800 | 三性、类型特定、使用公开、证明标准已分模块；类只保留编排 |
 | `packages/patent/patent-tools/src/tool/generate-structure-figure.ts` | 拆分 | 800 | 类型、模型 I/O、渲染收尾已分模块；入口保留 schema 与工具装配 |
@@ -405,6 +406,11 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-08 版面利用率提示判据**:`render-check-findings.ts` 由 951 升至 **988** 行并同步重定接受上限;`structure.long-functions`、`structure.large-files`、`structure.patent-large-files` 与 `lint.v8-ignore` 均不变。新增 `sheet-underfill` 判据(内容包围盒面积 ÷ 该图自身画布面积,低于 `Config.figureMinSheetFillRatio` 时报警)约 37 行,只读已量测的墨迹包围盒与画布尺寸,不新增遍历;`RenderCheckFinding` 同时增加 `advisory` 标记,`blockingFindings` 据此把它排除在阻断集之外,故 strict 门禁不会因软指标失败。
+- **2026-11-08 结构线稿分解图**:`freecad-structure-script.ts` 由 985 升至 **1217** 行并同步重定接受上限;`structure.long-functions`、`structure.large-files`、`structure.patent-large-files` 与 `lint.v8-ignore` 均不变。新增 `principal_axis`(包围盒中心点云的幂迭代主轴)、`exploded_part_offsets`(按各零件沿轴尺寸加中位间隙逐段累加,整串居中)、`build_exploded_view_svg`(逐件 `DrawViewPart` + 平移拼接),各 <50 行;`callout_fragments` 改为接收投影函数,使总装图与分解图共用同一套标号放置,`part_metadata` 多收一个可选的排布后矩形。分解图与 `details` 互斥:放大窗口按模型坐标挂在单一基视图上,而分解图每个零件各有一个视图。
+- **2026-11-08 结构线稿评审修正**:`freecad-structure-script.ts` 由 1217 升至 **1233** 行并同步重定接受上限;其余计数器不变。`principal_axis` 的幂迭代种子从固定 `(1,1,1)` 改为协方差矩阵范数最大的那一列——零件恰好沿 `(1,-1,0)` 这类与种子正交的方向排布时,旧种子第一步就塌成零向量,函数返回一个与真实主轴垂直的方向且不报错;`callout_fragments` 的包围盒参数与返回值统一为 `(min_x, max_x, min_y, max_y)`,消除同一函数入参与返回两套元组顺序;`build_exploded_view_svg` 不再返回无人消费的 `axis` 元数据。工具层 `structureAssembly` 在目录批量出多图时不给摘要(摘要只描述其中一张),同时补满 manifest 逐零件事实的负向测试。`principal_axis` 的修复目前只有脚本字符串级回归钉(内嵌 Python 在无 FreeCAD 时不执行)与 FreeCAD 门控的端到端用例,本地没有行为夹具;要补需把主轴算法抽成可在 TS 侧单测的纯函数,代价大于收益,暂记于此。
+- **2026-11-08 结构线稿标号候选布局**:`freecad-structure-script.ts` 由 884 升至 **985** 行并同步重定接受上限;`structure.long-functions`、`structure.large-files`、`structure.patent-large-files` 与 `lint.v8-ignore` 均不变。新增 `choose_callout_position`(十二方向 × 三档距离的候选扫描)与三个小辅助(`rotate_direction`/`rects_overlap`/`part_rects_in_canvas`),各 <45 行;首选方向从画布中心改到所属零件投影中心,`callout_fragments` 因此多收一个 `part_bounds` 参数并多返回一个警告列表,该列表经 manifest 视图条目的 `warnings` 回到工具层。
+- **2026-11-08 结构线稿每零件投影占位**:`freecad-structure-script.ts` 由 762 升至 **826** 行并新增接受行;`structure.large-files` 由 89 升至 **90**、`structure.patent-large-files` 由 9 升至 **10**。改动是 `projected_bbox_center` 扩为 `projected_bounds`(一次逐边取样同时产出整体与逐零件包围盒)并新增 `part_metadata`(把 3D 包围盒、体积与画布帧投影占位写进 manifest),两者都在内嵌 Python 模板里,与 payload 字段逐名对应,不另立文件;`structure.long-functions` 保持 **184**——装配体输出 schema 抽成模块级 `ASSEMBLY_SCHEMA`,`createGenerateStructureFigureTool` 回落到 150 行以下;`lint.v8-ignore` 由 1314 升至 **1315**,新增的一条是 `structureAssembly` 里「manifest 校验保证下标落在 modelPaths 内」的取值守卫;其余计数不变。
 - **2026-11-07 无效/复审受理条件门与请求书正文**:`manifests.ts` 由 903 升至 **953** 行、`patent-workflow-run.ts` 由 943 升至 **1028** 行并同步重定接受上限,`structure.long-functions` 与 `structure.large-files` 不变。两条 contested 链在 `citation-check` 与 `legal_gaps` 之间新增 `admissibility`(确定性原子)、`draft`(模型阶段)与 `slop_gate` 三个阶段。A33 的 `amendment_basis` 未接入这两条链:该原子从所读文本中提取修改后权项,而请求书正文同时承载理由与修改对照表,实机录制里把「权利要求 3 删除」读成新增技术特征并报出不存在的缺陷;A33 核对需等结构化的修改后权利要求输入。`patent_workflow_run` 为此新增 `rejectionDecisionDate`、`requestDate`、`recoveryRequested` 与 `priorInvalidationDecision` 四个参数,其 schema 收进 `ADMISSIBILITY_PARAMETERS` 常量,使 `createPatentWorkflowRunTool` 保持在 150 行以下(148)。
 - **2026-11-05 D10 patent-deadline 拆分**:`statutes.ts` 由 1,304 行拆为 `types.ts`（192）、`statutes-data.ts`（132）、`deadline-entries.ts`（737）与查询层 `statutes.ts`（230），四个文件均 ≤ 800 行，最大 737 行；`structure.large-files` 由 90 降至 **89**、`structure.patent-large-files` 由 10 降至 **9**，`structure.long-functions` 与 `lint.v8-ignore`（两条豁免随代码迁移）均不变。
 - **2026-11-04 团队状态租约计数**:`lint.v8-ignore` 由 1315 降至 **1314**;成员收件箱预览的末条消息改为先取下标再判空,原先「空列表必有一条末消息」的豁免不再需要——只有租约中消息的收件箱确实没有可预览的末条,该路径由 `service.spec.ts` 覆盖;其余计数不变。

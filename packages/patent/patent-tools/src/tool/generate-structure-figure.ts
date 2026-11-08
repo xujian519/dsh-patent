@@ -53,6 +53,7 @@ import {
   outlineStructureViews,
   renderStructureFigures,
   resolveStructureRun,
+  structureAssembly,
   structureComponents,
   structureNumeralMap,
 } from './structure-render.ts'
@@ -64,8 +65,7 @@ const CALLOUT_SCHEMA = {
     numeral: { type: 'string', required: true, description: '参考标号（阿拉伯数字字符串）' },
     point3d: {
       type: 'array',
-      required: true,
-      description: '锚定的模型 3D 坐标 [x,y,z]（毫米，与模型单位一致）',
+      description: '锚定的模型 3D 坐标 [x,y,z]（毫米，与模型单位一致）；省略时脚本在该零件的真实顶点里自动选一个（投影后离零件轮廓中心最远者）',
       items: { type: 'number' },
     },
     label: { type: 'string', description: '可选部件名称（写入标号表/manifest，不进图面像素）' },
@@ -90,6 +90,36 @@ const DETAIL_SCHEMA = {
   },
 } as const
 
+/**
+ * 装配体几何事实的输出 schema。
+ *
+ * `viewBounds` 是「视图名 → 每零件投影占位」的映射，键随 `views` 变化，故以
+ * `additionalProperties: true` 放行而不再逐键约束。
+ */
+const ASSEMBLY_SCHEMA = {
+  type: 'object',
+  description: '几何事实：每零件 3D 包围盒与体积、各视图下的投影占位；用于判断零件归属与标号位置，不必再手填 callouts[].point3d。只在本次调用只出一张图时给出（目录批量多图时没有）',
+  additionalProperties: false,
+  properties: {
+    modelPaths: { type: 'array', required: true, items: { type: 'string' } },
+    parts: {
+      type: 'array',
+      required: true,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          index: { type: 'integer', required: true },
+          path: { type: 'string', required: true },
+          bbox3d: { type: 'array', required: true, items: { type: 'number' } },
+          volume: { type: 'number', required: true },
+        },
+      },
+    },
+    viewBounds: { type: 'object', required: true, additionalProperties: true },
+  },
+} as const
+
 const DESCRIPTION = [
   '从 3D 模型生成专利结构线稿附图：用本机 FreeCAD（TechDraw）把 STEP/IGES/BREP 投影为多视图黑白线稿 SVG（等轴测/三视图等），件号以引线锚定到真实顶点投影，输出到工作区 patent/figures/，返回标号映射表与「图N是…的结构示意图」附图说明。需要机械结构真实投影（而非示意框图）时使用。',
   '',
@@ -99,9 +129,13 @@ const DESCRIPTION = [
   '',
   '线宽与线型：line_width_mm 取 GB/T 4457.4 线宽系列之一改写可见线线宽，hidden_line_style="dashed" 把隐藏线画成虚线；缺省两者都不改写，输出与 FreeCAD 原始投影一致。',
   '',
-  '件号锚定：callouts 传 [{numeral, point3d:[x,y,z], label?, model?}]，把参考标号绑定到模型 3D 坐标，脚本投影到每个视图的真实 2D 位置并以引线标注；标号应为阿拉伯数字，非数字标号与部件名会触发图面用语告警。',
+  '件号锚定：callouts 传 [{numeral, point3d:[x,y,z], label?, model?}]，把参考标号绑定到模型 3D 坐标，脚本投影到每个视图的真实 2D 位置并以引线标注；标号应为阿拉伯数字，非数字标号与部件名会触发图面用语告警。省略 point3d 时由脚本自动选点——在该零件的真实顶点里取投影后离零件轮廓中心最远的一个，标号因此落在实体外侧；此时须给出 model（单模型可省，默认零件 0），同一零件上的多个自动件号会轮流选不同顶点。',
   '',
   '装配体：model_paths 传多个模型文件时，所有零件投影到同一张图（TechDraw 一次投影处理零件之间的遮挡），callouts[].model 指明该件号属于第几个零件（0 起，对应 model_paths 的顺序），脚本按该零件的真实几何核对锚点确实落在它上面，偏离超过 0.5 毫米即报错；装配体下每个件号都必须写明归属，以免标号指错零件。',
+  '',
+  '几何事实：结果附带 assembly——每零件在 model_paths 中的下标与路径、3D 包围盒 [x,y,z,xLength,yLength,zLength] 与体积，以及各视图下该零件的投影占位 [x,y,width,height]（画布帧，与该视图件号落点同帧；该朝向看不见的零件为 null）。用它判断「哪个零件叫什么、该标几号」，并按占位避开标号压到别的零件。目录批量（一个 model_path 出多图）不给出 assembly：摘要只描述其中一张，会给错印象。',
+  '',
+  '分解图：exploded=true 时沿装配轴（各零件包围盒中心的第一主成分方向）把零件拉开成一维串，每个零件单独投影——零件之间互不遮挡，装配顺序一目了然；这是总装图「全部零件一次消隐」之外的另一条路径。需要 model_paths 传至少两个零件。位置按各零件自身沿轴尺寸加「中位尺寸 × 1.2」的间隙逐段累加。视线与装配轴近乎平行时主轴在投影面上退化成点、零件排不开，工具报错而不是画一张叠在一起的图；此时换一个垂直于轴的视图（轴为 z 时用 front/top）。',
   '',
   '局部放大：details 传 [{base, center:[x,y,z], radius_mm, scale?, reference?}]，把 base 视图上以模型坐标 center 为圆心、radius_mm 为半径的圆形区域按 scale（缺省 2）放大成一张独立视图（fig{N}_detail{M}.svg），并在 base 视图上画出该窗口的圆与标号。窗口按模型坐标给出，故与视图朝向、投影比例无关；base 必须是本次 views 里的视图，放大视图随 paths/manifest 一并返回（manifest 里该视图带 kind="detail" 与 base/center3d/radiusMm/scale/reference）。',
   '',
@@ -123,6 +157,7 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
       model_path: { type: 'string', description: '模型文件路径（STEP/IGES/BREP），或其目录（批量：目录内每个受支持模型各出一图）；与 model_paths 二选一' },
       model_paths: { type: 'array', items: { type: 'string' }, description: '装配体：多个模型文件一起投影成一张图（每个文件一个零件）；与 model_path 二选一' },
       views: { type: 'array', items: { type: 'string', enum: STRUCTURE_VIEWS }, description: '请求视图，缺省 iso/front/top/right' },
+      exploded: { type: 'boolean', description: '分解图：沿装配轴把零件拉开成一维串后逐件投影（零件之间互不遮挡），需要 model_paths 传至少两个零件；视线与装配轴近乎平行时会报错' },
       scale: { type: 'number', description: 'TechDraw 投影比例（正数）；缺省取部署配置或 1' },
       show_hidden: { type: 'boolean', description: '绘制隐藏线（细实线，实测 0.35 毫米；不是虚线），默认 false' },
       line_width_mm: { type: 'number', enum: STRUCTURE_LINE_WIDTH_SERIES, description: '可见线线宽（毫米），须取 GB/T 4457.4 线宽系列之一；缺省保持 FreeCAD 输出的 0.7 毫米档' },
@@ -176,6 +211,7 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
           },
           numeralMap: { type: 'array', required: true, items: NUMERAL_MAP_SCHEMA },
           components: { type: 'array', required: true, items: COMPONENT_SCHEMA },
+          assembly: ASSEMBLY_SCHEMA,
           warnings: WARNINGS_SCHEMA,
           indexed: { type: 'boolean', required: true },
         },
@@ -192,6 +228,15 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
       const warnings: string[] = ['由 3D 模型（FreeCAD TechDraw）投影生成的结构线稿']
       const figures = await renderStructureFigures(run, exec.signal)
       await applyViewLineStyles({ run, figures, warnings })
+      // 标号放置的降级说明随 manifest 回来：脚本退回首选方向时那句话必须到调用方手上，
+      // 否则「图面有标号」与「标号位置合规」会被混为一谈。
+      for (const figure of figures) {
+        for (const view of figure.manifest.views) {
+          for (const note of view.warnings ?? []) {
+            warnings.push(`图${figure.figureNumber} ${view.name}：${note}`)
+          }
+        }
+      }
       // 组件列表只派生一次，不随图数累加，否则每个索引条目会被其他图的组件重复污染。
       const components = structureComponents(run.callouts)
       const numeralMap = structureNumeralMap(figures, run.callouts)
@@ -213,6 +258,7 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
             warnings,
             clearanceMm: clearanceMmForFigure('structure'),
             failOnFindings: deps.failOnRenderFindings === true,
+            ...(deps.minSheetFillRatio === undefined ? {} : { minSheetFillRatio: deps.minSheetFillRatio }),
             tool: 'generate_structure_figure',
             label: `图${figure.figureNumber} `,
           })
@@ -235,9 +281,11 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
           }
         }
       }
+      const assembly = structureAssembly(figures)
       return {
         paths: figures.flatMap(figure => figure.paths),
         figures,
+        ...(assembly === undefined ? {} : { assembly }),
         figureDescription,
         ...(layout === undefined ? {} : { layout }),
         numeralMap,

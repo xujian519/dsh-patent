@@ -20,6 +20,7 @@ import type {
   GenerateStructureFigureDeps,
   GenerateStructureFigureInput,
   GenerateStructureFigureOutput,
+  StructureAssembly,
   StructureCalloutInput,
   StructureFigureView,
 } from './structure-types.ts'
@@ -47,6 +48,8 @@ type StructureRun = {
   modelPaths: string[]
   /** 是否装配体（`model_paths`）：所有模型投影成一张图，否则逐模型一图。 */
   assembly: boolean
+  /** 分解图：逐件投影并沿装配轴排布（仅装配体有效）。 */
+  exploded: boolean
 }
 
 /**
@@ -79,7 +82,7 @@ export async function resolveStructureRun(args: unknown, deps: GenerateStructure
   }
   const callouts = normalizeCallouts(input.callouts).map(callout => ({
     numeral: callout.numeral,
-    point3d: callout.point3d,
+    ...(callout.point3d === undefined ? {} : { point3d: callout.point3d }),
     ...(callout.label === undefined ? {} : { label: callout.label }),
     ...(callout.model === undefined ? {} : { model: callout.model }),
   }))
@@ -106,6 +109,15 @@ export async function resolveStructureRun(args: unknown, deps: GenerateStructure
   if (!assembly && modelPaths.length > 1 && details.length > 0) {
     throw new PatentToolError('invalid_tool_input', '批量（model_path 为目录）不支持 details：放大窗口的模型坐标仅对单个模型有效，请对单个模型生成结构线稿，或用 model_paths 把多个零件投影成一张装配图', { tool: 'generate_structure_figure' })
   }
+  const exploded = input.exploded === true
+  // 分解图的前提是「零件之间有装配关系」：单模型没有可分解的对象，目录批量是
+  // 一模型一图、同样没有；只有 model_paths 的装配体成立。
+  if (exploded && (!assembly || modelPaths.length < 2)) {
+    throw new PatentToolError('invalid_tool_input', 'exploded 需要 model_paths 传至少两个零件文件：分解图沿装配轴把零件拉开，单模型没有可分解的装配关系', { tool: 'generate_structure_figure' })
+  }
+  if (exploded && details.length > 0) {
+    throw new PatentToolError('invalid_tool_input', 'exploded 与 details 不能同时使用：放大窗口按模型坐标落在某个基视图上，而分解图每个零件各有一个视图，没有统一的基视图', { tool: 'generate_structure_figure' })
+  }
   return {
     deps,
     input,
@@ -121,6 +133,7 @@ export async function resolveStructureRun(args: unknown, deps: GenerateStructure
     details,
     modelPaths,
     assembly,
+    exploded,
   }
 }
 
@@ -147,6 +160,7 @@ export async function renderStructureFigures(run: StructureRun, signal: AbortSig
       showHidden: run.showHidden,
       callouts: run.callouts,
       details: run.details,
+      exploded: run.exploded,
       figureNumber,
       outputDir: renderDir,
       signal,
@@ -185,6 +199,41 @@ export async function applyViewLineStyles(args: {
       args.warnings.push(...styled.warnings.map(w => `线宽/线型：${viewPath} ${w}`))
       await writeFile(path, styled.svg, 'utf8')
     }
+  }
+}
+
+/**
+ * 装配体几何事实摘要：模型路径、每零件 3D 尺寸与每视图投影占位。
+ *
+ * 3D 事实（包围盒、体积）与视图无关，取任一普通视图的 `parts` 即可；投影占位按
+ * 视图分开收集，因为同一个零件在不同朝向下的占位不同。旧版 manifest 没有
+ * `parts` 字段时返回 undefined，调用方据此判断摘要是否可用。
+ * @param figures - 本次渲染出的图（装配体只有一条）。
+ * @returns 摘要；多图或没有逐零件几何事实时 undefined。
+ */
+export function structureAssembly(figures: readonly StructureFigureView[]): StructureAssembly | undefined {
+  const [first] = figures
+  if (first === undefined) return undefined
+  // 目录批量逐模型出图时 figures 有多条，摘要只描述其中一条——给了会让调用方
+  // 误以为它覆盖全部图，故这种形态不给摘要。
+  if (figures.length > 1) return undefined
+  const source = first.manifest.views.find(view => view.kind === 'view' && view.parts !== undefined)
+  if (source?.parts === undefined) return undefined
+  const viewBounds: Record<string, (number[] | null)[]> = {}
+  for (const view of first.manifest.views) {
+    if (view.kind !== 'view' || view.parts === undefined) continue
+    viewBounds[view.name] = view.parts.map(part => part.bounds)
+  }
+  return {
+    modelPaths: [...first.modelPaths],
+    parts: source.parts.map(part => ({
+      index: part.index,
+      /* v8 ignore next -- readManifest rejects an index outside modelPaths */
+      path: first.modelPaths[part.index] ?? '',
+      bbox3d: part.bbox3d,
+      volume: part.volume,
+    })),
+    viewBounds,
   }
 }
 

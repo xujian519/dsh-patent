@@ -1646,6 +1646,37 @@ describe('渲染复核门禁（strict）', () => {
     }
   })
 
+  it('版面利用率下限开启时只报提示级发现，strict 仍放行', async () => {
+    const dir = tempDir()
+    const outDir = join(dir, 'figs')
+    // 干净图但内容只占画布一角：撑不满纸面不是画错。
+    const sparse = [
+      '<svg xmlns="http://www.w3.org/2000/svg" width="120mm" height="40mm" viewBox="0 0 120 40">',
+      '  <g fill="none" stroke="#000000"><rect x="10" y="10" width="5" height="5" stroke-width="0.35"/></g>',
+      '</svg>',
+    ].join('\n')
+    try {
+      const tool = createGeneratePatentFigureTool({
+        render: fixedRenderer(sparse),
+        outputDir: outDir,
+        cwd: dir,
+        minSheetFillRatio: 0.9,
+        failOnRenderFindings: true,
+      })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'generate_patent_figure', {
+        figure_type: 'raw_dot',
+        dot: 'digraph G { a; }',
+        persist_index: false,
+      }, 'sheet1')
+      expect(result.isError).toBe(false)
+      const warnings = (valueOf(result) as { warnings: string[] }).warnings
+      expect(warnings.some(warning => warning.includes('撑不满纸面'))).toBe(true)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('默认模式只把发现折成警告，不阻断', async () => {
     const dir = tempDir()
     const outDir = join(dir, 'figs')

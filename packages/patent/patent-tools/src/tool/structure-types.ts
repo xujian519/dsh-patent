@@ -35,6 +35,24 @@ export type StructureManifestAnchor = {
   point2d: number[]
 }
 
+/**
+ * manifest 中单个零件在该视图下的几何事实。
+ *
+ * `bounds` 是投影占位（画布帧 `[x, y, width, height]`，与 {@link StructureManifestAnchor}
+ * 的 `point2d` 同帧）；该朝向看不见这个零件时为 `null`。引线布局判「标号或引线压到
+ * 别的零件」需要逐零件占位，不能用所有零件合并后的视图包围盒。
+ */
+export type StructureManifestPart = {
+  /** 零件在渲染请求的模型列表中的下标（与 `anchors[].model` 同一口径）。 */
+  index: number
+  /** 模型 3D 包围盒 `[x, y, z, xLength, yLength, zLength]`（毫米）。 */
+  bbox3d: number[]
+  /** 零件体积（模型单位的三次方）。 */
+  volume: number
+  /** 该视图下的投影占位；该朝向看不见时为 `null`。 */
+  bounds: number[] | null
+}
+
 /** manifest 中单个视图条目（`kind` 区分普通投影视图与局部放大视图）。 */
 export type StructureManifestView = {
   name: string
@@ -44,6 +62,12 @@ export type StructureManifestView = {
   path: string
   bbox: number[]
   anchors: StructureManifestAnchor[]
+  /** 每零件的投影占位；旧版 manifest 无此字段（局部放大视图恒为空数组）。 */
+  parts?: StructureManifestPart[]
+  /** 标号放置的降级说明（找不到不压盖的位置等）；旧版 manifest 无此字段。 */
+  warnings?: string[]
+  /** 该视图是否为分解图（逐件 HLR + 沿装配轴排布）；旧版 manifest 无此字段。 */
+  exploded?: boolean
   /** 放大视图的基视图名（仅 `kind='detail'`）。 */
   base?: string
   /** 放大视图的窗口圆心（模型 3D 坐标，仅 `kind='detail'`）。 */
@@ -83,8 +107,11 @@ export type StructureFigureView = {
 export type StructureCalloutInput = {
   /** 参考标号（阿拉伯数字字符串）。 */
   numeral: string
-  /** 锚定的模型 3D 坐标（毫米）。 */
-  point3d: [number, number, number]
+  /**
+   * 锚定的模型 3D 坐标（毫米）。省略时由渲染脚本在该零件的真实顶点里自动选一个
+   * 投影后离零件轮廓中心最远的点（单模型默认归属零件 0，装配体须给 `model`）。
+   */
+  point3d?: [number, number, number]
   /** 可选部件名称（写入标号表/manifest，不进图面像素）。 */
   label?: string
   /** 该件号所属零件在输入模型列表中的下标（0 起）；给定时渲染脚本核对锚点确实落在该零件上。 */
@@ -124,6 +151,11 @@ export type GenerateStructureFigureInput = {
   line_width_mm?: number
   /** 隐藏线线型：`solid`（缺省，FreeCAD 原始实线）或 `dashed`。 */
   hidden_line_style?: StructureHiddenLineStyle
+  /**
+   * 分解图：沿装配轴把零件拉开成一维串后逐件投影（零件之间互不遮挡）。
+   * 需要 `model_paths` 传至少两个零件；视图视线不得与装配轴近乎平行。
+   */
+  exploded?: boolean
   /** 件号锚定（可为空）。 */
   callouts?: StructureCalloutInput[]
   /** 局部放大视图（可为空）：把某个基视图上的一块圆形窗口放大成一张独立视图。 */
@@ -145,12 +177,31 @@ export type GenerateStructureFigureInput = {
   persist_index?: boolean
 }
 
+/**
+ * 单个模型的几何事实摘要（装配体为它的全部零件）。
+ *
+ * 由渲染脚本在同一次投影里量出，供调用方判断「哪个零件叫什么、该标几号」，
+ * 不必再手填 `callouts[].point3d`。`viewBounds` 与 `modelPaths` 同序，是引线布局
+ * 判「标号或引线压到别的零件」的输入。只在本次调用只出一张图时给出：目录批量
+ * 逐模型各出一图，摘要只描述其中一张，给出会让调用方以为它覆盖全部。
+ */
+export type StructureAssembly = {
+  /** 模型文件绝对路径，顺序即 `callouts[].model` 的下标口径。 */
+  modelPaths: string[]
+  /** 每零件的尺寸与体积（与视图无关）。 */
+  parts: { index: number; path: string; bbox3d: number[]; volume: number }[]
+  /** 视图名 → 该视图下每零件的投影占位（与 `parts` 同序；`null` 表示该朝向看不见）。 */
+  viewBounds: Record<string, (number[] | null)[]>
+}
+
 /** 工具输出（与 schema 一致）。 */
 export type GenerateStructureFigureOutput = {
   /** 全部视图 SVG 路径（工作区相对，跨批量图合并）。 */
   paths: string[]
   /** 逐图结果（单模型一条；批量多条）。 */
   figures: StructureFigureView[]
+  /** 几何事实摘要（单模型或装配体给出；目录批量出多图时不给）。 */
+  assembly?: StructureAssembly
   /** 附图说明文字（「图N是…的结构示意图」，可直接落说明书）。 */
   figureDescription: string
   /** 落版与尺寸核算结果（给定 target_office 时）。 */
@@ -187,6 +238,12 @@ export type GenerateStructureFigureDeps = {
    * 缺省只把发现折成警告。
    */
   failOnRenderFindings?: boolean
+  /**
+   * 版面利用率内控下限（0–1，Config.figureMinSheetFillRatio）：渲染复核按
+   * 「内容包围盒 ÷ 该图自己的画布」判，低于下限只记一条提示级发现
+   * （`sheet-underfill`），不阻断交付。缺省或 0 关闭该判据。
+   */
+  minSheetFillRatio?: number
   /**
    * 可选文字转路径（Config.figureTextToPath 注入的 port）：把每个视图 SVG 的 `<text>`
    * 换成轮廓路径。Config 未开启时缺省，视为不转换。

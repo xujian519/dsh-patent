@@ -31,6 +31,7 @@ export type RenderCheckKind =
   | 'figure-hierarchy'
   | 'font-below-minimum'
   | 'ink-outside-canvas'
+  | 'sheet-underfill'
   | 'not-measured'
 
 /** 图面墨迹的包围盒（毫米，根坐标系）。 */
@@ -51,6 +52,14 @@ export type RenderCheckFinding = {
   readonly check: RenderCheckKind
   /** 模型可见的一句话结论。 */
   readonly message: string
+  /**
+   * 提示级：报告但不当成图面缺陷阻断交付。
+   *
+   * 版面利用率属于这一类——阈值随图型与落版幅面变化，低于阈值只说明这张图
+   * 可能「撑不满纸面」，不说明它画错了；断线、穿字、压叠才是缺陷。缺省为
+   * 阻断级（undefined 即阻断）。
+   */
+  readonly advisory?: boolean
 }
 
 /** 复核报告：量测值 + 发现的问题。 */
@@ -815,13 +824,14 @@ export function measureInkBounds(svg: string, options: { maxBytes?: number } = {
 }
 
 /**
- * 阻断级发现：除 `not-measured` 以外的全部 findings。`not-measured` 是诚实降级
- * （声明哪些事实没量测），不是图面缺陷，不阻断交付。
+ * 阻断级发现：除 `not-measured` 与提示级（`advisory`）以外的全部 findings。
+ * `not-measured` 是诚实降级（声明哪些事实没量测），提示级是随图型与幅面变化的
+ * 软指标；两者都不是图面缺陷，不阻断交付。
  * @param report - 复核报告。
  * @returns 应阻断交付的发现。
  */
 export function blockingFindings(report: RenderCheckReport): RenderCheckFinding[] {
-  return report.findings.filter(finding => finding.check !== 'not-measured')
+  return report.findings.filter(finding => finding.check !== 'not-measured' && finding.advisory !== true)
 }
 
 /**
@@ -836,13 +846,19 @@ export function blockingFindings(report: RenderCheckReport): RenderCheckFinding[
  * 各自成组，与标注存在前的判定一致。
  * @param svg - 完整 SVG 文本。
  * @param options - 安全校验上限（字节）；`textClearanceMm` 为标号净距（毫米，默认
- * {@link DEFAULT_TEXT_CLEARANCE_MM}，`0` 关闭该判据）。
+ * {@link DEFAULT_TEXT_CLEARANCE_MM}，`0` 关闭该判据）；`minSheetFillRatio` 为版面
+ * 利用率下限（0–1，省略或 `0` 关闭该判据，命中只报提示级发现）。
  * @returns 量测值与发现的问题。
  * @throws SvgAnnotateError 输入未通过 {@link assertSafeSvg} 时。
  */
 export function checkFigureRendering(
   svg: string,
-  options: { maxBytes?: number; textClearanceMm?: number; minFontMm?: number } = {},
+  options: {
+    maxBytes?: number
+    textClearanceMm?: number
+    minFontMm?: number
+    minSheetFillRatio?: number
+  } = {},
 ): RenderCheckReport {
   assertSafeSvg(svg, options.maxBytes ?? DEFAULT_SVG_MAX_BYTES)
   const scan = scanSvg(svg)
@@ -933,6 +949,27 @@ export function checkFigureRendering(
   for (const item of drawn) {
     const key = Math.round(orientation(item.segment) * 10) / 10
     orientationCounts.set(key, (orientationCounts.get(key) ?? 0) + 1)
+  }
+
+  // 版面利用率：只在调用方给了下限、且画布尺寸可换算成毫米时才判。分母是**这张图
+  // 自己的画布**，不是与金样或标准图对比——两边的画布来源不同（生成图是落版纸面、
+  // 标准图是从附图页裁过的），跨图比它没有意义。
+  const minSheetFillRatio = options.minSheetFillRatio
+  if (minSheetFillRatio !== undefined && minSheetFillRatio > 0
+    && scan.widthMm !== undefined && scan.heightMm !== undefined) {
+    const bounds = inkBounds(scan)
+    if (bounds !== undefined) {
+      const canvasArea = scan.widthMm * scan.heightMm
+      const contentArea = (bounds.maxX - bounds.minX) * (bounds.maxY - bounds.minY)
+      const ratio = canvasArea > 0 ? contentArea / canvasArea : 0
+      if (ratio < minSheetFillRatio) {
+        findings.push({
+          check: 'sheet-underfill',
+          advisory: true,
+          message: `图面内容只占画布的 ${(ratio * 100).toFixed(1)}%（下限 ${(minSheetFillRatio * 100).toFixed(0)}%）：图形可能撑不满纸面，缩小复制后细节更难辨认；调整投影比例或改用更紧凑的视图`,
+        })
+      }
+    }
   }
 
   return {

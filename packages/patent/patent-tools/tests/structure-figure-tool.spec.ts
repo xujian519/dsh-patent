@@ -10,6 +10,7 @@ import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { StructureRenderOutcome, StructureRenderSpec } from '../src/figure/freecad-renderer.ts'
 import { STRUCTURE_MANIFEST_FILENAME } from '../src/figure/freecad-structure-script.ts'
 import { createGenerateStructureFigureTool, STRUCTURE_FIGURE_MODEL_USED } from '../src/tool/generate-structure-figure.ts'
+import { structureAssembly } from '../src/tool/structure-render.ts'
 import type { GenerateStructureFigureInput } from '../src/tool/generate-structure-figure.ts'
 import type { FigureIndexEntry } from '../src/figure/index-store.ts'
 import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
@@ -45,7 +46,16 @@ function writeModel(dir: string, name: string): string {
   return path
 }
 
-type RenderOpts = { unsafe?: boolean; emptyViews?: boolean; svg?: string }
+type RenderOpts = {
+  unsafe?: boolean
+  emptyViews?: boolean
+  svg?: string
+  omitParts?: boolean
+  /** 逐零件几何事实的覆盖值：喂出 manifest 读回的每条 fail-loud 分支。 */
+  partsOverride?: unknown
+  /** 视图级 warnings 的覆盖值：脚本的标号降级说明，或畸形类型。 */
+  viewWarnings?: unknown
+}
 
 type MockRenderer = { render: (spec: StructureRenderSpec) => Promise<StructureRenderOutcome>; calls: StructureRenderSpec[] }
 
@@ -60,6 +70,17 @@ function okRenderer(opts: RenderOpts = {}): MockRenderer {
       const svg = opts.svg ?? (opts.unsafe
         ? '<!ENTITY x SYSTEM "file:///etc/passwd"><svg xmlns="http://www.w3.org/2000/svg"></svg>'
         : '<svg xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke="#000000"><path d="M0 0 L10 10"/></g></svg>')
+      // 脚本按模型列表逐零件量出投影占位；mock 与之一致（每个零件一个单位方框）。
+      const parts = opts.omitParts === true
+        ? undefined
+        : opts.partsOverride === undefined
+          ? spec.modelPaths.map((_, index) => ({
+            index,
+            bbox3d: [0, 0, 0, 10, 10, 10],
+            volume: 1000,
+            bounds: [0, 0, 10, 10],
+          }))
+          : opts.partsOverride
       const views = spec.views.map((name, order) => {
         const path = join(spec.outputDir, `fig${spec.figureNumber}_${name}.svg`)
         writeFileSync(path, svg)
@@ -74,9 +95,12 @@ function okRenderer(opts: RenderOpts = {}): MockRenderer {
             label: c.label ?? '',
             model: c.model ?? null,
             modelPath: c.model === undefined ? null : (spec.modelPaths[c.model] ?? null),
-            point3d: [...c.point3d],
+            point3d: c.point3d === undefined ? [] : [...c.point3d],
             point2d: [0, 0],
           })),
+          // undefined 在 JSON.stringify 时被丢弃，正好模拟没有该字段的旧版 manifest。
+          parts,
+          warnings: opts.viewWarnings,
         }
       })
       // 放大视图：脚本产出的一等视图条目（kind='detail' + 窗口元数据）。
@@ -91,6 +115,7 @@ function okRenderer(opts: RenderOpts = {}): MockRenderer {
           path,
           bbox: [0, 0, 10, 10],
           anchors: [],
+          parts: [],
           base: detail.base,
           center3d: [...detail.center],
           radiusMm: detail.radiusMm,
@@ -276,6 +301,28 @@ describe('generate_structure_figure success', () => {
     }
   })
 
+  it('省略 point3d：单模型可省 model，锚点交给脚本自动选', async () => {
+    const dir = tempDir()
+    const model = writeModel(dir, 'bracket.step')
+    try {
+      const { render, calls } = okRenderer()
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: join(dir, 'figs'), cwd: dir })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'generate_structure_figure', {
+        model_path: model,
+        views: ['iso'],
+        // 不给坐标、也不给归属：单模型的唯一零件就是默认归属，锚点由脚本在顶点里选。
+        callouts: [{ numeral: '1', label: '底板' }],
+      }, 'a1') as { isError: boolean }
+      expect(result.isError).toBe(false)
+      expect(calls[0]?.callouts).toHaveLength(1)
+      expect(calls[0]?.callouts[0]?.point3d).toBeUndefined()
+      expect(calls[0]?.callouts[0]?.label).toBe('底板')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('批量目录：每个模型一图，图号自 base 递增', async () => {
     const dir = tempDir()
     const modelDir = join(dir, 'models')
@@ -292,8 +339,10 @@ describe('generate_structure_figure success', () => {
         model_path: modelDir,
         views: ['iso'],
         figure_number: 3,
-      }, 's2') as { isError: boolean; value: { paths: string[]; figures: { figureNumber: number }[]; figureDescription: string } }
+      }, 's2') as { isError: boolean; value: { paths: string[]; figures: { figureNumber: number }[]; figureDescription: string; assembly?: unknown } }
       expect(result.isError).toBe(false)
+      // 摘要只描述一张图，多图时给出会让调用方以为它覆盖全部，故不给。
+      expect(result.value.assembly).toBeUndefined()
       expect(result.value.figures.map(f => f.figureNumber)).toEqual([3, 4])
       expect(calls.map(c => c.figureNumber)).toEqual([3, 4])
       expect(result.value.paths).toEqual(['figs/fig3/fig3_iso.svg', 'figs/fig4/fig4_iso.svg'])
@@ -649,6 +698,112 @@ describe('generate_structure_figure render outcome mapping', () => {
     }
   })
 
+  it('manifest 的逐零件几何事实非法时报 tool_execution_failed', async () => {
+    const dir = tempDir()
+    const model = writeModel(dir, 'a.step')
+    const good = { index: 0, bbox3d: [0, 0, 0, 10, 10, 10], volume: 1000, bounds: [0, 0, 10, 10] }
+    // 这些值都会让下游把件号或占位算到错误位置，故在读回 manifest 处 fail-loud。
+    const cases: readonly (readonly [string, unknown])[] = [
+      ['parts 不是数组', 'not-an-array'],
+      ['index 不是整数', [{ ...good, index: 1.5 }]],
+      ['index 为负', [{ ...good, index: -1 }]],
+      ['index 越界', [{ ...good, index: 99 }]],
+      ['bbox3d 不是数组', [{ ...good, bbox3d: 6 }]],
+      ['bbox3d 长度不是六', [{ ...good, bbox3d: [0, 0, 0] }]],
+      ['bbox3d 含非有限数', [{ ...good, bbox3d: [0, 0, 0, 10, 10, Number.POSITIVE_INFINITY] }]],
+      ['volume 不是有限数', [{ ...good, volume: Number.NaN }]],
+      ['bounds 不是数组', [{ ...good, bounds: 4 }]],
+      ['bounds 长度不是四', [{ ...good, bounds: [0, 0, 0] }]],
+      ['bounds 含非有限数', [{ ...good, bounds: [0, 0, Number.NaN, 10] }]],
+    ]
+    try {
+      for (const [label, parts] of cases) {
+        const { render } = okRenderer({ partsOverride: parts })
+        const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: dir, cwd: dir })
+        await expect(tool.execute({ model_path: model, views: ['iso'] }, exec), label)
+          .rejects.toMatchObject({ code: 'tool_execution_failed' })
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('零件在该朝向看不见时 bounds 为 null，摘要原样带出', async () => {
+    const dir = tempDir()
+    const model = writeModel(dir, 'a.step')
+    try {
+      const { render } = okRenderer({
+        partsOverride: [{ index: 0, bbox3d: [0, 0, 0, 10, 10, 10], volume: 1000, bounds: null }],
+      })
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: join(dir, 'figs'), cwd: dir })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'generate_structure_figure', { model_path: model, views: ['iso'] }, 'n1') as {
+        isError: boolean
+        value: { assembly?: { viewBounds: Record<string, (number[] | null)[]> } }
+      }
+      expect(result.isError).toBe(false)
+      // null 表示该朝向看不见这个零件，与零面积框不是一回事。
+      expect(result.value.assembly?.viewBounds.iso).toEqual([null])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('manifest 视图的 warnings 不是字符串数组时报 tool_execution_failed', async () => {
+    const dir = tempDir()
+    const model = writeModel(dir, 'a.step')
+    try {
+      const { render } = okRenderer({ viewWarnings: 'not-an-array' })
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: dir, cwd: dir })
+      await expect(tool.execute({ model_path: model, views: ['iso'] }, exec))
+        .rejects.toMatchObject({ code: 'tool_execution_failed' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('视图级标号降级说明并入工具警告，注明哪张图的哪个视图', async () => {
+    const dir = tempDir()
+    const model = writeModel(dir, 'a.step')
+    try {
+      const { render } = okRenderer({ viewWarnings: ['件号 1 找不到不压盖标号的位置'] })
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: dir, cwd: dir })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'generate_structure_figure', { model_path: model, views: ['iso'] }, 'n2') as {
+        isError: boolean
+        value: { warnings: string[] }
+      }
+      expect(result.isError).toBe(false)
+      // 标号还在图上、但位置是退路：这句话必须到调用方手上，否则「有标号」会被当成「位置合规」。
+      expect(result.value.warnings).toContain('图1 iso：件号 1 找不到不压盖标号的位置')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('版面利用率下限开启时提示级发现进警告而不阻断交付', async () => {
+    const dir = tempDir()
+    const model = writeModel(dir, 'a.step')
+    // 内容只占 A4 幅面一小角：低于下限，但图本身没有画错。
+    const sparse = '<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm" viewBox="0 0 210 297">'
+      + '<g fill="none" stroke="#000000"><rect x="20" y="20" width="10" height="10" stroke-width="0.35"/></g></svg>'
+    try {
+      const { render } = okRenderer({ svg: sparse })
+      const tool = createGenerateStructureFigureTool({
+        render, enabled: true, outputDir: dir, cwd: dir, minSheetFillRatio: 0.5, failOnRenderFindings: true,
+      })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'generate_structure_figure', { model_path: model, views: ['iso'] }, 'n3') as {
+        isError: boolean
+        value: { warnings: string[] }
+      }
+      expect(result.isError).toBe(false)
+      expect(result.value.warnings.some(warning => warning.includes('撑不满纸面'))).toBe(true)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('视图 SVG 含不安全结构时报 tool_execution_failed', async () => {
     const dir = tempDir()
     const model = writeModel(dir, 'a.step')
@@ -944,6 +1099,90 @@ describe('generate_structure_figure 装配体（model_paths）', () => {
     }
   })
 
+  it('输出装配体几何事实：每零件 3D 尺寸与各视图投影占位', async () => {
+    const dir = tempDir()
+    const plate = writeModel(dir, 'plate.step')
+    const pin = writeModel(dir, 'pin.step')
+    try {
+      const { render } = okRenderer()
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: join(dir, 'figs'), cwd: dir })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'generate_structure_figure', {
+        model_paths: [plate, pin],
+        views: ['iso', 'front'],
+      }, 'a1') as {
+        isError: boolean
+        value: {
+          assembly?: {
+            modelPaths: string[]
+            parts: { index: number; path: string; bbox3d: number[]; volume: number }[]
+            viewBounds: Record<string, (number[] | null)[]>
+          }
+        }
+      }
+      expect(result.isError).toBe(false)
+      // 几何事实按 modelPaths 顺序给出，path 与下标一一对应（调用方据此把件号绑到零件）。
+      expect(result.value.assembly?.modelPaths).toEqual([plate, pin])
+      expect(result.value.assembly?.parts).toEqual([
+        { index: 0, path: plate, bbox3d: [0, 0, 0, 10, 10, 10], volume: 1000 },
+        { index: 1, path: pin, bbox3d: [0, 0, 0, 10, 10, 10], volume: 1000 },
+      ])
+      // 投影占位按视图分开：同一零件在不同朝向下的占位不同，不能共用一个框。
+      expect(Object.keys(result.value.assembly?.viewBounds ?? {})).toEqual(['iso', 'front'])
+      expect(result.value.assembly?.viewBounds.iso).toEqual([[0, 0, 10, 10], [0, 0, 10, 10]])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('旧版 manifest 无 parts 字段：不给出 assembly，图仍照常产出', async () => {
+    const dir = tempDir()
+    const plate = writeModel(dir, 'plate.step')
+    try {
+      const { render } = okRenderer({ omitParts: true })
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: join(dir, 'figs'), cwd: dir })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'generate_structure_figure', {
+        model_paths: [plate],
+        views: ['iso'],
+      }, 'a1') as { isError: boolean; value: { assembly?: unknown; paths: string[] } }
+      expect(result.isError).toBe(false)
+      expect(result.value.assembly).toBeUndefined()
+      expect(result.value.paths).toEqual(['figs/fig1/fig1_iso.svg'])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('分解图把 exploded 交给渲染器；单模型与 details 同时给都当场拒绝', async () => {
+    const dir = tempDir()
+    const plate = writeModel(dir, 'plate.step')
+    const pin = writeModel(dir, 'pin.step')
+    try {
+      const { render, calls } = okRenderer()
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: join(dir, 'figs'), cwd: dir })
+      // 装配体 + exploded：标记原样下发，渲染器据此走逐件投影路径。
+      await execute(await ctxWith(tool), 'generate_structure_figure', {
+        model_paths: [plate, pin],
+        views: ['front'],
+        exploded: true,
+      }, 'a1')
+      expect(calls[0]?.exploded).toBe(true)
+      // 单模型没有可分解的装配关系。
+      await expect(tool.execute({ model_path: plate, views: ['front'], exploded: true }, exec))
+        .rejects.toMatchObject({ code: 'invalid_tool_input' })
+      // 放大窗口挂在单一基视图上，而分解图每个零件各有一个视图。
+      await expect(tool.execute({
+        model_paths: [plate, pin],
+        views: ['front'],
+        exploded: true,
+        details: [{ base: 'front', center: [0, 0, 10], radius_mm: 5 }],
+      }, exec)).rejects.toMatchObject({ code: 'invalid_tool_input' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('装配体下件号必须写明归属：缺 model 报错且不落到渲染器', async () => {
     const dir = tempDir()
     const plate = writeModel(dir, 'plate.step')
@@ -1103,5 +1342,12 @@ describe('generate_structure_figure 渲染复核门禁', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+})
+
+describe('structureAssembly', () => {
+  it('没有图时不给摘要', () => {
+    // 空输入只有一个出口：摘要无从描述任何零件。
+    expect(structureAssembly([])).toBeUndefined()
   })
 })

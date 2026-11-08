@@ -168,6 +168,12 @@ describe('buildStructureScript', () => {
     expect(payload.callouts).toEqual([{ numeral: '102', point3d: [1, 2, 3], label: '', model: null }])
   })
 
+  it('callout 省略 point3d 时 payload 记为 null（锚点交给脚本自动选）', () => {
+    const script = buildStructureScript(params({ callouts: [{ numeral: '103', label: '底板', model: 0 }] }))
+    const payload = extractPayload(script)
+    expect(payload.callouts).toEqual([{ numeral: '103', point3d: null, label: '底板', model: 0 }])
+  })
+
   it('局部放大：payload 带窗口、文件名按序号，脚本用实测属性接线', () => {
     const script = buildStructureScript(params({
       views: ['front'],
@@ -296,10 +302,31 @@ describe('结构线稿的标号引线', () => {
       callouts: [{ numeral: '102', point3d: [10, 20, 30], label: '底板' }],
     }))
     expect(script).toContain('data-dsh-role="leader"')
-    expect(script).toContain('box_x, box_y, half_w, half_h = numeral_box(text_x, text_y, callout["numeral"])')
-    expect(script).toContain('end_x, end_y = leader_end(box_x, box_y, half_w, half_h, unit_x, unit_y)')
+    expect(script).toContain('end_x, end_y = leader_end(box_x, box_y, half_w, half_h, dir_x, dir_y)')
     // 旧写法把数字锚点直接当引线终点，必然穿过自己的标号。
     expect(script).not.toContain('% (fmt(anchor_x), fmt(anchor_y), fmt(text_x), fmt(text_y), fmt(STROKE_WIDTH))')
+  })
+
+  it('标号按候选位选择：绕首选方向每 30° 一圈、三档距离，压盖则换下一个', () => {
+    const script = buildStructureScript(params())
+    expect(script).toContain('CALLOUT_DIRECTION_STEPS = [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180]')
+    expect(script).toContain('CALLOUT_DISTANCE_SCALES = [1.0, 1.6, 2.4]')
+    expect(script).toContain('def choose_callout_position(')
+    // 首选方向取自所属零件的投影中心，而不是画布中心：零件位于图面中央时
+    // 后者是任意方向，标号会被丢进图形内部。
+    expect(script).toContain('out_x = anchor_x - part_cx')
+    expect(script).not.toContain('length = math.hypot(anchor_x, anchor_y)')
+    // 压盖判定只认别的零件与已放标号；自身零件的占位不算。
+    expect(script).toContain('if part_index == own_part or part_rect is None:')
+  })
+
+  it('装配轴以协方差列作幂迭代种子，避免与固定种子正交时静默退化', () => {
+    const script = buildStructureScript(params())
+    expect(script).toContain('seed_column = max(')
+    expect(script).toContain('vector = tuple(component / seed_norm for component in seed)')
+    // 固定 (1,1,1) 种子会在零件沿 (1,-1,0) 排布时与主轴正交：第一步塌成零向量，
+    // 函数返回一个与真实主轴垂直的方向且不报错。
+    expect(script).not.toContain('vector = (1.0, 1.0, 1.0)')
   })
 
   it('字宽比例与复核侧 glyph-box 一致，画布按真实占位框外扩', () => {

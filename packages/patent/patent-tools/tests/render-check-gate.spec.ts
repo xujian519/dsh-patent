@@ -77,3 +77,25 @@ describe('gateRenderedSvg', () => {
     expect(warnings[0]).toContain('渲染复核被跳过')
   })
 })
+
+describe('gateRenderedSvg 版面利用率', () => {
+  it('提示级发现不阻断 strict，只进警告', () => withSvg(CLEAN, async (path, warnings) => {
+    // 干净图但内容只占画布约三分之一：strict 门禁仍须放行——撑不满纸面不是画错。
+    await expect(gateRenderedSvg({
+      path,
+      warnings,
+      clearanceMm: 1.5,
+      failOnFindings: true,
+      tool: 'generate_structure_figure',
+      minSheetFillRatio: 0.9,
+    })).resolves.toBeUndefined()
+    expect(warnings.some(warning => warning.includes('撑不满纸面'))).toBe(true)
+  }))
+
+  it('不给下限时完全不判', () => withSvg(CLEAN, async (path, warnings) => {
+    await gateRenderedSvg({
+      path, warnings, clearanceMm: 1.5, failOnFindings: true, tool: 'generate_structure_figure',
+    })
+    expect(warnings).toEqual([])
+  }))
+})

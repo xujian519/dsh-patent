@@ -377,7 +377,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- structure-baseline:start -->
 | 文件 | 裁定 | 上限 | 理由 |
 | --- | --- | ---: | --- |
-| `packages/patent/patent-tools/src/figure/render-check-findings.ts` | 接受 | 951 | 纯几何判据：30+ 个小谓词 + 109 行编排，无 I/O，无第二消费方 |
+| `packages/patent/patent-tools/src/figure/render-check-findings.ts` | 接受 | 988 | 纯几何判据：30+ 个小谓词 + 109 行编排，无 I/O，无第二消费方。2026-11-08 版面利用率判据（`sheet-underfill`，内容包围盒占该图画布比）加了 37 行，判据本身只读已量测的墨迹包围盒与画布尺寸 |
 | `packages/patent/patent-tools/src/figure/section-diagram.ts` | 接受 | 918 | 纯几何绘制：146 行主绘制 + 小工具，与 `leader-line` 同类 |
 | `packages/patent/patent-tools/src/figure/leader-line.ts` | 接受 | 908 | 纯几何：稳定在 906→908，无状态、无 I/O |
 | `packages/patent/patent-tools/src/tool/patent-workflow-run.ts` | 接受 | 1028 | 单一工具入口同时承载 manifest 与领域图两条执行路径，输入 schema、恢复/审批接线与解析器共享同一输出契约；文件内无 >150 行函数，拆分会把 schema 与分派分离而不减少分支。2026-11-04 新增审批门现场决策接线（运行级 handler 注册、`approveStageIds` 拒绝与中断文案）约 85 行，仍无新的长函数 |
@@ -406,6 +406,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-08 版面利用率提示判据**:`render-check-findings.ts` 由 951 升至 **988** 行并同步重定接受上限;`structure.long-functions`、`structure.large-files`、`structure.patent-large-files` 与 `lint.v8-ignore` 均不变。新增 `sheet-underfill` 判据(内容包围盒面积 ÷ 该图自身画布面积,低于 `Config.figureMinSheetFillRatio` 时报警)约 37 行,只读已量测的墨迹包围盒与画布尺寸,不新增遍历;`RenderCheckFinding` 同时增加 `advisory` 标记,`blockingFindings` 据此把它排除在阻断集之外,故 strict 门禁不会因软指标失败。
 - **2026-11-08 结构线稿分解图**:`freecad-structure-script.ts` 由 985 升至 **1217** 行并同步重定接受上限;`structure.long-functions`、`structure.large-files`、`structure.patent-large-files` 与 `lint.v8-ignore` 均不变。新增 `principal_axis`(包围盒中心点云的幂迭代主轴)、`exploded_part_offsets`(按各零件沿轴尺寸加中位间隙逐段累加,整串居中)、`build_exploded_view_svg`(逐件 `DrawViewPart` + 平移拼接),各 <50 行;`callout_fragments` 改为接收投影函数,使总装图与分解图共用同一套标号放置,`part_metadata` 多收一个可选的排布后矩形。分解图与 `details` 互斥:放大窗口按模型坐标挂在单一基视图上,而分解图每个零件各有一个视图。
 - **2026-11-08 结构线稿标号候选布局**:`freecad-structure-script.ts` 由 884 升至 **985** 行并同步重定接受上限;`structure.long-functions`、`structure.large-files`、`structure.patent-large-files` 与 `lint.v8-ignore` 均不变。新增 `choose_callout_position`(十二方向 × 三档距离的候选扫描)与三个小辅助(`rotate_direction`/`rects_overlap`/`part_rects_in_canvas`),各 <45 行;首选方向从画布中心改到所属零件投影中心,`callout_fragments` 因此多收一个 `part_bounds` 参数并多返回一个警告列表,该列表经 manifest 视图条目的 `warnings` 回到工具层。
 - **2026-11-08 结构线稿每零件投影占位**:`freecad-structure-script.ts` 由 762 升至 **826** 行并新增接受行;`structure.large-files` 由 89 升至 **90**、`structure.patent-large-files` 由 9 升至 **10**。改动是 `projected_bbox_center` 扩为 `projected_bounds`(一次逐边取样同时产出整体与逐零件包围盒)并新增 `part_metadata`(把 3D 包围盒、体积与画布帧投影占位写进 manifest),两者都在内嵌 Python 模板里,与 payload 字段逐名对应,不另立文件;`structure.long-functions` 保持 **184**——装配体输出 schema 抽成模块级 `ASSEMBLY_SCHEMA`,`createGenerateStructureFigureTool` 回落到 150 行以下;`lint.v8-ignore` 由 1314 升至 **1315**,新增的一条是 `structureAssembly` 里「manifest 校验保证下标落在 modelPaths 内」的取值守卫;其余计数不变。

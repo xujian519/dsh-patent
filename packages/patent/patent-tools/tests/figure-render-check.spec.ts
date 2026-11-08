@@ -1151,3 +1151,25 @@ describe('节点/边语义分组', () => {
     expect(crossedByOther.findings.map(finding => finding.check)).toEqual(['text-crossed-by-line'])
   })
 })
+
+describe('checkFigureRendering 版面利用率', () => {
+  it('内容只占画布一角时报 sheet-underfill，且不进阻断集', () => {
+    const sparse = svg('<rect x="50" y="15" width="10" height="10" stroke-width="0.25"/>')
+    const report = checkFigureRendering(sparse, { minSheetFillRatio: 0.3 })
+    expect(report.findings.map(finding => finding.check)).toEqual(['sheet-underfill'])
+    expect(report.findings[0]?.advisory).toBe(true)
+    // 提示级是软指标：正文没画错，只是可能撑不满纸面，不阻断交付。
+    expect(blockingFindings(report)).toEqual([])
+  })
+
+  it('内容占满画布时不报', () => {
+    const full = svg('<rect x="0" y="0" width="120" height="40" stroke-width="0.25"/>')
+    expect(checkFigureRendering(full, { minSheetFillRatio: 0.3 }).findings).toEqual([])
+  })
+
+  it('不给下限或给 0 时不判：紧致片段画布本就贴着内容，该判据没有信息量', () => {
+    const sparse = svg('<rect x="50" y="15" width="10" height="10" stroke-width="0.25"/>')
+    expect(checkFigureRendering(sparse).findings).toEqual([])
+    expect(checkFigureRendering(sparse, { minSheetFillRatio: 0 }).findings).toEqual([])
+  })
+})

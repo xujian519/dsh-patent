@@ -23,6 +23,11 @@ type RenderCheckGateArgs = {
   clearanceMm: number
   /** 命中阻断级发现时是否抛错（Config.figureFailOnRenderFindings）。 */
   failOnFindings: boolean
+  /**
+   * 版面利用率下限（0–1，Config.figureMinSheetFillRatio）；缺省或 0 不判。
+   * 命中只产出提示级发现，不参与 `failOnFindings` 的阻断判定。
+   */
+  minSheetFillRatio?: number
   /** 错误归属的工具名（PatentToolError.details.tool）。 */
   tool: 'generate_patent_figure' | 'generate_structure_figure'
   /** 报告前缀（如「面板 B 」「图2 」），用于多面板/多视图时指明是哪一个。 */
@@ -56,6 +61,7 @@ export async function gateRenderedSvg(args: RenderCheckGateArgs): Promise<void> 
       maxBytes: Buffer.byteLength(svg, 'utf8'),
       // 显式传 0：省略该参数会退回复核的 1.5 默认值，等于关不掉净距。
       textClearanceMm: args.clearanceMm,
+      ...(args.minSheetFillRatio === undefined ? {} : { minSheetFillRatio: args.minSheetFillRatio }),
     })
     findings = blockingFindings(report)
     args.warnings.push(...report.findings.map(finding => `渲染复核：${finding.message}`))

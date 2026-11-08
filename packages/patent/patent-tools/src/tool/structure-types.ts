@@ -238,6 +238,12 @@ export type GenerateStructureFigureDeps = {
    */
   failOnRenderFindings?: boolean
   /**
+   * 版面利用率内控下限（0–1，Config.figureMinSheetFillRatio）：渲染复核按
+   * 「内容包围盒 ÷ 该图自己的画布」判，低于下限只记一条提示级发现
+   * （`sheet-underfill`），不阻断交付。缺省或 0 关闭该判据。
+   */
+  minSheetFillRatio?: number
+  /**
    * 可选文字转路径（Config.figureTextToPath 注入的 port）：把每个视图 SVG 的 `<text>`
    * 换成轮廓路径。Config 未开启时缺省，视为不转换。
    */

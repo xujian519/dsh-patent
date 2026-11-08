@@ -26,6 +26,8 @@ Status: implemented
 
 **`exploded` 切成逐件消隐并沿装配轴排布。**每个零件一个 `DrawViewPart`、`Source` 只挂它自己，故消隐逐件进行、零件之间不再互相遮挡——这与总装路径（全部零件共用一个 `Source`、一次消隐）正好相反。轴取各零件 `BoundBox.Center` 点云的第一主成分（幂迭代）；`Part.Shape` 没有 `CenterOfMass`（实测 `AttributeError`），而包围盒中心在沿轴排序上等效。目标位置按各零件自身沿轴尺寸加「1.2 × 中位尺寸」的间隙逐段累加，整串再移回原点居中——只用 `rank × gap` 会假设没有零件比间隙还宽，大件仍会互相压叠。视线与轴的投影长度不足 0.2 毫米时渲染当场失败，而不是把所有零件叠在一个点上。
 
+**版面利用率按图自身画布计算，且只作提示。**渲染复核用内容包围盒面积比该图自己的画布面积，`Config.figureMinSheetFillRatio` 给出下限时低于它报 `sheet-underfill`。该发现带 `advisory: true`，`blockingFindings` 会把它滤掉：图稀疏不等于画错，`figureFailOnRenderFindings` 不能把一个软比例变成渲染失败。分母永远是这张图自己的画布——落版好的 A4 页与从授权 PDF 裁出的附图页画布不同，跨两者比这个比值对哪边都不说明问题，所以它从不与参考图对比。下限默认关闭：紧致片段的画布本就贴着内容（比值接近 1，没有信号量）；把图落版到 A4 的部署可以打开它，先看分布再决定是否信任。
+
 **逐零件投影占位与视图包围盒在同一次取样里量出。**`projected_bounds` 每条边只离散化一次，同时累积紧致视图包围盒与逐零件包围盒；`part_metadata` 把每零件的 3D 包围盒、体积与该视图下的投影占位写进 manifest，工具再以 `assembly` 摘要给出同一份事实。两者都是画布帧坐标、与件号锚点同帧，该朝向看不见的零件记 `null`。合并后的单一视图框回答不了引线布局的问题——标号或引线会不会落到**别的零件**上——故逐零件占位在投影过程里量出，而不是事后从 SVG 反推：TechDraw 把所有零件画进同一个 `<g>`，事后无法恢复零件归属。
 
 **成功判定只看退出码加 manifest 存在。**`freecadcmd` 对 `~/Library/Preferences/FreeCAD` 与缓存写失败仅告警、非致命（STEP 载入/投影/导出均成功），且 macOS 下这些路径不随重定向的 HOME 迁移——其无害仅因为脚本把 `TransientDir` 自身锚定进输出目录，`TransientDir` 为空对模板拷贝是致命的。反过来，`freecadcmd` 吞掉未捕获的 Python 异常并以退出码 0 结束，故脚本包裹 `main()`，失败时 `traceback.print_exc()` + `sys.exit(1)`；没有这层包裹，失败的投影会看起来像成功。因此 stderr 文本绝不作为失败依据，只摘引进错误消息。
@@ -43,6 +45,7 @@ Status: implemented
 - **把自动锚点放在零件 3D 包围盒的角点。**拒绝：角点未必落在实体上，锚点要么被归属核验拒绝，要么让引线指向空白；真实顶点按定义就在几何上。
 - **用总装图那一次全局消隐画出分解图，事后把零件平移开。**拒绝：那次消隐已经处理了零件**之间**的遮挡，被邻居挡住的轮廓在片段里本就不存在，平移不可能把它们找回来。分解图需要的是从一开始就没有邻居参与消隐的轮廓。
 - **把整体包围盒的最长边当作装配轴。**拒绝：那是箱体自身的方向，不是零件的分布方向；一块宽而薄的支架沿厚度叠零件时会被沿错误的轴分解。
+- **把版面利用率与参考图或金样对比。**拒绝：两边的画布来自不同的裁剪——生成图落在纸面上，参考图从授权附图页裁出来——同一个比值在两侧含义不同。本仓早前的一次跨图比对得出过「生成图只用了 57% 幅面」的结论，那正是分母不同造成的假象。
 - **引线几何（与 `src/figure/leader-line.ts` 同批交付）：以节点 bbox 中位尺寸推导图面 scale。**实现期拒绝，改为以各节点组**实读 `font-size`** 的中位数相对基线 10 推导：几何常量（间隙、边距、文本行高）本就是按字号调校的，统一字宽模型已逐组实读 font-size，而 bbox 中位数会把标签长度混进图面 scale。
 
 ## Consequences
@@ -51,6 +54,7 @@ Status: implemented
 - 模型传入的 `scale`（有限且 > 0）与 `figure_number`（正整数）在工具层于渲染前校验：工具输入 schema 只约束其类型，未校验的值会让 FreeCAD 产出退化的 `width="0mm"` SVG 或不透明的投影失败。
 - `index.ts` 带一处 TypeScript 解析器缺陷的绕行：返回对象字面量的 `async` 箭头直接作三元分支、且整条赋值给以索引访问类型（`GenerateStructureFigureDeps['render']`）标注的 const 时会误解析（TS1359）；该分支被提升为具名常量 `structureNoSubprocess`。
 - 工具数断言（`registration.spec.ts`、双语 README）从 27 → 28。
+- `RenderCheckFinding` 增加 `advisory` 标记。除 `not-measured` 与提示级发现外，其余在 `figureFailOnRenderFindings` 下阻断交付；这个标记的用途是让软指标进入警告、却永不导致渲染失败。
 - 件号放置跑在 Python 脚本里，按候选网格展开：绕首选外向方向每 30° 共十二个方向，乘三档距离，取第一个「标号框既不压别的零件投影占位、也不压已放标号」的候选。首选方向取自**所属零件**的投影中心而非画布中心——零件位于图面中央时，画布中心方向是任意的，会把标号丢进图形内部。候选全部耗尽时退回首选方向的最近档，并在该视图的 manifest 记录一条警告，标号不会被静默丢弃。判定只看零件占位与已放标号，不检查图线本身的穿越与引线交叉；放置数学也没有与 `leader-line.ts` 的 TypeScript 原语共享。
 
 ## Testing
@@ -58,6 +62,7 @@ Status: implemented
 - `tests/figure-freecad-structure-script.spec.ts` —— 对构建出的脚本做纯函数断言（API 使用、视图表、`TransientDir` 锚定、payload 往返），无需 FreeCAD。
 - `tests/figure-freecad-renderer.spec.ts` —— mock `SubprocessRuntime`：发现顺序、probe、退出码分类、env 隔离、超时、取消。
 - `tests/structure-figure-tool.spec.ts` —— mock render：门禁、单模型/批量、图面用语告警、safe-SVG 门禁、索引持久化及其降级路径。
+- `tests/figure-render-check.spec.ts` 与 `tests/render-check-gate.spec.ts` —— 版面利用率下限在低于阈值时报、达标或不设时不报，且被 `blockingFindings` 滤掉，故 strict 门禁仍放行一张稀疏但干净的图。
 - `tests/figure-freecad-real-render.spec.ts` —— `describe.skipIf(!hasFreeCad)` 真实端到端，跑签入的 `tests/fixtures/structure-bracket.step`（由签入的 `generate-structure-fixture.py` 生成；一条恒开测试断言 fixture 的 ISO-10303-21 头部签名与该生成器一致）：iso+front 投影含 `<path>`、仅黑描边、无边框/图号，且两个件号锚点都落在各自视图 bbox 内；在拒绝写 FreeCAD 缓存目录的沙箱下，这条成功断言本身就是 `TransientDir` 的回归保护——否则该拷贝会解析到 `/`。同文件另有四条覆盖逐零件几何与放置：一条断言每零件的 manifest 占位都落在视图框内、且两个零件不会塌成同一个占位；一条在完全不给 `point3d` 的装配体上断言每个自动锚点落在其声明零件的 3D 包围盒内、且在各视图间逐值相同；一条断言装配体的两个标号在警告为空的前提下完成放置，并与图线保持可读净距；一条渲染分解图，断言两个零件的占位互不重叠、且每个锚点落在自己零件的占位内。
 
 ## Related

@@ -93,6 +93,17 @@ export interface Config {
    * 每次判定都失败，故在加载时由 schema 拒绝。
    */
   figureMinFontMm?: number
+  /**
+   * 版面利用率内控下限（0–1）；缺省 `0` 不判。
+   *
+   * 渲染复核按「内容包围盒面积 ÷ 该图自己的画布面积」计算，低于下限只报一条
+   * 提示级发现（`sheet-underfill`），不阻断交付。分母永远是这张图自己的画布：
+   * 生成图已落版到纸面、标准图从附图页裁过，跨图比这个比值没有意义。未落版的
+   * 紧致片段画布本就贴着内容，比值接近 1、这条判据没有信息量，故默认关闭；
+   * 落版到 A4 的部署可设为 `0.3` 起观察。越界取值（负数或大于 1）在加载时由
+   * schema 拒绝。
+   */
+  figureMinSheetFillRatio?: number
   /** Inkscape 可执行路径覆盖；默认自动探测（候选路径 + PATH）。仅 figureTextToPath 使用（两个附图生成工具共用同一端口）。 */
   inkscapeExecutable?: string
   /** Inkscape 单次文字转路径超时（毫秒）；默认 30000。仅 figureTextToPath 使用。 */
@@ -162,6 +173,7 @@ export const Config: z<Config> = z.object({
   figureFailOnRenderFindings: z.boolean(),
   figureFontMm: z.number().min(Number.MIN_VALUE),
   figureMinFontMm: z.number().min(Number.MIN_VALUE),
+  figureMinSheetFillRatio: z.number().min(0).max(1),
   inkscapeExecutable: z.string(),
   inkscapeRenderTimeoutMs: z.number().step(1).min(1).default(DEFAULT_INKSCAPE_RENDER_TIMEOUT_MS),
   approveStageGates: z.boolean(),

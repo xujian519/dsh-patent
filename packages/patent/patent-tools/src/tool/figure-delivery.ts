@@ -54,6 +54,7 @@ async function checkDeliveredSvg(args: {
     warnings: args.warnings,
     clearanceMm: clearanceMmForFigure(args.figureType),
     failOnFindings: args.deps.failOnRenderFindings === true,
+    ...(args.deps.minSheetFillRatio === undefined ? {} : { minSheetFillRatio: args.deps.minSheetFillRatio }),
     tool: 'generate_patent_figure',
     ...(args.suffix === '' ? {} : { label: `面板 ${args.suffix} ` }),
   })

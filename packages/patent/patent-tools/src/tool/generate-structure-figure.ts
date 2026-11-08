@@ -258,6 +258,7 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
             warnings,
             clearanceMm: clearanceMmForFigure('structure'),
             failOnFindings: deps.failOnRenderFindings === true,
+            ...(deps.minSheetFillRatio === undefined ? {} : { minSheetFillRatio: deps.minSheetFillRatio }),
             tool: 'generate_structure_figure',
             label: `图${figure.figureNumber} `,
           })

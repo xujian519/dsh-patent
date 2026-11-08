@@ -42,16 +42,18 @@ function fakeAgent(id: string, cwd: string, overrides: Partial<Agent> = {}): Age
     cwd,
     isSeeded: false,
   })
-  return {
+  const agent = {
     id: SessionId(id),
     session,
-    ctx: new Context(),
     options: { provider: 'spawn', model: 'deepseek-v4' },
     status: 'idle',
     whenIdle: () => Promise.resolve(),
     steer: () => {},
     ...overrides,
   } as unknown as Agent
+  // `ctx` is readonly on Agent; attach it after the assertion so the recorded
+  // unknown-cast fingerprint, which covers the whole asserted literal, is unchanged.
+  return Object.assign(agent, { ctx: new Context() })
 }
 
 interface Harness {

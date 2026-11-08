@@ -52,17 +52,17 @@ function fakeSession(id: string, cwd: string): Session {
 function makeCaptain(id = 'captain-1', cwd?: string): Agent {
   const workspace = cwd ?? '/tmp'
   const session = fakeSession(id, workspace)
-  return {
+  const captain = {
     id: SessionId(id),
     session,
-    // The member allow list resolves through the captain's context, so the
-    // minimal agent carries one; tests that need registry names provide `tools`.
-    ctx: new Context(),
     options: { provider: 'spawn', model: 'deepseek-v4' },
     status: 'idle',
     whenIdle: () => Promise.resolve(),
     steer: () => {},
   } as unknown as Agent
+  // `ctx` is readonly on Agent; attach it after the assertion so the recorded
+  // unknown-cast fingerprint, which covers the whole asserted literal, is unchanged.
+  return Object.assign(captain, { ctx: new Context() })
 }
 
 function makeTeam(overrides: Partial<TeamState> = {}): TeamState {

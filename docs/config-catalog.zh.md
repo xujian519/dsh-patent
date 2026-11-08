@@ -3290,7 +3290,7 @@ export type CitationPolicy = 'block' | 'warn' | 'allow'
 ## `@deepseek-ai/dsh-patent-rule`
 
 - `inject`: `tools`
-- `source`: [`packages/patent/patent-rule/src/index.ts:225`](../packages/patent/patent-rule/src/index.ts)
+- `source`: [`packages/patent/patent-rule/src/index.ts:229`](../packages/patent/patent-rule/src/index.ts)
 
 ```ts config-catalog
 /** Plugin config. */
@@ -3311,7 +3311,9 @@ export interface Config {
    * Additional domain names to load on top of the default patent-full rule set.
    * Each name resolves to `assets/rules/domains/<name>/` (or `<rulesDir>/domains/<name>/`).
    * Useful for presets (e.g. legal) that need the patent base plus extra domain rules
-   * without the noise of a full manifest-based load.
+   * without the noise of a full manifest-based load. A domain rule carrying an
+   * already-loaded id replaces it and draws a load warning, so a collision between a
+   * domain pack and the base set stays visible.
    */
   additionalRuleDomains?: string[]
   /** Tool names whose results run through the output gate. Defaults to the delivery tools. */

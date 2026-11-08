@@ -141,6 +141,36 @@ describe('rule pack', () => {
     expect(summary).toMatch(/overrides 1/)
   })
 
+  it('loadRulePack warns when two files in one layer define the same rule id', () => {
+    const root = mkdtempSync(join(tmpdir(), 'sati-rule-pack-same-layer-'))
+    const base = join(root, 'base-pack')
+    mkdirSync(base)
+    const ruleFile = (name: string, word: string) => [
+      'version: "1.0"',
+      'rules:',
+      `  ${name}:`,
+      '    id: LAYER-DUP',
+      `    name: ${name}`,
+      '    severity: minor',
+      '    action: warn',
+      '    check:',
+      '      type: keyword_blocklist',
+      '      keywords:',
+      `        - ${word}`,
+    ].join('\n')
+    writeFileSync(join(base, 'a.yaml'), ruleFile('先加载', 'FIRSTWORD'))
+    writeFileSync(join(base, 'b.yaml'), ruleFile('后加载', 'SECONDWORD'))
+    const manifestPath = join(root, 'rules.yaml')
+    writeFileSync(manifestPath, [`base: ${base}`, 'domains: []'].join('\n'))
+
+    const result = loadRulePack({ manifestPath })
+
+    // 后加载的文件整条覆盖，前一份的判定词不留任何痕迹——只有告警能让人知道。
+    expect(result.ruleSet.rules.map(r => r.id)).toEqual(['LAYER-DUP'])
+    expect(evaluateText('出现 FIRSTWORD。', result.ruleSet).violations).toHaveLength(0)
+    expect(result.warnings.some(w => w.includes('规则包 base 层内') && w.includes('LAYER-DUP'))).toBe(true)
+  })
+
   it('loadRulePack warns when an explicit manifest path does not exist', () => {
     const result = loadRulePack({ manifestPath: join(tmpdir(), 'dsh-no-such-manifest.yml') })
     expect(result.manifestPath).toBeNull()

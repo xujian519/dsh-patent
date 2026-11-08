@@ -46,7 +46,11 @@ import type { PostToolDecision, ToolExecution, ToolExecutionResult } from '@deep
 // Type-only: makes `ctx.get('approval')` resolve to the ApprovalService
 // augmentation. The seam stays optional at runtime.
 import type { ApprovalOutcome } from '@deepseek-ai/dsh-user-approval'
-import type { RuleOutputGate as PatentRuleOutputGate, RuleOutputGateResult } from '@deepseek-ai/dsh-patent-core'
+import type {
+  RuleOutputGate as PatentRuleOutputGate,
+  RuleOutputGateResult,
+  RuleSetValidationIssue,
+} from '@deepseek-ai/dsh-patent-core'
 import { patentAssetDir } from './asset-location.ts'
 import { createEvidenceComplianceGuards } from './guard/evidenceComplianceGuards.ts'
 import {
@@ -239,7 +243,9 @@ export interface Config {
    * Additional domain names to load on top of the default patent-full rule set.
    * Each name resolves to `assets/rules/domains/<name>/` (or `<rulesDir>/domains/<name>/`).
    * Useful for presets (e.g. legal) that need the patent base plus extra domain rules
-   * without the noise of a full manifest-based load.
+   * without the noise of a full manifest-based load. A domain rule carrying an
+   * already-loaded id replaces it and draws a load warning, so a collision between a
+   * domain pack and the base set stays visible.
    */
   additionalRuleDomains?: string[]
   /** Tool names whose results run through the output gate. Defaults to the delivery tools. */
@@ -439,7 +445,10 @@ export function apply(ctx: Context, config: Config): void {
       const { ruleSets: domainSets, warnings: domainWarnings } = loadRuleSetDir(domainDir)
       warnings.push(...domainWarnings.map(w => w.message))
       if (domainSets.length > 0) {
-        ruleSet = mergeRuleSets([ruleSet, ...domainSets])
+        // 同名 id 的域规则会覆盖基础规则集且不改变判定结果，静默覆盖等于部署配错而无人知。
+        const mergeIssues: RuleSetValidationIssue[] = []
+        ruleSet = mergeRuleSets([ruleSet, ...domainSets], mergeIssues)
+        warnings.push(...mergeIssues.map(issue => issue.message))
       }
     }
   }

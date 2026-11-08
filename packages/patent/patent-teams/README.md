@@ -48,6 +48,8 @@ Two of the twelve tools decide the case rather than the work inside it: `patent_
 
 `qualityGate` is opt-in and applies only to tasks created with a `worker` contract. A completion must carry output (submitted now or stored by an earlier update); a missing contract field, insufficient content, or a rule-gate hit bounces the task back to the member with feedback. `passThreshold` controls only when the advisory composite score is called out, not whether the gate bounces.
 
+Each member runs as a continuable child of the captain on the same preset generation. Its tool surface is the shared member baseline (file, shell, job, delegation, team-channel, and validator tools), the `mcp__cnlaw__*` tools the composition mounts, the role's declared tools that exist there, and the four coordination tools (`claim_task`, `update_task`, `send_message`, `status`); the captain-only mutators and the generic `send_message` are denied. A member without a role, or a composition without cnlaw, keeps the deny-only surface. The allow list is resolved against the captain's session context, so the tools the preset itself registers reach the child; deny names the composition does not carry are dropped before startup, and an unknown allowed name still fails member creation.
+
 ## State model
 
 Team state lives under `<workspace>/<stateDir>/<teamId>/`:

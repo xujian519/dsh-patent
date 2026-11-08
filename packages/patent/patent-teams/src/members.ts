@@ -39,9 +39,10 @@ import type { TeamMember, TeamState } from './types.ts'
  * that steering is needed — the runtime's background-delegation guidance names
  * `subagent_fork` in every member prompt, so the pressure is live even unused.
  *
- * Every name here must exist in the member's inherited tool surface: the
- * subagent runtime applies the list through `tools.restrict()`, which throws on
- * an unknown name and would fail member creation at `patent_teams_add_member`.
+ * A composition may not carry every name: {@link spawnMember} drops the names
+ * absent from the captain's restrictable set before starting the member, so a
+ * missing tool never fails member creation and the deny stays in force wherever
+ * the tool exists. An unknown allowed name stays fatal at `restrict()`.
  */
 export const MEMBER_DENIED_TOOLS = [
   'patent_teams_create',
@@ -52,6 +53,21 @@ export const MEMBER_DENIED_TOOLS = [
   'patent_teams_delete',
   'send_message',
 ] as const
+
+/**
+ * Tools every member needs to take work and report it. They stay in every
+ * allow list because a member without them cannot follow its persona; a
+ * composition that genuinely lacks one fails member creation at `restrict()`.
+ */
+const MEMBER_COORDINATION_TOOLS = [
+  'patent_teams_claim_task',
+  'patent_teams_update_task',
+  'patent_teams_send_message',
+  'patent_teams_status',
+] as const
+
+/** Self-check validators the member persona names only when they were granted. */
+const VALIDATOR_TOOLS = ['patent_worker_validate', 'validate_specification', 'rule_check'] as const
 
 /**
  * Tools every member keeps regardless of role: file access, the shell, skill
@@ -76,10 +92,7 @@ export const BASELINE_MEMBER_TOOLS = [
   'job_output',
   'job_kill',
   'subagent_fork',
-  'patent_teams_claim_task',
-  'patent_teams_update_task',
-  'patent_teams_send_message',
-  'patent_teams_status',
+  ...MEMBER_COORDINATION_TOOLS,
   'patent_worker_validate',
   'rule_check',
   'validate_specification',
@@ -93,11 +106,19 @@ export const BASELINE_MEMBER_TOOLS = [
  * Resolve the tool allow-list for one member, or `undefined` to keep the
  * deny-only surface.
  *
+ * Pass the captain's session context. The list is applied to the member child
+ * through `tools.restrict()`, and both the captain and the member are children
+ * of the same preset generation, so the preset's own registrations are
+ * restrictable from the captain. The plugin registration context excludes that
+ * layer, which would strip every preset-owned tool from the child.
+ *
  * Trimming fails open. A member without a role, an unregistered role, or a
  * composition without the cnlaw MCP tools the persona requires all fall back
- * to deny-only. Names absent from the composition are dropped rather than
- * passed to `tools.restrict()`, which rejects unknown names at member creation.
- * @param ctx - registrant context carrying the tools service.
+ * to deny-only. Names absent from the inherited surface are dropped rather than
+ * passed to `tools.restrict()`, which rejects unknown names at member creation;
+ * the coordination tools are the exception, because a member without them
+ * cannot follow its persona.
+ * @param ctx - the captain's session context carrying the tools service.
  * @param role - the member's registered role id, when it has one.
  * @returns the granted tool names, or `undefined` for the deny-only fallback.
  */
@@ -115,7 +136,9 @@ export function memberToolAllowList(ctx: Context, role: string | undefined): str
   if (lawTools.length === 0) return undefined
   const baseline = BASELINE_MEMBER_TOOLS.filter(name => restrictable.has(name))
   const roleTools = declared.filter(name => restrictable.has(name))
-  return [...new Set([...baseline, ...lawTools, ...roleTools])]
+  const granted = new Set<string>([...baseline, ...lawTools, ...roleTools, ...MEMBER_COORDINATION_TOOLS])
+  for (const name of MEMBER_DENIED_TOOLS) granted.delete(name)
+  return [...granted]
 }
 
 /**
@@ -299,7 +322,24 @@ Working rules:
 6. After your turn becomes idle, the shared task scheduler may assign your next ready task automatically. Never claim a second task while you still own unfinished work.
 7. You are a worker: do not create or delete teams, reassign tasks, or add/remove members — that is the captain's job.
 8. Blocked means report, not retry: when a tool errors, material is missing, access is denied, or the same call fails twice, stop and report the blocker to the captain (what you tried, what you need). Do not repeat a failing call, and do not route around a patent-domain tool with shell or ad-hoc python scripts: bypass artifacts are not indexed, not re-runnable by others, and count as work not done.
-9. Self-check before you submit: run the validators your role contract names (patent_worker_validate / validate_specification / rule_check and any task-specific check), fix what they report, and put the self-check conclusion into \`output\`. An unself-checked deliverable is not finished.`
+${selfCheckRule(grantedTools)}`
+}
+
+/**
+ * The self-check rule for the persona. A trimmed member is told to run only the
+ * validators it actually received; a member whose surface was not trimmed keeps
+ * the rule verbatim, and one that received no validator drops the rule instead
+ * of being ordered to call a tool it lacks.
+ * @param grantedTools - the granted surface, or `undefined` when it was not trimmed.
+ * @returns the rendered rule, or an empty string when no validator is granted.
+ */
+function selfCheckRule(grantedTools?: readonly string[]): string {
+  if (grantedTools === undefined) {
+    return '9. Self-check before you submit: run the validators your role contract names (patent_worker_validate / validate_specification / rule_check and any task-specific check), fix what they report, and put the self-check conclusion into `output`. An unself-checked deliverable is not finished.'
+  }
+  const validators = VALIDATOR_TOOLS.filter(name => grantedTools.includes(name))
+  if (validators.length === 0) return ''
+  return `9. Self-check before you submit: run the validators your role contract names (${validators.join(' / ')} and any task-specific check), fix what they report, and put the self-check conclusion into \`output\`. An unself-checked deliverable is not finished.`
 }
 
 /**
@@ -380,7 +420,20 @@ export async function spawnMember(
   const label = `${MEMBER_LABEL_PREFIX}${team.id}:${member.name}`
   // A role-scoped member gets only its role tools plus the shared baseline; an
   // unqualified or unregistered role keeps the deny-only surface it had before.
-  const grantedTools = memberToolAllowList(ctx, member.role)
+  // Resolve against the captain, not this plugin context: the child inherits the
+  // captain's preset layer, which the registration context cannot see.
+  const grantedTools = memberToolAllowList(captain.ctx, member.role)
+  // The child inherits the captain's preset layer, so a deny name the captain
+  // cannot restrict is absent for the child too. Dropping it keeps a missing
+  // `send_message` from failing member creation while the deny stays in force
+  // wherever the tool exists.
+  const restrictable = captain.ctx.get('tools')?.restrictableNames()
+  const deny = restrictable === undefined
+    ? [...MEMBER_DENIED_TOOLS]
+    : MEMBER_DENIED_TOOLS.filter(name => restrictable.has(name))
+  const toolFilter: { allow?: string[]; deny: string[] } = grantedTools === undefined
+    ? { deny }
+    : { allow: grantedTools, deny }
   // The route rides the creation request: the manager seeds it into the
   // child's durable descriptor, so fresh composition and cold resume both
   // restore provider/model without a per-child setup hook.
@@ -392,9 +445,7 @@ export async function spawnMember(
       prompt: [{ type: 'text', text: memberWelcome(team) }],
       parent: captain,
       persona: memberPersona(team, member, stateDir, roleContract, grantedTools),
-      toolFilter: grantedTools === undefined
-        ? { deny: [...MEMBER_DENIED_TOOLS] }
-        : { allow: grantedTools, deny: [...MEMBER_DENIED_TOOLS] },
+      toolFilter,
       agentOptions: {
         provider: llmSelection.provider,
         model: llmSelection.model,

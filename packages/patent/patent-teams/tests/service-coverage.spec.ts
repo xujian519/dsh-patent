@@ -32,6 +32,7 @@ function fakeAgent(id: string, cwd: string): Agent {
   return {
     id: SessionId(id),
     session,
+    ctx: new Context(),
     options: { provider: 'deepseek-official', model: 'deepseek-v4' },
     status: 'idle',
     whenIdle: () => Promise.resolve(),

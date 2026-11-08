@@ -26,7 +26,15 @@ describe('memberToolAllowList', () => {
     // `researcher` declares patent_search/patent_metadata/…; none are mounted here,
     // so the member keeps the shared surface and gains no domain tool.
     expect(memberToolAllowList(ctxWith(['read', 'bash', 'mcp__cnlaw__search']), 'researcher'))
-      .toEqual(['read', 'bash', 'mcp__cnlaw__search'])
+      .toEqual([
+        'read',
+        'bash',
+        'mcp__cnlaw__search',
+        'patent_teams_claim_task',
+        'patent_teams_update_task',
+        'patent_teams_send_message',
+        'patent_teams_status',
+      ])
   })
 
   it('keeps the deny-only surface when the cnlaw MCP tools are absent', () => {
@@ -48,10 +56,37 @@ describe('memberToolAllowList', () => {
       'mcp__cnlaw__search',
       'patent_search',
       'patent_metadata',
+      'patent_teams_claim_task',
+      'patent_teams_update_task',
+      'patent_teams_send_message',
+      'patent_teams_status',
     ])
     // A declared tool this composition does not register is dropped, not passed
     // to `tools.restrict()`, which rejects unknown names at member creation.
     expect(allow).not.toContain('web_search')
+  })
+
+  it('keeps the coordination channel even when the queried view omits it', () => {
+    const allow = memberToolAllowList(ctxWith(['read', 'mcp__cnlaw__search']), 'researcher')
+
+    expect(allow).toEqual([
+      'read',
+      'mcp__cnlaw__search',
+      'patent_teams_claim_task',
+      'patent_teams_update_task',
+      'patent_teams_send_message',
+      'patent_teams_status',
+    ])
+  })
+
+  it('drops a denied name even when the queried view reports it', () => {
+    const allow = memberToolAllowList(
+      ctxWith(['read', 'mcp__cnlaw__search', 'patent_teams_create', 'send_message']),
+      'researcher',
+    )
+
+    expect(allow).not.toContain('patent_teams_create')
+    expect(allow).not.toContain('send_message')
   })
 
   it('never grants a captain-only team tool or an unlisted tool', () => {

@@ -45,6 +45,7 @@ function fakeAgent(id: string, cwd: string, overrides: Partial<Agent> = {}): Age
   return {
     id: SessionId(id),
     session,
+    ctx: new Context(),
     options: { provider: 'spawn', model: 'deepseek-v4' },
     status: 'idle',
     whenIdle: () => Promise.resolve(),

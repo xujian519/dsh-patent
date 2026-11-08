@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-08-patent-teams-member-tool-scope.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-11-08-patent-teams-member-tool-scope.md
+/agent-note-resolve-member-tool-allow-lists-against-the-captain-s-scope:
+  en: 34345f96ef92bafe
+  zh: ba6f812ea71f8b75
+/agent-note-resolve-member-tool-allow-lists-against-the-captain-s-scope/problem:
+  en: 14d509871af33951
+  zh: 805a8fa2aa8d2eb0
+/agent-note-resolve-member-tool-allow-lists-against-the-captain-s-scope/decision:
+  en: ca01b9b8dee6a14e
+  zh: 35290666f987de3f
+/agent-note-resolve-member-tool-allow-lists-against-the-captain-s-scope/alternatives-considered:
+  en: e1addc11ce2c16f7
+  zh: 9104bd3f54004c8d
+/agent-note-resolve-member-tool-allow-lists-against-the-captain-s-scope/consequences:
+  en: 1bf23ca531c207d6
+  zh: 852f752615ebec86
+/agent-note-resolve-member-tool-allow-lists-against-the-captain-s-scope/testing:
+  en: ebd3ce86ddfc4f88
+  zh: 0d19a59fe06529c4

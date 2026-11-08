@@ -450,9 +450,12 @@ describe.skipIf(!hasFreeCad)('real FreeCAD structure rendering (needs `freecadcm
       // 没有降级说明：两个标号都找到了既不压别的零件、也不压已放标号的位置。
       // 这条同时防住「候选生成退化成只剩首选方向」——那样第二个标号必然冲突。
       expect(view.warnings).toEqual([])
-      // 标号与图线之间仍有可读净距：自动布局没有把它们贴到零件轮廓上。
+      // 标号与图线之间仍有可读净距：自动布局没有把它们贴到零件轮廓上，引线也没有
+      // 穿过自己的标号（后者是 text-crossed-by-line，与净距不是同一条判据）。
       const report = checkFigureRendering(readFileSync(view.path, 'utf8'), { textClearanceMm: 1.5 })
-      expect(report.findings.filter(finding => finding.check === 'text-clearance')).toEqual([])
+      expect(report.findings
+        .filter(finding => finding.check === 'text-clearance' || finding.check === 'text-crossed-by-line'))
+        .toEqual([])
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

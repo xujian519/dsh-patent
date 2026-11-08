@@ -350,6 +350,7 @@ describe('registerPatentTools 显式部署配置', () => {
       figureDpi: 300,
       figureMargin: 2.5,
       figureMinFontMm: 2,
+      figureMinSheetFillRatio: 0.3,
       structureFigureEnabled: true,
       structureFigureScale: 2,
       structureFigureViews: ['iso'],
@@ -384,7 +385,9 @@ describe('registerPatentTools 显式部署配置', () => {
 
     expect(figure.resolveFont?.(['壳体'])).toBe('Custom Font')
     expect(figure.failOnRenderFindings).toBe(true)
+    expect(figure.minSheetFillRatio).toBe(0.3)
     expect(mock.structures.at(-1)?.failOnRenderFindings).toBe(true)
+    expect(mock.structures.at(-1)?.minSheetFillRatio).toBe(0.3)
 
     const source = join(workspace(), 'fig.svg')
     writeFileSync(source, '<svg xmlns="http://www.w3.org/2000/svg"><text>图</text></svg>')

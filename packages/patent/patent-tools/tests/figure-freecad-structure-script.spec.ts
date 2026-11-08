@@ -314,6 +314,15 @@ describe('结构线稿的标号引线', () => {
     expect(script).toContain('if part_index == own_part or part_rect is None:')
   })
 
+  it('装配轴以协方差列作幂迭代种子，避免与固定种子正交时静默退化', () => {
+    const script = buildStructureScript(params())
+    expect(script).toContain('seed_column = max(')
+    expect(script).toContain('vector = tuple(component / seed_norm for component in seed)')
+    // 固定 (1,1,1) 种子会在零件沿 (1,-1,0) 排布时与主轴正交：第一步塌成零向量，
+    // 函数返回一个与真实主轴垂直的方向且不报错。
+    expect(script).not.toContain('vector = (1.0, 1.0, 1.0)')
+  })
+
   it('字宽比例与复核侧 glyph-box 一致，画布按真实占位框外扩', () => {
     const script = buildStructureScript(params())
     expect(script).toContain('GLYPH_WIDTH_RATIO = 0.62')

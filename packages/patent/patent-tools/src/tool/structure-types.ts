@@ -178,11 +178,12 @@ export type GenerateStructureFigureInput = {
 }
 
 /**
- * 装配体的几何事实摘要。
+ * 单个模型的几何事实摘要（装配体为它的全部零件）。
  *
  * 由渲染脚本在同一次投影里量出，供调用方判断「哪个零件叫什么、该标几号」，
  * 不必再手填 `callouts[].point3d`。`viewBounds` 与 `modelPaths` 同序，是引线布局
- * 判「标号或引线压到别的零件」的输入。
+ * 判「标号或引线压到别的零件」的输入。只在本次调用只出一张图时给出：目录批量
+ * 逐模型各出一图，摘要只描述其中一张，给出会让调用方以为它覆盖全部。
  */
 export type StructureAssembly = {
   /** 模型文件绝对路径，顺序即 `callouts[].model` 的下标口径。 */
@@ -199,7 +200,7 @@ export type GenerateStructureFigureOutput = {
   paths: string[]
   /** 逐图结果（单模型一条；批量多条）。 */
   figures: StructureFigureView[]
-  /** 装配体的几何事实摘要（单模型或装配体均给出）。 */
+  /** 几何事实摘要（单模型或装配体给出；目录批量出多图时不给）。 */
   assembly?: StructureAssembly
   /** 附图说明文字（「图N是…的结构示意图」，可直接落说明书）。 */
   figureDescription: string

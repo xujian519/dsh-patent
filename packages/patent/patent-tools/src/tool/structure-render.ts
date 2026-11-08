@@ -209,11 +209,14 @@ export async function applyViewLineStyles(args: {
  * 视图分开收集，因为同一个零件在不同朝向下的占位不同。旧版 manifest 没有
  * `parts` 字段时返回 undefined，调用方据此判断摘要是否可用。
  * @param figures - 本次渲染出的图（装配体只有一条）。
- * @returns 摘要；无逐零件几何事实时 undefined。
+ * @returns 摘要；多图或没有逐零件几何事实时 undefined。
  */
 export function structureAssembly(figures: readonly StructureFigureView[]): StructureAssembly | undefined {
-  const first = figures[0]
+  const [first] = figures
   if (first === undefined) return undefined
+  // 目录批量逐模型出图时 figures 有多条，摘要只描述其中一条——给了会让调用方
+  // 误以为它覆盖全部图，故这种形态不给摘要。
+  if (figures.length > 1) return undefined
   const source = first.manifest.views.find(view => view.kind === 'view' && view.parts !== undefined)
   if (source?.parts === undefined) return undefined
   const viewBounds: Record<string, (number[] | null)[]> = {}

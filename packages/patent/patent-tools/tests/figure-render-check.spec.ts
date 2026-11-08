@@ -1167,6 +1167,20 @@ describe('checkFigureRendering 版面利用率', () => {
     expect(checkFigureRendering(full, { minSheetFillRatio: 0.3 }).findings).toEqual([])
   })
 
+  it('画布内没有可量测图元时不判：没有内容就谈不上利用率', () => {
+    expect(checkFigureRendering(svg(''), { minSheetFillRatio: 0.3 }).findings).toEqual([])
+  })
+
+  it('画布尺寸为零时不除零：比值按 0 计并报提示', () => {
+    // 退化的 width="0mm" 是真实产物（投影比例极小），比值按 0 算，不产出 NaN。
+    const degenerate = svg(
+      '<rect x="0" y="0" width="1" height="1" stroke-width="0.25"/>',
+      'width="0mm" height="0mm" viewBox="0 0 0 0"',
+    )
+    const report = checkFigureRendering(degenerate, { minSheetFillRatio: 0.3 })
+    expect(report.findings.map(finding => finding.check)).toContain('sheet-underfill')
+  })
+
   it('不给下限或给 0 时不判：紧致片段画布本就贴着内容，该判据没有信息量', () => {
     const sparse = svg('<rect x="50" y="15" width="10" height="10" stroke-width="0.25"/>')
     expect(checkFigureRendering(sparse).findings).toEqual([])

@@ -323,7 +323,8 @@ EXPLODED = bool(PARAMS["exploded"])
 # 分解图的零件间隙：取各零件沿轴尺寸中位数的 1.2 倍。中位数而不是总跨度——
 # 总跨度会把「零件本来就排得开」的装配体拉得更散，而中位尺寸跟着零件尺度走。
 EXPLODED_GAP_RATIO = 1.2
-# 视线与装配轴夹角的余弦高于此值时主轴在投影面上退化，分解图无从排布，当场报错。
+# 单位装配轴向量投影后的长度（即视线与轴夹角的正弦）低于此值时主轴在投影面上
+# 退化成一个点，分解图无从排布，当场报错。
 EXPLODED_MIN_AXIS_PROJECTION = 0.2
 FIGURE_NUMBER = int(PARAMS["figureNumber"])
 OUTPUT_DIR = PARAMS["outputDir"]
@@ -486,7 +487,8 @@ def resolve_auto_anchors(shapes, view):
     按出现顺序轮转排名，避免全部落在同一个点上；排名以首个视图为准，其余视图对
     同一个 3D 点各自投影，锚定的仍是同一物理位置。
 
-    选完写回 CALLOUTS：之后的归属核对、投影与 manifest 读的都是这一份。
+    选完写回 CALLOUTS：之后的投影与 manifest 读的都是这一份。自动锚点取自该零件
+    自己的顶点，故不需要归属核验。
     """
     used = {}
     for index, callout in enumerate(CALLOUTS):
@@ -607,7 +609,7 @@ def choose_callout_position(anchor_x, anchor_y, numeral, preferred_x, preferred_
     return None
 
 
-def callout_fragments(project_point, canvas_bounds, part_rects):
+def callout_fragments(project_point, canvas_extent, part_rects):
     """
     把件号投影到画布并为每个标号选位置、画引线与数字（y-down 画布帧）。
 
@@ -623,12 +625,15 @@ def callout_fragments(project_point, canvas_bounds, part_rects):
     标号的候选（见 choose_callout_position）。全部候选都不可行时退回首选方向的
     最近档——宁可略微压盖也不丢标号——并记一条警告。
 
-    返回 (svg_片段列表, 锚点信息列表, 扩展包围盒, 警告列表)。
+    包围盒一律用 (min_x, max_x, min_y, max_y)（与 projected_bounds 同序）；
+    part_rects 里的矩形用 (min_x, min_y, max_x, max_y)（与 rects_overlap 同序）。
+
+    返回 (svg_片段列表, 锚点信息列表, 扩展包围盒, 警告列表)，包围盒同序。
     """
     fragments = []
     anchors = []
     warnings = []
-    min_x, min_y, max_x, max_y = canvas_bounds
+    min_x, max_x, min_y, max_y = canvas_extent
     placed = []
     for callout in CALLOUTS:
         px, py, pz = callout["point3d"]
@@ -811,29 +816,41 @@ def principal_axis(shapes):
     spread = max(abs(value) for row in covariance for value in row)
     if spread < 1e-9:
         raise RuntimeError("分解图需要各零件沿装配轴分开，但所有零件质心重合，无法确定装配轴")
-    vector = (1.0, 1.0, 1.0)
+    # 种子取协方差矩阵范数最大的那一列，而不是固定的 (1,1,1)：零件恰好沿 (1,-1,0)
+    # 这类方向排布时协方差是该方向的秩 1 矩阵，与 (1,1,1) 正交，幂迭代第一步就塌成
+    # 零向量，函数会静默返回一个与真实主轴垂直的方向。取列则不会：设该列为 s，
+    # 第一步是 C·s = C²[:,j]，其第 j 个分量 (C²)_jj = Σ_k C_jk² = |s|² > 0。
+    # （半正定只给出 xᵀCx = 0 则 Cx = 0，秩亏时零空间非平凡，故不能靠
+    # 「C x = 0 则 x = 0」论证——那是正定矩阵的性质。）
+    seed_column = max(
+        range(3),
+        key=lambda column: sum(covariance[row][column] ** 2 for row in range(3)),
+    )
+    seed = tuple(covariance[row][seed_column] for row in range(3))
+    seed_norm = math.sqrt(sum(component * component for component in seed))
+    vector = tuple(component / seed_norm for component in seed)
     for _ in range(64):
         next_vector = tuple(
             sum(covariance[row][column] * vector[column] for column in range(3))
             for row in range(3)
         )
         norm = math.sqrt(sum(component * component for component in next_vector))
+        # 从非零的协方差列出发后，迭代向量始终落在 C 的值域里，而对半正定矩阵
+        # 值域与零空间正交，故理论上不会再塌成零向量；这一条留作外部脚本的防御。
         if norm < 1e-12:
-            break
+            raise RuntimeError("分解图的装配主轴退化，无法排布零件")
         vector = tuple(component / norm for component in next_vector)
-    norm = math.sqrt(sum(component * component for component in vector))
-    if norm < 1e-12:
-        raise RuntimeError("分解图的装配主轴退化，无法排布零件")
-    return tuple(component / norm for component in vector)
+    return vector
 
 
 def exploded_part_offsets(shapes, view, axis):
     """
     求每个零件的画布位移：沿装配轴排成一维串后的位置减去原始位置。
 
-    目标位置 = 装配序 × 间隙，间隙取各零件沿轴尺寸中位数的 EXPLODED_GAP_RATIO
-    倍。用中位尺寸而不是串总长：总长会把本来就排得开的装配体拉得更散，中位
-    尺寸跟着零件自身的尺度走。
+    目标位置按装配序逐段累加——每段前进「该零件自身沿轴尺寸 + 间隙」，间隙取
+    各零件沿轴尺寸中位数的 EXPLODED_GAP_RATIO 倍，整串再移回原点居中。用中位
+    尺寸而不是串总长：总长会把本来就排得开的装配体拉得更散，中位尺寸跟着零件
+    自身的尺度走。
 
     projectPoint 是线性的，故「每毫米轴长对应多少画布单位」由
     projectPoint(axis) − projectPoint(0) 一次求得，不必对每个零件重复投影。
@@ -1000,7 +1017,7 @@ def build_exploded_view_svg(doc, page, shape_objs, shapes, view_name, index):
         return projected.x - c_x + dx, -(projected.y - c_y) + dy
 
     callout_svg, anchors, extent, callout_warnings = callout_fragments(
-        project_point, (min_x, min_y, max_x, max_y), rects
+        project_point, (min_x, max_x, min_y, max_y), rects
     )
     min_x = min(min_x, extent[0] - CANVAS_PADDING)
     max_x = max(max_x, extent[1] + CANVAS_PADDING)
@@ -1025,7 +1042,6 @@ def build_exploded_view_svg(doc, page, shape_objs, shapes, view_name, index):
         "parts": part_metadata(shapes, bounds_list, (0.0, 0.0), rects),
         "warnings": callout_warnings,
         "exploded": True,
-        "axis": [round(component, 6) for component in axis],
     }
 
 
@@ -1044,9 +1060,9 @@ def build_view_svg(view, shapes, view_name):
         projected = view.projectPoint(point)
         return projected.x - c_x, -(projected.y - c_y)
 
-    canvas_bounds = (bbox[0] - c_x, -(bbox[3] - c_y), bbox[1] - c_x, -(bbox[2] - c_y))
+    canvas_extent = (bbox[0] - c_x, bbox[1] - c_x, -(bbox[3] - c_y), -(bbox[2] - c_y))
     callout_svg, anchors, extent, callout_warnings = callout_fragments(
-        project_point, canvas_bounds, part_rects_in_canvas(part_bounds, center)
+        project_point, canvas_extent, part_rects_in_canvas(part_bounds, center)
     )
     marker_svg, marker_extent = detail_marking_fragments(view, center, view_name)
     if marker_extent is not None:

@@ -362,6 +362,40 @@ describe.skipIf(!hasFreeCad)('real FreeCAD structure rendering (needs `freecadcm
     }
   }, 180_000)
 
+  it('引线布局：标号避开别的零件与已放标号，不退回首选项', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-freecadlabel-'))
+    try {
+      const result = await renderStructureViews(runtime, {
+        modelPaths: [FIXTURE, PIN_FIXTURE],
+        views: ['iso'],
+        scale: 1,
+        showHidden: false,
+        callouts: [
+          { numeral: '1', label: '立柱', model: 0 },
+          { numeral: '2', label: '圆柱销', model: 1 },
+        ],
+        figureNumber: 1,
+        outputDir: dir,
+      }, { renderTimeoutMs: TEST_RENDER_TIMEOUT_MS })
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const manifest = JSON.parse(readFileSync(result.manifestPath, 'utf8')) as {
+        views: { path: string; warnings?: string[] }[]
+      }
+      const view = manifest.views[0]
+      expect(view).toBeDefined()
+      if (view === undefined) return
+      // 没有降级说明：两个标号都找到了既不压别的零件、也不压已放标号的位置。
+      // 这条同时防住「候选生成退化成只剩首选方向」——那样第二个标号必然冲突。
+      expect(view.warnings).toEqual([])
+      // 标号与图线之间仍有可读净距：自动布局没有把它们贴到零件轮廓上。
+      const report = checkFigureRendering(readFileSync(view.path, 'utf8'), { textClearanceMm: 1.5 })
+      expect(report.findings.filter(finding => finding.check === 'text-clearance')).toEqual([])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }, 180_000)
+
   it('自动锚点：省略 point3d 时在所属零件的真实顶点上选点', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-freecdauto-'))
     try {

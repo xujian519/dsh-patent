@@ -211,6 +211,12 @@ export async function readManifest(manifestPath: string): Promise<StructureManif
     throw new PatentToolError('tool_execution_failed', 'manifest 未包含任何视图（渲染可能未产生投影几何）', { tool: 'generate_structure_figure' })
   }
   for (const view of parsed.views) assertManifestParts(view, parsed.modelPaths)
+  for (const view of parsed.views) {
+    if (view.warnings === undefined) continue
+    if (!Array.isArray(view.warnings) || !view.warnings.every(note => typeof note === 'string')) {
+      throw new PatentToolError('tool_execution_failed', `manifest 视图 ${view.name} 的 warnings 必须是字符串数组`, { tool: 'generate_structure_figure' })
+    }
+  }
   return parsed
 }
 

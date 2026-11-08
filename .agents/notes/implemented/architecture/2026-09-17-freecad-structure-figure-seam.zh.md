@@ -47,14 +47,14 @@ Status: implemented
 - 模型传入的 `scale`（有限且 > 0）与 `figure_number`（正整数）在工具层于渲染前校验：工具输入 schema 只约束其类型，未校验的值会让 FreeCAD 产出退化的 `width="0mm"` SVG 或不透明的投影失败。
 - `index.ts` 带一处 TypeScript 解析器缺陷的绕行：返回对象字面量的 `async` 箭头直接作三元分支、且整条赋值给以索引访问类型（`GenerateStructureFigureDeps['render']`）标注的 const 时会误解析（TS1359）；该分支被提升为具名常量 `structureNoSubprocess`。
 - 工具数断言（`registration.spec.ts`、双语 README）从 27 → 28。
-- Python 脚本内的件号放置自洽：沿锚点外向向量固定偏移 10 毫米，不与其他零件、其他标号或已绘图元做碰撞检测。逐零件投影占位现在提供了这种布局所需的输入——哪些占位区属于哪个零件——但布局本身仍未实现，`leader-line.ts` 的 TypeScript 原语也没有共享给它。
+- 件号放置跑在 Python 脚本里，按候选网格展开：绕首选外向方向每 30° 共十二个方向，乘三档距离，取第一个「标号框既不压别的零件投影占位、也不压已放标号」的候选。首选方向取自**所属零件**的投影中心而非画布中心——零件位于图面中央时，画布中心方向是任意的，会把标号丢进图形内部。候选全部耗尽时退回首选方向的最近档，并在该视图的 manifest 记录一条警告，标号不会被静默丢弃。判定只看零件占位与已放标号，不检查图线本身的穿越与引线交叉；放置数学也没有与 `leader-line.ts` 的 TypeScript 原语共享。
 
 ## Testing
 
 - `tests/figure-freecad-structure-script.spec.ts` —— 对构建出的脚本做纯函数断言（API 使用、视图表、`TransientDir` 锚定、payload 往返），无需 FreeCAD。
 - `tests/figure-freecad-renderer.spec.ts` —— mock `SubprocessRuntime`：发现顺序、probe、退出码分类、env 隔离、超时、取消。
 - `tests/structure-figure-tool.spec.ts` —— mock render：门禁、单模型/批量、图面用语告警、safe-SVG 门禁、索引持久化及其降级路径。
-- `tests/figure-freecad-real-render.spec.ts` —— `describe.skipIf(!hasFreeCad)` 真实端到端，跑签入的 `tests/fixtures/structure-bracket.step`（由签入的 `generate-structure-fixture.py` 生成；一条恒开测试断言 fixture 的 ISO-10303-21 头部签名与该生成器一致）：iso+front 投影含 `<path>`、仅黑描边、无边框/图号，且两个件号锚点都落在各自视图 bbox 内；在拒绝写 FreeCAD 缓存目录的沙箱下，这条成功断言本身就是 `TransientDir` 的回归保护——否则该拷贝会解析到 `/`。同文件另有两条覆盖逐零件几何：一条断言每零件的 manifest 占位都落在视图框内、且两个零件不会塌成同一个占位，另一条在完全不给 `point3d` 的装配体上断言每个自动锚点落在其声明零件的 3D 包围盒内、且在各视图间逐值相同。
+- `tests/figure-freecad-real-render.spec.ts` —— `describe.skipIf(!hasFreeCad)` 真实端到端，跑签入的 `tests/fixtures/structure-bracket.step`（由签入的 `generate-structure-fixture.py` 生成；一条恒开测试断言 fixture 的 ISO-10303-21 头部签名与该生成器一致）：iso+front 投影含 `<path>`、仅黑描边、无边框/图号，且两个件号锚点都落在各自视图 bbox 内；在拒绝写 FreeCAD 缓存目录的沙箱下，这条成功断言本身就是 `TransientDir` 的回归保护——否则该拷贝会解析到 `/`。同文件另有三条覆盖逐零件几何与放置：一条断言每零件的 manifest 占位都落在视图框内、且两个零件不会塌成同一个占位；一条在完全不给 `point3d` 的装配体上断言每个自动锚点落在其声明零件的 3D 包围盒内、且在各视图间逐值相同；一条断言装配体的两个标号在警告为空的前提下完成放置，并与图线保持可读净距。
 
 ## Related
 

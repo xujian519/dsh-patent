@@ -317,6 +317,9 @@ TEMPLATE_FILENAME = PARAMS["templateFilename"]
 TRANSIENT_DIRNAME = PARAMS["transientDirname"]
 NUMERAL_FONT_SIZE = float(PARAMS["numeralFontSize"])
 LEADER_OFFSET = float(PARAMS["leaderOffset"])
+# 标号候选：绕首选方向每 30° 试一圈（12 个方向），每个方向再按三档距离外推。
+CALLOUT_DIRECTION_STEPS = [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180]
+CALLOUT_DISTANCE_SCALES = [1.0, 1.6, 2.4]
 CANVAS_PADDING = float(PARAMS["canvasPadding"])
 STROKE_WIDTH = float(PARAMS["strokeWidth"])
 EDGE_SAMPLES = int(PARAMS["edgeSamples"])
@@ -524,35 +527,129 @@ def make_view(doc, page, shape_objs, view_name, index):
     return view
 
 
-def callout_fragments(view, center, bbox):
+def rotate_direction(unit_x, unit_y, degrees):
+    """把单位向量绕原点旋转 degrees 度（画布帧 y 向下，正角在画面上顺时针）。"""
+    radians = math.radians(degrees)
+    cos_a = math.cos(radians)
+    sin_a = math.sin(radians)
+    return unit_x * cos_a - unit_y * sin_a, unit_x * sin_a + unit_y * cos_a
+
+
+def rects_overlap(left, right):
+    """两个 (min_x, min_y, max_x, max_y) 矩形是否有面积重叠（贴边不算）。"""
+    return not (left[2] <= right[0] or right[2] <= left[0] or left[3] <= right[1] or right[3] <= left[1])
+
+
+def part_rects_in_canvas(part_bounds, center):
     """
-    把件号投影到视图并生成引线 + 数字文本（y-down SVG 帧）。
+    把逐零件包围盒从 projectPoint 帧（y 向上）转到画布帧（y 向下）。
+
+    返回与 part_bounds 同序的 (min_x, min_y, max_x, max_y) 列表，该朝向看不见的
+    零件保持 None——它不参与压盖判定，否则空框会把整幅图面判成禁区。
+    """
+    c_x, c_y = center
+    rects = []
+    for bounds in part_bounds:
+        if bounds is None:
+            rects.append(None)
+            continue
+        # projectPoint 的 y 向上、画布帧 y 向下，故上下两端互换。
+        rects.append((bounds[0] - c_x, -(bounds[3] - c_y), bounds[1] - c_x, -(bounds[2] - c_y)))
+    return rects
+
+
+def choose_callout_position(anchor_x, anchor_y, numeral, preferred_x, preferred_y, own_part, part_rects, placed):
+    """
+    为首选方向轴上的一个件号选标号位置。
+
+    候选按「距离档 × 方向偏移」两级展开：先试首选距离，绕首选方向每 30° 试一圈；
+    该距离全部压盖时再退到更远的档。判定只看两件事——标号框是否压到**别的零件**
+    的投影占位、是否压到已放好的标号；自身零件的占位不算，标号本就该贴着自己。
+
+    返回 (text_x, text_y, box_x, box_y, half_w, half_h, dir_x, dir_y, rect)；
+    全部候选都不可行时返回 None，由调用方决定退路。
+    """
+    for scale in CALLOUT_DISTANCE_SCALES:
+        for step in CALLOUT_DIRECTION_STEPS:
+            dir_x, dir_y = rotate_direction(preferred_x, preferred_y, step)
+            text_x = anchor_x + dir_x * LEADER_OFFSET * scale
+            text_y = anchor_y + dir_y * LEADER_OFFSET * scale
+            box_x, box_y, half_w, half_h = numeral_box(text_x, text_y, numeral)
+            rect = (box_x - half_w, box_y - half_h, box_x + half_w, box_y + half_h)
+            if any(rects_overlap(rect, other) for other in placed):
+                continue
+            blocked = False
+            for part_index, part_rect in enumerate(part_rects):
+                if part_index == own_part or part_rect is None:
+                    continue
+                if rects_overlap(rect, part_rect):
+                    blocked = True
+                    break
+            if blocked:
+                continue
+            return text_x, text_y, box_x, box_y, half_w, half_h, dir_x, dir_y, rect
+    return None
+
+
+def callout_fragments(view, center, bbox, part_bounds):
+    """
+    把件号投影到视图并为每个标号选位置、画引线与数字（y-down SVG 帧）。
 
     锚点 = projectPoint(point3d) - C，再翻转 y（片段帧 y 向上 → SVG y 向下）。
-    片段按投影几何居中于原点，故几何中心恒为 (0,0)，引线方向即锚点向量本身；
-    件号沿该外向偏移 LEADER_OFFSET，落在实体外侧。
-    返回 (svg_片段列表, 锚点信息列表, 扩展包围盒)。
+    首选引线方向取自**所属零件的投影中心**指向锚点，而不是画布中心：零件正好
+    位于图面中央时，「画布中心 → 锚点」是任意方向，标号会被丢进图形内部；以
+    零件自身中心为基准，方向恒为从该零件向外。
+
+    标号位置在该方向附近按 30° 步长、三档距离找第一个不压别的零件、不压已放
+    标号的候选（见 choose_callout_position）。全部候选都不可行时退回首选方向的
+    最近档——宁可略微压盖也不丢标号——并记一条警告。
+
+    返回 (svg_片段列表, 锚点信息列表, 扩展包围盒, 警告列表)。
     """
     c_x, c_y = center
     fragments = []
     anchors = []
+    warnings = []
     min_x, max_x = bbox[0] - c_x, bbox[1] - c_x
     min_y, max_y = -bbox[3] + c_y, -bbox[2] + c_y  # 翻转后的 y-down 范围
+    part_rects = part_rects_in_canvas(part_bounds, center)
+    placed = []
     for callout in CALLOUTS:
         px, py, pz = callout["point3d"]
         owner = callout["model"]
+        # 未声明归属时按单模型处理：目录批量已由工具层拒绝，走到这里必然是单模型。
+        own_part = 0 if owner is None else owner
         projected = view.projectPoint(App.Vector(px, py, pz))
         anchor_x = projected.x - c_x
         anchor_y = -(projected.y - c_y)  # 翻转到 y-down
-        length = math.hypot(anchor_x, anchor_y)
-        if length < 1e-9:
-            unit_x, unit_y = 1.0, 0.0
-        else:
-            unit_x, unit_y = anchor_x / length, anchor_y / length
-        text_x = anchor_x + unit_x * LEADER_OFFSET
-        text_y = anchor_y + unit_y * LEADER_OFFSET
-        box_x, box_y, half_w, half_h = numeral_box(text_x, text_y, callout["numeral"])
-        end_x, end_y = leader_end(box_x, box_y, half_w, half_h, unit_x, unit_y)
+        # 首选方向：所属零件投影中心 → 锚点。锚点与零件中心重合（退化）时退回 +x。
+        unit_x, unit_y = 1.0, 0.0
+        own_rect = part_rects[own_part] if 0 <= own_part < len(part_rects) else None
+        if own_rect is not None:
+            part_cx = (own_rect[0] + own_rect[2]) / 2.0
+            part_cy = (own_rect[1] + own_rect[3]) / 2.0
+            out_x = anchor_x - part_cx
+            out_y = anchor_y - part_cy
+            length = math.hypot(out_x, out_y)
+            if length >= 1e-9:
+                unit_x, unit_y = out_x / length, out_y / length
+        chosen = choose_callout_position(
+            anchor_x, anchor_y, callout["numeral"], unit_x, unit_y, own_part, part_rects, placed
+        )
+        if chosen is None:
+            # 全部候选都压盖：保留首选方向最近档，记警告而不是丢标号。
+            text_x = anchor_x + unit_x * LEADER_OFFSET
+            text_y = anchor_y + unit_y * LEADER_OFFSET
+            box_x, box_y, half_w, half_h = numeral_box(text_x, text_y, callout["numeral"])
+            rect = (box_x - half_w, box_y - half_h, box_x + half_w, box_y + half_h)
+            chosen = (text_x, text_y, box_x, box_y, half_w, half_h, unit_x, unit_y, rect)
+            warnings.append(
+                "件号 %s 找不到不压盖标号的位置（%d 个候选全部压到别的零件或已放标号），已退回首选方向"
+                % (callout["numeral"], len(CALLOUT_DISTANCE_SCALES) * len(CALLOUT_DIRECTION_STEPS))
+            )
+        text_x, text_y, box_x, box_y, half_w, half_h, dir_x, dir_y, rect = chosen
+        placed.append(rect)
+        end_x, end_y = leader_end(box_x, box_y, half_w, half_h, dir_x, dir_y)
         fragments.append(
             '<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="#000000" '
             'stroke-width="%s" fill="none" data-dsh-role="leader"/>'
@@ -574,7 +671,7 @@ def callout_fragments(view, center, bbox):
                 "point2d": [round(anchor_x, 4), round(anchor_y, 4)],
             }
         )
-    return fragments, anchors, (min_x, max_x, min_y, max_y)
+    return fragments, anchors, (min_x, max_x, min_y, max_y), warnings
 
 
 def detail_label_position(center_x, center_y, radius):
@@ -733,7 +830,7 @@ def build_view_svg(view, shapes, view_name):
     # 片段帧（y-down）几何范围。
     geo_min_x, geo_max_x = bbox[0] - c_x, bbox[1] - c_x
     geo_min_y, geo_max_y = bbox[2] - c_y, bbox[3] - c_y
-    callout_svg, anchors, extent = callout_fragments(view, center, bbox)
+    callout_svg, anchors, extent, callout_warnings = callout_fragments(view, center, bbox, part_bounds)
     marker_svg, marker_extent = detail_marking_fragments(view, center, view_name)
     if marker_extent is not None:
         extent = (
@@ -764,6 +861,7 @@ def build_view_svg(view, shapes, view_name):
         "bbox": [round(min_x, 4), round(min_y, 4), round(width, 4), round(height, 4)],
         "anchors": anchors,
         "parts": part_metadata(shapes, part_bounds, center),
+        "warnings": callout_warnings,
     }
 
 
@@ -823,6 +921,7 @@ def main():
                 "bbox": meta["bbox"],
                 "anchors": meta["anchors"],
                 "parts": meta["parts"],
+                "warnings": meta["warnings"],
             }
         )
 
@@ -848,8 +947,10 @@ def main():
                 "bbox": meta["bbox"],
                 "anchors": [],
                 # 放大视图是基视图上某个模型坐标窗口的放大，没有独立的零件投影
-                # 占位；空数组与普通视图的字段保持对称，消费方不必按 kind 分支。
+                # 占位、也不放件号；空数组与普通视图的字段保持对称，消费方不必按
+                # kind 分支。
                 "parts": [],
+                "warnings": [],
                 "base": detail["base"],
                 "center3d": detail["center3d"],
                 "radiusMm": detail["radiusMm"],

@@ -225,6 +225,15 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
       const warnings: string[] = ['由 3D 模型（FreeCAD TechDraw）投影生成的结构线稿']
       const figures = await renderStructureFigures(run, exec.signal)
       await applyViewLineStyles({ run, figures, warnings })
+      // 标号放置的降级说明随 manifest 回来：脚本退回首选方向时那句话必须到调用方手上，
+      // 否则「图面有标号」与「标号位置合规」会被混为一谈。
+      for (const figure of figures) {
+        for (const view of figure.manifest.views) {
+          for (const note of view.warnings ?? []) {
+            warnings.push(`图${figure.figureNumber} ${view.name}：${note}`)
+          }
+        }
+      }
       // 组件列表只派生一次，不随图数累加，否则每个索引条目会被其他图的组件重复污染。
       const components = structureComponents(run.callouts)
       const numeralMap = structureNumeralMap(figures, run.callouts)

@@ -64,6 +64,8 @@ export type StructureManifestView = {
   anchors: StructureManifestAnchor[]
   /** 每零件的投影占位；旧版 manifest 无此字段（局部放大视图恒为空数组）。 */
   parts?: StructureManifestPart[]
+  /** 标号放置的降级说明（找不到不压盖的位置等）；旧版 manifest 无此字段。 */
+  warnings?: string[]
   /** 放大视图的基视图名（仅 `kind='detail'`）。 */
   base?: string
   /** 放大视图的窗口圆心（模型 3D 坐标，仅 `kind='detail'`）。 */

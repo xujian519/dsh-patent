@@ -168,6 +168,12 @@ describe('buildStructureScript', () => {
     expect(payload.callouts).toEqual([{ numeral: '102', point3d: [1, 2, 3], label: '', model: null }])
   })
 
+  it('callout 省略 point3d 时 payload 记为 null（锚点交给脚本自动选）', () => {
+    const script = buildStructureScript(params({ callouts: [{ numeral: '103', label: '底板', model: 0 }] }))
+    const payload = extractPayload(script)
+    expect(payload.callouts).toEqual([{ numeral: '103', point3d: null, label: '底板', model: 0 }])
+  })
+
   it('局部放大：payload 带窗口、文件名按序号，脚本用实测属性接线', () => {
     const script = buildStructureScript(params({
       views: ['front'],

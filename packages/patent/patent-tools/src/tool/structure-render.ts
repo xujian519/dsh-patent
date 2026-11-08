@@ -20,6 +20,7 @@ import type {
   GenerateStructureFigureDeps,
   GenerateStructureFigureInput,
   GenerateStructureFigureOutput,
+  StructureAssembly,
   StructureCalloutInput,
   StructureFigureView,
 } from './structure-types.ts'
@@ -79,7 +80,7 @@ export async function resolveStructureRun(args: unknown, deps: GenerateStructure
   }
   const callouts = normalizeCallouts(input.callouts).map(callout => ({
     numeral: callout.numeral,
-    point3d: callout.point3d,
+    ...(callout.point3d === undefined ? {} : { point3d: callout.point3d }),
     ...(callout.label === undefined ? {} : { label: callout.label }),
     ...(callout.model === undefined ? {} : { model: callout.model }),
   }))
@@ -185,6 +186,38 @@ export async function applyViewLineStyles(args: {
       args.warnings.push(...styled.warnings.map(w => `线宽/线型：${viewPath} ${w}`))
       await writeFile(path, styled.svg, 'utf8')
     }
+  }
+}
+
+/**
+ * 装配体几何事实摘要：模型路径、每零件 3D 尺寸与每视图投影占位。
+ *
+ * 3D 事实（包围盒、体积）与视图无关，取任一普通视图的 `parts` 即可；投影占位按
+ * 视图分开收集，因为同一个零件在不同朝向下的占位不同。旧版 manifest 没有
+ * `parts` 字段时返回 undefined，调用方据此判断摘要是否可用。
+ * @param figures - 本次渲染出的图（装配体只有一条）。
+ * @returns 摘要；无逐零件几何事实时 undefined。
+ */
+export function structureAssembly(figures: readonly StructureFigureView[]): StructureAssembly | undefined {
+  const first = figures[0]
+  if (first === undefined) return undefined
+  const source = first.manifest.views.find(view => view.kind === 'view' && view.parts !== undefined)
+  if (source?.parts === undefined) return undefined
+  const viewBounds: Record<string, (number[] | null)[]> = {}
+  for (const view of first.manifest.views) {
+    if (view.kind !== 'view' || view.parts === undefined) continue
+    viewBounds[view.name] = view.parts.map(part => part.bounds)
+  }
+  return {
+    modelPaths: [...first.modelPaths],
+    parts: source.parts.map(part => ({
+      index: part.index,
+      /* v8 ignore next -- readManifest rejects an index outside modelPaths */
+      path: first.modelPaths[part.index] ?? '',
+      bbox3d: part.bbox3d,
+      volume: part.volume,
+    })),
+    viewBounds,
   }
 }
 

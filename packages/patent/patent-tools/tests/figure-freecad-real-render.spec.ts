@@ -362,6 +362,104 @@ describe.skipIf(!hasFreeCad)('real FreeCAD structure rendering (needs `freecadcm
     }
   }, 180_000)
 
+  it('自动锚点：省略 point3d 时在所属零件的真实顶点上选点', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-freecdauto-'))
+    try {
+      const result = await renderStructureViews(runtime, {
+        modelPaths: [FIXTURE, PIN_FIXTURE],
+        views: ['front', 'iso'],
+        scale: 1,
+        showHidden: false,
+        // 只声明归属，不给坐标：锚点由脚本在该零件上自动选。
+        callouts: [
+          { numeral: '100', label: '立柱', model: 0 },
+          { numeral: '200', label: '圆柱销', model: 1 },
+        ],
+        figureNumber: 1,
+        outputDir: dir,
+      }, { renderTimeoutMs: TEST_RENDER_TIMEOUT_MS })
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const manifest = JSON.parse(readFileSync(result.manifestPath, 'utf8')) as {
+        views: {
+          name: string
+          anchors: { numeral: string; model: number | null; point3d: number[]; point2d: number[] }[]
+          parts?: { index: number; bbox3d: number[] }[]
+        }[]
+      }
+      for (const view of manifest.views) {
+        const parts = view.parts ?? []
+        expect(view.anchors).toHaveLength(2)
+        for (const anchor of view.anchors) {
+          // 自动锚点必须真的选到某个 3D 点，而不是留空或落在原点。
+          expect(anchor.point3d).toHaveLength(3)
+          expect(anchor.point3d.some(value => value !== 0)).toBe(true)
+          const part = parts.find(entry => entry.index === anchor.model)
+          expect(part).toBeDefined()
+          if (part === undefined) continue
+          // 锚点落在所声明零件的 3D 包围盒内（顶点本就属于该零件，容差覆盖数值误差）。
+          const [x, y, z, lengthX, lengthY, lengthZ] = part.bbox3d as [number, number, number, number, number, number]
+          const [px, py, pz] = anchor.point3d as [number, number, number]
+          expect(px).toBeGreaterThanOrEqual(x - 0.5)
+          expect(px).toBeLessThanOrEqual(x + lengthX + 0.5)
+          expect(py).toBeGreaterThanOrEqual(y - 0.5)
+          expect(py).toBeLessThanOrEqual(y + lengthY + 0.5)
+          expect(pz).toBeGreaterThanOrEqual(z - 0.5)
+          expect(pz).toBeLessThanOrEqual(z + lengthZ + 0.5)
+        }
+      }
+      // 选点以首个视图为准：同一件号在其余视图锚定的是同一个 3D 点。
+      const first = manifest.views[0]?.anchors.map(anchor => anchor.point3d)
+      const second = manifest.views[1]?.anchors.map(anchor => anchor.point3d)
+      expect(second).toEqual(first)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }, 180_000)
+
+  it('装配体：manifest 带每零件投影占位，落点与件号同帧', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-freecadparts-'))
+    try {
+      const result = await renderStructureViews(runtime, {
+        modelPaths: [FIXTURE, PIN_FIXTURE],
+        views: ['front'],
+        scale: 1,
+        showHidden: false,
+        callouts: [],
+        figureNumber: 1,
+        outputDir: dir,
+      }, { renderTimeoutMs: TEST_RENDER_TIMEOUT_MS })
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const manifest = JSON.parse(readFileSync(result.manifestPath, 'utf8')) as {
+        views: { bbox: number[]; parts?: { index: number; bbox3d: number[]; volume: number; bounds: number[] | null }[] }[]
+      }
+      const view = manifest.views[0]
+      expect(view).toBeDefined()
+      if (view === undefined) return
+      const parts = view.parts
+      // 每零件一条，下标与 modelPaths 同序——引线布局判「压到别的零件」就靠这份占位。
+      expect(parts).toHaveLength(2)
+      expect(parts?.map(part => part.index)).toEqual([0, 1])
+      for (const part of parts ?? []) {
+        expect(part.bbox3d).toHaveLength(6)
+        expect(part.volume).toBeGreaterThan(0)
+        expect(part.bounds).toHaveLength(4)
+        // 占位是画布帧坐标：必须落在视图包围盒内（视图框已含内边距，故不会贴着边）。
+        const [boxX, boxY, boxWidth, boxHeight] = view.bbox as [number, number, number, number]
+        const [x, y, width, height] = part.bounds as [number, number, number, number]
+        expect(x).toBeGreaterThanOrEqual(boxX)
+        expect(y).toBeGreaterThanOrEqual(boxY)
+        expect(x + width).toBeLessThanOrEqual(boxX + boxWidth)
+        expect(y + height).toBeLessThanOrEqual(boxY + boxHeight)
+      }
+      // 两个零件在正视图里位置不同：合并成一个框就说明逐零件取样没生效。
+      expect(parts?.[0]?.bounds).not.toEqual(parts?.[1]?.bounds)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }, 180_000)
+
   it('工具端到端：model_paths 走真实渲染出装配图，件号归属随结果返回', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-freecadtool16-'))
     try {

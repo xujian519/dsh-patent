@@ -18,9 +18,13 @@ Status: implemented
 
 **Page + 最小模板，每视图一个 `DrawViewPart`。**TechDraw 只投影归属于带模板 `DrawPage` 的视图，故脚本自带一个最小空白 SVG 模板（一个不可见页面矩形）并把 `doc.TransientDir` 锚定到输出目录下的子目录——TechDraw 以该属性为基准拷贝模板，而 FreeCAD 在自身缓存目录不可写时（任何拒绝写 `~/Library/Caches/FreeCAD` 的沙箱）不派生它，该拷贝随之解析到 `/` 而失败；`doc.FileName` 不参与该拷贝。每个请求视图是单个带显式 `Direction`/`XDirection` 的 `TechDraw::DrawViewPart`；`DrawProjGroup.addProjection(str)` 在 1.1.3 抛 `TypeError: wrong type`，弃用。旧 `Drawing` 工作台在 FreeCAD 1.1 已移除，不用。
 
-**输出取 `viewPartAsSvg` 原始片段，而非渲染整页。**`TechDraw.viewPartAsSvg(view)` 返回纯 `<g fill="none" stroke="#000000">` 几何片段，不含模板边框、标题栏或图号——正是 4.3 的要求——故脚本把片段包成独立 `<svg viewBox=…>` 而不导出页面。片段坐标帧 y 向上（数学约定）而 SVG 画布 y 向下，故片段置于 `<g transform="scale(1,-1)">` 内。
+**输出取 `viewPartAsSvg` 原始片段，而非渲染整页。**`TechDraw.viewPartAsSvg(view)` 返回纯 `<g fill="none" stroke="#000000">` 几何片段，不含模板边框、标题栏或图号——正是 4.3 的要求——故脚本把片段包成独立 `<svg viewBox=…>` 而不导出页面。片段本身已是 y 向下的画布帧（实测：它按投影紧致几何居中，y 向下），故原样进画布、不做翻转；按「片段 y 向上」的假设套 `<g transform="scale(1,-1)">` 会把图上下镜像。
 
 **件号在 Python 侧经 `projectPoint` 锚定。**`DrawViewPart.projectPoint(App.Vector)` 与片段共享同一坐标帧（实测：两者都产出形如 `M -10 2.5` 的坐标），故脚本把每个件号的 3D 点投影、减去帧中心、翻转 y，在那里画引线与数字。在 Python 侧锚定让件号落在真实投影顶点上；在 TypeScript 侧做则要在外部重新推导 TechDraw 的投影。帧中心 C 是**紧致投影几何包围盒**的中心，经离散化每条边（`discretize(Number=32)`）逐点投影取样求得：TechDraw 按投影后的几何居中片段，旋转视图（iso）下 C *不是*模型 AABB 中心的投影——用 AABB 投影会可见地放错件号。
+
+**件号的 `point3d` 可省略，省略时由脚本选顶点。**只给 `{numeral, model}` 时，脚本取该零件**自身投影轮廓中心最远**的那个真实顶点。最远顶点必在轮廓外缘，引线因此从实体向外延伸而不会落进图面内部——这正是模型手填坐标最常犯的错，因为模型看不见 STEP 内部。同一零件上有多个自动件号时按该排名轮转，不会全部叠在同一个顶点。选点只跑一次、且在首个视图上；其余视图投影同一个 3D 点，故一个件号在整套图里指向同一物理位置。手填的 `point3d` 仍在任何投影之前过 0.5 毫米的 `distToShape` 归属核验；自动锚点不需要这一步，因为它本就取自该零件自己的顶点。
+
+**逐零件投影占位与视图包围盒在同一次取样里量出。**`projected_bounds` 每条边只离散化一次，同时累积紧致视图包围盒与逐零件包围盒；`part_metadata` 把每零件的 3D 包围盒、体积与该视图下的投影占位写进 manifest，工具再以 `assembly` 摘要给出同一份事实。两者都是画布帧坐标、与件号锚点同帧，该朝向看不见的零件记 `null`。合并后的单一视图框回答不了引线布局的问题——标号或引线会不会落到**别的零件**上——故逐零件占位在投影过程里量出，而不是事后从 SVG 反推：TechDraw 把所有零件画进同一个 `<g>`，事后无法恢复零件归属。
 
 **成功判定只看退出码加 manifest 存在。**`freecadcmd` 对 `~/Library/Preferences/FreeCAD` 与缓存写失败仅告警、非致命（STEP 载入/投影/导出均成功），且 macOS 下这些路径不随重定向的 HOME 迁移——其无害仅因为脚本把 `TransientDir` 自身锚定进输出目录，`TransientDir` 为空对模板拷贝是致命的。反过来，`freecadcmd` 吞掉未捕获的 Python 异常并以退出码 0 结束，故脚本包裹 `main()`，失败时 `traceback.print_exc()` + `sys.exit(1)`；没有这层包裹，失败的投影会看起来像成功。因此 stderr 文本绝不作为失败依据，只摘引进错误消息。
 
@@ -33,6 +37,8 @@ Status: implemented
 - **把渲染后的 `DrawPage` 导出为 SVG**（会带上模板）。拒绝：整页导出携带模板几何与页面装饰；专利附图像素内既不能有边框也不能有图号。
 - **把 Python 脚本作为包 asset 交付。**拒绝：`files` 只 ship `lib/index.js` 加类型；asset 需要打包与运行期路径解析。返回源码文本的纯构建函数无 FreeCAD 也可测，且不动打包。
 - **以 stderr 干净与否判定成功。**拒绝：FreeCAD 在健康运行里也会输出 `system.cfg`/transcoder 告警；把它们当致命会让某些宿主上每次渲染都失败。
+- **用独立的分析工具产出锚点。**拒绝：一次 FreeCAD 渲染的缺省超时是 120 秒、冷启动比 `dot` 慢，为一个模型图纯粹再起一次 `freecadcmd` 读几何会让成本大致翻倍；而这些事实在已经逐边离散化的投影过程里是免费得到的。
+- **把自动锚点放在零件 3D 包围盒的角点。**拒绝：角点未必落在实体上，锚点要么被归属核验拒绝，要么让引线指向空白；真实顶点按定义就在几何上。
 - **引线几何（与 `src/figure/leader-line.ts` 同批交付）：以节点 bbox 中位尺寸推导图面 scale。**实现期拒绝，改为以各节点组**实读 `font-size`** 的中位数相对基线 10 推导：几何常量（间隙、边距、文本行高）本就是按字号调校的，统一字宽模型已逐组实读 font-size，而 bbox 中位数会把标签长度混进图面 scale。
 
 ## Consequences
@@ -41,14 +47,14 @@ Status: implemented
 - 模型传入的 `scale`（有限且 > 0）与 `figure_number`（正整数）在工具层于渲染前校验：工具输入 schema 只约束其类型，未校验的值会让 FreeCAD 产出退化的 `width="0mm"` SVG 或不透明的投影失败。
 - `index.ts` 带一处 TypeScript 解析器缺陷的绕行：返回对象字面量的 `async` 箭头直接作三元分支、且整条赋值给以索引访问类型（`GenerateStructureFigureDeps['render']`）标注的 const 时会误解析（TS1359）；该分支被提升为具名常量 `structureNoSubprocess`。
 - 工具数断言（`registration.spec.ts`、双语 README）从 27 → 28。
-- Python 脚本内的件号放置自洽（简单外向偏移），不共享 TypeScript 引线的碰撞原语。TS/Python 放置数学的统一推迟到 Python 侧放置出现第二个消费者时再做。
+- Python 脚本内的件号放置自洽：沿锚点外向向量固定偏移 10 毫米，不与其他零件、其他标号或已绘图元做碰撞检测。逐零件投影占位现在提供了这种布局所需的输入——哪些占位区属于哪个零件——但布局本身仍未实现，`leader-line.ts` 的 TypeScript 原语也没有共享给它。
 
 ## Testing
 
 - `tests/figure-freecad-structure-script.spec.ts` —— 对构建出的脚本做纯函数断言（API 使用、视图表、`TransientDir` 锚定、payload 往返），无需 FreeCAD。
 - `tests/figure-freecad-renderer.spec.ts` —— mock `SubprocessRuntime`：发现顺序、probe、退出码分类、env 隔离、超时、取消。
 - `tests/structure-figure-tool.spec.ts` —— mock render：门禁、单模型/批量、图面用语告警、safe-SVG 门禁、索引持久化及其降级路径。
-- `tests/figure-freecad-real-render.spec.ts` —— `describe.skipIf(!hasFreeCad)` 真实端到端，跑签入的 `tests/fixtures/structure-bracket.step`（由签入的 `generate-structure-fixture.py` 生成；一条恒开测试断言 fixture 的 ISO-10303-21 头部签名与该生成器一致）：iso+front 投影含 `<path>`、仅黑描边、无边框/图号，且两个件号锚点都落在各自视图 bbox 内；在拒绝写 FreeCAD 缓存目录的沙箱下，这条成功断言本身就是 `TransientDir` 的回归保护——否则该拷贝会解析到 `/`。
+- `tests/figure-freecad-real-render.spec.ts` —— `describe.skipIf(!hasFreeCad)` 真实端到端，跑签入的 `tests/fixtures/structure-bracket.step`（由签入的 `generate-structure-fixture.py` 生成；一条恒开测试断言 fixture 的 ISO-10303-21 头部签名与该生成器一致）：iso+front 投影含 `<path>`、仅黑描边、无边框/图号，且两个件号锚点都落在各自视图 bbox 内；在拒绝写 FreeCAD 缓存目录的沙箱下，这条成功断言本身就是 `TransientDir` 的回归保护——否则该拷贝会解析到 `/`。同文件另有两条覆盖逐零件几何：一条断言每零件的 manifest 占位都落在视图框内、且两个零件不会塌成同一个占位，另一条在完全不给 `point3d` 的装配体上断言每个自动锚点落在其声明零件的 3D 包围盒内、且在各视图间逐值相同。
 
 ## Related
 

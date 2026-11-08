@@ -48,8 +48,11 @@ export const DEFAULT_STRUCTURE_VIEWS: readonly StructureViewName[] = ['iso', 'fr
 export type StructureCallout = {
   /** 参考标号（阿拉伯数字字符串；非数字由工具层 figureWordingWarnings 告警）。 */
   numeral: string
-  /** 锚定的模型 3D 坐标（毫米，与 STEP/IGES/BREP 单位一致）。 */
-  point3d: readonly [number, number, number]
+  /**
+   * 锚定的模型 3D 坐标（毫米，与 STEP/IGES/BREP 单位一致）。省略时脚本在该零件的
+   * 真实顶点里自动选一个（见模板内 `resolve_auto_anchors`）。
+   */
+  point3d?: readonly [number, number, number]
   /** 可选部件名称（写入 manifest 件号表供检索，不进图面像素）。 */
   label?: string | undefined
   /**
@@ -196,7 +199,7 @@ type ScriptPayload = {
   directions: Record<string, StructureViewDirection>
   scale: number
   showHidden: boolean
-  callouts: readonly { numeral: string; point3d: readonly number[]; label: string; model: number | null }[]
+  callouts: readonly { numeral: string; point3d: readonly number[] | null; label: string; model: number | null }[]
   details: readonly { base: string; center3d: readonly number[]; radiusMm: number; scale: number; reference: string }[]
   detailFilenames: readonly string[]
   mattingSlack: number
@@ -238,7 +241,7 @@ export function buildStructureScript(params: StructureScriptParams): string {
     showHidden: params.showHidden,
     callouts: params.callouts.map(callout => ({
       numeral: callout.numeral,
-      point3d: [...callout.point3d],
+      point3d: callout.point3d === undefined ? null : [...callout.point3d],
       label: callout.label ?? '',
       model: callout.model ?? null,
     })),
@@ -349,27 +352,40 @@ def escape_text(value):
     )
 
 
-def projected_bbox_center(view, shapes):
+def projected_bounds(view, shapes):
     """
-    求投影视图的紧致几何包围盒与其中心 C。
+    求投影视图的整体包围盒与逐零件包围盒（一次取样，两种口径）。
 
     离散化每条边后逐点 projectPoint：TechDraw 按投影后的紧致几何居中片段，
     旋转视图（如 iso）下该中心不等于模型 AABB 中心的投影，故必须实测取样。
     装配体的每个零件都参与取样（片段是所有零件的合并投影）。
-    返回 (C, (x_min, x_max, y_min, y_max))，均在 projectPoint 的原始帧（y 向上）。
+
+    逐零件包围盒是引线布局的输入：判「引线是否穿过别的零件」需要每个零件的
+    投影占位，而不是所有零件合并后的整体包围盒。零件在投影中没有几何时记
+    None（TechDraw 仍把它放进同一次 HLR，但该朝向看不见它）。
+    返回 ((x_min, x_max, y_min, y_max), [每零件同形包围盒或 None])，均在
+    projectPoint 的原始帧（y 向上）。
     """
-    xs = []
-    ys = []
+    xs_all = []
+    ys_all = []
+    per_part = []
     for shape in shapes:
+        xs = []
+        ys = []
         for edge in shape.Edges:
             for point in edge.discretize(Number=EDGE_SAMPLES):
                 projected = view.projectPoint(point)
                 xs.append(projected.x)
                 ys.append(projected.y)
-    if not xs:
+        if not xs:
+            per_part.append(None)
+            continue
+        per_part.append((min(xs), max(xs), min(ys), max(ys)))
+        xs_all.extend(xs)
+        ys_all.extend(ys)
+    if not xs_all:
         raise RuntimeError("投影未产生任何几何：模型可能为空或视图朝向退化")
-    center = ((min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0)
-    return center, (min(xs), max(xs), min(ys), max(ys))
+    return (min(xs_all), max(xs_all), min(ys_all), max(ys_all)), per_part
 
 
 def numeral_box(text_x, text_y, value):
@@ -417,6 +433,8 @@ def verify_callout_owners(shapes):
 
     只在渲染前跑：锚点错位是输入错误，不该先花掉一次完整投影再报。
     distToShape 对体外点返回真实偏移（实测 0.3 毫米报 0.3），故容差是尺度明确的阈值。
+    point3d 为 None 的件号走自动锚点，其坐标由 resolve_auto_anchors 在建好首个
+    视图后填入，故在这里跳过。
     """
     for index, callout in enumerate(CALLOUTS):
         owner = callout["model"]
@@ -427,6 +445,8 @@ def verify_callout_owners(shapes):
                 "callouts[%d].model = %d 超出 modelPaths 范围（共 %d 个模型）"
                 % (index, owner, len(shapes))
             )
+        if callout["point3d"] is None:
+            continue
         px, py, pz = callout["point3d"]
         offset = shapes[owner].distToShape(Part.Vertex(App.Vector(px, py, pz)))[0]
         if offset > ANCHOR_TOLERANCE:
@@ -435,6 +455,53 @@ def verify_callout_owners(shapes):
                 "件号必须锚定到所声明的零件，或改正 model 下标"
                 % (index, fmt(px), fmt(py), fmt(pz), owner, MODEL_PATHS[owner], fmt(offset), fmt(ANCHOR_TOLERANCE))
             )
+
+
+def resolve_auto_anchors(shapes, view):
+    """
+    给未给 point3d 的件号自动选锚点。
+
+    选点规则：在该零件的真实顶点里，取投影后离该零件投影轮廓中心最远的那个。
+    最远的顶点必在轮廓外缘，引线因此从实体外侧向外延伸，不会指向图形内部
+    （手填坐标最容易犯的错就是把标号丢进图面中心）。同一零件上有多个自动件号时
+    按出现顺序轮转排名，避免全部落在同一个点上；排名以首个视图为准，其余视图对
+    同一个 3D 点各自投影，锚定的仍是同一物理位置。
+
+    选完写回 CALLOUTS：之后的归属核对、投影与 manifest 读的都是这一份。
+    """
+    used = {}
+    for index, callout in enumerate(CALLOUTS):
+        if callout["point3d"] is not None:
+            continue
+        owner = callout["model"]
+        if owner is None:
+            owner = 0
+        if not 0 <= owner < len(shapes):
+            raise RuntimeError(
+                "callouts[%d].model = %d 超出 modelPaths 范围（共 %d 个模型）"
+                % (index, owner, len(shapes))
+            )
+        shape = shapes[owner]
+        points = [vertex.Point for vertex in shape.Vertexes]
+        if not points:
+            raise RuntimeError(
+                "callouts[%d] 需要自动锚点，但 modelPaths[%d]（%s）没有可投影的顶点"
+                % (index, owner, MODEL_PATHS[owner])
+            )
+        projected = [view.projectPoint(point) for point in points]
+        xs = [projected_point.x for projected_point in projected]
+        ys = [projected_point.y for projected_point in projected]
+        center_x = (min(xs) + max(xs)) / 2.0
+        center_y = (min(ys) + max(ys)) / 2.0
+        ranked = sorted(
+            range(len(points)),
+            key=lambda i: (projected[i].x - center_x) ** 2 + (projected[i].y - center_y) ** 2,
+            reverse=True,
+        )
+        ordinal = used.get(owner, 0)
+        used[owner] = ordinal + 1
+        pick = points[ranked[ordinal % len(ranked)]]
+        callout["point3d"] = [pick.x, pick.y, pick.z]
 
 
 def make_view(doc, page, shape_objs, view_name, index):
@@ -610,9 +677,55 @@ def build_detail_view_svg(view, detail, index):
     return "".join(parts), {"bbox": [round(-half, 4), round(-half, 4), round(size, 4), round(size, 4)]}
 
 
+def part_metadata(shapes, part_bounds, center):
+    """
+    每零件的 manifest 条目：3D 包围盒、体积与本次视图的投影占位（画布帧）。
+
+    投影占位给引线布局判「引线或标号是否压到别的零件」用。画布帧与 anchors 的
+    point2d 同帧（y 向下、以 C 居中），消费方不需要再做坐标换算。该朝向看不见
+    的零件记 None，而不是退化成零面积框。
+    """
+    c_x, c_y = center
+    parts = []
+    for index, shape in enumerate(shapes):
+        box = shape.BoundBox
+        bounds = part_bounds[index]
+        if bounds is None:
+            projected = None
+        else:
+            x_min = bounds[0] - c_x
+            x_max = bounds[1] - c_x
+            # projectPoint 的 y 向上、画布帧 y 向下，故上下两端互换。
+            y_min = -(bounds[3] - c_y)
+            y_max = -(bounds[2] - c_y)
+            projected = [
+                round(x_min, 4),
+                round(y_min, 4),
+                round(x_max - x_min, 4),
+                round(y_max - y_min, 4),
+            ]
+        parts.append(
+            {
+                "index": index,
+                "bbox3d": [
+                    round(box.XMin, 4),
+                    round(box.YMin, 4),
+                    round(box.ZMin, 4),
+                    round(box.XLength, 4),
+                    round(box.YLength, 4),
+                    round(box.ZLength, 4),
+                ],
+                "volume": round(shape.Volume, 4),
+                "bounds": projected,
+            }
+        )
+    return parts
+
+
 def build_view_svg(view, shapes, view_name):
     """生成单个视图的独立黑白 SVG 文本与其 manifest 元数据。"""
-    center, bbox = projected_bbox_center(view, shapes)
+    bbox, part_bounds = projected_bounds(view, shapes)
+    center = ((bbox[0] + bbox[1]) / 2.0, (bbox[2] + bbox[3]) / 2.0)
     c_x, c_y = center
     fragment = TechDraw.viewPartAsSvg(view)
     if fragment is None or fragment.strip() == "":
@@ -650,6 +763,7 @@ def build_view_svg(view, shapes, view_name):
         "center": center,
         "bbox": [round(min_x, 4), round(min_y, 4), round(width, 4), round(height, 4)],
         "anchors": anchors,
+        "parts": part_metadata(shapes, part_bounds, center),
     }
 
 
@@ -691,6 +805,10 @@ def main():
     view_centers = {}
     for index, view_name in enumerate(VIEWS):
         view = make_view(doc, page, shape_objs, view_name, index)
+        # 自动锚点以首个视图为选点依据；必须在任何 viewPartAsSvg 之前定稿，
+        # 否则后续视图会按各自的投影重新选点，同一件号落到不同物理位置。
+        if index == 0 and any(callout["point3d"] is None for callout in CALLOUTS):
+            resolve_auto_anchors(shapes, view)
         svg_text, meta = build_view_svg(view, shapes, view_name)
         view_centers[view_name] = (view, meta["center"])
         svg_path = os.path.join(OUTPUT_DIR, SVG_FILENAMES[view_name])
@@ -704,6 +822,7 @@ def main():
                 "path": svg_path,
                 "bbox": meta["bbox"],
                 "anchors": meta["anchors"],
+                "parts": meta["parts"],
             }
         )
 
@@ -728,6 +847,9 @@ def main():
                 "path": svg_path,
                 "bbox": meta["bbox"],
                 "anchors": [],
+                # 放大视图是基视图上某个模型坐标窗口的放大，没有独立的零件投影
+                # 占位；空数组与普通视图的字段保持对称，消费方不必按 kind 分支。
+                "parts": [],
                 "base": detail["base"],
                 "center3d": detail["center3d"],
                 "radiusMm": detail["radiusMm"],

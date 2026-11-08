@@ -45,7 +45,7 @@ function writeModel(dir: string, name: string): string {
   return path
 }
 
-type RenderOpts = { unsafe?: boolean; emptyViews?: boolean; svg?: string }
+type RenderOpts = { unsafe?: boolean; emptyViews?: boolean; svg?: string; omitParts?: boolean; badParts?: boolean }
 
 type MockRenderer = { render: (spec: StructureRenderSpec) => Promise<StructureRenderOutcome>; calls: StructureRenderSpec[] }
 
@@ -60,6 +60,15 @@ function okRenderer(opts: RenderOpts = {}): MockRenderer {
       const svg = opts.svg ?? (opts.unsafe
         ? '<!ENTITY x SYSTEM "file:///etc/passwd"><svg xmlns="http://www.w3.org/2000/svg"></svg>'
         : '<svg xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke="#000000"><path d="M0 0 L10 10"/></g></svg>')
+      // 脚本按模型列表逐零件量出投影占位；mock 与之一致（每个零件一个单位方框）。
+      const parts = opts.badParts === true
+        ? [{ index: 99, bbox3d: [0, 0, 0, 10, 10, 10], volume: 1000, bounds: [0, 0, 10, 10] }]
+        : spec.modelPaths.map((_, index) => ({
+          index,
+          bbox3d: [0, 0, 0, 10, 10, 10],
+          volume: 1000,
+          bounds: [0, 0, 10, 10],
+        }))
       const views = spec.views.map((name, order) => {
         const path = join(spec.outputDir, `fig${spec.figureNumber}_${name}.svg`)
         writeFileSync(path, svg)
@@ -74,9 +83,11 @@ function okRenderer(opts: RenderOpts = {}): MockRenderer {
             label: c.label ?? '',
             model: c.model ?? null,
             modelPath: c.model === undefined ? null : (spec.modelPaths[c.model] ?? null),
-            point3d: [...c.point3d],
+            point3d: c.point3d === undefined ? [] : [...c.point3d],
             point2d: [0, 0],
           })),
+          // undefined 在 JSON.stringify 时被丢弃，正好模拟没有该字段的旧版 manifest。
+          parts: opts.omitParts === true ? undefined : parts,
         }
       })
       // 放大视图：脚本产出的一等视图条目（kind='detail' + 窗口元数据）。
@@ -91,6 +102,7 @@ function okRenderer(opts: RenderOpts = {}): MockRenderer {
           path,
           bbox: [0, 0, 10, 10],
           anchors: [],
+          parts: [],
           base: detail.base,
           center3d: [...detail.center],
           radiusMm: detail.radiusMm,
@@ -271,6 +283,28 @@ describe('generate_structure_figure success', () => {
       expect(upserted[0]?.analysis.confidence).toBe(1)
       expect(upserted[0]?.analysis.usable).toBe(true)
       expect(upserted[0]?.imagePath).toBe('figs/fig1/fig1_iso.svg')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('省略 point3d：单模型可省 model，锚点交给脚本自动选', async () => {
+    const dir = tempDir()
+    const model = writeModel(dir, 'bracket.step')
+    try {
+      const { render, calls } = okRenderer()
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: join(dir, 'figs'), cwd: dir })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'generate_structure_figure', {
+        model_path: model,
+        views: ['iso'],
+        // 不给坐标、也不给归属：单模型的唯一零件就是默认归属，锚点由脚本在顶点里选。
+        callouts: [{ numeral: '1', label: '底板' }],
+      }, 'a1') as { isError: boolean }
+      expect(result.isError).toBe(false)
+      expect(calls[0]?.callouts).toHaveLength(1)
+      expect(calls[0]?.callouts[0]?.point3d).toBeUndefined()
+      expect(calls[0]?.callouts[0]?.label).toBe('底板')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -649,6 +683,19 @@ describe('generate_structure_figure render outcome mapping', () => {
     }
   })
 
+  it('manifest 的 parts 索引越界时报 tool_execution_failed', async () => {
+    const dir = tempDir()
+    const model = writeModel(dir, 'a.step')
+    try {
+      const { render } = okRenderer({ badParts: true })
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: dir, cwd: dir })
+      // 越界下标会让下游把件号绑到不存在的零件上，故在读回 manifest 处 fail-loud。
+      await expect(tool.execute({ model_path: model, views: ['iso'] }, exec)).rejects.toMatchObject({ code: 'tool_execution_failed' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('视图 SVG 含不安全结构时报 tool_execution_failed', async () => {
     const dir = tempDir()
     const model = writeModel(dir, 'a.step')
@@ -939,6 +986,61 @@ describe('generate_structure_figure 装配体（model_paths）', () => {
         expect.objectContaining({ numeral: '100', model: 1, modelPath: pin }),
         expect.objectContaining({ numeral: '102', model: 0, modelPath: plate }),
       ])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('输出装配体几何事实：每零件 3D 尺寸与各视图投影占位', async () => {
+    const dir = tempDir()
+    const plate = writeModel(dir, 'plate.step')
+    const pin = writeModel(dir, 'pin.step')
+    try {
+      const { render } = okRenderer()
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: join(dir, 'figs'), cwd: dir })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'generate_structure_figure', {
+        model_paths: [plate, pin],
+        views: ['iso', 'front'],
+      }, 'a1') as {
+        isError: boolean
+        value: {
+          assembly?: {
+            modelPaths: string[]
+            parts: { index: number; path: string; bbox3d: number[]; volume: number }[]
+            viewBounds: Record<string, (number[] | null)[]>
+          }
+        }
+      }
+      expect(result.isError).toBe(false)
+      // 几何事实按 modelPaths 顺序给出，path 与下标一一对应（调用方据此把件号绑到零件）。
+      expect(result.value.assembly?.modelPaths).toEqual([plate, pin])
+      expect(result.value.assembly?.parts).toEqual([
+        { index: 0, path: plate, bbox3d: [0, 0, 0, 10, 10, 10], volume: 1000 },
+        { index: 1, path: pin, bbox3d: [0, 0, 0, 10, 10, 10], volume: 1000 },
+      ])
+      // 投影占位按视图分开：同一零件在不同朝向下的占位不同，不能共用一个框。
+      expect(Object.keys(result.value.assembly?.viewBounds ?? {})).toEqual(['iso', 'front'])
+      expect(result.value.assembly?.viewBounds.iso).toEqual([[0, 0, 10, 10], [0, 0, 10, 10]])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('旧版 manifest 无 parts 字段：不给出 assembly，图仍照常产出', async () => {
+    const dir = tempDir()
+    const plate = writeModel(dir, 'plate.step')
+    try {
+      const { render } = okRenderer({ omitParts: true })
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: join(dir, 'figs'), cwd: dir })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'generate_structure_figure', {
+        model_paths: [plate],
+        views: ['iso'],
+      }, 'a1') as { isError: boolean; value: { assembly?: unknown; paths: string[] } }
+      expect(result.isError).toBe(false)
+      expect(result.value.assembly).toBeUndefined()
+      expect(result.value.paths).toEqual(['figs/fig1/fig1_iso.svg'])
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

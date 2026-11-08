@@ -5563,9 +5563,11 @@ CAD 剖视（sections.source）：复杂件不必手算轮廓——给 model_pat
 
 线宽与线型：line_width_mm 取 GB/T 4457.4 线宽系列之一改写可见线线宽，hidden_line_style="dashed" 把隐藏线画成虚线；缺省两者都不改写，输出与 FreeCAD 原始投影一致。
 
-件号锚定：callouts 传 [{numeral, point3d:[x,y,z], label?, model?}]，把参考标号绑定到模型 3D 坐标，脚本投影到每个视图的真实 2D 位置并以引线标注；标号应为阿拉伯数字，非数字标号与部件名会触发图面用语告警。
+件号锚定：callouts 传 [{numeral, point3d:[x,y,z], label?, model?}]，把参考标号绑定到模型 3D 坐标，脚本投影到每个视图的真实 2D 位置并以引线标注；标号应为阿拉伯数字，非数字标号与部件名会触发图面用语告警。省略 point3d 时由脚本自动选点——在该零件的真实顶点里取投影后离零件轮廓中心最远的一个，标号因此落在实体外侧；此时须给出 model（单模型可省，默认零件 0），同一零件上的多个自动件号会轮流选不同顶点。
 
 装配体：model_paths 传多个模型文件时，所有零件投影到同一张图（TechDraw 一次投影处理零件之间的遮挡），callouts[].model 指明该件号属于第几个零件（0 起，对应 model_paths 的顺序），脚本按该零件的真实几何核对锚点确实落在它上面，偏离超过 0.5 毫米即报错；装配体下每个件号都必须写明归属，以免标号指错零件。
+
+几何事实：结果附带 assembly——每零件在 model_paths 中的下标与路径、3D 包围盒 [x,y,z,xLength,yLength,zLength] 与体积，以及各视图下该零件的投影占位 [x,y,width,height]（画布帧，与该视图件号落点同帧；该朝向看不见的零件为 null）。用它判断「哪个零件叫什么、该标几号」，并按占位避开标号压到别的零件。
 
 局部放大：details 传 [{base, center:[x,y,z], radius_mm, scale?, reference?}]，把 base 视图上以模型坐标 center 为圆心、radius_mm 为半径的圆形区域按 scale（缺省 2）放大成一张独立视图（fig{N}_detail{M}.svg），并在 base 视图上画出该窗口的圆与标号。窗口按模型坐标给出，故与视图朝向、投影比例无关；base 必须是本次 views 里的视图，放大视图随 paths/manifest 一并返回（manifest 里该视图带 kind="detail" 与 base/center3d/radiusMm/scale/reference）。
 
@@ -5648,7 +5650,7 @@ CAD 剖视（sections.source）：复杂件不必手算轮廓——给 model_pat
           },
           "point3d": {
             "type": "array",
-            "description": "锚定的模型 3D 坐标 [x,y,z]（毫米，与模型单位一致）",
+            "description": "锚定的模型 3D 坐标 [x,y,z]（毫米，与模型单位一致）；省略时脚本在该零件的真实顶点里自动选一个（投影后离零件轮廓中心最远者）",
             "items": {
               "type": "number"
             }
@@ -5663,8 +5665,7 @@ CAD 剖视（sections.source）：复杂件不必手算轮廓——给 model_pat
           }
         },
         "required": [
-          "numeral",
-          "point3d"
+          "numeral"
         ]
       }
     },

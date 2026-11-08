@@ -35,6 +35,24 @@ export type StructureManifestAnchor = {
   point2d: number[]
 }
 
+/**
+ * manifest 中单个零件在该视图下的几何事实。
+ *
+ * `bounds` 是投影占位（画布帧 `[x, y, width, height]`，与 {@link StructureManifestAnchor}
+ * 的 `point2d` 同帧）；该朝向看不见这个零件时为 `null`。引线布局判「标号或引线压到
+ * 别的零件」需要逐零件占位，不能用所有零件合并后的视图包围盒。
+ */
+export type StructureManifestPart = {
+  /** 零件在渲染请求的模型列表中的下标（与 `anchors[].model` 同一口径）。 */
+  index: number
+  /** 模型 3D 包围盒 `[x, y, z, xLength, yLength, zLength]`（毫米）。 */
+  bbox3d: number[]
+  /** 零件体积（模型单位的三次方）。 */
+  volume: number
+  /** 该视图下的投影占位；该朝向看不见时为 `null`。 */
+  bounds: number[] | null
+}
+
 /** manifest 中单个视图条目（`kind` 区分普通投影视图与局部放大视图）。 */
 export type StructureManifestView = {
   name: string
@@ -44,6 +62,8 @@ export type StructureManifestView = {
   path: string
   bbox: number[]
   anchors: StructureManifestAnchor[]
+  /** 每零件的投影占位；旧版 manifest 无此字段（局部放大视图恒为空数组）。 */
+  parts?: StructureManifestPart[]
   /** 放大视图的基视图名（仅 `kind='detail'`）。 */
   base?: string
   /** 放大视图的窗口圆心（模型 3D 坐标，仅 `kind='detail'`）。 */
@@ -83,8 +103,11 @@ export type StructureFigureView = {
 export type StructureCalloutInput = {
   /** 参考标号（阿拉伯数字字符串）。 */
   numeral: string
-  /** 锚定的模型 3D 坐标（毫米）。 */
-  point3d: [number, number, number]
+  /**
+   * 锚定的模型 3D 坐标（毫米）。省略时由渲染脚本在该零件的真实顶点里自动选一个
+   * 投影后离零件轮廓中心最远的点（单模型默认归属零件 0，装配体须给 `model`）。
+   */
+  point3d?: [number, number, number]
   /** 可选部件名称（写入标号表/manifest，不进图面像素）。 */
   label?: string
   /** 该件号所属零件在输入模型列表中的下标（0 起）；给定时渲染脚本核对锚点确实落在该零件上。 */
@@ -145,12 +168,30 @@ export type GenerateStructureFigureInput = {
   persist_index?: boolean
 }
 
+/**
+ * 装配体的几何事实摘要。
+ *
+ * 由渲染脚本在同一次投影里量出，供调用方判断「哪个零件叫什么、该标几号」，
+ * 不必再手填 `callouts[].point3d`。`viewBounds` 与 `modelPaths` 同序，是引线布局
+ * 判「标号或引线压到别的零件」的输入。
+ */
+export type StructureAssembly = {
+  /** 模型文件绝对路径，顺序即 `callouts[].model` 的下标口径。 */
+  modelPaths: string[]
+  /** 每零件的尺寸与体积（与视图无关）。 */
+  parts: { index: number; path: string; bbox3d: number[]; volume: number }[]
+  /** 视图名 → 该视图下每零件的投影占位（与 `parts` 同序；`null` 表示该朝向看不见）。 */
+  viewBounds: Record<string, (number[] | null)[]>
+}
+
 /** 工具输出（与 schema 一致）。 */
 export type GenerateStructureFigureOutput = {
   /** 全部视图 SVG 路径（工作区相对，跨批量图合并）。 */
   paths: string[]
   /** 逐图结果（单模型一条；批量多条）。 */
   figures: StructureFigureView[]
+  /** 装配体的几何事实摘要（单模型或装配体均给出）。 */
+  assembly?: StructureAssembly
   /** 附图说明文字（「图N是…的结构示意图」，可直接落说明书）。 */
   figureDescription: string
   /** 落版与尺寸核算结果（给定 target_office 时）。 */

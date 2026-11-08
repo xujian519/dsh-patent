@@ -61,6 +61,18 @@ describe('upgrade guide gate', () => {
     }))).toEqual([])
   })
 
+  it('accepts the live-approval path alignment note and still rejects other loose files', () => {
+    expect(collectUpgradeGuideViolations(fixtureRoot({
+      'PATH-ALIGNMENT-NOTE.md': '# 升级指南目录对齐说明\n',
+      'PATH-ALIGNMENT-NOTE.zh.md': '# 不应存在\n',
+      'v0.2.2-rc.1/patent-stage-gate-live-approval/guide.md': VALID,
+      'README.md': '# no\n',
+    }))).toEqual([
+      'docs/upgrade-guide/PATH-ALIGNMENT-NOTE.zh.md: only v<semver>/<kebab-case-item>/guide.{md,zh.md,i18n.yaml} files belong in docs/upgrade-guide',
+      'docs/upgrade-guide/README.md: only v<semver>/<kebab-case-item>/guide.{md,zh.md,i18n.yaml} files belong in docs/upgrade-guide',
+    ])
+  })
+
   it('rejects files outside the version/item/guide pair layout', () => {
     expect(collectUpgradeGuideViolations(fixtureRoot({
       'README.md': VALID,

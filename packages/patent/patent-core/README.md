@@ -84,7 +84,7 @@ The evidence layer records tool receipts (`Ledger`/`receiptFromToolExecution`), 
 
 ## Claim-chart runtime
 
-`validateElements`/`validateRowMapping`/`detectGaps`/`validatePinCite` validate the element grid, and `saveClaimChart`/`loadClaimChart`/`renderChartMarkdown` persist and render it (backed by the shared `JsonFileStore` helpers). `deriveClaimRefs` derives independent/dependent status and referenced claim numbers from the claim text itself: a prefixed reference (`根据权利要求1`) counts anywhere in the claim, a bare `权利要求1所述` counts only in the preamble (before the characterizing part or within the first sentence), and catch-all forms (`前述权利要求中任一项`) expand to all earlier claims.
+`validateClaimTextStructure(claimText)` checks claim-number structure in the raw claim text (unique numbers, starting at 1, contiguous with no gaps; scans the text directly so a `Map` cannot hide duplicates; a single claim with no leading numbers returns an empty error list). `validateElements` calls it first, then checks element-to-text consistency. `validateElements`/`validateRowMapping`/`detectGaps`/`validatePinCite` validate the element grid, and `saveClaimChart`/`loadClaimChart`/`renderChartMarkdown` persist and render it (backed by the shared `JsonFileStore` helpers). `deriveClaimRefs` derives independent/dependent status and referenced claim numbers from the claim text itself: a prefixed reference (`根据权利要求1`) counts anywhere in the claim, a bare `权利要求1所述` counts only in the preamble (before the characterizing part or within the first sentence), and catch-all forms (`前述权利要求中任一项`) expand to all earlier claims.
 
 ## Claim-coverage checks
 

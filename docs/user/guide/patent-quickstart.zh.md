@@ -54,6 +54,21 @@ Agent 在动手前会复述任务范围与每个关键取舍并等待确认；�
 - 检索报告写明数据来源、检索式、检索日期与覆盖范围。
 - 每条事实性断言都带来源；拿不出来源的断言会被撤回。
 
+
+## 审批门（会话内卡片，无独立路由）
+
+专利工作流跑到 `approval-gate` 阶段时，**不会**打开单独的「审批」页面或侧栏路由。
+
+在默认前台配置（专利预设对 `@deepseek-ai/dsh-patent-tools` 开启 `approveStageGates: true`，且部署挂载了 `approval` / `@deepseek-ai/dsh-user-approval`）下：
+
+1. 同一会话里会出现**审批卡片**（一次性决策），摘要来自该审批门 `review_keys` 所列产出。
+2. 放行后工作流继续；拒绝 / 取消 / 服务不可用 / `never` 策略会带结果名暂停，结果写在工具返回值里。
+3. 后台运行（`run_in_background: true`）或关闭该开关的部署，仍可能走「暂停后用 `approveStageIds` 续跑」的旧契约——见升级指南，不要在前台开关打开时自行传 `approveStageIds`。
+
+核对步骤：用短 manifest（例如 `patent_workflow_run` 传 `manifestId: patent_novelty_v1`）跑到审批门，确认卡片可见且放行后整链完成。
+
+详细迁移说明：[`../../upgrade-guide/v0.2.2-alpha.3/patent-stage-gate-live-approval/guide.zh.md`](../../upgrade-guide/v0.2.2-alpha.3/patent-stage-gate-live-approval/guide.zh.md)（正文保持在 `alpha.3`；`v0.2.2-rc.1` 下仅有指针，见 `docs/upgrade-guide/PATH-ALIGNMENT-NOTE.md`）。
+
 ## 继续阅读
 
 - [使用 Web UI](index.zh.md)

@@ -11,7 +11,9 @@
 
 > **状态（2026-09-22 上游 v0.1.7-alpha.1 同步后，已被 2026-10-16 版本取代）**：preset 随上游改为声明式。专利模式正本是 `packages/bundle/web-app/presets/patent.patch.yml` —— `@deepseek-ai/dsh-web-app` bundle 内一条 id 为 `patent` 的 `@deepseek-ai/dsh-agent-preset` 声明，随应用安装交付；不再存在 preset 目录，也不再读取 `$DSH_HOME/.agent-presets` 用户根，用户自建或覆盖经 bundle patch 安装（见 `editing-cordis-compositions` 技能）。下文凡写 `packages/preset/agent-presets/presets/patent/` 或 `~/.dsh/.agent-presets/patent/` 之处，均指该声明。
 
-> **当前状态（2026-10-16 答复审查意见域审阅后）**：审查意见答复已落地为 `patent-oa-response` 技能与 `patent_oa_response_v1` 工作流 manifest（parse → claim-chart → response-plan → draft → approval），交付经 `render_patent_document`（template=oa-response）受控草稿渲染；下文 L4 的「docx 成品」为历史设计口径，正式出件按 100012/100014 表格（见模板 `references/conventions.md` §8）。本文保留 2026-08-25 / 2026-09-22 两版状态为设计史。
+> **当前状态（2026-11-09 文档对齐草稿）**：实现早已越过「只出设计 / Phase 1 零代码」。根包版本 `0.2.2-rc.1`；专利能力以仓库内 `packages/patent/*`（含 `@deepseek-ai/dsh-patent-core` / `dsh-patent-tools` / `dsh-patent-deadline` 等）、专利预设声明与技能（含 `patent-oa-response`、`patent_oa_response_v1` 工作流）、以及前台 `approveStageGates` 运行中审批门为准。下文 §1「不写任何 Harness 侧新插件（Phase 1 零代码）」与「不移植 Sati 运行时」中，**前者已过时**——插件与包已落地；**后者（不接 Sati 进程 / 不搬 Pregel 工作流状态机）仍成立**，但仓内自有图引擎与 atoms 是 Harness 侧实现，不是 Sati 桥。预设路径以现行 bundle patch / 包导出为准，文中 `~/.dsh/.agent-presets/patent/` 与早期目录写法仅作设计史。与本文冲突时：**以代码与现行预设/升级指南为准**。2026-08-25 / 2026-09-22 / 2026-10-16 三版状态条保留为设计史。
+
+> **状态（2026-10-16 答复审查意见域审阅后）**：审查意见答复已落地为 `patent-oa-response` 技能与 `patent_oa_response_v1` 工作流 manifest（parse → claim-chart → response-plan → draft → approval），交付经 `render_patent_document`（template=oa-response）受控草稿渲染；下文 L4 的「docx 成品」为历史设计口径，正式出件按 100012/100014 表格（见模板 `references/conventions.md` §8）。本文保留 2026-08-25 / 2026-09-22 两版状态为设计史。
 
 ---
 
@@ -29,7 +31,7 @@
 
 **不需要**的东西（明确不做）：
 - 不建 RAG / 向量 / 图引擎（Sati 有，但决定不接；第一阶段用 web 检索 + 文件化知识库替代，见 §9 的召回策略）
-- 不写任何 Harness 侧新插件（Phase 1 零代码；工具行全部是现有插件）
+- 不写任何 Harness 侧新插件（~~Phase 1 零代码~~；**已过时——见文首 2026-11-09 状态**；设计当时工具行拟全部复用现有插件）
 - 不移植 Sati 的运行时（工作流状态机、Pregel 图、审批门状态机）——Harness 的 plan / workflow / goal / ask_user 已覆盖同等职责
 
 ---

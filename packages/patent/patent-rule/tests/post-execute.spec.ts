@@ -20,7 +20,9 @@ function exec(name: string): ToolExecution {
 
 /** A call with no owning agent: the gate cannot address an approval request for it. */
 function execWithoutAgent(name: string): ToolExecution {
-  return { callId: ToolCallId(`call-${name}`), name, arguments: {}, signal } as unknown as ToolExecution
+  // Derived from exec() so the fixture needs no second `as unknown` construction.
+  const { agent: _omitted, ...rest } = exec(name)
+  return rest
 }
 
 function deliveryTool(name: string, text: string) {

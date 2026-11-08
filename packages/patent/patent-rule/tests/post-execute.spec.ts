@@ -18,6 +18,11 @@ function exec(name: string): ToolExecution {
   return { callId: ToolCallId(`call-${name}`), name, arguments: {}, agent, signal } as unknown as ToolExecution
 }
 
+/** A call with no owning agent: the gate cannot address an approval request for it. */
+function execWithoutAgent(name: string): ToolExecution {
+  return { callId: ToolCallId(`call-${name}`), name, arguments: {}, signal } as unknown as ToolExecution
+}
+
 function deliveryTool(name: string, text: string) {
   return defineContentToolFixture({
     name,
@@ -117,6 +122,34 @@ describe('tools/post-execute output gate', () => {
     const result = await executeToolFixture(ctx, exec('validate_specification'))
     expect(result.isError).toBe(true)
     expect(result.error?.message).toMatch(/无审批通道/)
+  })
+
+  it('fails closed without asking when approval is disabled by config', async () => {
+    // The answerer is mounted and would allow the result: only the config switch
+    // can produce the block, so `requested` staying false pins which guard fired.
+    const ctx = await mount({ rulesDir: makeRulesFixture(), approvalDisabled: true })
+    let requested = false
+    ctx.provide('approval', {
+      request: async (): Promise<string> => { requested = true; return 'allowed-once' },
+    })
+    ctx.tools.register(deliveryTool('draft_claims', '包含 REVIEWWORD 的文档'))
+    const result = await executeToolFixture(ctx, exec('draft_claims'))
+    expect(result.isError).toBe(true)
+    expect(result.error?.message).toMatch(/无审批通道/)
+    expect(requested).toBe(false)
+  })
+
+  it('fails closed without asking when the call carries no agent', async () => {
+    const ctx = await mount({ rulesDir: makeRulesFixture() })
+    let requested = false
+    ctx.provide('approval', {
+      request: async (): Promise<string> => { requested = true; return 'allowed-once' },
+    })
+    ctx.tools.register(deliveryTool('draft_claims', '包含 REVIEWWORD 的文档'))
+    const result = await executeToolFixture(ctx, execWithoutAgent('draft_claims'))
+    expect(result.isError).toBe(true)
+    expect(result.error?.message).toMatch(/无审批通道/)
+    expect(requested).toBe(false)
   })
 
   it('fails closed on a shipped PAT-APPROVAL-001 hit with no approval service', async () => {

@@ -528,3 +528,105 @@ D11 范围：`patent-tools` 的工具层（schema、结果结构、错误码、�
 - **不覆盖 `figure/` 的几何与渲染实现**：`render-check-*`、`section-diagram`、`leader-line`、FreeCAD/Graphviz/Inkscape 的数值确定性与退化输入留 D12。
 - **不启动真实 knowledge.db、网络或浏览器通道**：D11 的复现全部用注入的 fake 依赖，覆盖契约分支；真实 provider 的端到端覆盖仍由 CI 与 D7 的通道测试负责。
 - **不把 20 个错误码裁到已用集合**：`PatentToolErrorCode` 是 Sati 协议面，可能被下游按码路由；R-58/R-59 暴露的是映射缺口，不是码表冗余。
+
+## 34. D12 渲染族复核范围与方法
+
+D12 范围：`packages/patent/patent-tools/src/figure` 的渲染族（几何、数值确定性、退化输入、CJK 字体）。七个 >700 行文件逐一过读（导出面、校验、几何/落位与发射分段，关键函数逐行）：`freecad-structure-script.ts` 1,233、`render-check-findings.ts` 988、`section-diagram.ts` 918、`leader-line.ts` 908、`dot-builder.ts` 839、`render-check-scan.ts` 792、`circuit-diagram.ts` 749；合计 6,427 行。支撑模块按调用关系抽读：`glyph-box.ts`（CJK/字宽模型）、`mm-primitives.ts`（数值格式）、`vector-figure.ts`（片段上限）、`plot-diagram.ts` 与 `sequence-diagram.ts`（另两条直绘通路）、字体解析（`wiring.ts` 的 `resolveDotFont`）与 Graphviz 产物收尾（`graphviz-renderer.ts`）；`svg-viewport.ts`、`submission-page.ts`、`section-source.ts`、`freecad-section-geometry.ts`、`freecad-hatch-geometry.ts` 只按导出、常量与依赖核对，未逐行复核。
+
+方法：先按 §5.1「图形渲染」与 D12 行的四类检查项（退化输入、数值确定性、CJK 字体、几何）读实现与既有测试；每个可疑路径用临时 spec 直接调用纯函数或 `dot` CLI 复现，记录实际输出后删除；可长期保留的输出另建回归快照（§37）。复现覆盖 12 组输入：零面积/共线轮廓、空集合、常量序列、超长标签、CJK 混排、XML 实体文字、巨大轮廓、微小 `stroke-dasharray`、20 万点多边形、重复/冲突节点 id、自连电路、缺失字体。未启动 FreeCAD、Inkscape 或真实模型渲染；真实渲染链路由 CI 的 `figure-*-real-render.spec.ts` 覆盖。
+
+结论：渲染族的正常路径有较完整的几何校验与既有测试，退化输入的主要问题集中在「按输入规模展开、缺少上限」与「同一度量存在多份实现」。本次复核确认 10 项风险（P2 7 项、P3 3 项），全部登记为后续修复/拆分 PR 的输入；D12 本身只新增回归快照与拆分方案，不改产品代码（见 §39）。
+
+## 35. D12 渲染族问题清单
+
+以下 10 项均以最小输入或 CLI 实测确认，详情见风险登记册 R-67–R-76。级别按第 3 节标准判定。
+
+| 风险 | 类别 | 证据 | 最小复现 / 实际结果 | 级别 |
+|---|---|---|---|---|
+| R-67 | 正确性 / id | `dot-builder.ts:253-257,485-486,593-594`；对照 `:668,723` | 流程图 id `a.b` 与 `a_b` → 两个 `"a_b"` 节点、`"a_b" -> "a_b"`；框图重复 id `a` → 两行同名节点，标号同为 100 | P2 |
+| R-68 | 检查正确性 / 文字度量 | `render-check-scan.ts:716,616-628`；对照 `svg-annotate.ts:100-102` | `<text>A&amp;B</text>` 量成 `A&amp;B`（5 字符）：框宽 15.75 mm，实际 7.35 mm；x=16 的线未穿真实文字，却报 `text-crossed-by-line` | P2 |
+| R-69 | 正确性 / 标号匹配 | `leader-line.ts:824-825,887-891` | 节点「泵体」「泵」与参考 `[{泵,1},{泵体,2}]` → 两个节点都标 1，参考「泵体」报未命中 | P2 |
+| R-70 | CJK 字体降级 | `wiring.ts:220-237`、`dot-builder.ts:444`、`graphviz-renderer.ts:237-248` | `dot` 用不存在的 `fontname` 渲染中文：退出码 0、无 stderr，SVG 仍写 `font-family="…"`；工具不报 | P2 |
+| R-71 | 退化输入 / 上限 | `render-check-scan.ts:281-291`、`render-check-findings.ts:557-577` | 160 mm 线 + `stroke-dasharray="0.001 0.001"` → 8 万段、11 ms；模式再小 10 倍即 80 万段，无上限 | P2 |
+| R-72 | 退化输入 / 上限 | `section-diagram.ts:469-504`、`vector-figure.ts:83-85` | 100,000 mm 见方轮廓 → 3,608,928 字节片段、30 ms；跨度再放大 10 倍即 36 MB，且 `too_large` 在生成之后才检查 | P2 |
+| R-73 | 退化输入 / 崩溃 | `render-check-findings.ts:211-215,725,789` | 20 万点、约 0.8 MB 的合法多边形 → `RangeError: Maximum call stack size exceeded` | P2 |
+| R-74 | 参数校验 | `dot-builder.ts:300-315,329-347` | `pageSize: 'a4', marginCm: 30` → `size="-15.35,-11.93"` 负值 | P3 |
+| R-75 | 输入校验 / 几何 | `circuit-diagram.ts:641-660,700-710,741` | 元件自连 → `polyline 10.5,13 7,13 10.5,13` 与引脚上的实心结点 | P3 |
+| R-76 | CJK / 数值一致性 | `glyph-box.ts:16-25,38-51,78-88`、`leader-line.ts:138-147,268-271`、`plot-diagram.ts:126-130,200-203`、`freecad-structure-script.ts:344-347,361-363`、`freecad-section-script.ts:191`、`mm-primitives.ts:2` | 同一字符在三处分别是 0.6/0.75/1、0.55/1、0.62；Hangul 与扩展 B 只在 `glyph-box` 按全角；Python `%.3f` 与 JS `Math.round` 在 4 位小数的半值上 941/20,000 次不同 | P3 |
+
+## 36. D12 退化输入与数值确定性矩阵
+
+| 输入类别 | 覆盖对象 | 当前行为（实测/快照） | 结论 |
+|---|---|---|---|
+| 零面积轮廓 | `buildSectionDiagram` | 不产生剖面线；重心退化为顶点平均位置，标号引线仍画出 | 已固定（§37 快照） |
+| 共线顶点 | `buildSectionDiagram` | 切线交点为零长线段时跳过；画布仍由顶点与文字框撑开 | 已固定（既有用例 + 快照） |
+| 空可选集合 | 剖视/电路/曲线/时序构建器 | 缺省 `outline`/`labels`/`connections`/图例等按空集合处理；必需集合为空时抛 `empty_input` | 已固定（快照/既有用例） |
+| 常量序列（零跨度） | `buildPlotDiagram` | 按 `DEGENERATE_HALF_SPAN = 1` 展开范围，刻度与折线仍可画 | 已固定（快照） |
+| 超长标签 | `buildCircuitDiagram` | 全部候选落位越界时退回首选位置，由渲染复核报出 | 既有用例；不新增 |
+| CJK 混排 | 全部文字量测 | 复核侧全角 1.0、大写 0.75、其余 0.6；放置侧 0.55/1.0 且 CJK 正则更窄；Hangul/扩展 B 只在 `glyph-box` 按全角（R-76） | 快照锁定当前口径 |
+| XML 实体文字 | `scanSvg` / 渲染复核 | 实体不解码，框按原文变宽，可产生假穿字（R-68） | 待修 |
+| 微小 `stroke-dasharray` | `scanSvg` / `dashSegments` | 按 `长度 / 模式` 展开，无段数上限（R-71） | 待修 |
+| 巨大坐标轮廓 | `buildSectionDiagram` | 剖面线条数与跨度成正比，先建片段后查 2 MB 上限（R-72） | 待修 |
+| 超大顶点集 | `measureInkBounds` / `outlineOverlaps` | `Math.min(...xs)` 在 20 万点时抛栈溢出（R-73） | 待修 |
+| 重复/清洗碰撞 id | 四个 DOT 构建器 | 流程图/框图静默合并；层级图/状态图已拒绝（R-67） | 待修 |
+| 自连与同格元件 | `buildCircuitDiagram` | 自连画出往返零面积折线与结点；同格元件完全重叠（R-75） | 待修 |
+| 缺字体 | Graphviz 渲染链 | CLI 退出 0、无告警；SVG 保留缺失字族（R-70） | 待修 |
+| 重复构建 | 全部纯函数构建器 | 相同输入逐字节一致（无随机、时钟、`toLocale*`） | 已固定（§37 用例外） |
+
+数值确定性补充：`formatMm` 以 `Math.round(value * 1000) / 1000` 输出三位小数，JS 侧重复构建稳定；Python 侧 `freecad-structure-script.ts` 用 `"%.3f"`、`freecad-section-script.ts` 用 `round(..., 3)`，与 JS 的半值舍入在约 4.7% 的 4 位小数输入上不同（R-76）。这不是同一次构建内的随机性，而是跨引擎复现同一图面时的口径差异。
+
+## 37. D12 渲染回归快照清单
+
+新增 `packages/patent/patent-tools/tests/figure-render-regression.spec.ts` 与同名 `__snapshots__`。全部输入为固定字面量、不依赖本机字体与外部程序；拆分文件时必须零改动通过（除 import 路径外不得改测试）。
+
+| 用例 | 锁定内容 | 类型 |
+|---|---|---|
+| 剖视图（外轮廓 + 双向剖面线 + 中心线 + 断裂线 + 剖切符号 + 引线标号） | 完整 `body`、画布尺寸、`labels`（含组号、线宽、坐标） | 文件快照 |
+| 剖视图退化（零面积轮廓） | 无剖面线、退化重心、引线与文字框 | 文件快照 |
+| 电路图（中文元件名/连线名 + T 形结点） | 符号、走线、文字落位与结点顺序 | 文件快照 |
+| 曲线图（双序列、网格、中文轴标目） | 轴、刻度、网格、标记与图例坐标 | 文件快照 |
+| 曲线图退化（常量序列） | 零跨度范围的默认展开 | 文件快照 |
+| 时序图（同步/返回/异步 + 激活条） | 生命线、箭头、虚线样式与消息文字 | 文件快照 |
+| 引线标注（两中文节点 + 边） | 组平移换算、引线端点、标号文本、画布扩边 | 文件快照 |
+| 流程图 DOT（中文步骤 + 决策边 + A4 页边距） | 完整 DOT 文本与页面属性 | 文件快照 |
+| 框图 DOT（语义填充 + 跨图续号） | 完整 DOT 文本与标号 | 文件快照 |
+| FreeCAD 结构线稿脚本 | 全文 SHA-256 + 双重 JSON 参数 + 自动锚点 `null` 传递 | 内联摘要 |
+| 渲染复核：合规 / 缺陷 / 空 SVG | 报告的字段、范围、发现类别、文案与顺序 | 文件快照 |
+| CJK 文字度量 | `textWidthMm('壳体 R1', 3.5)` 与 `glyphBox` 的精确值 | 内联断言 |
+| 重复构建确定性 | 剖视/电路/曲线/时序/DOT/脚本连续两次输出逐字节相等 | 断言 |
+
+更新规则：只有渲染行为被有意改变时才用 `vitest -u` 重录，并在 PR 描述说明差异；拆分文件一律不重录。`freecad` 摘要变化时，同时人工核对 `manifest` 字段与脚本版本注释。
+
+## 38. D12 拆分方案（几何 / 渲染 / 检查分层）
+
+目标：把七个 >700 行文件按 P2 第 3 项「几何计算 / 渲染 / 检查」分层，单文件收敛到 600 行以内；公共导出面与既有测试保持不变，拆分 PR 只做移动。
+
+| 源文件（现状行） | 现状职责（行段） | 目标模块（预计行） |
+|---|---|---|
+| `section-diagram.ts`（918） | 类型/校验 28-427；剖面线 429-504；标号、断裂线、剖切符号 506-683；SVG 发射 685-751；组装 753-918 | `section-hatch.ts`（约 150：剖面线参数/裁剪）；`section-annotations.ts`（约 230：重心、标号引线、断裂线、剖切符号、点划线）；`section-diagram.ts`（约 520：类型、校验、组装） |
+| `render-check-findings.ts`（988） | 类型/常量 25-178；线段与区间数学 179-358；各项判据 358-815；公开入口 817-988 | `render-check-geometry.ts`（约 300：包围盒、多边形内点、遮挡切分、虚线展开、区间合并）；`render-check-rules.ts`（约 430：穿字/净距/点划线/剖面线/叠压/字高/越界/版面）；`render-check-findings.ts`（约 260：类型、`checkFigureRendering`、`measureInkBounds`、`blockingFindings`） |
+| `leader-line.ts`（908） | 类型/常量 37-218；SVG 与文本解析 220-480；候选与落位 485-700；画布扩边与标注入口 700-908 | `leader-line-parse.ts`（约 280：标签/属性/组平移/画布/障碍解析）；`leader-line-place.ts`（约 280：候选、碰撞、画布扩边）；`leader-line.ts`（约 350：类型、入口、片段发射） |
+| `dot-builder.ts`（839） | 类型/常量 23-195；标号/清洗 196-257；页面 259-356；转义、头、四个构建器 358-838 | `dot-numerals.ts`（约 110）；`dot-page.ts`（约 120）；`dot-diagrams.ts`（约 430：四个构建器与模板）；`dot-builder.ts`（约 180：类型、头/转义、再导出） |
+| `render-check-scan.ts`（792） | 类型 40-148；标签/属性/变换 150-390；路径与图元几何 390-660；遍历与汇总 660-792 | `svg-scan-attrs.ts`（约 270：标签、行内样式、长度/字号、变换）；`svg-scan-geometry.ts`（约 270：path/points/圆椭圆、折线化）；`render-check-scan.ts`（约 250：帧遍历、`scanSvg`、`textQuad`） |
+| `circuit-diagram.ts`（749） | 类型/常量 25-161；发射与符号画法 163-405；走线与落位 405-660；校验与组装 660-749 | `circuit-symbols.ts`（约 330：符号发射、十种画法、端口、外接框）；`circuit-routing.ts`（约 230：正交走线、连线说明落位、结点）；`circuit-diagram.ts`（约 190：类型、校验、组装） |
+| `freecad-structure-script.ts`（1,233） | 类型/常量 35-226；构建器 228-292；Python 模板 294-1,233 | `freecad-structure-python-geometry.ts`（约 500：模板前半：参数、投影、几何事实、锚点）；`freecad-structure-python-render.ts`（约 450：模板后半：视图、SVG、manifest、main）；`freecad-structure-script.ts`（约 300：payload、文件名、模板拼接） |
+
+拆分原则与顺序：
+
+1. **先检查、后渲染**：第一批拆 `render-check-scan` + `render-check-findings`（判据最多、最独立）；第二批 `section-diagram` + `circuit-diagram`；第三批 `leader-line`；第四批 `dot-builder`；最后 `freecad-structure-script`。
+2. **依赖单向**：`geometry`/`parse` 不得反向 import 入口模块；入口模块保留同名导出（`index.ts` 与工具层不改），必要时从新模块再导出。
+3. **纯移动**：每个 PR 只移动函数与常量并改 import；`git diff --color-moved=dimmed-zebra` 不得显示逻辑改动；预计 diff 超过 400 行的单日 PR 规则，但按 §3.2「纯移动单独 PR」处理，不与修复混做。
+4. **等价性证据**：§37 快照零改动通过；FreeCAD 脚本 SHA-256 不变；`pnpm exec vitest run packages/patent/patent-tools/tests/figure-*.spec.ts` 全绿；`pnpm run typecheck`、`pnpm run lint`。
+5. **修复不与拆分混做**：R-67–R-75 的修复各自成 PR 并先加失败用例（§35 的复现即用例设计）；R-76 的文字度量收敛在拆分完成后单独评估（改比例会改模型可见图面，需要快照差异评审），不要顺手合并。
+
+拆分收益（按当前行数估算）：最大文件从 1,233 行降到约 520 行；七个文件合计仍约 6,427 行，不追求删行；收益是职责边界、可测试性与后续修复的落点（R-68/R-71/R-73 落在 check 层，R-67/R-74 落在 DOT 层，R-72 落在 section 层，R-70/R-76 落在文字度量与字体解析）。
+
+## 39. D12 范围校正与不做项
+
+- **不改产品代码**：D12 的交付是「渲染回归快照 + 拆分方案」；R-67–R-76 只登记，修复与拆分各自 PR。这样 review 结论与行为改动不混在一个 diff 里，也符合 §3.2「simplification 与 behavior fix 不得混在一个 PR」。
+- **不做真实渲染的端到端复核**：FreeCAD/Graphviz/Inkscape 的真实输出依赖本机二进制与字体；D12 只用纯函数、固定 SVG 与 `dot` 的缺字体实验取证，真实链路仍由 CI 的 `figure-*-real-render.spec.ts` 与 `figure-graphviz-ci-signal.spec.ts` 负责。
+- **不在 D12 统一 Python 与 JS 的数值格式（R-76）**：统一会改 FreeCAD 产物的坐标文本，进而改模型可见附图；需要先决定「谁迁就谁」并重录快照，留给拆分后的独立 PR。
+- **不在 D12 决定缺字体时的产品行为（R-70）**：可选方案是预检并报错、输出字族回退列表、或默认开启文字转路径；三者对宿主环境与交付物的承诺不同，需要 owner 决策。D12 只固定「当前静默降级」的事实。
+- **不删既有测试**：渲染族已有 46 个 `figure-*.spec.ts`（连同 5 个复核/分析入口 spec 共约 1.7 万行）；D12 只新增快照，不合并或删除既有细粒度用例。细粒度用例定位缺陷，快照锁定整体输出，两者用途不同。
+- **不把快照当覆盖率**：快照验证「输出未变」，不验证「输出正确」；R-67–R-75 的修复仍需各自的定向失败用例（§35 的复现输入即起点）。
+- **不扩大拆分到 `figure/` 之外**：`submission-page`、`section-source`、`freecad-renderer` 等 ≤512 行模块本轮只在被上述七个文件依赖时抽读，不纳入拆分范围。

@@ -1,0 +1,406 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`D12 渲染回归快照：DOT 与投影脚本 > 框图 DOT：语义填充、中文块名与跨图续号 1`] = `
+"digraph BlockDiagram {
+    rankdir=LR;
+    node [fontname="PingFang SC", fontsize=10, style=filled];
+    edge [fontname="PingFang SC", fontsize=9];
+
+    "in" [label="技术交底 (200)", shape=invhouse, fillcolor=lightblue];
+    "core" [label="撰写引擎 (202)", shape=box, fillcolor=lightyellow];
+    "out" [label="申请文件 (204)", shape=house, fillcolor=lightgreen];
+
+    "in" -> "core";
+    "core" -> "out";
+}
+"
+`;
+
+exports[`D12 渲染回归快照：DOT 与投影脚本 > 流程图 DOT：中文步骤、决策边标签与 A4 页边距 1`] = `
+"digraph Flowchart {
+    rankdir=TB;
+    page="8.27,11.69";
+    size="7.09,10.51";
+    margin="0.59,0.59";
+    node [fontname="PingFang SC", fontsize=12];
+    edge [fontname="PingFang SC", fontsize=12];
+
+    "start" [label="100. 接收交底书", shape=box];
+    "check" [label="102. 是否清楚", shape=diamond];
+    "ask" [label="104. 补充材料", shape=box];
+    "draft" [label="106. 撰写申请文件", shape=box];
+
+    "start" -> "check";
+    "check" -> "draft" [label="清楚"];
+    "check" -> "ask" [label="不清楚"];
+    "ask" -> "check";
+}
+"
+`;
+
+exports[`D12 渲染回归快照：渲染复核报告 > 合规图面不报发现 1`] = `
+{
+  "findings": [],
+  "heightMm": 40,
+  "minFontMm": 3.05,
+  "orientationDeg": [
+    {
+      "count": 2,
+      "orientationDeg": 0,
+    },
+    {
+      "count": 2,
+      "orientationDeg": 90,
+    },
+  ],
+  "strokeWidthMm": [
+    {
+      "count": 1,
+      "widthMm": 0.5,
+    },
+  ],
+  "textCount": 1,
+  "widthMm": 40,
+}
+`;
+
+exports[`D12 渲染回归快照：渲染复核报告 > 缺陷图面报出穿字、字高与越界 1`] = `
+{
+  "findings": [
+    {
+      "check": "text-crossed-by-line",
+      "message": "图面文字「A」被线条贯穿：引线或轮廓线穿过了文字外框；文字应落在零件轮廓或元件符号之外，引线应止于文字外框之外",
+    },
+    {
+      "check": "ink-outside-canvas",
+      "message": "图面内容越出画布 50×30：墨迹范围 (0, 8.5)-(55, 35)；越界部分不会渲染出来",
+    },
+    {
+      "check": "font-below-minimum",
+      "message": "1 处图面文字的字高低于 3.5 毫米（最小 1.74 毫米）：「A」1.74 毫米。下限是本部署的内控口径（法条只要求缩小到三分之二仍能分辨）：调大字号或减少图面内容后重出",
+    },
+  ],
+  "heightMm": 30,
+  "minFontMm": 1.74,
+  "orientationDeg": [
+    {
+      "count": 3,
+      "orientationDeg": 0,
+    },
+    {
+      "count": 2,
+      "orientationDeg": 90,
+    },
+  ],
+  "strokeWidthMm": [
+    {
+      "count": 1,
+      "widthMm": 0.25,
+    },
+    {
+      "count": 1,
+      "widthMm": 0.5,
+    },
+  ],
+  "textCount": 1,
+  "widthMm": 50,
+}
+`;
+
+exports[`D12 渲染回归快照：渲染复核报告 > 退化输入：只有根元素、没有任何可量测图元 1`] = `
+{
+  "findings": [],
+  "heightMm": 10,
+  "orientationDeg": [],
+  "strokeWidthMm": [],
+  "textCount": 0,
+  "widthMm": 10,
+}
+`;
+
+exports[`D12 渲染回归快照：矢量直绘图型 > 剖视图退化输入：零面积轮廓不打剖面线，标号仍按顶点平均位置引出 1`] = `
+{
+  "body": "<polygon points="4,12.425 14,12.425 24,12.425" stroke-width="0.5"/>
+<line x1="14" y1="12.425" x2="27.25" y2="7.045" stroke-width="0.25" data-dsh-role="leader"/>
+<text x="31" y="6.625" font-size="3.5" text-anchor="middle" fill="#000000" stroke="none">退化件</text>",
+  "heightMm": 16.425,
+  "labels": [
+    "退化件",
+  ],
+  "widthMm": 40.25,
+}
+`;
+
+exports[`D12 渲染回归快照：矢量直绘图型 > 剖视图：外轮廓、双向剖面线、中心线、断裂线、剖切符号与中文标号 1`] = `
+{
+  "body": "<polygon points="8.313,15.425 68.313,15.425 68.313,51.425 8.313,51.425" stroke-width="0.5"/>
+<polygon points="14.313,21.425 42.313,21.425 42.313,45.425 14.313,45.425" stroke-width="0.5" data-dsh-hatch-group="0"/>
+<polygon points="48.313,21.425 62.313,21.425 62.313,45.425 48.313,45.425" stroke-width="0.7" data-dsh-hatch-group="1"/>
+<line x1="39.768" y1="21.425" x2="42.313" y2="23.969" stroke-width="0.25"/>
+<line x1="35.526" y1="21.425" x2="42.313" y2="28.212" stroke-width="0.25"/>
+<line x1="31.283" y1="21.425" x2="42.313" y2="32.454" stroke-width="0.25"/>
+<line x1="27.04" y1="21.425" x2="42.313" y2="36.697" stroke-width="0.25"/>
+<line x1="22.798" y1="21.425" x2="42.313" y2="40.94" stroke-width="0.25"/>
+<line x1="18.555" y1="21.425" x2="42.313" y2="45.182" stroke-width="0.25"/>
+<line x1="14.313" y1="21.425" x2="38.313" y2="45.425" stroke-width="0.25"/>
+<line x1="14.313" y1="25.668" x2="34.07" y2="45.425" stroke-width="0.25"/>
+<line x1="14.313" y1="29.91" x2="29.827" y2="45.425" stroke-width="0.25"/>
+<line x1="14.313" y1="34.153" x2="25.585" y2="45.425" stroke-width="0.25"/>
+<line x1="14.313" y1="38.396" x2="21.342" y2="45.425" stroke-width="0.25"/>
+<line x1="14.313" y1="42.638" x2="17.099" y2="45.425" stroke-width="0.25"/>
+<line x1="48.313" y1="23.508" x2="50.396" y2="21.425" stroke-width="0.25"/>
+<line x1="48.313" y1="26.337" x2="53.224" y2="21.425" stroke-width="0.25"/>
+<line x1="48.313" y1="29.165" x2="56.053" y2="21.425" stroke-width="0.25"/>
+<line x1="48.313" y1="31.994" x2="58.881" y2="21.425" stroke-width="0.25"/>
+<line x1="48.313" y1="34.822" x2="61.709" y2="21.425" stroke-width="0.25"/>
+<line x1="48.313" y1="37.65" x2="62.313" y2="23.65" stroke-width="0.25"/>
+<line x1="48.313" y1="40.479" x2="62.313" y2="26.479" stroke-width="0.25"/>
+<line x1="48.313" y1="43.307" x2="62.313" y2="29.307" stroke-width="0.25"/>
+<line x1="49.023" y1="45.425" x2="62.312" y2="32.136" stroke-width="0.25"/>
+<line x1="51.852" y1="45.425" x2="62.313" y2="34.964" stroke-width="0.25"/>
+<line x1="54.68" y1="45.425" x2="62.313" y2="37.793" stroke-width="0.25"/>
+<line x1="57.508" y1="45.425" x2="62.312" y2="40.621" stroke-width="0.25"/>
+<line x1="60.337" y1="45.425" x2="62.313" y2="43.449" stroke-width="0.25"/>
+<line x1="38.313" y1="11.425" x2="38.313" y2="19.425" stroke-width="0.25"/>
+<line x1="38.313" y1="21.425" x2="38.313" y2="21.825" stroke-width="0.25"/>
+<line x1="38.313" y1="23.825" x2="38.313" y2="31.825" stroke-width="0.25"/>
+<line x1="38.313" y1="33.825" x2="38.313" y2="34.225" stroke-width="0.25"/>
+<line x1="38.313" y1="36.225" x2="38.313" y2="44.225" stroke-width="0.25"/>
+<line x1="38.313" y1="46.225" x2="38.313" y2="46.625" stroke-width="0.25"/>
+<line x1="38.313" y1="48.625" x2="38.313" y2="55.425" stroke-width="0.25"/>
+<polyline points="8.313,33.425 8.813,34.925 9.313,31.925 9.813,34.925 10.313,31.925 10.813,34.925 11.313,31.925 11.813,34.925 12.313,33.425" stroke-width="0.25"/>
+<line x1="28.313" y1="33.425" x2="47.621" y2="16.045" stroke-width="0.25" data-dsh-role="leader"/>
+<line x1="55.313" y1="33.425" x2="68.185" y2="16.045" stroke-width="0.25" data-dsh-role="leader"/>
+<line x1="62.313" y1="33.425" x2="77.263" y2="33.516" stroke-width="0.25" data-dsh-role="leader"/>
+<line x1="5.313" y1="9.425" x2="71.313" y2="9.425" stroke-width="0.5"/>
+<polyline points="6.313,9.425 5.313,6.925 4.313,9.425" stroke-width="0.5"/>
+<polyline points="72.313,9.425 71.313,6.925 70.313,9.425" stroke-width="0.5"/>
+<text x="49.313" y="15.625" font-size="3.5" text-anchor="middle" fill="#000000" stroke="none">壳体</text>
+<text x="69.313" y="15.625" font-size="3.5" text-anchor="middle" fill="#000000" stroke="none">端盖</text>
+<text x="78.313" y="34.625" font-size="3.5" text-anchor="middle" fill="#000000" stroke="none">7</text>
+<text x="5.313" y="6.625" font-size="3.5" text-anchor="middle" fill="#000000" stroke="none">A</text>
+<text x="71.313" y="6.625" font-size="3.5" text-anchor="middle" fill="#000000" stroke="none">A</text>",
+  "heightMm": 59.425,
+  "labels": [
+    "壳体",
+    "端盖",
+    "7",
+    "A",
+  ],
+  "widthMm": 83.3625,
+}
+`;
+
+exports[`D12 渲染回归快照：矢量直绘图型 > 引线标注：Graphviz 组坐标平移下的中文节点标号与画布扩边 1`] = `
+{
+  "svg": "<svg width="200pt" height="110pt" viewBox="0 -10 200 110" xmlns="http://www.w3.org/2000/svg">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 66)">
+<g id="node-a" class="node">
+<title>a</title>
+<polygon fill="none" stroke="black" points="0,-44 0,-12 60,-12 60,-44"/>
+<text text-anchor="middle" x="30" y="-44" font-size="10">壳体</text>
+</g>
+<g id="node-b" class="node">
+<title>b</title>
+<polygon fill="none" stroke="black" points="0,-84 0,-52 60,-52 60,-84"/>
+<text text-anchor="middle" x="30" y="-44" font-size="10">端盖</text>
+</g>
+<g id="edge-ab" class="edge">
+<title>a&#45;&gt;b</title>
+<path fill="none" stroke="black" d="M30,-44 C30,-48 30,-48 30,-52"/>
+</g>
+</g>
+<g id="leader-lines">
+<line x1="64" y1="38" x2="74" y2="38" stroke="black" stroke-width="1" data-dsh-role="leader"/>
+<text x="77" y="41.5" font-size="10" text-anchor="start" stroke="none" xml:space="preserve">1</text>
+<line x1="64" y1="-2" x2="74" y2="-2" stroke="black" stroke-width="1" data-dsh-role="leader"/>
+<text x="77" y="1.5" font-size="10" text-anchor="start" stroke="none" xml:space="preserve">2</text>
+</g>
+</svg>",
+  "warnings": [],
+}
+`;
+
+exports[`D12 渲染回归快照：矢量直绘图型 > 时序图：同步/返回/异步消息与激活条 1`] = `
+{
+  "body": "<line x1="20" y1="13" x2="20" y2="58" stroke="#000000" stroke-width="0.25"/>
+<line x1="62" y1="13" x2="62" y2="58" stroke="#000000" stroke-width="0.25"/>
+<line x1="104" y1="13" x2="104" y2="58" stroke="#000000" stroke-width="0.25"/>
+<rect x="5" y="5" width="30" height="8" fill="none" stroke="#000000" stroke-width="0.35"/>
+<text x="20" y="10.225" text-anchor="middle" fill="#000000" stroke="none" font-size="3.5">用户</text>
+<rect x="47" y="5" width="30" height="8" fill="none" stroke="#000000" stroke-width="0.35"/>
+<text x="62" y="10.225" text-anchor="middle" fill="#000000" stroke="none" font-size="3.5">控制模块</text>
+<rect x="89" y="5" width="30" height="8" fill="none" stroke="#000000" stroke-width="0.35"/>
+<text x="104" y="10.225" text-anchor="middle" fill="#000000" stroke="none" font-size="3.5">存储单元</text>
+<line x1="20" y1="23" x2="59" y2="23" stroke="#000000" stroke-width="0.35"/>
+<polygon points="62,23 59,21.8 59,24.2" fill="#000000" stroke="#000000" stroke-width="0.25"/>
+<text x="41" y="21.8" text-anchor="middle" fill="#000000" stroke="none" font-size="3.5">请求</text>
+<line x1="62" y1="33" x2="101" y2="33" stroke="#000000" stroke-width="0.35"/>
+<polygon points="104,33 101,31.8 101,34.2" fill="#000000" stroke="#000000" stroke-width="0.25"/>
+<text x="83" y="31.8" text-anchor="middle" fill="#000000" stroke="none" font-size="3.5">查询</text>
+<line x1="104" y1="43" x2="65" y2="43" stroke="#000000" stroke-width="0.35" stroke-dasharray="1.5 1"/>
+<polygon points="62,43 65,41.8 65,44.2" fill="#000000" stroke="#000000" stroke-width="0.25"/>
+<text x="83" y="41.8" text-anchor="middle" fill="#000000" stroke="none" font-size="3.5">返回</text>
+<rect x="19" y="48" width="2" height="10" fill="none" stroke="#000000" stroke-width="0.25"/>
+<line x1="62" y1="53" x2="23" y2="53" stroke="#000000" stroke-width="0.35"/>
+<polygon points="20,53 23,51.8 23,54.2" fill="none" stroke="#000000" stroke-width="0.25"/>
+<text x="41" y="51.8" text-anchor="middle" fill="#000000" stroke="none" font-size="3.5">完成</text>",
+  "heightMm": 63,
+  "labels": [
+    "用户",
+    "控制模块",
+    "存储单元",
+    "请求",
+    "查询",
+    "返回",
+    "完成",
+  ],
+  "widthMm": 124,
+}
+`;
+
+exports[`D12 渲染回归快照：矢量直绘图型 > 曲线图退化输入：常量序列（零跨度）按默认半跨度展开 1`] = `
+{
+  "body": "<line x1="22" y1="6" x2="22" y2="67" stroke="#000000" stroke-width="0.35"/>
+<line x1="22" y1="67" x2="112" y2="67" stroke="#000000" stroke-width="0.35"/>
+<line x1="22" y1="6" x2="21.3" y2="8.2" stroke="#000000" stroke-width="0.35"/>
+<line x1="22" y1="6" x2="22.7" y2="8.2" stroke="#000000" stroke-width="0.35"/>
+<line x1="112" y1="67" x2="109.8" y2="66.3" stroke="#000000" stroke-width="0.35"/>
+<line x1="112" y1="67" x2="109.8" y2="67.7" stroke="#000000" stroke-width="0.35"/>
+<line x1="22" y1="67" x2="22" y2="68.5" stroke="#000000" stroke-width="0.25"/>
+<text x="22" y="72.7" font-size="3.2" text-anchor="middle" fill="#000000" stroke="none">-3</text>
+<line x1="44.5" y1="67" x2="44.5" y2="68.5" stroke="#000000" stroke-width="0.25"/>
+<text x="44.5" y="72.7" font-size="3.2" text-anchor="middle" fill="#000000" stroke="none">13.5</text>
+<line x1="67" y1="67" x2="67" y2="68.5" stroke="#000000" stroke-width="0.25"/>
+<text x="67" y="72.7" font-size="3.2" text-anchor="middle" fill="#000000" stroke="none">30</text>
+<line x1="89.5" y1="67" x2="89.5" y2="68.5" stroke="#000000" stroke-width="0.25"/>
+<text x="89.5" y="72.7" font-size="3.2" text-anchor="middle" fill="#000000" stroke="none">46.5</text>
+<line x1="112" y1="67" x2="112" y2="68.5" stroke="#000000" stroke-width="0.25"/>
+<text x="112" y="72.7" font-size="3.2" text-anchor="middle" fill="#000000" stroke="none">63</text>
+<line x1="22" y1="67" x2="20.5" y2="67" stroke="#000000" stroke-width="0.25"/>
+<text x="19.5" y="68.12" font-size="3.2" text-anchor="end" fill="#000000" stroke="none">57</text>
+<line x1="22" y1="51.75" x2="20.5" y2="51.75" stroke="#000000" stroke-width="0.25"/>
+<text x="19.5" y="52.87" font-size="3.2" text-anchor="end" fill="#000000" stroke="none">58.5</text>
+<line x1="22" y1="36.5" x2="20.5" y2="36.5" stroke="#000000" stroke-width="0.25"/>
+<text x="19.5" y="37.62" font-size="3.2" text-anchor="end" fill="#000000" stroke="none">60</text>
+<line x1="22" y1="21.25" x2="20.5" y2="21.25" stroke="#000000" stroke-width="0.25"/>
+<text x="19.5" y="22.37" font-size="3.2" text-anchor="end" fill="#000000" stroke="none">61.5</text>
+<line x1="22" y1="6" x2="20.5" y2="6" stroke="#000000" stroke-width="0.25"/>
+<text x="19.5" y="7.12" font-size="3.2" text-anchor="end" fill="#000000" stroke="none">63</text>
+<text x="67" y="77.9" font-size="3.2" text-anchor="middle" fill="#000000" stroke="none">时间</text>
+<text x="14.3" y="36.5" font-size="3.2" text-anchor="middle" transform="rotate(-90 14.3 36.5)" fill="#000000" stroke="none">温度</text>
+<polyline points="26.091,36.5 67,36.5 107.909,36.5" fill="none" stroke="#000000" stroke-width="0.25"/>
+<circle cx="26.091" cy="36.5" r="0.9" fill="none" stroke="#000000" stroke-width="0.25"/>
+<circle cx="67" cy="36.5" r="0.9" fill="none" stroke="#000000" stroke-width="0.25"/>
+<circle cx="107.909" cy="36.5" r="0.9" fill="none" stroke="#000000" stroke-width="0.25"/>",
+  "heightMm": 80,
+  "labels": [
+    "时间",
+    "温度",
+    "-3",
+    "13.5",
+    "30",
+    "46.5",
+    "63",
+    "57",
+    "58.5",
+    "60",
+    "61.5",
+    "恒温",
+  ],
+  "widthMm": 120,
+}
+`;
+
+exports[`D12 渲染回归快照：矢量直绘图型 > 曲线图：双序列、网格与中文轴标目 1`] = `
+{
+  "body": "<line x1="22" y1="6" x2="22" y2="62" stroke="#000000" stroke-width="0.15"/>
+<line x1="52" y1="6" x2="52" y2="62" stroke="#000000" stroke-width="0.15"/>
+<line x1="82" y1="6" x2="82" y2="62" stroke="#000000" stroke-width="0.15"/>
+<line x1="112" y1="6" x2="112" y2="62" stroke="#000000" stroke-width="0.15"/>
+<line x1="22" y1="62" x2="112" y2="62" stroke="#000000" stroke-width="0.15"/>
+<line x1="22" y1="43.333" x2="112" y2="43.333" stroke="#000000" stroke-width="0.15"/>
+<line x1="22" y1="24.667" x2="112" y2="24.667" stroke="#000000" stroke-width="0.15"/>
+<line x1="22" y1="6" x2="112" y2="6" stroke="#000000" stroke-width="0.15"/>
+<line x1="22" y1="6" x2="22" y2="62" stroke="#000000" stroke-width="0.35"/>
+<line x1="22" y1="62" x2="112" y2="62" stroke="#000000" stroke-width="0.35"/>
+<line x1="22" y1="6" x2="21.3" y2="8.2" stroke="#000000" stroke-width="0.35"/>
+<line x1="22" y1="6" x2="22.7" y2="8.2" stroke="#000000" stroke-width="0.35"/>
+<line x1="112" y1="62" x2="109.8" y2="61.3" stroke="#000000" stroke-width="0.35"/>
+<line x1="112" y1="62" x2="109.8" y2="62.7" stroke="#000000" stroke-width="0.35"/>
+<line x1="22" y1="62" x2="22" y2="63.5" stroke="#000000" stroke-width="0.25"/>
+<text x="22" y="67.7" font-size="3.2" text-anchor="middle" fill="#000000" stroke="none">-2</text>
+<line x1="52" y1="62" x2="52" y2="63.5" stroke="#000000" stroke-width="0.25"/>
+<text x="52" y="67.7" font-size="3.2" text-anchor="middle" fill="#000000" stroke="none">12.667</text>
+<line x1="82" y1="62" x2="82" y2="63.5" stroke="#000000" stroke-width="0.25"/>
+<text x="82" y="67.7" font-size="3.2" text-anchor="middle" fill="#000000" stroke="none">27.333</text>
+<line x1="112" y1="62" x2="112" y2="63.5" stroke="#000000" stroke-width="0.25"/>
+<text x="112" y="67.7" font-size="3.2" text-anchor="middle" fill="#000000" stroke="none">42</text>
+<line x1="22" y1="62" x2="20.5" y2="62" stroke="#000000" stroke-width="0.25"/>
+<text x="19.5" y="63.12" font-size="3.2" text-anchor="end" fill="#000000" stroke="none">18.25</text>
+<line x1="22" y1="43.333" x2="20.5" y2="43.333" stroke="#000000" stroke-width="0.25"/>
+<text x="19.5" y="44.453" font-size="3.2" text-anchor="end" fill="#000000" stroke="none">31.083</text>
+<line x1="22" y1="24.667" x2="20.5" y2="24.667" stroke="#000000" stroke-width="0.25"/>
+<text x="19.5" y="25.787" font-size="3.2" text-anchor="end" fill="#000000" stroke="none">43.917</text>
+<line x1="22" y1="6" x2="20.5" y2="6" stroke="#000000" stroke-width="0.25"/>
+<text x="19.5" y="7.12" font-size="3.2" text-anchor="end" fill="#000000" stroke="none">56.75</text>
+<text x="67" y="72.9" font-size="3.2" text-anchor="middle" fill="#000000" stroke="none">时间(s)</text>
+<text x="14.3" y="34" font-size="3.2" text-anchor="middle" transform="rotate(-90 14.3 34)" fill="#000000" stroke="none">温度(℃)</text>
+<polyline points="26.091,59.455 46.545,30.364 67,8.545" fill="none" stroke="#000000" stroke-width="0.25"/>
+<circle cx="26.091" cy="59.455" r="0.9" fill="none" stroke="#000000" stroke-width="0.25"/>
+<circle cx="46.545" cy="30.364" r="0.9" fill="none" stroke="#000000" stroke-width="0.25"/>
+<circle cx="67" cy="8.545" r="0.9" fill="none" stroke="#000000" stroke-width="0.25"/>
+<polyline points="67,8.545 87.455,8.545 107.909,8.545" fill="none" stroke="#000000" stroke-width="0.25"/>
+<rect x="66.1" y="7.645" width="1.8" height="1.8" fill="none" stroke="#000000" stroke-width="0.25"/>
+<rect x="86.555" y="7.645" width="1.8" height="1.8" fill="none" stroke="#000000" stroke-width="0.25"/>
+<rect x="107.009" y="7.645" width="1.8" height="1.8" fill="none" stroke="#000000" stroke-width="0.25"/>
+<circle cx="24" cy="77.08" r="0.9" fill="none" stroke="#000000" stroke-width="0.25"/>
+<text x="26" y="78.2" font-size="3.2" text-anchor="start" fill="#000000" stroke="none">升温</text>
+<rect x="41.5" y="76.18" width="1.8" height="1.8" fill="none" stroke="#000000" stroke-width="0.25"/>
+<text x="44.4" y="78.2" font-size="3.2" text-anchor="start" fill="#000000" stroke="none">保温</text>",
+  "heightMm": 80,
+  "labels": [
+    "时间(s)",
+    "温度(℃)",
+    "-2",
+    "12.667",
+    "27.333",
+    "42",
+    "18.25",
+    "31.083",
+    "43.917",
+    "56.75",
+    "升温",
+    "保温",
+  ],
+  "widthMm": 120,
+}
+`;
+
+exports[`D12 渲染回归快照：矢量直绘图型 > 电路图：中文元件名/连线说明、T 形结点与符号叠放顺序 1`] = `
+{
+  "body": "<polyline points="19.5,13 23,13 43,13 46.5,13" stroke-width="0.25"/>
+<polyline points="19.5,13 23,13 23,20 33,20 33,23.5" stroke-width="0.25"/>
+<polyline points="46.5,13 43,13 43,20 33,20 33,23.5" stroke-width="0.25"/>
+<text x="33" y="11.8" font-size="3" text-anchor="middle" fill="#000000" stroke="none">信号线</text>
+<text x="28" y="18.8" font-size="3" text-anchor="middle" fill="#000000" stroke="none">屏蔽层</text>
+<rect x="10.5" y="11.95" width="9" height="2.1"/>
+<text x="15" y="8.3" font-size="3" text-anchor="middle" fill="#000000" stroke="none">电阻 R1</text>
+<line x1="46.5" y1="13" x2="49.875" y2="13"/><line x1="52.125" y1="13" x2="55.5" y2="13"/><line x1="49.875" y1="9.85" x2="49.875" y2="16.15"/><line x1="52.125" y1="9.85" x2="52.125" y2="16.15"/>
+<text x="51" y="8.3" font-size="3" text-anchor="middle" fill="#000000" stroke="none">电容 C1</text>
+<line x1="33" y1="23.5" x2="33" y2="27"/><line x1="28.5" y1="27" x2="37.5" y2="27"/><line x1="30.3" y1="28.225" x2="35.7" y2="28.225"/><line x1="31.875" y1="29.45" x2="34.125" y2="29.45"/>
+<text x="38.7" y="27.945" font-size="3" text-anchor="start" fill="#000000" stroke="none">接地</text>
+<circle cx="19.5" cy="13" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="46.5" cy="13" r="0.5" fill="#000000" stroke="none"/>
+<circle cx="33" cy="23.5" r="0.5" fill="#000000" stroke="none"/>",
+  "heightMm": 40,
+  "labels": [
+    "信号线",
+    "屏蔽层",
+    "电阻 R1",
+    "电容 C1",
+    "接地",
+  ],
+  "widthMm": 66,
+}
+`;

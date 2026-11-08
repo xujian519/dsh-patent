@@ -5569,6 +5569,8 @@ CAD 剖视（sections.source）：复杂件不必手算轮廓——给 model_pat
 
 几何事实：结果附带 assembly——每零件在 model_paths 中的下标与路径、3D 包围盒 [x,y,z,xLength,yLength,zLength] 与体积，以及各视图下该零件的投影占位 [x,y,width,height]（画布帧，与该视图件号落点同帧；该朝向看不见的零件为 null）。用它判断「哪个零件叫什么、该标几号」，并按占位避开标号压到别的零件。
 
+分解图：exploded=true 时沿装配轴（各零件包围盒中心的第一主成分方向）把零件拉开成一维串，每个零件单独投影——零件之间互不遮挡，装配顺序一目了然；这是总装图「全部零件一次消隐」之外的另一条路径。需要 model_paths 传至少两个零件。位置按各零件自身沿轴尺寸加「中位尺寸 × 1.2」的间隙逐段累加。视线与装配轴近乎平行时主轴在投影面上退化成点、零件排不开，工具报错而不是画一张叠在一起的图；此时换一个垂直于轴的视图（轴为 z 时用 front/top）。
+
 局部放大：details 传 [{base, center:[x,y,z], radius_mm, scale?, reference?}]，把 base 视图上以模型坐标 center 为圆心、radius_mm 为半径的圆形区域按 scale（缺省 2）放大成一张独立视图（fig{N}_detail{M}.svg），并在 base 视图上画出该窗口的圆与标号。窗口按模型坐标给出，故与视图朝向、投影比例无关；base 必须是本次 views 里的视图，放大视图随 paths/manifest 一并返回（manifest 里该视图带 kind="detail" 与 base/center3d/radiusMm/scale/reference）。
 
 批量：model_path 传目录时，对目录内每个受支持模型各出一图，图号自 figure_number 起递增；批量模式不支持 callouts（件号 3D 锚点仅对单个模型有效），多个零件要合成一张图时改用 model_paths。
@@ -5605,6 +5607,10 @@ CAD 剖视（sections.source）：复杂件不必手算轮廓——给 model_pat
           "right"
         ]
       }
+    },
+    "exploded": {
+      "type": "boolean",
+      "description": "分解图：沿装配轴把零件拉开成一维串后逐件投影（零件之间互不遮挡），需要 model_paths 传至少两个零件；视线与装配轴近乎平行时会报错"
     },
     "scale": {
       "type": "number",

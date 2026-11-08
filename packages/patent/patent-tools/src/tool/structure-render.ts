@@ -48,6 +48,8 @@ type StructureRun = {
   modelPaths: string[]
   /** 是否装配体（`model_paths`）：所有模型投影成一张图，否则逐模型一图。 */
   assembly: boolean
+  /** 分解图：逐件投影并沿装配轴排布（仅装配体有效）。 */
+  exploded: boolean
 }
 
 /**
@@ -107,6 +109,15 @@ export async function resolveStructureRun(args: unknown, deps: GenerateStructure
   if (!assembly && modelPaths.length > 1 && details.length > 0) {
     throw new PatentToolError('invalid_tool_input', '批量（model_path 为目录）不支持 details：放大窗口的模型坐标仅对单个模型有效，请对单个模型生成结构线稿，或用 model_paths 把多个零件投影成一张装配图', { tool: 'generate_structure_figure' })
   }
+  const exploded = input.exploded === true
+  // 分解图的前提是「零件之间有装配关系」：单模型没有可分解的对象，目录批量是
+  // 一模型一图、同样没有；只有 model_paths 的装配体成立。
+  if (exploded && (!assembly || modelPaths.length < 2)) {
+    throw new PatentToolError('invalid_tool_input', 'exploded 需要 model_paths 传至少两个零件文件：分解图沿装配轴把零件拉开，单模型没有可分解的装配关系', { tool: 'generate_structure_figure' })
+  }
+  if (exploded && details.length > 0) {
+    throw new PatentToolError('invalid_tool_input', 'exploded 与 details 不能同时使用：放大窗口按模型坐标落在某个基视图上，而分解图每个零件各有一个视图，没有统一的基视图', { tool: 'generate_structure_figure' })
+  }
   return {
     deps,
     input,
@@ -122,6 +133,7 @@ export async function resolveStructureRun(args: unknown, deps: GenerateStructure
     details,
     modelPaths,
     assembly,
+    exploded,
   }
 }
 
@@ -148,6 +160,7 @@ export async function renderStructureFigures(run: StructureRun, signal: AbortSig
       showHidden: run.showHidden,
       callouts: run.callouts,
       details: run.details,
+      exploded: run.exploded,
       figureNumber,
       outputDir: renderDir,
       signal,

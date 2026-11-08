@@ -24,6 +24,8 @@ Status: implemented
 
 **件号的 `point3d` 可省略，省略时由脚本选顶点。**只给 `{numeral, model}` 时，脚本取该零件**自身投影轮廓中心最远**的那个真实顶点。最远顶点必在轮廓外缘，引线因此从实体向外延伸而不会落进图面内部——这正是模型手填坐标最常犯的错，因为模型看不见 STEP 内部。同一零件上有多个自动件号时按该排名轮转，不会全部叠在同一个顶点。选点只跑一次、且在首个视图上；其余视图投影同一个 3D 点，故一个件号在整套图里指向同一物理位置。手填的 `point3d` 仍在任何投影之前过 0.5 毫米的 `distToShape` 归属核验；自动锚点不需要这一步，因为它本就取自该零件自己的顶点。
 
+**`exploded` 切成逐件消隐并沿装配轴排布。**每个零件一个 `DrawViewPart`、`Source` 只挂它自己，故消隐逐件进行、零件之间不再互相遮挡——这与总装路径（全部零件共用一个 `Source`、一次消隐）正好相反。轴取各零件 `BoundBox.Center` 点云的第一主成分（幂迭代）；`Part.Shape` 没有 `CenterOfMass`（实测 `AttributeError`），而包围盒中心在沿轴排序上等效。目标位置按各零件自身沿轴尺寸加「1.2 × 中位尺寸」的间隙逐段累加，整串再移回原点居中——只用 `rank × gap` 会假设没有零件比间隙还宽，大件仍会互相压叠。视线与轴的投影长度不足 0.2 毫米时渲染当场失败，而不是把所有零件叠在一个点上。
+
 **逐零件投影占位与视图包围盒在同一次取样里量出。**`projected_bounds` 每条边只离散化一次，同时累积紧致视图包围盒与逐零件包围盒；`part_metadata` 把每零件的 3D 包围盒、体积与该视图下的投影占位写进 manifest，工具再以 `assembly` 摘要给出同一份事实。两者都是画布帧坐标、与件号锚点同帧，该朝向看不见的零件记 `null`。合并后的单一视图框回答不了引线布局的问题——标号或引线会不会落到**别的零件**上——故逐零件占位在投影过程里量出，而不是事后从 SVG 反推：TechDraw 把所有零件画进同一个 `<g>`，事后无法恢复零件归属。
 
 **成功判定只看退出码加 manifest 存在。**`freecadcmd` 对 `~/Library/Preferences/FreeCAD` 与缓存写失败仅告警、非致命（STEP 载入/投影/导出均成功），且 macOS 下这些路径不随重定向的 HOME 迁移——其无害仅因为脚本把 `TransientDir` 自身锚定进输出目录，`TransientDir` 为空对模板拷贝是致命的。反过来，`freecadcmd` 吞掉未捕获的 Python 异常并以退出码 0 结束，故脚本包裹 `main()`，失败时 `traceback.print_exc()` + `sys.exit(1)`；没有这层包裹，失败的投影会看起来像成功。因此 stderr 文本绝不作为失败依据，只摘引进错误消息。
@@ -39,6 +41,8 @@ Status: implemented
 - **以 stderr 干净与否判定成功。**拒绝：FreeCAD 在健康运行里也会输出 `system.cfg`/transcoder 告警；把它们当致命会让某些宿主上每次渲染都失败。
 - **用独立的分析工具产出锚点。**拒绝：一次 FreeCAD 渲染的缺省超时是 120 秒、冷启动比 `dot` 慢，为一个模型图纯粹再起一次 `freecadcmd` 读几何会让成本大致翻倍；而这些事实在已经逐边离散化的投影过程里是免费得到的。
 - **把自动锚点放在零件 3D 包围盒的角点。**拒绝：角点未必落在实体上，锚点要么被归属核验拒绝，要么让引线指向空白；真实顶点按定义就在几何上。
+- **用总装图那一次全局消隐画出分解图，事后把零件平移开。**拒绝：那次消隐已经处理了零件**之间**的遮挡，被邻居挡住的轮廓在片段里本就不存在，平移不可能把它们找回来。分解图需要的是从一开始就没有邻居参与消隐的轮廓。
+- **把整体包围盒的最长边当作装配轴。**拒绝：那是箱体自身的方向，不是零件的分布方向；一块宽而薄的支架沿厚度叠零件时会被沿错误的轴分解。
 - **引线几何（与 `src/figure/leader-line.ts` 同批交付）：以节点 bbox 中位尺寸推导图面 scale。**实现期拒绝，改为以各节点组**实读 `font-size`** 的中位数相对基线 10 推导：几何常量（间隙、边距、文本行高）本就是按字号调校的，统一字宽模型已逐组实读 font-size，而 bbox 中位数会把标签长度混进图面 scale。
 
 ## Consequences
@@ -54,7 +58,7 @@ Status: implemented
 - `tests/figure-freecad-structure-script.spec.ts` —— 对构建出的脚本做纯函数断言（API 使用、视图表、`TransientDir` 锚定、payload 往返），无需 FreeCAD。
 - `tests/figure-freecad-renderer.spec.ts` —— mock `SubprocessRuntime`：发现顺序、probe、退出码分类、env 隔离、超时、取消。
 - `tests/structure-figure-tool.spec.ts` —— mock render：门禁、单模型/批量、图面用语告警、safe-SVG 门禁、索引持久化及其降级路径。
-- `tests/figure-freecad-real-render.spec.ts` —— `describe.skipIf(!hasFreeCad)` 真实端到端，跑签入的 `tests/fixtures/structure-bracket.step`（由签入的 `generate-structure-fixture.py` 生成；一条恒开测试断言 fixture 的 ISO-10303-21 头部签名与该生成器一致）：iso+front 投影含 `<path>`、仅黑描边、无边框/图号，且两个件号锚点都落在各自视图 bbox 内；在拒绝写 FreeCAD 缓存目录的沙箱下，这条成功断言本身就是 `TransientDir` 的回归保护——否则该拷贝会解析到 `/`。同文件另有三条覆盖逐零件几何与放置：一条断言每零件的 manifest 占位都落在视图框内、且两个零件不会塌成同一个占位；一条在完全不给 `point3d` 的装配体上断言每个自动锚点落在其声明零件的 3D 包围盒内、且在各视图间逐值相同；一条断言装配体的两个标号在警告为空的前提下完成放置，并与图线保持可读净距。
+- `tests/figure-freecad-real-render.spec.ts` —— `describe.skipIf(!hasFreeCad)` 真实端到端，跑签入的 `tests/fixtures/structure-bracket.step`（由签入的 `generate-structure-fixture.py` 生成；一条恒开测试断言 fixture 的 ISO-10303-21 头部签名与该生成器一致）：iso+front 投影含 `<path>`、仅黑描边、无边框/图号，且两个件号锚点都落在各自视图 bbox 内；在拒绝写 FreeCAD 缓存目录的沙箱下，这条成功断言本身就是 `TransientDir` 的回归保护——否则该拷贝会解析到 `/`。同文件另有四条覆盖逐零件几何与放置：一条断言每零件的 manifest 占位都落在视图框内、且两个零件不会塌成同一个占位；一条在完全不给 `point3d` 的装配体上断言每个自动锚点落在其声明零件的 3D 包围盒内、且在各视图间逐值相同；一条断言装配体的两个标号在警告为空的前提下完成放置，并与图线保持可读净距；一条渲染分解图，断言两个零件的占位互不重叠、且每个锚点落在自己零件的占位内。
 
 ## Related
 

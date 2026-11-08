@@ -100,6 +100,14 @@ export type StructureScriptParams = {
   showHidden: boolean
   /** 件号锚定（可为空）。 */
   callouts: readonly StructureCallout[]
+  /**
+   * 分解图：沿装配轴把每个零件拉开成一维串后分别投影。
+   *
+   * 真值时每个零件单独建一个 `DrawViewPart`（逐件消隐，零件之间互不遮挡），
+   * 再按主轴排布拼接。要求 `modelPaths` 至少两个零件，且视图视线不得与
+   * 装配轴近乎平行——那样主轴在投影面上退化成一个点，无从排布。
+   */
+  exploded?: boolean | undefined
   /** 局部放大视图（可为空；每个落在它的基视图上）。 */
   details?: readonly StructureDetail[] | undefined
   /** 图号（决定输出文件名 fig{N}_{view}.svg 与 manifest）。 */
@@ -204,6 +212,7 @@ type ScriptPayload = {
   detailFilenames: readonly string[]
   mattingSlack: number
   anchorTolerance: number
+  exploded: boolean
   figureNumber: number
   outputDir: string
   svgFilenames: Record<string, string>
@@ -246,6 +255,7 @@ export function buildStructureScript(params: StructureScriptParams): string {
       model: callout.model ?? null,
     })),
     anchorTolerance: STRUCTURE_ANCHOR_TOLERANCE_MM,
+    exploded: params.exploded === true,
     details: (params.details ?? []).map(detail => ({
       base: detail.base,
       center3d: [...detail.center],
@@ -309,6 +319,12 @@ DETAILS = PARAMS["details"]
 DETAIL_FILENAMES = PARAMS["detailFilenames"]
 MATTING_SLACK = float(PARAMS["mattingSlack"])
 ANCHOR_TOLERANCE = float(PARAMS["anchorTolerance"])
+EXPLODED = bool(PARAMS["exploded"])
+# 分解图的零件间隙：取各零件沿轴尺寸中位数的 1.2 倍。中位数而不是总跨度——
+# 总跨度会把「零件本来就排得开」的装配体拉得更散，而中位尺寸跟着零件尺度走。
+EXPLODED_GAP_RATIO = 1.2
+# 视线与装配轴夹角的余弦高于此值时主轴在投影面上退化，分解图无从排布，当场报错。
+EXPLODED_MIN_AXIS_PROJECTION = 0.2
 FIGURE_NUMBER = int(PARAMS["figureNumber"])
 OUTPUT_DIR = PARAMS["outputDir"]
 SVG_FILENAMES = PARAMS["svgFilenames"]
@@ -591,11 +607,14 @@ def choose_callout_position(anchor_x, anchor_y, numeral, preferred_x, preferred_
     return None
 
 
-def callout_fragments(view, center, bbox, part_bounds):
+def callout_fragments(project_point, canvas_bounds, part_rects):
     """
-    把件号投影到视图并为每个标号选位置、画引线与数字（y-down SVG 帧）。
+    把件号投影到画布并为每个标号选位置、画引线与数字（y-down 画布帧）。
 
-    锚点 = projectPoint(point3d) - C，再翻转 y（片段帧 y 向上 → SVG y 向下）。
+    project_point(part_index, point) 把模型点转到画布坐标：总装图是一个视图
+    共享一个投影，分解图是每个零件各自的视图加上各自的排布位移，故由调用方
+    给定，不在函数里假设。
+
     首选引线方向取自**所属零件的投影中心**指向锚点，而不是画布中心：零件正好
     位于图面中央时，「画布中心 → 锚点」是任意方向，标号会被丢进图形内部；以
     零件自身中心为基准，方向恒为从该零件向外。
@@ -606,22 +625,17 @@ def callout_fragments(view, center, bbox, part_bounds):
 
     返回 (svg_片段列表, 锚点信息列表, 扩展包围盒, 警告列表)。
     """
-    c_x, c_y = center
     fragments = []
     anchors = []
     warnings = []
-    min_x, max_x = bbox[0] - c_x, bbox[1] - c_x
-    min_y, max_y = -bbox[3] + c_y, -bbox[2] + c_y  # 翻转后的 y-down 范围
-    part_rects = part_rects_in_canvas(part_bounds, center)
+    min_x, min_y, max_x, max_y = canvas_bounds
     placed = []
     for callout in CALLOUTS:
         px, py, pz = callout["point3d"]
         owner = callout["model"]
         # 未声明归属时按单模型处理：目录批量已由工具层拒绝，走到这里必然是单模型。
         own_part = 0 if owner is None else owner
-        projected = view.projectPoint(App.Vector(px, py, pz))
-        anchor_x = projected.x - c_x
-        anchor_y = -(projected.y - c_y)  # 翻转到 y-down
+        anchor_x, anchor_y = project_point(own_part, App.Vector(px, py, pz))
         # 首选方向：所属零件投影中心 → 锚点。锚点与零件中心重合（退化）时退回 +x。
         unit_x, unit_y = 1.0, 0.0
         own_rect = part_rects[own_part] if 0 <= own_part < len(part_rects) else None
@@ -774,7 +788,108 @@ def build_detail_view_svg(view, detail, index):
     return "".join(parts), {"bbox": [round(-half, 4), round(-half, 4), round(size, 4), round(size, 4)]}
 
 
-def part_metadata(shapes, part_bounds, center):
+def principal_axis(shapes):
+    """
+    求装配主轴：各零件质心点云的第一主成分方向（幂迭代求最大特征向量）。
+
+    质心几乎共点时协方差塌成 0，主轴无从确定——分解图需要零件沿轴分开，
+    这种情况当场报错，而不是编一个方向出来。
+    """
+    # Part.Shape 没有 CenterOfMass（实测 AttributeError），包围盒中心对所有形状
+    # 都存在，且在「沿轴排布」这件事上与质心等效。
+    centers = [shape.BoundBox.Center for shape in shapes]
+    count = float(len(centers))
+    mean_x = sum(point.x for point in centers) / count
+    mean_y = sum(point.y for point in centers) / count
+    mean_z = sum(point.z for point in centers) / count
+    covariance = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+    for point in centers:
+        delta = (point.x - mean_x, point.y - mean_y, point.z - mean_z)
+        for row in range(3):
+            for column in range(3):
+                covariance[row][column] += delta[row] * delta[column]
+    spread = max(abs(value) for row in covariance for value in row)
+    if spread < 1e-9:
+        raise RuntimeError("分解图需要各零件沿装配轴分开，但所有零件质心重合，无法确定装配轴")
+    vector = (1.0, 1.0, 1.0)
+    for _ in range(64):
+        next_vector = tuple(
+            sum(covariance[row][column] * vector[column] for column in range(3))
+            for row in range(3)
+        )
+        norm = math.sqrt(sum(component * component for component in next_vector))
+        if norm < 1e-12:
+            break
+        vector = tuple(component / norm for component in next_vector)
+    norm = math.sqrt(sum(component * component for component in vector))
+    if norm < 1e-12:
+        raise RuntimeError("分解图的装配主轴退化，无法排布零件")
+    return tuple(component / norm for component in vector)
+
+
+def exploded_part_offsets(shapes, view, axis):
+    """
+    求每个零件的画布位移：沿装配轴排成一维串后的位置减去原始位置。
+
+    目标位置 = 装配序 × 间隙，间隙取各零件沿轴尺寸中位数的 EXPLODED_GAP_RATIO
+    倍。用中位尺寸而不是串总长：总长会把本来就排得开的装配体拉得更散，中位
+    尺寸跟着零件自身的尺度走。
+
+    projectPoint 是线性的，故「每毫米轴长对应多少画布单位」由
+    projectPoint(axis) − projectPoint(0) 一次求得，不必对每个零件重复投影。
+    视线与主轴近乎平行时轴在投影面上退化成一个点，零件无从排开，当场报错。
+    """
+    origin = view.projectPoint(App.Vector(0.0, 0.0, 0.0))
+    tip = view.projectPoint(App.Vector(axis[0], axis[1], axis[2]))
+    axis_dx = tip.x - origin.x
+    axis_dy = -(tip.y - origin.y)
+    projected_length = math.hypot(axis_dx, axis_dy)
+    if projected_length < EXPLODED_MIN_AXIS_PROJECTION:
+        raise RuntimeError(
+            "分解图的视线方向与装配轴过近（轴在投影面上只有 %.3f 毫米/毫米），"
+            "主轴退化成点、零件排不开；换一个垂直于装配轴的视图"
+            % projected_length
+        )
+    along = []
+    for shape in shapes:
+        box_center = shape.BoundBox.Center
+        along.append(
+            box_center.x * axis[0] + box_center.y * axis[1] + box_center.z * axis[2]
+        )
+    sizes = []
+    for shape in shapes:
+        box = shape.BoundBox
+        sizes.append(
+            abs(box.XLength * axis[0]) + abs(box.YLength * axis[1]) + abs(box.ZLength * axis[2])
+        )
+    ordered_sizes = sorted(sizes)
+    middle = len(ordered_sizes) // 2
+    if len(ordered_sizes) % 2 == 0:
+        median = (ordered_sizes[middle - 1] + ordered_sizes[middle]) / 2.0
+    else:
+        median = ordered_sizes[middle]
+    gap = median * EXPLODED_GAP_RATIO
+    if gap <= 1e-6:
+        gap = 1.0
+    order = sorted(range(len(shapes)), key=lambda part_index: along[part_index])
+    # 目标位置按「各零件沿轴尺寸 + 间隙」逐段累加，而不是 rank × gap：后者
+    # 只在零件尺寸不超过间隙时成立，大件与小件混排时仍会互相压叠。整串再
+    # 平移回原点，图面保持居中。
+    targets = [0.0] * len(shapes)
+    cursor = 0.0
+    for part_index in order:
+        targets[part_index] = cursor + sizes[part_index] / 2.0
+        cursor += sizes[part_index] + gap
+    for part_index in order:
+        targets[part_index] -= cursor / 2.0
+    offsets = [None] * len(shapes)
+    for part_index in range(len(shapes)):
+        displacement = targets[part_index] - along[part_index]
+        offsets[part_index] = (displacement * axis_dx, displacement * axis_dy)
+    return offsets
+
+
+def part_metadata(shapes, part_bounds, center, layout_rects=None):
     """
     每零件的 manifest 条目：3D 包围盒、体积与本次视图的投影占位（画布帧）。
 
@@ -787,7 +902,16 @@ def part_metadata(shapes, part_bounds, center):
     for index, shape in enumerate(shapes):
         box = shape.BoundBox
         bounds = part_bounds[index]
-        if bounds is None:
+        if layout_rects is not None:
+            # 分解图：占位取排布后的画布矩形，直接给出，不必再从 C 换算。
+            rect = layout_rects[index]
+            projected = [
+                round(rect[0], 4),
+                round(rect[1], 4),
+                round(rect[2] - rect[0], 4),
+                round(rect[3] - rect[1], 4),
+            ]
+        elif bounds is None:
             projected = None
         else:
             x_min = bounds[0] - c_x
@@ -819,6 +943,92 @@ def part_metadata(shapes, part_bounds, center):
     return parts
 
 
+def build_exploded_view_svg(doc, page, shape_objs, shapes, view_name, index):
+    """
+    逐件投影后沿装配轴排成一维串，生成一张分解图。
+
+    每个零件单独一个 DrawViewPart（Source 只挂它自己），故 HLR 逐件进行、
+    零件之间互不遮挡——总装图是「全部零件一次 HLR」，这是另一条路径，两者
+    不可互换。各片段已按自身几何居中，排布只需在外层加平移。
+    """
+    axis = principal_axis(shapes)
+    views = []
+    centers = []
+    bounds_list = []
+    fragments = []
+    for part_index, shape_obj in enumerate(shape_objs):
+        part_view = make_view(doc, page, [shape_obj], view_name, index * 1000 + part_index)
+        bounds, _ = projected_bounds(part_view, [shapes[part_index]])
+        centers.append(((bounds[0] + bounds[1]) / 2.0, (bounds[2] + bounds[3]) / 2.0))
+        fragment = TechDraw.viewPartAsSvg(part_view)
+        if fragment is None or fragment.strip() == "":
+            raise RuntimeError(
+                "viewPartAsSvg 返回空片段：分解视图 %s 的零件 %d 未产生投影几何"
+                % (view_name, part_index)
+            )
+        views.append(part_view)
+        bounds_list.append(bounds)
+        fragments.append(fragment)
+    # 自动锚点的选点需要视图；逐件视图已建好，用首个零件视图作依据（其余视图
+    # 投影同一个 3D 点，选点与总装图同源）。
+    if any(callout["point3d"] is None for callout in CALLOUTS):
+        resolve_auto_anchors(shapes, views[0])
+    offsets = exploded_part_offsets(shapes, views[0], axis)
+    # 排布后的逐零件画布占位（y-down）。
+    rects = []
+    for part_index in range(len(shapes)):
+        c_x, c_y = centers[part_index]
+        dx, dy = offsets[part_index]
+        bounds = bounds_list[part_index]
+        rects.append(
+            (
+                bounds[0] - c_x + dx,
+                -(bounds[3] - c_y) + dy,
+                bounds[1] - c_x + dx,
+                -(bounds[2] - c_y) + dy,
+            )
+        )
+    min_x = min(rect[0] for rect in rects) - CANVAS_PADDING
+    min_y = min(rect[1] for rect in rects) - CANVAS_PADDING
+    max_x = max(rect[2] for rect in rects) + CANVAS_PADDING
+    max_y = max(rect[3] for rect in rects) + CANVAS_PADDING
+
+    def project_point(part_index, point):
+        c_x, c_y = centers[part_index]
+        dx, dy = offsets[part_index]
+        projected = views[part_index].projectPoint(point)
+        return projected.x - c_x + dx, -(projected.y - c_y) + dy
+
+    callout_svg, anchors, extent, callout_warnings = callout_fragments(
+        project_point, (min_x, min_y, max_x, max_y), rects
+    )
+    min_x = min(min_x, extent[0] - CANVAS_PADDING)
+    max_x = max(max_x, extent[1] + CANVAS_PADDING)
+    min_y = min(min_y, extent[2] - CANVAS_PADDING)
+    max_y = max(max_y, extent[3] + CANVAS_PADDING)
+    width = max_x - min_x
+    height = max_y - min_y
+    parts = [
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="%s %s %s %s" '
+        'width="%smm" height="%smm">'
+        % (fmt(min_x), fmt(min_y), fmt(width), fmt(height), fmt(width * SCALE), fmt(height * SCALE)),
+    ]
+    for part_index, fragment in enumerate(fragments):
+        dx, dy = offsets[part_index]
+        parts.append('<g transform="translate(%s %s)">%s</g>' % (fmt(dx), fmt(dy), fragment))
+    parts.extend(callout_svg)
+    parts.append("</svg>")
+    return "".join(parts), {
+        "center": ((min_x + max_x) / 2.0, (min_y + max_y) / 2.0),
+        "bbox": [round(min_x, 4), round(min_y, 4), round(width, 4), round(height, 4)],
+        "anchors": anchors,
+        "parts": part_metadata(shapes, bounds_list, (0.0, 0.0), rects),
+        "warnings": callout_warnings,
+        "exploded": True,
+        "axis": [round(component, 6) for component in axis],
+    }
+
+
 def build_view_svg(view, shapes, view_name):
     """生成单个视图的独立黑白 SVG 文本与其 manifest 元数据。"""
     bbox, part_bounds = projected_bounds(view, shapes)
@@ -830,7 +1040,14 @@ def build_view_svg(view, shapes, view_name):
     # 片段帧（y-down）几何范围。
     geo_min_x, geo_max_x = bbox[0] - c_x, bbox[1] - c_x
     geo_min_y, geo_max_y = bbox[2] - c_y, bbox[3] - c_y
-    callout_svg, anchors, extent, callout_warnings = callout_fragments(view, center, bbox, part_bounds)
+    def project_point(part_index, point):
+        projected = view.projectPoint(point)
+        return projected.x - c_x, -(projected.y - c_y)
+
+    canvas_bounds = (bbox[0] - c_x, -(bbox[3] - c_y), bbox[1] - c_x, -(bbox[2] - c_y))
+    callout_svg, anchors, extent, callout_warnings = callout_fragments(
+        project_point, canvas_bounds, part_rects_in_canvas(part_bounds, center)
+    )
     marker_svg, marker_extent = detail_marking_fragments(view, center, view_name)
     if marker_extent is not None:
         extent = (
@@ -866,6 +1083,14 @@ def build_view_svg(view, shapes, view_name):
 
 
 def main():
+    if EXPLODED and len(MODEL_PATHS) < 2:
+        raise RuntimeError(
+            "分解图需要至少两个零件（用 model_paths 传多个文件），单模型没有可分解的装配关系"
+        )
+    if EXPLODED and DETAILS:
+        raise RuntimeError(
+            "分解图不支持 details：放大窗口按模型坐标给出，而分解图每个零件各有一个视图，没有统一的基视图"
+        )
     template_path = os.path.join(OUTPUT_DIR, TEMPLATE_FILENAME)
     # 三处文本写出都显式指定 UTF-8：默认编码取宿主 locale（LANG=C 时为 ascii），
     # 写含中文标注的 manifest 会 UnicodeEncodeError 退出码 1。
@@ -902,13 +1127,19 @@ def main():
     manifest_views = []
     view_centers = {}
     for index, view_name in enumerate(VIEWS):
-        view = make_view(doc, page, shape_objs, view_name, index)
-        # 自动锚点以首个视图为选点依据；必须在任何 viewPartAsSvg 之前定稿，
-        # 否则后续视图会按各自的投影重新选点，同一件号落到不同物理位置。
-        if index == 0 and any(callout["point3d"] is None for callout in CALLOUTS):
-            resolve_auto_anchors(shapes, view)
-        svg_text, meta = build_view_svg(view, shapes, view_name)
-        view_centers[view_name] = (view, meta["center"])
+        if EXPLODED:
+            # 分解图逐件建视图，自动锚点在建完首个零件视图后定稿，见该函数内。
+            svg_text, meta = build_exploded_view_svg(doc, page, shape_objs, shapes, view_name, index)
+        else:
+            view = make_view(doc, page, shape_objs, view_name, index)
+            # 自动锚点以首个视图为选点依据；必须在任何 viewPartAsSvg 之前定稿，
+            # 否则后续视图会按各自的投影重新选点，同一件号落到不同物理位置。
+            if index == 0 and any(callout["point3d"] is None for callout in CALLOUTS):
+                resolve_auto_anchors(shapes, view)
+            svg_text, meta = build_view_svg(view, shapes, view_name)
+            # 放大窗口挂在这个基视图上，分解图没有单一基视图（逐件各一个），
+            # 故只在总装路径登记；分解图 + details 在 main 开头即被拒绝。
+            view_centers[view_name] = (view, meta["center"])
         svg_path = os.path.join(OUTPUT_DIR, SVG_FILENAMES[view_name])
         with open(svg_path, "w", encoding="utf-8") as handle:
             handle.write(svg_text)
@@ -922,6 +1153,7 @@ def main():
                 "anchors": meta["anchors"],
                 "parts": meta["parts"],
                 "warnings": meta["warnings"],
+                "exploded": meta.get("exploded", False),
             }
         )
 

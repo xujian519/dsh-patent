@@ -362,6 +362,68 @@ describe.skipIf(!hasFreeCad)('real FreeCAD structure rendering (needs `freecadcm
     }
   }, 180_000)
 
+  it('分解图：沿装配轴把零件拉开，逐件投影互不重叠', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-freecadexploded-'))
+    try {
+      const result = await renderStructureViews(runtime, {
+        modelPaths: [FIXTURE, PIN_FIXTURE],
+        views: ['front'],
+        scale: 1,
+        showHidden: false,
+        exploded: true,
+        callouts: [
+          { numeral: '1', label: '立柱', model: 0 },
+          { numeral: '2', label: '圆柱销', model: 1 },
+        ],
+        figureNumber: 1,
+        outputDir: dir,
+      }, { renderTimeoutMs: TEST_RENDER_TIMEOUT_MS })
+      expect(result.ok ? 'ok' : result.error).toBe('ok')
+      if (!result.ok) return
+      const manifest = JSON.parse(readFileSync(result.manifestPath, 'utf8')) as {
+        views: {
+          path: string
+          exploded?: boolean
+          warnings?: string[]
+          parts?: { index: number; bounds: number[] | null }[]
+        }[]
+      }
+      const view = manifest.views[0]
+      expect(view).toBeDefined()
+      if (view === undefined) return
+      expect(view.exploded).toBe(true)
+      const parts = view.parts ?? []
+      expect(parts).toHaveLength(2)
+      // 逐件投影 + 沿轴排布：两个零件的占位不重叠，说明它们确实被拉开了。
+      const first = parts[0]?.bounds
+      const second = parts[1]?.bounds
+      expect(first).not.toBeNull()
+      expect(second).not.toBeNull()
+      if (first == null || second == null) return
+      const [fx = Number.NaN, fy = Number.NaN, fw = Number.NaN, fh = Number.NaN] = first
+      const [sx = Number.NaN, sy = Number.NaN, sw = Number.NaN, sh = Number.NaN] = second
+      const separated = (fx + fw <= sx) || (sx + sw <= fx) || (fy + fh <= sy) || (sy + sh <= fy)
+      expect(separated).toBe(true)
+      // 标号跟着各自零件走：锚点落在自己零件的占位里（容差覆盖引线偏移前的落点）。
+      const anchors = (JSON.parse(readFileSync(result.manifestPath, 'utf8')) as {
+        views: { anchors: { numeral: string; model: number | null; point2d: number[] }[] }[]
+      }).views[0]?.anchors ?? []
+      expect(anchors).toHaveLength(2)
+      for (const anchor of anchors) {
+        const own = parts.find(part => part.index === anchor.model)
+        expect(own?.bounds).not.toBeNull()
+        if (own?.bounds == null) continue
+        const [x = Number.NaN, y = Number.NaN, width = Number.NaN, height = Number.NaN] = own.bounds
+        expect(anchor.point2d[0]).toBeGreaterThanOrEqual(x - 0.5)
+        expect(anchor.point2d[1]).toBeGreaterThanOrEqual(y - 0.5)
+        expect(anchor.point2d[0]).toBeLessThanOrEqual(x + width + 0.5)
+        expect(anchor.point2d[1]).toBeLessThanOrEqual(y + height + 0.5)
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }, 180_000)
+
   it('引线布局：标号避开别的零件与已放标号，不退回首选项', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-freecadlabel-'))
     try {

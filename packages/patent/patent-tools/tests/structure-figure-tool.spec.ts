@@ -1046,6 +1046,35 @@ describe('generate_structure_figure 装配体（model_paths）', () => {
     }
   })
 
+  it('分解图把 exploded 交给渲染器；单模型与 details 同时给都当场拒绝', async () => {
+    const dir = tempDir()
+    const plate = writeModel(dir, 'plate.step')
+    const pin = writeModel(dir, 'pin.step')
+    try {
+      const { render, calls } = okRenderer()
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: join(dir, 'figs'), cwd: dir })
+      // 装配体 + exploded：标记原样下发，渲染器据此走逐件投影路径。
+      await execute(await ctxWith(tool), 'generate_structure_figure', {
+        model_paths: [plate, pin],
+        views: ['front'],
+        exploded: true,
+      }, 'a1')
+      expect(calls[0]?.exploded).toBe(true)
+      // 单模型没有可分解的装配关系。
+      await expect(tool.execute({ model_path: plate, views: ['front'], exploded: true }, exec))
+        .rejects.toMatchObject({ code: 'invalid_tool_input' })
+      // 放大窗口挂在单一基视图上，而分解图每个零件各有一个视图。
+      await expect(tool.execute({
+        model_paths: [plate, pin],
+        views: ['front'],
+        exploded: true,
+        details: [{ base: 'front', center: [0, 0, 10], radius_mm: 5 }],
+      }, exec)).rejects.toMatchObject({ code: 'invalid_tool_input' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('装配体下件号必须写明归属：缺 model 报错且不落到渲染器', async () => {
     const dir = tempDir()
     const plate = writeModel(dir, 'plate.step')

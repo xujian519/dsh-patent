@@ -66,6 +66,8 @@ export type StructureManifestView = {
   parts?: StructureManifestPart[]
   /** 标号放置的降级说明（找不到不压盖的位置等）；旧版 manifest 无此字段。 */
   warnings?: string[]
+  /** 该视图是否为分解图（逐件 HLR + 沿装配轴排布）；旧版 manifest 无此字段。 */
+  exploded?: boolean
   /** 放大视图的基视图名（仅 `kind='detail'`）。 */
   base?: string
   /** 放大视图的窗口圆心（模型 3D 坐标，仅 `kind='detail'`）。 */
@@ -149,6 +151,11 @@ export type GenerateStructureFigureInput = {
   line_width_mm?: number
   /** 隐藏线线型：`solid`（缺省，FreeCAD 原始实线）或 `dashed`。 */
   hidden_line_style?: StructureHiddenLineStyle
+  /**
+   * 分解图：沿装配轴把零件拉开成一维串后逐件投影（零件之间互不遮挡）。
+   * 需要 `model_paths` 传至少两个零件；视图视线不得与装配轴近乎平行。
+   */
+  exploded?: boolean
   /** 件号锚定（可为空）。 */
   callouts?: StructureCalloutInput[]
   /** 局部放大视图（可为空）：把某个基视图上的一块圆形窗口放大成一张独立视图。 */

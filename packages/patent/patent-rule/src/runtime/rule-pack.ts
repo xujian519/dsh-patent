@@ -13,7 +13,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { parseDocument } from 'yaml'
-import type { RuleSet } from '@deepseek-ai/dsh-patent-core'
+import type { RuleSet, RuleSetValidationIssue } from '@deepseek-ai/dsh-patent-core'
 import { assetRulesRoot, candidatePackDirs } from '../asset-location.ts'
 import { loadRuleSetDir, mergeRuleSets } from './RuleLoader.ts'
 
@@ -168,6 +168,9 @@ function checkPackManifest(dir: string, layerName: string, warnings: string[]): 
 
 /**
  * 加载分层规则包。
+ *
+ * 同名 id 的覆盖一律记 warning：同一层内两个文件、跨层的 domain/overrides 覆盖 base，
+ * 都只保留后加载的那条，静默覆盖会让一条规则从未生效而无人察觉。
  * @param options - 显式清单路径与可选规则根目录覆盖；缺省按打包 base 包加载。
  * @returns 分层规则包加载结果。
  */
@@ -211,7 +214,12 @@ export function loadRulePack(options: { manifestPath?: string; rulesDir?: string
       warnings.push(`规则包 ${layerName} 无可加载规则文件（${dir}）`)
     }
     sources.push(...layerSources)
-    layerOrder.push({ name: layerName, ruleSet: mergeRuleSets(ruleSets) })
+    // 跨层覆盖在下面逐层记录；同一层内两个文件定义同一 id 时同样会后加载覆盖先前的，
+    // 那条路径此前完全无声，配错就成了一条规则从未生效而无人察觉。
+    const layerIssues: RuleSetValidationIssue[] = []
+    const layerRuleSet = mergeRuleSets(ruleSets, layerIssues)
+    warnings.push(...layerIssues.map(issue => `规则包 ${layerName} 层内：${issue.message}`))
+    layerOrder.push({ name: layerName, ruleSet: layerRuleSet })
   }
 
   loadLayer('base', manifest.base, isAbsolute(manifest.base) ? 'path' : 'builtin')

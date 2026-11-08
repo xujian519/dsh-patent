@@ -2,7 +2,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
@@ -42,6 +42,30 @@ describe('patent-rule apply rule loading', () => {
   it('loads a manifest without a rules directory', async () => {
     const ctx = await mount({ manifestPath: join(tempDir(), 'missing.yaml') })
     expect(ctx.get('patentRuleGate')).toBeDefined()
+  })
+
+  it('warns when an additional domain rule shadows a base rule id', async () => {
+    const domain = tempDir()
+    writeFileSync(
+      join(domain, 'shadow.yaml'),
+      [
+        'rules:',
+        '  shadowed:',
+        '    id: PAT-ABS-001',
+        '    name: 域内同 id 覆盖',
+        '    severity: minor',
+        '    action: warn',
+        '    check: { type: keyword_blocklist, keywords: ["DUPWORD"] }',
+      ].join('\n'),
+    )
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    const warnSpy = vi.spyOn(ctx.logger, 'warn')
+    await ctx.plugin(PatentRule, { additionalRuleDomains: [domain] })
+    const logged = warnSpy.mock.calls.map(([message]) => String(message))
+    warnSpy.mockRestore()
+    expect(logged.some(message => message.includes('PAT-ABS-001') && message.includes('重复'))).toBe(true)
   })
 
   it('loads a manifest with a rules directory', async () => {

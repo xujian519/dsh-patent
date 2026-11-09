@@ -54,6 +54,21 @@ The agent restates the scope and each key decision for confirmation before draft
 - Search reports name the data source, search expression, date, and coverage.
 - Every factual assertion carries a source; assertions without a source are withdrawn.
 
+
+## Approval gate (in-session card, no separate route)
+
+When a patent workflow reaches the `approval-gate` stage, it does **not** open a dedicated Approvals page or sidebar route.
+
+With the default foreground setup (`approveStageGates: true` on `@deepseek-ai/dsh-patent-tools` in the patent preset, and an `approval` / `@deepseek-ai/dsh-user-approval` service mounted):
+
+1. An **approval card** appears in the same session (one-shot decision). The summary comes from the outputs listed in that gate's `review_keys`.
+2. Allow continues the run; reject / cancel / unavailable / `never` policy pauses with the outcome name in the tool result.
+3. Background runs (`run_in_background: true`) or deployments with the flag off may still use the older “pause then resume with `approveStageIds`” contract — see the upgrade guide; do not pass `approveStageIds` yourself when the foreground flag is on.
+
+Smoke check: run a short manifest (for example `patent_workflow_run` with `manifestId: patent_novelty_v1`) to the gate, confirm the card, then allow and finish the chain.
+
+Details: [`../../upgrade-guide/v0.2.2-alpha.3/patent-stage-gate-live-approval/guide.md`](../../upgrade-guide/v0.2.2-alpha.3/patent-stage-gate-live-approval/guide.md) (canonical text stays under `alpha.3`; `v0.2.2-rc.1` has a pointer only — see `docs/upgrade-guide/PATH-ALIGNMENT-NOTE.md`).
+
 ## Continue
 
 - [Use the Web UI](index.md)

@@ -26,6 +26,7 @@ Pre-stable internal APIs whose consumers are all updated in the same change need
 - `<version>` is the `version` field of the root `package.json` when you write the guide, for example `v0.1.7-rc.2`. The guide describes the upgrade from that release to the next one.
 - `<item>` is a kebab-case name of the changed surface, for example `profile-flag-rename`.
 - Each item directory holds exactly `guide.md`, its Chinese counterpart `guide.zh.md`, and the pairing record `guide.i18n.yaml`: no index, no attachments.
+- `docs/upgrade-guide/PATH-ALIGNMENT-NOTE.md` is the one file outside that layout. It records that the patent stage-gate live-approval body stays under `v0.2.2-alpha.3`, and `v0.2.2-rc.1/patent-stage-gate-live-approval/` only points there. Do not move or copy that body. The note is Chinese-only and excluded from bilingual pairing.
 
 ## Maintenance
 

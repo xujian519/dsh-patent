@@ -20,6 +20,12 @@ const LANGUAGES = {
 } as const
 const SEMVER = String.raw`(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?`
 const GUIDE_PATH = new RegExp(`^v${SEMVER}/[a-z0-9]+(?:-[a-z0-9]+)*/(guide\\.md|guide\\.zh\\.md|guide\\.i18n\\.yaml)$`, 'u')
+/**
+ * 中文决策说明，不是升级指南。
+ * 审批门正文留在 `v0.2.2-alpha.3`；`v0.2.2-rc.1` 只放指针。
+ * 双语配对清单排除此文件。
+ */
+const ALIGNMENT_NOTE = 'PATH-ALIGNMENT-NOTE.md'
 
 /** Return one guide's frontmatter and structure violations. */
 function guideViolations(source: string, language: typeof LANGUAGES[keyof typeof LANGUAGES]): string[] {
@@ -61,6 +67,7 @@ export function collectUpgradeGuideViolations(root: string): string[] {
     .map(entry => join(entry.parentPath, entry.name).slice(directory.length + 1).replaceAll('\\', '/'))
     .sort()
   for (const file of files) {
+    if (file === ALIGNMENT_NOTE) continue
     const path = `${GUIDE_ROOT}/${file}`
     const name = GUIDE_PATH.exec(file)?.[1]
     if (name === undefined) {

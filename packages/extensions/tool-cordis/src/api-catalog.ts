@@ -2552,7 +2552,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       {
         signature: 'async runPlantask( agent: PatentAgent, caseId: string, planSteps: string[], options?: PlantaskRunOptions, ): Promise<PlantaskRunResult>',
         description: 'Drive a plantask plan through planning → awaiting_approval → executing. The awaiting_approval gate resolves through ctx.get(\'approval\'); without an approval service the plan fails closed (replanning with a feedback) rather than auto-approving. Set options.autoApprove to false to leave the plan pending for an out-of-band approve/reject.',
-        parameters: [{ name: 'agent', description: 'the agent whose session records the patent/plantask events.' }, { name: 'caseId', description: 'case identity keying the tracked pending plantask.' }, { name: 'planSteps', description: 'the ordered plan steps to sync into tasks.' }, { name: 'options', description: 'autoApprove and approvalReason.' }],
+        parameters: [{ name: 'agent', description: 'the agent whose session records the patent/plantask events.' }, { name: 'caseId', description: 'case identity keying the tracked pending plantask.' }, { name: 'planSteps', description: 'the ordered plan steps to sync into tasks (non-empty).' }, { name: 'options', description: 'autoApprove and approvalReason.' }],
         returns: 'the final plantask state plus tasks and the approval outcome.',
       },
       {

@@ -315,7 +315,7 @@ async runWorkflow( manifest: WorkflowManifest, wctx: WorkflowContext, executor?:
  * pending for an out-of-band approve/reject.
  * @param agent - the agent whose session records the patent/plantask events.
  * @param caseId - case identity keying the tracked pending plantask.
- * @param planSteps - the ordered plan steps to sync into tasks.
+ * @param planSteps - the ordered plan steps to sync into tasks (non-empty).
  * @param options - autoApprove and approvalReason.
  * @returns the final plantask state plus tasks and the approval outcome.
  */

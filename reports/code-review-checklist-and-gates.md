@@ -630,3 +630,55 @@ D12 范围：`packages/patent/patent-tools/src/figure` 的渲染族（几何、�
 - **不删既有测试**：渲染族已有 46 个 `figure-*.spec.ts`（连同 5 个复核/分析入口 spec 共约 1.7 万行）；D12 只新增快照，不合并或删除既有细粒度用例。细粒度用例定位缺陷，快照锁定整体输出，两者用途不同。
 - **不把快照当覆盖率**：快照验证「输出未变」，不验证「输出正确」；R-67–R-75 的修复仍需各自的定向失败用例（§35 的复现输入即起点）。
 - **不扩大拆分到 `figure/` 之外**：`submission-page`、`section-source`、`freecad-renderer` 等 ≤512 行模块本轮只在被上述七个文件依赖时抽读，不纳入拆分范围。
+
+## 40. D14 复核范围与方法
+
+D14 范围：`packages/patent/patent-workflow` 的执行器、manifest 目录、运行持久化与 plantask 状态机，对应计划第 165 行的「`manifests.ts` 状态机、恢复、幂等、HITL 审批」，交付物为恢复/重复调用测试。逐行过读 `workflow.ts`（520）、`workflow/executor.ts`（187）、`workflow-store.ts`（282）、`plantask.ts`（227）、`index.ts`（305）；`workflow/manifests.ts`（953）作为数据目录按阶段顺序、门位置与参数核对，不逐条重读阶段文案。跨包只读消费面：`patent-core/src/workflow/manifest.ts`（`rewindTo`/`routes` 不得跨门的校验）、`patent-core/src/atoms/handlers/builtin/gate.ts`（放行标记只进局部执行态）、`patent-tools/src/tool/patent-workflow-run.ts`（manifest 路径的 `approveStageIds`、live 门与持久化装配）与 `patent-tools/src/tool/patent-plan-task.ts`（无状态 transition/sync/replan）。
+
+方法：先把状态推进画成「线性序号 + 回退 + 中断 + 并行窗口」四条路径，逐条找可复现输入；再用临时 spec 直接调用 `runWorkflow`、`runPlantask` 与 store 复现（保留为 §42 的用例），包括暂停后带放行/不带放行重跑、重新打开 store、同 runId 连续两次、相邻双门、放行名单拼错、空计划、重复决策与轮次封顶。状态机封闭性检查两处：manifest 校验拒绝跨门的回退；plantask 转移表以用例固定「六态齐全、目标在词表内、finished 无出边、全部可达」。
+
+结论：正常路径的状态推进与门禁顺序完整，问题集中在「恢复语义」和「人工决策的来源与时机」。本次确认 6 项风险（P1 1、P2 4、P3 1）：R-78/R-79/R-81 本轮修复并带用例；R-77/R-80/R-82 只登记，修复需要接口或部署策略决策。
+
+## 41. D14 问题清单
+
+| 风险 | 类别 | 证据 | 最小复现 / 实际结果 | 级别 | 状态 |
+|---|---|---|---|---|---|
+| R-77 | 恢复语义 | `workflow.ts:97,481`；`workflow-store.ts:243,274` | 门暂停后带放行重跑：门前阶段全部再执行，暂停记录不被复用 | P2 | 已确认 |
+| R-78 | HITL 时机 | `workflow.ts:269-277`；`tests/workflow.spec.ts` 的 parallel-interrupt | `[gate_a, gate_b, deliver]` 拒绝 a → 修复前 b 也被追问（`['a','b']`）；修复后只问 a | P2 | 已关闭 |
+| R-79 | 放行诊断 | `workflow/executor.ts:88`；修复前无校验 | `approvalGrants: ['gtae']` → 修复前再次暂停且无诊断；修复后运行前 `WorkflowError` | P3 | 已关闭 |
+| R-80 | 持久化 / 恢复 | `index.ts:148,150,264-272`；`types.ts` 的 plantask 事件注释 | 重启后 `approve` 抛 no pending；批准后同 case 再发起视为新计划；轮次跨周期累计 | P2 | 已确认 |
+| R-81 | 挂起锁 | `index.ts:204`；`plantask.ts` 的 executing 守卫 | `runPlantask(agent,'case',[])` → 先问审批，批准后抛语义错误并可能留下 pending | P2 | 已关闭 |
+| R-82 | HITL 信任边界 | `patent-tools/src/config.ts:116,179`；`patent-workflow-run.ts:439-448,607-608`；`patent-workflow-run.spec.ts:337-348` | 默认配置 + `approveStageIds:['review_gate']` → 直接完成，不产生 `approval/request` | P1 | 已确认 |
+
+## 42. D14 恢复/重复调用测试矩阵
+
+新增 `packages/patent/patent-workflow/tests/workflow-recovery.spec.ts`，并在 `service.spec.ts`、`plantask.spec.ts`、`manifest-atoms.spec.ts` 补集成、状态机与 manifest 结构用例。全部输入为固定字面量，临时目录每例自建并清理。
+
+| 用例 | 锁定内容 | 对应风险 |
+|---|---|---|
+| 暂停记录落盘后带放行重跑 | 暂停结果含 `interrupted`、`completed=false`；带 `approvalGrants` 重跑完成并覆盖同一 runId；门前 `draft` 执行两次 | R-77 |
+| 不带放行重跑两次 | 两次暂停结果与磁盘 JSON 逐字相同；同 runId 只有一条记录 | R-77 |
+| 新 store 实例重读暂停记录 | 暂停的 stage 列表与 `interrupted` 可跨实例恢复 | R-77 |
+| `requireAllSteps:false` 下的暂停 | 没有降级阶段也报告 `completed=false` | R-77 |
+| 落盘失败后恢复 | 暂停结果带 `persistWarning`，后续带放行运行仍可写成完成记录 | R-77 |
+| 完成运行重复两次 | 两次结果与磁盘 JSON 逐字相同，阶段不追加 | 重复调用 |
+| 相邻双门逐个取决策 | 拒绝第一个门后第二个门不再被询问 | R-78 |
+| 放行只作用于点名的门 | 批准 gate_a 后仍停在 gate_b，交付阶段不执行 | R-78 |
+| 放行名单未知阶段 / 非门阶段 | 执行前 `WorkflowError`，执行器未被调用 | R-79 |
+| 空计划 | 不取审批、不落 pending、不写 `patent/plantask`；同 caseId 随后可发起 | R-81 |
+| 暂停与恢复的会话事件 | 同一 runId 两次运行各追加一条 `patent/workflow-run`（先 interrupted、后 completed） | R-77 / 重复调用 |
+| 重复决策 | `approve` 后再次 `approve`/`reject` 抛 no pending | R-80 |
+| 批准后同 caseId 重新发起 | 只锁 `awaiting_approval`；执行态无服务端状态可查 | R-80 |
+| plantask 转移表封闭 | 六态齐全、目标在词表内、finished 无出边、全部从 planning 可达 | 状态机 |
+| 内置 manifest 门位置 | 每个 manifest 恰好一个门、位于最后、不声明 consumes/retry | manifests 状态机 |
+
+门禁命令：`pnpm exec vitest run packages/patent/patent-workflow packages/patent/patent-tools/tests/patent-workflow-run.spec.ts packages/patent/patent-tools/tests/patent-flexible-plan.spec.ts packages/patent/patent-tools/tests/approval-gate.spec.ts`；类型与静态检查按 §5.1。
+
+## 43. D14 范围校正与不做项
+
+- **不做「从暂停记录真续接」**：`WorkflowRunStore.loadRun` 目前没有生产消费者；真正续接要先决定哪些阶段可跳过、恢复后的证据账本与回退留痕如何合并、以及重跑的幂等承诺边界。D14 只把「恢复 = 带放行重跑」写成测试与 README 语义（R-77）。
+- **不落盘 plantask 状态**：跨重启恢复需要新增持久化格式与「谁驱动 `awaiting_feedback`→`finished`」的产品决定；D14 只固定内存语义并登记（R-80）。
+- **不改 `approveStageGates` 默认值**：把默认改为 `true` 会要求部署挂载审批服务，并改变既有工具契约；是否收紧属于 owner 决策（R-82）。
+- **不重构执行器**：`runWorkflow` 的单文件 520 行与「串行/并行/回退/中断」四路径耦合是已知结构债，但拆分需要单独 PR 与等价性测试，不与本轮行为修复混做。
+- **不动 `manifests.ts` 的阶段文案与顺序**：本轮只固定门的位置与结构；文案属模型可见输出，改动需单独评审快照。
+- **不覆盖 graph 路径的检查点恢复**：`resumeCheckpointId` 的检查点语义在 patent-core 的 graph 适配器，D14 范围是 manifest 路径与 plantask 状态机；graph 恢复另列。

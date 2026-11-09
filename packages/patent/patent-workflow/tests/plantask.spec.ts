@@ -3,10 +3,12 @@ import {
   PlanTaskSemanticError,
   PlanTaskStateError,
   PlanTaskStateMachine,
+  TRANSITIONS,
   hashStep,
   replanTasks,
   syncPlanToTasks,
   type DocketIssue,
+  type PlanTaskState,
 } from '@deepseek-ai/dsh-patent-workflow'
 
 /** 一条 open 条目；默认不阻塞，按用例逐项改档位。 */
@@ -24,6 +26,35 @@ function issue(overrides: Partial<DocketIssue> = {}): DocketIssue {
 }
 
 describe('plantask state machine', () => {
+  it('转移表封闭：六个状态都有出边定义，目标都在词表内，finished 无出边', () => {
+    const states: PlanTaskState[] = [
+      'planning',
+      'awaiting_approval',
+      'executing',
+      'awaiting_feedback',
+      'replanning',
+      'finished',
+    ]
+    expect(Object.keys(TRANSITIONS).sort()).toEqual([...states].sort())
+    for (const targets of Object.values(TRANSITIONS)) {
+      for (const target of targets) expect(states).toContain(target)
+    }
+    expect(TRANSITIONS.finished).toEqual([])
+
+    // 每个状态至少从 planning 出发可达：图里没有孤立状态。
+    const reached = new Set<PlanTaskState>(['planning'])
+    const queue: PlanTaskState[] = ['planning']
+    while (queue.length > 0) {
+      const from = queue.shift()!
+      for (const to of TRANSITIONS[from]) {
+        if (reached.has(to)) continue
+        reached.add(to)
+        queue.push(to)
+      }
+    }
+    expect([...reached].sort()).toEqual([...states].sort())
+  })
+
   it('follows the allowed transition chain', () => {
     const sm = new PlanTaskStateMachine()
     expect(sm.state).toBe('planning')

@@ -185,8 +185,10 @@ export type WorkflowRunOptions = {
   /** 原子执行所需的外部能力（LLM/检索器），由宿主注入。 */
   provider?: StageProvider
   /**
-   * 已人工批准的审批门阶段 id 列表：命中时跳过执行直接放行（输出 "APPROVED"），
-   * 未命中的审批门照常中断。人工批准后重跑时传入，实现"审批门通过后继续"。
+   * 已人工批准的审批门阶段 id 列表：命中时把放行标记注入该门的执行态，由审批门
+   * handler 放行并写出 "APPROVED" 占位；未命中的审批门照常中断。人工批准后重跑时
+   * 传入（重跑从第一个阶段开始）。名单里出现非审批门阶段时，运行在开始前抛
+   * WorkflowError。
    */
   approvalGrants?: string[]
   /**

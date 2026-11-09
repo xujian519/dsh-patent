@@ -784,3 +784,18 @@ describe('PFIE 一致性阶段：确定性原子与回退信号闭环', () => {
     expect(stageOf('patent_disclosure_v1', 'consistency')?.consumes).toBeUndefined()
   })
 })
+
+describe('manifests 状态机：审批门位置', () => {
+  it('每个内置 manifest 恰好一个审批门，且是最后一个阶段、不声明 consumes/retry', () => {
+    for (const manifest of builtinPatentManifests) {
+      const gates = manifest.stages.filter(stage => stage.atom === 'approval-gate')
+      expect(gates).toHaveLength(1)
+      const gate = gates[0]!
+      expect(manifest.stages.at(-1)?.id).toBe(gate.id)
+      expect(gate.strategy).toBe('chain')
+      // 门 handler 直接读共享 state；回退不得跨门（由 manifest 校验强制）。
+      expect(gate.consumes).toBeUndefined()
+      expect(gate.retry).toBeUndefined()
+    }
+  })
+})

@@ -27,7 +27,7 @@ kind: "package-reference"
 
 ### runWorkflow(manifest, ctx, executor?, options?, agent?)
 
-经移植的执行器运行工作流 manifest，并在传入 agent 时把 `patent/workflow-run` 事件写入 `agent.session`。阶段声明 atom 或回退到 `executor`；阶段在 `consumes` 中列出上游阶段 id 时，这些阶段的产出会交给 executor（manifest 与图两条路径都把每个已执行阶段的产出存在该阶段 id 下），原子阶段则直接读共享 state；审批门 `InterruptStageError` 暂停运行并返回 `interrupted` 而非失败，宿主以 `options.approvalGrants` 重跑续接；审批门 handler 自行取得决策时返回 `APPROVAL_GRANTED_KEY`，执行器按预批准门同样消费该标记、写入相同的 `APPROVED` 占位，且绝不把标记并入共享 state，因此现场放行无需重跑。审批门阶段的 `params.review_keys` 指定现场询问用户时引用的状态键，询问文本只带这些产出的限长摘要；暂停路径仍在运行结果里给出完整阶段产出。取消是类型化的：阶段边界前已中止的信号以 `WorkflowError` 拒绝运行；阶段执行中到达 handler 的中止以 `StageCancelledError` 拒绝；两者都不重试、不写降级阶段输出。运行终态包含证据来源时，结果同时携带 `evidenceLedger`，并追加 `patent/evidence-ledger` 事件，按来源逐条给出收据；执行了 `legal-gaps` 阶段的运行还会追加 `patent/legal-gaps` 事件，携带该阶段的报告。回退可由阶段输出文本（`whenOutputMatches`）或阶段经 `_revision_signals` 返回的结构化 `RetrySignal` 触发；`retry.routes` 把 `RetrySignal.gapId` 映射到各自的回退目标，未命中的信号回落到 `retry.rewindTo`。一次评估请求多个目标时，执行器以最早的目标作为重跑起点，较晚的目标随其下游阶段一并重做，每条信号各自记录自己的 `rewindTo`；每次回退向运行结果的 `revisions` 追加一条 `RevisionRecord`（缺口编号、回退目标、前后产出摘要、原因、结果），上限 64 条，超出时以 `revisionsTruncated` 标记。
+经移植的执行器运行工作流 manifest，并在传入 agent 时把 `patent/workflow-run` 事件写入 `agent.session`。阶段声明 atom 或回退到 `executor`；阶段在 `consumes` 中列出上游阶段 id 时，这些阶段的产出会交给 executor（manifest 与图两条路径都把每个已执行阶段的产出存在该阶段 id 下），原子阶段则直接读共享 state；审批门 `InterruptStageError` 暂停运行并返回 `interrupted` 而非失败，宿主以 `options.approvalGrants` 重跑续接。该重跑从第一个阶段开始，门前的阶段会再执行一次；落盘的暂停记录是审计产物，不是续接点。审批门不会进入并行窗口，宿主一次只取一个人工决策；`options.approvalGrants` 只接受本 manifest 的审批门阶段 id，其它 id 在执行前被拒绝。审批门 handler 自行取得决策时返回 `APPROVAL_GRANTED_KEY`，执行器按预批准门同样消费该标记、写入相同的 `APPROVED` 占位，且绝不把标记并入共享 state，因此现场放行无需重跑。审批门阶段的 `params.review_keys` 指定现场询问用户时引用的状态键，询问文本只带这些产出的限长摘要；暂停路径仍在运行结果里给出完整阶段产出。取消是类型化的：阶段边界前已中止的信号以 `WorkflowError` 拒绝运行；阶段执行中到达 handler 的中止以 `StageCancelledError` 拒绝；两者都不重试、不写降级阶段输出。运行终态包含证据来源时，结果同时携带 `evidenceLedger`，并追加 `patent/evidence-ledger` 事件，按来源逐条给出收据；执行了 `legal-gaps` 阶段的运行还会追加 `patent/legal-gaps` 事件，携带该阶段的报告。回退可由阶段输出文本（`whenOutputMatches`）或阶段经 `_revision_signals` 返回的结构化 `RetrySignal` 触发；`retry.routes` 把 `RetrySignal.gapId` 映射到各自的回退目标，未命中的信号回落到 `retry.rewindTo`。一次评估请求多个目标时，执行器以最早的目标作为重跑起点，较晚的目标随其下游阶段一并重做，每条信号各自记录自己的 `rewindTo`；每次回退向运行结果的 `revisions` 追加一条 `RevisionRecord`（缺口编号、回退目标、前后产出摘要、原因、结果），上限 64 条，超出时以 `revisionsTruncated` 标记。
 
 `patent_disclosure_v1` 与 `patent_patentability_v1` 在撰写前运行 `figure_analysis`（sub_agent，对 `figure_files` 中每个文件调用一次 `analyze_patent_figure`）与 `figure_analysis_parse`（确定性 `figure-analysis` 原子）；无附图、无视觉能力或未产出结果时写 `figure_analysis_skipped`，使说明书门禁能区分“未核”与“已核且一致”。
 
@@ -41,7 +41,7 @@ kind: "package-reference"
 
 ### runPlantask(agent, caseId, planSteps, options?)
 
-驱动 plantask 计划经过 planning → awaiting_approval → executing。awaiting_approval 门经 `ctx.get('approval')` 解决；无审批服务时计划 fail-closed（replanning）而非自动放行。`options.autoApprove: false` 让计划停在 awaiting_approval 等待带外决策。
+驱动 plantask 计划经过 planning → awaiting_approval → executing。awaiting_approval 门经 `ctx.get('approval')` 解决；无审批服务时计划 fail-closed（replanning）而非自动放行。`options.autoApprove: false` 让计划停在 awaiting_approval 等待带外决策。空计划步骤在取审批前被拒绝，案卷不会在无任务时挂起。
 
 ### approve(caseId) / reject(caseId, feedback?)
 
@@ -96,6 +96,8 @@ Independent; the pipeline registers no prompt, tool schema, or result of its own
 - **存储经 `ctx.get('storage')` 可选** — 文件产物（workflow-run 与 flexible-plan 存储）使用调用方提供的 `JsonFileStore` 后端；服务不接线 storage-domain 接缝，ctx.storage 集成延期。
 - **运行记录只校验、不带版本号** — `JsonFileWorkflowRunStore` 对字段不符合 `WorkflowRunResult` 的记录（含阶段、中断、证据账本、回退留痕等嵌套字段）抛带文件路径的 `StoredRecordError`；`listRuns` 只列文件名、不解析内容。格式没有版本字段，不兼容的旧形状按非法记录拒绝，不做迁移。`JsonFileFlexiblePlanStore` 同样拒绝 `caseId` 与文件名不一致的计划。
 - **无答案者时审批 fail-closed** — 无审批服务挂载（或未组合答案者）时，`runPlantask` 拒绝计划转至 replanning 而非自动放行。
+- **manifest 恢复是整次重跑** — `WorkflowRunStore.loadRun` 没有生产消费者：暂停运行的落盘记录是审计产物，恢复时门前的每个阶段都会再执行，非确定性阶段的两次结果可以不同。
+- **挂起的 plantask 决策只在内存** — 停等的计划与轮次计数器都在服务实例里；重启即丢失，`patent/plantask` 会话事件不会回读进服务。
 - **轮次计数器按进程** — `maxRounds` 计在服务里而非会话日志里：重启即清零，计划收到 `finished` 也清零该登记。
 
 ### 开发备注

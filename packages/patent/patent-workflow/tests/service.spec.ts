@@ -119,6 +119,79 @@ describe('PatentWorkflow service', () => {
     }
   })
 
+  it('records the paused and resumed attempts of one runId as separate workflow-run events', async () => {
+    const manifest: WorkflowManifest = {
+      id: 'recovery_event_v1',
+      name: '恢复事件',
+      caseType: 'test',
+      stages: [
+        {
+          id: 'review',
+          strategy: 'chain',
+          description: '人工确认结论',
+          atom: 'approval-gate',
+          params: { review_context: '确认结论' },
+        },
+      ],
+    }
+    const ctx = new Context()
+    await ctx.plugin(PatentWorkflow)
+    try {
+      const agent = makeAgent('workflow-recovery-events')
+      const paused = await ctx.patentWorkflow.runWorkflow(manifest, {}, undefined, { runId: 'run-recover' }, agent)
+      expect(paused.completed).toBe(false)
+      expect(paused.interrupted?.stageId).toBe('review')
+
+      const resumed = await ctx.patentWorkflow.runWorkflow(
+        manifest,
+        {},
+        undefined,
+        { runId: 'run-recover', approvalGrants: ['review'] },
+        agent,
+      )
+      expect(resumed.completed).toBe(true)
+
+      const events = agent.session.snapshotEvents().filter(e => e.type === 'patent/workflow-run')
+      expect(events.map(e => e.data.completed)).toEqual([false, true])
+      expect(events[0]!.data.interrupted?.stageId).toBe('review')
+      expect(events[1]!.data.interrupted).toBeUndefined()
+      expect(events.map(e => e.data.runId)).toEqual(['run-recover', 'run-recover'])
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('consumes a pending plantask decision once; repeated approve/reject throw', async () => {
+    const ctx = new Context()
+    await ctx.plugin(PatentWorkflow)
+    try {
+      const agent = makeAgent('plantask-double-decision')
+      await ctx.patentWorkflow.runPlantask(agent, 'case-double', ['步骤A'], { autoApprove: false })
+      expect(ctx.patentWorkflow.approve('case-double').state).toBe('executing')
+      expect(() => ctx.patentWorkflow.approve('case-double')).toThrow(/no pending plantask/)
+      expect(() => ctx.patentWorkflow.reject('case-double')).toThrow(/no pending plantask/)
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('only locks awaiting_approval: an approved caseId can start a new plan', async () => {
+    const ctx = new Context()
+    await ctx.plugin(PatentWorkflow)
+    try {
+      const agent = makeAgent('plantask-reinvoke')
+      await ctx.patentWorkflow.runPlantask(agent, 'case-reinvoke', ['步骤A'], { autoApprove: false })
+      ctx.patentWorkflow.approve('case-reinvoke')
+
+      // executing 之后没有服务端状态可查；同一 caseId 再次发起等于新计划，而不是被旧计划锁死。
+      const again = await ctx.patentWorkflow.runPlantask(agent, 'case-reinvoke', ['步骤B'], { autoApprove: false })
+      expect(again.state).toBe('awaiting_approval')
+      expect(again.tasks.map(task => task.description)).toEqual(['步骤B'])
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
   it('records a workflow run as a patent/workflow-run session event', async () => {
     const ctx = new Context()
     await ctx.plugin(PatentWorkflow)
@@ -246,6 +319,35 @@ describe('PatentWorkflow service', () => {
       await ctx.patentWorkflow.runPlantask(agent, 'case-dup', ['步骤A'], { autoApprove: false })
       await expect(ctx.patentWorkflow.runPlantask(agent, 'case-dup', ['步骤B'], { autoApprove: false }))
         .rejects.toThrow(/已有挂起的 plantask/)
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('rejects an empty plan before asking for approval, leaving the caseId usable', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjectionRegistry)
+    await ctx.plugin(ApprovalService)
+    await ctx.plugin(PatentWorkflow)
+    try {
+      const agent = makeAgent('plantask-empty-plan')
+      let asked = 0
+      ctx.on('approval/request', () => {
+        asked += 1
+        return Promise.resolve<ApprovalOutcome>('allowed-once')
+      })
+
+      await expect(ctx.patentWorkflow.runPlantask(agent, 'case-empty', []))
+        .rejects.toThrow(/计划步骤不能为空/)
+
+      // 没有可取审批的任务：不询问、不落 pending、不写 plantask 事件。
+      expect(asked).toBe(0)
+      expect(agent.session.snapshotEvents().some(event => event.type === 'patent/plantask')).toBe(false)
+
+      // caseId 没有被"已有挂起 plantask"锁死。
+      const again = await ctx.patentWorkflow.runPlantask(agent, 'case-empty', ['步骤A'], { autoApprove: false })
+      expect(again.state).toBe('awaiting_approval')
     } finally {
       await ctx.fiber.dispose()
     }

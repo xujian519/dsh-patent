@@ -8,9 +8,9 @@
 | 级别 | 数量 | 主题 |
 |---|---:|---|
 | P0 | 2 | 法律引用门与证据引擎的同构分叉 |
-| P1 | 16 | 超长文件、类型逃逸、测试缺口、并发语义、A33/无附图/月级日期误判、证据门缺口、待补输入仍给合计、缺款判有效 |
-| P2 | 32 | 跨域依赖、环境版本、通知书自指、IPC 误分类、文献号与黑板别名、claim-chart 校验缺口、模板草案未知键、CNIPR 取消映射、检索上限与 NUL 检索词、款数未核验、滞纳金规则缺失、未知修订版回退、款/项数字降级、工具检索错误码误映射、上游抛错无稳定码、`total` 语义漂移、`json` 输出契约、DOT 节点 id 合并、复核实体宽度、引线标号歧义、缺字体静默降级、虚线/剖面线/多边形规模上限 |
-| P3 | 26 | TODO 归并、报告换行、项号/年份/日期边界、引用区间与目标配置回退、权项编号切分、必填字段双报、检索行静默丢弃、启动失败无错误码、主题词空白、减缴备案提示、重复款号、limit 截断静默、上下文截断、未知 `node_type`、空 `patents` 成功、数值参数未校验、DOT 负边距、电路自连/同格、文字度量多份实现 |
+| P1 | 17 | 超长文件、类型逃逸、测试缺口、并发语义、A33/无附图/月级日期误判、证据门缺口、待补输入仍给合计、缺款判有效、默认部署可由模型自报审批放行 |
+| P2 | 36 | 跨域依赖、环境版本、通知书自指、IPC 误分类、文献号与黑板别名、claim-chart 校验缺口、模板草案未知键、CNIPR 取消映射、检索上限与 NUL 检索词、款数未核验、滞纳金规则缺失、未知修订版回退、款/项数字降级、工具检索错误码误映射、上游抛错无稳定码、`total` 语义漂移、`json` 输出契约、DOT 节点 id 合并、复核实体宽度、引线标号歧义、缺字体静默降级、虚线/剖面线/多边形规模上限、审批门恢复非续接、审批门并行取决策、plantask 状态只在内存、空计划锁死 caseId |
+| P3 | 27 | TODO 归并、报告换行、项号/年份/日期边界、引用区间与目标配置回退、权项编号切分、必填字段双报、检索行静默丢弃、启动失败无错误码、主题词空白、减缴备案提示、重复款号、limit 截断静默、上下文截断、未知 `node_type`、空 `patents` 成功、数值参数未校验、DOT 负边距、电路自连/同格、文字度量多份实现、放行名单拼错静默忽略 |
 
 ## 2. 明细
 
@@ -821,13 +821,82 @@
 - **负责人**：B
 - **状态**：已确认
 
+### R-77 审批门后的恢复是整次重跑，持久化的暂停记录没有续接入口（P2）
+
+- **域**：patent-workflow
+- **证据**：`runWorkflow` 以 `{ ...ctx }` 起步（`workflow.ts:97`），主循环从序号 0 开始（`workflow.ts:481`），从不读取 `WorkflowRunStore.loadRun`（仅两处实现：`workflow-store.ts:243,274`）。暂停结果由 `assembleRunResult` 落盘，同 runId 重跑直接覆盖（`workflow-store.ts:9` 注释自述为有意语义）。
+- **失败输入**：novelty 在 `approval` 门暂停 → 带 `approvalGrants: ['approval']` 重跑 → 门前的模型阶段全部再执行一次；门前的 `draft`/检索产出不会被复用，非确定性阶段的两次结果可以不同，暂停记录只作审计。
+- **测试覆盖**：`tests/workflow-recovery.spec.ts` 的暂停/恢复用例锁定「整次重跑」（门前 `draft` 调用两次）与同 runId 覆盖；重复暂停两次写入逐字相同的记录。
+- **风险**：重跑成本与外部副作用重复；用户以为「续接」而实际拿到第二次生成的结果；暂停记录里的阶段产出无法据以恢复现场。
+- **动作**：D14 只补测试并固定「恢复 = 带放行重跑」的语义，README 不宣称可续接。若要真正从持久化产出续接，需要先决定 `state` 的来源、哪些阶段可跳过以及证据账本如何合并，属于接口决策，后续单独立项。
+- **验证**：见执行卡 §42 的 R-77 行；暂停后恢复完成、同 runId 只保留一条记录、门前阶段调用两次。
+- **负责人**：A
+- **状态**：已确认
+
+### R-78 相邻审批门进入并行窗口，同时向人收集多个决策（P2，已修复）
+
+- **域**：patent-workflow
+- **证据**：`stageWindow` 只排除声明 `retry`/`consumes` 的阶段（`workflow.ts:269-277`）；同 atom 的连续审批门因此进入并行窗口，`Promise.all` 同时执行两个门。既有用例 `tests/workflow.spec.ts` 的 `parallel-interrupt` 正是两个相邻门触发的。
+- **失败输入**：manifest `[gate_a, gate_b, deliver]`，拒绝 `gate_a` → 修复前两个门都被追问（回调次序 `['a', 'b']`），拒绝第一个门不能阻止第二个门已经被提问；修复后只询问 `gate_a`（`['a']`），运行停在第一个门。
+- **风险**：人工决策被并发收集；第二个门可能基于第一个门尚未批准的产出取决策，拒绝路径在提问范围上失效。
+- **动作**：`stageWindow` 对审批门返回 1（`workflow.ts:277`），门一次只取一个决策。内置 manifest 每个只有一个门，正常路径行为不变。
+- **验证**：见执行卡 §42 的 R-78 行；新增用例修复前失败、修复后通过；patent-workflow 全量测试通过。
+- **负责人**：A
+- **状态**：已关闭
+
+### R-79 审批放行名单拼错或指向非门阶段时被静默忽略（P3，已修复）
+
+- **域**：patent-workflow（调用方：patent-tools 的 `approveStageIds`）
+- **证据**：修复前 `runWorkflow` 把 `approvalGrants` 原样交给执行器，执行器只做 `includes(stage.id)`（`workflow/executor.ts:88`）；名单里的未知 id 与「未批准」在结果上不可区分。
+- **失败输入**：`approvalGrants: ['gtae']`（或指向 `draft` 这类非门阶段）→ 修复前运行照常执行、再次停在门口且没有诊断；修复后在执行前抛 `WorkflowError`（`workflow.ts:189`）。
+- **风险**：模型或宿主把拼错当成被拒绝，反复重跑仍停同一门；放行决定看似已给出却没有生效。
+- **动作**：新增 `assertApprovalGrants`（`workflow.ts:189`），只接受本 manifest 的 `approval-gate` 阶段 id，校验发生在 validate 之后、任何阶段执行之前。
+- **验证**：见执行卡 §42 的 R-79 行；两条用例分别覆盖未知阶段与非门阶段，且断言执行器未被调用。
+- **负责人**：A
+- **状态**：已关闭
+
+### R-80 plantask 的挂起决策与轮次只在进程内存，恢复语义不完整（P2）
+
+- **域**：patent-workflow
+- **证据**：`pending` 与 `rounds` 都是服务实例的 `Map`（`index.ts:148,150`），重启即失；`patent/plantask` 事件虽写入会话日志并声称可据此重建（`types.ts` 事件注释），服务不读回日志。`applyDecision` 只有批准→executing、拒绝→replanning（封顶→finished）两条出口（`index.ts:264-272`），`awaiting_feedback`/`finished` 没有服务入口；轮次只在封顶时清零（`index.ts:269`），「计划收到终态时清零」在正常批准路径不会发生。
+- **失败输入**：进程重启后 `approve(caseId)` 抛 `no pending plantask`；`approve` 之后对同一 caseId 再 `runPlantask` 会当作新计划（执行态无锁）；同一 case 先拒绝一次、批准后再拒绝，轮次继续累计。
+- **风险**：跨重启的人工决策无法续接；重复调用无法区分「重试上一轮」与「新计划」；轮次预算跨计划周期漂移。
+- **测试覆盖**：`tests/service.spec.ts` 的重复决策、批准后重新发起、轮次封顶、审批请求抛错清理用例；D14 补空计划不取审批用例。
+- **动作**：D14 只固定现状并登记；若需要跨重启恢复，需决定 plantask 状态是否落盘、由谁驱动 `awaiting_feedback`→`finished`，属于持久化设计决策，后续 PR。
+- **验证**：见执行卡 §42 的 R-80 行；重复决策抛错、同一 caseId 可重新发起且不复用旧 pending。
+- **负责人**：A
+- **状态**：已确认
+
+### R-81 空计划在取到批准后才失败，caseId 被挂起锁死（P2，已修复）
+
+- **域**：patent-workflow
+- **证据**：修复前 `runPlantask` 对空 `planSteps` 也迁移到 `awaiting_approval` 并挂 `pending`；批准后 `applyDecision` 的 executing 守卫抛 `PlanTaskSemanticError`（`plantask.ts` 的 `SEMANTIC_GUARDS.executing`）。自动批准路径的 `catch` 清掉 pending 但丢弃了已作出的批准；`autoApprove:false` 走 `approve()` 时异常发生在 `pending.delete` 之前，pending 永久残留。
+- **失败输入**：`runPlantask(agent, 'case', [])` → 审批被询问；`allowed-once` → 抛「executing 前必须先 sync 计划步骤」；之后同一 caseId 的 `runPlantask` 永远抛「已有挂起的 plantask」，直到进程重启。
+- **风险**：没有可审内容的计划也向人取审批；批准被丢弃；caseId 被锁死，恢复只能等重启。
+- **动作**：在同步任务后、取审批与落 pending 之前拒绝空计划（`index.ts:204`），错误类型沿用 `PlanTaskSemanticError`。
+- **验证**：见执行卡 §42 的 R-81 行；空计划不触发审批、不写 plantask 事件、同一 caseId 随后可正常发起。
+- **负责人**：A
+- **状态**：已关闭
+
+### R-82 默认部署允许模型自报审批放行，HITL 门只对协作式调用者生效（P1）
+
+- **域**：patent-tools（消费 patent-workflow 的审批门）+ patent-workflow（放行名单是调用方数据）
+- **证据**：`approveStageGates` 缺省为 false（`patent-tools/src/config.ts:116,179`；`wiring.ts:450` 以 `=== true` 落定），此时 `liveGateTarget` 返回 undefined（`patent-workflow-run.ts:539-551`），门仍用默认 `ApprovalGateHandler`；工具只在 live 门存在时拒绝 `approveStageIds`（`patent-workflow-run.ts:439-448`），否则把它原样作为 `approvalGrants`（`:607-608`）。既有用例明确锁定该行为：「keeps approveStageIds working when live gates are off」（`patent-tools/tests/patent-workflow-run.spec.ts:337-348`）。
+- **失败输入**：默认配置（未设 `approveStageGates`）+ `patent_workflow_run({ manifestId: 'patent_disclosure_v1', input: '…', approveStageIds: ['review_gate'] })` → 运行直接完成，不产生 `approval/request`；期望的 HITL 行为是暂停并让人决策。引擎侧只校验放行 id 是否为本 manifest 的门（`workflow.ts:189`），不校验谁给出的放行。
+- **风险**：默认部署里模型可以在首次调用就自报放行，审批门从「人工确认」退化为「模型自觉」；拒绝路径本身仍在执行点生效，但批准来源不受约束。
+- **动作**：D14 只登记，不改默认值（改默认会改变现有部署行为并要求 approval 服务在场）。后续由 owner 决定：默认改 `approveStageGates: true`，或要求放行必须对应一次先前暂停（按 caseId/runId 记录暂停门）后才接受。
+- **验证**：见执行卡 §42 的 R-82 行；登记复现路径与现有测试，不含代码改动。
+- **负责人**：A
+- **状态**：已确认
+
 ## 3. 处理顺序
 
 1. **先验证后动手**：R-01、R-02 先做行为对比；R-03、R-06 先补边界/并发测试。
 2. **P0 完成后**：R-05、R-08、R-09 并行；R-04 与 R-13 合并处理。
 3. **结构拆分**：R-07、R-03 在测试就位后进行；R-10 跟随 R-01/R-02 的共享核心决策。`figure/` 的拆分按执行卡 §38 的顺序推进，纯移动 PR 不与修复混做。
 4. **D12 修复队列**：R-68（实体解码）与 R-71/R-73（复核上限/循环改造）先成一组；R-67/R-69/R-74/R-75 各自带失败用例成 PR；R-70 需 owner 先定降级策略；R-72 给剖面线段数上限；R-76 在拆分完成后单独评估。
-5. **每项关闭条件**：有可执行验证证据、受影响文档与快照同步、PR 单一意图。
+5. **D14 修复队列**：R-78（门串行）、R-79（放行名单校验）、R-81（空计划前置拒绝）已随 D14 修复并带用例；R-77（审批门后恢复非续接）与 R-80（plantask 状态只在内存）是恢复语义缺口，先固定现状，真实续接与持久化各自单独立项。
+6. **每项关闭条件**：有可执行验证证据、受影响文档与快照同步、PR 单一意图。
 
 ## 4. 与日程的映射
 
@@ -862,3 +931,6 @@
 | R-60 / R-61 | D11 登记，独立 PR（输出契约） |
 | R-62 / R-63 / R-64 / R-65 / R-66 | D11 登记，随工具层修复 PR |
 | R-67 / R-68 / R-69 / R-70 / R-71 / R-72 / R-73 / R-74 / R-75 / R-76 | D12 登记，按执行卡 §38 先拆分、再修复（各带失败用例） |
+| R-78 / R-79 / R-81 | D14 修复（门串行、放行名单校验、空计划前置拒绝） |
+| R-77 / R-80 | D14 登记，恢复语义与持久化设计另立 PR |
+| R-82 | D14 登记，默认部署的 HITL 信任边界需 owner 决策 |

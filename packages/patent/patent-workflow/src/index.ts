@@ -18,7 +18,7 @@ import type {
 } from '@deepseek-ai/dsh-patent-core'
 import { registerBuiltinAtoms } from '@deepseek-ai/dsh-patent-core'
 import { runWorkflow as runWorkflowPipeline } from './workflow.ts'
-import { PlanTaskStateMachine, syncPlanToTasks, type PlanTask, type PlanTaskState } from './plantask.ts'
+import { PlanTaskSemanticError, PlanTaskStateMachine, syncPlanToTasks, type PlanTask, type PlanTaskState } from './plantask.ts'
 import { roundCapReached } from './docket-issue.ts'
 import type {
   PatentAgent,
@@ -187,7 +187,7 @@ export class PatentWorkflow extends Service {
    * pending for an out-of-band approve/reject.
    * @param agent - the agent whose session records the patent/plantask events.
    * @param caseId - case identity keying the tracked pending plantask.
-   * @param planSteps - the ordered plan steps to sync into tasks.
+   * @param planSteps - the ordered plan steps to sync into tasks (non-empty).
    * @param options - autoApprove and approvalReason.
    * @returns the final plantask state plus tasks and the approval outcome.
    */
@@ -199,6 +199,11 @@ export class PatentWorkflow extends Service {
   ): Promise<PlantaskRunResult> {
     const machine = new PlanTaskStateMachine()
     const { tasks, toRun } = syncPlanToTasks(planSteps)
+    // 空计划没有可审的任务：先取审批再在 executing 守卫失败，会把已作出的批准
+    // 丢弃，并把 caseId 留在"已有挂起 plantask"的锁里直到进程重启。
+    if (tasks.length === 0) {
+      throw new PlanTaskSemanticError('plantask 计划步骤不能为空：没有任务可取审批')
+    }
     if (this.pending.has(caseId)) {
       throw new Error(
         `patentWorkflow: caseId "${caseId}" 已有挂起的 plantask，拒绝覆盖（先 approve/reject 或等待其完成）`,

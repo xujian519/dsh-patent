@@ -18,11 +18,11 @@
   en: 1d38956b05afe9e2
   zh: 4d30f4afb48ff0bc
 /deepseek-ai-dsh-patent-workflow/service/runworkflow-manifest-ctx-executor-options-agent:
-  en: a56f28b693d0ea18
-  zh: 4a6587e203a78664
+  en: 01a9b805d5e71187
+  zh: 8463a512778c1435
 /deepseek-ai-dsh-patent-workflow/service/runplantask-agent-caseid-plansteps-options:
-  en: 8a19616d59b8dfeb
-  zh: 07fe715b07f24fc5
+  en: e0d65265e6b5a595
+  zh: 2cdb558419a2dca6
 /deepseek-ai-dsh-patent-workflow/service/approve-caseid-reject-caseid-feedback:
   en: e9a489c94af71736
   zh: 54d477f5593547ce
@@ -45,8 +45,8 @@
   en: f5e39b2fe9f05b72
   zh: 6f74c1f7b6319753
 /deepseek-ai-dsh-patent-workflow/known-limitations-and-deferred-work:
-  en: cea772bd61d8a6d8
-  zh: 0dae5b3bffb98b99
+  en: 53ff8a242e274be8
+  zh: e5690602ef81a9e7
 /deepseek-ai-dsh-patent-workflow/known-limitations-and-deferred-work/dev-note:
   en: 0a1253c6f7b5e8b9
   zh: 9f56528562c7c914

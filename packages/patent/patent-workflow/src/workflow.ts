@@ -88,6 +88,7 @@ export async function runWorkflow(
   validateWorkflowManifest(manifest, {
     ...(options.guidelineRevision !== undefined ? { guidelineRevision: options.guidelineRevision } : {}),
   })
+  assertApprovalGrants(manifest, options.approvalGrants)
   const atoms = options.atoms ?? globalAtomRegistry
   assertKnownAtoms(manifest, atoms)
   const run: StageRun = {
@@ -177,6 +178,27 @@ function assertKnownAtoms(manifest: WorkflowManifest, atoms: StageAtoms): void {
 }
 
 /**
+ * 审批放行名单 fail-fast：只接受本 manifest 的审批门阶段 id。
+ *
+ * 放行按阶段 id 命中；拼错或指向非门阶段的条目在运行时会被静默跳过，运行再次停在
+ * 门口且没有任何诊断，调用方无法区分「放行名单写错」与「门被拒绝」。因此在执行前拒绝。
+ * @param manifest - 工作流清单。
+ * @param grants - 宿主给出的已批准阶段 id 列表。
+ * @throws WorkflowError 名单含非审批门阶段（含不存在的阶段）的 id。
+ */
+function assertApprovalGrants(manifest: WorkflowManifest, grants: readonly string[] | undefined): void {
+  if (grants === undefined) return
+  const gateIds = new Set(
+    manifest.stages.filter(stage => stage.atom === 'approval-gate').map(stage => stage.id),
+  )
+  for (const grant of grants) {
+    if (gateIds.has(grant)) continue
+    const available = gateIds.size > 0 ? [...gateIds].join('、') : '该 manifest 没有审批门'
+    throw new WorkflowError(`approvalGrants 中的 "${grant}" 不是本 manifest 的审批门阶段（可用: ${available}）`)
+  }
+}
+
+/**
  * 调用方取消：阶段边界检查，中止时中止执行（stage 内部的长调用由调用方另行取消）。
  * @param signal - 调用方取消信号。
  * @throws WorkflowError 信号已中止。
@@ -250,7 +272,9 @@ function stageWindow(manifest: WorkflowManifest, index: number, maxParallelStage
   if (current === undefined) return 0
   // 声明 retry 的阶段必须单跑：并行窗口走 Promise.all，回退/重试会被静默跳过。
   // 声明 consumes 的首阶段同样单跑，避免与同组上游并发读写同一 state。
-  if (current.retry !== undefined || current.consumes !== undefined) return 1
+  // 审批门一次只取一个人工决策：同一窗口内的两个门会并发询问，拒绝第一个门也拦不住
+  // 第二个门已经被追问，因此门阶段不进入并行窗口。
+  if (current.retry !== undefined || current.consumes !== undefined || current.atom === 'approval-gate') return 1
   const groupAtom = current.atom
   while (index + window < manifest.stages.length && window < maxParallelStages) {
     const candidate = manifest.stages[index + window]

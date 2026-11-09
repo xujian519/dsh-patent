@@ -161,23 +161,31 @@ describe('runWorkflow — parallel windows', () => {
     expect(result.completed).toBe(true)
   })
 
-  it('a parallel group interrupted by a gate pauses the whole run', async () => {
+  it('a parallel group interrupted by one stage pauses the whole run', async () => {
     const handlers = new StageHandlerRegistry()
-    const gate: StageHandler = {
-      name: 'approval-gate',
-      category: 'gate',
-      execute: async () => { throw new InterruptStageError('a', '等待人工确认', { stageId: 'a' }) },
+    // 审批门已排除在并行窗口外；这里用普通同 atom 阶段验证「组内任一中止即暂停」。
+    const stageHandler: StageHandler = {
+      name: 'extract',
+      category: 'extract',
+      execute: async ({ state }) => {
+        if (String(state['tag']) === 'b') throw new InterruptStageError('extract', '等待人工确认', { stageId: 'b' })
+        return { out: 'ok' }
+      },
     }
-    handlers.register(gate)
-    const atoms = atomRegistry(['approval-gate'])
+    handlers.register(stageHandler)
+    const atoms = atomRegistry(['extract'])
     const result = await runWorkflow(
-      manifest('parallel-interrupt', [stage('a', { atom: 'approval-gate' }), stage('b', { atom: 'approval-gate' })]),
+      manifest('parallel-interrupt', [
+        stage('a', { atom: 'extract', params: { tag: 'a' } }),
+        stage('b', { atom: 'extract', params: { tag: 'b' } }),
+      ]),
       { input: 'x' },
       okExecutor,
       { handlers, atoms },
     )
     expect(result.interrupted).toBeDefined()
-    expect(result.interrupted!.stageId).toBe('a')
+    expect(result.interrupted!.stageId).toBe('b')
+    expect(result.stages.map(entry => entry.stageId)).toEqual(['a'])
     expect(result.completed).toBe(false)
     expect(result.summary).toContain('暂停等待人工确认')
   })

@@ -9,7 +9,7 @@ English | [中文](guide.zh.md)
 
 ## Change
 
-`AtomRegistry.register`, `StageHandlerRegistry.register`, and the `RegisterAtom` helper now return `() => void`. The disposer removes the entry only while its name still points at that registration, is idempotent, and never deletes a later registration that overrode it. `@deepseek-ai/dsh-patent-tools` wraps its six package atoms and handlers in one `ctx.effect`, so unloading the plugin removes them while `patent-core` builtins stay registered.
+`AtomRegistry.register`, `StageHandlerRegistry.register`, and the `RegisterAtom` helper now return `() => void`. The disposer removes the entry only while its name still points at that registration, is idempotent, and never deletes a later registration that overrode it. `@deepseek-ai/dsh-patent-tools` wraps its six package atoms and handlers in one `ctx.effect`, so unloading the plugin removes them while `patent-core` builtins stay registered. This guide records the six package atoms registered at v0.2.1-rc.2; atoms added later unload through the same effect and are outside this migration.
 
 `StageError` is no longer exported. Expected stage failures return a `degraded()` fragment; a manual interruption throws `InterruptStageError`; any other exception is handled by the workflow executor's retry/degrade policy.
 

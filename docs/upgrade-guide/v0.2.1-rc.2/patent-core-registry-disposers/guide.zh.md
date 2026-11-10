@@ -9,7 +9,7 @@ description: "专利原子与阶段 handler 注册表现在返回 disposer，`St
 
 ## 变更
 
-`AtomRegistry.register`、`StageHandlerRegistry.register` 与 `RegisterAtom` helper 现在返回 `() => void`。disposer 只在名称仍指向本次注册时删除条目，可重复调用，且不会删除后来覆盖它的注册。`@deepseek-ai/dsh-patent-tools` 用同一个 `ctx.effect` 包裹自己的 6 个包内原子与 handler，插件卸载时撤销它们，`patent-core` 内置原子保持注册。
+`AtomRegistry.register`、`StageHandlerRegistry.register` 与 `RegisterAtom` helper 现在返回 `() => void`。disposer 只在名称仍指向本次注册时删除条目，可重复调用，且不会删除后来覆盖它的注册。`@deepseek-ai/dsh-patent-tools` 用同一个 `ctx.effect` 包裹自己的 6 个包内原子与 handler，插件卸载时撤销它们，`patent-core` 内置原子保持注册。本指南记录的是 v0.2.1-rc.2 当时的 6 个包内原子；其后新增的包内原子仍由同一个 effect 卸载，不属于本次迁移。
 
 `StageError` 不再导出。预期阶段失败返回 `degraded()` 片段；人工中断抛出 `InterruptStageError`；其它异常由工作流执行器的重试/降级策略处理。
 

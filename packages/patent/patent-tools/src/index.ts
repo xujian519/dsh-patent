@@ -1,5 +1,5 @@
 /**
- * Function plugin registering the 36 model-facing patent tools ported from Sati:
+ * Function plugin registering the 37 model-facing patent tools ported from Sati:
  * search, metadata, legal status, case/wiki/kg knowledge queries, claim-chart,
  * office-action parsing, drafting, specification validation, evidence judgment,
  * rule check, claim-set lint, figure analysis + generation, PDF download, chemical recognition,
@@ -266,7 +266,7 @@ export const name = 'patent-tools'
 export const inject = ['tools']
 
 /**
- * Register the 36 patent tools and their workflow atoms.
+ * Register the 37 patent tools and their workflow atoms.
  * @param ctx - registrant context carrying the tool registry and optional services.
  * @param config - validated plugin configuration.
  */

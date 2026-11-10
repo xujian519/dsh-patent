@@ -1,5 +1,5 @@
 ---
-description: "函数插件，将 Sati 专利域工具集原生移植到 DeepSeek Harness。它注册 36 个模型可见工具，覆盖检索、元数据、知识查询、权利要求对照表、通知书解析、TRIZ 矛盾分析、撰写、分析报告、证据判定、规则检查、附图生成、跨图一致性与图文比对、案卷只追加日志以及工作流/计划状态机。每个工具返回可无损 JSON 序列化的规范值，并暴露纯 `output.render` 函数生成模型可见 prose（Sati 没有 render 拆分，这是新的 dsh 契约）。"
+description: "函数插件，将 Sati 专利域工具集原生移植到 DeepSeek Harness。它注册 37 个模型可见工具，覆盖检索、元数据、知识查询、权利要求对照表、通知书解析、TRIZ 矛盾分析、撰写、分析报告、证据判定、规则检查、附图生成、跨图一致性与图文比对、案卷只追加日志以及工作流/计划状态机。每个工具返回可无损 JSON 序列化的规范值，并暴露纯 `output.render` 函数生成模型可见 prose（Sati 没有 render 拆分，这是新的 dsh 契约）。"
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-函数插件，将 Sati 专利域工具集原生移植到 DeepSeek Harness。它注册 36 个模型可见工具，覆盖检索、元数据、知识查询、权利要求对照表、通知书解析、TRIZ 矛盾分析、撰写、分析报告、证据判定、规则检查、附图生成、跨图一致性与图文比对、案卷只追加日志以及工作流/计划状态机。每个工具返回可无损 JSON 序列化的规范值，并暴露纯 `output.render` 函数生成模型可见 prose（Sati 没有 render 拆分，这是新的 dsh 契约）。
+函数插件，将 Sati 专利域工具集原生移植到 DeepSeek Harness。它注册 37 个模型可见工具，覆盖检索、元数据、知识查询、权利要求对照表、通知书解析、TRIZ 矛盾分析、撰写、分析报告、证据判定、规则检查、附图生成、跨图一致性与图文比对、案卷只追加日志以及工作流/计划状态机。每个工具返回可无损 JSON 序列化的规范值，并暴露纯 `output.render` 函数生成模型可见 prose（Sati 没有 render 拆分，这是新的 dsh 契约）。
 
 ## 目录
 
@@ -121,7 +121,7 @@ Schemastery 配置，所有字段可选。
 
 #### 模型所见
 
-36 个已注册工具定义（见上表），各含描述、参数 schema 与将规范结果渲染为 Markdown prose 的 `output.render`。精确描述与参数见生成的[`patent-tools` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-patent-tools)。`patent_search` 与 `patent_metadata` 在渲染结果与上游失败消息里都点名所读通道（`Google Patents（nuo 引擎）` 或 `CNIPR（中国知识产权网）`），检索报告据此写明事实来自哪个通道，而不必从命中的 URL 反推；`patent_search` 还在引擎失败或零命中时经 CNIPR 再检索一次（带 `assignee:` 这类 Google 字段语法的查询不咨询该通道），并点名本次实际服务的通道；`patent_metadata` 在引擎失败、抛错或查不到某条中国公开(公告)号（如 `CN218483312U`）时经 CNIPR 按号重查一次，该通道只发布标题、申请人、公开日与摘要，其余字段为空，被咨询过但未能服务的通道列入 `warnings`。两者对瞬时上游失败（超时、连接断开）各按带界退避重试两次，退避耗尽仍失败时报告已尝试次数。`patent_pdf_download` 逐篇点名通道（`Google Patents（nuo 引擎）` 或 `CNIPR（中国知识产权网）`），并在 `warnings` 里列出「被咨询过但未能服务」的通道，使回退可见、不与被接手的那篇混为一谈；续传条目的通道取自 MANIFEST 的记录。`patent_legal_status` 逐篇点名通道，并把引擎答不出的号经 CNIPR 重查一次；该通道也没有记录时保留引擎给出的原因。`matter_log_append` 在一次消息里列出被拒回合的每一处缺陷，各带稳定规则 id 与修法（该先落盘的产物、撰写轮需要的新路径、日志中查不到的旧版），使拒绝说明缺的是留档记录的哪一部分，而不只是「本轮被拒」。
+37 个已注册工具定义（见上表），各含描述、参数 schema 与将规范结果渲染为 Markdown prose 的 `output.render`。精确描述与参数见生成的[`patent-tools` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-patent-tools)。`patent_search` 与 `patent_metadata` 在渲染结果与上游失败消息里都点名所读通道（`Google Patents（nuo 引擎）` 或 `CNIPR（中国知识产权网）`），检索报告据此写明事实来自哪个通道，而不必从命中的 URL 反推；`patent_search` 还在引擎失败或零命中时经 CNIPR 再检索一次（带 `assignee:` 这类 Google 字段语法的查询不咨询该通道），并点名本次实际服务的通道；`patent_metadata` 在引擎失败、抛错或查不到某条中国公开(公告)号（如 `CN218483312U`）时经 CNIPR 按号重查一次，该通道只发布标题、申请人、公开日与摘要，其余字段为空，被咨询过但未能服务的通道列入 `warnings`。两者对瞬时上游失败（超时、连接断开）各按带界退避重试两次，退避耗尽仍失败时报告已尝试次数。`patent_pdf_download` 逐篇点名通道（`Google Patents（nuo 引擎）` 或 `CNIPR（中国知识产权网）`），并在 `warnings` 里列出「被咨询过但未能服务」的通道，使回退可见、不与被接手的那篇混为一谈；续传条目的通道取自 MANIFEST 的记录。`patent_legal_status` 逐篇点名通道，并把引擎答不出的号经 CNIPR 重查一次；该通道也没有记录时保留引擎给出的原因。`matter_log_append` 在一次消息里列出被拒回合的每一处缺陷，各带稳定规则 id 与修法（该先落盘的产物、撰写轮需要的新路径、日志中查不到的旧版），使拒绝说明缺的是留档记录的哪一部分，而不只是「本轮被拒」。
 
 #### Token 影响
 

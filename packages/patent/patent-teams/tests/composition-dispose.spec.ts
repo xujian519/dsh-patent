@@ -13,7 +13,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { apply, Config, inject, name } from '../src/index.ts'
+import { apply, Config, inject, name, type PatentTeamsService } from '../src/index.ts'
 import { recordRetiredMemberIds } from '../src/state.ts'
 import { PATENT_TEAMS_TOOL_NAMES } from '../src/tools.ts'
 import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
@@ -187,5 +187,25 @@ describe('patent-teams composition', () => {
     expect(stub.listChildren).toBe(guardProbe.listChildren)
     expect(stub.listDescendants).toBe(guardProbe.listDescendants)
     expect(stub.sendMessage).toBe(guardProbe.sendMessage)
+  })
+
+  it('releases a live team wait when the plugin fiber disposes', async () => {
+    const cwd = await tmpWorkspace()
+    const captain = fakeCaptain('captain-wait', cwd)
+    const ctx = await mount({ stateDir: cwd, captain })
+    const teams = ctx.get('patentTeams') as PatentTeamsService
+    await teams.create(captain, 'alpha', 'lifecycle')
+    const pending = teams.wait(captain, 60_000, new AbortController().signal)
+
+    await ctx.fiber.dispose()
+    context = undefined
+
+    const outcome = await Promise.race([
+      pending.then(value => ({ settled: true as const, value })),
+      new Promise<{ settled: false }>((resolve) => {
+        setTimeout(() => { resolve({ settled: false }) }, 1_000)
+      }),
+    ])
+    expect(outcome).toEqual({ settled: true, value: { timed_out: false } })
   })
 })

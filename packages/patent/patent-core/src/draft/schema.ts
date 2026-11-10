@@ -15,6 +15,14 @@ const STRING_LIST = {
   items: { type: 'string' },
 } as const
 
+/** 字符串行数组。每一行本身是字符串数组。 */
+const STRING_ROWS = {
+  type: 'array',
+  required: true,
+  description: 'JSON array of rows. Each row is a JSON array of strings.',
+  items: { type: 'array', items: { type: 'string' } },
+} as const
+
 /** 段落块。`kind` 的 const 使它与列表、表格互斥。 */
 const PARAGRAPH_BLOCK = {
   type: 'object',
@@ -44,12 +52,7 @@ const TABLE_BLOCK = {
     kind: { type: 'string', const: 'table', required: true },
     name: { type: 'string', required: true },
     header: STRING_LIST,
-    rows: {
-      type: 'array',
-      required: true,
-      description: 'JSON array of rows. Each row is a JSON array of strings.',
-      items: { type: 'array', items: { type: 'string' } },
-    },
+    rows: STRING_ROWS,
   },
 } as const
 
@@ -127,12 +130,7 @@ const ROWS_SECTION = {
   additionalProperties: false,
   properties: {
     id: { type: 'string', required: true },
-    rows: {
-      type: 'array',
-      required: true,
-      description: 'JSON array of rows. Each row is a JSON array of strings.',
-      items: { type: 'array', items: { type: 'string' } },
-    },
+    rows: STRING_ROWS,
   },
 } as const
 

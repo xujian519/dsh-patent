@@ -3,7 +3,7 @@
  *
  * - atom.ts：Atom 声明式契约 + 注册表（纯声明，不参与执行）
  * - handler.ts：StageHandler 运行时 + PipelineState + 错误模型 + 注册表
- * - handlers/builtin/：31 个内置原子，按职责分域：
+ * - handlers/builtin/：32 个内置原子，按职责分域：
  *   search/keywords/extract/merge/compare/novelty/reasoning/groundedness/
  *   draft-claims/approval-gate/claim-chart 为模型或检索阶段；
  *   claim-strategy 为成文前的权利要求策略阶段（特征归属、锚点与从权树）；
@@ -15,7 +15,9 @@
  *   adversary-review 为换位重跑原子（评估最终意见陈述书）。
  *   enablement-report 为充分公开判定原子（独权特征逐条锚点复核）。
  *   claim-breadth 为概括范围判定原子（上位概括逐条锚点复核）。
- *   @deepseek-ai/dsh-patent-tools 另以插件 effect 注册 6 个包内原子。
+ *   draft-review 为撰写链审查员回合（按类别回退到说明书、权利要求或策略阶段）。
+ *   @deepseek-ai/dsh-patent-tools 另以插件 effect 注册 9 个包内原子：
+ *   slop-gate、tighten、draft-specification、figure-analysis、spec-check、response-check、eligibility、legal-gaps、admissibility。
  *   @deepseek-ai/dsh-patent-law 以插件 effect 注册 rule-lock 原子。
  *
  * 使用：调用 registerBuiltinAtoms() 将内置原子注册进全局注册表；

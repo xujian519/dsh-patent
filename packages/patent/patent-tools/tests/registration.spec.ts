@@ -48,10 +48,10 @@ const EXPECTED_TOOLS = [
 ]
 
 /**
- * Atoms a complete composition registers: patent-core's 31 built-ins plus
- * `slop-gate`, `tighten`, `draft-specification`, `spec-check`, `response-check`,
- * `eligibility`, and `legal-gaps` (registered by this package, not by
- * registerBuiltinAtoms).
+ * Atoms a complete composition registers: patent-core's 32 built-ins plus
+ * the nine package atoms this package registers (`slop-gate`, `tighten`,
+ * `draft-specification`, `figure-analysis`, `spec-check`, `response-check`,
+ * `eligibility`, `legal-gaps`, `admissibility`), not `registerBuiltinAtoms`.
  */
 const REGISTERED_ATOMS = [
   'admissibility',
@@ -107,7 +107,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     expect(typeof tool.apply).toBe('function')
   })
 
-  it('registers all 35 tools via ctx.plugin (direct mount)', async () => {
+  it('registers all 37 tools via ctx.plugin (direct mount)', async () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
@@ -167,7 +167,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     expect(ctx.tools.schemas().map(schema => schema.name)).toContain('patent_workflow_run')
   })
 
-  it('每个内置 manifest 声明的 atom 在完整组合下都有契约与 handler（跨包注册：六个 patent-tools 原子属本包）', async () => {
+  it('每个内置 manifest 声明的 atom 在完整组合下都有契约与 handler（跨包注册：九个 patent-tools 原子属本包）', async () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)

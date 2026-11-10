@@ -1,5 +1,5 @@
 /**
- * Registration of the 35 patent tools on a Cordis context. `apply` in the package
+ * Registration of the 37 patent tools on a Cordis context. `apply` in the package
  * entry delegates here; the exports in this module are the composition surface
  * that tools and tests build on directly.
  * @module @deepseek-ai/dsh-patent-tools/wiring
@@ -292,7 +292,7 @@ function registerPackageAtoms(
 }
 
 /**
- * Register the 35 patent tools.
+ * Register the 37 patent tools.
  * @param ctx - registrant context carrying the tool registry and optional services.
  * @param config - validated {@link Config}.
  */

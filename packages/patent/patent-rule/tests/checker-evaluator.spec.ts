@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest'
+import { ruleGateNode, type RuleGateState } from '@deepseek-ai/dsh-patent-core'
 import {
   CHECKER_RULE_EVALUATOR_ID,
   createCheckerRuleEvaluator,
@@ -6,6 +7,16 @@ import {
 } from '@deepseek-ai/dsh-patent-rule'
 
 const NOVELTY_VIOLATION = '结合多份对比文件结合，可认定本申请不具备新颖性。'
+
+/** 规则门写入的是 `unknown` 状态增量；只在字段齐全时当成 `RuleGateState` 读。 */
+function asRuleGate(value: unknown): RuleGateState {
+  if (typeof value !== 'object' || value === null) throw new Error('rule_gate missing')
+  if (!('status' in value) || !('verdict' in value) || !('evaluatedKeys' in value) || !('failures' in value)) {
+    throw new Error('rule_gate missing fields')
+  }
+  if (!Array.isArray(value.failures)) throw new Error('rule_gate.failures is not an array')
+  return value as RuleGateState
+}
 
 // ---------------------------------------------------------------------------
 // checker 规则评估器：patent-core 规则门端口的 patent-rule 实现
@@ -37,6 +48,20 @@ it('createCheckerRuleEvaluator: 多域评估扩大规则集', () => {
   const one = evaluator.evaluate({ text: NOVELTY_VIOLATION, domains: ['patent_novelty'] })
   const two = evaluator.evaluate({ text: NOVELTY_VIOLATION, domains: ['patent_novelty', 'patent_spec'] })
   expect(two.evaluatedRules).toBeGreaterThan(one.evaluatedRules)
+})
+
+it('规则门执行真实 checker：单独对比违规写入 rule_gate', async () => {
+  const delta = await ruleGateNode({
+    domains: ['patent_novelty'],
+    sourceKeys: ['novelty_report'],
+    evaluator: createCheckerRuleEvaluator(),
+  })({ state: { novelty_report: NOVELTY_VIOLATION } })
+
+  const gate = asRuleGate(delta.rule_gate)
+  expect(gate.status).toBe('blocked')
+  expect(gate.verdict).toBe('blocked')
+  expect(gate.evaluatedKeys).toEqual(['novelty_report'])
+  expect(gate.failures.map(failure => failure.ruleId)).toContain('NOVELTY-SINGLE-COMPARISON')
 })
 
 it('createCheckerRuleEvaluator: 合规文本 → pass 且零失败', () => {

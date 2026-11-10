@@ -106,6 +106,19 @@ describe('tools/post-execute output gate', () => {
     expect(result.error?.message).toMatch(/TEST-REVIEW/)
   })
 
+  it.each(['cancelled', 'unavailable'] as const)(
+    'blocks a review-level result when approval returns %s',
+    async (outcome) => {
+      const ctx = await mount({ rulesDir: makeRulesFixture() })
+      ctx.provide('approval', { request: async (): Promise<string> => outcome })
+      ctx.tools.register(deliveryTool('draft_claims', '包含 REVIEWWORD 的文档'))
+      const result = await executeToolFixture(ctx, exec('draft_claims'))
+      expect(result.isError).toBe(true)
+      expect(result.error?.message).toMatch(/TEST-REVIEW/)
+      expect(result.error?.message).toMatch(/审批未通过/)
+    },
+  )
+
   it('fails closed when the approval channel throws', async () => {
     const ctx = await mount({ rulesDir: makeRulesFixture() })
     ctx.provide('approval', {

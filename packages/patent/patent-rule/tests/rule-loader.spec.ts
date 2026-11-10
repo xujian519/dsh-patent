@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { RuleSetValidationIssue } from '@deepseek-ai/dsh-patent-core'
+import type { RuleSet, RuleSetValidationIssue } from '@deepseek-ai/dsh-patent-core'
 import {
   applyRuleOverrides,
   asRecord,
@@ -197,14 +197,14 @@ rules:
     expect(issues.some(i => i.message.includes('灾难性回溯'))).toBe(true)
   })
 
-  it('parseRuleSetFromYaml reports duplicate ids', () => {
-    const { issues } = parseRuleSetFromYaml(
+  it('parseRuleSetFromYaml reports duplicate ids and keeps the later rule', () => {
+    const { ruleSet, issues } = parseRuleSetFromYaml(
       `
 rules:
   - id: CON-DUP
     name: a
     severity: major
-    action: warn
+    action: block
     check: { type: keyword_blocklist, keywords: ["x"] }
   - id: CON-DUP
     name: b
@@ -213,7 +213,9 @@ rules:
     check: { type: keyword_blocklist, keywords: ["y"] }
 `,
     )
-    expect(issues.some(i => i.message.includes('重复的规则 id'))).toBe(true)
+    expect(issues.filter(issue => issue.message.includes('重复的规则 id'))).toHaveLength(1)
+    expect(ruleSet.rules).toHaveLength(1)
+    expect(ruleSet.rules[0]).toMatchObject({ name: 'b', action: 'warn', check: { keywords: ['y'] } })
   })
 
   it('loadRuleSetFromFile reads a valid file', () => {
@@ -406,23 +408,14 @@ rules:
   })
 
   it('validateRuleSet detects duplicates', () => {
-    const set = parseRuleSetFromYaml(
-      `
-rules:
-  - id: D1
-    name: a
-    severity: major
-    action: warn
-    check: { type: keyword_blocklist, keywords: ["x"] }
-  - id: D1
-    name: b
-    severity: major
-    action: warn
-    check: { type: keyword_blocklist, keywords: ["y"] }
-`,
-    ).ruleSet
+    const set: RuleSet = {
+      rules: [
+        { id: 'D1', name: 'a', severity: 'major', action: 'warn', check: { type: 'keyword_blocklist', keywords: ['x'] } },
+        { id: 'D1', name: 'b', severity: 'major', action: 'warn', check: { type: 'keyword_blocklist', keywords: ['y'] } },
+      ],
+    }
     const issues = validateRuleSet(set, 'dup.yaml')
-    expect(issues.some(i => i.message.includes('重复的规则 id'))).toBe(true)
+    expect(issues.some(i => i.message.includes('重复的规则 id') && i.source === 'dup.yaml')).toBe(true)
   })
 
   it('asRecord returns null for non-object values', () => {
@@ -447,7 +440,7 @@ rules:
     const { ruleSet, issues } = parseRuleSetFromYaml('rules:\n  - 42\n  - id: OK\n    name: ok\n    severity: minor\n    action: warn\n    check: { type: keyword_blocklist, keywords: ["x"] }\n')
     expect(ruleSet.rules.length).toBe(1)
     expect(ruleSet.rules[0]?.id).toBe('OK')
-    expect(issues.length).toBe(0)
+    expect(issues.some(i => i.message.includes('rules[0]: 条目必须是对象'))).toBe(true)
   })
 
   it('parseRuleSetFromYaml rejects rules missing a name', () => {
@@ -656,6 +649,14 @@ rules:
     }
   })
 
+  it('map-form rule sets report a non-object entry and keep the valid rule', () => {
+    const { ruleSet, issues } = parseRuleSetFromYaml(
+      'rules:\n  good:\n    id: G1\n    name: n\n    severity: minor\n    action: warn\n    check: { type: keyword_blocklist, keywords: ["x"] }\n  bad: 42\n',
+    )
+    expect(ruleSet.rules.map(rule => rule.id)).toEqual(['G1'])
+    expect(issues.some(issue => issue.message.includes('rules.bad: 条目必须是对象'))).toBe(true)
+  })
+
   it('map-form rule sets skip invalid rules and keep valid ones', () => {
     const { ruleSet, issues } = parseRuleSetFromYaml(
       'rules:\n  good:\n    id: G1\n    name: n\n    severity: minor\n    action: warn\n    check: { type: keyword_blocklist, keywords: ["x"] }\n  bad:\n    id: B1\n    name: n\n    severity: minor\n    action: warn\n    check: { type: keyword_blocklist, keywords: 42 }\n',
@@ -666,21 +667,12 @@ rules:
   })
 
   it('validateRuleSet reports duplicates without a source', () => {
-    const set = parseRuleSetFromYaml(
-      `
-rules:
-  - id: D1
-    name: a
-    severity: major
-    action: warn
-    check: { type: keyword_blocklist, keywords: ["x"] }
-  - id: D1
-    name: b
-    severity: major
-    action: warn
-    check: { type: keyword_blocklist, keywords: ["y"] }
-`,
-    ).ruleSet
+    const set: RuleSet = {
+      rules: [
+        { id: 'D1', name: 'a', severity: 'major', action: 'warn', check: { type: 'keyword_blocklist', keywords: ['x'] } },
+        { id: 'D1', name: 'b', severity: 'major', action: 'warn', check: { type: 'keyword_blocklist', keywords: ['y'] } },
+      ],
+    }
     const issues = validateRuleSet(set)
     expect(issues.some(i => i.message.includes('重复的规则 id'))).toBe(true)
     expect(issues[0]?.source).toBeUndefined()

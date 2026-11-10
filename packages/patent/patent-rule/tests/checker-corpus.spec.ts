@@ -194,6 +194,9 @@ it('推理模式: pathElements 为 string[][] 层级（每步至少命中其一�
 
 it('spec: specRules 共 8 条并并入 defaultPatentRules', () => {
   expect(specRules().length).toBe(8)
+  const sections = specRules().find(rule => rule.id === 'SPEC-SECTIONS')
+  expect(sections?.fixSuggestion).toContain('技术领域')
+  expect(sections?.fixSuggestion).not.toContain('七部分')
   const all = defaultPatentRules()
   expect(all.some(r => r.id === 'SPEC-SECTIONS')).toBeTruthy()
   expect(all.some(r => r.id === 'SPEC-COMMERCIAL-BAN')).toBeTruthy()
@@ -209,7 +212,7 @@ it('spec: 说明书缺少章节 → 阻断', () => {
   expect(sections!.level).toBe(1)
 })
 
-it('spec: 七部分齐全 + 三段式 + 实施例 + 摘要关键词 → 通过', () => {
+it('spec: 五部分齐全 + 三段式 + 实施例 + 摘要关键词 → 通过', () => {
   const local = new RuleEngine()
   local.registerMany(specRules())
   const text = [

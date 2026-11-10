@@ -231,7 +231,7 @@ export function specRules(): CheckRule[] {
       requiredAspects: SPEC_SECTION_TERMS,
       domain: DOMAIN_SPEC,
       fixSuggestion:
-        '按七部分结构撰写：发明名称/技术领域/背景技术/发明内容/附图说明/具体实施方式/摘要（摘要另由 SPEC-ABSTRACT 检查）',
+        '补齐说明书的五部分：技术领域、背景技术、发明内容、附图说明、具体实施方式（摘要由 SPEC-ABSTRACT 另查）',
     },
     {
       id: 'SPEC-CONTENT-TRIPLE',

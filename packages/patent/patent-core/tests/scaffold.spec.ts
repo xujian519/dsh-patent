@@ -28,6 +28,8 @@ describe('@deepseek-ai/dsh-patent-core surface', () => {
     expect(typeof Pkg.numberedFigureDescriptions).toBe('function')
     expect(Pkg.SPEC_PART_HEADINGS.embodiment).toBe('具体实施方式')
     expect(Pkg.SPEC_PART_ORDER).toEqual(['technicalField', 'background', 'summary', 'drawingDescriptions', 'embodiment'])
+    expect(Pkg.SPEC_DRAFT_SCHEMA.type).toBe('object')
+    expect(Pkg.TEMPLATE_DRAFT_SCHEMA.type).toBe('object')
   })
 
   it('exports the IPC classifier + standards loader', () => {

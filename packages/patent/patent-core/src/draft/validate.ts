@@ -108,6 +108,18 @@ function readRequiredString(record: Record<string, unknown>, key: string, path: 
   return requireNonEmptyString(record[key], `${path}.${key}`, violations)
 }
 
+/**
+ * 非数组若包在 `item` 键下，告诉模型直接传数组。
+ * 不拆这层包装：字符串和数组两种包法不能当成同一种成功。
+ */
+function itemWrapperHint(value: unknown): string {
+  const record = asJsonRecord(value)
+  if (record !== undefined && Object.hasOwn(record, 'item')) {
+    return '；当前是带 item 的对象，请直接传 JSON 数组，不要包在 item 里'
+  }
+  return ''
+}
+
 /** 读取数组：缺失、非数组记违规；给出 emptyMessage 时空数组也记违规。 */
 function readArray(value: unknown, path: string, violations: string[], emptyMessage?: string): unknown[] | undefined {
   if (value === undefined) {
@@ -115,7 +127,7 @@ function readArray(value: unknown, path: string, violations: string[], emptyMess
     return undefined
   }
   if (!Array.isArray(value)) {
-    violations.push(`${path} 必须是数组`)
+    violations.push(`${path} 必须是数组${itemWrapperHint(value)}`)
     return undefined
   }
   if (emptyMessage !== undefined && value.length === 0) {

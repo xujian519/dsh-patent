@@ -2,6 +2,8 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { validateJsonSchemaValue, type JsonSchemaNode } from '@deepseek-ai/dsh-tools'
+import { validateSpecDraft, validateTemplateDraft } from '@deepseek-ai/dsh-patent-core'
 import { createRenderPatentDocumentTool, renderDocumentResult } from '@deepseek-ai/dsh-patent-document'
 import { fakeSubprocess, successHandle } from './helpers.ts'
 
@@ -51,6 +53,69 @@ describe('render_patent_document tool', () => {
     expect(parameters.required).toContain('draft')
     expect(typeof tool.output.render).toBe('function')
     expect(typeof tool.execute).toBe('function')
+    const draft = parameters.properties?.draft as { oneOf?: unknown[]; additionalProperties?: boolean }
+    expect(draft.oneOf).toHaveLength(2)
+    expect(draft.additionalProperties).toBeUndefined()
+  })
+
+  it('accepts exactly one draft branch and rejects an item wrapper', () => {
+    const subprocess = fakeSubprocess(() => successHandle()).runtime
+    const tool = createRenderPatentDocumentTool({ subprocess })
+    const schema = tool.parameters as JsonSchemaNode
+    const spec = {
+      meta: { caseNumber: 'CN2026-0001', title: '一种装置', applicant: '示例申请人', inventor: '示例发明人', agent: '示例代理', date: '2026-10-09' },
+      claims: ['一种装置，其特征在于，包括示例部件。'],
+      abstract: ['本发明公开一种装置。'],
+      figureFiles: ['fig1.svg', 'fig2.svg'],
+      sections: {
+        technicalField: [{ kind: 'paragraph', text: '本发明属于示例领域。' }],
+        background: [{ kind: 'paragraph', text: '现有技术存在不足。' }],
+        summary: [{ kind: 'list', items: ['效果一', '效果二'], ordered: true }],
+        drawingDescriptions: [{ kind: 'list', items: ['整体结构示意图', '剖视示意图'] }],
+        embodiment: [{
+          kind: 'table',
+          name: '示例参数表',
+          header: ['参数', '取值'],
+          rows: [['长度', '10mm']],
+        }],
+      },
+    }
+    const check = (draft: unknown, template = 'claims-spec') => validateJsonSchemaValue(schema, {
+      template,
+      outputName: 'out',
+      draft,
+    })
+    expect(check(spec)).toEqual([])
+    expect(check({ fields: {}, sections: [] }, 'oa-response')).toEqual([])
+    const templateDraft = {
+      fields: { 'footer-case': '案卷' },
+      sections: [
+        { id: 'body', blocks: [{ kind: 'paragraph', text: '正文。' }] },
+        { id: 'rows', rows: [['a', 'b']] },
+        { id: 'grounds', grounds: [{ article: '专利法第22条第3款', ground: '创造性', claimNos: [1], facts: '事实', evidence: '证据', conclusion: '结论' }] },
+      ],
+    }
+    expect(check(templateDraft, 'invalidation-opinion')).toEqual([])
+    expect(check({ ...spec, claims: { item: ['一种装置'] } }).join('\n')).toContain('matched 0')
+    expect(check({ ...spec, sections: [] }).join('\n')).toContain('matched 0')
+    const tableInField = {
+      ...spec,
+      sections: {
+        ...spec.sections,
+        technicalField: [{ kind: 'table', name: '不应出现', header: ['列'], rows: [['值']] }],
+      },
+    }
+    expect(check(tableInField)).toEqual([])
+    expect(() => validateSpecDraft(tableInField)).toThrow('表格仅允许出现在具体实施方式')
+    expect(() => validateSpecDraft({ ...spec, claims: [''] })).toThrow('claims[0] 为空')
+    expect(check({ ...spec, claims: [''] })).toEqual([])
+    const drawingFree = {
+      ...spec,
+      figureFiles: [],
+      sections: { ...spec.sections, drawingDescriptions: [] },
+    }
+    expect(check(drawingFree)).toEqual([])
+    expect(() => validateTemplateDraft({ fields: {}, sections: [{ id: 'missing', blocks: [{ kind: 'paragraph', text: 'x' }] }] }, { sections: { body: { required: true } } })).toThrow('未知槽位')
   })
 
   it('executes a claims-spec render from a controlled draft', async () => {
@@ -101,7 +166,19 @@ describe('render_patent_document tool', () => {
         template: 'claims-spec',
         outputName: 'bad-draft',
         format: 'html',
-        draft: { claims: ['1. 自带项号的一种装置'] },
+        draft: {
+          meta: { caseNumber: 'CN2026-0001', title: '一种装置', applicant: '示例申请人', inventor: '示例发明人', agent: '示例代理', date: '2026-10-09' },
+          claims: ['1. 自带项号的一种装置'],
+          abstract: ['本发明公开一种装置。'],
+          figureFiles: ['fig1.svg'],
+          sections: {
+            technicalField: [{ kind: 'paragraph', text: '本发明属于示例领域。' }],
+            background: [{ kind: 'paragraph', text: '现有技术存在不足。' }],
+            summary: [{ kind: 'paragraph', text: '本发明提供一种装置。' }],
+            drawingDescriptions: [{ kind: 'list', items: ['整体结构示意图'] }],
+            embodiment: [{ kind: 'paragraph', text: '下面结合附图说明。' }],
+          },
+        },
       },
       { signal: new AbortController().signal } as never,
     )).rejects.toThrow(/claims\[0\] 自带项号/)

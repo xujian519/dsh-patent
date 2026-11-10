@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest'
+import { ruleGateNode } from '@deepseek-ai/dsh-patent-core'
 import {
   CHECKER_RULE_EVALUATOR_ID,
   createCheckerRuleEvaluator,
@@ -37,6 +38,23 @@ it('createCheckerRuleEvaluator: 多域评估扩大规则集', () => {
   const one = evaluator.evaluate({ text: NOVELTY_VIOLATION, domains: ['patent_novelty'] })
   const two = evaluator.evaluate({ text: NOVELTY_VIOLATION, domains: ['patent_novelty', 'patent_spec'] })
   expect(two.evaluatedRules).toBeGreaterThan(one.evaluatedRules)
+})
+
+it('规则门执行真实 checker：单独对比违规写入 rule_gate', async () => {
+  const delta = await ruleGateNode({
+    domains: ['patent_novelty'],
+    sourceKeys: ['novelty_report'],
+    evaluator: createCheckerRuleEvaluator(),
+  })({ state: { novelty_report: NOVELTY_VIOLATION } })
+
+  expect(delta.rule_gate).toEqual(expect.objectContaining({
+    status: 'blocked',
+    verdict: 'blocked',
+    evaluatedKeys: ['novelty_report'],
+    failures: expect.arrayContaining([
+      expect.objectContaining({ ruleId: 'NOVELTY-SINGLE-COMPARISON' }),
+    ]),
+  }))
 })
 
 it('createCheckerRuleEvaluator: 合规文本 → pass 且零失败', () => {

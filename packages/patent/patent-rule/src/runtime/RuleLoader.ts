@@ -435,10 +435,19 @@ function parseCheck(raw: unknown, issues: RuleSetValidationIssue[], ruleId: stri
   }
 }
 
-/** 解析单条规则；非法返回 null 并收集问题。 */
-function parseRule(raw: unknown, issues: RuleSetValidationIssue[]): ConstitutionalRule | null {
+/**
+ * 解析单条规则；非法返回 null 并收集问题。
+ * @param raw - YAML 里的一条规则。
+ * @param issues - 加载期问题收集器。
+ * @param where - 条目位置，用于非对象条目的诊断（如 `rules[0]`）。
+ * @returns 解析出的规则；条目非法时为 null。
+ */
+function parseRule(raw: unknown, issues: RuleSetValidationIssue[], where: string): ConstitutionalRule | null {
   const record = asRecord(raw)
-  if (record === null) return null
+  if (record === null) {
+    issues.push({ message: `${where}: 条目必须是对象，已跳过` })
+    return null
+  }
   const id = typeof record.id === 'string' ? record.id : ''
   if (!id) {
     issues.push({ message: 'rule: 缺少 id' })
@@ -521,15 +530,25 @@ export function parseRuleSetFromYaml(
   }
   const rulesRaw = root.rules
   const rules: ConstitutionalRule[] = []
+  // 同一文件内 id 重复时保留后出现的规则，与 mergeRuleSets 的覆盖方向一致。
+  // 两条都留下会让被替换的 block 规则继续拦截。
+  const adoptRule = (rule: ConstitutionalRule): void => {
+    const index = rules.findIndex(existing => existing.id === rule.id)
+    if (index >= 0) {
+      issues.push({ source, ruleId: rule.id, message: `rule ${rule.id}: 重复的规则 id` })
+      rules.splice(index, 1)
+    }
+    rules.push(rule)
+  }
   if (Array.isArray(rulesRaw)) {
-    for (const item of rulesRaw) {
-      const rule = parseRule(item, issues)
-      if (rule !== null) rules.push(rule)
+    for (const [index, item] of rulesRaw.entries()) {
+      const rule = parseRule(item, issues, `rules[${String(index)}]`)
+      if (rule !== null) adoptRule(rule)
     }
   } else if (asRecord(rulesRaw) !== null) {
-    for (const item of Object.values(rulesRaw as Record<string, unknown>)) {
-      const rule = parseRule(item, issues)
-      if (rule !== null) rules.push(rule)
+    for (const [key, item] of Object.entries(rulesRaw as Record<string, unknown>)) {
+      const rule = parseRule(item, issues, `rules.${key}`)
+      if (rule !== null) adoptRule(rule)
     }
   } else {
     issues.push({ source, message: '规则文件缺少 rules 字段（数组或映射）' })

@@ -1,3 +1,6 @@
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
@@ -472,6 +475,47 @@ describe('tools/guard 交付前置门禁', () => {
     expect((await call(ctx, 'rule_check', { caseId: 'case-B' }, AGENT)).isError).toBe(false)
     expect((await call(ctx, 'render_patent_document', { template: 'claims-spec', caseId: 'case-B' }, AGENT)).isError)
       .toBe(false)
+  })
+
+  it('被输出门禁拦住的前置调用不算跑过', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'patent-rule-delivery-'))
+    const patentDir = join(root, 'patent')
+    mkdirSync(patentDir)
+    writeFileSync(
+      join(patentDir, 'compliance.yaml'),
+      [
+        'rules:',
+        '  - id: TEST-BLOCK',
+        '    name: 测试拦截',
+        '    severity: critical',
+        '    action: block',
+        '    check: { type: keyword_blocklist, keywords: ["BLOCKWORD"] }',
+      ].join('\n'),
+      'utf8',
+    )
+    const ctx = await mount({
+      rulesDir: root,
+      gateToolNames: ['rule_check', 'render_patent_document'],
+      deliveryGate: [{ tool: 'render_patent_document', requires: ['rule_check'] }],
+    })
+    ctx.tools.register(documentTool())
+    ctx.tools.register(defineContentToolFixture({
+      name: 'rule_check',
+      description: 'rule_check',
+      parameters: {},
+      async execute(): Promise<ContentBlock[]> {
+        return [{ type: 'text', text: '包含 BLOCKWORD 的检查' }]
+      },
+    }))
+
+    const blocked = await call(ctx, 'rule_check', {}, AGENT)
+    expect(blocked.isError).toBe(true)
+    expect(blocked.error?.message).toMatch(/TEST-BLOCK/)
+
+    const denied = await call(ctx, 'render_patent_document', { template: 'claims-spec' }, AGENT)
+    expect(denied.isError).toBe(true)
+    expect(denied.error?.message).toMatch(/交付前置门禁拒绝 render_patent_document/)
+    expect(denied.error?.message).toMatch(/rule_check/)
   })
 
   it('前置调用报错不算跑过', async () => {

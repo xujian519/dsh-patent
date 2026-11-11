@@ -913,7 +913,7 @@ D18 的判定表共享与 D19 的入口对齐此前各占一张 PR，本轮只�
 | 迁包不改查询结果 | 迁出模块的实现逐字平移；`patent-core` 迁移前后按同一方法提取的导出名集合都是 578 个，差集为空 | 通过 |
 | 新包自身行为 | `packages/law/knowledge-core/tests/` 7 个 spec，41 个用例 | 通过 |
 | 新包覆盖率 | `vitest run packages/law/knowledge-core --coverage` | `src/**` 逐文件语句 / 分支 / 函数均 100% |
-| 受影响包回归 | `vitest run packages/law/knowledge-core packages/patent/patent-core packages/patent/patent-knowledge packages/legal/legal-knowledge packages/patent/patent-tools` | 358 通过；1 个失败为 `patent-knowledge/tests/bin.spec.ts`，在基线分支上同样失败（vitest 模块运行器不支持 `import.meta.resolve`），与本次改动无关 |
+| 受影响包回归 | `vitest run packages/law/knowledge-core packages/patent/patent-core packages/patent/patent-knowledge packages/legal/legal-knowledge packages/patent/patent-tools` | 240 个测试文件：236 通过、2 失败、2 跳过；4309 个用例：4278 通过、27 失败、4 跳过。27 个失败全是环境问题：`figure-freecad-real-render.spec.ts` 的 26 例因本机 FreeCAD 的 Qt 构建要求 neon 指令集而启动即 SIGABRT；`patent-knowledge/tests/bin.spec.ts` 的 1 例因 vitest 模块运行器不支持 `import.meta.resolve`，在基线分支上同样失败 |
 | 依赖方向 | `grep -rn '@deepseek-ai/dsh-patent-core' packages/legal packages/law` | 0 处 |
 | 类型与静态检查 | `pnpm run typecheck`、`pnpm run lint` | 通过（5 passed / 0 failed；0 errors） |
 | 重复实现 | `pnpm run duplication` 与 `scripts/duplication-gate.ts` | 0 个仓库级克隆；94 个收紧域配对与 13 个跨域配对与基线一致 |
@@ -952,9 +952,11 @@ D18 的判定表共享与 D19 的入口对齐此前各占一张 PR，本轮只�
 
 ## 65. patent 结项清单
 
-登记册共 85 项风险，其中 19 项已关闭、60 项已确认、6 项待验证。本清单只登记 patent 域（`packages/patent/**`）与 patent 直接消费的共享件，按「已关闭 / 已登记未关闭 / 需 owner 决策」三段排列。
+登记册共 88 项风险，其中 23 项已关闭、59 项已确认、6 项待验证。本清单只登记 patent 域（`packages/patent/**`）与 patent 直接消费的共享件，按「已关闭 / 已登记未关闭 / 需 owner 决策」三段排列。`R-06`、`R-07`、`R-08`（video / document 域）与 `R-12`（流程域）不属于 patent 结项范围，留给 D21–D25。
 
-### 64.1 已关闭
+§65.1 列 23 项已关闭，§65.2 列 60 项已登记未关闭，合计 83 项；余下 5 项中，`R-06`、`R-07`、`R-08`、`R-12` 按上述理由排除，`R-11`（流程域）虽不在 patent 域内，但它的决策决定本轮门禁结论的可信度，故列在 §65.3。§65.3 的 6 项中 `R-82`、`R-86`、`R-87`、`R-60`、`R-70` 同时出现在 §65.2，是其中必须先由 owner 定调才能关闭的部分，不是另外 6 项。
+
+### 65.1 已关闭
 
 | 风险 | 级别 | 主题 | 落地日卡 |
 |---|---|---|---|
@@ -982,11 +984,12 @@ D18 的判定表共享与 D19 的入口对齐此前各占一张 PR，本轮只�
 | R-88 | P2 | 法律知识库的结果上限没有在进入查询前夹取 | D19 |
 | R-10 | P2 | legal 域依赖 patent-core | D20 |
 
-### 64.2 已登记未关闭（顺延到下一轮）
+### 65.2 已登记未关闭（顺延到下一轮）
 
 | 域 | 风险 | 顺延理由 |
 |---|---|---|
-| `patent-core` | R-14–R-43 共 30 项 | 大多是单点判定与解析规则（日期、月份级公开日、权项切分、覆盖映射、模板未知键、证据身份字段）。每项都带具体失败输入，但修复分散在 10 余个原子处理器里，按原子分组另立 PR 更安全；本轮 D16–D20 已用「一个 PR 一个意图」的节奏跑完 5 张日卡。 |
+| `patent-core` | R-04、R-13、R-14–R-43 共 32 项 | R-04 是 `adversary` 模块以确定性骨架承载「完整版」语义，完整版需要模型注入；R-13 是分散 TODO 缺少统一出口。其余 30 项大多是单点判定与解析规则（日期、月份级公开日、权项切分、覆盖映射、模板未知键、证据身份字段）。每项都带具体失败输入，但修复分散在 10 余个原子处理器里，按原子分组另立 PR 更安全；本轮 D16–D20 已用「一个 PR 一个意图」的节奏跑完 5 张日卡。 |
+| `patent-tools` 包层 | R-05、R-09 | R-05 是源码类型逃逸集中在 `patent-tools`（51 处 `as unknown`），D11 已定「按边界分类、窄化优先」的方案，需要专项 PR；R-09 是公共面过宽，收窄导出同样是破坏性变更，须与升级指南同批做。 |
 | `patent-tools` 工具层 | R-58–R-66 | 检索族错误码、`total` 语义与输出 schema 属工具契约，改动会改模型可见输出，需要先定 `total` / `returned` 的语义再批量改，不能与其它 PR 混做。 |
 | `patent-tools/figure` | R-67–R-76 | 图形族 10 项（DOT id 冲突、引线标号、CJK 字体降级、虚线与剖面线规模上限、包围盒栈溢出、页边距、电路自连、文字度量多份实现）。D12 已给出「几何 / 渲染 / 检查」分层方案，但拆分本身是纯移动 PR，须与行为修复分开。 |
 | `patent-workflow` | R-77、R-80 | 恢复与续接语义缺口。真实续接要决定 plantask 状态是否落盘、由谁驱动 `awaiting_feedback` → `finished`，属于持久化设计决策，需 owner 定调后立项。 |
@@ -994,8 +997,9 @@ D18 的判定表共享与 D19 的入口对齐此前各占一张 PR，本轮只�
 | `tool-literature` | R-86 | `paper_download` 无下载字节上限。真正的上限要在读响应流时累计字节并迁移测试桩；上限值是协议不变量还是部署 `Config` 也要 owner 定。 |
 | `patent-filing` | R-87 | 验收 DOCX 读取无归档预算。预算值要与 `verify_deliverable` 的 64 MiB 与 `docx-kit` 的 `ZipReadLimits` 对齐，Python 侧要在 `python-docx` 打开前用标准库检查。 |
 | `patent-index-asset` + 消费方 | R-50 | 条目没有 `paragraphs` 时跳过款号窄化。法律索引一条款列表都没有，改判定会拦截每条点了款号的引用；专利侧 13 条《专利法》的款数补录需要官方文本，走数据 PR。 |
+| `legal` + `patent` 跨域 | R-02 | 证据评分引擎与规则表重复（D18 的判定共享只覆盖法条引用门，不含证据评分）。该风险的结论要等 D21–D23 对 legal 域的复盘，跨域合并不在本轮范围。 |
 
-### 64.3 需 owner 决策才能关闭
+### 65.3 需 owner 决策才能关闭
 
 | 风险 | 决策点 |
 |---|---|

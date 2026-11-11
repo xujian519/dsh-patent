@@ -397,6 +397,7 @@ flowchart TD
     pkg_tool_jobs["tool-jobs"]
   end
   subgraph group_law["packages/law"]
+    pkg_knowledge_core["knowledge-core"]
     pkg_law_core["law-core"]
   end
   subgraph group_legal["packages/legal"]
@@ -665,6 +666,7 @@ flowchart TD
   pkg_host_product_telemetry_otel --> pkg_otel
   pkg_patent_data --> pkg_patent_core
   pkg_patent_data --> pkg_subprocess
+  pkg_patent_knowledge --> pkg_knowledge_core
   pkg_patent_knowledge --> pkg_patent_core
   pkg_patent_workflow --> pkg_patent_core
   pkg_patent_workflow --> pkg_session
@@ -1852,6 +1854,7 @@ flowchart TD
 | [`host-directory-picker-native`](../packages/host/directory-picker-native) | `host` | — |
 | [`host-open-in-app`](../packages/host/open-in-app) | `host` | — |
 | [`host-webserver`](../packages/host/webserver) | `host` | — |
+| [`knowledge-core`](../packages/law/knowledge-core) | `law` | — |
 | [`law-core`](../packages/law/law-core) | `law` | — |
 | [`patent-index-asset`](../packages/patent/patent-index-asset) | `patent` | — |
 | [`message-quotes`](../packages/session/message-quotes) | `session` | — |
@@ -1929,7 +1932,7 @@ flowchart TD
 | [`experimental-translator`](../packages/experimental/translator) | `experimental` | [`credentials`](../packages/credentials/credentials), [`launch-environment`](../packages/util/launch-environment), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`session-persistence`](../packages/session/session-persistence), [`timeout`](../packages/util/timeout), [`util-values`](../packages/util/values) |
 | [`host-product-telemetry-otel`](../packages/host/product-telemetry-otel) | `host` | [`otel`](../packages/telemetry/otel) |
 | [`patent-data`](../packages/patent/patent-data) | `patent` | [`patent-core`](../packages/patent/patent-core), [`subprocess`](../packages/subprocess/subprocess) |
-| [`patent-knowledge`](../packages/patent/patent-knowledge) | `patent` | [`patent-core`](../packages/patent/patent-core) |
+| [`patent-knowledge`](../packages/patent/patent-knowledge) | `patent` | [`knowledge-core`](../packages/law/knowledge-core), [`patent-core`](../packages/patent/patent-core) |
 | [`patent-workflow`](../packages/patent/patent-workflow) | `patent` | [`patent-core`](../packages/patent/patent-core), [`session`](../packages/core/session) |
 | [`ptc-runtime`](../packages/ptc-runtime/ptc-runtime) | `ptc-runtime` | [`sandbox`](../packages/sandbox/sandbox) |
 | [`sandbox-local`](../packages/sandbox/sandbox-local) | `sandbox` | [`llm`](../packages/llm/llm), [`sandbox`](../packages/sandbox/sandbox), [`session`](../packages/core/session) |

@@ -1776,9 +1776,6 @@
     "d1b9dfde1e58767f058f6bbc5e17c4f3f3535844040e90bc3008e9c83c894274": 1,
     "d2c44e8e3c9eb241e50092eebf9c1874784651609211b002b8b28d90b5d39d4f": 1
   },
-  "packages/patent/tool-literature/tests/runtime/shared/text.spec.ts": {
-    "c9da2bbd63d402c70f1ef8ac2bc892a22ad9fda0222c548916ee3399b2642ba4": 1
-  },
   "packages/patent/writing-patterns/tests/loader-composition.spec.ts": {
     "2577e96b1bb379e2262039c566722773b3830ee1af7e028347c4b2c66eed0c08": 1
   },

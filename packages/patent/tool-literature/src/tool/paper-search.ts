@@ -115,10 +115,15 @@ export function createPaperSearchTool(registry: ConnectorRegistry): ToolDefiniti
         )
       }
 
+      const query = args.query.trim()
+      if (query === '') {
+        throw new LiteratureToolError('invalid_tool_input', 'query must be non-empty.', { tool: 'paper_search' })
+      }
+
       const limit = clampLimit(args.limit)
       let hits: ConnectorHit[]
       try {
-        hits = await connector.search(args.query, { limit, signal: exec.signal })
+        hits = await connector.search(query, { limit, signal: exec.signal })
       } catch (err) {
         // Source errors differ from zero hits: surface a structured failure with actionable
         // guidance instead of an empty result the model misreads as "no such paper". Caller
@@ -134,7 +139,7 @@ export function createPaperSearchTool(registry: ConnectorRegistry): ToolDefiniti
       // registry validates JSON-safety at the boundary and the connectors produce JSON-safe
       // `ConnectorHit`s, so this cast records that guarantee.
       const hitsJson: JsonValue[] = hits as unknown as JsonValue[]
-      return { db: args.db, query: args.query, hits: hitsJson }
+      return { db: args.db, query, hits: hitsJson }
     },
   })
 }

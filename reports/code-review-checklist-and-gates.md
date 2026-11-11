@@ -682,3 +682,111 @@ D14 范围：`packages/patent/patent-workflow` 的执行器、manifest 目录、
 - **不重构执行器**：`runWorkflow` 的单文件 520 行与「串行/并行/回退/中断」四路径耦合是已知结构债，但拆分需要单独 PR 与等价性测试，不与本轮行为修复混做。
 - **不动 `manifests.ts` 的阶段文案与顺序**：本轮只固定门的位置与结构；文案属模型可见输出，改动需单独评审快照。
 - **不覆盖 graph 路径的检查点恢复**：`resumeCheckpointId` 的检查点语义在 patent-core 的 graph 适配器，D14 范围是 manifest 路径与 plantask 状态机；graph 恢复另列。
+
+## 44. D16 复核范围与方法
+
+D16 范围：`packages/patent/writing-patterns`（7 个源文件）、`packages/patent/methodology`（5 个源文件 + 3 个 JSON 资产）、`packages/patent/tool-literature`（18 个源文件），对应计划第 172 行的「语料选择、TRIZ 表、文献连接器」，交付物为语料/矩阵边界测试。
+
+方法：逐行过读三包源码与既有测试（writing-patterns 7 个 spec、methodology 6 个 spec、tool-literature 12 个 spec），先确认现有断言已覆盖的正常路径与拒绝路径，再用一次性探针复现疑点：(1) `fromInverted({ a: [1e7] })` 135 ms、`{ a: [1e8] }` 1,246 ms，耗时随最大位置线性增长；(2) 给 `validateTrizAssets` 注入 `signals: [123, null, {}]` 直接通过，而 triz 输出 schema 在首次对角查询时才报 `must match exactly one oneOf branch`；(3) `paper_search({ db: 'arxiv', query: '   ' })` 不报错，实际请求 `search_query=all%3A`。矩阵方向用已知经典单元交叉核对：`lookupMatrixCell(14, 1) = [1, 8, 40, 15]`，与转置 `(1, 14) = [28, 27, 18, 40]` 不同。
+
+结论：三包的语料加载、词法选择与资产结构校验整体完整，问题集中在「响应体边界」——外部源的超大数值、非文本信号、空白查询都能穿过现有校验。本次确认 4 项风险（P2 4）：R-83/R-84/R-85 本轮修复并带边界用例；R-86（PDF 下载无字节上限）只登记，修复需要流式读取与测试桩迁移。
+
+## 45. D16 问题清单
+
+| 风险 | 类别 | 证据 | 最小复现 / 实际结果 | 级别 | 状态 |
+|---|---|---|---|---|---|
+| R-83 | 响应边界 / 资源上限 | `tool-literature/src/runtime/shared/text.ts:117`；`openalex.ts:69` | `fromInverted({ a: [2 ** 32 - 2] })`：修复前按位置建密集数组，`filter` 需走访 4.29e9 个槽位；修复前 1e8 位置实测 1,246 ms | P2 | 已关闭 |
+| R-84 | 资产校验 | `methodology/src/data.ts:180-188`；`triz.ts:75,97` | `signals: [123]` 通过 `validateTrizAssets`，插件正常加载；首次对角查询被输出 schema 拒绝 | P2 | 已关闭 |
+| R-85 | 工具输入边界 | `tool-literature/src/tool/paper-search.ts:118-121` | `query: '   '` 修复前返回成功并请求 `all:`，模型据此读到「无结果」 | P2 | 已关闭 |
+| R-86 | 下载字节上限 | `tool-literature/src/tool/paper-download.ts:111-113` | 直接链与兜底链均先 `arrayBuffer()` 再校验 PDF 魔数；无 `Content-Length` 预检、无累计字节上限 | P2 | 已确认 |
+
+## 46. D16 语料/矩阵边界测试矩阵
+
+新增或扩展的用例全部使用固定字面量与临时目录，不依赖网络、时钟或宿主字体。
+
+| 包 | 用例 | 锁定内容 | 对应风险 |
+|---|---|---|---|
+| writing-patterns | 同一 `patterns` 列表内重复 id | 加载期拒绝，报文件与首个占用者 | 语料唯一性 |
+| writing-patterns | `quality: 1` | 上边界保留为 1，不被默认值覆盖 | 质量权重边界 |
+| writing-patterns | `limit` 为 0 / -1 / 1.5 | 0 与 -1 由执行层报「正整数」；1.5 在模型参数 schema 层拒绝 | 结果上限边界 |
+| writing-patterns | `limit` 大于类目规模 | 返回全部 11 条 `claim_drafting`，不补空位 | 结果上限边界 |
+| writing-patterns | `sectionCategories: []` | 段落文本恰为指引散文，无 `<pattern_index>` | 语料注入边界 |
+| methodology | 矩阵方向 | `lookupMatrixCell(14, 1)` 取 `matrix[0][13]`，与转置结果不同 | TRIZ 表方向 |
+| methodology | 参数 40 / 1.5 / NaN | 公共数据接口返回空数组，不抛错、不环绕 | TRIZ 表范围 |
+| methodology | `ENGINEERING_PARAMS` | 编号 1–39 顺序且标签非空，`paramLabel` 与表一致 | 参数表完整性 |
+| methodology | 分离原则 signals 元素 | 数字、null、对象、空串逐一报出序号；插件加载即拒绝 | R-84 |
+| tool-literature | `fromInverted` 远位置 | `2 ** 32 - 2` 立即返回单词，工作量只随条目数增长 | R-83 |
+| tool-literature | `fromInverted` 重复位置 / 非数组位置 | 重复位置保留后写值；非数组位置跳过而不抛错 | R-83 |
+| tool-literature | 空白查询三种形式 | 空串、空格、换行制表符均拒绝，源调用次数为 0 | R-85 |
+| tool-literature | 查询首尾空白 | 检索与结果回显都使用裁剪后的查询 | R-85 |
+| tool-literature | Semantic Scholar `limit: 999` | 请求参数钳制为 `limit=50` | 连接器上限 |
+
+门禁命令：`pnpm exec vitest run packages/patent/writing-patterns packages/patent/methodology packages/patent/tool-literature`；类型与静态检查按 §5.1。
+
+## 47. D16 范围校正与不做项
+
+- **不改语料内容**：writing-patterns 的 24 个模式资产、法条引用与检索词本轮零改动；`source-ref.spec.ts` 仍作为引用解析的负载校验。
+- **不改 TRIZ 数据**：`triz-matrix.json`、`triz-principles.json`、`triz-separations.json` 保持原样；只收紧对 signals 文本的加载期校验。已知的 `(19, 9)` 重复单元仍按「保留源值、读取去重」处理。
+- **不改连接器契约**：`Connector.search` 的签名、`limit` 由连接器自行钳制的分工不变；本轮只在工具层补输入校验，不替连接器重排结果。
+- **不修 R-86（下载字节上限）**：真正的上限需要在读取响应流时累计字节，并同步迁移 `paper-download.spec.ts` 的 `arrayBuffer()` 测试桩；上限值（协议不变量还是部署配置）也需要 owner 决策，留给独立 PR。
+- **不改词法排序**：`scorePattern` / `scoreMatch` 的权重、中文 bigram 与 id 兜底排序保持不变；这类改动会改模型可见选择结果，需要快照差异评审。
+- **不新增快照**：三包的有效输出本次未变（只改无效输入的失败路径），`snapshots/` 与系统提示录制无需刷新。
+
+## 48. D17 复核范围与方法
+
+D17 范围：`packages/patent/patent-document`（23 个源文件）、`packages/patent/patent-filing`（10 个源文件 + 1,187 行 Python 引擎 + spec/模板资产）、`packages/document/docx-kit`（8 个源文件），以及 `patent-core` 的草案契约与 `doc-template`、`document-deliver` 两个 DOCX 消费方。对应计划第 173 行的「DOCX 管线比对，共享或明确保留各自实现的决策」。
+
+方法：按「输入 → 投影 → 序列化 → 校验」四段画出三条管线，再核对两条专利通道共享的草案函数。三个探针固化事实：(1) `renderDocx` 的产物只含 `[Content_Types].xml`、`_rels/.rels`、`word/document.xml`，没有 styles / numbering / media 部件；(2) `patent-filing` 的 `package.json` 不含 `docx-kit`，DOCX 由 `assets/engine/build.py`（python-docx）从 `.docx` 模板写出；(3) `patent-document` 的 `RenderFormat` 只有 `html` / `pdf` / `both`，源码没有 DOCX 写入路径，注释中的「下游 HTML→docx 转制」指第三方转换。
+
+结论：计划 §6 P1-3「统一 patent-document / patent-filing / docx-kit 的 DOCX 底层写出行」的前提不成立——`patent-document` 根本不写 DOCX；三份实现服务三类交付物，应保留并写清共享边界。本次确认 1 项风险（P2 1，R-87：验收读取无归档预算），不影响决策。
+
+## 49. DOCX 管线能力对比矩阵
+
+| 能力 | patent-document | patent-filing | docx-kit |
+|---|---|---|---|
+| 产物 | HTML + 可选 PDF（headless Chrome） | 单个 CNIPA 五节 `.docx` | Markdown → 三部件 DOCX；或 DOCX → 文本 |
+| 输入 | 13 个 HTML 模板 + 受控草案（SpecDraft / 表单 / 通用） | 受控草案 → `FilingContent` + spec JSON + `.docx` 模板 | Markdown 子集 / DOCX 字节 + 读取预算 |
+| 样式真相源 | `tokens.css` + `theme.json` 品牌注入 | `.docx` 模板反解（`styles.xml` 字体 + 段落 `sz`/`spacing`/`ind`） | 固定内联 WordprocessingML（标题字号、粗体、Consolas） |
+| 分节 / 页眉 / 页脚 | HTML 模板骨架 | 模板 `sectPr` 与 header 引用；`build.py` 增删节 | 不支持：只写空 `<w:sectPr/>`，无 header/footer 部件 |
+| 图片 | 不嵌图，附图另附 | 位图嵌入；`.svg` 经 Chrome 栅格化；每图一页、摘要附图恰一张 | 不支持（无 media 部件） |
+| 段落编号 | `data-paragraph-numbering` → 字面文本，先剥后写、幂等 | spec 的 numbering 策略；`build.py` 写 `[NNNN]`，`verify.py` 验连续性 | 不支持 |
+| 校验 | 渲染后 HTML 合规扫描；`verify_deliverable` 比对字节与 mtime | `verify.py` 逐项断言分节、页眉、字号、行距、缩进、颜色、权项、编号、图与内部痕迹 | `readZip` 条目/字节预算 + 文本投影 problems |
+| 运行时 | Node + Chrome（PDF 可降级） | Node + Python + python-docx（SVG 另需 Chrome） | Node 标准库 |
+| 信任边界 | 模型草案与模板 | 模板（部署配置）+ 待验收 DOCX（模型给出） | 不可信 DOCX（`document-deliver`） |
+| 消费方 | patent preset | patent preset | `doc-template`（写）、`document-deliver`（读） |
+
+两条专利通道已经共享的部分：
+
+| 共享项 | 归属 | 两通道用法 |
+|---|---|---|
+| 五部分顺序与标题 | `patent-core/src/draft/types.ts:56,68` | `specDraft.ts` 生成 `<h3>`；`fromDraft.ts` 生成 `h3` 节点 |
+| 表题文本 | `patent-core/src/draft/tableCaption.ts:17` | `blocks.ts:33` 与 `fromDraft.ts:32` 各自计数、调用同一函数 |
+| 附图说明编号 | `patent-core/src/draft/figureDescriptions.ts:27` | `specDraft.ts:22` 与 `fromDraft.ts:56` 同源 |
+| 输出目录与文件名安全 | `patent-core` 的 `caseOutputsDir` / `resolveConfinedPath` / `assertSafeId` | `renderPatentDocument.ts:83-91` 与 `engine.ts:127-140` |
+| 草案校验 | `patent-core` 的 `validateSpecDraft` | 两个工具入口共用 |
+
+## 50. D17 决策：保留三份实现，共享草案层
+
+**决策：不抽共享 OOXML 写入器。** 共享边界定在「受控草案 + `patent-core` 的格式助手 + 输出路径约束」，序列化层按交付物保留三份实现：
+
+- `patent-document` 继续走 HTML 模板 → HTML/PDF，不新增 DOCX 出口。它需要的是品牌 CSS、HTML 槽位、渲染后合规扫描与 Chrome 打印，这些与 WordprocessingML 无关。
+- `patent-filing` 继续用 `.docx` 模板 + Python 引擎。模板是体例唯一真相源，`style.py` 从模板 OOXML 反解字体、字号、行距、缩进、节数；`build.py` 直接操作模板的分节、页眉与编号。改用 JS 写入器会重做这些能力，收益不可见。
+- `docx-kit` 继续服务文档工作线：Markdown → 最小 DOCX，以及带预算的 DOCX → 文本。它是 `doc-template` 的写渲染器与 `document-deliver` 的读投影器，不进入 patent preset。
+
+**证伪计划 P1-3 的根据**：`docx-kit` 的写入器只产出三个部件（探针见 §48），没有 styles、numbering、media、header/footer 与节属性；`patent-document` 没有 DOCX 写入代码；`patent-filing` 的写入器是 python-docx。三者不存在可抽出的「同一条底层写出行」。
+
+**未来共享的条件**：出现第二个与 `patent-filing` 保真度相同的消费者（模板反解 + 分节/页眉 + 编号 + 图片）时，抽的是「模板 DOCX 引擎」服务缝，而不是把 `docx-kit` 泛化成第二套模板引擎；抽取前必须具备两通道行为等价性测试。
+
+## 51. D17 问题清单与不做项
+
+| 风险 | 类别 | 证据 | 最小复现 / 实际结果 | 级别 | 状态 |
+|---|---|---|---|---|---|
+| R-87 | 读取边界 / 资源上限 | `patent-filing/assets/engine/verify.py:118`；`src/filing/engine.ts:451` | `verify_patent_filing({ docx })` 对任意 `.docx` 直接 `Document(path)`；JS 与 Python 两侧都没有条目数、解压字节或文件大小预算，只有 120 s 超时与 4 MB 标准输出上限 | P2 | 已确认 |
+
+不做项：
+
+- **不把 `docx-kit` 扩成模板引擎**：补齐 styles、sections、headers、media 等于重建 `patent-filing` 的 Python 引擎，且会改变文档工作线的最小实现承诺。
+- **不把 `patent-filing` 迁到 JS**：python-docx 与模板反解是当前体例保证的基础；迁移没有用户可观察收益，风险高于收益。
+- **不合并两个 DOCX 校验器**：`verify.py` 断言的是申请文件体例（节、页眉、字体、图），`docx-kit` 的读取器投影的是通用文本；职责与信任边界不同。
+- **不在 D17 修 R-87**：预算值需要与 `verify_deliverable` 的 64 MiB、`docx-kit` 的 `ZipReadLimits` 对齐，且 Python 侧要在 `python-docx` 打开前用标准库检查；另立 PR 并带负向用例。
+- **不新增跨通道 golden**：两通道共享的是草案与格式字符串，不共享序列化；D18 的等价性测试服务于 `patent-law` ↔ `legal-law`，不适用于这里。

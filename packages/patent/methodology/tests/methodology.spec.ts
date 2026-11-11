@@ -6,6 +6,7 @@ import ToolRuntime, { validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
 import * as methodology from '../src/index.ts'
 import {
   createTrizTool,
+  ENGINEERING_PARAMS,
   loadMatrix,
   loadPrinciples,
   loadSeparations,
@@ -54,9 +55,20 @@ async function setupPlugin(config: Record<string, unknown> = {}): Promise<Contex
 }
 
 describe('TRIZ data access', () => {
-  it('lookupMatrixCell returns [] for out-of-range parameters', () => {
+  it('lookupMatrixCell returns [] for out-of-range or non-integer parameters', () => {
     expect(lookupMatrixCell(14, 0)).toEqual([])
     expect(lookupMatrixCell(0, 14)).toEqual([])
+    expect(lookupMatrixCell(40, 1)).toEqual([])
+    expect(lookupMatrixCell(1, 40)).toEqual([])
+    expect(lookupMatrixCell(1.5, 1)).toEqual([])
+    expect(lookupMatrixCell(Number.NaN, 1)).toEqual([])
+  })
+
+  it('reads rows as worsening and columns as improving, never the transpose', () => {
+    const data = loadMatrix()
+    expect(lookupMatrixCell(14, 1)).toEqual(data[0]?.[13])
+    expect(lookupMatrixCell(1, 14)).toEqual(data[13]?.[0])
+    expect(lookupMatrixCell(14, 1)).not.toEqual(lookupMatrixCell(1, 14))
   })
 
   it('paramLabel falls back to the number for unknown parameters', () => {
@@ -113,6 +125,14 @@ describe('TRIZ data access', () => {
     const data = loadMatrix()
     for (let i = 0; i < 39; i += 1) {
       expect(data[i]?.[i]).toEqual([])
+    }
+  })
+
+  it('engineering parameters cover 1-39 in order with matching labels', () => {
+    expect(ENGINEERING_PARAMS.map(param => param.no)).toEqual(Array.from({ length: 39 }, (_, index) => index + 1))
+    for (const param of ENGINEERING_PARAMS) {
+      expect(param.label.length).toBeGreaterThan(0)
+      expect(paramLabel(param.no)).toBe(param.label)
     }
   })
 

@@ -136,6 +136,49 @@ describe('paper_search over an injected-fetchImpl registry', () => {
     expect(text(result)).toContain('Available: arxiv, openalex, semantic-scholar, crossref')
   })
 
+  it('rejects a blank query before reaching the source', async () => {
+    let calls = 0
+    const registry = new ConnectorRegistry()
+    registry.register({
+      id: 'stub',
+      name: 'Stub',
+      domain: 'literature',
+      description: 'stub source',
+      search: async () => {
+        calls += 1
+        return []
+      },
+    })
+    const ctx = await setupRegistry(registry)
+    for (const query of ['', '   ', '\n\t']) {
+      const result = await execute(ctx, 'paper_search', { db: 'stub', query }, `blank-${JSON.stringify(query)}`)
+      expect(result.isError).toBe(true)
+      expect(text(result)).toContain('query must be non-empty')
+    }
+    expect(calls).toBe(0)
+  })
+
+  it('trims the query it searches and echoes', async () => {
+    let searched = ''
+    const registry = new ConnectorRegistry()
+    registry.register({
+      id: 'stub',
+      name: 'Stub',
+      domain: 'literature',
+      description: 'stub source',
+      search: async (query) => {
+        searched = query
+        return []
+      },
+    })
+    const ctx = await setupRegistry(registry)
+    const result = await execute(ctx, 'paper_search', { db: 'stub', query: '  attention  ' }, 'trimmed')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected paper_search success')
+    expect(searched).toBe('attention')
+    expect((result.value as { query: string }).query).toBe('attention')
+  })
+
   it('surfaces rate-limit source errors with actionable guidance', async () => {
     const registry = makeRegistry(async () => new Response('rate limited', { status: 429 }))
     const ctx = await setupRegistry(registry)

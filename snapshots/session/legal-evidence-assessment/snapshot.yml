@@ -1,0 +1,9 @@
+version: 1
+scenario: legal-evidence-assessment
+profile: headless
+composition: legal-evidence-assessment
+recording: authored
+header:
+  class: legal-evidence-assessment
+  pin: true
+  systemPromptSource: text-turn

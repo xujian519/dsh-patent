@@ -111,14 +111,14 @@ export function raw(value: unknown): Record<string, unknown> {
  * repeated position keeps the last word written. A response can name any
  * integer position, so the work is proportional to the number of positions
  * rather than to the largest offset.
- * @param index - the inverted index (word → positions), optional.
+ * @param index - the raw `abstract_inverted_index` value from the response; it
+ *   arrives as untrusted JSON, so the value and every position are validated here.
  * @returns the rebuilt abstract text, or undefined when empty or absent.
  */
-export function fromInverted(index?: Record<string, number[]> | null): string | undefined {
-  if (!index) return undefined
+export function fromInverted(index?: unknown): string | undefined {
+  if (typeof index !== 'object' || index === null) return undefined
   const words = new Map<number, string>()
-  for (const word of Object.keys(index)) {
-    const positions: unknown = index[word]
+  for (const [word, positions] of Object.entries(index)) {
     if (!Array.isArray(positions)) continue
     for (const pos of positions) {
       if (typeof pos === 'number' && Number.isInteger(pos) && pos >= 0) words.set(pos, word)

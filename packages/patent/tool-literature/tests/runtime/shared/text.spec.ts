@@ -56,14 +56,14 @@ describe('text helpers', () => {
   })
 
   it('fromInverted skips nullish word entries and non-integer positions', () => {
-    expect(fromInverted({ a: null as unknown as number[], b: [0] })).toBe('b')
+    expect(fromInverted({ a: null, b: [0] })).toBe('b')
     expect(fromInverted({ a: [1.5] })).toBeUndefined()
     expect(fromInverted({ a: [-1] })).toBeUndefined()
   })
 
   it('fromInverted ignores a non-array position list instead of throwing', () => {
-    expect(fromInverted({ a: 5 as unknown as number[], b: [0] })).toBe('b')
-    expect(fromInverted({ a: '1' as unknown as number[], b: [0] })).toBe('b')
+    expect(fromInverted({ a: 5, b: [0] })).toBe('b')
+    expect(fromInverted({ a: '1', b: [0] })).toBe('b')
   })
 
   it('fromInverted keeps the last word for a repeated position', () => {

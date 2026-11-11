@@ -134,7 +134,7 @@ export class CaseLawSearchEngine extends SqliteBackedEngine<CaseLawSearchOptions
   /**
    * Search case-law records by keyword.
    * NUL is removed before matching. An empty remainder returns no hits.
-   * The cap defaults to 5. A finite cap is an integer in `[1, 50]`.
+   * An omitted or non-finite cap uses 5. Any other cap is an integer in `[1, 50]`.
    * @param query - the search text.
    * @param options - result cap, docType, court, and caseType filters.
    * @returns matching hits sorted by relevance (descending).

@@ -11,20 +11,13 @@
 import { type DatabaseSync } from 'node:sqlite'
 import { createFtsLadder, resolveResultLimit, type FtsSearchOps } from '@deepseek-ai/dsh-patent-core'
 import { errorMessage } from '@deepseek-ai/dsh-value'
-import { escapeFtsPhrase, joinFtsOrTerms, sanitizeSearchText, sqliteHasFts5 } from './fts.ts'
+import { escapeFtsPhrase, joinFtsOrTerms, prepareSearchText, sqliteHasFts5 } from './fts.ts'
 import { runFtsSearch } from './fts-search.ts'
 
 /** 没有更紧家族上限的引擎所用的最大结果条数。 */
 const OPEN_RESULT_MAX = Number.MAX_SAFE_INTEGER
 
-/**
- * 去掉 NUL 再 trim。SQLite 在 NUL 处截断绑定文本，这个字符必须在 FTS 或 LIKE 之前离开查询。
- * @param value - 调用方给出的检索文本。
- * @returns 用于匹配的文本；没有可检索内容时为空串。
- */
-export function prepareSearchText(value: string): string {
-  return sanitizeSearchText(value).trim()
-}
+export { prepareSearchText }
 
 /** 选择一个后端的构造选项。 */
 type SqliteSearchBackendOptions = {

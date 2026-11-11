@@ -33,7 +33,7 @@ Legal research needs to search decisions, regulations, and judicial interpretati
 <a id="model-facing-tool"></a>
 ## Model-facing tool
 
-`@deepseek-ai/dsh-legal-knowledge/tool` is a function plugin that injects `tools` and `legalKnowledge` and registers `legal_knowledge_search`. Its `scope` selects one family: `regulation` (the default), `case_law`, `judicial_interpretation`, or `guiding_case`. The tool forwards `limit`, `asOf`, `level`, `docType`, `court`, `caseType`, and `interpretationType` to the matching service method, clamps results to 1–20, and returns the hits plus a summary. The summary states that an empty result means this deployment's knowledge base did not match, not that the source does not exist. Mount it inside the same `isolate` realm as the service; the legal preset's `legal-knowledge-index` group does that.
+`@deepseek-ai/dsh-legal-knowledge/tool` is a function plugin that injects `tools` and `legalKnowledge` and registers `legal_knowledge_search`. Its `scope` selects one family: `regulation` (the default), `case_law`, `judicial_interpretation`, or `guiding_case`. The tool forwards `limit`, `asOf`, `level`, `docType`, `court`, `caseType`, and `interpretationType` to the matching service method, clamps results to 1–20, and returns the hits plus a summary. A query that is empty after NUL removal is rejected as an empty query, and NUL is removed from the query text the tool echoes. The summary states that an empty result means this deployment's knowledge base did not match, not that the source does not exist. Mount it inside the same `isolate` realm as the service; the legal preset's `legal-knowledge-index` group does that.
 
 <a id="backends"></a>
 ## Backends

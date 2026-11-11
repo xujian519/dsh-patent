@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { CaseLawSearchEngine } from '@deepseek-ai/dsh-legal-knowledge'
+import type { CaseLawRecord } from '@deepseek-ai/dsh-legal-knowledge'
 import { LegalRegulationSearchEngine } from '@deepseek-ai/dsh-legal-knowledge'
 import { JudicialInterpretationSearch } from '@deepseek-ai/dsh-legal-knowledge'
 import {
@@ -161,6 +162,12 @@ function createJudicialInterpretationsDb(dbPath: string): void {
         '房屋买卖居间合同中关于买方独家委托的约定，不违反法律强制性规定，合法有效。',
         '["民法典第961条", "民法典第962条"]', '（指导案例1号全文内容）'
       );
+      INSERT INTO guiding_cases VALUES (
+        2, 'gc-002', '指导案例2号', '另一起房屋居间合同纠纷案',
+        '北京市第一中级人民法院', '2012-03-01', '民事',
+        '居间人未促成合同成立的，不得要求支付报酬。',
+        '[]', '（指导案例2号全文内容）'
+      );
     `)
   } finally {
     db.close()
@@ -244,21 +251,22 @@ describe('SQLite FTS5 search', () => {
     })
 
     it('非有限上限回退到案例默认值', () => {
-      const engine = new CaseLawSearchEngine([
-        {
-          caseId: 'case-001',
-          docType: 'judgment',
-          caseName: '合同纠纷案',
-          court: '北京法院',
-          decisionDate: '2023-06-15',
-          caseNumber: '(2023)001号',
-          caseType: '民事',
-          fullText: '合同违约',
-          summary: '违约',
-        },
-      ])
-      expect(engine.search('合同', { limit: Number.NaN })).toHaveLength(1)
-      expect(engine.search('合同\u0000').map(hit => hit.caseId)).toEqual(['case-001'])
+      const records = Array.from({ length: 6 }, (_, index): CaseLawRecord => ({
+        caseId: `case-${index}`,
+        docType: 'judgment',
+        caseName: `合同纠纷案${index}`,
+        court: '北京法院',
+        decisionDate: '2023-06-15',
+        caseNumber: `(2023)${index}号`,
+        caseType: '民事',
+        fullText: '合同违约',
+        summary: '违约',
+      }))
+      const engine = new CaseLawSearchEngine(records)
+      expect(engine.search('合同', { limit: Number.NaN })).toHaveLength(5)
+      expect(engine.search('合同', { limit: 0 })).toHaveLength(1)
+      expect(engine.search('合同', { limit: -1 })).toHaveLength(1)
+      expect(engine.search('合同\u0000')).toHaveLength(5)
       expect(engine.search('\u0000')).toEqual([])
     })
   })
@@ -330,12 +338,11 @@ describe('SQLite FTS5 search', () => {
       createJudicialInterpretationsDb(dbPath)
       const engine = new JudicialInterpretationSearch({ dbPath })
       try {
-        const results = engine.searchGuidingCases('居间')
-        expect(results.length).toBeGreaterThan(0)
-        expect(results[0]!.caseId).toBe('gc-001')
-        expect(engine.searchGuidingCases('居间\u0000').map(hit => hit.caseId)).toEqual(['gc-001'])
+        expect(engine.searchGuidingCases('居间').map(hit => hit.caseId).sort()).toEqual(['gc-001', 'gc-002'])
+        expect(engine.searchGuidingCases('居间\u0000').map(hit => hit.caseId).sort()).toEqual(['gc-001', 'gc-002'])
         expect(engine.searchGuidingCases('\u0000')).toEqual([])
         expect(engine.searchGuidingCases('居间', -1)).toHaveLength(1)
+        expect(engine.searchGuidingCases('居间', 0)).toHaveLength(1)
       } finally {
         engine.close()
       }

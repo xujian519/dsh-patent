@@ -33,7 +33,7 @@ DeepSeek Harness 的法律知识库查询接缝：案例检索、法规检索、
 <a id="model-facing-tool"></a>
 ## 面向模型的工具
 
-`@deepseek-ai/dsh-legal-knowledge/tool` 是一个函数插件，注入 `tools` 与 `legalKnowledge` 并注册 `legal_knowledge_search`。`scope` 选择一类记录：`regulation`（默认）、`case_law`、`judicial_interpretation` 或 `guiding_case`。工具把 `limit`、`asOf`、`level`、`docType`、`court`、`caseType` 与 `interpretationType` 转交给对应的服务方法，结果上限钳制在 1–20 条，并返回命中记录与摘要。摘要会说明：空结果表示本部署的知识库未命中，不代表该法源不存在。挂载时必须与服务处于同一个 `isolate` realm；法律 preset 的 `legal-knowledge-index` 分组已按此配置。
+`@deepseek-ai/dsh-legal-knowledge/tool` 是一个函数插件，注入 `tools` 与 `legalKnowledge` 并注册 `legal_knowledge_search`。`scope` 选择一类记录：`regulation`（默认）、`case_law`、`judicial_interpretation` 或 `guiding_case`。工具把 `limit`、`asOf`、`level`、`docType`、`court`、`caseType` 与 `interpretationType` 转交给对应的服务方法，结果上限钳制在 1–20 条，并返回命中记录与摘要。去掉 NUL 后为空的查询会按空查询拒绝，回显的查询文本也不再含 NUL。摘要会说明：空结果表示本部署的知识库未命中，不代表该法源不存在。挂载时必须与服务处于同一个 `isolate` realm；法律 preset 的 `legal-knowledge-index` 分组已按此配置。
 
 <a id="backends"></a>
 ## 后端

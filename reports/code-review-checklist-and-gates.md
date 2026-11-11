@@ -826,7 +826,7 @@ D19 范围：`packages/patent/patent-knowledge`、`packages/legal/legal-knowledg
 
 - **不把 FTS 放进 `patent-index-asset`**：该包只读随包 YAML 的字段。`legal-law` 已经用它读条文；知识库查询是 SQLite，不是这套字段格式。
 - **不收紧未知键**：`readArticleEntries` 忽略未知键。收紧会碰到 `legal-law` 的资产文件和 `patent-fees` 的 `effectiveFrom`。
-- **不改工具的 1–20**：`legal_knowledge_search` 的上限比引擎更紧，是工具契约。引擎上的 0 与负数由引擎自己夹取。
+- **不改工具的 1–20**：`legal_knowledge_search` 的上限比引擎更紧，是工具契约。引擎上的 0 与负数由引擎自己夹取。只含 NUL 的查询在工具里先按同一套清洗再判空，与空白查询一样拒绝。
 - **不清洗 NUL 以外的控制字符**：换行和制表符可以留在短语里，没有失败证据。
 - **不清洗法院等过滤字段里的 NUL**：案例的 `court` 仍原样进入 LIKE。本轮只处理四个公开查询入口的检索文本。
 - **不改 C-09**：wiki 与图谱入口的负上限仍是专利包内部的问题，不在两条知识库查询的对比里。

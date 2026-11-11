@@ -74,6 +74,15 @@ describe('LegalRegulationSearchEngine', () => {
     expect(engine.findByName('\u0000')).toEqual([])
   })
 
+  it('findByName 把小于 1 的上限夹成一条', () => {
+    const engine = new LegalRegulationSearchEngine(SAMPLE_RECORDS)
+    const named = engine.findByName('民法典')
+    expect(named.map(row => row.regulationId).sort()).toEqual(['reg-001', 'reg-004'])
+    expect(engine.findByName('民法典', 0)).toHaveLength(1)
+    expect(engine.findByName('民法典', -1)).toHaveLength(1)
+    expect(engine.findByName('民法典', Number.NaN)).toEqual(named)
+  })
+
   it('小于 1 或非有限的上限夹成至少一条，而不是清空或丢掉末条', () => {
     const engine = new LegalRegulationSearchEngine(SAMPLE_RECORDS)
     const visible = engine.search('中华人民共和国')

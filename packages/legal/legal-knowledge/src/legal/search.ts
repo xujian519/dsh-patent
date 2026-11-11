@@ -105,6 +105,8 @@ export class LegalRegulationSearchEngine extends SqliteBackedEngine<LegalSearchO
 
   /**
    * Search legal regulation records by keyword.
+   * NUL is removed before matching. An empty remainder returns no hits.
+   * An omitted or non-finite cap uses 10. Any other cap is an integer of at least 1.
    * @param query - the search text.
    * @param options - result cap, level filter, and validity options.
    * @returns matching hits sorted by relevance (descending).

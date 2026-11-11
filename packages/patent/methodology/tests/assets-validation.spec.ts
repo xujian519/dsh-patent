@@ -103,6 +103,19 @@ describe('TRIZ asset validation at plugin start', () => {
     expect(validationMessage(assets)).toMatch(/separation "space" has no signals/)
   })
 
+  it('rejects a separation signal that is empty or not a string', () => {
+    const assets = shippedAssets()
+    assets.separations[0]!.signals = [123 as never, null as never, { text: 'x' } as never]
+    const message = validationMessage(assets)
+    expect(message).toMatch(/separation "space" signal 1 is empty or not a string/)
+    expect(message).toMatch(/separation "space" signal 2 is empty or not a string/)
+    expect(message).toMatch(/separation "space" signal 3 is empty or not a string/)
+
+    const empty = shippedAssets()
+    empty.separations[0]!.signals = ['']
+    expect(validationMessage(empty)).toMatch(/separation "space" signal 1 is empty or not a string/)
+  })
+
   it('rejects an empty separation catalog', () => {
     const assets = shippedAssets()
     assets.separations = []

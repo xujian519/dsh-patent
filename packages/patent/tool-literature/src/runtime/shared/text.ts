@@ -106,19 +106,27 @@ export function raw(value: unknown): Record<string, unknown> {
 
 /**
  * Rebuild plain-text abstract from OpenAlex's `abstract_inverted_index` (word → positions).
+ *
+ * Positions are sparse offsets, not a dense token array: gaps collapse and a
+ * repeated position keeps the last word written. A response can name any
+ * integer position, so the work is proportional to the number of positions
+ * rather than to the largest offset.
  * @param index - the inverted index (word → positions), optional.
  * @returns the rebuilt abstract text, or undefined when empty or absent.
  */
 export function fromInverted(index?: Record<string, number[]> | null): string | undefined {
   if (!index) return undefined
-  const words: (string | undefined)[] = []
+  const words = new Map<number, string>()
   for (const word of Object.keys(index)) {
-    for (const pos of index[word] ?? []) {
-      if (Number.isInteger(pos) && pos >= 0) words[pos] = word
+    const positions: unknown = index[word]
+    if (!Array.isArray(positions)) continue
+    for (const pos of positions) {
+      if (typeof pos === 'number' && Number.isInteger(pos) && pos >= 0) words.set(pos, word)
     }
   }
-  const text = words
-    .filter(w => w !== undefined)
+  const text = [...words]
+    .sort(([left], [right]) => left - right)
+    .map(([, word]) => word)
     .join(' ')
     .trim()
   return text.length ? text : undefined

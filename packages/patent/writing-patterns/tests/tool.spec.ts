@@ -218,9 +218,24 @@ describe('query_writing_patterns execution', () => {
 
   it('fails loud on a limit that is not positive', async () => {
     const ctx = await host()
-    const result = await execute(ctx, { limit: 0 })
+    for (const limit of [0, -1]) {
+      const result = await execute(ctx, { limit })
+      expect(result.isError).toBe(true)
+      expect(JSON.stringify(result.content)).toContain('limit must be a positive integer')
+    }
+  })
+
+  it('rejects a fractional limit at the schema boundary', async () => {
+    const ctx = await host()
+    const result = await execute(ctx, { limit: 1.5 })
     expect(result.isError).toBe(true)
-    expect(JSON.stringify(result.content)).toContain('limit must be a positive integer')
+  })
+
+  it('returns every candidate when the limit exceeds the category size', async () => {
+    const ctx = await host()
+    const result = await execute(ctx, { category: 'claim_drafting', limit: 100 })
+    if (result.isError) throw new Error('expected success')
+    expect((result.value as QueryWritingPatternsOutput).patterns).toHaveLength(11)
   })
 
   it('rejects an unknown category at the schema boundary', async () => {

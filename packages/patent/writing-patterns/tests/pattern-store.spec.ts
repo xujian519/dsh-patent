@@ -442,6 +442,24 @@ describe('corpus loading is fail-loud', () => {
     expect(() => loadPatternCorpus(dir)).toThrow(/模式 id "p1" 与 a\.yaml 重复/)
   })
 
+  it('reports a duplicated pattern id inside one patterns list', async () => {
+    const dir = await writeCorpus({
+      'p1.yaml': [
+        'patterns:',
+        '  - id: same',
+        '    name: First',
+        '    category: claim_drafting',
+        '    summary: S1',
+        '  - id: same',
+        '    name: Second',
+        '    category: claim_drafting',
+        '    summary: S2',
+        '',
+      ].join('\n'),
+    })
+    expect(() => loadPatternCorpus(dir)).toThrow(/模式 id "same" 与 p1\.yaml 重复/)
+  })
+
   it('reports an unreadable asset file', () => {
     expect(() => parsePatternFile(tmpdir())).toThrow(/无法读取写作模式资产/)
   })
@@ -453,6 +471,11 @@ describe('corpus normalization', () => {
     expect(loadPatternCorpus(absent)[0]?.quality).toBe(0.8)
     const zero = await writeCorpus({ 'p1.yaml': `${MINIMAL}quality: 0\n` })
     expect(loadPatternCorpus(zero)[0]?.quality).toBe(0.8)
+  })
+
+  it('keeps a quality at the unit upper bound', async () => {
+    const dir = await writeCorpus({ 'p1.yaml': `${MINIMAL}quality: 1\n` })
+    expect(loadPatternCorpus(dir)[0]?.quality).toBe(1)
   })
 
   it('rejects a quality outside the unit range', async () => {

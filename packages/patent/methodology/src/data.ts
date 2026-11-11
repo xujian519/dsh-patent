@@ -179,6 +179,12 @@ function collectSeparationViolations(separations: TrizSeparation[], violations: 
     }
     if (!Array.isArray(separation.signals) || separation.signals.length === 0) {
       violations.push(`separation "${separation.id}" has no signals`)
+    } else {
+      for (const [signalIndex, signal] of separation.signals.entries()) {
+        if (typeof signal !== 'string' || signal.length === 0) {
+          violations.push(`separation "${separation.id}" signal ${signalIndex + 1} is empty or not a string`)
+        }
+      }
     }
   }
 }

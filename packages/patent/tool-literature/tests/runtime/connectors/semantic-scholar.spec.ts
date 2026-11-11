@@ -42,6 +42,17 @@ describe('semantic scholar connector', () => {
     expect(hit.summary).toBe('The dominant sequence transduction models are based on complex recurrent networks.')
   })
 
+  it('forwards the clamped result limit', async () => {
+    let url = ''
+    const connector = makeConnector(async (input: RequestInfo | URL) => {
+      url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      return jsonResponse({ data: [] })
+    })
+
+    await connector.search('attention', { limit: 999 })
+    expect(url.includes('limit=50')).toBe(true)
+  })
+
   it('sends no x-api-key header on keyless tier', async () => {
     let headers: Record<string, string> | undefined
     const connector = makeConnector(async (_input, init) => {

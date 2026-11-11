@@ -126,6 +126,13 @@ describe('@deepseek-ai/dsh-writing-patterns plugin surface', () => {
       .not.toContain(WRITING_PATTERNS_SECTION_NAME)
   })
 
+  it('injects only the guidance prose when no category is requested', async () => {
+    const { ctx } = await install({ sectionCategories: [] })
+    const section = (await ctx.systemPrompt.assemble()).sections
+      .find(candidate => candidate.name === WRITING_PATTERNS_SECTION_NAME)
+    expect(section?.text).toBe(Pkg.WRITING_PATTERNS_PROMPT_TEXT)
+  })
+
   it('places the section at the configured order', async () => {
     const { ctx } = await install({ sectionCategories: [], sectionOrder: 700 })
     ctx.systemPrompt.section({ name: 'test:anchor', order: 900, text: 'anchor' })

@@ -682,3 +682,52 @@ D14 范围：`packages/patent/patent-workflow` 的执行器、manifest 目录、
 - **不重构执行器**：`runWorkflow` 的单文件 520 行与「串行/并行/回退/中断」四路径耦合是已知结构债，但拆分需要单独 PR 与等价性测试，不与本轮行为修复混做。
 - **不动 `manifests.ts` 的阶段文案与顺序**：本轮只固定门的位置与结构；文案属模型可见输出，改动需单独评审快照。
 - **不覆盖 graph 路径的检查点恢复**：`resumeCheckpointId` 的检查点语义在 patent-core 的 graph 适配器，D14 范围是 manifest 路径与 plantask 状态机；graph 恢复另列。
+
+## 44. D16 复核范围与方法
+
+D16 范围：`packages/patent/writing-patterns`（7 个源文件）、`packages/patent/methodology`（5 个源文件 + 3 个 JSON 资产）、`packages/patent/tool-literature`（18 个源文件），对应计划第 172 行的「语料选择、TRIZ 表、文献连接器」，交付物为语料/矩阵边界测试。
+
+方法：逐行过读三包源码与既有测试（writing-patterns 7 个 spec、methodology 6 个 spec、tool-literature 12 个 spec），先确认现有断言已覆盖的正常路径与拒绝路径，再用一次性探针复现疑点：(1) `fromInverted({ a: [1e7] })` 135 ms、`{ a: [1e8] }` 1,246 ms，耗时随最大位置线性增长；(2) 给 `validateTrizAssets` 注入 `signals: [123, null, {}]` 直接通过，而 triz 输出 schema 在首次对角查询时才报 `must match exactly one oneOf branch`；(3) `paper_search({ db: 'arxiv', query: '   ' })` 不报错，实际请求 `search_query=all%3A`。矩阵方向用已知经典单元交叉核对：`lookupMatrixCell(14, 1) = [1, 8, 40, 15]`，与转置 `(1, 14) = [28, 27, 18, 40]` 不同。
+
+结论：三包的语料加载、词法选择与资产结构校验整体完整，问题集中在「响应体边界」——外部源的超大数值、非文本信号、空白查询都能穿过现有校验。本次确认 4 项风险（P2 4）：R-83/R-84/R-85 本轮修复并带边界用例；R-86（PDF 下载无字节上限）只登记，修复需要流式读取与测试桩迁移。
+
+## 45. D16 问题清单
+
+| 风险 | 类别 | 证据 | 最小复现 / 实际结果 | 级别 | 状态 |
+|---|---|---|---|---|---|
+| R-83 | 响应边界 / 资源上限 | `tool-literature/src/runtime/shared/text.ts:117`；`openalex.ts:69` | `fromInverted({ a: [2 ** 32 - 2] })`：修复前按位置建密集数组，`filter` 需走访 4.29e9 个槽位；修复前 1e8 位置实测 1,246 ms | P2 | 已关闭 |
+| R-84 | 资产校验 | `methodology/src/data.ts:180-188`；`triz.ts:75,97` | `signals: [123]` 通过 `validateTrizAssets`，插件正常加载；首次对角查询被输出 schema 拒绝 | P2 | 已关闭 |
+| R-85 | 工具输入边界 | `tool-literature/src/tool/paper-search.ts:118-121` | `query: '   '` 修复前返回成功并请求 `all:`，模型据此读到「无结果」 | P2 | 已关闭 |
+| R-86 | 下载字节上限 | `tool-literature/src/tool/paper-download.ts:111-113` | 直接链与兜底链均先 `arrayBuffer()` 再校验 PDF 魔数；无 `Content-Length` 预检、无累计字节上限 | P2 | 已确认 |
+
+## 46. D16 语料/矩阵边界测试矩阵
+
+新增或扩展的用例全部使用固定字面量与临时目录，不依赖网络、时钟或宿主字体。
+
+| 包 | 用例 | 锁定内容 | 对应风险 |
+|---|---|---|---|
+| writing-patterns | 同一 `patterns` 列表内重复 id | 加载期拒绝，报文件与首个占用者 | 语料唯一性 |
+| writing-patterns | `quality: 1` | 上边界保留为 1，不被默认值覆盖 | 质量权重边界 |
+| writing-patterns | `limit` 为 0 / -1 / 1.5 | 0 与 -1 由执行层报「正整数」；1.5 在模型参数 schema 层拒绝 | 结果上限边界 |
+| writing-patterns | `limit` 大于类目规模 | 返回全部 11 条 `claim_drafting`，不补空位 | 结果上限边界 |
+| writing-patterns | `sectionCategories: []` | 段落文本恰为指引散文，无 `<pattern_index>` | 语料注入边界 |
+| methodology | 矩阵方向 | `lookupMatrixCell(14, 1)` 取 `matrix[0][13]`，与转置结果不同 | TRIZ 表方向 |
+| methodology | 参数 40 / 1.5 / NaN | 公共数据接口返回空数组，不抛错、不环绕 | TRIZ 表范围 |
+| methodology | `ENGINEERING_PARAMS` | 编号 1–39 顺序且标签非空，`paramLabel` 与表一致 | 参数表完整性 |
+| methodology | 分离原则 signals 元素 | 数字、null、对象、空串逐一报出序号；插件加载即拒绝 | R-84 |
+| tool-literature | `fromInverted` 远位置 | `2 ** 32 - 2` 立即返回单词，工作量只随条目数增长 | R-83 |
+| tool-literature | `fromInverted` 重复位置 / 非数组位置 | 重复位置保留后写值；非数组位置跳过而不抛错 | R-83 |
+| tool-literature | 空白查询三种形式 | 空串、空格、换行制表符均拒绝，源调用次数为 0 | R-85 |
+| tool-literature | 查询首尾空白 | 检索与结果回显都使用裁剪后的查询 | R-85 |
+| tool-literature | Semantic Scholar `limit: 999` | 请求参数钳制为 `limit=50` | 连接器上限 |
+
+门禁命令：`pnpm exec vitest run packages/patent/writing-patterns packages/patent/methodology packages/patent/tool-literature`；类型与静态检查按 §5.1。
+
+## 47. D16 范围校正与不做项
+
+- **不改语料内容**：writing-patterns 的 24 个模式资产、法条引用与检索词本轮零改动；`source-ref.spec.ts` 仍作为引用解析的负载校验。
+- **不改 TRIZ 数据**：`triz-matrix.json`、`triz-principles.json`、`triz-separations.json` 保持原样；只收紧对 signals 文本的加载期校验。已知的 `(19, 9)` 重复单元仍按「保留源值、读取去重」处理。
+- **不改连接器契约**：`Connector.search` 的签名、`limit` 由连接器自行钳制的分工不变；本轮只在工具层补输入校验，不替连接器重排结果。
+- **不修 R-86（下载字节上限）**：真正的上限需要在读取响应流时累计字节，并同步迁移 `paper-download.spec.ts` 的 `arrayBuffer()` 测试桩；上限值（协议不变量还是部署配置）也需要 owner 决策，留给独立 PR。
+- **不改词法排序**：`scorePattern` / `scoreMatch` 的权重、中文 bigram 与 id 兜底排序保持不变；这类改动会改模型可见选择结果，需要快照差异评审。
+- **不新增快照**：三包的有效输出本次未变（只改无效输入的失败路径），`snapshots/` 与系统提示录制无需刷新。

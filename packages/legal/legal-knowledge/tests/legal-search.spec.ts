@@ -66,6 +66,32 @@ describe('LegalRegulationSearchEngine', () => {
     expect(ids).toContain('reg-001')
   })
 
+  it('去掉查询里的 NUL，只剩 NUL 时没有命中', () => {
+    const engine = new LegalRegulationSearchEngine(SAMPLE_RECORDS)
+    expect(engine.search('违约责任\u0000').map(hit => hit.regulationId)).toContain('reg-001')
+    expect(engine.search('\u0000')).toEqual([])
+    expect(engine.findByName('民法典\u0000').map(row => row.regulationId)).toContain('reg-001')
+    expect(engine.findByName('\u0000')).toEqual([])
+  })
+
+  it('findByName 把小于 1 的上限夹成一条', () => {
+    const engine = new LegalRegulationSearchEngine(SAMPLE_RECORDS)
+    const named = engine.findByName('民法典')
+    expect(named.map(row => row.regulationId).sort()).toEqual(['reg-001', 'reg-004'])
+    expect(engine.findByName('民法典', 0)).toHaveLength(1)
+    expect(engine.findByName('民法典', -1)).toHaveLength(1)
+    expect(engine.findByName('民法典', Number.NaN)).toEqual(named)
+  })
+
+  it('小于 1 或非有限的上限夹成至少一条，而不是清空或丢掉末条', () => {
+    const engine = new LegalRegulationSearchEngine(SAMPLE_RECORDS)
+    const visible = engine.search('中华人民共和国')
+    expect(visible.map(hit => hit.regulationId).sort()).toEqual(['reg-001', 'reg-002', 'reg-004'])
+    expect(engine.search('中华人民共和国', { limit: 0 })).toHaveLength(1)
+    expect(engine.search('中华人民共和国', { limit: -1 })).toHaveLength(1)
+    expect(engine.search('中华人民共和国', { limit: Number.NaN })).toEqual(visible)
+  })
+
   it('已废止法规默认不返回', () => {
     const engine = new LegalRegulationSearchEngine(SAMPLE_RECORDS)
     const results = engine.search('合同法')

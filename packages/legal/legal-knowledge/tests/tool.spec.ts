@@ -166,6 +166,9 @@ describe('legal_knowledge_search tool', () => {
     const empty = await execute(ctx, { query: '   ' })
     expect(empty.isError).toBe(true)
     expect(empty.error?.message ?? '').toContain('query 不能为空')
+    const nulOnly = await execute(ctx, { query: '\u0000' })
+    expect(nulOnly.isError).toBe(true)
+    expect(nulOnly.error?.message ?? '').toContain('query 不能为空')
 
     const unknown = await execute(ctx, { query: '合同', scope: 'statute' })
     expect(unknown.isError).toBe(true)
@@ -197,7 +200,9 @@ describe('legal_knowledge_search tool', () => {
   })
 
   it('clamps limits below one up to one', async () => {
-    const output = await run(await host(), { query: '违约', limit: 0 })
+    const output = await run(await host(), { query: '违约\u0000', limit: 0 })
+    expect(output.query).toBe('违约')
+    expect(output.summary).not.toContain('\u0000')
     expect(output.count).toBe(1)
   })
 

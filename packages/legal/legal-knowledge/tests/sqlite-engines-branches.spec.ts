@@ -818,6 +818,7 @@ describe('memory-store and validity helpers', () => {
     expect(toVisibleMemoryHits(hits, { limit: 1 }, 10)).toEqual([
       { effectiveDate: '2021-01-01', id: 'a', relevanceScore: 2, via: 'memory', validity: 'in-force' },
     ])
+    expect(toVisibleMemoryHits(hits, {}, 1).map(hit => hit.id)).toEqual(['a'])
   })
 
   it('breaks at the validity limit and skips invisible rows', () => {

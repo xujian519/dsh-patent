@@ -155,8 +155,10 @@ describe('JudicialInterpretationSearch', () => {
 
     it('limit 限制返回数量', () => {
       const search = new JudicialInterpretationSearch({ guidingCases: SAMPLE_GUIDING_CASES })
-      const results = search.searchGuidingCases('案例', 1)
-      expect(results.length).toBeLessThanOrEqual(1)
+      expect(search.searchGuidingCases('案例')).toHaveLength(2)
+      expect(search.searchGuidingCases('案例', 1)).toHaveLength(1)
+      expect(search.searchGuidingCases('案例', 0)).toHaveLength(1)
+      expect(search.searchGuidingCases('案例', -1)).toHaveLength(1)
     })
   })
 

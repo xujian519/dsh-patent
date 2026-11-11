@@ -137,8 +137,10 @@ export class LegalKnowledge extends Service {
 
   /**
    * Case-law full-text search (SQLite FTS5 with LIKE fallback, or in-memory).
+   * NUL is removed before matching. An empty remainder returns no hits.
+   * An omitted or non-finite cap uses 5. Any other cap is an integer in `[1, 50]`.
    * @param query - the search text.
-   * @param options - result cap, docType/court/caseType filters.
+   * @param options - result cap, docType, court, and caseType filters.
    * @returns matching hits sorted by relevance.
    */
   caseLawSearch(query: string, options?: CaseLawSearchOptions): CaseLawHit[] {
@@ -147,6 +149,8 @@ export class LegalKnowledge extends Service {
 
   /**
    * Legal regulation full-text search (SQLite FTS5 with LIKE fallback, or in-memory).
+   * NUL is removed before matching. An empty remainder returns no hits.
+   * An omitted or non-finite cap uses 10. Any other cap is an integer of at least 1.
    * @param query - the search text.
    * @param options - result cap, level filter, and validity options.
    * @returns matching hits sorted by relevance.
@@ -157,6 +161,8 @@ export class LegalKnowledge extends Service {
 
   /**
    * Judicial interpretation full-text search (SQLite FTS5 with LIKE fallback, or in-memory).
+   * NUL is removed before matching. An empty remainder returns no hits.
+   * An omitted or non-finite cap uses 10. Any other cap is an integer of at least 1.
    * @param query - the search text.
    * @param options - result cap, type filter, and validity options.
    * @returns matching hits sorted by relevance.
@@ -170,6 +176,8 @@ export class LegalKnowledge extends Service {
 
   /**
    * Guiding case search (SQLite LIKE or in-memory keyword matching).
+   * NUL is removed before matching. An empty remainder returns no hits.
+   * An omitted or non-finite cap uses 10. Any other cap is an integer of at least 1.
    * @param query - the search text.
    * @param limit - result cap.
    * @returns matching guiding case hits sorted by relevance.

@@ -15,9 +15,10 @@
  */
 
 import { type DatabaseSync } from 'node:sqlite'
+import { resolveResultLimit } from '@deepseek-ai/dsh-patent-core'
 import { searchInMemory, filterRecords } from '../shared/memory-store.ts'
 import { columnText } from '../shared/row-text.ts'
-import { SqliteBackedEngine, type SqliteSearchShape } from '../shared/sqlite-search.ts'
+import { prepareSearchText, SqliteBackedEngine, type SqliteSearchShape } from '../shared/sqlite-search.ts'
 import type { CaseLawHit, CaseLawRecord, CaseLawSearchOptions } from '../types.ts'
 
 /** Maximum result limit for case-law search. */
@@ -132,13 +133,15 @@ export class CaseLawSearchEngine extends SqliteBackedEngine<CaseLawSearchOptions
 
   /**
    * Search case-law records by keyword.
+   * NUL is removed before matching. An empty remainder returns no hits.
+   * An omitted or non-finite cap uses 5. Any other cap is an integer in `[1, 50]`.
    * @param query - the search text.
-   * @param options - result cap, docType/court/caseType filters.
+   * @param options - result cap, docType, court, and caseType filters.
    * @returns matching hits sorted by relevance (descending).
    */
   override search(query: string, options: CaseLawSearchOptions = {}): CaseLawHit[] {
-    const limit = Math.min(Math.max(options.limit ?? 5, 1), MAX_LIMIT)
-    const trimmed = query.trim()
+    const limit = resolveResultLimit(options.limit, 5, MAX_LIMIT)
+    const trimmed = prepareSearchText(query)
     if (!trimmed) return []
 
     if (this.sqlite.connected) {

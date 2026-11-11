@@ -34,4 +34,5 @@ D19 让两个入口在清洗与夹取上对齐，但保留了依赖：把共享�
 - `law/` 包组现在承载两个领域中立库：法条引用（`dsh-law-core`）与知识库检索（`dsh-knowledge-core`）。
 - 单元测试随模块迁入 `packages/law/knowledge-core/tests/`。新包 `src/**` 的语句、分支与函数覆盖率均为 100%。
 - `resolveRealPath` 从专利域路径辅助变为共享规则；专利域的包含性校验 `resolveConfinedPath` 仍留在 `patent-core/src/paths.ts`，由它导入。
+- 新包进入 Python SDK 运行时闭包，发布的 `dsh` 可执行文件因此从中立包解析这套共享机制。
 - 未来的知识库域导入 `dsh-knowledge-core`，永不导入专利包。

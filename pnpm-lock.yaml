@@ -20598,6 +20598,9 @@ importers:
       '@deepseek-ai/dsh-jobs-local':
         specifier: workspace:*
         version: link:../../packages/jobs/jobs-local
+      '@deepseek-ai/dsh-knowledge-core':
+        specifier: workspace:*
+        version: link:../../packages/law/knowledge-core
       '@deepseek-ai/dsh-launch-environment':
         specifier: workspace:*
         version: link:../../packages/util/launch-environment

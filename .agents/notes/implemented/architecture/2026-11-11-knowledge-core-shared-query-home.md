@@ -34,4 +34,5 @@ D19 aligned the two entry points on the shared cleaning and capping rules but ke
 - The `law/` package group now carries two domain-neutral libraries: statute citations (`dsh-law-core`) and knowledge-database retrieval (`dsh-knowledge-core`).
 - The unit tests move with the modules into `packages/law/knowledge-core/tests/`. The new package's `src/**` is at 100% statement, branch, and function coverage.
 - `resolveRealPath` is now a shared rule rather than a patent-domain path helper; the patent-domain containment check `resolveConfinedPath` stays in `patent-core/src/paths.ts` and imports it.
+- The new package joins the Python SDK runtime closure, so the shipped `dsh` executable resolves the shared mechanics from the neutral package.
 - A future knowledge-database domain imports `dsh-knowledge-core` and never a patent package.

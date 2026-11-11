@@ -915,6 +915,7 @@ D18 的判定表共享与 D19 的入口对齐此前各占一张 PR，本轮只�
 | 新包覆盖率 | `vitest run packages/law/knowledge-core --coverage` | `src/**` 逐文件语句 / 分支 / 函数均 100% |
 | 受影响包回归 | `vitest run packages/law/knowledge-core packages/patent/patent-core packages/patent/patent-knowledge packages/legal/legal-knowledge packages/patent/patent-tools` | 240 个测试文件：236 通过、2 失败、2 跳过；4309 个用例：4278 通过、27 失败、4 跳过。27 个失败全是环境问题：`figure-freecad-real-render.spec.ts` 的 26 例因本机 FreeCAD 的 Qt 构建要求 neon 指令集而启动即 SIGABRT；`patent-knowledge/tests/bin.spec.ts` 的 1 例因 vitest 模块运行器不支持 `import.meta.resolve`，在基线分支上同样失败 |
 | 依赖方向 | `grep -rn '@deepseek-ai/dsh-patent-core' packages/legal packages/law` | 0 处 |
+| 运行时闭包 | `pnpm run verify-runtime-closure` | 7 个 agent preset 与 224 个工作区包构成闭合的运行时依赖图；新包已登记进 `python/sdk-runtime` |
 | 类型与静态检查 | `pnpm run typecheck`、`pnpm run lint` | 通过（5 passed / 0 failed；0 errors） |
 | 重复实现 | `pnpm run duplication` 与 `scripts/duplication-gate.ts` | 0 个仓库级克隆；94 个收紧域配对与 13 个跨域配对与基线一致 |
 | 文档门禁 | `pnpm run doc-sync` | 53 passed，0 failed |

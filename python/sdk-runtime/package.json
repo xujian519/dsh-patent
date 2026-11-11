@@ -62,6 +62,7 @@
     "@deepseek-ai/dsh-http-proxy": "workspace:*",
     "@deepseek-ai/dsh-jobs": "workspace:*",
     "@deepseek-ai/dsh-jobs-local": "workspace:*",
+    "@deepseek-ai/dsh-knowledge-core": "workspace:*",
     "@deepseek-ai/dsh-launch-environment": "workspace:*",
     "@deepseek-ai/dsh-legal-evidence": "workspace:*",
     "@deepseek-ai/dsh-legal-knowledge": "workspace:*",

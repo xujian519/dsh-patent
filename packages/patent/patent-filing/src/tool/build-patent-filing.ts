@@ -5,7 +5,7 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { validateSpecDraft } from '@deepseek-ai/dsh-patent-core'
+import { SPEC_DRAFT_SCHEMA, validateSpecDraft } from '@deepseek-ai/dsh-patent-core'
 import type { FilingBuildResult } from '../types.ts'
 import { buildFiling } from '../filing/engine.ts'
 import type { BuildEngineOptions } from '../filing/engine.ts'
@@ -14,7 +14,7 @@ import { SECTION_TALLY_SCHEMA } from './schemas.ts'
 
 const DESCRIPTION = [
   '把受控草案按本部署的申请文件模板体例成文为一件 CNIPA 专利申请文件（有附图时 5 节：说明书摘要 / 摘要附图 / 权利要求书 / 说明书 / 说明书附图；无附图发明省略摘要附图与说明书附图两节，为 3 节），并与成品一并给出体例实测与模板指纹。',
-  '草案走 draft 参数（required），与 render_patent_document 的 claims-spec 同一份结构（著录项 meta、不带项号的 claims、多段 abstract、figureFiles、摘要附图号 abstractFigure、五部分 sections 块；附图说明部分的列表项即附图条目，条数须等于 figureFiles 项数）；权项项号、附图说明的「图N为……」与表题「表 N · 名称」由本工具按与 HTML 通道相同的算法生成。旧的 content 参数已删除：传 content 会被参数校验以「missing required property draft」拒绝。',
+  '草案走 draft 参数（required），与 render_patent_document 的 claims-spec 同一份 SpecDraft。claims、abstract、figureFiles 和五个 sections 部分都是 JSON 数组，不要写成带 item 键的对象。权项不带项号。附图说明每幅附图一条列表条目，条数须等于 figureFiles 项数，条目只写图名与描述文字。权项项号、附图说明的「图N为……」与表题「表 N · 名称」由本工具按与 HTML 通道相同的算法生成。旧的 content 参数已删除：传 content 会被参数校验以「missing required property draft」拒绝。',
   '正文体例（字体、字号、行距、首行缩进、分节与页眉）由模板决定，调用方只提供内容，不要自己排格式。',
   '说明书是否写 `[NNNN]` 段落编号由 spec 的 numbering 声明决定：声明 paragraph 时按 spec 顺序写入，正文里已带编号的先剥后写、与段落顺序不一致会报错而不是静默覆盖；随包 spec 声明 none，说明书不写段落编号——没有法条要求它。',
   '附图按图序传入 draft.figureFiles，其中 draft.abstractFigure 指定的那张（缺省第 1 张）进「摘要附图」节，全部进「说明书附图」节且每图独占一页；`.svg` 源件先栅格化为位图再入文。无附图发明（指南第二部分第二章 2.3）传 figureFiles: []、drawingDescriptions: []，且不要给 abstractFigure。',
@@ -52,12 +52,8 @@ const RESULT_SCHEMA = {
   },
 } as const
 
-/** 受控草案参数的 schema；块级约束由 patent-core 的 validateSpecDraft 补足。 */
-const DRAFT_PARAM = {
-  type: 'object',
-  additionalProperties: true,
-  description: '受控草案（结构化 JSON，与 render_patent_document 的 claims-spec draft 同一份 SpecDraft 结构）：meta（caseNumber（案卷号，HTML 通道印在抬头编号行与页脚；docx 通道不印）、title/applicant/inventor/agent/date）、claims（不带项号，≥1 项）、abstract（≥1 段）、figureFiles（按图序；无附图发明可为空数组）、abstractFigure（摘要附图号，1..figureFiles 项数，缺省 1；无附图时不要给）、sections（技术领域/背景技术/发明内容/附图说明/具体实施方式五部分的 paragraph/list/table 块；无附图时 drawingDescriptions 为空数组；附图说明部分的列表项即附图条目，条数须等于 figureFiles 项数；表格仅允许出现在具体实施方式）',
-} as const
+/** 受控草案参数。JSON 类型在 SPEC_DRAFT_SCHEMA；体例由 validateSpecDraft 补足。 */
+const DRAFT_DESCRIPTION = '申请文件受控草案。结构以 schema 为准：claims、abstract、figureFiles 和五个 sections 部分都是 JSON 数组，不要写成带 item 键的对象。权项不带项号。附图说明只写图名与描述文字，不写「图N为」和句末标点。无附图时 figureFiles 与 drawingDescriptions 传空数组，且不要给 abstractFigure。表格只出现在 embodiment。'
 
 /**
  * 把成文结果渲染为模型可读文本。
@@ -91,7 +87,7 @@ export function createBuildPatentFilingTool(options: BuildPatentFilingToolOption
     name: 'build_patent_filing',
     description: DESCRIPTION,
     parameters: {
-      draft: { ...DRAFT_PARAM, required: true, description: `申请文件受控草案。${DRAFT_PARAM.description}` },
+      draft: { ...SPEC_DRAFT_SCHEMA, required: true, description: DRAFT_DESCRIPTION },
       outputName: {
         type: 'string',
         required: true,

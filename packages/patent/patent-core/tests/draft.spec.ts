@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   DraftValidationError,
+  SPEC_DRAFT_SCHEMA,
   SPEC_PART_HEADINGS,
+  SPEC_PART_ORDER,
   formatTableCaption,
   validateSpecDraft,
   validateTemplateDraft,
@@ -64,6 +66,16 @@ function expectSpecViolation(input: unknown, ...fragments: string[]): void {
     expect(message).toContain(fragment)
   }
 }
+
+describe('SPEC_DRAFT_SCHEMA', () => {
+  it('顶层键与说明书五部分键和校验器一致', () => {
+    expect(Object.keys(SPEC_DRAFT_SCHEMA.properties)).toEqual([
+      'meta', 'claims', 'abstract', 'figureFiles', 'abstractFigure', 'sections',
+    ])
+    expect(Object.keys(SPEC_DRAFT_SCHEMA.properties.sections.properties)).toEqual([...SPEC_PART_ORDER])
+    expect(SPEC_DRAFT_SCHEMA.additionalProperties).toBe(false)
+  })
+})
 
 describe('SPEC_PART_HEADINGS', () => {
   it('固定五部分的中文标题', () => {
@@ -161,6 +173,21 @@ describe('validateSpecDraft', () => {
 
   it('claims 为非数组时拒绝', () => {
     expectSpecViolation(withSpecDraft({ claims: '一种装置' }), 'claims 必须是数组')
+  })
+
+  it('claims 或 abstract 包在 item 里时指出要改成数组', () => {
+    expectSpecViolation(
+      withSpecDraft({ claims: { item: ['一种装置'] } }),
+      'claims 必须是数组',
+      '带 item 的对象',
+    )
+    expectSpecViolation(
+      withSpecDraft({ abstract: { item: '一段' } }),
+      'abstract 必须是数组',
+      '不要包在 item 里',
+    )
+    const sections = { ...validSpecDraft().sections, background: { item: [{ kind: 'paragraph', text: 'x' }] } }
+    expectSpecViolation(withSpecDraft({ sections }), 'sections.background 必须是数组', '带 item 的对象')
   })
 
   it.each(['1. 一种装置', '3、 一种装置', '12．一种装置'])('claims 自带项号 %s 时拒绝', (claim) => {

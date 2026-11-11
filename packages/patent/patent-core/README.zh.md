@@ -145,7 +145,7 @@ Stage params 可调整这些 handler。缺省键保留各原子默认值；畸�
 <a id="draft-model-controlled-drafts"></a>
 ## 受控草案模型
 
-`draft` 模块定义了受控草案契约，取代专利交付工具中由模型产出的 HTML：`SpecDraft` 用于 claims-spec 申请文件（著录项 `meta`（含抬头编号行与页脚印出的案卷号）、不带项号的 `claims`、多段 `abstract`、`figureFiles`、摘要附图号 `abstractFigure`（1 起，缺省 1），以及按 `SPEC_PART_HEADINGS` 五部分 keyed 的 `sections`（附图说明部分恰每幅附图一条列表项，条数等于 `figureFiles` 项数，且每项只写图名与描述文字，不含图号前缀与句末标点））；`TemplateDraft` 用于其余文书模板：`fields` 承载 `text` 文本槽（填入 `.fill` 值位）与 `choice` 选项槽（选中项的选项 id，多选组为 id 数组），`sections` 承载 `blocks` 正文块（paragraph/list，每段或每项一行）或 `rows` 数据行（等宽字符串数组，供表单数据行克隆）。块仅有 `paragraph`/`list`/`table` 三种；表题与权项编号由下游转换器生成，因此合法草案不会携带标题或任意表格标记。两通道共享的词汇——`SPEC_PART_ORDER` 与生成「图N为……；/。」附图说明的 `numberedFigureDescriptions`——也在这里持有，HTML 与 DOCX 转换器不可能分叉。`validateSpecDraft`/`validateTemplateDraft` 把无类型的工具 JSON 窄化为上述类型，并把全部违规聚合进一次抛出的 `DraftValidationError`，消息中对每个未知键列出可用项。支撑 `TemplateDraft` 校验的槽位注册表随 `dsh-patent-document` 分发。
+`draft` 模块定义了受控草案契约，取代专利交付工具中由模型产出的 HTML：`SpecDraft` 用于 claims-spec 申请文件（著录项 `meta`（含抬头编号行与页脚印出的案卷号）、不带项号的 `claims`、多段 `abstract`、`figureFiles`、摘要附图号 `abstractFigure`（1 起，缺省 1），以及按 `SPEC_PART_HEADINGS` 五部分 keyed 的 `sections`（附图说明部分恰每幅附图一条列表项，条数等于 `figureFiles` 项数，且每项只写图名与描述文字，不含图号前缀与句末标点））；`TemplateDraft` 用于其余文书模板：`fields` 承载 `text` 文本槽（填入 `.fill` 值位）与 `choice` 选项槽（选中项的选项 id，多选组为 id 数组），`sections` 承载 `blocks` 正文块（paragraph/list，每段或每项一行）或 `rows` 数据行（等宽字符串数组，供表单数据行克隆）。块仅有 `paragraph`/`list`/`table` 三种；表题与权项编号由下游转换器生成，因此合法草案不会携带标题或任意表格标记。两通道共享的词汇——`SPEC_PART_ORDER` 与生成「图N为……；/。」附图说明的 `numberedFigureDescriptions`——也在这里持有，HTML 与 DOCX 转换器不可能分叉。`validateSpecDraft`/`validateTemplateDraft` 把无类型的工具 JSON 窄化为上述类型，并把全部违规聚合进一次抛出的 `DraftValidationError`，消息中对每个未知键列出可用项。`SPEC_DRAFT_SCHEMA` 与 `TEMPLATE_DRAFT_SCHEMA` 是封闭的参数 schema；`claims`、`abstract`、`figureFiles` 和说明书各部分都是 JSON 数组。支撑 `TemplateDraft` 校验的槽位注册表随 `dsh-patent-document` 分发。
 
 <a id="model-experience"></a>
 ## Model Experience
@@ -172,7 +172,7 @@ Independent; the draft schema is submitted per call inside tool arguments and ne
 - **侵权的等同结论由调用方给出** — 手段/功能/效果的认定是输入，本模块只核对其与图表是否自洽；它既不判断是否构成等同，也不以未公开的赔偿上限替换调用方给出的比例。
 - **数值提取只识别封闭的单位表** — 拉丁/符号单位加一份列明的汉字单位表；用其他单位（或无单位）书写的数值只算弱发现、不能改变结论。表外单位仅在两侧写法完全相同时可比，同量纲换算也只覆盖表内单位（不做温标偏置换算），因此该核验偏向返回 `inconclusive`。
 - **LLM 对照依赖 `verdict` 字段** — 数值范围节点从 LLM JSON 读取 `verdict`；响应缺少该字段时对照结论保持 `n_a`，不做猜测。
-- **草案模型只校验结构、不渲染** — 槽位注册表、HTML 转换器与 docx 映射位于 `dsh-patent-document`/`dsh-patent-filing`；patent-core 只持有共享类型与校验器。
+- **草案模型只校验结构、不渲染** — 槽位注册表、HTML 转换器与 docx 映射位于 `dsh-patent-document`/`dsh-patent-filing`；patent-core 持有共享类型、两份参数 schema（`SPEC_DRAFT_SCHEMA` 与 `TEMPLATE_DRAFT_SCHEMA`）和校验器。
 - **不支持无附图申请** — `SpecDraft` 要求 `figureFiles` 必填，且附图说明部分须每幅附图一条列表项；无附图的申请不在当前草案契约范围内。
 
 ### 开发备注

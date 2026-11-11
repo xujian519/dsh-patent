@@ -11,6 +11,8 @@ import {
   renderVerifyResult,
 } from '@deepseek-ai/dsh-patent-filing'
 import type { FilingBuildResult, FilingVerifyResult } from '@deepseek-ai/dsh-patent-filing'
+import { validateJsonSchemaValue, type JsonSchemaNode } from '@deepseek-ai/dsh-tools'
+import { validateSpecDraft } from '@deepseek-ai/dsh-patent-core'
 import { argvOf, fakeSubprocess, stdoutHandle } from './helpers.ts'
 
 /** A build report as `build.py` prints it. */
@@ -207,9 +209,35 @@ describe('build_patent_filing tool', () => {
       timeoutMs: 1_000,
     })
     await expect(tool.execute({
-      draft: { claims: ['1. 自带项号的一种装置'] },
+      draft: { ...draftFixture('fig.png'), claims: ['1. 自带项号的一种装置'] },
       outputName: 'bad-draft',
     }, { signal: new AbortController().signal } as never)).rejects.toThrow(/claims\[0\] 自带项号/)
+  })
+
+  it('accepts a SpecDraft at the argument gate and rejects an item wrapper or an empty claim there or in the validator', () => {
+    const tool = createBuildPatentFilingTool({
+      subprocess: fakeSubprocess(() => stdoutHandle(BUILD_REPORT)).spawner,
+      pythonPath: '/usr/bin/python3',
+      specPath: defaultSpecPath(),
+      templatePath: defaultTemplatePath(),
+      defaultOutputDir: '.dsh/documents',
+      figureScale: 3,
+      timeoutMs: 1_000,
+    })
+    const schema = tool.parameters as JsonSchemaNode
+    const draft = draftFixture('fig.png')
+    expect(validateJsonSchemaValue(schema, { draft, outputName: 'out' })).toEqual([])
+    const wrapped = { ...draft, claims: { item: ['一种装置'] } }
+    expect(validateJsonSchemaValue(schema, { draft: wrapped, outputName: 'out' }, '').join('\n')).toContain('"draft.claims" must be an array')
+    const emptyClaim = { ...draft, claims: [''] }
+    expect(validateJsonSchemaValue(schema, { draft: emptyClaim, outputName: 'out' })).toEqual([])
+    expect(() => validateSpecDraft(emptyClaim)).toThrow('claims[0] 为空')
+    const drawingFree = {
+      ...draft,
+      figureFiles: [],
+      sections: { ...(draft.sections as object), drawingDescriptions: [] },
+    }
+    expect(validateJsonSchemaValue(schema, { draft: drawingFree, outputName: 'out' })).toEqual([])
   })
 
   it('renders the canonical result as pure model-facing prose', () => {

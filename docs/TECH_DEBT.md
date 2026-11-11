@@ -385,7 +385,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-core/src/atoms/handlers/builtin/evidence-check.ts` | 接受 | 842 | 单个 atom handler 的五阶段，最大函数 123 行，仅超阈值 5% |
 | `packages/patent/patent-tools/src/figure/dot-builder.ts` | 接受 | 839 | 单一 DOT 词汇表：五个 builder 各 <60 行，共享头部/标号/转义契约 |
 | `packages/patent/patent-core/src/ipc/ipc-classifier.ts` | 接受 | 807 | 数据表为主：`IPC_DOMAINS` 409 行 + 明细表 260 行，分类函数 <30 行 |
-| `packages/patent/patent-core/src/draft/validate.ts` | 接受 | 811 | 受控草案校验入口：按部分聚合违规；本轮附图说明列表项禁图号/句末标点把文件从 776 推到 811，最大新增函数 <40 行，拆分会把 SpecDraft 窄化与违规聚合拆散 |
+| `packages/patent/patent-core/src/draft/validate.ts` | 接受 | 823 | 受控草案校验入口：按部分聚合违规。附图说明列表项禁图号/句末标点把文件从 776 推到 811；非数组且带 item 键时的改写说明再推到 823。新增函数不足 20 行，拆分会把 SpecDraft 窄化与违规聚合拆散 |
 | `packages/patent/patent-tools/src/figure/freecad-structure-script.ts` | 接受 | 1233 | 脚本构建器与内嵌 Python 模板同处一模块：模板必须与 payload 字段逐名对应，拆成两个文件会让「改 payload 忘改模板」失去同文件可读性；而模板本身已超过 800 行，按文件切开只会多出一个同样超限的文件。2026-11-08 的推进依次为：每零件投影占位 762 → 826；自动锚点 826 → 884；标号候选布局 884 → 985；分解图（`principal_axis` 幂迭代主轴、`exploded_part_offsets` 逐段累加排布、`build_exploded_view_svg`）985 → 1217；评审修正（装配轴改用协方差列作幂迭代种子、包围盒元组统一为一个顺序）1217 → 1233。新增函数各 <50 行。下一次增长前须把模板按「标号布局」「分解图」切成分段常量分文件拼接，否则单文件继续膨胀 |
 | `packages/patent/patent-tools/src/tool/generate-patent-figure.ts` | 拆分 | 800 | 多面板路径与交付链已分拆；入口保留 schema 与单图编排 |
 | `packages/patent/patent-core/src/evidence/engine.ts` | 拆分 | 800 | 三性、类型特定、使用公开、证明标准已分模块；类只保留编排 |

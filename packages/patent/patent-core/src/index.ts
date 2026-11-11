@@ -52,8 +52,10 @@ export {
 // (no HTML); converters generate headings and tables from the structure.
 export {
   DraftValidationError,
+  SPEC_DRAFT_SCHEMA,
   SPEC_PART_HEADINGS,
   SPEC_PART_ORDER,
+  TEMPLATE_DRAFT_SCHEMA,
   formatTableCaption,
   numberedFigureDescriptions,
   validateSpecDraft,

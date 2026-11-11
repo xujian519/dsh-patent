@@ -4,11 +4,12 @@
  * 此前 worker-contract 的 `data/cases/{caseId}/outputs` 与 patentWorkflowTool 的
  * `data/cases/{caseId}/workflow-runs` 两处各自维护字面量，靠注释"对齐"——
  * 本模块统一推导，避免路径约定漂移。两个文书工具也共用这里的真实路径归一化
- * 与工作目录包含性校验，避免两处各写一份判定。
+ * 与工作目录包含性校验，避免两处各写一份判定。真实路径归一化本身是知识库
+ * 安装与各领域共用的内核，落在 `@deepseek-ai/dsh-knowledge-core`。
  */
 
-import { existsSync, realpathSync } from 'node:fs'
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { isAbsolute, relative, resolve, sep } from 'node:path'
+import { resolveRealPath } from '@deepseek-ai/dsh-knowledge-core'
 
 /** 案例根目录（相对 cwd）。 */
 export const CASE_ROOT_REL = 'data/cases'
@@ -35,27 +36,6 @@ export function caseOutputsDir(caseId: string): string {
  */
 export function caseWorkflowRunsDir(caseId: string): string {
   return `${CASE_ROOT_REL}/${caseId}/${CASE_WORKFLOW_RUNS_REL}`
-}
-
-/**
- * 解析文件路径的真实形态，允许文件本身尚不存在。
- *
- * 对不存在的输出文件无法直接 realpath，因此对第一个存在的祖先目录做
- * realpath，再拼回缺失的路径段；这样 `./`、`../` 与 symlink 别名会归一到
- * 同一个值，同文件守卫与包含性校验才能可靠比较。
- * @param path - 待归一化的路径。
- * @returns 归一化后的绝对路径。
- */
-export function resolveRealPath(path: string): string {
-  const abs = resolve(path)
-  let dir = dirname(abs)
-  let suffix = basename(abs)
-  // 每轮上移一层，必然终止于存在的根目录。
-  while (!existsSync(dir)) {
-    suffix = join(basename(dir), suffix)
-    dir = dirname(dir)
-  }
-  return join(realpathSync(dir), suffix)
 }
 
 /**

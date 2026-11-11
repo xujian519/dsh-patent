@@ -15,7 +15,7 @@
  */
 
 import { type DatabaseSync } from 'node:sqlite'
-import { resolveResultLimit } from '@deepseek-ai/dsh-patent-core'
+import { resolveResultLimit } from '@deepseek-ai/dsh-knowledge-core'
 import { searchInMemory, filterRecords } from '../shared/memory-store.ts'
 import { columnText } from '../shared/row-text.ts'
 import { prepareSearchText, SqliteBackedEngine, type SqliteSearchShape } from '../shared/sqlite-search.ts'

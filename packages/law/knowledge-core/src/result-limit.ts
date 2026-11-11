@@ -1,12 +1,12 @@
 /**
- * Result-cap normalization shared by the patent knowledge tools and engines.
+ * Result-cap normalization shared by the knowledge tools and engines of both domains.
  *
  * SQLite binds a cap as `LIMIT ?`: a fractional or non-finite operand is a
  * datatype error, and a negative operand means "no limit", so a caller-supplied
  * cap must be truncated and clamped before it reaches a query. The tool layer
  * and the knowledge engines call one implementation so a cap means the same
  * thing on both sides.
- * @module @deepseek-ai/dsh-patent-core/knowledge/result-limit
+ * @module @deepseek-ai/dsh-knowledge-core/result-limit
  */
 
 /**

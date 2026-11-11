@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveResultLimit, sanitizeSearchText } from '@deepseek-ai/dsh-patent-core'
+import { resolveResultLimit } from '@deepseek-ai/dsh-knowledge-core'
 
 describe('resolveResultLimit', () => {
   it('uses the fallback when the caller omitted the cap or sent a non-finite value', () => {
@@ -16,13 +16,5 @@ describe('resolveResultLimit', () => {
     expect(resolveResultLimit(0, 5, 10)).toBe(1)
     expect(resolveResultLimit(-3, 5, 10)).toBe(1)
     expect(resolveResultLimit(3, 5, 10)).toBe(3)
-  })
-})
-
-describe('sanitizeSearchText', () => {
-  it('drops NUL because SQLite terminates a query text there', () => {
-    expect(sanitizeSearchText('创造性\u0000判断')).toBe('创造性判断')
-    expect(sanitizeSearchText('\u0000\u0000')).toBe('')
-    expect(sanitizeSearchText('创造性')).toBe('创造性')
   })
 })

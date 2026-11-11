@@ -3,14 +3,14 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/law/README.md
 /:
-  en: 72e5f4a6866f6311
-  zh: 0079965e46b3ee72
-/law-domain-neutral-statute-citation-family:
-  en: 124d6be209573a3e
-  zh: 692a4641b6bf5b04
-/law-domain-neutral-statute-citation-family/summary:
-  en: 3f7e579f5c3f5fc4
-  zh: c73450f55b67c9b1
-/law-domain-neutral-statute-citation-family/packages:
-  en: 27e0ea73a101aec0
-  zh: 2a4ee1ebd5e760f5
+  en: a834ba668ddfd0b5
+  zh: 37caa3ba829c0bcb
+/law-domain-neutral-shared-mechanics-family:
+  en: 44efcf71e38c949d
+  zh: 34e69a2f2bd3bfe0
+/law-domain-neutral-shared-mechanics-family/summary:
+  en: 9d09bdd8c7203e5e
+  zh: f0f60942a8ee6f7e
+/law-domain-neutral-shared-mechanics-family/packages:
+  en: d82adec30f7e3095
+  zh: 9472b6bb75f45572

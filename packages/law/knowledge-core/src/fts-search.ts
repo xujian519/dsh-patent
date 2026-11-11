@@ -3,7 +3,7 @@
  *
  * 阶梯：整句 phrase FTS → 切词 OR FTS → LIKE 兜底；FTS 抛异常或短查询
  * /FTS 不可用时整体走 LIKE（粘性降级由调用方 degrade 回调完成）。
- * @module @deepseek-ai/dsh-patent-core/knowledge/fts-search
+ * @module @deepseek-ai/dsh-knowledge-core/fts-search
  */
 
 import { errorMessage } from '@deepseek-ai/dsh-value'

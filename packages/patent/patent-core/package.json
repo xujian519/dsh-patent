@@ -27,6 +27,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@deepseek-ai/dsh-knowledge-core": "workspace:*",
     "@deepseek-ai/dsh-law-core": "workspace:*",
     "@deepseek-ai/dsh-methodology": "workspace:*",
     "@deepseek-ai/dsh-value": "workspace:*",

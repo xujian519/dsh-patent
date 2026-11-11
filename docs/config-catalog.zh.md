@@ -6507,6 +6507,7 @@ export type PatternCategory = (typeof PATTERN_CATEGORIES)[number]
 | `@deepseek-ai/dsh-hook-protocol` | — | [`packages/experimental/hook-protocol/src/index.ts`](../packages/experimental/hook-protocol/src/index.ts) |
 | `@deepseek-ai/dsh-http-proxy` | — | [`packages/util/http-proxy/src/index.ts`](../packages/util/http-proxy/src/index.ts) |
 | `@deepseek-ai/dsh-im` | — | [`packages/bundle/im/src/index.ts`](../packages/bundle/im/src/index.ts) |
+| `@deepseek-ai/dsh-knowledge-core` | — | [`packages/law/knowledge-core/src/index.ts`](../packages/law/knowledge-core/src/index.ts) |
 | `@deepseek-ai/dsh-launch-environment` | — | [`packages/util/launch-environment/src/index.ts`](../packages/util/launch-environment/src/index.ts) |
 | `@deepseek-ai/dsh-law-core` | — | [`packages/law/law-core/src/index.ts`](../packages/law/law-core/src/index.ts) |
 | `@deepseek-ai/dsh-lazy-require` | — | [`packages/util/lazy-require/src/index.ts`](../packages/util/lazy-require/src/index.ts) |

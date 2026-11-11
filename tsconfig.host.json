@@ -642,6 +642,7 @@
     { "path": "./packages/legal/legal-knowledge" },
     { "path": "./packages/legal/legal-law" },
     { "path": "./packages/law/law-core" },
+    { "path": "./packages/law/knowledge-core" },
     { "path": "./packages/self-evolve/self-evolve" },
     { "path": "./packages/self-evolve/self-evolve-basic" },
     { "path": "./packages/self-evolve/self-evolve-benchmark" },

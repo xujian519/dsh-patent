@@ -707,18 +707,12 @@ function validateTemplateSections(
   schema: TemplateDraftSchema | undefined,
   violations: string[],
 ): TemplateDraft['sections'] | undefined {
-  if (value === undefined) {
-    violations.push('sections 缺失')
-    return undefined
-  }
-  if (!Array.isArray(value)) {
-    violations.push('sections 必须是数组')
-    return undefined
-  }
+  const array = readArray(value, 'sections', violations)
+  if (array === undefined) return undefined
   const sections: TemplateDraft['sections'] = []
   const seen = new Set<string>()
   let valid = true
-  value.forEach((item, index) => {
+  array.forEach((item, index) => {
     const record = asJsonRecord(item)
     if (record === undefined) {
       violations.push(`sections[${index}] 必须是对象`)

@@ -152,7 +152,7 @@ Independent; the draft schema is submitted per call inside tool arguments and ne
 - **Infringement equivalence is caller-supplied** — means/function/effect findings are inputs the module cross-checks for consistency; it neither decides equivalence nor substitutes an unpublished damage ceiling for the caller's ratio.
 - **LLM cross-check needs the `verdict` field** — the numeric-range node reads `verdict` from the LLM JSON; a response without it leaves the agreement at `n_a` instead of guessing.
 - **Draft model validates structure, not rendering** — the slot registry, HTML converter, and docx mapping live in `dsh-patent-document`/`dsh-patent-filing`; patent-core owns the shared types, the two parameter schemas (`SPEC_DRAFT_SCHEMA` and `TEMPLATE_DRAFT_SCHEMA`), and the validators.
-- **Figureless applications are unsupported** — `figureFiles` is required on `SpecDraft` and the drawing-description part must list one item per figure; an application without drawings is out of scope for the current draft contract.
+- **Figureless applications use empty arrays** — `figureFiles` may be `[]`; the drawing-description part then stays empty and `abstractFigure` must be omitted, while downstream output omits the drawing-description part and the abstract-figure line.
 
 ### Dev Note
 

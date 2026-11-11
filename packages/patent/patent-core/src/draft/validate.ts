@@ -371,8 +371,9 @@ export function validateSpecDraft(input: unknown): SpecDraft {
     })
   }
   const abstractParagraphs = readStringList(root.abstract, 'abstract', violations, '至少一段')
-  // 无附图发明的 figureFiles 可以是空数组；逐项仍要求非空。
-  const figureFiles = readStringList(root.figureFiles, 'figureFiles', violations, undefined)
+  // 无附图发明的 figureFiles 可以是空数组；逐项仍要求非空。空数组策略必须在这里
+  // 显式跳过：readStringList 的 emptyMessage 传 undefined 会触发默认值「至少一项」。
+  const figureFiles = readStringListWith('figureFiles', violations, readArray(root.figureFiles, 'figureFiles', violations))
   const abstractFigure = root.abstractFigure === undefined
     ? undefined
     : requireNonEmptyString(root.abstractFigure, 'abstractFigure', violations)

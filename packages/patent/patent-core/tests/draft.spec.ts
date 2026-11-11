@@ -436,6 +436,7 @@ describe('validateTemplateDraft', () => {
   it('sections 缺失、为非数组或条目缺 id/blocks 时拒绝', () => {
     expectTemplateViolation({ sections: undefined }, 'sections 缺失')
     expectTemplateViolation({ sections: {} }, 'sections 必须是数组')
+    expectTemplateViolation({ sections: { item: [] } }, 'sections 必须是数组', '不要包在 item 里')
     expectTemplateViolation({ sections: ['x'] }, 'sections[0] 必须是对象')
     expectTemplateViolation({ sections: [{ blocks: [{ kind: 'paragraph', text: 'x' }] }] }, 'sections[0].id 缺失')
     expectTemplateViolation({ sections: [{ id: 'analysis' }] }, 'sections[0].blocks 缺失')

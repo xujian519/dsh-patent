@@ -9,6 +9,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseDocument } from 'yaml'
 import { describe, expect, it } from 'vitest'
 import { LegalEvidenceEngine } from '../src/engine.ts'
 import { parseLegalRuleSet } from '../src/rule-set.ts'
@@ -20,6 +21,11 @@ const yamlText = readFileSync(ASSET_PATH, 'utf8')
 const parsed = parseLegalRuleSet(yamlText, ASSET_PATH)
 const rules = parsed.ruleSet?.rules ?? []
 const ruleById = new Map(rules.map(rule => [rule.id, rule]))
+const raw = parseDocument(yamlText).toJS() as {
+  weights?: Record<string, unknown>
+  rules?: Array<Record<string, unknown>>
+}
+const rawRules = raw.rules ?? []
 
 /** 为每条规则构造一个能触发其失败发现的输入。 */
 function failingInputFor(rule: LegalEvidenceRule): LegalEvidenceInput {
@@ -91,7 +97,19 @@ describe('legal-evidence rule table', () => {
   })
 
   it('matches shipped weights to the engine defaults', () => {
+    // Assert the asset's raw declaration first: parseLegalRuleSet falls back to
+    // DEFAULT_LEGAL_WEIGHTS field by field, so the parsed value alone would hide
+    // a missing or malformed weights block.
+    expect(raw.weights).toEqual({ relevance: 0.35, legality: 0.3, authenticity: 0.35 })
     expect(parsed.ruleSet?.weights).toEqual({ relevance: 0.35, legality: 0.3, authenticity: 0.35 })
+  })
+
+  it('declares only known severities without parser fallback', () => {
+    const allowed = ['critical', 'warning', 'info']
+    for (const rule of rawRules) {
+      expect(allowed, `rule ${String(rule.id)} severity`).toContain(rule.severity)
+      expect(ruleById.get(String(rule.id))?.severity, `rule ${String(rule.id)} parsed severity`).toBe(rule.severity)
+    }
   })
 
   it.each(rules)('produces a failure finding for rule $id with declared severity', (rule) => {

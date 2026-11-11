@@ -217,10 +217,20 @@ describe('validateSpecDraft', () => {
     expectSpecViolation(withSpecDraft({ abstractFigure: '二' }), 'abstractFigure')
   })
 
-  it('figureFiles 缺失、为空数组或含空项时拒绝', () => {
+  it('figureFiles 缺失或含空项时拒绝', () => {
     expectSpecViolation(withSpecDraft({ figureFiles: undefined }), 'figureFiles 缺失')
-    expectSpecViolation(withSpecDraft({ figureFiles: [] }), 'figureFiles 至少一项')
     expectSpecViolation(withSpecDraft({ figureFiles: [' '] }), 'figureFiles[0] 为空')
+  })
+
+  it('无附图发明接受空的 figureFiles 与 drawingDescriptions', () => {
+    const draft = withSpecDraft({
+      figureFiles: [],
+      sections: { ...validSpecDraft().sections, drawingDescriptions: [] },
+    })
+    const parsed = validateSpecDraft(draft)
+    expect(parsed.figureFiles).toEqual([])
+    expect(parsed.sections.drawingDescriptions).toEqual([])
+    expectSpecViolation(withSpecDraft({ figureFiles: [], abstractFigure: '1' }), 'abstractFigure')
   })
 
   it('附图说明条目数与 figureFiles 项数不一致时拒绝', () => {

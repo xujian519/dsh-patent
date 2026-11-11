@@ -151,6 +151,19 @@ describe('renderSpecDraftSections', () => {
     expect(map.abstract).toContain('图 <span class="mono">2</span>')
   })
 
+  it('无附图草案省略附图说明标题与摘要附图行', () => {
+    const map = renderSpecDraftSections(specDraft({
+      figureFiles: [],
+      sections: { ...specDraft().sections, drawingDescriptions: [] },
+    }))
+    expect(map['specification-body']).not.toContain('<h3>附图说明</h3>')
+    expect(map['specification-body']).toContain('<h3>具体实施方式</h3>')
+    expect(map.abstract).toBe(
+      '<div class="abstract-box"><h3>摘要</h3>'
+      + '<p>本发明公开一种智能保温杯，主要用途是恒温饮水。</p></div>',
+    )
+  })
+
   it('无序列表渲染 ul，ordered 显式 false 也渲染 ul', () => {
     const map = renderSpecDraftSections(specDraft({
       sections: {

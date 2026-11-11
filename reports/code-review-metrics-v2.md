@@ -160,6 +160,9 @@ v2：`legal-law` 依赖 `@deepseek-ai/dsh-law-core`；`legal-knowledge` 依赖 `
 | 定向测试（knowledge-core / patent-core / patent-knowledge / legal-knowledge / patent-tools） | 通过 | 240 个测试文件中 236 通过、2 失败、2 跳过；4309 个用例中 4278 通过、27 失败、4 跳过。27 个失败全为环境问题（26 例 FreeCAD 的 Qt 构建要求 neon 指令集，1 例 vitest 模块运行器不支持 `import.meta.resolve`），详见执行卡 §62 |
 | 新包覆盖率 | 通过 | `packages/law/knowledge-core/src/**` 逐文件语句、分支、函数均 100% |
 | `pnpm run duplication` | 通过 | 0 克隆；94 + 13 对与基线一致 |
+| `pnpm run hygiene` | 通过 | 24 passed，0 failed |
+| `pnpm run verify-runtime-closure` | 通过 | 7 个 agent preset 与 224 个工作区包构成闭合的运行时依赖图 |
+| `pnpm run build:artifacts` / `pnpm run build:check` | 通过 | 8/8 通过；2/2 通过 |
 | `pnpm run doc-sync` | 通过 | 53 passed，0 failed |
 | `pnpm run test:coverage` | 未运行 | 周度门禁，CI 负责全量覆盖 |
 

@@ -65,20 +65,28 @@ export interface SpecDraftSectionMap {
  */
 export function renderSpecDraftSections(draft: SpecDraft): SpecDraftSectionMap {
   const captionCounter: TableCaptionCounter = { count: 0 }
-  const specification = SPEC_PART_ORDER.map((partId) => {
-    const heading = `<h3>${SPEC_PART_HEADINGS[partId]}</h3>`
-    const blocks = partId === 'drawingDescriptions'
-      ? renderDrawingDescriptions(draft.sections[partId], captionCounter)
-      : renderBlocks(draft.sections[partId], captionCounter)
-    return heading + blocks
-  }).join('')
+  const specification = SPEC_PART_ORDER
+    // 无附图发明不写空的「附图说明」标题（指南第二部分第二章 2.3）。
+    .filter(partId => partId !== 'drawingDescriptions' || draft.figureFiles.length > 0)
+    .map((partId) => {
+      const heading = `<h3>${SPEC_PART_HEADINGS[partId]}</h3>`
+      const blocks = partId === 'drawingDescriptions'
+        ? renderDrawingDescriptions(draft.sections[partId], captionCounter)
+        : renderBlocks(draft.sections[partId], captionCounter)
+      return heading + blocks
+    })
+    .join('')
   const claims = draft.claims
     .map((claim, index) => `<div class="claim-item"><span class="claim-num">${index + 1}.</span>${escapeHtmlText(claim)}</div>`)
     .join('')
-  const abstractFigure = escapeHtmlText(draft.abstractFigure ?? '1')
+  // 无附图时没有可指代的摘要附图，整行省略而不是退回「图 1」。
+  const abstractFigure = draft.figureFiles.length === 0 ? undefined : escapeHtmlText(draft.abstractFigure ?? '1')
   const abstract = '<div class="abstract-box"><h3>摘要</h3>'
     + draft.abstract.map(paragraph => `<p>${escapeHtmlText(paragraph)}</p>`).join('')
-    + `<p><strong>摘要附图：</strong>图 <span class="mono">${abstractFigure}</span></p></div>`
+    + (abstractFigure === undefined
+      ? ''
+      : `<p><strong>摘要附图：</strong>图 <span class="mono">${abstractFigure}</span></p>`)
+    + '</div>'
   return {
     'meta-case': escapeHtmlText(draft.meta.caseNumber),
     'meta-title': escapeHtmlText(draft.meta.title),

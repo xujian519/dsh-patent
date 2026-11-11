@@ -731,3 +731,62 @@ D16 范围：`packages/patent/writing-patterns`（7 个源文件）、`packages/
 - **不修 R-86（下载字节上限）**：真正的上限需要在读取响应流时累计字节，并同步迁移 `paper-download.spec.ts` 的 `arrayBuffer()` 测试桩；上限值（协议不变量还是部署配置）也需要 owner 决策，留给独立 PR。
 - **不改词法排序**：`scorePattern` / `scoreMatch` 的权重、中文 bigram 与 id 兜底排序保持不变；这类改动会改模型可见选择结果，需要快照差异评审。
 - **不新增快照**：三包的有效输出本次未变（只改无效输入的失败路径），`snapshots/` 与系统提示录制无需刷新。
+
+## 48. D17 复核范围与方法
+
+D17 范围：`packages/patent/patent-document`（23 个源文件）、`packages/patent/patent-filing`（10 个源文件 + 1,187 行 Python 引擎 + spec/模板资产）、`packages/document/docx-kit`（8 个源文件），以及 `patent-core` 的草案契约与 `doc-template`、`document-deliver` 两个 DOCX 消费方。对应计划第 173 行的「DOCX 管线比对，共享或明确保留各自实现的决策」。
+
+方法：按「输入 → 投影 → 序列化 → 校验」四段画出三条管线，再核对两条专利通道共享的草案函数。三个探针固化事实：(1) `renderDocx` 的产物只含 `[Content_Types].xml`、`_rels/.rels`、`word/document.xml`，没有 styles / numbering / media 部件；(2) `patent-filing` 的 `package.json` 不含 `docx-kit`，DOCX 由 `assets/engine/build.py`（python-docx）从 `.docx` 模板写出；(3) `patent-document` 的 `RenderFormat` 只有 `html` / `pdf` / `both`，源码没有 DOCX 写入路径，注释中的「下游 HTML→docx 转制」指第三方转换。
+
+结论：计划 §6 P1-3「统一 patent-document / patent-filing / docx-kit 的 DOCX 底层写出行」的前提不成立——`patent-document` 根本不写 DOCX；三份实现服务三类交付物，应保留并写清共享边界。本次确认 1 项风险（P2 1，R-87：验收读取无归档预算），不影响决策。
+
+## 49. DOCX 管线能力对比矩阵
+
+| 能力 | patent-document | patent-filing | docx-kit |
+|---|---|---|---|
+| 产物 | HTML + 可选 PDF（headless Chrome） | 单个 CNIPA 五节 `.docx` | Markdown → 三部件 DOCX；或 DOCX → 文本 |
+| 输入 | 13 个 HTML 模板 + 受控草案（SpecDraft / 表单 / 通用） | 受控草案 → `FilingContent` + spec JSON + `.docx` 模板 | Markdown 子集 / DOCX 字节 + 读取预算 |
+| 样式真相源 | `tokens.css` + `theme.json` 品牌注入 | `.docx` 模板反解（`styles.xml` 字体 + 段落 `sz`/`spacing`/`ind`） | 固定内联 WordprocessingML（标题字号、粗体、Consolas） |
+| 分节 / 页眉 / 页脚 | HTML 模板骨架 | 模板 `sectPr` 与 header 引用；`build.py` 增删节 | 不支持：只写空 `<w:sectPr/>`，无 header/footer 部件 |
+| 图片 | 不嵌图，附图另附 | 位图嵌入；`.svg` 经 Chrome 栅格化；每图一页、摘要附图恰一张 | 不支持（无 media 部件） |
+| 段落编号 | `data-paragraph-numbering` → 字面文本，先剥后写、幂等 | spec 的 numbering 策略；`build.py` 写 `[NNNN]`，`verify.py` 验连续性 | 不支持 |
+| 校验 | 渲染后 HTML 合规扫描；`verify_deliverable` 比对字节与 mtime | `verify.py` 逐项断言分节、页眉、字号、行距、缩进、颜色、权项、编号、图与内部痕迹 | `readZip` 条目/字节预算 + 文本投影 problems |
+| 运行时 | Node + Chrome（PDF 可降级） | Node + Python + python-docx（SVG 另需 Chrome） | Node 标准库 |
+| 信任边界 | 模型草案与模板 | 模板（部署配置）+ 待验收 DOCX（模型给出） | 不可信 DOCX（`document-deliver`） |
+| 消费方 | patent preset | patent preset | `doc-template`（写）、`document-deliver`（读） |
+
+两条专利通道已经共享的部分：
+
+| 共享项 | 归属 | 两通道用法 |
+|---|---|---|
+| 五部分顺序与标题 | `patent-core/src/draft/types.ts:56,68` | `specDraft.ts` 生成 `<h3>`；`fromDraft.ts` 生成 `h3` 节点 |
+| 表题文本 | `patent-core/src/draft/tableCaption.ts:17` | `blocks.ts:33` 与 `fromDraft.ts:32` 各自计数、调用同一函数 |
+| 附图说明编号 | `patent-core/src/draft/figureDescriptions.ts:27` | `specDraft.ts:22` 与 `fromDraft.ts:56` 同源 |
+| 输出目录与文件名安全 | `patent-core` 的 `caseOutputsDir` / `resolveConfinedPath` / `assertSafeId` | `renderPatentDocument.ts:83-91` 与 `engine.ts:127-140` |
+| 草案校验 | `patent-core` 的 `validateSpecDraft` | 两个工具入口共用 |
+
+## 50. D17 决策：保留三份实现，共享草案层
+
+**决策：不抽共享 OOXML 写入器。** 共享边界定在「受控草案 + `patent-core` 的格式助手 + 输出路径约束」，序列化层按交付物保留三份实现：
+
+- `patent-document` 继续走 HTML 模板 → HTML/PDF，不新增 DOCX 出口。它需要的是品牌 CSS、HTML 槽位、渲染后合规扫描与 Chrome 打印，这些与 WordprocessingML 无关。
+- `patent-filing` 继续用 `.docx` 模板 + Python 引擎。模板是体例唯一真相源，`style.py` 从模板 OOXML 反解字体、字号、行距、缩进、节数；`build.py` 直接操作模板的分节、页眉与编号。改用 JS 写入器会重做这些能力，收益不可见。
+- `docx-kit` 继续服务文档工作线：Markdown → 最小 DOCX，以及带预算的 DOCX → 文本。它是 `doc-template` 的写渲染器与 `document-deliver` 的读投影器，不进入 patent preset。
+
+**证伪计划 P1-3 的根据**：`docx-kit` 的写入器只产出三个部件（探针见 §48），没有 styles、numbering、media、header/footer 与节属性；`patent-document` 没有 DOCX 写入代码；`patent-filing` 的写入器是 python-docx。三者不存在可抽出的「同一条底层写出行」。
+
+**未来共享的条件**：出现第二个与 `patent-filing` 保真度相同的消费者（模板反解 + 分节/页眉 + 编号 + 图片）时，抽的是「模板 DOCX 引擎」服务缝，而不是把 `docx-kit` 泛化成第二套模板引擎；抽取前必须具备两通道行为等价性测试。
+
+## 51. D17 问题清单与不做项
+
+| 风险 | 类别 | 证据 | 最小复现 / 实际结果 | 级别 | 状态 |
+|---|---|---|---|---|---|
+| R-87 | 读取边界 / 资源上限 | `patent-filing/assets/engine/verify.py:118`；`src/filing/engine.ts:451` | `verify_patent_filing({ docx })` 对任意 `.docx` 直接 `Document(path)`；JS 与 Python 两侧都没有条目数、解压字节或文件大小预算，只有 120 s 超时与 4 MB 标准输出上限 | P2 | 已确认 |
+
+不做项：
+
+- **不把 `docx-kit` 扩成模板引擎**：补齐 styles、sections、headers、media 等于重建 `patent-filing` 的 Python 引擎，且会改变文档工作线的最小实现承诺。
+- **不把 `patent-filing` 迁到 JS**：python-docx 与模板反解是当前体例保证的基础；迁移没有用户可观察收益，风险高于收益。
+- **不合并两个 DOCX 校验器**：`verify.py` 断言的是申请文件体例（节、页眉、字体、图），`docx-kit` 的读取器投影的是通用文本；职责与信任边界不同。
+- **不在 D17 修 R-87**：预算值需要与 `verify_deliverable` 的 64 MiB、`docx-kit` 的 `ZipReadLimits` 对齐，且 Python 侧要在 `python-docx` 打开前用标准库检查；另立 PR 并带负向用例。
+- **不新增跨通道 golden**：两通道共享的是草案与格式字符串，不共享序列化；D18 的等价性测试服务于 `patent-law` ↔ `legal-law`，不适用于这里。

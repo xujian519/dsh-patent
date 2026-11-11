@@ -19,10 +19,10 @@
 - **域**：legal + patent
 - **证据**：`legal-law` 与 `patent-law` 的 `reference.ts`、`verify.ts`、`tool/law-verify.ts`、`baseline.ts`、`asset-location.ts`、`index.ts`、`types.ts` 同构；`reference.ts` 差异约 146 增 / 144 删，`verify.ts` 约 339 增 / 59 删，`law-verify.ts` 约 111 增 / 114 删。
 - **风险**：同一法条、同一引用集合在两个领域可能得到不同判定；修复只落在一侧时另一侧继续漂移。
-- **动作**：D18 建立行为等价性矩阵（同索引、同引用、逐条判定对比），把差异归类为「数据差异」或「逻辑差异」；逻辑部分抽共享核心，领域包只保留数据源与工具名。
-- **验证**：两侧判定逐条一致；差异项有来源与决策记录；既有测试零改动通过。
+- **动作**：D18 用 `tests/fixtures/citation-samples.ts` 锁住两侧判定与理由（缺索引走 `missingIndexReason`），并把判定表、处置查找、判定计数收进 `law-core`。引用语法、索引、工具名和表后说明留在各域。审查指南、`A22.3`、沿革与动态法律名归为语法/数据，不抽。
+- **验证**：两侧 `citation-conformance.spec.ts` 对同一样例断言判定与理由；`CONFORMANCE_POLICIES` 固定默认策略差异；`pnpm exec tsx scripts/duplication-gate.ts` 通过，既有跨域克隆对仍在基线内。
 - **负责人**：C + A
-- **状态**：待验证
+- **状态**：已关闭
 
 ### R-02 证据评分引擎与规则表重复（P0）
 
@@ -530,8 +530,8 @@
 - **证据**：`entries.ts:21,33-45` 的 `paragraphs` 是可选字段；`article-decision.ts:174-178` 在 `entry.paragraphs === undefined` 时直接返回 null（跳过窄化）；`patent-law/assets/law/cn-patent-law.yaml` 中 13 条已转录条目（第 13、32、33、34、37、38、39、40、43、45、62、67、77 条）没有 `paragraphs`。
 - **最小复现**：`decideArticleCitation({ article: 33, paragraph: 99 }, baseline, entry)` → `valid`，理由为「与《专利法》第 33 条一致（来源：…官方全文）」；同一索引第 22 条第 9 款 → `mismatch`（载明共 5 款，不含第 9 款）。
 - **风险**：款号窄化门对约三分之一的已转录法条静默失效；不存在的款号被判 `valid` 并附来源，读者会当成已核对。
-- **动作**：先对照官方文本补录这 13 条的款数（数据动作）；或让判定在 `paragraphs` 缺失时返回 `unverified`（跨 patent-core / patent-law / legal-law 的语义决策，`patent-law/tests/verify.spec.ts:156` 现固定了“跳过”行为）。本条只登记，留 D18/D19 决策。
-- **验证**：补录后第 33 条第 99 款应报 `mismatch`；未补录时若改判定，应报 `unverified` 而非 `valid`。
+- **动作**：D18 决定不改判定。`legal-law` 的 7,910 个 YAML、339,217 条都没有 `paragraphs`，默认策略会拦截 `unverified`，把缺列表改成 `unverified` 会拦截每一条点了款号的法律引用。专利侧这 13 条的款数补录需要官方文本，另立数据 PR，不在审查轮猜测款数。一致性样例「named paragraph while the entry lists no paragraphs」把两侧都锁在 `valid`。
+- **验证**：补录后第 33 条第 99 款应报 `mismatch`；在补录之前保持 `valid`。`citation-conformance.spec.ts` 覆盖缺列表这一行。
 - **负责人**：A
 - **状态**：已确认
 
@@ -585,10 +585,10 @@
 - **证据**：`patent-core/src/knowledge/citation-extract.ts:34-53` 的 `readStatuteArticleCandidate` 只用 `parseCnNumber` 校验条号；`patent-core/src/knowledge/citation-text.ts:72-82` 的 `narrowed` 对不可解析的款/项直接省略字段。
 - **最小复现**：`parseLawReference('专利法第22条第十十款')` 返回第 22 条且无款号，`verifyCitation` 判 `valid`，`scanUnrecognizedCitations` 为空（识别到的 `raw` 覆盖了该片段）。`专利法第22条第3款第十十项` 与 `专利法第22条第3款第（十十）项` 同样降级为款级/条级引用。
 - **风险**：款号或项号写错时引用仍显示已核验，读者以为该款被核对过；与 README“malformed numeral is rejected, not guessed”的承诺不符。
-- **动作**：共享解析器应在款/项数字不可解析时拒绝整条引用，让片段进入 `unrecognized`。该函数同时服务 legal-law，属两域共享语法面；D9 只登记，随 R-01 的解析器收敛在 D18 一起改。
-- **验证**：新增失败用例：`parseLawReference` 返回 null，`scanUnrecognizedCitations` 列出片段；当前实现不满足。
+- **动作**：D18 在 `law-core` 的 `narrowed` 中拒绝非正整数的款/项，`readStatuteArticleCandidate` 与专利紧凑形式因此丢掉整条引用。两侧未识别模式补上括号项。
+- **验证**：`citation-text.spec.ts`、`citation-extract.spec.ts`、两侧 `reference.spec.ts`：`专利法第22条第十十款`、`第十十项`、`第（十十）项` 与 `民法典` 同形输入返回 null，`unrecognized` 非空。
 - **负责人**：A
-- **状态**：已确认
+- **状态**：已关闭
 
 ### R-56 不要求备案的减缴仍提示未备案（P3）
 
@@ -953,13 +953,14 @@
 5. **D14 修复队列**：R-78（门串行）、R-79（放行名单校验）、R-81（空计划前置拒绝）已随 D14 修复并带用例；R-77（审批门后恢复非续接）与 R-80（plantask 状态只在内存）是恢复语义缺口，先固定现状，真实续接与持久化各自单独立项。
 6. **D16 修复队列**：R-83（倒排索引改按条目收集）、R-84（signals 加载期校验）、R-85（空白查询前置拒绝）已随 D16 修复并带边界用例；R-86（下载字节上限）只登记，流式读取与上限值决策另立 PR。
 7. **D17 决策**：不抽共享 OOXML 写入器；`patent-document` 的 HTML/PDF、`patent-filing` 的模板 DOCX、`docx-kit` 的最小 DOCX 读写各自保留，共享边界是受控草案与 `patent-core` 格式助手（执行卡 §50）。R-87（验收 DOCX 读取无归档预算）照常单独立项。
-8. **每项关闭条件**：有可执行验证证据、受影响文档与快照同步、PR 单一意图。
+8. **D18 决策**：法条判定与判定表共享；引用语法、索引和工具名留在各域（执行卡 §54）。R-55 已关闭。R-50 保持缺列表时 `valid`，13 条《专利法》款数另立数据 PR。
+9. **每项关闭条件**：有可执行验证证据、受影响文档与快照同步、PR 单一意图。
 
 ## 4. 与日程的映射
 
 | 风险 | 计划日 |
 |---|---|
-| R-01 | D18–D20 |
+| R-01 | D18 关闭（判定与判定表共享；语法留在各域） |
 | R-02 | D21–D23 |
 | R-03 | D10 |
 | R-04 / R-13 | D4–D6 |
@@ -980,10 +981,10 @@
 | R-43 | D6 |
 | R-44 / R-45 / R-46 | D7 |
 | R-47 / R-48 / R-49 | D8 |
-| R-50 | D18–D19 |
+| R-50 | D18 决定不改判定；款数补录另立数据 PR |
 | R-51 / R-52 / R-56 / R-57 | D9 |
 | R-53 / R-54 | D9 |
-| R-55 | D9 登记，D18 随 R-01 修复 |
+| R-55 | D18 修复（畸形款/项拒绝整条引用） |
 | R-58 / R-59 | D11 登记，随错误码修复 PR |
 | R-60 / R-61 | D11 登记，独立 PR（输出契约） |
 | R-62 / R-63 / R-64 / R-65 / R-66 | D11 登记，随工具层修复 PR |

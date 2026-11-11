@@ -223,7 +223,7 @@ function referenceIdentity(reference: LegalLawReference): string {
  * A fragment that looks like a citation but was not resolved.
  */
 const UNRECOGNIZED_PATTERN = new RegExp(
-  `第\\s*${NUMBER}\\s*[条款项]`,
+  `第\\s*${NUMBER}\\s*[条款项]|第\\s*[（(]\\s*${NUMBER}\\s*[）)]\\s*项`,
   'g',
 )
 

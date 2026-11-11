@@ -147,6 +147,15 @@ describe('extractLegalLawReferences', () => {
     expect(extractLegalLawReferences('民法典第十十条')).toEqual([])
   })
 
+  it('rejects a citation whose paragraph or item numeral cannot be read', () => {
+    for (const text of ['民法典第143条第十十款', '民法典第143条第2款第十十项', '民法典第143条第2款第（十十）项']) {
+      expect(parseLegalLawReference(text), text).toBeNull()
+      expect(extractLegalLawReferences(text), text).toEqual([])
+      expect(scanUnrecognizedLegalCitations(text, []), text).not.toEqual([])
+    }
+    expect(scanUnrecognizedLegalCitations('民法典第143条第十十款', [])).toEqual(['第143条', '第十十款'])
+  })
+
   it('extracts multiple references from text', () => {
     const text = '根据民法典第143条和第577条，以及劳动合同法第10条的规定'
     const refs = extractLegalLawReferences(text)

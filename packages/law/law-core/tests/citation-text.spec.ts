@@ -70,8 +70,12 @@ describe('narrowed', () => {
     expect(narrowed(undefined, '二')).toEqual({ item: 2 })
   })
 
-  it('无法解析的数字被丢弃而不是抛错', () => {
-    expect(narrowed('abc', undefined)).toEqual({})
+  it('无法解析或不是正整数的款、项拒绝整条窄化', () => {
+    expect(narrowed('abc', undefined)).toBeNull()
+    expect(narrowed('十十', undefined)).toBeNull()
+    expect(narrowed('0', undefined)).toBeNull()
+    expect(narrowed('三', '十十')).toBeNull()
+    expect(narrowed(undefined, '0')).toBeNull()
   })
 })
 

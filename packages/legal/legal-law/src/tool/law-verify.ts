@@ -15,6 +15,7 @@ import {
   citationReportLines,
   citationVerifyReport,
   citationVerifyToolOptions,
+  countCitationDecisions,
 } from '@deepseek-ai/dsh-law-core'
 import { extractLegalLawReferences, formatLegalLawReference, parseLegalLawReference, scanUnrecognizedLegalCitations } from '../reference.ts'
 import { renderLegalCitationRows, resolveLegalCitationPolicy, verifyLegalCitation } from '../verify.ts'
@@ -213,16 +214,7 @@ function toFinding(finding: LegalCitationFinding, policies: LegalCitationPolicyS
 
 /** Count the findings by decision. */
 function countDecisions(findings: LegalLawVerifyFinding[]): Record<LegalCitationDecision, number> {
-  const counts: Record<LegalCitationDecision, number> = {
-    'valid': 0,
-    'mismatch': 0,
-    'unmatched': 0,
-    'out-of-range': 0,
-    'not-indexed': 0,
-    'unverified': 0,
-  }
-  for (const finding of findings) counts[finding.decision] += 1
-  return counts
+  return countCitationDecisions(findings)
 }
 
 /** Render one finding as the canonical reference the table shows. */

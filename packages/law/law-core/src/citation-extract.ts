@@ -29,7 +29,7 @@ export type StatuteArticleGroups = {
  * @param match - the pattern match, which supplies the span and the raw text.
  * @param groups - the match groups the statute pattern captures.
  * @param law - the statute the citation names.
- * @returns the candidate, or null when the numeral parser rejects the article number.
+ * @returns the candidate, or null when the numeral parser rejects the article, paragraph, or item number.
  */
 export function readStatuteArticleCandidate<TLaw extends string>(
   match: RegExpExecArray,
@@ -37,8 +37,11 @@ export function readStatuteArticleCandidate<TLaw extends string>(
   law: TLaw,
 ): ArticleCandidate<TLaw> | null {
   const article = parseCnNumber(groups.article)
-  // A number the pattern allows but the numeral parser rejects, e.g. 第十十条.
+  // A number the pattern allows but the numeral parser rejects, e.g. 第十十条
+  // or 第十十款. A rejected 款 or 项 rejects the whole citation.
   if (article === null || article < 1) return null
+  const fields = narrowed(groups.paragraph, groups.itemParen ?? groups.item)
+  if (fields === null) return null
   return {
     start: match.index,
     end: match.index + match[0].length,
@@ -46,7 +49,7 @@ export function readStatuteArticleCandidate<TLaw extends string>(
       kind: 'law-article',
       law,
       article,
-      ...narrowed(groups.paragraph, groups.itemParen ?? groups.item),
+      ...fields,
       raw: stripBookMarks(match[0]),
     },
   }

@@ -30,7 +30,7 @@ A legal-domain citation of 《民法典》第 143 条 and a patent-domain citati
 <a id="citation-text"></a>
 ## Citation text
 
-`normalizeCitationText`, `stripBookMarks`, `trimPunctuation`, `compactCitation`, and `narrowed` normalize a cited string before parsing; `parseCnNumber` reads a Chinese numeral (`一百一十二` → `112`, accepting `〇` and `千`, returning null for a malformed numeral) and `formatCnNumber`/`formatCitationNumber`/`formatArticleCitation` render the canonical forms a finding prints; `articleReferenceIdentity` is the dedupe key one cited article carries per law.
+`normalizeCitationText`, `stripBookMarks`, `trimPunctuation`, `compactCitation`, and `narrowed` normalize a cited string before parsing; `parseCnNumber` reads a Chinese numeral (`一百一十二` → `112`, accepting `〇` and `千`, returning null for a malformed numeral) and `formatCnNumber`/`formatCitationNumber`/`formatArticleCitation` render the canonical forms a finding prints; `articleReferenceIdentity` is the dedupe key one cited article carries per law. `narrowed` returns null when a named 款 or 项 is not a positive integer, so the caller rejects the citation instead of dropping the field.
 
 <a id="reference-extraction"></a>
 ## Reference extraction
@@ -50,7 +50,7 @@ A legal-domain citation of 《民法典》第 143 条 and a patent-domain citati
 <a id="tool-scaffolding"></a>
 ## Tool scaffolding
 
-`citationVerifyToolOptions`, `citationVerifyParameters`, `citationVerifyExecute`, `citationVerifyOutputSchema`, `citationVerifyRender`, `citationVerifyReport`, `citationReportLines`, `citationFindingSchema`, `citationInputProblem`, `CITATION_FINDING_DECISION_PROPERTIES`, and `CITATION_REPORT_PROPERTIES` build the framework-shaped pieces of a citation-verify tool as plain values; the domain packages register the tool under their own name and description and own every model-facing string.
+`citationVerifyToolOptions`, `citationVerifyParameters`, `citationVerifyExecute`, `citationVerifyOutputSchema`, `citationVerifyRender`, `citationVerifyReport`, `citationReportLines`, `citationFindingSchema`, `citationInputProblem`, `CITATION_FINDING_DECISION_PROPERTIES`, and `CITATION_REPORT_PROPERTIES` build the framework-shaped pieces of a citation-verify tool as plain values. `renderCitationDecisionRows`, `resolveCitationDecisionPolicy`, `countCitationDecisions`, and `missingIndexReason` are the decision table, treatment lookup, decision counts, and missing-index reason both tools share. Each domain package registers the tool under its own name and description and owns the notes that follow the table.
 
 <a id="consumers"></a>
 ## Consumers
@@ -61,7 +61,8 @@ A legal-domain citation of 《民法典》第 143 条 and a patent-domain citati
 
 - **No statute data ships here.** Baselines, article entries, and law names are domain data owned by each domain's index packages; this package only computes over the entries a caller hands it.
 - **The overlap signals are lexical.** A proposition reworded around a synonym neither the topics nor the transcribed text lists reaches no signal and is reported `unmatched` by design, so a deployment that needs semantic matching must add it in its own verify path rather than here.
-- **Domain scaffolding stays mirrored.** The legal-law and patent-law verify/baseline/reference files remain per-domain structures by design; only the decision rule they call is shared, and the conformance samples in `tests/fixtures/citation-samples.ts` guard that boundary.
+- **Paragraph narrowing needs a recorded paragraph list.** `decideArticleCitation` skips the 款 check when an entry omits `paragraphs`. A caller that must reject an unknown 款 supplies the list; a missing list is not reported as `unverified`.
+- **Grammars stay per domain.** The legal-law and patent-law reference files keep their own citation grammars, indexes, tool names, and the notes after the decision table. The article decision, the decision table, and the conformance samples in `tests/fixtures/citation-samples.ts` are shared; `CONFORMANCE_POLICIES` records the two default policy sets, which differ on `not-indexed` and `unverified`.
 
 ### Dev Note
 

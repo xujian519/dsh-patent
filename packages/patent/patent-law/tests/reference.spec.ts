@@ -248,6 +248,22 @@ describe('extractLawReferences', () => {
     expect(extractLawReferences('依据专利法第十二三条')).toHaveLength(0)
   })
 
+  it('rejects a citation whose paragraph or item numeral cannot be read', () => {
+    for (const text of [
+      '专利法第22条第十十款',
+      '专利法第22条第3款第十十项',
+      '专利法第22条第3款第（十十）项',
+      'A22.0',
+    ]) {
+      expect(parseLawReference(text), text).toBeNull()
+      expect(extractLawReferences(text), text).toEqual([])
+      expect(scanUnrecognizedCitations(text, []), text).not.toEqual([])
+    }
+    expect(scanUnrecognizedCitations('专利法第22条第十十款', [])).toEqual(['第22条', '第十十款'])
+    // NFKC folds the full-width parentheses before the fragment is reported.
+    expect(scanUnrecognizedCitations('专利法第22条第3款第（十十）项', [])).toEqual(['第22条', '第3款', '第(十十)项'])
+  })
+
   it('keeps a guideline reference that names only a part', () => {
     expect(extractLawReferences('审查指南第三部分')[0]).toMatchObject({ path: '第三部分' })
   })

@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-rc.1/malformed-citation-numerals/guide.md
+/:
+  en: 02283d7578930050
+  zh: f817bfde94e94554
+/malformed-paragraph-and-item-numerals-are-rejected:
+  en: d8d24c8eeccba6b6
+  zh: c293272c5d3d4d79
+/malformed-paragraph-and-item-numerals-are-rejected/change:
+  en: e89d4c092aaeeb0e
+  zh: da23c53e9ee4304f
+/malformed-paragraph-and-item-numerals-are-rejected/migration:
+  en: d99cabfce2edb7c6
+  zh: 46a44161a305d849

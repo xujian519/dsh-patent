@@ -171,12 +171,15 @@ export function extractLawReferences(text: string): LawReference[] {
 
   for (const match of normalized.matchAll(COMPACT_PATTERN)) {
     const groups = match.groups as CompactGroups
+    const fields = narrowed(groups.paragraph, undefined)
+    // A22.0 names a paragraph the numeral reader rejects; do not keep the article alone.
+    if (fields === null) continue
     addCandidate(candidates, match, {
       kind: 'law-article',
       law: '专利法',
       // The pattern captures one to three digits, so the parse is always safe.
       article: Number.parseInt(groups.article, 10),
-      ...narrowed(groups.paragraph, undefined),
+      ...fields,
       raw: match[0],
     })
   }
@@ -207,6 +210,7 @@ function referenceIdentity(reference: LawReference): string {
  */
 const UNRECOGNIZED_PATTERN = new RegExp(
   `第\\s*${NUMBER}\\s*[条款项]`
+  + `|第\\s*[（(]\\s*${NUMBER}\\s*[）)]\\s*项`
   + '|(?<![0-9A-Za-z])A[0-9]{1,3}(?:\\.[0-9]{1,2})?(?![0-9A-Za-z\\u4e00-\\u9fff])',
   'g',
 )

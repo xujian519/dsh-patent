@@ -242,6 +242,25 @@ describe('SQLite FTS5 search', () => {
       expect(results.length).toBeGreaterThan(0)
       expect(results[0]!.via).toBe('memory')
     })
+
+    it('非有限上限回退到案例默认值', () => {
+      const engine = new CaseLawSearchEngine([
+        {
+          caseId: 'case-001',
+          docType: 'judgment',
+          caseName: '合同纠纷案',
+          court: '北京法院',
+          decisionDate: '2023-06-15',
+          caseNumber: '(2023)001号',
+          caseType: '民事',
+          fullText: '合同违约',
+          summary: '违约',
+        },
+      ])
+      expect(engine.search('合同', { limit: Number.NaN })).toHaveLength(1)
+      expect(engine.search('合同\u0000').map(hit => hit.caseId)).toEqual(['case-001'])
+      expect(engine.search('\u0000')).toEqual([])
+    })
   })
 
   describe('LegalRegulationSearchEngine', () => {
@@ -253,6 +272,21 @@ describe('SQLite FTS5 search', () => {
         const results = engine.search('违约责任')
         expect(results.length).toBeGreaterThan(0)
         expect(results.some(r => r.regulationId === 'reg-001')).toBe(true)
+      } finally {
+        engine.close()
+      }
+    })
+
+    it('负上限夹成 1 条，查询中的 NUL 不把 FTS 打成降级', () => {
+      const dbPath = join(tempDir, 'legal-limit.db')
+      createLegalRegulationsDb(dbPath)
+      const engine = new LegalRegulationSearchEngine({ dbPath })
+      try {
+        expect(engine.search('中华人民共和国', { limit: -1 })).toHaveLength(1)
+        expect(engine.ftsAvailable).toBe(true)
+        expect(engine.search('违约责任\u0000').some(hit => hit.regulationId === 'reg-001')).toBe(true)
+        expect(engine.ftsAvailable).toBe(true)
+        expect(engine.search('\u0000')).toEqual([])
       } finally {
         engine.close()
       }
@@ -299,6 +333,9 @@ describe('SQLite FTS5 search', () => {
         const results = engine.searchGuidingCases('居间')
         expect(results.length).toBeGreaterThan(0)
         expect(results[0]!.caseId).toBe('gc-001')
+        expect(engine.searchGuidingCases('居间\u0000').map(hit => hit.caseId)).toEqual(['gc-001'])
+        expect(engine.searchGuidingCases('\u0000')).toEqual([])
+        expect(engine.searchGuidingCases('居间', -1)).toHaveLength(1)
       } finally {
         engine.close()
       }

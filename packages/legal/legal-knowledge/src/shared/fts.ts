@@ -4,4 +4,4 @@
  * @module @deepseek-ai/dsh-legal-knowledge/shared/fts
  */
 
-export { escapeFtsPhrase, FTS_MIN_RUNES, joinFtsOrTerms, sqliteHasFts5 } from '@deepseek-ai/dsh-patent-core'
+export { escapeFtsPhrase, FTS_MIN_RUNES, joinFtsOrTerms, sanitizeSearchText, sqliteHasFts5 } from '@deepseek-ai/dsh-patent-core'

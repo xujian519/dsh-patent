@@ -9,10 +9,22 @@
  */
 
 import { type DatabaseSync } from 'node:sqlite'
-import { createFtsLadder, type FtsSearchOps } from '@deepseek-ai/dsh-patent-core'
+import { createFtsLadder, resolveResultLimit, type FtsSearchOps } from '@deepseek-ai/dsh-patent-core'
 import { errorMessage } from '@deepseek-ai/dsh-value'
-import { escapeFtsPhrase, joinFtsOrTerms, sqliteHasFts5 } from './fts.ts'
+import { escapeFtsPhrase, joinFtsOrTerms, sanitizeSearchText, sqliteHasFts5 } from './fts.ts'
 import { runFtsSearch } from './fts-search.ts'
+
+/** 没有更紧家族上限的引擎所用的最大结果条数。 */
+const OPEN_RESULT_MAX = Number.MAX_SAFE_INTEGER
+
+/**
+ * 去掉 NUL 再 trim。SQLite 在 NUL 处截断绑定文本，这个字符必须在 FTS 或 LIKE 之前离开查询。
+ * @param value - 调用方给出的检索文本。
+ * @returns 用于匹配的文本；没有可检索内容时为空串。
+ */
+export function prepareSearchText(value: string): string {
+  return sanitizeSearchText(value).trim()
+}
 
 /** 选择一个后端的构造选项。 */
 type SqliteSearchBackendOptions = {
@@ -322,16 +334,18 @@ export abstract class SqliteBackedEngine<
 
   /**
    * 按关键词检索；有数据库连接时走 SQLite，否则回退内存记录。
-   * @param query - 检索文本。
-   * @param options - 引擎的检索选项。
+   * @param query - 检索文本。NUL 先去掉，去掉后为空则没有命中。
+   * @param options - 引擎的检索选项。`limit` 缺省或非有限时用 10，其余取整后夹在 `[1, 最大安全整数]`。
    * @returns 命中列表。
    */
   search(query: string, options: TOptions): THit[] {
-    const limit = options.limit ?? 10
-    const trimmed = query.trim()
+    const limit = resolveResultLimit(options.limit, 10, OPEN_RESULT_MAX)
+    const trimmed = prepareSearchText(query)
     if (!trimmed) return []
-    if (this.sqlite.connected) return this.sqlite.search(trimmed, options, limit)
-    return this.searchInMemory(trimmed, options, limit)
+    // 效力过滤读的是 options.limit，这里必须已经是取整后的上限。
+    const capped = { ...options, limit }
+    if (this.sqlite.connected) return this.sqlite.search(trimmed, capped, limit)
+    return this.searchInMemory(trimmed, capped, limit)
   }
 
   /** 内存后端检索；只在没有数据库连接时调用。 */

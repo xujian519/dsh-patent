@@ -273,7 +273,7 @@ D8 范围：`patent-knowledge`（法规/判例 FTS 引擎、KG 关键词检索�
 | R-47 | `search('专利审查', { limit: 2.5 })`；`search(kw, { limit: Number.NaN })`；`limit: -1` | 前两者抛 SQLite `datatype mismatch`；NaN 还使 `ftsAvailable` 变 false（粘性降级）；`-1` 绑定为 `LIMIT -1` | 已修：上限归一到 patent-core 的 `resolveResultLimit`，工具层与三个检索入口共用；四个 spec 补小数/0/负数/NaN 用例 |
 | R-48 | `search('创造性\u0000判断')`；`KgStore.searchByKeyword('创造性\u0000判断')`；`searchByKeyword('\u0000')` | 法规/判例引擎 FTS5 抛 `unterminated string` 后永久降级；KG 把原始错误抛给调用方；NUL-only 在 LIKE 下返回 1 条 | 已修：`sanitizeSearchText` 进入 patent-core 的 FTS 工具并经 shim 再导出；检索入口去 NUL，三处补 NUL 用例 |
 | R-49 | 资产 `topics: [" 新颖性 "]` + `text: null`，命题「该方案具备新颖性」 | `topicOverlap` 按原文比较，判 `unmatched` | 已修：`readEntryTopics` 返回 trim 后的关键词；双语 README 同步 |
-| R-50 | `decideArticleCitation({ article: 33, paragraph: 99 }, cnPatentLaw, entry33)` | 第 33 条已转录、无 `paragraphs`，判定 `valid` 并附官方来源；对照第 22 条第 9 款正确报 `mismatch` | 未修：跨域判定语义与资产补录，留 D18–D19 |
+| R-50 | `decideArticleCitation({ article: 33, paragraph: 99 }, cnPatentLaw, entry33)` | 第 33 条已转录、无 `paragraphs`，判定 `valid` 并附官方来源；对照第 22 条第 9 款正确报 `mismatch` | 未修：缺 `paragraphs` 时仍判 `valid`。D19 不改这个判定，见 §55 |
 
 结论：FTS 检索入口不再把调用方的错误输入当成 FTS 故障；索引读取的转录记录、重复条号与 YAML 结构边界有测试固定。R-50 是数据完整性 + 判定语义问题，D8 只登记，不在本日改判定。
 
@@ -301,14 +301,14 @@ D8 范围：`patent-knowledge`（法规/判例 FTS 引擎、KG 关键词检索�
 | ID | 位置 | 候选动作 | 优先级 | 预期收益 | 等价性验证 |
 |---|---|---|---|---|---|
 | C-07 | `knowledge-law-search.ts:422-427` | `searchLike` 在 `!options.level` 早返回后仍有 `if (options.level)` 复查（带 `v8 ignore`），删除复查与忽略注释，直接把 level 视为已定义 | P3 | 去掉一段不可达分支与一处覆盖率逃逸 | `typecheck`；等级过滤与降级用例不变 |
-| C-08 | `patent-core/src/knowledge/fts.ts:37,50` | NUL 清洗已共享到 patent-core，但 `legal-knowledge` 的引擎入口还没有调用；把它并进 `escapeFtsPhrase` 或两条 legal 引擎入口，与 R-10/D19 的共享 FTS 核心一起做 | P2 | 两域共享一处查询清洗，不再依赖各引擎入口自觉 | `fts.spec` 与 `legal-knowledge` 的 `sqlite-search.spec` 同时通过；NUL 用例在 legal 侧同样成立 |
+| C-08 | `patent-core/src/knowledge/fts.ts:37,50` | D19 已在法律引擎入口调用 `sanitizeSearchText`，见 §53 | P2 | 两域共享一处查询清洗，不再依赖各引擎入口自觉 | `fts.spec` 与 `legal-knowledge` 的 `sqlite-search.spec`、`legal-search.spec.ts` |
 | C-09 | `wiki-card-loader.ts`、`graph-traversal.ts` | 把 `normalizeResultLimit` 同样用到 `list/search/byConcept/byDomain/getNeighbors/listByType`：负值目前经 `Array.slice(0, -1)` 丢掉末条，图谱入口直接绑定 `LIMIT -1` | P3 | 非 FTS 检索入口的上限语义与 FTS 一致 | 各方法补负值/小数为 `[1, ∞)` 的用例；现有正常路径不变 |
 
 ## 22. D8 范围校正与不做项
 
-- **不给索引资产加未知键校验**：`readArticleEntries` 现在忽略未知键，是 `patent-index-asset` README 已声明的限制；收紧需按每个消费方声明允许键集合。`legal-law` 的 7,911 个资产文件与 `patent-fees` 的 `effectiveFrom` 扩展字段都依赖当前兼容性，留 D19/D20 与 R-10 一起评估。
+- **不给索引资产加未知键校验**：`readArticleEntries` 现在忽略未知键，是 `patent-index-asset` README 已声明的限制；收紧需按每个消费方声明允许键集合。`legal-law` 的 7,911 个资产文件与 `patent-fees` 的 `effectiveFrom` 扩展字段都依赖当前兼容性。D19 评估后仍不收紧，见 §55。
 - **不改款号窄化语义（R-50）**：跳过 `paragraphs` 缺失的条目是 `patent-law/tests/verify.spec.ts:156` 固定的行为；改成 `unverified` 会同时影响 `legal-law` 的判定与策略配置，属于跨域产品决策，不在 D8 落地。
-- **不合并 `patent-knowledge` 与 `legal-knowledge`**：两包仍各自持有同构引擎（R-10）；D19 先做查询行为对比，再决定共享核心，避免在 D8 顺手移动 600+ 行。
+- **不合并 `patent-knowledge` 与 `legal-knowledge`**：两包仍各自持有同构引擎（R-10）；D19 先做查询行为对比，再决定共享核心，避免在 D8 顺手移动 600+ 行。决定见 §54。
 - **不在本日清洗全部控制字符**：只处理在 SQLite 边界上会截断查询的 NUL；换行、制表符在短语内可正常匹配，扩大清洗面没有失败证据。
 
 ## 23. D9 复核结果
@@ -417,7 +417,7 @@ D9 范围：`patent-law`（13 个源码文件 / 2,838 行）与 `patent-fees`（
 
 ## 27. D9 范围校正与不做项
 
-- **不改 R-50 的款数语义**：`entry.paragraphs === undefined` 时跳过款号窄化是 `patent-law/tests/verify.spec.ts` 固定的行为，改成 `unverified` 会影响 `legal-law` 与规则资产，留 D18/D19 的跨域决策。
+- **不改 R-50 的款数语义**：`entry.paragraphs === undefined` 时跳过款号窄化是 `patent-law/tests/verify.spec.ts` 固定的行为，改成 `unverified` 会影响 `legal-law` 与规则资产。D19 确认仍不改，见 §55。
 - **不在 D9 改共享引用解析器（R-55）**：`readStatuteArticleCandidate` 同时被 `patent-law` 与 `legal-law` 使用；把不可解析的款/项从“静默降级”改为“整条拒绝”会同时改变两域语法，应随 R-01 的解析器收敛一次完成。
 - **不合并 `patent-law` 与 `legal-law`**：同构实现的分叉仍是 R-01/R-10；D18 先做行为等价矩阵，再抽共享核心。
 - **不把指南 2026 全文补进索引**：本地只有官方修改对照表，没有 2026 合订全文；README 已声明 64 条基础节仍按 2023 文本判定，且 3 条已确认改动已用 `versions` 覆盖。
@@ -790,3 +790,44 @@ D17 范围：`packages/patent/patent-document`（23 个源文件）、`packages/
 - **不合并两个 DOCX 校验器**：`verify.py` 断言的是申请文件体例（节、页眉、字体、图），`docx-kit` 的读取器投影的是通用文本；职责与信任边界不同。
 - **不在 D17 修 R-87**：预算值需要与 `verify_deliverable` 的 64 MiB、`docx-kit` 的 `ZipReadLimits` 对齐，且 Python 侧要在 `python-docx` 打开前用标准库检查；另立 PR 并带负向用例。
 - **不新增跨通道 golden**：两通道共享的是草案与格式字符串，不共享序列化；D18 的等价性测试服务于 `patent-law` ↔ `legal-law`，不适用于这里。
+
+## 52. D19 复核范围与方法
+
+D19 范围：`packages/patent/patent-knowledge`、`packages/legal/legal-knowledge`、`packages/patent/patent-core/src/knowledge`，以及 `packages/patent/patent-index-asset` 能否承接查询核心。对应计划第 175 行的「查询行为对比表」和「patent-index-asset 复用评估」。
+
+方法：对照同一类输入在两侧入口的处理，区分已经共用的函数、领域自己的默认值，以及会让 SQLite 截断或放行无上限的差异。查询阶梯 `runFtsSearch`、短语转义、切词、FTS5 探测、NUL 清洗 `sanitizeSearchText` 和上限 `resolveResultLimit` 都在 `patent-core`。专利引擎在进入阶梯前调用后两个函数。法律引擎原先只 trim，上限在案例入口用 `Math.min`/`Math.max`，法规与司法解释把调用方原值交给 SQL 和效力过滤。
+
+## 53. 查询行为对比矩阵
+
+| 输入 | patent-knowledge | legal-knowledge（本轮之前） | 本轮之后 | 归类 |
+|---|---|---|---|---|
+| 空查询 / 只含空白 | 无命中 | 无命中 | 无命中 | 已共享 |
+| 查询短于 3 个字符 | LIKE，不走 MATCH | 同左 | 同左 | 阶梯已共享 |
+| 短语中的双引号 | `escapeFtsPhrase` 加倍 | 同左 | 同左 | 已共享 |
+| FTS 无命中或抛错 | 切词 OR，再 LIKE；抛错后粘性降级 | 同左 | 同左 | 已共享 |
+| 查询含 NUL | 去掉后再检索；只剩 NUL 则无命中；不降级 | 原样进入 MATCH/LIKE，可能粘性降级 | 与专利相同 | 本轮对齐，C-08 |
+| `limit` 缺省 | 案例 5，法规 10 | 案例 5，法规/司法解释/指导案例 10；工具默认 5 | 同左 | 领域默认值 |
+| `limit` 为 0、负数、小数、非有限 | `resolveResultLimit`：非有限用默认，其余取整后夹在 `[1, max]` | 案例把负数抬到 1，但 NaN 与小数漏过；法规把 0 与负数交给过滤，结果被清空或在 SQL 里失去上限 | 案例 max 50、默认 5；其余引擎默认 10、max 为最大安全整数 | 本轮对齐，R-88 |
+| 工具层上限 | 各专利工具自定 | `legal_knowledge_search` 夹在 1–20 | 不变 | 工具契约 |
+| 效力过滤 | SQL 预过滤后再用 `isLawVisible` | 内存与 SQLite 后过滤用同一套 `isLawVisible` | 同左 | 规则已共享 |
+| 无数据库 | 打开失败 | 内存 TF 匹配 | 同左 | 法律专有后端 |
+| 分块、图谱、wiki | `knowledge.db` 分块与 kg/wiki | 无 | 无 | 专利专有 |
+| 四类记录与指导案例 | 无对等入口 | 法规、案例、司法解释、指导案例 | 同左 | 法律专有 |
+
+## 54. D19 决策：对齐查询入口，不合并引擎，不改索引包
+
+**不合并两个检索引擎。** 专利侧是分块文档、图谱和 wiki；法律侧是四类记录加内存后端。表名、过滤列和命中字段都不是同一份数据。共用的是 `patent-core` 里的阶梯和效力规则，两边继续各写自己的引擎。
+
+**本轮对齐的一半。** 法律的 `search`、案例 `search`、`findByName` 和 `searchGuidingCases` 在匹配前调用 `prepareSearchText`（`sanitizeSearchText` 再 trim）。法规与司法解释的 `search` 把取整后的上限写回 `options.limit`，因为效力过滤读的是这个字段：原来的 0 或负数会让过滤立刻停住，或让 SQL `LIMIT` 失去上限。案例上限仍是 `[1, 50]`，默认 5。工具的 1–20 不变。
+
+**R-10 不迁包。** 法律域对 `patent-core` 的依赖还在。把已共享的查询函数再搬到新包不改变查询结果，留到 D20。`patent-index-asset` 不接收这套查询核心。
+
+## 55. D19 不做项
+
+- **不把 FTS 放进 `patent-index-asset`**：该包只读随包 YAML 的字段。`legal-law` 已经用它读条文；知识库查询是 SQLite，不是这套字段格式。
+- **不收紧未知键**：`readArticleEntries` 忽略未知键。收紧会碰到 `legal-law` 的资产文件和 `patent-fees` 的 `effectiveFrom`。
+- **不改工具的 1–20**：`legal_knowledge_search` 的上限比引擎更紧，是工具契约。引擎上的 0 与负数由引擎自己夹取。
+- **不清洗 NUL 以外的控制字符**：换行和制表符可以留在短语里，没有失败证据。
+- **不清洗法院等过滤字段里的 NUL**：案例的 `court` 仍原样进入 LIKE。本轮只处理四个公开查询入口的检索文本。
+- **不改 C-09**：wiki 与图谱入口的负上限仍是专利包内部的问题，不在两条知识库查询的对比里。
+- **不改 R-50**：条文没有 `paragraphs` 时，点名的款仍判 `valid`。法律索引没有款列表，改成 `unverified` 会拦住每条带款号的引用。

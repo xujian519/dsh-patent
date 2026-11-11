@@ -28,7 +28,7 @@ DeepSeek Harness 的法律知识库查询接缝：案例检索、法规检索、
 <a id="query-surface"></a>
 ## 查询接口
 
-`caseLawSearch` 按上限与 `docType`、`court`、`caseType` 过滤查询案例；`legalSearch` 按层级与效力选项查询法规；`judicialInterpretationSearch` 按类型与效力选项查询司法解释；`guidingCaseSearch` 按关键词查询指导案例。`addCaseLawRecords`、`addLegalRegulationRecords`、`addJudicialInterpretationRecords` 与 `addGuidingCaseRecords` 填充内存存储，仅在引擎未使用数据库时生效。命中结果携带记录字段、相关度评分与产生该结果的通道；效力选项按调用方给出的截止日期过滤法规的施行与失效日期。
+`caseLawSearch` 按上限与 `docType`、`court`、`caseType` 过滤查询案例；`legalSearch` 按层级与效力选项查询法规；`judicialInterpretationSearch` 按类型与效力选项查询司法解释；`guidingCaseSearch` 按关键词查询指导案例。`addCaseLawRecords`、`addLegalRegulationRecords`、`addJudicialInterpretationRecords` 与 `addGuidingCaseRecords` 填充内存存储，仅在引擎未使用数据库时生效。命中结果携带记录字段、相关度评分与产生该结果的通道；效力选项按调用方给出的截止日期过滤法规的施行与失效日期。查询中的 NUL 会在匹配前去掉，去掉后为空则没有命中。缺省或非有限的上限使用该方法的默认值，案例为 5，其余为 10；其他上限取整后落在 1 到该方法的最大值之间，案例为 50，其余为最大安全整数。
 
 <a id="model-facing-tool"></a>
 ## 面向模型的工具

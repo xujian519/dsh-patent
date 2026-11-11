@@ -15,10 +15,11 @@
  */
 
 import { type DatabaseSync } from 'node:sqlite'
+import { resolveResultLimit } from '@deepseek-ai/dsh-patent-core'
 import { searchInMemory, filterRecords, toVisibleMemoryHits } from '../shared/memory-store.ts'
 import { columnText, articleRowColumns, assignDatedColumns } from '../shared/row-text.ts'
 import { filterByValidity, isVisible, resolveAsOf, resolveValidity } from '../shared/validity.ts'
-import { SqliteBackedEngine, type SqliteSearchShape } from '../shared/sqlite-search.ts'
+import { prepareSearchText, SqliteBackedEngine, type SqliteSearchShape } from '../shared/sqlite-search.ts'
 import type {
   GuidingCaseHit,
   GuidingCaseRecord,
@@ -149,6 +150,8 @@ export class JudicialInterpretationSearch extends SqliteBackedEngine<JudicialInt
 
   /**
    * Search judicial interpretation records by keyword.
+   * NUL is removed before matching. An empty remainder returns no hits.
+   * An omitted or non-finite cap uses 10. Any other cap is an integer of at least 1.
    * @param query - the search text.
    * @param options - result cap, type filter, and validity options.
    * @returns matching hits sorted by relevance (descending).
@@ -159,18 +162,19 @@ export class JudicialInterpretationSearch extends SqliteBackedEngine<JudicialInt
 
   /**
    * Search guiding cases by keyword.
-   * @param query - the search text.
-   * @param limit - result cap.
+   * @param query - the search text. NUL is removed first; an empty remainder returns no hits.
+   * @param limit - result cap. It defaults to 10, and a supplied cap is an integer of at least 1; a non-finite cap uses 10.
    * @returns matching guiding case hits sorted by relevance.
    */
   searchGuidingCases(query: string, limit = 10): GuidingCaseHit[] {
-    const trimmed = query.trim()
+    const trimmed = prepareSearchText(query)
     if (!trimmed) return []
+    const capped = resolveResultLimit(limit, 10, Number.MAX_SAFE_INTEGER)
 
     if (this.sqlite.connected) {
-      return this.searchGuidingCasesFromSqlite(trimmed, limit)
+      return this.searchGuidingCasesFromSqlite(trimmed, capped)
     }
-    return this.searchGuidingCasesInMemory(trimmed, limit)
+    return this.searchGuidingCasesInMemory(trimmed, capped)
   }
 
   /**

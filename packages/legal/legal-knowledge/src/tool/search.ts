@@ -8,6 +8,7 @@
  */
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { prepareSearchText } from '../shared/fts.ts'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type {
   CaseLawHit,
@@ -168,7 +169,7 @@ export function createLegalKnowledgeSearchTool(knowledge: LegalKnowledgeQuery): 
       }],
     },
     execute: (input): Promise<LegalKnowledgeSearchOutput> => {
-      const query = input.query.trim()
+      const query = prepareSearchText(input.query)
       if (query.length === 0) {
         throw new LegalKnowledgeSearchToolError('empty-query', 'query 不能为空')
       }

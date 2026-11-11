@@ -15,10 +15,11 @@
  */
 
 import { type DatabaseSync } from 'node:sqlite'
+import { resolveResultLimit } from '@deepseek-ai/dsh-patent-core'
 import { searchInMemory, filterRecords, toVisibleMemoryHits } from '../shared/memory-store.ts'
 import { columnText, articleRowColumns, assignDatedColumns } from '../shared/row-text.ts'
 import { filterByValidity, isVisible, resolveAsOf, resolveValidity } from '../shared/validity.ts'
-import { SqliteBackedEngine, type SqliteSearchShape } from '../shared/sqlite-search.ts'
+import { prepareSearchText, SqliteBackedEngine, type SqliteSearchShape } from '../shared/sqlite-search.ts'
 import type { LegalRegulationHit, LegalRegulationRecord, LegalSearchOptions } from '../types.ts'
 
 /** Extract all searchable text from a legal regulation record. */
@@ -104,6 +105,8 @@ export class LegalRegulationSearchEngine extends SqliteBackedEngine<LegalSearchO
 
   /**
    * Search legal regulation records by keyword.
+   * NUL is removed before matching. An empty remainder returns no hits.
+   * An omitted or non-finite cap uses 10. Any other cap is an integer of at least 1.
    * @param query - the search text.
    * @param options - result cap, level filter, and validity options.
    * @returns matching hits sorted by relevance (descending).
@@ -114,18 +117,21 @@ export class LegalRegulationSearchEngine extends SqliteBackedEngine<LegalSearchO
 
   /**
    * Find regulations by name (fuzzy match).
-   * @param name - the regulation name (or substring).
-   * @param limit - result cap.
+   * @param name - the regulation name (or substring). NUL is removed first; an empty remainder returns no records.
+   * @param limit - result cap. It defaults to 10, and a supplied cap is an integer of at least 1; a non-finite cap uses 10.
    * @param options - validity options.
    * @returns matching records.
    */
   findByName(name: string, limit = 10, options: LegalSearchOptions = {}): LegalRegulationRecord[] {
+    const trimmed = prepareSearchText(name)
+    if (!trimmed) return []
+    const capped = resolveResultLimit(limit, 10, Number.MAX_SAFE_INTEGER)
     const asOf = resolveAsOf(options.asOf)
     const includeUnverified = options.includeUnverified ?? true
     if (this.sqlite.connected) {
-      return this.findByNameFromSqlite(name, limit, asOf, includeUnverified)
+      return this.findByNameFromSqlite(trimmed, capped, asOf, includeUnverified)
     }
-    const lower = name.toLowerCase()
+    const lower = trimmed.toLowerCase()
     const matches = this.records
       .filter(r => r.regulationName.toLowerCase().includes(lower))
       .filter((r) => {
@@ -135,7 +141,7 @@ export class LegalRegulationSearchEngine extends SqliteBackedEngine<LegalSearchO
         )
         return isVisible(validity, includeUnverified)
       })
-      .slice(0, limit)
+      .slice(0, capped)
     return matches.map(r => ({
       ...r,
       validity: resolveValidity(

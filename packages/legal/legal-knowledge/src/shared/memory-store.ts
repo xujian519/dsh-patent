@@ -93,7 +93,7 @@ export function filterRecords<T>(
  * 未核验记录由调用方决定是否返回。
  * @param hits - 内存检索命中（按得分降序）。
  * @param options - as-of 日期、未核验可见性与结果上限。
- * @param limit - 结果上限。
+ * @param limit - 结果上限。options.limit 缺省时用它。
  * @returns 带效力状态与得分的可见命中。
  */
 export function toVisibleMemoryHits<T extends ValidityDated>(

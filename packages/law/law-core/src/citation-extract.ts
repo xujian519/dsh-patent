@@ -118,14 +118,16 @@ function coveredCitationRanges(text: string, raws: readonly string[]): Array<[nu
   const haystack = stripped.join('')
   const ranges: Array<[number, number]> = []
   for (const raw of raws) {
+    // indexOf('') stays at 0, so an empty raw would not advance the search.
     if (raw.length === 0) continue
     let from = 0
     while (from < haystack.length) {
       const at = haystack.indexOf(raw, from)
       if (at < 0) break
-      const start = toOriginal[at]
-      const last = toOriginal[at + raw.length - 1]
-      if (start !== undefined && last !== undefined) ranges.push([start, last + 1])
+      // A found non-empty raw occupies that many code units of the stripped text.
+      const start = toOriginal[at] as number
+      const last = toOriginal[at + raw.length - 1] as number
+      ranges.push([start, last + 1])
       from = at + raw.length
     }
   }
@@ -135,7 +137,8 @@ function coveredCitationRanges(text: string, raws: readonly string[]): Array<[nu
 /**
  * List the citation-like fragments in `text` that the parser did not resolve.
  *
- * A fragment is omitted only when its span lies inside a recognized citation.
+ * A fragment is omitted when its span lies inside a recognized citation, or when
+ * removing its whitespace leaves nothing.
  * The same characters later in the text are still reported: a resolved
  * `第22条第3款` does not hide `第22条` inside a following `第22条第十十款`.
  * @param text - the text that was scanned.

@@ -57,4 +57,12 @@ describe('scanUnrecognizedReferences', () => {
   it('重复出现的已识别引用每一处都盖住', () => {
     expect(scanUnrecognizedReferences('第22条。第22条。', [{ raw: '第22条' }], pattern())).toEqual([])
   })
+
+  it('已识别原文去掉书名号后为空时，不盖住其它片段', () => {
+    expect(scanUnrecognizedReferences('第99条', [{ raw: '' }, { raw: '》' }], pattern())).toEqual(['第99条'])
+  })
+
+  it('只由空白组成的片段不列入', () => {
+    expect(scanUnrecognizedReferences('  第99条', [], /第\d+条|\s+/g)).toEqual(['第99条'])
+  })
 })

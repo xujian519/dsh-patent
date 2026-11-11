@@ -30,7 +30,7 @@ kind: "package-reference"
 <a id="citation-text"></a>
 ## 引用文本
 
-`normalizeCitationText`、`stripBookMarks`、`trimPunctuation`、`compactCitation` 与 `narrowed` 在解析前归一化被引字符串；`parseCnNumber` 读取中文数字（`一百一十二` → `112`，接受 `〇` 与 `千`，畸形数字返回 null），`formatCnNumber`/`formatCitationNumber`/`formatArticleCitation` 渲染 finding 打印的规范形式；`articleReferenceIdentity` 是同法同条引用的去重键。
+`normalizeCitationText`、`stripBookMarks`、`trimPunctuation`、`compactCitation` 与 `narrowed` 在解析前归一化被引字符串；`parseCnNumber` 读取中文数字（`一百一十二` → `112`，接受 `〇` 与 `千`，畸形数字返回 null），`formatCnNumber`/`formatCitationNumber`/`formatArticleCitation` 渲染 finding 打印的规范形式；`articleReferenceIdentity` 是同法同条引用的去重键。被点名的款或项不是正整数时，`narrowed` 返回 null，调用方拒绝整条引用，而不是丢掉该字段。
 
 <a id="reference-extraction"></a>
 ## 引用抽取
@@ -50,7 +50,7 @@ kind: "package-reference"
 <a id="tool-scaffolding"></a>
 ## 工具脚手架
 
-`citationVerifyToolOptions`、`citationVerifyParameters`、`citationVerifyExecute`、`citationVerifyOutputSchema`、`citationVerifyRender`、`citationVerifyReport`、`citationReportLines`、`citationFindingSchema`、`citationInputProblem`、`CITATION_FINDING_DECISION_PROPERTIES` 与 `CITATION_REPORT_PROPERTIES` 以纯值形式构建 citation-verify 工具的框架构件；领域包以自己的名称与描述注册工具，并拥有一切面向模型的文案。
+`citationVerifyToolOptions`、`citationVerifyParameters`、`citationVerifyExecute`、`citationVerifyOutputSchema`、`citationVerifyRender`、`citationVerifyReport`、`citationReportLines`、`citationFindingSchema`、`citationInputProblem`、`CITATION_FINDING_DECISION_PROPERTIES` 与 `CITATION_REPORT_PROPERTIES` 以纯值形式构建 citation-verify 工具的框架构件。`renderCitationDecisionRows`、`resolveCitationDecisionPolicy`、`countCitationDecisions` 与 `missingIndexReason` 是两个工具共用的判定表、处置查找、判定计数与缺索引理由。各领域包以自己的名称与描述注册工具，并拥有表后的说明文字。
 
 <a id="consumers"></a>
 ## 消费方
@@ -62,7 +62,8 @@ kind: "package-reference"
 
 - **本包不分发法条数据。** 基线、条目与法名是各领域索引包拥有的领域数据，本包只对调用方给定的条目求值。
 - **重合度信号是词面的。** 围绕同义词改写的命题够不到主题词与转录文本两路信号，按设计报 `unmatched`；需要语义匹配的部署应在自己的 verify 路径中扩展，而不是在这里。
-- **领域脚手架保持镜像。** legal-law 与 patent-law 的 verify/baseline/reference 文件按设计保持各领域结构；共享的只有它们调用的判定规则，`tests/fixtures/citation-samples.ts` 中的一致性样例守着这条边界。
+- **款号窄化需要已登记的款列表。** 条目省略 `paragraphs` 时，`decideArticleCitation` 跳过款号检查。必须拒绝未知款号的调用方要自己提供列表；缺列表不会报成 `unverified`。
+- **语法留在各领域。** legal-law 与 patent-law 的 reference 文件保留各自的引用语法、索引、工具名与判定表之后的说明。逐条判定、判定表与 `tests/fixtures/citation-samples.ts` 中的一致性样例是共享的；`CONFORMANCE_POLICIES` 记下两套默认策略，二者在 `not-indexed` 与 `unverified` 上不同。
 
 ### 开发备注
 

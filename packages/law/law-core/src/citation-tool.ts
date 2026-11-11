@@ -7,6 +7,28 @@
  * @module @deepseek-ai/dsh-law-core/citation-tool
  */
 
+import type { ArticleDecision } from './article-decision.ts'
+
+/** How a deployment treats one citation decision. */
+export type CitationTreatment = 'block' | 'warn' | 'allow'
+
+/**
+ * Per-decision treatment both citation-verify tools share.
+ * `valid` is always allowed and is not a field.
+ */
+export type CitationDecisionPolicy = {
+  /** Treatment for `mismatch`. */
+  mismatch: CitationTreatment
+  /** Treatment for `unmatched`. */
+  unmatched: CitationTreatment
+  /** Treatment for `out-of-range`. */
+  outOfRange: CitationTreatment
+  /** Treatment for `not-indexed`. */
+  notIndexed: CitationTreatment
+  /** Treatment for `unverified`. */
+  unverified: CitationTreatment
+}
+
 /** The input shape both citation-verify tools accept. */
 export type CitationVerifyArgs = {
   /** Free text whose citations are extracted and checked. */
@@ -263,4 +285,97 @@ export function citationReportLines<
     lines.push('', `文本中仍有 ${unrecognized.length} 处形如法条引用的片段未被识别，未参与判定：${unrecognized.join('、')}。请改写为完整引用或另行核验。`)
   }
   return lines
+}
+
+/** Which policy field each non-`valid` decision reads. */
+const DECISION_POLICY_KEYS = {
+  'mismatch': 'mismatch',
+  'unmatched': 'unmatched',
+  'out-of-range': 'outOfRange',
+  'not-indexed': 'notIndexed',
+  'unverified': 'unverified',
+} as const satisfies Record<Exclude<ArticleDecision, 'valid'>, keyof CitationDecisionPolicy>
+
+/** Labels the shared decision table prints for each decision. */
+const CITATION_DECISION_LABELS: Record<ArticleDecision, string> = {
+  'valid': '已核验',
+  'mismatch': '与所引命题不符',
+  'unmatched': '未与条文对应（未判定）',
+  'out-of-range': '条号超出有效范围',
+  'not-indexed': '索引中不存在',
+  'unverified': '条文未转录（未核验）',
+}
+
+/** Labels the shared decision table prints for each treatment. */
+const CITATION_POLICY_LABELS: Record<CitationTreatment, string> = {
+  block: '拦截',
+  warn: '警告',
+  allow: '放行',
+}
+
+/** Report both tools print when a text contains no resolved citation. */
+const NO_CITATION_REPORT = '未在文本中识别到法条引用。\n\n注意：没有引用不等于引用正确——结论性论断仍须给出可核验的来源。'
+
+/**
+ * Resolve how a decision is treated.
+ * @param decision - the citation decision.
+ * @param policies - the deployment's per-decision policy.
+ * @returns `allow` for `valid`, otherwise the policy field that decision reads.
+ */
+export function resolveCitationDecisionPolicy(
+  decision: ArticleDecision,
+  policies: CitationDecisionPolicy,
+): CitationTreatment {
+  if (decision === 'valid') return 'allow'
+  return policies[DECISION_POLICY_KEYS[decision]]
+}
+
+/** Escape a table cell so a proposition containing `|` cannot split the row. */
+function cell(value: string): string {
+  return value.replaceAll('|', '\\|')
+}
+
+/**
+ * Render the decision table both citation-verify tools show.
+ * @param rows - the rows to render.
+ * @returns the Markdown table, or the no-citation notice when there are no rows.
+ */
+export function renderCitationDecisionRows(
+  rows: readonly CitationReportRow<ArticleDecision, CitationTreatment>[],
+): string {
+  if (rows.length === 0) return NO_CITATION_REPORT
+  return [
+    '| 引用 | 判定 | 处置 | 说明 |',
+    '|---|---|---|---|',
+    ...rows.map(row => `| ${cell(row.label)} | ${CITATION_DECISION_LABELS[row.decision]} | ${CITATION_POLICY_LABELS[row.policy]} | ${cell(row.reason)} |`),
+  ].join('\n')
+}
+
+/**
+ * Count findings by decision.
+ * @param findings - the findings to count.
+ * @returns a count for every decision, including those that did not occur.
+ */
+export function countCitationDecisions(
+  findings: readonly { decision: ArticleDecision }[],
+): Record<ArticleDecision, number> {
+  const counts: Record<ArticleDecision, number> = {
+    'valid': 0,
+    'mismatch': 0,
+    'unmatched': 0,
+    'out-of-range': 0,
+    'not-indexed': 0,
+    'unverified': 0,
+  }
+  for (const finding of findings) counts[finding.decision] += 1
+  return counts
+}
+
+/**
+ * The reason both verifiers report when the deployment has no index for a law.
+ * @param law - the law the citation named.
+ * @returns the reason line.
+ */
+export function missingIndexReason(law: string): string {
+  return `本次部署没有随包索引《${law}》，该引用无法核验`
 }

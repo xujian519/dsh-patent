@@ -16,6 +16,7 @@ import {
   citationReportLines,
   citationVerifyReport,
   citationVerifyToolOptions,
+  countCitationDecisions,
 } from '@deepseek-ai/dsh-patent-core'
 import { formatLawReference, parseLawReference, scanUnrecognizedCitations } from '../reference.ts'
 import { renderCitationRows, resolveCitationPolicy, verifyCitation, verifyCitations } from '../verify.ts'
@@ -202,16 +203,7 @@ function toFinding(finding: CitationFinding, policies: CitationPolicySet): LawVe
 
 /** Count the findings by decision. */
 function countDecisions(findings: LawVerifyFinding[]): Record<CitationDecision, number> {
-  const counts: Record<CitationDecision, number> = {
-    'valid': 0,
-    'mismatch': 0,
-    'unmatched': 0,
-    'out-of-range': 0,
-    'not-indexed': 0,
-    'unverified': 0,
-  }
-  for (const finding of findings) counts[finding.decision] += 1
-  return counts
+  return countCitationDecisions(findings)
 }
 
 /** Render one finding as the canonical reference the table shows. */

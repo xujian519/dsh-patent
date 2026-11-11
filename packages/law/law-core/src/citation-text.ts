@@ -64,20 +64,37 @@ export function formatCitationNumber(value: number): string {
 }
 
 /**
- * Paragraph and item fields a reference carries, omitted when the text names none.
+ * Read one optional 款 or 项 numeral.
+ * @param raw - the numeral text, when the citation names that field.
+ * @returns the positive integer, `undefined` when the citation names no such field, or null when the text is not a positive integer.
+ */
+function readNarrowedField(raw: string | undefined): number | null | undefined {
+  if (raw === undefined) return undefined
+  const value = parseCnNumber(raw)
+  if (value === null || value < 1) return null
+  return value
+}
+
+/**
+ * Paragraph and item fields a reference carries.
+ *
+ * A field the citation does not name is omitted. A field it names with a numeral
+ * the parser rejects, including `十十` and `0`, rejects the whole citation:
+ * dropping the field would leave a broader reference that still looks checked.
  * @param paragraph - the paragraph text, when the reference names one.
  * @param item - the item text, when the reference names one.
- * @returns the parsed fields; an absent field is omitted.
+ * @returns the parsed fields, or null when a named field is not a positive integer.
  */
 export function narrowed(paragraph: string | undefined, item: string | undefined): {
   paragraph?: number
   item?: number
-} {
-  const paragraphValue = paragraph === undefined ? null : parseCnNumber(paragraph)
-  const itemValue = item === undefined ? null : parseCnNumber(item)
+} | null {
+  const paragraphValue = readNarrowedField(paragraph)
+  const itemValue = readNarrowedField(item)
+  if (paragraphValue === null || itemValue === null) return null
   return {
-    ...(paragraphValue !== null ? { paragraph: paragraphValue } : {}),
-    ...(itemValue !== null ? { item: itemValue } : {}),
+    ...(paragraphValue === undefined ? {} : { paragraph: paragraphValue }),
+    ...(itemValue === undefined ? {} : { item: itemValue }),
   }
 }
 

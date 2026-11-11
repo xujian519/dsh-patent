@@ -29,7 +29,7 @@ export type StatuteArticleGroups = {
  * @param match - the pattern match, which supplies the span and the raw text.
  * @param groups - the match groups the statute pattern captures.
  * @param law - the statute the citation names.
- * @returns the candidate, or null when the numeral parser rejects the article number.
+ * @returns the candidate, or null when the numeral parser rejects the article, paragraph, or item number.
  */
 export function readStatuteArticleCandidate<TLaw extends string>(
   match: RegExpExecArray,
@@ -37,8 +37,11 @@ export function readStatuteArticleCandidate<TLaw extends string>(
   law: TLaw,
 ): ArticleCandidate<TLaw> | null {
   const article = parseCnNumber(groups.article)
-  // A number the pattern allows but the numeral parser rejects, e.g. 第十十条.
+  // A number the pattern allows but the numeral parser rejects, e.g. 第十十条
+  // or 第十十款. A rejected 款 or 项 rejects the whole citation.
   if (article === null || article < 1) return null
+  const fields = narrowed(groups.paragraph, groups.itemParen ?? groups.item)
+  if (fields === null) return null
   return {
     start: match.index,
     end: match.index + match[0].length,
@@ -46,7 +49,7 @@ export function readStatuteArticleCandidate<TLaw extends string>(
       kind: 'law-article',
       law,
       article,
-      ...narrowed(groups.paragraph, groups.itemParen ?? groups.item),
+      ...fields,
       raw: stripBookMarks(match[0]),
     },
   }
@@ -95,11 +98,49 @@ export function collectReferences<
 }
 
 /**
+ * Spans of `text` occupied by each recognized citation.
+ *
+ * Stored raw drops a closing book-title mark, so the search ignores `》` and
+ * maps each hit back onto `text`. Every occurrence is covered, including a
+ * repeated citation that the finding list kept only once.
+ * @param text - the normalized text that was scanned.
+ * @param raws - recognized citation text, book-title closers already removed.
+ * @returns half-open ranges in `text`.
+ */
+function coveredCitationRanges(text: string, raws: readonly string[]): Array<[number, number]> {
+  const stripped: string[] = []
+  const toOriginal: number[] = []
+  for (let index = 0; index < text.length; index += 1) {
+    if (text.charAt(index) === '》') continue
+    stripped.push(text.charAt(index))
+    toOriginal.push(index)
+  }
+  const haystack = stripped.join('')
+  const ranges: Array<[number, number]> = []
+  for (const raw of raws) {
+    // indexOf('') stays at 0, so an empty raw would not advance the search.
+    if (raw.length === 0) continue
+    let from = 0
+    while (from < haystack.length) {
+      const at = haystack.indexOf(raw, from)
+      if (at < 0) break
+      // A found non-empty raw occupies that many code units of the stripped text.
+      const start = toOriginal[at] as number
+      const last = toOriginal[at + raw.length - 1] as number
+      ranges.push([start, last + 1])
+      from = at + raw.length
+    }
+  }
+  return ranges
+}
+
+/**
  * List the citation-like fragments in `text` that the parser did not resolve.
  *
- * A fragment already carried by a recognized reference is not reported, so a
- * text whose first citation was recognized but whose later citation was not
- * still names the unresolved remainder.
+ * A fragment is omitted when its span lies inside a recognized citation, or when
+ * removing its whitespace leaves nothing.
+ * The same characters later in the text are still reported: a resolved
+ * `第22条第3款` does not hide `第22条` inside a following `第22条第十十款`.
  * @param text - the text that was scanned.
  * @param recognized - the references the parser resolved.
  * @param pattern - the domain's fragment pattern.
@@ -110,13 +151,18 @@ export function scanUnrecognizedReferences(
   recognized: readonly { raw: string }[],
   pattern: RegExp,
 ): string[] {
-  const raws = recognized.map(reference => compactCitation(normalizeCitationText(reference.raw)))
+  const normalized = normalizeCitationText(text)
+  const raws = recognized.map(reference => stripBookMarks(normalizeCitationText(reference.raw)))
+  const covered = coveredCitationRanges(normalized, raws)
   const seen = new Set<string>()
   const out: string[] = []
-  for (const match of normalizeCitationText(text).matchAll(pattern)) {
+  for (const match of normalized.matchAll(pattern)) {
     const token = match[0]
     const key = compactCitation(token)
-    if (raws.some(raw => raw.includes(key))) continue
+    if (key.length === 0) continue
+    const start = match.index
+    const end = start + token.length
+    if (covered.some(([rangeStart, rangeEnd]) => start >= rangeStart && end <= rangeEnd)) continue
     if (seen.has(key)) continue
     seen.add(key)
     out.push(token)

@@ -7,7 +7,12 @@
  * @module @deepseek-ai/dsh-legal-law/verify
  */
 
-import { decideArticleCitation } from '@deepseek-ai/dsh-law-core'
+import {
+  decideArticleCitation,
+  missingIndexReason,
+  renderCitationDecisionRows,
+  resolveCitationDecisionPolicy,
+} from '@deepseek-ai/dsh-law-core'
 import { findLegalArticle } from './baseline.ts'
 import { extractLegalLawReferences, formatLegalLawReference } from './reference.ts'
 import type {
@@ -63,7 +68,7 @@ export function verifyLegalCitation(
       raw: reference.raw,
       reference,
       decision: 'not-indexed',
-      reason: `本次部署没有随包索引《${reference.law}》，该引用无法核验`,
+      reason: missingIndexReason(reference.law),
     }
   }
   return verifyArticle(reference, baseline, options)
@@ -91,17 +96,7 @@ export function verifyLegalCitations(
  * @returns `allow`, `warn`, or `block`.
  */
 export function resolveLegalCitationPolicy(finding: LegalCitationFinding, policies: LegalCitationPolicySet): LegalCitationPolicy {
-  if (finding.decision === 'valid') return 'allow'
-  return policies[LEGAL_DECISION_POLICY_KEYS[finding.decision]]
-}
-
-/** Which policy field each non-`valid` decision reads. */
-const LEGAL_DECISION_POLICY_KEYS: Record<Exclude<LegalCitationDecision, 'valid'>, keyof LegalCitationPolicySet> = {
-  'mismatch': 'mismatch',
-  'unmatched': 'unmatched',
-  'out-of-range': 'outOfRange',
-  'not-indexed': 'notIndexed',
-  'unverified': 'unverified',
+  return resolveCitationDecisionPolicy(finding.decision, policies)
 }
 
 /**
@@ -134,34 +129,7 @@ export type LegalCitationRow = {
  * @returns the Markdown report.
  */
 export function renderLegalCitationRows(rows: LegalCitationRow[]): string {
-  if (rows.length === 0) {
-    return '未在文本中识别到法条引用。\n\n注意：没有引用不等于引用正确——结论性论断仍须给出可核验的来源。'
-  }
-  return [
-    '| 引用 | 判定 | 处置 | 说明 |',
-    '|---|---|---|---|',
-    ...rows.map(row => `| ${cell(row.label)} | ${LEGAL_DECISION_LABELS[row.decision]} | ${LEGAL_POLICY_LABELS[row.policy]} | ${cell(row.reason)} |`),
-  ].join('\n')
-}
-
-/** Escape a table cell so a proposition containing `|` cannot split the row. */
-function cell(value: string): string {
-  return value.replaceAll('|', '\\|')
-}
-
-const LEGAL_DECISION_LABELS: Record<LegalCitationDecision, string> = {
-  'valid': '已核验',
-  'mismatch': '与所引命题不符',
-  'unmatched': '未与条文对应（未判定）',
-  'out-of-range': '条号超出有效范围',
-  'not-indexed': '索引中不存在',
-  'unverified': '条文未转录（未核验）',
-}
-
-const LEGAL_POLICY_LABELS: Record<LegalCitationPolicy, string> = {
-  block: '拦截',
-  warn: '警告',
-  allow: '放行',
+  return renderCitationDecisionRows(rows)
 }
 
 /** Build one finding, omitting the entry when the decision used none. */

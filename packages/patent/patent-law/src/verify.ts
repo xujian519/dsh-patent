@@ -13,6 +13,9 @@ import {
   decideArticleCitation,
   findCompetingLabels,
   formatPercent,
+  missingIndexReason,
+  renderCitationDecisionRows,
+  resolveCitationDecisionPolicy,
   supportMismatchReason,
   transcribedText,
   truncateProposition,
@@ -90,7 +93,7 @@ export function verifyCitation(
       raw: reference.raw,
       reference,
       decision: 'not-indexed',
-      reason: `本次部署没有随包索引《${reference.law}》，该引用无法核验`,
+      reason: missingIndexReason(reference.law),
     }
   }
   if (reference.kind === 'guideline-section') return verifySection(reference, baseline, options)
@@ -122,17 +125,7 @@ export function verifyCitations(
  * @returns `allow`, `warn`, or `block`.
  */
 export function resolveCitationPolicy(finding: CitationFinding, policies: CitationPolicySet): CitationPolicy {
-  if (finding.decision === 'valid') return 'allow'
-  return policies[DECISION_POLICY_KEYS[finding.decision]]
-}
-
-/** Which policy field each non-`valid` decision reads. */
-const DECISION_POLICY_KEYS: Record<Exclude<CitationDecision, 'valid'>, keyof CitationPolicySet> = {
-  'mismatch': 'mismatch',
-  'unmatched': 'unmatched',
-  'out-of-range': 'outOfRange',
-  'not-indexed': 'notIndexed',
-  'unverified': 'unverified',
+  return resolveCitationDecisionPolicy(finding.decision, policies)
 }
 
 /**
@@ -165,34 +158,7 @@ export type CitationRow = {
  * @returns the Markdown report.
  */
 export function renderCitationRows(rows: CitationRow[]): string {
-  if (rows.length === 0) {
-    return '未在文本中识别到法条引用。\n\n注意：没有引用不等于引用正确——结论性论断仍须给出可核验的来源。'
-  }
-  return [
-    '| 引用 | 判定 | 处置 | 说明 |',
-    '|---|---|---|---|',
-    ...rows.map(row => `| ${cell(row.label)} | ${DECISION_LABELS[row.decision]} | ${POLICY_LABELS[row.policy]} | ${cell(row.reason)} |`),
-  ].join('\n')
-}
-
-/** Escape a table cell so a proposition containing `|` cannot split the row. */
-function cell(value: string): string {
-  return value.replaceAll('|', '\\|')
-}
-
-const DECISION_LABELS: Record<CitationDecision, string> = {
-  'valid': '已核验',
-  'mismatch': '与所引命题不符',
-  'unmatched': '未与条文对应（未判定）',
-  'out-of-range': '条号超出有效范围',
-  'not-indexed': '索引中不存在',
-  'unverified': '条文未转录（未核验）',
-}
-
-const POLICY_LABELS: Record<CitationPolicy, string> = {
-  block: '拦截',
-  warn: '警告',
-  allow: '放行',
+  return renderCitationDecisionRows(rows)
 }
 
 /** Build one finding, omitting the entry when the decision used none. */

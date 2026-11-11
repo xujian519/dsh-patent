@@ -22,6 +22,11 @@ export type ConformanceSample = {
   proposition?: string
   /** The ceiling profile the sample's baseline carries. */
   ceiling: ConformanceCeiling
+  /**
+   * Whether the deployment's index contains the law. Omitted means it does.
+   * A missing law is decided before the article rule, by both verifiers.
+   */
+  indexed?: boolean
   /** The decision both domains must reach. */
   expected: ArticleDecision
   /** Why the label is what it is, for the reader. */
@@ -167,4 +172,38 @@ export const CONFORMANCE_SAMPLES: ConformanceSample[] = [
     expected: 'unverified',
     note: '条目在索引中但文本未转录核验。',
   },
+  {
+    name: 'valid: named paragraph while the entry lists no paragraphs',
+    article: 1,
+    paragraph: 9,
+    ceiling: 'verified',
+    expected: 'valid',
+    note: '条目未登记款数时两域都跳过款号窄化。缺列表是数据缺口，不把判定改成 unverified。',
+  },
+  {
+    name: 'not-indexed: the deployment has no baseline for the law',
+    article: 1,
+    ceiling: 'verified',
+    indexed: false,
+    expected: 'not-indexed',
+    note: '索引里没有这部法律时，两域使用同一句理由，不进入逐条判定。',
+  },
 ]
+
+/** Default per-decision treatment each domain ships. The two sets differ on purpose. */
+export const CONFORMANCE_POLICIES = {
+  patent: {
+    mismatch: 'block',
+    unmatched: 'warn',
+    outOfRange: 'block',
+    notIndexed: 'warn',
+    unverified: 'warn',
+  },
+  legal: {
+    mismatch: 'block',
+    unmatched: 'warn',
+    outOfRange: 'block',
+    notIndexed: 'block',
+    unverified: 'block',
+  },
+} as const

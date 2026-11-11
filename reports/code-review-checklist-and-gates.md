@@ -353,7 +353,7 @@ D9 范围：`patent-law`（13 个源码文件 / 2,838 行）与 `patent-fees`（
 | 指南节不在索引 | `第九部分第九章9.9` | `not-indexed` | 同上 |
 | 未识别片段 | “另见第99条” | `unrecognized` 含 `第99条` | `reference.spec.ts` “reports fragments…” |
 | 条号数字非法 | `专利法第十十条` | 无引用 | `reference.spec.ts` “skips a statute reference…” |
-| 款/项数字非法 | `专利法第22条第十十款` | 期望无引用并把片段列入 `unrecognized`；当前降级为条级 | 复现见 R-55（未修） |
+| 款/项数字非法 | `专利法第22条第十十款` | 无引用。`text` 列入 `unrecognized`；`references` 报输入错误 | D18 已修，见 §57；`reference.spec.ts`、`tool.spec.ts` |
 | 续指继承 | `第22条、第23条第3款第（二）项` | 两条引用，后者 23/3/2 | `reference.spec.ts` “carries the context through a narrowing chain” |
 | 政策映射 | 六个判定 × block/warn/allow | `valid` 恒 `allow`，其余按配置 | `verify.spec.ts` “maps each decision to its policy…” |
 | 沿革覆盖 | lineage `active` / `repealed` | 状态取沿革；生效日取最近修订 | `rule-lock.spec.ts` “沿革快照接入” |
@@ -831,3 +831,48 @@ D19 范围：`packages/patent/patent-knowledge`、`packages/legal/legal-knowledg
 - **不清洗法院等过滤字段里的 NUL**：案例的 `court` 仍原样进入 LIKE。本轮只处理四个公开查询入口的检索文本。
 - **不改 C-09**：wiki 与图谱入口的负上限仍是专利包内部的问题，不在两条知识库查询的对比里。
 - **不改 R-50**：条文没有 `paragraphs` 时，点名的款仍判 `valid`。法律索引没有款列表，改成 `unverified` 会拦住每条带款号的引用。
+
+## 56. D18 复核范围与方法
+
+D18 范围：`packages/law/law-core`、`packages/patent/patent-law`、`packages/legal/legal-law`。对应计划第 174 行的「先证明行为等价，再抽共享包；可只落地一半」。
+
+方法：同一份 `tests/fixtures/citation-samples.ts` 已经让两侧 `verify` 对同一组条目给出同一判定。本轮补上三条锁：理由必须等于 `decideArticleCitation` 的理由（缺索引时等于 `missingIndexReason`）；`CONFORMANCE_POLICIES` 固定两套默认策略的差异；条目不带 `paragraphs` 而引用点了款号时，两侧都保持 `valid`。解析器差异用同一组畸形款/项输入在两侧 `reference.spec.ts` 对照。
+
+随包数据：`cn-patent-law.yaml` 的 37 条已转录条文中，第 13、32、33、34、37、38、39、40、43、45、62、67、77 条没有 `paragraphs`。`legal-law` 的 7,910 个 YAML、339,217 条条文都没有 `paragraphs`。
+
+## 57. 行为等价矩阵
+
+| 输入 | 两侧判定 | 归类 |
+|---|---|---|
+| 已转录、无命题 | `valid`，理由来自 `decideArticleCitation` | 逻辑已共享 |
+| 命题命中主题或正文 | `valid` | 逻辑已共享 |
+| 命题在另一条 | `mismatch` | 逻辑已共享 |
+| 条目载明款数、引用缺款 | `mismatch` | 逻辑已共享 |
+| 命题与任何条目都不重合 | `unmatched` | 逻辑已共享 |
+| 超出已核验上限 | `out-of-range` | 逻辑已共享 |
+| 超出未核验上限 | `unverified` | 逻辑已共享 |
+| 上限内但索引无此条 | `not-indexed` | 逻辑已共享 |
+| 已索引未转录 | `unverified` | 逻辑已共享 |
+| 条目无 `paragraphs`、引用点了款 | `valid`（不窄化） | 数据缺口，见 R-50 |
+| 部署没有这部法律 | `not-indexed`，同一句 `missingIndexReason` | 本轮抽到 law-core |
+| `第十十款` / `第十十项` / `第（十十）项` | 无引用。`text` 列入 `unrecognized`，且只略去落在已识别引用跨度内的片段；`references` 报输入错误 | 本轮修复 R-55 |
+| 默认策略 `not-indexed` / `unverified` | 专利 `warn`，法律 `block` | 领域策略，`CONFORMANCE_POLICIES` 固定 |
+| 审查指南节路径、`A22.3`、沿革、rule-lock | 仅专利 | 语法与数据，不抽 |
+| 法律名按清单分块、文件标题别名 | 仅法律 | 语法与数据，不抽 |
+
+## 58. D18 决策：判定与判定表共享，语法与款列表留在各域
+
+**已落地的一半。** 逐条判定本来就在 `decideArticleCitation`。本轮把两侧逐字相同的判定表、处置查找、判定计数和缺索引理由收进 `law-core`（`renderCitationDecisionRows`、`resolveCitationDecisionPolicy`、`countCitationDecisions`、`missingIndexReason`）。领域包保留工具名、表后说明、引用语法和索引。`verify.ts` 与 `tool/law-verify.ts` 仍留在重复基线里：缺索引包装、finding 组装和表后说明仍按领域类型各写一遍，专利的未核验说明还点明子节。
+
+**R-55。** `narrowed` 在被点名的款或项不是正整数时返回 null，`readStatuteArticleCandidate` 与专利紧凑形式 `A22.0` 拒绝整条引用。未识别模式补上 `第（十十）项` 这类括号项，避免坏项号从 `unrecognized` 消失。未识别片段只在它的位置落在某条已识别引用的原文里时略去；已识别的「第22条第3款」不会把后面「第22条第十十款」里的「第22条」一起隐去。`text` 走 `unrecognized` 且不置 `blocked`；`references` 报输入错误。
+
+**R-50 不改判定。** 缺 `paragraphs` 时跳过款号窄化。改成 `unverified` 会让法律域每一条点了款号的引用被默认策略拦截，而该索引一条款列表都没有。专利侧 13 条的款数补录需要官方文本，留作数据 PR，不在本轮猜测款数。
+
+**仍不合并的部分。** 专利的指南节、沿革、`A22.3`、citator 与 rule-lock，以及法律的动态法律名，都不是「同一条规则、不同数据源」。工具名 `law_verify` 与 `legal_law_verify` 保持各自注册。
+
+## 59. D18 不做项
+
+- **不补录 13 条《专利法》的款数**：没有逐条对照官方文本，不写入款号。
+- **不把缺款列表改成 `unverified`**：法律域 339,217 条都没有列表，默认策略会拦截。
+- **不合并两套引用语法**：指南路径与动态法律名没有共同的正则可抽。
+- **不改默认策略**：`not-indexed` 与 `unverified` 的 warn/block 差异是部署选择，由 `CONFORMANCE_POLICIES` 固定，避免一侧被悄悄改成另一侧。

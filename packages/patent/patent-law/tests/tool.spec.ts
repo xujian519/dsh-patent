@@ -143,6 +143,29 @@ describe('law_verify tool', () => {
     expect(JSON.stringify(result.content)).toContain('无法把「见前述条款」解析为单条法条引用')
   })
 
+  it('lists an unreadable paragraph from text and does not check it as the bare article', async () => {
+    const value = await run(await host(verifiedIndex), { text: '专利法第22条第十十款' })
+    expect(value.findings).toEqual([])
+    expect(value.unrecognized).toEqual(['第22条', '第十十款'])
+    expect(value.blocked).toBe(false)
+  })
+
+  it('rejects an unreadable paragraph passed as a reference', async () => {
+    const result = await execute(await host(verifiedIndex), { references: ['专利法第22条第十十款'] })
+    expect(result.isError).toBe(true)
+    expect(JSON.stringify(result.content)).toContain('无法把「专利法第22条第十十款」解析为单条法条引用')
+  })
+
+  it('keeps a malformed citation visible beside a resolved citation of the same article', async () => {
+    const value = await run(await host(verifiedIndex), {
+      text: '专利法第22条第3款。另见专利法第22条第十十款',
+    })
+    expect(value.findings).toHaveLength(1)
+    expect(value.findings[0]).toMatchObject({ article: 22, paragraph: 3 })
+    expect(value.unrecognized).toEqual(['第22条', '第十十款'])
+    expect(value.blocked).toBe(false)
+  })
+
   it('reports a call with neither text nor references as an input error', async () => {
     const ctx = await host()
     const result = await execute(ctx, {})

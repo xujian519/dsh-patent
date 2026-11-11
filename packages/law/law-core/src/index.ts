@@ -60,9 +60,15 @@ export {
   citationVerifyRender,
   citationVerifyReport,
   citationVerifyToolOptions,
+  countCitationDecisions,
+  missingIndexReason,
+  renderCitationDecisionRows,
+  resolveCitationDecisionPolicy,
 } from './citation-tool.ts'
 export type {
+  CitationDecisionPolicy,
   CitationInputProblem,
   CitationReportRow,
+  CitationTreatment,
   CitationVerifyArgs,
 } from './citation-tool.ts'

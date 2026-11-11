@@ -302,8 +302,16 @@ describe('liveshare owner host', () => {
         ? { supported: true }
         : authority))
     })
+    // The management route is what narrows admission. The tunnel upgrade has to stay open on the
+    // same origin: Node answers an unhandled upgrade as this HTTP handler, and a 200 there is a
+    // failed registration. That failure stops the running turn on its own.
+    const gateway = new WebSocketServer({ server: relay })
     await new Promise<void>((resolve) => { relay.listen(0, '127.0.0.1', resolve) })
-    closers.push(async () => { await new Promise<void>((resolve) => { relay.close(() => { resolve() }) }) })
+    closers.push(async () => {
+      for (const client of gateway.clients) client.terminate()
+      await new Promise<void>((resolve) => { gateway.close(() => { resolve() }) })
+      await new Promise<void>((resolve) => { relay.close(() => { resolve() }) })
+    })
     const port = (relay.address() as AddressInfo).port
     const { host } = ownerRoutes({
       agents: { get: () => liveAgent('session-1', cancel) },
@@ -315,6 +323,12 @@ describe('liveshare owner host', () => {
     } satisfies Config)
     closers.push(dispose)
 
+    // share-connected forgets any authority read before the gateway is up. The snapshot this test
+    // narrows is the one taken after that, while the socket is still open.
+    await expect.poll(async () => {
+      const listed = await host.liveshareShares.list()
+      return listed.shares.some(share => share.shareId === 'share-1' && share.online)
+    }, { timeout: 5_000 }).toBe(true)
     await expect(host.liveshareShares.list()).resolves.toMatchObject({
       shares: [expect.objectContaining({ shareId: 'share-1' })],
     })
@@ -327,6 +341,10 @@ describe('liveshare owner host', () => {
     await host.liveshareShares.list()
     await expect.poll(() => cancel.mock.calls.length, { timeout: 5_000 }).toBe(1)
     expect(cancel).toHaveBeenCalledWith({ kind: 'user' }, { keepInbox: true })
+    // A failed tunnel registration retries at 500ms and stops the turn again. The count has to
+    // still be one after that retry, which is what a loaded coverage worker used to miss.
+    await new Promise<void>((resolve) => { setTimeout(resolve, 700) })
+    expect(cancel.mock.calls.length).toBe(1)
   }, 20_000)
 
   it('registers no route for the retired approval flow', async () => {

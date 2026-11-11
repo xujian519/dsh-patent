@@ -173,7 +173,7 @@ Independent; the draft schema is submitted per call inside tool arguments and ne
 - **数值提取只识别封闭的单位表** — 拉丁/符号单位加一份列明的汉字单位表；用其他单位（或无单位）书写的数值只算弱发现、不能改变结论。表外单位仅在两侧写法完全相同时可比，同量纲换算也只覆盖表内单位（不做温标偏置换算），因此该核验偏向返回 `inconclusive`。
 - **LLM 对照依赖 `verdict` 字段** — 数值范围节点从 LLM JSON 读取 `verdict`；响应缺少该字段时对照结论保持 `n_a`，不做猜测。
 - **草案模型只校验结构、不渲染** — 槽位注册表、HTML 转换器与 docx 映射位于 `dsh-patent-document`/`dsh-patent-filing`；patent-core 持有共享类型、两份参数 schema（`SPEC_DRAFT_SCHEMA` 与 `TEMPLATE_DRAFT_SCHEMA`）和校验器。
-- **不支持无附图申请** — `SpecDraft` 要求 `figureFiles` 必填，且附图说明部分须每幅附图一条列表项；无附图的申请不在当前草案契约范围内。
+- **无附图申请传空数组** — `figureFiles` 可为 `[]`，附图说明部分随之为空且不得给 `abstractFigure`；下游输出省略附图说明部分与摘要附图行。
 
 ### 开发备注
 

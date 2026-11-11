@@ -115,6 +115,7 @@ describe('render_patent_document tool', () => {
       sections: { ...spec.sections, drawingDescriptions: [] },
     }
     expect(check(drawingFree)).toEqual([])
+    expect(validateSpecDraft(drawingFree).figureFiles).toEqual([])
     expect(() => validateTemplateDraft({ fields: {}, sections: [{ id: 'missing', blocks: [{ kind: 'paragraph', text: 'x' }] }] }, { sections: { body: { required: true } } })).toThrow('未知槽位')
   })
 

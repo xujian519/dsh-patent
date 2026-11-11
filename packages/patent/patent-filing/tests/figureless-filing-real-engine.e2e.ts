@@ -2,8 +2,8 @@
  * 真实引擎端到端：无附图草案走 `build_patent_filing` → `verify_patent_filing` 的完整用户流程。
  *
  * 与 `tools.spec.ts` 的差别是这里不伪造子进程：`build.py` / `verify.py` 真实执行，
- * 产出真实 .docx 并由验收引擎重新打开核对。整组只在解释器自带 `python-docx` 时运行，
- * 与 `figure-graphviz-real-render.spec.ts` 对 host 能力的处理一致。
+ * 产出真实 .docx 并由验收引擎重新打开核对。与 `filing-engine.e2e.ts` 一样落在不计覆盖率的
+ * e2e 车道：它需要自带 `python-docx` 的解释器，单元车道不安装该依赖，整组按 host 能力跳过。
  * @module @deepseek-ai/dsh-patent-filing/tests/figureless-filing-real-engine
  */
 

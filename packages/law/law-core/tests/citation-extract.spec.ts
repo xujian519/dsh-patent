@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readStatuteArticleCandidate } from '@deepseek-ai/dsh-law-core'
+import { readStatuteArticleCandidate, scanUnrecognizedReferences } from '@deepseek-ai/dsh-law-core'
 
 function matchOf(text: string): RegExpExecArray {
   const match = /[\s\S]+/.exec(text)
@@ -35,5 +35,26 @@ describe('readStatuteArticleCandidate', () => {
       paragraph: '3',
       itemParen: '十十',
     }, '专利法')).toBeNull()
+  })
+})
+
+describe('scanUnrecognizedReferences', () => {
+  const pattern = () => /第\d+条/g
+
+  it('略去落在已识别引用里面的片段，包括书名号后的条号', () => {
+    expect(scanUnrecognizedReferences('《专利法》第22条，另见第99条', [{ raw: '专利法第22条' }], pattern()))
+      .toEqual(['第99条'])
+  })
+
+  it('同一条号出现在已识别引用之外时仍然列出', () => {
+    expect(scanUnrecognizedReferences(
+      '第22条第3款。另见第22条第十十款',
+      [{ raw: '第22条第3款' }],
+      pattern(),
+    )).toEqual(['第22条'])
+  })
+
+  it('重复出现的已识别引用每一处都盖住', () => {
+    expect(scanUnrecognizedReferences('第22条。第22条。', [{ raw: '第22条' }], pattern())).toEqual([])
   })
 })

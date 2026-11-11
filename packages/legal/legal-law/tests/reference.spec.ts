@@ -154,6 +154,8 @@ describe('extractLegalLawReferences', () => {
       expect(scanUnrecognizedLegalCitations(text, []), text).not.toEqual([])
     }
     expect(scanUnrecognizedLegalCitations('民法典第143条第十十款', [])).toEqual(['第143条', '第十十款'])
+    const adjacent = '民法典第143条第2款。另见民法典第143条第十十款'
+    expect(scanUnrecognizedLegalCitations(adjacent, extractLegalLawReferences(adjacent))).toEqual(['第143条', '第十十款'])
   })
 
   it('extracts multiple references from text', () => {

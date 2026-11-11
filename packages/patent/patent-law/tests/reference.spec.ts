@@ -260,6 +260,8 @@ describe('extractLawReferences', () => {
       expect(scanUnrecognizedCitations(text, []), text).not.toEqual([])
     }
     expect(scanUnrecognizedCitations('专利法第22条第十十款', [])).toEqual(['第22条', '第十十款'])
+    const adjacent = '专利法第22条第3款。另见专利法第22条第十十款'
+    expect(scanUnrecognizedCitations(adjacent, extractLawReferences(adjacent))).toEqual(['第22条', '第十十款'])
     // NFKC folds the full-width parentheses before the fragment is reported.
     expect(scanUnrecognizedCitations('专利法第22条第3款第（十十）项', [])).toEqual(['第22条', '第3款', '第(十十)项'])
   })

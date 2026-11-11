@@ -98,11 +98,46 @@ export function collectReferences<
 }
 
 /**
+ * Spans of `text` occupied by each recognized citation.
+ *
+ * Stored raw drops a closing book-title mark, so the search ignores `》` and
+ * maps each hit back onto `text`. Every occurrence is covered, including a
+ * repeated citation that the finding list kept only once.
+ * @param text - the normalized text that was scanned.
+ * @param raws - recognized citation text, book-title closers already removed.
+ * @returns half-open ranges in `text`.
+ */
+function coveredCitationRanges(text: string, raws: readonly string[]): Array<[number, number]> {
+  const stripped: string[] = []
+  const toOriginal: number[] = []
+  for (let index = 0; index < text.length; index += 1) {
+    if (text.charAt(index) === '》') continue
+    stripped.push(text.charAt(index))
+    toOriginal.push(index)
+  }
+  const haystack = stripped.join('')
+  const ranges: Array<[number, number]> = []
+  for (const raw of raws) {
+    if (raw.length === 0) continue
+    let from = 0
+    while (from < haystack.length) {
+      const at = haystack.indexOf(raw, from)
+      if (at < 0) break
+      const start = toOriginal[at]
+      const last = toOriginal[at + raw.length - 1]
+      if (start !== undefined && last !== undefined) ranges.push([start, last + 1])
+      from = at + raw.length
+    }
+  }
+  return ranges
+}
+
+/**
  * List the citation-like fragments in `text` that the parser did not resolve.
  *
- * A fragment already carried by a recognized reference is not reported, so a
- * text whose first citation was recognized but whose later citation was not
- * still names the unresolved remainder.
+ * A fragment is omitted only when its span lies inside a recognized citation.
+ * The same characters later in the text are still reported: a resolved
+ * `第22条第3款` does not hide `第22条` inside a following `第22条第十十款`.
  * @param text - the text that was scanned.
  * @param recognized - the references the parser resolved.
  * @param pattern - the domain's fragment pattern.
@@ -113,13 +148,18 @@ export function scanUnrecognizedReferences(
   recognized: readonly { raw: string }[],
   pattern: RegExp,
 ): string[] {
-  const raws = recognized.map(reference => compactCitation(normalizeCitationText(reference.raw)))
+  const normalized = normalizeCitationText(text)
+  const raws = recognized.map(reference => stripBookMarks(normalizeCitationText(reference.raw)))
+  const covered = coveredCitationRanges(normalized, raws)
   const seen = new Set<string>()
   const out: string[] = []
-  for (const match of normalizeCitationText(text).matchAll(pattern)) {
+  for (const match of normalized.matchAll(pattern)) {
     const token = match[0]
     const key = compactCitation(token)
-    if (raws.some(raw => raw.includes(key))) continue
+    if (key.length === 0) continue
+    const start = match.index
+    const end = start + token.length
+    if (covered.some(([rangeStart, rangeEnd]) => start >= rangeStart && end <= rangeEnd)) continue
     if (seen.has(key)) continue
     seen.add(key)
     out.push(token)

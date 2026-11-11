@@ -146,6 +146,29 @@ describe('legal_law_verify tool', () => {
     expect(JSON.stringify(result.content)).toContain('无法把「见前述条款」解析为单条法条引用')
   }, HOST_TIMEOUT)
 
+  it('lists an unreadable paragraph from text and does not check it as the bare article', async () => {
+    const value = await run(await host(verifiedIndex), { text: '民法典第143条第十十款' })
+    expect(value.findings).toEqual([])
+    expect(value.unrecognized).toEqual(['第143条', '第十十款'])
+    expect(value.blocked).toBe(false)
+  }, HOST_TIMEOUT)
+
+  it('rejects an unreadable paragraph passed as a reference', async () => {
+    const result = await execute(await host(verifiedIndex), { references: ['民法典第143条第十十款'] })
+    expect(result.isError).toBe(true)
+    expect(JSON.stringify(result.content)).toContain('无法把「民法典第143条第十十款」解析为单条法条引用')
+  }, HOST_TIMEOUT)
+
+  it('keeps a malformed citation visible beside a resolved citation of the same article', async () => {
+    const value = await run(await host(verifiedIndex), {
+      text: '民法典第143条第2款。另见民法典第143条第十十款',
+    })
+    expect(value.findings).toHaveLength(1)
+    expect(value.findings[0]).toMatchObject({ article: 143, paragraph: 2 })
+    expect(value.unrecognized).toEqual(['第143条', '第十十款'])
+    expect(value.blocked).toBe(false)
+  }, HOST_TIMEOUT)
+
   it('reports a call with neither text nor references as an input error', async () => {
     const ctx = await host()
     const result = await execute(ctx, {})

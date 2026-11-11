@@ -586,7 +586,7 @@
 - **最小复现**：`parseLawReference('专利法第22条第十十款')` 返回第 22 条且无款号，`verifyCitation` 判 `valid`，`scanUnrecognizedCitations` 为空（识别到的 `raw` 覆盖了该片段）。`专利法第22条第3款第十十项` 与 `专利法第22条第3款第（十十）项` 同样降级为款级/条级引用。
 - **风险**：款号或项号写错时引用仍显示已核验，读者以为该款被核对过；与 README“malformed numeral is rejected, not guessed”的承诺不符。
 - **动作**：D18 在 `law-core` 的 `narrowed` 中拒绝非正整数的款/项，`readStatuteArticleCandidate` 与专利紧凑形式因此丢掉整条引用。两侧未识别模式补上括号项。
-- **验证**：`citation-text.spec.ts`、`citation-extract.spec.ts`、两侧 `reference.spec.ts`：`专利法第22条第十十款`、`第十十项`、`第（十十）项` 与 `民法典` 同形输入返回 null，`unrecognized` 非空。
+- **验证**：`citation-text.spec.ts`、`citation-extract.spec.ts`、两侧 `reference.spec.ts`：`专利法第22条第十十款`、`第十十项`、`第（十十）项` 与 `民法典` 同形输入返回 null，`unrecognized` 非空。两侧 `tool.spec.ts`：`text` 不产生 finding 且列出片段；`references` 报 `unparsable_reference`。相邻的已识别引用不会盖住坏引用里的同一条号。
 - **负责人**：A
 - **状态**：已关闭
 

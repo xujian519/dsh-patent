@@ -19,7 +19,7 @@ import {
   formatGigabytes,
   prepareTempSibling,
   resolveRealPath,
-} from '@deepseek-ai/dsh-patent-core'
+} from '@deepseek-ai/dsh-knowledge-core'
 import { DEFAULT_LEGAL_KNOWLEDGE_DIR, DEFAULT_LEGAL_SOURCE_DB_PATH } from './config.ts'
 import type { InstallLegalKnowledgeOptions, InstallResult } from './types.ts'
 

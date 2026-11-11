@@ -1,7 +1,7 @@
 import { DatabaseSync, type StatementSync } from 'node:sqlite'
 import type { KgNode } from '../patent/types.ts'
 import { escapeFtsPhrase, FTS_MIN_RUNES, joinFtsOrTerms, sanitizeSearchText } from './fts.ts'
-import { resolveResultLimit } from '@deepseek-ai/dsh-patent-core'
+import { resolveResultLimit } from '@deepseek-ai/dsh-knowledge-core'
 import { LruCache } from './lru-cache.ts'
 import { openKnowledgeDb } from './db-version.ts'
 import { KNOWLEDGE_DB } from './schema-versions.ts'

@@ -7,7 +7,7 @@
  *
  * 背景：桌面端捆绑的旧版 Node（node:sqlite 未编译 FTS5，如 v22.14.0）即便数据库
  * 含 FTS 表，MATCH 查询也会抛 "no such module: fts5"，必须探测后降级。
- * @module @deepseek-ai/dsh-patent-core/knowledge/fts
+ * @module @deepseek-ai/dsh-knowledge-core/fts
  */
 
 import type { DatabaseSync } from 'node:sqlite'

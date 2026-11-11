@@ -1,0 +1,46 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/law/knowledge-core/README.md
+/:
+  en: ee655360840daed7
+  zh: b2bb4f065490d779
+/deepseek-ai-dsh-knowledge-core:
+  en: 57f8db251270c72a
+  zh: 9d3800df03e8b09b
+/deepseek-ai-dsh-knowledge-core/summary:
+  en: e423045d5c1e7eb4
+  zh: ac30e5690fc848d2
+/deepseek-ai-dsh-knowledge-core/table-of-contents:
+  en: da66ef4482a45a2a
+  zh: da8b92140ba41310
+/deepseek-ai-dsh-knowledge-core/why-it-exists:
+  en: 14ded802ad53dd12
+  zh: e4d3fd4d4dabc7bd
+/deepseek-ai-dsh-knowledge-core/full-text-search:
+  en: 86b765d49a53132a
+  zh: 9c6ac35e5da4a848
+/deepseek-ai-dsh-knowledge-core/query-keywords:
+  en: e476eaae26ab2901
+  zh: 02f0a270fa65d612
+/deepseek-ai-dsh-knowledge-core/result-caps:
+  en: 079e6478bc6d4a10
+  zh: 15aa7452602ce4f7
+/deepseek-ai-dsh-knowledge-core/statute-validity:
+  en: 2f3ccb19e472362d
+  zh: ed8326dedd400a2a
+/deepseek-ai-dsh-knowledge-core/install-file-operations:
+  en: ea9c81a61c626146
+  zh: d98d5dc074881d39
+/deepseek-ai-dsh-knowledge-core/real-paths:
+  en: 6f8b0033c65b3a01
+  zh: 3fe914effd82ef93
+/deepseek-ai-dsh-knowledge-core/consumers:
+  en: 85e7111a2fea7aa9
+  zh: 10cb55123be21df0
+/deepseek-ai-dsh-knowledge-core/known-limitations-and-deferred-work:
+  en: 69990ea7d19f68a3
+  zh: ee7fec1d2cc3689e
+/deepseek-ai-dsh-knowledge-core/known-limitations-and-deferred-work/dev-note:
+  en: 0a1253c6f7b5e8b9
+  zh: 9f56528562c7c914

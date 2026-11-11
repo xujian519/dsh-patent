@@ -18,7 +18,7 @@
 import { type StatementSync } from 'node:sqlite'
 import { KnowledgeFtsSearchBase, type KnowledgeSearchEngineOptions } from '../shared/knowledge-fts.ts'
 import { escapeFtsPhrase, joinFtsOrTerms } from '../shared/fts.ts'
-import { resolveResultLimit } from '@deepseek-ai/dsh-patent-core'
+import { resolveResultLimit } from '@deepseek-ai/dsh-knowledge-core'
 import { decompressChunk } from '../shared/chunk-compression.ts'
 import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { LawCategory, LawLookupOptions, LawRecord, LawSearchResult, LegalSearchSource } from './types.ts'

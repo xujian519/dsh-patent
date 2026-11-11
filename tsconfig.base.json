@@ -502,6 +502,7 @@
       "@deepseek-ai/dsh-im": ["./packages/bundle/im/src"],
       "@deepseek-ai/dsh-jobs": ["./packages/jobs/jobs/src"],
       "@deepseek-ai/dsh-jobs-local": ["./packages/jobs/jobs-local/src"],
+      "@deepseek-ai/dsh-knowledge-core": ["./packages/law/knowledge-core/src"],
       "@deepseek-ai/dsh-launch-environment": ["./packages/util/launch-environment/src"],
       "@deepseek-ai/dsh-law-core": ["./packages/law/law-core/src"],
       "@deepseek-ai/dsh-lazy-require": ["./packages/util/lazy-require/src"],

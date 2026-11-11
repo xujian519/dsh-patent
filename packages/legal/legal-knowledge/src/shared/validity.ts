@@ -1,16 +1,16 @@
 /**
  * Legal regulation validity determination.
  *
- * The validity rules live in `@deepseek-ai/dsh-patent-core` because the patent
+ * The validity rules live in `@deepseek-ai/dsh-knowledge-core` because the patent
  * knowledge database applies the same three-column rule. This module keeps the
  * legal-domain column names and the visible-result filter the engines use.
  * @module @deepseek-ai/dsh-legal-knowledge/shared/validity
  */
 
-import { isLawVisible, resolveAsOf, resolveLawValidity } from '@deepseek-ai/dsh-patent-core'
+import { isLawVisible, resolveAsOf, resolveLawValidity } from '@deepseek-ai/dsh-knowledge-core'
 import type { LegalRegulationValidity } from '../types.ts'
 
-export { isLawVisible as isVisible, resolveAsOf, todayIsoDate } from '@deepseek-ai/dsh-patent-core'
+export { isLawVisible as isVisible, resolveAsOf, todayIsoDate } from '@deepseek-ai/dsh-knowledge-core'
 
 /** Validity determination input columns. */
 export type ValidityInput = {

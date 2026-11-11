@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { resolveConfinedPath, resolveRealPath } from '@deepseek-ai/dsh-patent-core'
+import { resolveConfinedPath } from '@deepseek-ai/dsh-patent-core'
 
 const created: string[] = []
 
@@ -56,19 +56,5 @@ describe('resolveConfinedPath', () => {
     const root = tempDir('dsh-confine-root-')
     // The target does not exist yet, so containment reads the deepest existing ancestor.
     expect(() => resolveConfinedPath(join(outside, 'deep', 'new'), root, '输出目录', fail)).toThrow(/越出工作目录/)
-  })
-})
-
-describe('resolveRealPath', () => {
-  it('returns the real path of an existing file', () => {
-    const root = tempDir('dsh-realpath-')
-    const file = join(root, 'theme.json')
-    writeFileSync(file, '{}')
-    expect(resolveRealPath(file)).toBe(join(resolveRealPath(root), 'theme.json'))
-  })
-
-  it('keeps missing trailing segments while normalizing the existing ancestor', () => {
-    const root = tempDir('dsh-realpath-')
-    expect(resolveRealPath(join(root, 'a/b/c'))).toBe(join(resolveRealPath(root), 'a/b/c'))
   })
 })

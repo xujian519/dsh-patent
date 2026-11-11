@@ -42,10 +42,12 @@
     "yaml": "^2.9.0"
   },
   "peerDependencies": {
+    "@deepseek-ai/dsh-knowledge-core": "workspace:*",
     "@deepseek-ai/dsh-patent-core": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~"
   },
   "devDependencies": {
+    "@deepseek-ai/dsh-knowledge-core": "workspace:*",
     "@deepseek-ai/dsh-patent-core": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/cordis-plugin-include": "workspace:~",

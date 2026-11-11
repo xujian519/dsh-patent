@@ -9,7 +9,7 @@
  */
 
 import { type DatabaseSync } from 'node:sqlite'
-import { createFtsLadder, resolveResultLimit, type FtsSearchOps } from '@deepseek-ai/dsh-patent-core'
+import { createFtsLadder, resolveResultLimit, type FtsSearchOps } from '@deepseek-ai/dsh-knowledge-core'
 import { errorMessage } from '@deepseek-ai/dsh-value'
 import { escapeFtsPhrase, joinFtsOrTerms, prepareSearchText, sqliteHasFts5 } from './fts.ts'
 import { runFtsSearch } from './fts-search.ts'

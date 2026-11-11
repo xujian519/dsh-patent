@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-11-11-knowledge-core-shared-query-home.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-11-knowledge-core-shared-query-home.md
+/agent-note-knowledge-database-query-core-moves-to-dsh-knowledge-core:
+  en: 48f7a7905fed2352
+  zh: 1d975c383c1bf7e2
+/agent-note-knowledge-database-query-core-moves-to-dsh-knowledge-core/problem:
+  en: 47ebf6925e0868a5
+  zh: 09b7a9d4d056fe92
+/agent-note-knowledge-database-query-core-moves-to-dsh-knowledge-core/decision:
+  en: 5c1d5d93a6949341
+  zh: 2260f8db72294618
+/agent-note-knowledge-database-query-core-moves-to-dsh-knowledge-core/alternatives-considered:
+  en: c0285338f9b908c2
+  zh: 715e9db2f6b39995
+/agent-note-knowledge-database-query-core-moves-to-dsh-knowledge-core/consequences:
+  en: 90595944e3d22462
+  zh: dc7844f277cf34d8

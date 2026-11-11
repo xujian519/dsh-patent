@@ -14460,6 +14460,16 @@ importers:
         specifier: workspace:*
         version: link:../../core/tools
 
+  packages/law/knowledge-core:
+    dependencies:
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:~
+        version: link:../../../vendor/cordis
+
   packages/law/law-core:
     devDependencies:
       '@deepseek-ai/cordis':
@@ -14487,9 +14497,9 @@ importers:
 
   packages/legal/legal-knowledge:
     dependencies:
-      '@deepseek-ai/dsh-patent-core':
+      '@deepseek-ai/dsh-knowledge-core':
         specifier: workspace:*
-        version: link:../../patent/patent-core
+        version: link:../../law/knowledge-core
       '@deepseek-ai/dsh-value':
         specifier: workspace:*
         version: link:../../util/value
@@ -15268,6 +15278,9 @@ importers:
 
   packages/patent/patent-core:
     dependencies:
+      '@deepseek-ai/dsh-knowledge-core':
+        specifier: workspace:*
+        version: link:../../law/knowledge-core
       '@deepseek-ai/dsh-law-core':
         specifier: workspace:*
         version: link:../../law/law-core
@@ -15462,6 +15475,9 @@ importers:
       '@deepseek-ai/cordis-plugin-loader':
         specifier: workspace:~
         version: link:../../../vendor/loader
+      '@deepseek-ai/dsh-knowledge-core':
+        specifier: workspace:*
+        version: link:../../law/knowledge-core
       '@deepseek-ai/dsh-patent-core':
         specifier: workspace:*
         version: link:../patent-core
@@ -20582,6 +20598,9 @@ importers:
       '@deepseek-ai/dsh-jobs-local':
         specifier: workspace:*
         version: link:../../packages/jobs/jobs-local
+      '@deepseek-ai/dsh-knowledge-core':
+        specifier: workspace:*
+        version: link:../../packages/law/knowledge-core
       '@deepseek-ai/dsh-launch-environment':
         specifier: workspace:*
         version: link:../../packages/util/launch-environment

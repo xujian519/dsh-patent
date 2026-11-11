@@ -4,7 +4,7 @@
  * 数据源可能有三类时间列：`expired`（0/1 废止标记）、`valid_from`（施行日）与
  * `valid_to`（失效日）。三列都允许缺失：缺失表示「时间效力未核验」，不能当作
  * 现行有效。判定只回答「在给定日期是否可见」，不改变法条正文或位阶。
- * @module @deepseek-ai/dsh-patent-core/knowledge/validity
+ * @module @deepseek-ai/dsh-knowledge-core/validity
  */
 
 /** 法规在某一时点的效力状态。 */

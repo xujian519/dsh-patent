@@ -15,7 +15,7 @@
 import { DatabaseSync } from 'node:sqlite'
 import { existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { commitTempSibling, countTableRows, formatGigabytes, prepareTempSibling, resolveRealPath } from '@deepseek-ai/dsh-patent-core'
+import { commitTempSibling, countTableRows, formatGigabytes, prepareTempSibling, resolveRealPath } from '@deepseek-ai/dsh-knowledge-core'
 import { compressIfSmaller, decompressChunk } from './shared/chunk-compression.ts'
 import { KgStore } from './shared/kg-store.ts'
 import { KnowledgeLawSearch } from './legal/knowledge-law-search.ts'

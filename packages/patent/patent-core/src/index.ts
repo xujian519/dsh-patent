@@ -563,7 +563,6 @@ export {
   caseOutputsDir,
   caseWorkflowRunsDir,
   resolveConfinedPath,
-  resolveRealPath,
 } from './paths.ts'
 
 // Shared conventions of the two PDF download tools (body verification + dated output dir).
@@ -689,20 +688,31 @@ export {
 // star-export collision does not silently drop them from this package's surface.
 export { getStateString, getStateArray } from './atoms/handler.ts'
 
-// Knowledge-search primitives shared by the SQLite knowledge databases.
-export { escapeFtsPhrase, FTS_MIN_RUNES, joinFtsOrTerms, sanitizeSearchText, sqliteHasFts5 } from './knowledge/fts.ts'
-export { resolveResultLimit } from './knowledge/result-limit.ts'
-export { createFtsLadder, runFtsSearch } from './knowledge/fts-search.ts'
-export type { FtsSearchLadder, FtsSearchOps } from './knowledge/fts-search.ts'
-export { extractLawKeywords } from './knowledge/keywords.ts'
-export { isLawVisible, resolveAsOf, resolveLawValidity, todayIsoDate } from './knowledge/validity.ts'
-export type { LawValidity, LawValidityInput } from './knowledge/validity.ts'
+// Knowledge-search primitives shared by the SQLite knowledge databases. They
+// live in dsh-knowledge-core so the legal domain consumes them without
+// depending on this package; re-exported here so existing patent-domain
+// consumers keep one import surface.
 export {
   commitTempSibling,
   countTableRows,
+  createFtsLadder,
+  escapeFtsPhrase,
+  extractLawKeywords,
   formatGigabytes,
+  FTS_MIN_RUNES,
+  isLawVisible,
+  joinFtsOrTerms,
   prepareTempSibling,
-} from './knowledge/install-fs.ts'
+  resolveAsOf,
+  resolveLawValidity,
+  resolveRealPath,
+  resolveResultLimit,
+  runFtsSearch,
+  sanitizeSearchText,
+  sqliteHasFts5,
+  todayIsoDate,
+} from '@deepseek-ai/dsh-knowledge-core'
+export type { FtsSearchLadder, FtsSearchOps, LawValidity, LawValidityInput } from '@deepseek-ai/dsh-knowledge-core'
 
 // Workflow manifest contract, pre-positioned so the graph adapter (manifestToGraph)
 // has no dependency on the P3.1 workflow executor. The runWorkflow executor and

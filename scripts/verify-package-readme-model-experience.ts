@@ -45,6 +45,7 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
   'packages/util/code-language': 'The package only maps a filename suffix to a syntax-highlighting language id; the read consumer owns the persisted hint.',
   'packages/legal/legal-knowledge': 'The package is a model-agnostic search service; consumers own tool schemas and result rendering.',
   'packages/law/law-core': 'The package only computes citation text, reference, overlap, and decision values; the legal-law and patent-law tool packages own every model-facing surface.',
+  'packages/law/knowledge-core': 'The package only computes search text, result caps, and statute validity values; the legal-knowledge and patent-knowledge engines own every model-facing surface.',
 }
 
 /**

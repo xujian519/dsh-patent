@@ -12,7 +12,7 @@ import { KNOWLEDGE_DB } from './schema-versions.ts'
 import { sanitizeSearchText, sqliteHasFts5 } from './fts.ts'
 import { registerChunkUncompress } from './chunk-compression.ts'
 import { runFtsSearch } from './fts-search.ts'
-import { createFtsLadder } from '@deepseek-ai/dsh-patent-core'
+import { createFtsLadder } from '@deepseek-ai/dsh-knowledge-core'
 import type { KnowledgeRuntimeStats } from './knowledge-stats.ts'
 
 /** 引擎构造选项（全部可选；不传时行为与旧签名完全一致）。 */

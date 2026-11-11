@@ -1,9 +1,10 @@
 /**
  * 长查询切词关键词提取（纯函数）。
  *
- * 检索阶梯（fts-search）位于 shared 层，切词也随之放在 shared，避免 shared
- * 反向依赖具体检索域；各知识库的公开入口保留同名再导出以维持公开入口。
- * @module @deepseek-ai/dsh-patent-core/knowledge/keywords
+ * 切词规则与检索阶梯同属知识库查询内核：阶梯按 trigram tokenizer 的下限
+ * 要求挑词，切词因此与阶梯放在同一个领域中立包里，各知识库的公开入口保留
+ * 同名再导出以维持公开入口。
+ * @module @deepseek-ai/dsh-knowledge-core/keywords
  */
 
 import { FTS_MIN_RUNES } from './fts.ts'

@@ -32,7 +32,7 @@ Upstream published `dsh-v0.2.2-rc.2` as the second release candidate of the 0.2.
 
 ## Consequences
 
-Master shares a reachable merge base with the rc.2 tag, so the next release merges without a synthetic parent. Fork-only packages stay in the release family at `0.2.2-rc.2`. `scripts/plugin-entry-existing-exports.ts` now carries 125 packages; a fork package that adds a public export must extend it, and the gate names the missing entry. The patent preset composes `@deepseek-ai/dsh-tool-agent-team` only as a negative assertion, so the rename does not change which plugins the preset mounts.
+Master shares a reachable merge base with the rc.2 tag, so the next release merges without a synthetic parent. Fork-only packages stay in the release family at `0.2.2-rc.2`. `scripts/plugin-entry-existing-exports.ts` now carries 125 packages; a fork package that adds a public export must extend it, and the gate names the missing entry. The patent preset composes `@deepseek-ai/dsh-tool-agent-team` only as a negative assertion, so the rename does not change which plugins the preset mounts. The fork tracks the `dsh-v0.2.2-rc.2` tag rather than the tip of `upstream/master`: at sync time that branch carried 166 further commits, 128 of them non-merge, covering CUA and PTC work that this merge does not include and that enters through the release which ships it.
 
 ## Testing
 

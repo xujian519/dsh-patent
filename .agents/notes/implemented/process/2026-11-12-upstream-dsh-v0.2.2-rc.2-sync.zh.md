@@ -32,7 +32,7 @@ Status: implemented
 
 ## Consequences
 
-master 与 rc.2 tag 共享可达的合并基，下一个 release 无需再补造父提交。fork 独有包保持在同一 release 版本族 `0.2.2-rc.2`。`scripts/plugin-entry-existing-exports.ts` 现在登记 125 个包；fork 包新增公开导出必须扩充它，门禁会点名缺失条目。专利 preset 对 `@deepseek-ai/dsh-tool-agent-team` 只有否定断言，因此改名不改变该 preset 实际挂载的插件。
+master 与 rc.2 tag 共享可达的合并基，下一个 release 无需再补造父提交。fork 独有包保持在同一 release 版本族 `0.2.2-rc.2`。`scripts/plugin-entry-existing-exports.ts` 现在登记 125 个包；fork 包新增公开导出必须扩充它，门禁会点名缺失条目。专利 preset 对 `@deepseek-ai/dsh-tool-agent-team` 只有否定断言，因此改名不改变该 preset 实际挂载的插件。fork 跟踪的是 `dsh-v0.2.2-rc.2` tag，而非 `upstream/master` 的最新提交：同步时该分支另有 166 个提交（其中 128 个非 merge），涵盖本次合并不包含的 CUA 与 PTC 工作，它们将随发布这些改动的 release 一并进入。
 
 ## Testing
 

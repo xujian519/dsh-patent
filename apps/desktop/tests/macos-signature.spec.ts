@@ -68,7 +68,13 @@ describe('desktop macOS release signature', () => {
     const engine = config.extraResources[1]
     expect(engine?.to).toBe('node_modules/@deepseek-ai')
     expect(portablePath(engine?.from ?? '')).toContain('/.desktop-build/targets/mac-arm64/dsh/node_modules/@deepseek-ai')
-    expect(engine?.filter).toEqual(['libreoffice-kit-*/**'])
+    // Copying beside the archive skips the packager's default matcher, so the
+    // engine's filter repeats the names and extensions that matcher drops.
+    expect(engine?.filter).toEqual(expect.arrayContaining([
+      'libreoffice-kit-*/**',
+      '!**/.gitignore',
+      '!**/*.cc',
+    ]))
     const [dshFiles, dshNodeModules] = config.files.slice(-2)
     if (!dshFiles || !dshNodeModules || typeof dshFiles === 'string' || typeof dshNodeModules === 'string') {
       throw new Error('desktop DSH resources must use electron-builder file mappings')

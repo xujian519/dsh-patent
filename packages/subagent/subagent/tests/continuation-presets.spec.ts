@@ -304,6 +304,33 @@ describe('continuable child presets', () => {
     expect((adapter.requests[0]?.tools ?? []).map(tool => tool.name)).toEqual(['preset_only'])
   })
 
+  it('restores a deny-only filter without an allow mask', async () => {
+    const { ctx, parent, adapter } = await setup()
+    parkParent(ctx, parent)
+    const childId = SessionId('deny-only-child')
+    const historical = await ctx.agents.create({
+      sessionId: childId,
+      meta: { parentSession: parent.id, origin: 'subagent', delegationDepth: 1, agentPreset: 'coding' },
+      setup: (childCtx, child) => {
+        child.session.append('subagent/descriptor', snapshotSubagentDescriptor({
+          mode: 'continuable', provider: 'separate', label: 'deny-only',
+          agentProvider: 'mock', agentModel: 'mock',
+          toolFilter: { deny: ['preset_only'] },
+        }))
+        ctx.agentPresets.composeFrom(childCtx, parent.ctx)
+      },
+    })
+    parent.session.append('subagent/catalog', {
+      version: 0, childId, childCreatedAt: historical.agent.session.header.createdAt,
+      mode: 'continuable', label: 'deny-only',
+    })
+    await historical.dispose()
+
+    await continueChild(ctx, childId)
+    await settled(ctx, childId)
+    expect((adapter.requests[0]?.tools ?? []).map(tool => tool.name)).not.toContain('preset_only')
+  })
+
   it('fails open when a persisted allow-list names nothing the child still carries', async () => {
     const { ctx, parent, adapter } = await setup()
     parkParent(ctx, parent)

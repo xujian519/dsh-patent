@@ -408,6 +408,57 @@ describe('SubagentRuntime.listDescendants', () => {
     ])
   })
 
+  it('propagates a root catalog read failure instead of listing unnamed children', async () => {
+    const { ctx, parent } = await setup([])
+    await authorChild(ctx, '00000000-0000-4000-8000-00000000abb1', {
+      parentSession: parent.id,
+      createdAt: 1,
+      origin: 'subagent',
+    }, childEvents(descriptorPayload('branch a')))
+    const failure = new Error('root catalog read failed')
+    vi.spyOn(ctx.sessionQuery, 'observeSession').mockRejectedValue(failure)
+
+    await expect(ctx.subagents.listDescendants(parent.id)).rejects.toBe(failure)
+  })
+
+  it('continues past an unreadable branch catalog and leaves its members unnamed', async () => {
+    const { ctx, parent } = await setup([])
+    const childA = await authorChild(ctx, '00000000-0000-4000-8000-00000000acc1', {
+      parentSession: parent.id,
+      createdAt: 1,
+      origin: 'subagent',
+    }, childEvents(descriptorPayload('branch a')))
+    const grandchild = await authorChild(ctx, '00000000-0000-4000-8000-00000000acc2', {
+      parentSession: childA,
+      createdAt: 2,
+      origin: 'subagent',
+    }, childEvents(descriptorPayload('under a')))
+    parent.session.append('subagent/catalog', {
+      version: 3, childId: childA, childCreatedAt: 1, mode: 'continuable', label: 'branch a', name: 'alpha',
+    })
+    const observeSession = ctx.sessionQuery.observeSession.bind(ctx.sessionQuery)
+    let branchCatalogFailed = false
+    vi.spyOn(ctx.sessionQuery, 'observeSession').mockImplementation(async (sessionId, options) => {
+      if (sessionId === childA && !branchCatalogFailed) {
+        branchCatalogFailed = true
+        throw new Error('branch catalog read failed')
+      }
+      return observeSession(sessionId, options)
+    })
+
+    const entries = await ctx.subagents.listDescendants(parent.id)
+    expect(entries).toEqual([
+      {
+        kind: 'child', id: childA, label: 'branch a', mode: 'continuable',
+        activity: 'inactive', hasChildren: true, parentId: parent.id, depth: 1, path: 'alpha',
+      },
+      {
+        kind: 'child', id: grandchild, label: 'under a', mode: 'continuable',
+        activity: 'inactive', hasChildren: false, parentId: childA, depth: 2,
+      },
+    ])
+  })
+
   it('returns an empty result when the root has no descendants', async () => {
     const { ctx, parent } = await setup([])
     await ctx.sessions.flush(parent.session)

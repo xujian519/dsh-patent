@@ -210,6 +210,17 @@ export function applyChildComposition(
   applyChildOverrides(childCtx, composition)
 }
 
+/** One descriptor tool list narrowed to the names its child still carries. */
+type RestoredToolMask =
+  | { readonly declared: false }
+  | {
+    readonly declared: true
+    /** Surviving names after narrowing. */
+    readonly kept: string[]
+    /** Whether a non-empty written list lost every name. */
+    readonly emptied: boolean
+  }
+
 function applyChildOverrides(childCtx: Context, composition: ChildComposition): void {
   childCtx.systemPrompt.context({
     name: 'subagent:delegation',
@@ -229,20 +240,21 @@ function applyChildOverrides(childCtx: Context, composition: ChildComposition): 
     // no longer carries must narrow the mask rather than fail the restore. A
     // fresh spawn still fails loud, because its composition just produced it.
     const known = composition.restoring === true ? childCtx.tools.restrictableNames() : undefined
-    const narrow = (names?: readonly string[]): string[] | undefined =>
-      known === undefined ? (names === undefined ? undefined : [...names]) : names?.filter(name => known.has(name))
-    const allow = narrow(composition.toolFilter.allow)
-    const deny = narrow(composition.toolFilter.deny)
+    const maskOf = (names: readonly string[] | undefined): RestoredToolMask => {
+      if (names === undefined) return { declared: false }
+      const kept = known === undefined ? [...names] : names.filter(name => known.has(name))
+      return { declared: true, kept, emptied: names.length > 0 && kept.length === 0 }
+    }
+    const allow = maskOf(composition.toolFilter.allow)
+    const deny = maskOf(composition.toolFilter.deny)
     // An allow list whose every name vanished would hide the whole inherited
     // surface; fail open to no restriction instead of stranding the child. A
     // list that was empty when written states a deliberately tool-free child,
     // so it keeps restricting to nothing.
-    const emptied = allow !== undefined && allow.length === 0
-      && (composition.toolFilter.allow?.length ?? 0) > 0
-    if (!emptied) {
+    if (!(allow.declared && allow.emptied)) {
       childCtx.tools.restrict({
-        ...(allow === undefined ? {} : { allow }),
-        ...(deny === undefined ? {} : { deny }),
+        ...(allow.declared ? { allow: allow.kept } : {}),
+        ...(deny.declared ? { deny: deny.kept } : {}),
       })
     }
   }

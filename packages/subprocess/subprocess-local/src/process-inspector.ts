@@ -238,11 +238,15 @@ export function linuxProcessGroupLiveMember(
  * Report whether a Linux process group has an executing member, for the
  * ownership checks that only need live-member presence rather than the pid.
  * @param processGroupId - POSIX process-group id to inspect.
+ * @param internals - injectable process-table operations.
  * @returns true for a live member, false for zombie/dead entries only, and
  *   undefined when the process table cannot prove either outcome.
  */
-export function linuxProcessGroupHasLiveMembers(processGroupId: number): boolean | undefined {
-  const member = linuxProcessGroupLiveMember(processGroupId)
+export function linuxProcessGroupHasLiveMembers(
+  processGroupId: number,
+  internals: ProcessInspectorInternals = DEFAULT_INTERNALS,
+): boolean | undefined {
+  const member = linuxProcessGroupLiveMember(processGroupId, undefined, internals)
   return member === undefined ? undefined : member !== false
 }
 

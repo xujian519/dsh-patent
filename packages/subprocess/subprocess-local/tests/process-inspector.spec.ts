@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createProcessInspector,
+  linuxProcessGroupHasLiveMembers,
   linuxProcessGroupLiveMember,
   parseProcStat,
 } from '@deepseek-ai/dsh-subprocess-local/src/process-inspector.ts'
@@ -149,6 +150,19 @@ describe('Linux process inspector', () => {
     fake.files.delete('/proc/12/stat')
     expect(linuxProcessGroupLiveMember(77, 12, fake.internals)).toBe(false)
     expect(scans).toBe(3)
+  })
+
+  it('projects live-member presence onto the ownership boolean', () => {
+    const fake = fakeInternals()
+    expect(linuxProcessGroupHasLiveMembers(77, fake.internals)).toBeUndefined()
+
+    fake.dirs.set('/proc', ['10', '11'])
+    fake.files.set('/proc/10/stat', stat(10, 77, 10, -1, '500', 1, 'Z'))
+    fake.files.set('/proc/11/stat', stat(11, 88, 12, -1, '501'))
+    expect(linuxProcessGroupHasLiveMembers(77, fake.internals)).toBe(false)
+
+    fake.files.set('/proc/11/stat', stat(11, 77, 10, -1, '501'))
+    expect(linuxProcessGroupHasLiveMembers(77, fake.internals)).toBe(true)
   })
 
   it('parses stat safely, captures only the rooted process tree, and signals identities', () => {

@@ -37,3 +37,5 @@ master 与 rc.2 tag 共享可达的合并基，下一个 release 无需再补造
 ## Testing
 
 `pnpm run build:artifacts` 重新生成了目录、模块图、能力 seam 与客户端元数据，`pnpm run build:check` 针对该产物编译聚合检查。`pnpm run test` 与 `pnpm run test:snapshot` 覆盖合并后的行为与重录的期望输出；`pnpm run test:docs`（30/0）与 `pnpm run hygiene`（25/0，含 vendor rescope、suppression reasons、plugin entry exports 与 unknown-cast 门禁）通过，`pnpm run duplication`（无克隆）与 `pnpm run gen-doc-graphs --check` 亦通过。
+
+`pnpm run test` 在本机有 3 条用例失败，单跑均通过：`boot/hmr` 的配置替换用例在全量负载下超出 5 秒预算，`liveshare` 的 Relay 不可达用例等待本机解析器从不回答的 `.test` 主机名，`subprocess-local` 的 Windows PATH 用例读到外层 shell 导出的 `NoDefaultCurrentDirectoryInExePath`。三者都不触及本次合并的代码路径。

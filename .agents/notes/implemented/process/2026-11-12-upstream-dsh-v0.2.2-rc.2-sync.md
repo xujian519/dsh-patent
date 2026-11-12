@@ -37,3 +37,5 @@ Master shares a reachable merge base with the rc.2 tag, so the next release merg
 ## Testing
 
 `pnpm run build:artifacts` regenerated the catalogs, module graph, capability seams, and client metadata, and `pnpm run build:check` compiled the aggregate checks against it. `pnpm run test` and `pnpm run test:snapshot` cover the merged behavior and the re-recorded expected outputs; `pnpm run test:docs` (30/0) and `pnpm run hygiene` (25/0, including the vendor rescope, suppression reasons, plugin entry exports, and unknown-cast gates) pass, as do `pnpm run duplication` (no clones) and `pnpm run gen-doc-graphs --check`.
+
+Three `pnpm run test` cases fail on this machine and pass when run alone: `boot/hmr`'s config-replacement case exceeds the 5 s budget under full-suite load, `liveshare`'s Relay-unreachable case waits on a `.test` hostname this machine's resolver never answers, and `subprocess-local`'s Windows PATH case sees the `NoDefaultCurrentDirectoryInExePath` the surrounding shell exports. None of the three touches the merged code paths.

@@ -29,6 +29,7 @@ tmp/
 .claude/launch.json
 .claude/settings.json
 .vscode/
+.zed/
 .DS_Store
 .idea
 mise.toml

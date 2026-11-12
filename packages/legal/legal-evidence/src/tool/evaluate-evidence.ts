@@ -154,7 +154,6 @@ export function createEvaluateLegalEvidenceTool(engine: LegalEvidenceEngine): To
               },
               burdenHolder: { type: 'string', enum: ['plaintiff', 'defendant'] },
               standard: { type: 'string' },
-              hasShifted: { type: 'boolean' },
               reasoning: { type: 'string' },
             },
           },

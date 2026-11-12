@@ -170,8 +170,6 @@ export type LegalEvidenceAssessment = {
   burdenHolder?: 'plaintiff' | 'defendant'
   /** 证明标准（可选）。 */
   standard?: string
-  /** 举证责任是否转移（可选）。 */
-  hasShifted?: boolean
   /** 综合推理说明。 */
   reasoning: string
 }

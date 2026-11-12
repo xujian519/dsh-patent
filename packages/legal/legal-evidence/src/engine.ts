@@ -21,6 +21,7 @@ import type {
   LegalEvidenceType,
 } from './types.ts'
 import { getEvaluator } from './evaluators/index.ts'
+import { hasText } from './evaluators/base.ts'
 
 /** 法律域证据判断引擎。 */
 export class LegalEvidenceEngine implements LegalEvidenceEngineInterface {
@@ -76,7 +77,7 @@ export class LegalEvidenceEngine implements LegalEvidenceEngineInterface {
     const authenticity = evaluator.evaluateAuthenticity(input)
 
     // 规则检查发现
-    const findings = evaluator.checkFindings(input)
+    const findings = [...evaluator.checkFindings(input), ...this.checkGeneralFindings(input)]
 
     // 综合评分
     const score = this.computeOverallScore(relevance, legality, authenticity)
@@ -99,6 +100,40 @@ export class LegalEvidenceEngine implements LegalEvidenceEngineInterface {
   /** 批量判定。 */
   batchAssess(inputs: LegalEvidenceInput[]): LegalEvidenceAssessment[] {
     return inputs.map(input => this.assess(input))
+  }
+
+  /**
+   * 通用规则发现：适用于全部八类法定证据的跨类型检查。
+   *
+   * 与类型判定器一致，只在失败时产出发现；通过的通用规则不占用发现列表。
+   * 对应 YAML 中 `evidence_type: general` 的 `LEGAL-EVI-GEN-001` 与 `LEGAL-EVI-GEN-002`。
+   * @param input - 证据评估输入。
+   * @returns 触发失败的通用发现列表。
+   */
+  private checkGeneralFindings(input: LegalEvidenceInput): LegalEvidenceFinding[] {
+    const findings: LegalEvidenceFinding[] = []
+
+    // LEGAL-EVI-GEN-001: 证据应与待证事实具有关联性
+    if (!hasText(input.factToProve)) {
+      findings.push({
+        ruleId: 'LEGAL-EVI-GEN-001',
+        passed: false,
+        reason: '未明确待证事实，关联性无法确认',
+        severity: 'critical',
+      })
+    }
+
+    // LEGAL-EVI-GEN-002: 证据收集应合法
+    if (input.collectionLegal !== true) {
+      findings.push({
+        ruleId: 'LEGAL-EVI-GEN-002',
+        passed: false,
+        reason: '证据收集合法性未确认',
+        severity: 'critical',
+      })
+    }
+
+    return findings
   }
 
   /** 综合三性评分（权重可经 YAML 配置）。 */

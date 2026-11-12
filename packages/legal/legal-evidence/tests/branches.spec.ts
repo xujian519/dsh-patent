@@ -635,7 +635,7 @@ describe('plugin entry', () => {
       signal: new AbortController().signal,
       callId: ToolCallId('legal-evidence-no-findings'),
       name: 'evaluate_legal_evidence',
-      arguments: { evidenceId: 'party-2', evidenceType: 'party_statement', corroborated: true },
+      arguments: { evidenceId: 'party-2', evidenceType: 'party_statement', corroborated: true, factToProve: '待证事实', collectionLegal: true },
     })
     expect(result.isError).toBe(false)
     const text = result.content[0]?.type === 'text' ? result.content[0].text : ''

@@ -1,0 +1,10 @@
+# Live-recording patch: mount the legal-evidence plugin over the ordinary
+# headless composition, so a recording pins the evaluate_legal_evidence schema
+# the model receives and the tool result it gets for a minimal evidence record.
+# The scenario is authored, so replay reads its model script from the committed
+# session JSONL; this file remains the composition owner record and recovery
+# path for a future live recording.
+
+- insert:
+    - id: legal-evidence
+      name: '@deepseek-ai/dsh-legal-evidence'

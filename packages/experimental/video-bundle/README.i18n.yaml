@@ -5,33 +5,33 @@
 /:
   en: ad1fdc26ef9f5d3a
   zh: f32a87b0c3ee2e69
-/deepseek-ai-dsh-experimental-video-bundle:
-  en: 153baf6cdd79c148
-  zh: 9a9715fa6d73c9cd
-/deepseek-ai-dsh-experimental-video-bundle/summary:
+/deepseek-ai-dsh-video-bundle:
+  en: d314ebfd88eace74
+  zh: ffb00910518b0343
+/deepseek-ai-dsh-video-bundle/summary:
   en: 22f0ea48c257b51f
   zh: c2a499ccd17ed52e
-/deepseek-ai-dsh-experimental-video-bundle/table-of-contents:
+/deepseek-ai-dsh-video-bundle/table-of-contents:
   en: d152484eb41ac6b4
   zh: 505d74a9432cbe49
-/deepseek-ai-dsh-experimental-video-bundle/use-this-package:
+/deepseek-ai-dsh-video-bundle/use-this-package:
   en: 364b5c50bf665e00
   zh: 5462cc717f196501
-/deepseek-ai-dsh-experimental-video-bundle/understand-the-implementation:
+/deepseek-ai-dsh-video-bundle/understand-the-implementation:
   en: 79fae0783b13a8c1
   zh: 003e73a72be3f37f
-/deepseek-ai-dsh-experimental-video-bundle/further-exploration:
+/deepseek-ai-dsh-video-bundle/further-exploration:
   en: 1bc21595689f337f
   zh: ead65095fe3562f4
-/deepseek-ai-dsh-experimental-video-bundle/model-experience:
+/deepseek-ai-dsh-video-bundle/model-experience:
   en: 4c80130edce3e7a4
   zh: d9d1cab66afd3756
-/deepseek-ai-dsh-experimental-video-bundle/model-experience/kv-cache-effect:
+/deepseek-ai-dsh-video-bundle/model-experience/kv-cache-effect:
   en: dde7060319a92ed2
   zh: c9883d6461aeaf55
-/deepseek-ai-dsh-experimental-video-bundle/known-limitations-and-deferred-work:
+/deepseek-ai-dsh-video-bundle/known-limitations-and-deferred-work:
   en: 2cab28f941366221
   zh: fdc6e2ac36da73fb
-/deepseek-ai-dsh-experimental-video-bundle/known-limitations-and-deferred-work/dev-note:
+/deepseek-ai-dsh-video-bundle/known-limitations-and-deferred-work/dev-note:
   en: 0225ba087c5266f3
   zh: 0400e21a2683a23c

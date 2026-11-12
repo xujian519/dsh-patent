@@ -8,8 +8,9 @@ import type {} from '@deepseek-ai/dsh-working-directory'
 import { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
-import { TerminalBackendCleanupError } from '@deepseek-ai/dsh-terminal'
+import { TerminalBackendCleanupError, TerminalError } from '@deepseek-ai/dsh-terminal'
 import type { TerminalBackend, TerminalBackendSpawnSpec, TerminalSendOperation } from '@deepseek-ai/dsh-terminal'
+import { SubprocessError } from '@deepseek-ai/dsh-subprocess'
 import type { SubprocessTerminalHandle, SubprocessTerminalSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 import type { SandboxExecutionPolicy } from '@deepseek-ai/dsh-sandbox'
 import type {} from '@deepseek-ai/dsh-sandbox-policy'
@@ -95,12 +96,17 @@ function childEnvironment(spec: TerminalBackendSpawnSpec, dialect: ShellDialect)
 export const PWSH_PROMPT_SETUP =
   "function prompt { [Console]::Write([char]27 + ']133;D;' + [int]$LASTEXITCODE + [char]7); '" + CONTROLLED_PROMPT + "' }"
 
+/** The startup deadline failure shared by both dialects. */
+function startupTimeout(): TerminalError {
+  return new TerminalError('PTY shell did not reach readiness before startup timeout', 'STARTUP_TIMEOUT')
+}
+
 async function spawnArgv(ctx: Context, config: ResolvedConfig, policy: SandboxExecutionPolicy, signal?: AbortSignal): Promise<string[]> {
   const argv = [config.shellPath, ...config.shellArgs]
   if (policy.mode === 'danger-full-access') return argv
   const sandbox = ctx.get('sandbox')
   if (sandbox === undefined) {
-    throw new Error(`terminal-bash: sandbox mode "${policy.mode}" requires a ctx.sandbox provider in the execution world`)
+    throw new TerminalError(`terminal-bash: sandbox mode "${policy.mode}" requires a ctx.sandbox provider in the execution world`, 'NO_SANDBOX')
   }
   // Re-state the discriminant because object spread does not preserve its narrowed type.
   return (await sandbox.confine(argv, { ...policy, mode: policy.mode }, signal)).argv
@@ -132,8 +138,8 @@ async function startupSession(
         ...signal !== undefined ? { signal } : {},
       })
       const result = await abortable(startupOperation.done, signal)
-      if (result.waitReason === 'session_exit') throw new Error('PTY shell exited during startup')
-      if (result.waitReason === 'timeout') throw new Error('PTY shell did not reach readiness before startup timeout')
+      if (result.waitReason === 'session_exit') throw new TerminalError('PTY shell exited during startup', 'STARTUP_EXITED')
+      if (result.waitReason === 'timeout') throw startupTimeout()
       viewport = result.viewport
       if (result.waitReason === 'stdin_read') break
     }
@@ -147,7 +153,7 @@ async function startupSession(
       const deadline = new Promise<never>((_, reject) => {
         deadlineTimer = setTimeout(() => {
           startupOperation?.cancel()
-          reject(new Error('PTY shell did not reach readiness before startup timeout'))
+          reject(startupTimeout())
         }, timeoutMs)
       })
       startup = Promise.race([startup, deadline])
@@ -192,7 +198,7 @@ export class BashTerminalBackend implements TerminalBackend {
     const policy = this.ctx.sandboxPolicy.resolve({ session: spec.owner.session })
     const argv = await spawnArgv(this.ctx, this.config, policy, spec.signal)
     spec.signal?.throwIfAborted()
-    if (argv[0] === undefined) throw new Error('terminal-bash: sandbox returned empty argv')
+    if (argv[0] === undefined) throw new SubprocessError('terminal-bash: sandbox returned empty argv', 'SUBPROCESS_INVALID_ARGV')
     const terminal = await this.spawnTerminal({
       argv,
       cwd: spec.cwd ?? await this.ctx.workingDirectory.ensure(spec.owner, spec.signal),

@@ -8,7 +8,7 @@ English | [中文](2026-08-27-generalize-agent-teams-capability.zh.md)
 
 Multi-agent team functionality exists three times in this repository with two incompatible durability models, and the only shipped implementation is locked to the patent domain:
 
-- `packages/experimental/agent-team` + `packages/experimental/tool-agent-team` ([placement](../../archived/architecture/2026-08-18-experimental-agent-teams-packages.md)) — a Lead/teammate model whose mailbox and task board live in the Lead's session log, with event fold and invariant replay. Unreleased (experimental release exclusion), mounted only by the headless example, and it has no scheduler.
+- `packages/team/agent-team` + `packages/team/tool-agent-team` ([placement](../../archived/architecture/2026-08-18-experimental-agent-teams-packages.md)) — a Lead/teammate model whose mailbox and task board live in the Lead's session log, with event fold and invariant replay. Unreleased (experimental release exclusion), mounted only by the headless example, and it has no scheduler.
 - `packages/patent/patent-teams` — a formal port of the upstream plugin `NanmiCoder/dsh-agent-teams`, re-scoped to patent: file-backed `.patent-teams/` state, an event-driven scheduler with `attempt`/`attemptId`/`handoffId` revocation, JSONL mailboxes, a composite completion gate, and the only real preset wiring ([wiring](../../implemented/feature/2026-08-23-wire-patent-teams-into-preset.md)).
 - The upstream plugin itself (external, MIT, ~1.1k stars) — domain-neutral and more featureful than our port, but outside the repo and outside our seam control.
 
@@ -55,7 +55,7 @@ Composition knowledge stays per-domain where it already works: presets mount the
 ### Migration and scope
 
 - Patent rebase: `packages/patent/patent-teams` shrinks to a small policy plugin implementing the two hooks over `patent-workflow`/`patent-tools`/`patent-rule`; the patent preset's `isolate.patentTeams` mount renames to the generic service. Pre-release stance applies — old `.patent-teams/` state directories are not migrated.
-- Experimental retirement: `packages/experimental/agent-team` + `tool-agent-team` are deleted, their headless example mounts the generic seam instead, and inbound links (including the `agentTeams` api-catalog key) are repaired in the same change. Their durable ideas — invariant replay over team events, `waitForChange` — are recorded here as candidates to fold into the generic provider later, not as blockers.
+- Experimental retirement: `packages/team/agent-team` + `tool-agent-team` are deleted, their headless example mounts the generic seam instead, and inbound links (including the `agentTeams` api-catalog key) are repaired in the same change. Their durable ideas — invariant replay over team events, `waitForChange` — are recorded here as candidates to fold into the generic provider later, not as blockers.
 - Feature adoption from upstream is phased: P0 is the generic core with the port's current semantics (scheduler, attempt revocation, mailboxes, model snapshots); P1 adds the `halted`/`escalated` lifecycle with `agent_teams_resume` and named profiles; P2 is staged planning with Approve & Run and the overlay activity panel (needs command-surface and client work).
 - Domain landings: patent migrates (P0 proof), `code`/`standard` presets gain the seam with the stock quality-kinds gate (P1), `document` mounts it with a composition skill alongside `document_deliver` as the terminal gate (P1). Self-media stays out of this repo until that domain exists here; the seam is what it would mount.
 

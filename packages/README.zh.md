@@ -24,7 +24,7 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 <a id="package-groups"></a>
 ## 包分组
 
-新包加入现有组，新组则更新其自身 README 与本表。
+新包加入现有组；新组则更新其 README 与本表。
 
 | 组 | 职责 |
 |---|---|
@@ -53,11 +53,12 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 | [`context/`](context/README.zh.md) | 模型可见请求上下文：workspace 指令、时间上下文、引用 |
 | [`memory/`](memory/README.zh.md) | 外部记忆与上下文数据库集成（OpenViking） |
 | [`subagent/`](subagent/README.zh.md) | subagent 能力系列：提供方注册表约定和面向模型的委托工具 |
+| [`team/`](team/README.zh.md) | Team 协调：共享任务板与面向模型的任务工具 |
 | [`jobs/`](jobs/README.zh.md) | 通用后台任务运行时和面向模型的作业控制工具 |
 | [`experimental/`](experimental/README.zh.md) | 仍在评估中的能力；[状态与支持策略](experimental/README.zh.md#status) |
 | [`workflow/`](workflow/README.zh.md) | 工作流 seam、PTC 进程引擎、面向模型的 `workflow` 工具 |
 | [`web/`](web/README.zh.md) | Web 能力系列：seam、搜索／获取提供方、面向模型的 Web 工具 |
-| [`document/`](document/README.zh.md) | 文档领域：面向模型的交付工具、模板、样式模型与 DOCX kit，以及宿主 Office 到 PDF 转换 |
+| [`document/`](document/README.zh.md) | 文档领域：交付工具、模板、样式模型与 DOCX kit，以及宿主 Office 转换 |
 | [`attachment/`](attachment/README.zh.md) | 持久附件标识、校验、本地内容寻址存储 |
 | [`spill/`](spill/README.zh.md) | spill 能力系列：存储 seam、本地实现、工具结果 spill 策略 |
 | [`todo/`](todo/README.zh.md) | 面向模型的 `todo_write` 工具 |
@@ -86,7 +87,7 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 | [`client/`](client/README.zh.md) | web GUI 浏览器半侧：shell、协议层、对象服务、slot、`ui-*` 插件 |
 | [`desktop/`](desktop/README.zh.md) | 桌面操作系统集成：Service Definition + Electron shell 提供方 + 沙盒化目录选择桥 + CLI 驱动的 macOS 原生工具 |
 | [`test-support/`](test-support/README.zh.md) | 测试基础设施（testkit、回放、Loader 冒烟测试） |
-| [`util/`](util/README.zh.md) | 组间共享的低层工具与纯数据包列表（`Branded<B>`、home/路径辅助函数、超时、留存、官方组合包列表）；运行期依赖只出现在确实需要它的原语里（`zod`、`undici`、`dsh-util-values`） |
+| [`util/`](util/README.zh.md) | 共享工具与纯数据包列表（`Branded<B>`、home/路径辅助函数、超时、留存、官方组合包列表）；运行期依赖出现在确实需要它的原语里（`zod`、`undici`、`dsh-util-values`） |
 
 -----
 

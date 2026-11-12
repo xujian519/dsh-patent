@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-host-synapse",
   "description": "The Synapse session-map host half for dsh web: the /synapse canvas page/API and the committed-session projection store, mounted on the existing Web Server",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -26,7 +26,10 @@
     "locale/*.json",
     "lib/index.js",
     "assets",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "peerDependencies": {

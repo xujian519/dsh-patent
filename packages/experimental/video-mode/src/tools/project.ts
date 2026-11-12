@@ -2,7 +2,7 @@
  * The model-facing `video_project` tool: create, read, and mutate the durable
  * project document. Every mutation validates the complete document before it
  * is written, so a malformed shot cannot reach the workspace or the studio.
- * @module @deepseek-ai/dsh-experimental-video-mode/tools/project
+ * @module @deepseek-ai/dsh-video-mode/tools/project
  */
 
 import type { Context } from '@deepseek-ai/cordis'

@@ -10,7 +10,7 @@ import {
   resolveMiniMax,
   solidPng,
   type MediaTask,
-} from '@deepseek-ai/dsh-experimental-video-mode'
+} from '@deepseek-ai/dsh-video-mode'
 
 /**
  * Real-API smoke for the MiniMax-H3 video provider. Self-skips without

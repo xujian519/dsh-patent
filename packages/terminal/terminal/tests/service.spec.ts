@@ -5,6 +5,7 @@ import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import TerminalSessionService, { TerminalBackendCleanupError, TerminalError, TerminalSessionId } from '@deepseek-ai/dsh-terminal'
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import type {
   TerminalBackend,
   TerminalBackendSession,
@@ -199,7 +200,18 @@ describe('TerminalSessionService ownership and lifecycle', () => {
     await expect(ctx.terminals.spawn(owner, { type: 'stub', name: 'main' })).rejects.toMatchObject({ code: 'DUPLICATE_NAME' })
 
     const operation = ctx.terminals.startSend(owner, created.sessionId, { text: 'echo hi', submit: true })
-    expect(() => ctx.terminals.startSend(owner, created.sessionId, { text: 'pwd', submit: true })).toThrow(TerminalError)
+    let concurrent: unknown
+    try {
+      ctx.terminals.startSend(owner, created.sessionId, { text: 'pwd', submit: true })
+    } catch (error: unknown) {
+      concurrent = error
+    }
+    expect(concurrent).toBeInstanceOf(TerminalError)
+    expect(concurrent).toBeInstanceOf(HarnessError)
+    expect(concurrent).toMatchObject({ name: 'TerminalError', code: 'SEND_ACTIVE' })
+    const cleanup = new TerminalBackendCleanupError(new Error('setup failed'), new Error('cleanup failed'))
+    expect(cleanup).toBeInstanceOf(TerminalError)
+    expect(cleanup).toMatchObject({ name: 'TerminalBackendCleanupError', code: 'CLEANUP_FAILED' })
     expect(operation.readOutput()).toEqual({ delta: 'delta', truncated: false })
     expect(operation.cancel()).toBe(true)
     await operation.done
@@ -292,6 +304,18 @@ describe('TerminalSessionService ownership and lifecycle', () => {
     controller.abort(reason)
 
     await expect(pending).rejects.toBe(reason)
+  })
+
+  it('rejects an uncancelled spawn with the backend cleanup failure and its code', async () => {
+    const ctx = await harness()
+    const failure = new TerminalBackendCleanupError(new Error('startup failed'), new Error('backend cleanup failed'))
+    ctx.terminals.registerBackend({ type: 'cleanup-failing', spawn: () => Promise.reject(failure) })
+    const owner = stubAgent(ctx, 'owner')
+    await ctx.agents.register(owner)
+
+    await expect(ctx.terminals.spawn(owner, { type: 'cleanup-failing' })).rejects.toBe(failure)
+    expect(failure).toMatchObject({ name: 'TerminalBackendCleanupError', code: 'CLEANUP_FAILED' })
+    expect(ctx.terminals.hasOwnerActivity(owner)).toBe(true)
   })
 
   it.each(['owner', 'service'] as const)('retains caller-triggered backend cleanup failure until %s disposal', async (scope) => {
@@ -521,9 +545,8 @@ describe('TerminalSessionService ownership and lifecycle', () => {
     const created = await ctx.terminals.spawn(owner, { type: 'stub' })
     b.sessions[0]!.closeGate = Promise.withResolvers<undefined>()
     const first = ctx.terminals.kill(owner, created.sessionId, 'test cleanup')
-    expect(() => ctx.terminals.startSend(owner, created.sessionId, { text: '', submit: false })).toThrow(expect.objectContaining({
-      code: 'SESSION_CLOSING',
-    }))
+    expect(() => ctx.terminals.startSend(owner, created.sessionId, { text: '', submit: false }))
+      .toThrow(expect.objectContaining({ name: 'TerminalError', code: 'SESSION_CLOSING' }))
     const second = ctx.terminals.kill(owner, created.sessionId, 'test cleanup')
     b.sessions[0]!.closeGate?.resolve(undefined)
     expect(await first).toBe(true)

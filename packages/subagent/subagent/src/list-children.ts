@@ -3,7 +3,8 @@
  * plus complete descendant-tree enumeration from the Session corpus. A direct
  * listing owns one parent observation and reads no child log. Descendant
  * enumeration retains the complete corpus and the child identity projection
- * because ordinary Sessions and one-shot children remain traversal nodes.
+ * because ordinary Sessions and one-shot children remain traversal nodes; each
+ * reachable creator's catalog supplies the names its members' paths are built from.
  *
  * @module @deepseek-ai/dsh-subagent
  */
@@ -16,8 +17,8 @@ import type { SessionProjectionCache } from '@deepseek-ai/dsh-session-projection
 import type { SessionObservation, SessionQueryEngine } from '@deepseek-ai/dsh-session-query'
 import type { SubagentListEntry } from './control-types.ts'
 import { SubagentError } from './error.ts'
-import type { SubagentIdentityProjection } from './projection-types.ts'
-import type { SubagentCatalogEntry } from './projection-types.ts'
+import { isAgentName, joinAgentPath } from './names.ts'
+import type { SubagentCatalogEntry, SubagentIdentityProjection } from './projection-types.ts'
 
 export type { SubagentListEntry } from './control-types.ts'
 
@@ -34,6 +35,8 @@ export type SubagentDescendantListEntry = SubagentListEntry & {
   readonly parentId: SessionId
   /** Edge distance from the requested root; direct children are `1`. */
   readonly depth: number
+  /** Slash-separated names from the requested root; absent when this child or an ancestor below the root has no name. */
+  readonly path?: string
 }
 
 type CorpusRecord = { readonly header: SessionHeader; readonly live: Session | undefined }
@@ -50,6 +53,8 @@ interface PositionedCandidate {
   readonly record: CorpusRecord
   readonly parentId: SessionId
   readonly depth: number
+  /** Slash-separated names from the root; absent when a link below the root is unnamed. */
+  readonly path?: string
 }
 
 /**
@@ -96,7 +101,8 @@ export async function listChildren(
  * @param signal - caller-owned cancellation observed around every persistence read.
  * @param coldReadConcurrency - maximum concurrent cold observations; defaults to
  *   {@link DEFAULT_COLD_READ_CONCURRENCY}.
- * @returns interpreted subagents with durable direct-parent and root-relative depth.
+ * @returns interpreted subagents with durable direct-parent, root-relative depth,
+ *   and the name path of every member whose creators all recorded one.
  * @throws {@link SubagentError} when listing dependencies are unavailable or the caller cancels.
  */
 export async function listDescendants(
@@ -106,7 +112,7 @@ export async function listDescendants(
   coldReadConcurrency: number = DEFAULT_COLD_READ_CONCURRENCY,
 ): Promise<SubagentDescendantListEntry[]> {
   const listing = await prepareListing(ctx, signal)
-  const positioned = descendantCandidates(listing.corpus, rootSessionId)
+  const positioned = await descendantCandidates(ctx, listing.corpus, rootSessionId, signal)
   const rows = await resolveCandidateRows(
     positioned.map(candidate => candidate.record),
     listing,
@@ -117,7 +123,12 @@ export async function listDescendants(
   positioned.forEach((position, index) => {
     const row = rows[index]
     if (row !== undefined) {
-      entries.push({ ...row, parentId: position.parentId, depth: position.depth })
+      entries.push({
+        ...row,
+        parentId: position.parentId,
+        depth: position.depth,
+        ...position.path === undefined ? {} : { path: position.path },
+      })
     }
   })
   return entries
@@ -243,11 +254,22 @@ async function resolveCandidateRows(
   return rows
 }
 
-/** Build origin-classified candidates from the complete tree without recursion. */
-function descendantCandidates(
+/**
+ * Build origin-classified candidates from the complete tree without recursion,
+ * naming each member from its creator's catalog as the walk reaches it.
+ * @param ctx - context carrying the Session query service for catalog reads.
+ * @param corpus - live-preferred Session corpus keyed by Session id.
+ * @param rootSessionId - tree root whose children start the walk.
+ * @param signal - cancellation forwarded to each catalog read.
+ * @returns subagent candidates in pre-order, every parent before its children.
+ * @throws {@link SubagentError} when the root catalog cannot be read or the caller cancels.
+ */
+async function descendantCandidates(
+  ctx: Context,
   corpus: ReadonlyMap<SessionId, CorpusRecord>,
   rootSessionId: SessionId,
-): PositionedCandidate[] {
+  signal: AbortSignal | undefined,
+): Promise<PositionedCandidate[]> {
   const children = new Map<SessionId, CorpusRecord[]>()
   for (const record of corpus.values()) {
     const parentId = record.header.parentSession
@@ -258,25 +280,80 @@ function descendantCandidates(
   }
   for (const siblings of children.values()) siblings.sort(compareCorpusRecords)
 
+  // One catalog read names every child of that creator, so the walk reads each
+  // reachable non-leaf once and reuses the result for its whole sibling row.
+  const catalogs = new Map<SessionId, ReadonlyMap<SessionId, string> | undefined>()
+  const catalogOf = async (parentId: SessionId): Promise<ReadonlyMap<SessionId, string> | undefined> => {
+    if (catalogs.has(parentId)) return catalogs.get(parentId)
+    let names: ReadonlyMap<SessionId, string> | undefined
+    try {
+      names = await readChildNames(ctx, parentId, signal)
+    } catch (error: unknown) {
+      // The root catalog is the model-facing entry point, so its failure ends
+      // the listing; an unreachable branch catalog leaves its members unnamed.
+      if (parentId === rootSessionId) throw error
+      assertListingNotCancelled(signal)
+      names = undefined
+    }
+    catalogs.set(parentId, names)
+    return names
+  }
+
+  type Frame = {
+    readonly record: CorpusRecord
+    readonly parentId: SessionId
+    readonly depth: number
+    readonly parentPath: string | undefined
+  }
   const positioned: PositionedCandidate[] = []
-  const stack: PositionedCandidate[] = (children.get(rootSessionId) ?? [])
-    .map(record => ({ record, parentId: rootSessionId, depth: 1 }))
+  const stack: Frame[] = (children.get(rootSessionId) ?? [])
+    .map(record => ({ record, parentId: rootSessionId, depth: 1, parentPath: '' }))
     .reverse()
   const visited = new Set<SessionId>([rootSessionId])
   while (stack.length > 0) {
     // The length guard proves one frame exists.
     // oxlint-disable-next-line typescript/no-non-null-assertion
-    const position = stack.pop()!
-    const id = position.record.header.id
+    const frame = stack.pop()!
+    const id = frame.record.header.id
     if (visited.has(id)) continue
     visited.add(id)
-    if (position.record.header.origin === 'subagent') positioned.push(position)
+    const path = joinAgentPath(frame.parentPath, (await catalogOf(frame.parentId))?.get(id))
+    if (frame.record.header.origin === 'subagent') {
+      positioned.push({
+        record: frame.record,
+        parentId: frame.parentId,
+        depth: frame.depth,
+        ...path === undefined ? {} : { path },
+      })
+    }
     const descendants = children.get(id) ?? []
     for (const record of [...descendants].reverse()) {
-      stack.push({ record, parentId: id, depth: position.depth + 1 })
+      stack.push({ record, parentId: id, depth: frame.depth + 1, parentPath: path })
     }
   }
   return positioned
+}
+
+/**
+ * Read one creator's durable child names, live-preferred through the query engine.
+ * @param ctx - context carrying the Session query service.
+ * @param parentId - creator whose direct children are named.
+ * @param signal - cancellation forwarded to the catalog read.
+ * @returns child id to name for every named entry, or undefined when it names none.
+ * @throws {@link SubagentError} when the catalog dependencies are unavailable.
+ */
+async function readChildNames(
+  ctx: Context,
+  parentId: SessionId,
+  signal: AbortSignal | undefined,
+): Promise<ReadonlyMap<SessionId, string> | undefined> {
+  const names = new Map<SessionId, string>()
+  for (const entry of await listChildren(ctx, parentId, signal)) {
+    // Historical catalog entries predate names, so they name nothing.
+    const name = 'name' in entry ? entry.name : undefined
+    if (name !== undefined) names.set(entry.id, name)
+  }
+  return names.size === 0 ? undefined : names
 }
 
 /** Compare siblings by durable creation time, then id. */
@@ -392,6 +469,35 @@ const LIFECYCLE_WITNESS_KEYS = [
 /** Whether an inspected log still belongs to the enumerated lifecycle. */
 function sameLifecycle(meta: SessionHeader, expected: SessionHeader): boolean {
   return LIFECYCLE_WITNESS_KEYS.every(key => meta[key] === expected[key])
+}
+
+/**
+ * Resolve a slash-separated name by reading only the catalogs along its path.
+ * @param ctx - context carrying the Session query service.
+ * @param rootSessionId - tree root whose catalog holds the first name.
+ * @param name - candidate full name relative to the root.
+ * @param signal - cancellation forwarded to each catalog read.
+ * @returns the named member's Session id, or undefined when the text is not a name in this tree.
+ * @throws {@link SubagentError} when a catalog dependency is unavailable; Session read failures propagate.
+ */
+export async function resolveAgentPath(
+  ctx: Context,
+  rootSessionId: SessionId,
+  name: string,
+  signal: AbortSignal,
+): Promise<SessionId | undefined> {
+  const segments = name.split('/')
+  if (!segments.every(isAgentName)) return undefined
+  let current = rootSessionId
+  for (const [index, segment] of segments.entries()) {
+    const children = await listChildren(ctx, current, signal)
+    const child = children.find(entry => 'name' in entry && entry.name === segment)
+    if (child === undefined) return undefined
+    // External and unknown children own no local Session, so they are the last segment too.
+    if (index < segments.length - 1 && child.mode !== 'continuable' && child.mode !== 'one-shot') return undefined
+    current = child.id
+  }
+  return current
 }
 
 /** Stop a listing at its next cancellation checkpoint. */

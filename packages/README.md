@@ -24,7 +24,7 @@ The harness is assembled from npm packages under `packages/`, grouped by capabil
 <a id="package-groups"></a>
 ## Package groups
 
-New packages join existing groups, and a new group updates its own README and this table.
+New packages join existing groups; a new group updates its README and this table.
 
 | Group | Role |
 |---|---|
@@ -53,11 +53,12 @@ New packages join existing groups, and a new group updates its own README and th
 | [`context/`](context/README.md) | Model-visible request context: workspace instructions, time context, references |
 | [`memory/`](memory/README.md) | External memory and context-database integrations (OpenViking) |
 | [`subagent/`](subagent/README.md) | Subagent capability family: provider-registry contract and model-facing delegation tools |
+| [`team/`](team/README.md) | Team coordination: shared task boards and model-facing task tools |
 | [`jobs/`](jobs/README.md) | Generic background-job runtime and model-facing job control tools |
 | [`experimental/`](experimental/README.md) | Capabilities under evaluation; [status and support policy](experimental/README.md#status) |
 | [`workflow/`](workflow/README.md) | Workflow seam, PTC process engine, and the model-facing `workflow` tool |
 | [`web/`](web/README.md) | Web capability family: seam, search/fetch providers, model-facing web tools |
-| [`document/`](document/README.md) | Document domain: the model-facing delivery tool, templates, style model, and DOCX kit, plus Host Office-to-PDF conversion |
+| [`document/`](document/README.md) | Document domain: delivery tool, templates, style model, DOCX kit, and Host Office conversion |
 | [`attachment/`](attachment/README.md) | Durable attachment identity, validation, local content-addressed storage |
 | [`spill/`](spill/README.md) | Spill capability family: storage seam, local impl, tool-result spill policy |
 | [`todo/`](todo/README.md) | The model-facing `todo_write` tool |
@@ -86,7 +87,7 @@ New packages join existing groups, and a new group updates its own README and th
 | [`client/`](client/README.md) | Web-GUI browser half: shell, wire, object services, slots, `ui-*` plugins |
 | [`desktop/`](desktop/README.md) | Desktop OS integration: Service Definition + Electron shell provider + sandboxed directory-picker bridge + CLI-backed macOS native tools |
 | [`test-support/`](test-support/README.md) | Test infrastructure (testkits, replay, Loader smokes) |
-| [`util/`](util/README.md) | Low-level shared utilities and package lists (`Branded<B>`, home/path helpers, timeout, retention, official bundle lists); runtime dependencies only where needed (`zod`, `undici`, `dsh-util-values`) |
+| [`util/`](util/README.md) | Shared utilities and package lists (`Branded<B>`, home/path helpers, timeout, retention, official bundle lists); runtime dependencies where needed (`zod`, `undici`, `dsh-util-values`) |
 
 -----
 

@@ -104,8 +104,8 @@ const EXEMPT_REFERENCES: ReadonlyMap<string, string> = new Map([
   ['section_order', 'validate_specification result key'],
   ['source_path', 'patent evidence field'],
   ['unreadable_ack', 'document_deliver parameter'],
-  ['spawn_teammate', 'tool of @deepseek-ai/dsh-experimental-tool-agent-team, which no shipped preset mounts; named only to prohibit its use'],
-  ['wait_agent', 'tool of @deepseek-ai/dsh-experimental-tool-agent-team, which no shipped preset mounts; named only to prohibit its use'],
+  ['spawn_teammate', 'removed by the subagent-control split; no shipped package registers it, and the corpus names it only to prohibit its use'],
+
 ])
 
 /**

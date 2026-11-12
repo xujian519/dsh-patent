@@ -60,7 +60,7 @@ Web patch 为每个会话挂载本插件；会话打开过项目后标签即出�
 <a id="further-exploration"></a>
 ## 延伸阅读
 
-- [dsh-experimental-video-mode](../../experimental/video-mode/README.zh.md) —— 本看板读取的项目文档、账本、日志、工具与提供方。
+- [dsh-video-mode](../../experimental/video-mode/README.zh.md) —— 本看板读取的项目文档、账本、日志、工具与提供方。
 - [ui-document-studio](../ui-document-studio/README.zh.md) —— 面向产出文件的兄弟交付工作室。
 - [ui-conversation](../ui-conversation/README.zh.md) —— `conversation.view` 环及其视图定义。
 - [客户端包地图](../README.zh.md) —— 相邻浏览器 UI 包。
@@ -93,6 +93,6 @@ Web patch 为每个会话挂载本插件；会话打开过项目后标签即出�
 <details>
 <summary>维护者工作上下文——点击展开</summary>
 
-`tests/project-reads.client.spec.ts` 拥有解析与读取约定，`tests/video-projects.client.spec.ts` 拥有折叠与修订语义，`tests/StudioView.client.spec.tsx` 拥有看板行为。项目文档 schema 位于 `dsh-experimental-video-mode`；这些解析器只需与看板展示的字段保持对齐，不要复制 Host 的完整校验器。
+`tests/project-reads.client.spec.ts` 拥有解析与读取约定，`tests/video-projects.client.spec.ts` 拥有折叠与修订语义，`tests/StudioView.client.spec.tsx` 拥有看板行为。项目文档 schema 位于 `dsh-video-mode`；这些解析器只需与看板展示的字段保持对齐，不要复制 Host 的完整校验器。
 
 </details>

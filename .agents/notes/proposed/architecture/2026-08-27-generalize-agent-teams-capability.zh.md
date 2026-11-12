@@ -8,7 +8,7 @@ Status: proposed
 
 多智能体团队功能在本仓库中存在三份实现、两种互不兼容的持久化模型，而唯一已发布的那份被锁死在专利领域：
 
-- `packages/experimental/agent-team` + `packages/experimental/tool-agent-team`（[落位决策](../../archived/architecture/2026-08-18-experimental-agent-teams-packages.md)）——Lead/teammate 模型，邮箱与任务板存放在 Lead 的会话日志中，带事件折叠与不变量重放。未发布（experimental 发布排除），仅被 headless 示例挂载，且没有调度器。
+- `packages/team/agent-team` + `packages/team/tool-agent-team`（[落位决策](../../archived/architecture/2026-08-18-experimental-agent-teams-packages.md)）——Lead/teammate 模型，邮箱与任务板存放在 Lead 的会话日志中，带事件折叠与不变量重放。未发布（experimental 发布排除），仅被 headless 示例挂载，且没有调度器。
 - `packages/patent/patent-teams`——上游插件 `NanmiCoder/dsh-agent-teams` 的正式移植版，重定域到专利：文件态 `.patent-teams/`、带 `attempt`/`attemptId`/`handoffId` 撤销的事件驱动调度器、JSONL 邮箱、组合式完成门禁，以及唯一真实接入的 preset（[接线](../../implemented/feature/2026-08-23-wire-patent-teams-into-preset.zh.md)）。
 - 上游插件本体（外部、MIT、约 1.1k stars）——领域无关且比我们的移植版功能更全，但在仓库之外、不受我们的接缝控制。
 
@@ -55,7 +55,7 @@ Status: proposed
 ### 迁移与范围
 
 - 专利重定基：`packages/patent/patent-teams` 收缩为实现两个钩子的小策略插件，覆盖 `patent-workflow`/`patent-tools`/`patent-rule`；专利 preset 的 `isolate.patentTeams` 挂载改名为通用服务。适用 pre-release 立场——不迁移旧 `.patent-teams/` 状态目录。
-- Experimental 退役：删除 `packages/experimental/agent-team` + `tool-agent-team`，其 headless 示例改为挂载通用接缝，入站链接（含 `agentTeams` api-catalog 键）在同一变更中修复。其耐久的思想——团队事件的不变量重放、`waitForChange`——在此记录为日后并入通用 provider 的候选，而非阻塞项。
+- Experimental 退役：删除 `packages/team/agent-team` + `tool-agent-team`，其 headless 示例改为挂载通用接缝，入站链接（含 `agentTeams` api-catalog 键）在同一变更中修复。其耐久的思想——团队事件的不变量重放、`waitForChange`——在此记录为日后并入通用 provider 的候选，而非阻塞项。
 - 上游特性采纳分阶段：P0 是保持移植版现有语义的通用核心（调度器、attempt 撤销、邮箱、模型快照）；P1 加 `halted`/`escalated` 生命周期与 `agent_teams_resume`、命名 profiles；P2 是 staged 计划 + Approve & Run 与浮层活动面板（需要命令面与客户端工作）。
 - 领域落位：专利迁移（P0 验证），`code`/`standard` preset 以现成质量种类门禁获得接缝（P1），`document` 携带组合技能挂载并以 `document_deliver` 为终局门禁（P1）。自媒体在该领域进入本仓库之前保持在外；接缝就是它届时要挂载的东西。
 

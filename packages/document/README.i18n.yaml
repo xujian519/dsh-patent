@@ -3,23 +3,23 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/document/README.md
 /:
-  en: 43568a9124ff80ab
-  zh: 94bebbefb1147029
-/document-document-delivery-and-office-conversion:
-  en: b15d72e12fd51ed2
-  zh: 9e5690530e1e69fb
-/document-document-delivery-and-office-conversion/summary:
-  en: 3829706b3aa2832c
-  zh: 77859e71c84d0567
-/document-document-delivery-and-office-conversion/table-of-contents:
+  en: a92891fc15dcf0b0
+  zh: 2270fdec02180b40
+/document-office-documents-and-document-delivery:
+  en: 45f4012b862c7a2c
+  zh: e7d9135820434d35
+/document-office-documents-and-document-delivery/summary:
+  en: bca9159f9220661d
+  zh: 579e54abfcf681fb
+/document-office-documents-and-document-delivery/table-of-contents:
   en: 1eb35b015a6c423f
   zh: a8a3dceee2c9e943
-/document-document-delivery-and-office-conversion/packages:
-  en: 96179e9e42e353c2
-  zh: b684e136b605e04e
-/document-document-delivery-and-office-conversion/related-documentation:
-  en: bd98b091b248bbdb
-  zh: 778af8a4f49d322a
-/document-document-delivery-and-office-conversion/dev-note:
+/document-office-documents-and-document-delivery/packages:
+  en: 4f5fb339658fc166
+  zh: c249d59252d5b9d5
+/document-office-documents-and-document-delivery/related-documentation:
+  en: 73db6f7c9a552bf1
+  zh: 7eae0026a921bf10
+/document-office-documents-and-document-delivery/dev-note:
   en: 5de1d6304e00c58f
   zh: e58fc8dda0bea8d5

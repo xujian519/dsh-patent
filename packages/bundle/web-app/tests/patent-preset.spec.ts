@@ -468,7 +468,7 @@ describe('patent preset composition', () => {
     const rows = await patentRows()
     const named = rows.filter((row): row is PresetRow & { name: string } => typeof row.name === 'string')
     const mounted = named.map(row => packageOf(row.name))
-    expect(mounted).not.toContain('@deepseek-ai/dsh-experimental-tool-agent-team')
+    expect(mounted).not.toContain('@deepseek-ai/dsh-tool-agent-team')
     expect(mounted).toContain('@deepseek-ai/dsh-tool-subagent-control')
     const skill = readFileSync(join(PATENT_SKILLS, 'patent-team-composition', 'SKILL.md'), 'utf8')
     const discipline = skill.split('\n').find(line => line.includes('patent_teams_send_message'))

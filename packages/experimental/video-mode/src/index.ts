@@ -10,7 +10,7 @@
  * This package is an evaluated prototype. The provider seam, the project
  * document, and the EDL are designed for promotion into separate `media/` and
  * `video/` packages once a second provider and the Web studio land.
- * @module @deepseek-ai/dsh-experimental-video-mode
+ * @module @deepseek-ai/dsh-video-mode
  */
 
 import type { Context } from '@deepseek-ai/cordis'

@@ -41,6 +41,7 @@ python/**/__pycache__/
 python/**/.pytest_cache/
 packages/**/__pycache__/
 apps/web/dist/
+apps/cli/docs/
 apps/desktop/dist/
 apps/desktop/release/
 apps/desktop/resources/
@@ -52,6 +53,7 @@ apps/desktop/resources/
 .build/
 .dsh-report/
 .dsh-research/
+.ui-review/
 .playwright-mcp/
 .orig
 .worktrees/

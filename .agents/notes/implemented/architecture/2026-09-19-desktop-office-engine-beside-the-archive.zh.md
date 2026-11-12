@@ -8,7 +8,7 @@ Status: implemented
 
 打包后的桌面应用无法预览 Office 文档。每次转换都返回 `document-render/failed`、reason 为 `unavailable`，右侧栏据此显示「Office 预览不可用。请在运行 DeepSeek Harness 的主机上启用文档预览服务。」而同一版本的源码安装能转换同一批文档。
 
-[Office 转换提供方](../../../../packages/document/office-to-pdf/README.zh.md)把渲染委托给 `@deepseek-ai/libreoffice-kit`。它的 `resolveEngine` 与 `engineAsset` 用 `require.resolve('@deepseek-ai/libreoffice-kit-<target>/package.json')` 解析引擎包，并把该包根目录以下的每条路径当作普通文件树。在桌面包中，这个根目录是 `resources/app.asar/dsh/node_modules/@deepseek-ai/libreoffice-kit-<target>`：
+[Office 转换提供方](../../../../packages/document/office-kit/README.zh.md)把渲染委托给 `@deepseek-ai/libreoffice-kit`。它的 `resolveEngine` 与 `engineAsset` 用 `require.resolve('@deepseek-ai/libreoffice-kit-<target>/package.json')` 解析引擎包，并把该包根目录以下的每条路径当作普通文件树。在桌面包中，这个根目录是 `resources/app.asar/dsh/node_modules/@deepseek-ai/libreoffice-kit-<target>`：
 
 - 对 `app.asar` 内任意路径调用 `stat()` 得到的是 Electron 合成的归档模式，因此 `bin/libreoffice-kit` 读作 `0644`，kit 的可执行检查（`mode & 0o111`）在转换开始前就拒绝该引擎。把文件标记为解包也不能改变这一点：`@electron/asar` 写解包条目时不写 `executable` 头标志，Electron 也不会为归档路径去 stat 解包的孪生文件。
 - kit 以 `--program-directory <engine>/program/...` 启动 `bin/libreoffice-kit`。该辅助程序是独立的原生进程，不支持归档，因此归档路径指向一棵它无法打开的 LibreOffice 目录树。

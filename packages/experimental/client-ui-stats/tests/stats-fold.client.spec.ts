@@ -1,6 +1,5 @@
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
-    'team-message': { readonly kind: 'team-message'; readonly senderName: string }
     /** Fixture mirror of the host `agent-message` source (subagent continuation). */
     'agent-message': {
       readonly kind: 'agent-message'
@@ -12,6 +11,7 @@ declare module '@deepseek-ai/dsh-llm' {
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { SessionEventLike } from '@deepseek-ai/dsh-api-session-controller/client'
+import { TeamId, TeamMessageId } from '@deepseek-ai/dsh-agent-team/types'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import {
   LlmAttemptId,
@@ -731,10 +731,10 @@ describe('prompt helper', () => {
 describe('trigger sender helper', () => {
   it('names the teammate that sent a framed message', () => {
     expect(triggerSenderOf(userMessage([imageBlock(), textBlock('Team message from hfai-deploy: update')], {
-      kind: 'team-message', senderName: 'hfai-deploy',
+      kind: 'team-message', teamId: TeamId('team'), messageId: TeamMessageId('message'), senderId: SessionId('sender'), senderName: 'hfai-deploy',
     }))).toBe('hfai-deploy')
     expect(triggerSenderOf(userMessage([textBlock('Team message from  stack-rebase : go')], {
-      kind: 'team-message', senderName: 'stack-rebase',
+      kind: 'team-message', teamId: TeamId('team'), messageId: TeamMessageId('message'), senderId: SessionId('sender'), senderName: 'stack-rebase',
     }))).toBe('stack-rebase')
   })
 

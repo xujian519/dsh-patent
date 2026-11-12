@@ -4,7 +4,7 @@
  * production skills mounted, the budget and confirmation threshold in the
  * persona, and no second deliverable channel (`present`). This spec reads the
  * shipped declaration; the tool and service behavior is covered by
- * `@deepseek-ai/dsh-experimental-video-mode`'s own tests.
+ * `@deepseek-ai/dsh-video-mode`'s own tests.
  */
 
 import { readdir, readFile } from 'node:fs/promises'
@@ -79,7 +79,7 @@ describe('video preset declaration', () => {
   it('mounts one video-mode row with cloud H3 video and local keyframes, and no second delivery channel', async () => {
     const preset = await loadPreset()
     const row = findRow(preset, 'video-mode')
-    expect(row?.name).toBe('@deepseek-ai/dsh-experimental-video-mode')
+    expect(row?.name).toBe('@deepseek-ai/dsh-video-mode')
     expect(row?.disabled).toBeUndefined()
     const config = configOf(row)
     expect(config['fakeProvider']).toBe(false)

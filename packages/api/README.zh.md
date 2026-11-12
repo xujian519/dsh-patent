@@ -32,7 +32,6 @@ kind: "package-group"
 | [`job-controller/`](job-controller/README.zh.md) | 把一个后台任务的观测 record 流式送到 Client。 | `ctx.jobController` / `ctx.remote.job` |
 | [`session-controller/`](session-controller/README.zh.md) | 拥有会话命令、历史记录流、实时控制状态与 Agent/Session 身份策略。 | `ctx.sessionController` / `ctx.remote.session` |
 | [`settings-controller/`](settings-controller/README.zh.md) | 拥有 settings 域各 seam 之上的配置界面读写。 | `ctx.settingsController`、`ctx.credentialsController` / `ctx.remote.settings`、`ctx.remote.credentials` |
-| [`account-controller/`](account-controller/README.zh.md) | 拥有账号 Remote 面：以已认证命令与快照流封装账号服务，不返回 token 或 PKCE 机密。 | `ctx.accountController` / `ctx.remote.account` |
 | [`workspace-controller/`](workspace-controller/README.zh.md) | 拥有 Workspace 变更与完整 Client Workspace 投影。 | `ctx.workspaceController` / `ctx.remote.workspace` |
 | [`terminal-controller/`](terminal-controller/README.zh.md) | Session 拥有的交互式 shell、屏幕恢复和浏览器终端控制。 | `ctx.terminalController` / `ctx.remote.terminal` |
 | [`workspace-files/`](workspace-files/README.zh.md) | 拥有有界的工作区文件访问——`stat`、分页 `read`、`list` 与已埋点操作的 `changes` 流——以及其上的 Client `file` 资源提供方。 | `ctx.workspaceFiles` / `ctx.remote.workspaceFiles` |

@@ -6,14 +6,34 @@
  */
 import type { Context, Fiber } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
-import type { BootManifest, BootPluginRow, ClientModuleLoader } from '@deepseek-ai/dsh-client-modules/client'
+import type { BootManifest, ClientModuleLoader } from '@deepseek-ai/dsh-client-modules/client'
 import { STATE_LABELS } from './loader-status.ts'
 
 /** Entry state label as the boot page renders it. */
 export type EntryStateLabel = (typeof STATE_LABELS)[keyof typeof STATE_LABELS] | 'loading' | 'failed'
 
+/**
+ * Entry names whose presence defines a usable Web client.
+ *
+ * The list is global rather than page or profile metadata. A name absent from
+ * the boot manifest does not affect startup; a listed entry that is present
+ * must activate. The list covers the module system, Session control, the
+ * renderer and application frame, and the Session view with its sidebar. It is
+ * the minimum fatal set: an entry that a listed entry waits on leaves it
+ * inactive, so that entry's failure also rejects startup.
+ */
+const requiredClientEntryNames = new Set<string>([
+  '@deepseek-ai/dsh-client-modules',
+  '@deepseek-ai/dsh-api-session-controller',
+  '@deepseek-ai/dsh-client-ui-renderer',
+  '@deepseek-ai/dsh-client-ui-layout',
+  '@deepseek-ai/dsh-client-ui-session',
+  '@deepseek-ai/dsh-client-ui-chat',
+  '@deepseek-ai/dsh-client-ui-sidebar',
+])
+
 /** Inputs of {@link bootClient}. */
-interface ClientBootOptions {
+export interface ClientBootOptions {
   /** Fresh root Context that will own the plugin tree. */
   readonly ctx: Context
   /** Module system installed as `loader.internal`. */
@@ -27,11 +47,12 @@ interface ClientBootOptions {
 /**
  * Compose the client: `ctx.plugin(Loader)`, `loader.internal = modules`, one
  * `loader.create({ name })` per manifest row, `loader.await()`, then
- * {@link auditClientActivation}. A row whose module cannot be imported is
- * marked failed; the Loader logs its import error, the module system records
- * it, and the audit names that error text in its report.
+ * {@link assertEntriesActive}. A row whose module cannot be imported is marked
+ * failed; the Loader logs its import error, the module system records it, and
+ * the audit reports that error text per entry.
  * @param options - context, module system, manifest, optional progress sink.
- * @returns resolves after every required entry is active; rejects with the audit report otherwise.
+ * @returns resolves after the audit accepts the tree, including after optional-entry warnings;
+ * rejects with the audit report when a required entry is inactive.
  */
 export async function bootClient(options: ClientBootOptions): Promise<void> {
   const { ctx, manifest, onEntryState } = options
@@ -53,50 +74,38 @@ export async function bootClient(options: ClientBootOptions): Promise<void> {
   }
 
   await loader.await()
-  await auditClientActivation(ctx, options.modules, manifest.plugins)
-}
-
-/** One inactive Loader entry and the reason the audit names for it. */
-interface InactiveEntry {
-  name: string
-  /** Row policy: an inactive required entry keeps the application from starting. */
-  required: boolean
-  detail: string
+  await assertEntriesActive(ctx, options.modules)
 }
 
 /**
- * Apply client startup policy to a settled Loader tree.
- *
- * An inactive required entry rejects startup with every inactive entry named.
- * A row the active profile installed is optional: its inactivity warns instead,
- * because the application is usable without a plugin half the deployment does
- * not own, and Settings → Plugins carries the client synchronization failure
- * and its retry.
+ * Audit entries that failed import/apply or still wait on missing services.
+ * An inactive entry named in the required list rejects startup; other
+ * inactive entries produce one warning and leave active siblings running.
+ * A failed entry reports its recorded activation error; reading it awaits
+ * only failed fibers, which have settled by the time the Loader has.
  * @param ctx - root Context carrying the Loader.
  * @param modules - the module system whose recorded import failures name why an entry
- *   has no fiber; a row with no record points at the console.
- * @param rows - boot rows carrying the per-entry required marks.
- * @param warn - sink for optional-entry warnings.
- * @throws {Error} when a required entry is inactive, listing every inactive entry with its reason.
+ *   has no fiber; a row with no record points at the console. An entry without a fiber
+ *   failed to import or was rejected at creation (its module exports no plugin); like the
+ *   Host audit's `failed to import`, both are reported as an import failure.
+ * @param warn - sink for the optional-entry warning.
+ * @returns resolves after any optional-entry warning.
+ * @throws {Error} rejects when a required entry is inactive, listing every non-active entry with its
+ *   reason and marking the required ones; no warning is written in that case.
  */
-export async function auditClientActivation(
+export async function assertEntriesActive(
   ctx: Context,
   modules: Pick<ClientModuleLoader, 'importError'>,
-  rows: readonly BootPluginRow[],
-  warn: (line: string) => void = warnToConsole,
+  warn: (message: string) => void = (message) => { console.warn(message) },
 ): Promise<void> {
-  // Rows outside the boot graph (a child plugin of an active row) are required here.
-  const optionalRows = new Set(rows.filter(row => !row.required).map(row => row.id))
-  const failures: InactiveEntry[] = []
+  const failures: { name: string; reason: string }[] = []
   for (const entry of ctx.loader.entries()) {
     const name = entry.options.name
-    const required = !optionalRows.has(name)
     if (entry.fiber === undefined) {
       const importError = modules.importError(name)
       failures.push({
         name,
-        required,
-        detail: importError === undefined
+        reason: importError === undefined
           ? 'import failed (see console for the import error)'
           : `import failed: ${importError.message}`,
       })
@@ -106,58 +115,35 @@ export async function auditClientActivation(
     if (state === 'active') continue
     if (state === 'pending') {
       const missing = Object.keys(entry.fiber.inject).filter(service => ctx.get(service) === undefined)
-      failures.push({
-        name,
-        required,
-        detail: `pending (waiting for service${missing.length === 1 ? '' : 's'}: ${missing.join(', ') || 'unknown'})`,
-      })
-      continue
+      failures.push({ name, reason: `pending (waiting for service${missing.length === 1 ? '' : 's'}: ${missing.join(', ') || 'unknown'})` })
+    } else if (state === 'failed') {
+      failures.push({ name, reason: await activationFailure(entry.fiber) })
+    } else {
+      failures.push({ name, reason: state })
     }
-    failures.push({
-      name,
-      required,
-      // Only a FAILED fiber carries the activation error that `await()` rethrows.
-      detail: state === 'failed' ? `failed${await activationErrorDetail(entry.fiber)}` : state,
-    })
   }
-  const blocking = failures.filter(failure => failure.required)
-  if (blocking.length > 0) {
-    throw new Error([
-      `web boot: ${String(blocking.length)} required ${blocking.length === 1 ? 'entry' : 'entries'} did not activate`,
-      ...failures.map(inactiveDiagnostic),
-    ].join('\n'))
+  if (failures.length === 0) return
+  const isRequired = (name: string): boolean => requiredClientEntryNames.has(name)
+  const required = failures.filter(({ name }) => isRequired(name)).length
+  if (required > 0) {
+    const lines = failures.map(({ name, reason }) => `${name}${isRequired(name) ? ' (required)' : ''}: ${reason}`)
+    throw new Error(`web boot: ${String(required)} required ${entryNoun(required)} did not activate\n${lines.join('\n')}`)
   }
-  if (failures.length > 0) {
-    warn([
-      `web boot: warning: ${String(failures.length)} ${failures.length === 1 ? 'entry' : 'entries'} did not activate`,
-      ...failures.map(inactiveDiagnostic),
-      '',
-    ].join('\n'))
-  }
+  const lines = failures.map(({ name, reason }) => `${name}: ${reason}`)
+  warn(`web boot: warning: ${String(failures.length)} ${entryNoun(failures.length)} did not activate\n${lines.join('\n')}`)
 }
 
-/** Stable per-entry text for the boot report and optional warnings. */
-function inactiveDiagnostic({ name, required, detail }: InactiveEntry): string {
-  return `${name}${required ? ' (required)' : ''}: ${detail}`
+/** Singular or plural noun for an entry count in audit reports. */
+function entryNoun(count: number): string {
+  return count === 1 ? 'entry' : 'entries'
 }
 
-/** Default optional-entry sink: the audit runs before any page surface owns the report. */
-function warnToConsole(line: string): void {
-  console.warn(line)
-}
-
-/**
- * Read the activation error the fiber failed with, one line of it: the report
- * reaches the boot page and the Desktop crash dialog, and the console already
- * carries the full stack through the Loader's own logging.
- * @param fiber - the failed fiber, whose settled error {@link Fiber.await} rethrows.
- * @returns the message prefixed with `: `, or `''` when the fiber carries none.
- */
-async function activationErrorDetail(fiber: Fiber): Promise<string> {
+/** A failed fiber's recorded activation error; Cordis exposes it only through `await()`, which rethrows it. */
+async function activationFailure(fiber: Pick<Fiber, 'await'>): Promise<string> {
   try {
     await fiber.await()
   } catch (error) {
-    return `: ${error instanceof Error ? error.message : String(error)}`
+    return `failed: ${String(error)}`
   }
-  return ''
+  return 'failed'
 }

@@ -33,7 +33,7 @@ function stubRun(output: ContentBlock[], stopReason = 'completed'): StubRun {
   }
 }
 
-type ForkStart = (spec: { request: { prompt: ContentBlock[]; parent: unknown }; signal: AbortSignal }) => Promise<StubRun>
+type ForkStart = (spec: { prompt: ContentBlock[]; parent: unknown; signal: AbortSignal }) => Promise<StubRun>
 
 function provideRuntime(ctx: Context, start: ForkStart, agentsGet: () => unknown = () => ({})): void {
   ctx.provide('subagents', {
@@ -167,7 +167,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       const parent = {}
       const agentsGet = vi.fn(() => parent)
       const start = vi.fn(
-        async (_spec: { request: { prompt: ContentBlock[]; parent: unknown }; signal: AbortSignal }) =>
+        async (_spec: { prompt: ContentBlock[]; parent: unknown; signal: AbortSignal }) =>
           stubRun([textBlock('{"score": 80}')]),
       )
       provideRuntime(ctx, start, agentsGet)
@@ -181,7 +181,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
 
       expect(agentsGet).toHaveBeenCalledWith(SessionId('sess-1'))
       const spec = start.mock.calls[0]![0]
-      expect(spec.request.parent).toBe(parent)
+      expect(spec.parent).toBe(parent)
     })
 
     it('collects every optional outcome field when the evaluator reports them', async () => {
@@ -223,7 +223,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
     it('fails loud when the evaluator subagent ends early', async () => {
       const ctx = new Context()
       provideRuntime(ctx, async (spec) => {
-        const first = spec.request.prompt[0]
+        const first = spec.prompt[0]
         const text = first !== undefined && first.type === 'text' ? first.text : ''
         if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
         return stubRun([textBlock('{"score": 80}')], 'error')
@@ -318,7 +318,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       const parent = {}
       const runs: StubRun[] = []
       const start: ForkStart = async (spec) => {
-        const first = spec.request.prompt[0]
+        const first = spec.prompt[0]
         const text = first !== undefined && first.type === 'text' ? first.text : ''
         const run = text.includes('任务执行者')
           ? stubRun([textBlock('正式答复文本')])
@@ -345,7 +345,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       const ctx = new Context()
       const parent = {}
       const start: ForkStart = async (spec) => {
-        const first = spec.request.prompt[0]
+        const first = spec.prompt[0]
         const text = first !== undefined && first.type === 'text' ? first.text : ''
         if (text.includes('任务执行者')) {
           return { ...stubRun([textBlock('deliverable')]), childId: SessionId('exec-session-1') }
@@ -370,7 +370,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       provideRuntime(
         ctx,
         async (spec) => {
-          const first = spec.request.prompt[0]
+          const first = spec.prompt[0]
           const text = first !== undefined && first.type === 'text' ? first.text : ''
           if (text.includes('任务执行者')) return stubRun([textBlock('partial')], 'max-tokens')
           return stubRun([textBlock('{"score": 80}')])
@@ -389,7 +389,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
   describe('default optimizer and applier seams', () => {
     function routedStart(routes: Record<string, { output: string; stopReason?: string }>): ForkStart {
       return async (spec) => {
-        const first = spec.request.prompt[0]
+        const first = spec.prompt[0]
         const text = first !== undefined && first.type === 'text' ? first.text : ''
         const route = text.includes('任务执行者')
           ? 'execute'
@@ -514,7 +514,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       const ctx = new Context()
       let evaluateCalls = 0
       provideRuntime(ctx, async (spec) => {
-        const first = spec.request.prompt[0]
+        const first = spec.prompt[0]
         const text = first !== undefined && first.type === 'text' ? first.text : ''
         if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
         evaluateCalls += 1
@@ -539,7 +539,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
     it('applies configured loop defaults to an optimizeLoop that omits them', async () => {
       const ctx = new Context()
       const start: ForkStart = async (spec) => {
-        const first = spec.request.prompt[0]
+        const first = spec.prompt[0]
         const text = first !== undefined && first.type === 'text' ? first.text : ''
         if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
         if (text.includes('优化者')) return stubRun([textBlock('{"name":"n","description":"d","prediction":"p"}')])
@@ -572,7 +572,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       const ctx = new Context()
       let evaluateCalls = 0
       provideRuntime(ctx, async (spec) => {
-        const first = spec.request.prompt[0]
+        const first = spec.prompt[0]
         const text = first !== undefined && first.type === 'text' ? first.text : ''
         if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
         evaluateCalls += 1
@@ -598,7 +598,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
     it('honors explicit optimizeLoop knobs over the configured defaults', async () => {
       const ctx = new Context()
       provideRuntime(ctx, async (spec) => {
-        const first = spec.request.prompt[0]
+        const first = spec.prompt[0]
         const text = first !== undefined && first.type === 'text' ? first.text : ''
         if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
         if (text.includes('优化者')) return stubRun([textBlock('{"name":"n","description":"d","prediction":"p"}')])

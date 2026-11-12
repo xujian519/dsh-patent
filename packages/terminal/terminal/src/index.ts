@@ -6,7 +6,7 @@
 
 import { Context, Service } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { TerminalBackendCleanupError } from './types.ts'
+import { TerminalBackendCleanupError, TerminalError } from './error.ts'
 import type {
   TerminalBackend,
   TerminalBackendSession,
@@ -40,7 +40,7 @@ export type {
   TerminalSpawnResult,
   TerminalWaitReason,
 } from './types.ts'
-export { TerminalBackendCleanupError } from './types.ts'
+export { TerminalBackendCleanupError, TerminalError, type TerminalErrorCode } from './error.ts'
 
 /** Opaque identity minted by {@link TerminalSessionService} for one live PTY session. */
 export type TerminalSessionId = TerminalSessionIdValue
@@ -48,27 +48,6 @@ export type TerminalSessionId = TerminalSessionIdValue
 declare module '@deepseek-ai/cordis' {
   interface Context {
     terminals: TerminalSessionService
-  }
-}
-
-/** Machine-routable PTY service failures. */
-export type TerminalErrorCode =
-  | 'DUPLICATE_BACKEND'
-  | 'DUPLICATE_NAME'
-  | 'FOREIGN_SESSION'
-  | 'NO_BACKEND'
-  | 'NO_SESSION'
-  | 'OWNER_NOT_LIVE'
-  | 'SEND_ACTIVE'
-  | 'SESSION_CLOSING'
-  | 'SESSION_EXITED'
-  | 'SERVICE_DISPOSING'
-
-/** Error carrying a stable {@link TerminalErrorCode}. */
-export class TerminalError extends Error {
-  constructor(message: string, readonly code: TerminalErrorCode) {
-    super(message)
-    this.name = 'TerminalError'
   }
 }
 

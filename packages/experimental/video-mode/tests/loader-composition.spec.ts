@@ -112,7 +112,7 @@ async function boot(directory: string): Promise<Context> {
     "- name: '@deepseek-ai/dsh-working-directory'",
     '  config:',
     `    defaultDirectory: ${JSON.stringify(directory)}`,
-    "- name: '@deepseek-ai/dsh-experimental-video-mode'",
+    "- name: '@deepseek-ai/dsh-video-mode'",
     '  config:',
     '    fakeProvider: true',
     '    approvalThresholdCny: 0.1',
@@ -135,7 +135,7 @@ async function boot(directory: string): Promise<Context> {
     ['@deepseek-ai/dsh-fs-local', LocalFileSystem],
     ['@deepseek-ai/dsh-subprocess-local', LocalSubprocessRuntime],
     ['@deepseek-ai/dsh-working-directory', WorkingDirectory],
-    ['@deepseek-ai/dsh-experimental-video-mode', VideoMode],
+    ['@deepseek-ai/dsh-video-mode', VideoMode],
   ])
   ctx.loader.internal = new StubLoader(modules)
   await ctx.loader.create({ name: 'cordis:include', config: { path: pathToFileURL(configPath).href } })

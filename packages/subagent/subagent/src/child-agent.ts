@@ -155,7 +155,7 @@ export function childSessionMeta(
 
 /** The scoped composition a child agent's creation window applies. */
 export interface ChildComposition {
-  /** Independently mounted preset; omission shares the parent's standing generation. */
+  /** Preset to mount; omission shares a supplied creator or uses host composition. */
   readonly agentPreset?: string | undefined
   /** Historical descriptor persona reapplied only during cold resume. */
   readonly persona?: string | undefined
@@ -184,16 +184,17 @@ const SUBAGENT_DELEGATION_CONTEXT
 
 /**
  * Compose a child before publication and restore historical descriptor overrides.
- * Explicit selection mounts the named preset; omission synchronously joins the
- * parent's current generation. Registrations belong to the child's scope.
+ * Explicit selection mounts the named preset. Omission joins a supplied creator's
+ * current generation; a restored child without a saved preset uses host composition.
+ * Registrations belong to the child's scope.
  * @param childCtx - the child agent's scoped creation context.
- * @param parent - the delegating parent used when no preset is selected.
+ * @param parent - creator for fresh delegation; absent during target-only restoration.
  * @param composition - independent preset and any overrides read from a historical descriptor.
  * @returns A promise when mounting an independent preset; otherwise completes synchronously.
  */
 export function applyChildComposition(
   childCtx: Context,
-  parent: Agent,
+  parent: Agent | undefined,
   composition: ChildComposition,
 ): void | Promise<void> {
   if (composition.agentPreset !== undefined) {
@@ -205,9 +206,20 @@ export function applyChildComposition(
       applyChildOverrides(childCtx, composition)
     })
   }
-  childCtx.get('agentPresets')?.composeFrom(childCtx, parent.ctx)
+  if (parent !== undefined) childCtx.get('agentPresets')?.composeFrom(childCtx, parent.ctx)
   applyChildOverrides(childCtx, composition)
 }
+
+/** One descriptor tool list narrowed to the names its child still carries. */
+type RestoredToolMask =
+  | { readonly declared: false }
+  | {
+    readonly declared: true
+    /** Surviving names after narrowing. */
+    readonly kept: string[]
+    /** Whether a non-empty written list lost every name. */
+    readonly emptied: boolean
+  }
 
 function applyChildOverrides(childCtx: Context, composition: ChildComposition): void {
   childCtx.systemPrompt.context({
@@ -228,16 +240,21 @@ function applyChildOverrides(childCtx: Context, composition: ChildComposition): 
     // no longer carries must narrow the mask rather than fail the restore. A
     // fresh spawn still fails loud, because its composition just produced it.
     const known = composition.restoring === true ? childCtx.tools.restrictableNames() : undefined
-    const narrow = (names?: readonly string[]): string[] | undefined =>
-      known === undefined ? (names === undefined ? undefined : [...names]) : names?.filter(name => known.has(name))
-    const allow = narrow(composition.toolFilter.allow)
-    const deny = narrow(composition.toolFilter.deny)
+    const maskOf = (names: readonly string[] | undefined): RestoredToolMask => {
+      if (names === undefined) return { declared: false }
+      const kept = known === undefined ? [...names] : names.filter(name => known.has(name))
+      return { declared: true, kept, emptied: names.length > 0 && kept.length === 0 }
+    }
+    const allow = maskOf(composition.toolFilter.allow)
+    const deny = maskOf(composition.toolFilter.deny)
     // An allow list whose every name vanished would hide the whole inherited
-    // surface; fail open to no restriction instead of stranding the child.
-    if (allow === undefined || allow.length > 0) {
+    // surface; fail open to no restriction instead of stranding the child. A
+    // list that was empty when written states a deliberately tool-free child,
+    // so it keeps restricting to nothing.
+    if (!(allow.declared && allow.emptied)) {
       childCtx.tools.restrict({
-        ...(allow === undefined ? {} : { allow }),
-        ...(deny === undefined ? {} : { deny }),
+        ...(allow.declared ? { allow: allow.kept } : {}),
+        ...(deny.declared ? { deny: deny.kept } : {}),
       })
     }
   }

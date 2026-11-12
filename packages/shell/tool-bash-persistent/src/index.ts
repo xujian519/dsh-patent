@@ -9,9 +9,10 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { truncateWithoutSplittingSurrogatePair } from '@deepseek-ai/dsh-output-retention'
+import { TerminalError } from '@deepseek-ai/dsh-terminal'
 import type { TerminalReadResult, TerminalSessionId } from '@deepseek-ai/dsh-terminal'
 import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
-import { defineTool } from '@deepseek-ai/dsh-tools'
+import { defineTool, ToolArgsError, ToolContextUnavailableError } from '@deepseek-ai/dsh-tools'
 import { LOST_PREFIX_NOTICE, TRUNCATED_NOTICE, timeoutNotice } from './notices.ts'
 
 const SHELL_RESET_MESSAGE = 'The persistent bash shell was reset; the next bash call starts from the workspace with a fresh current directory and environment.'
@@ -289,7 +290,7 @@ function persistentShells(ctx: Context, config: ResolvedConfig): PersistentShell
         })
         const result = await setup.done
         if (result.sessionStatus.kind === 'exited' || result.waitReason === 'timeout') {
-          throw new Error('persistent bash shell did not accept initialization')
+          throw new TerminalError('persistent bash shell did not accept initialization', 'INIT_REJECTED')
         }
         return spawned.sessionId
       } catch (error: unknown) {
@@ -435,9 +436,9 @@ function registerPersistentBash(ctx: Context, config: ResolvedConfig): void {
       render: (_args, value) => [{ type: 'text', text: value }],
     },
     async execute(args, exec) {
-      if (args.command.trim().length === 0) throw new Error('command must be a non-empty string')
+      if (args.command.trim().length === 0) throw new ToolArgsError(['command must be a non-empty string'])
       const owner = exec.agent
-      if (owner === undefined) throw new Error('bash requires an owning agent session')
+      if (owner === undefined) throw new ToolContextUnavailableError('bash requires an owning agent session')
       return serialized(owner, async () => {
         if (exec.signal.aborted) return '' // ToolRuntime publishes ABORTED after settlement.
         return executeCommand(ctx, shells, owner, args.command, config, exec.signal)

@@ -2,7 +2,7 @@
  * Vocabulary for the experimental video mode: the media provider seam, the
  * durable project document, the edit decision list the assembler consumes, and
  * the typed failures every tool routes on.
- * @module @deepseek-ai/dsh-experimental-video-mode/types
+ * @module @deepseek-ai/dsh-video-mode/types
  */
 
 import { HarnessError } from '@deepseek-ai/dsh-llm'

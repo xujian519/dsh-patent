@@ -119,7 +119,7 @@ describe('hooks-codex bridge', () => {
     const inject = vi.fn()
     const agent = { id: session.id, session, ctx, inject } as unknown as Agent
 
-    ctx.effect(() => ctx.agents.enter(agent, undefined))
+    ctx.effect(() => ctx.agents.enter(agent))
     await ctx.agents.announce(agent, 'resume')
 
     // The hook must run even though the announcement carries no creation signal.

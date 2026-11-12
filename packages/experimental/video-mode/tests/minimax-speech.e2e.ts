@@ -6,7 +6,7 @@ import {
   MINIMAX_SPEECH_VOICE,
   MiniMaxSpeechProvider,
   type MiniMaxSpeechSettings,
-} from '@deepseek-ai/dsh-experimental-video-mode'
+} from '@deepseek-ai/dsh-video-mode'
 
 /**
  * Real-API smoke for the MiniMax speech provider. Self-skips without

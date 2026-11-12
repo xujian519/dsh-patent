@@ -5,42 +5,42 @@
 /:
   en: f2396553f4d855ea
   zh: 5ac2db28f31073bf
-/deepseek-ai-dsh-experimental-video-mode:
-  en: 58c5254c89e460ab
-  zh: e6b9b396d48b3574
-/deepseek-ai-dsh-experimental-video-mode/summary:
+/deepseek-ai-dsh-video-mode:
+  en: c768dbdfff3d26d0
+  zh: 5d02a36a034597be
+/deepseek-ai-dsh-video-mode/summary:
   en: 7c3b7e751fdb61ab
   zh: 87e0c63d3d40ea03
-/deepseek-ai-dsh-experimental-video-mode/table-of-contents:
+/deepseek-ai-dsh-video-mode/table-of-contents:
   en: 81ebfb0a13571ff6
   zh: 86584aa7142f6c75
-/deepseek-ai-dsh-experimental-video-mode/what-it-mounts:
+/deepseek-ai-dsh-video-mode/what-it-mounts:
   en: 5dc816e555f508e2
   zh: f5c6de3864c127ab
-/deepseek-ai-dsh-experimental-video-mode/use-this-package:
+/deepseek-ai-dsh-video-mode/use-this-package:
   en: d13a45d5eaae368f
   zh: 6b589c7de83a90f2
-/deepseek-ai-dsh-experimental-video-mode/understand-the-implementation:
+/deepseek-ai-dsh-video-mode/understand-the-implementation:
   en: bc40016a11cdbdbd
   zh: 18327206ee99e535
-/deepseek-ai-dsh-experimental-video-mode/model-experience:
+/deepseek-ai-dsh-video-mode/model-experience:
   en: 215e7ba838619b7b
   zh: a311da3843709f90
-/deepseek-ai-dsh-experimental-video-mode/model-experience/tool-schemas:
+/deepseek-ai-dsh-video-mode/model-experience/tool-schemas:
   en: 3039bc5e7a796b21
   zh: 6b7a9eaf69c9ea53
-/deepseek-ai-dsh-experimental-video-mode/model-experience/tool-schemas/what-the-model-sees:
-  en: 7e0acc2d5a820162
-  zh: f32bf42a46326db0
-/deepseek-ai-dsh-experimental-video-mode/model-experience/tool-schemas/token-effect:
+/deepseek-ai-dsh-video-mode/model-experience/tool-schemas/what-the-model-sees:
+  en: 9892d29e3380ec15
+  zh: 5045174b7a23d698
+/deepseek-ai-dsh-video-mode/model-experience/tool-schemas/token-effect:
   en: 55dde63ed81ebea5
   zh: ba964dcd073423ca
-/deepseek-ai-dsh-experimental-video-mode/model-experience/tool-schemas/kv-cache-effect:
+/deepseek-ai-dsh-video-mode/model-experience/tool-schemas/kv-cache-effect:
   en: e3a87b44a164f303
   zh: eb945d26d5621b25
-/deepseek-ai-dsh-experimental-video-mode/known-limitations-and-deferred-work:
+/deepseek-ai-dsh-video-mode/known-limitations-and-deferred-work:
   en: 8489b23ff1105b0e
   zh: cfbe295a467d855e
-/deepseek-ai-dsh-experimental-video-mode/known-limitations-and-deferred-work/dev-note:
+/deepseek-ai-dsh-video-mode/known-limitations-and-deferred-work/dev-note:
   en: 05d678933215c93b
   zh: 1b5c81d1750f6e63

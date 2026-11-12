@@ -97,6 +97,9 @@ function classShape(node: ts.ClassDeclaration): ts.ClassDeclaration {
   const members = node.members.flatMap((member): ts.ClassElement[] => {
     if (nonPublic(member)) return []
     if (ts.isMethodDeclaration(member)) {
+      if (member.body !== undefined && node.members.some(candidate => ts.isMethodDeclaration(candidate)
+        && candidate.body === undefined && memberName(candidate.name) === memberName(member.name)
+        && hasModifier(candidate, ts.SyntaxKind.StaticKeyword) === hasModifier(member, ts.SyntaxKind.StaticKeyword))) return []
       return [ts.factory.updateMethodDeclaration(
         member,
         member.modifiers,

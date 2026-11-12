@@ -3,7 +3,7 @@
  * classification, and the keyed-provider boilerplate live in `cloud-common.ts`
  * because the SiliconFlow provider uses the same code; this module keeps the
  * MiniMax names and its credential remedy.
- * @module @deepseek-ai/dsh-experimental-video-mode/minimax-common
+ * @module @deepseek-ai/dsh-video-mode/minimax-common
  */
 
 import {

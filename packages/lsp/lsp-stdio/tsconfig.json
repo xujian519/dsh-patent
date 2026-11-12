@@ -12,6 +12,9 @@
       "path": "../../util/value"
     },
     {
+      "path": "../../util/error"
+    },
+    {
       "path": "../../../vendor/cosmokit"
     },
     {

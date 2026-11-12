@@ -39,9 +39,6 @@ import { Service } from '@deepseek-ai/cordis'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Entry } from '@deepseek-ai/cordis-plugin-loader'
 import type { IndexInjection } from '@deepseek-ai/dsh-host-webserver'
-// Type-only: the profile package lookup that marks profile-installed rows
-// optional, resolved through `ctx.get` (absent in profiles without it).
-import type {} from '@deepseek-ai/dsh-app-boot'
 import { PACKAGE_ASSET_SEGMENT, packageAssetMediaType } from './assets.ts'
 import { exactPackageSpecifier, parseDshClient, stripClientSuffix } from './client/manifest.ts'
 import type { WebBootBatch, WebBootBatchPhase, WebBootEntry, WebBootGraph, WebBootRelease } from './client/manifest.ts'
@@ -64,12 +61,6 @@ interface WebBootRowFields {
   /** Module specifiers the package requests from the module table. */
   external: string[]
   immediately: boolean
-  /**
-   * Whether the application must activate this row. False for rows whose
-   * package the active profile installed (`dsh plugin add`), so one user-added
-   * plugin cannot keep the browser application from starting.
-   */
-  required: boolean
 }
 
 /** Filesystem baseline captured before a client artifact snapshot is read. */
@@ -544,7 +535,6 @@ function graphRow(id: string, rev: string, fields: WebBootRowFields): WebBootEnt
     ...(fields.inject !== undefined ? { inject: fields.inject } : {}),
     ...(fields.immediately ? { immediately: true } : {}),
     ...(fields.external.length > 0 ? { external: fields.external } : {}),
-    ...(fields.required ? {} : { required: false }),
   }
 }
 
@@ -923,7 +913,6 @@ export class ClientModuleRegistry extends Service {
       ...(decl.inject !== undefined ? { inject: decl.inject } : {}),
       external: decl.external ?? [],
       immediately: decl.immediately === true,
-      required: this.ctx.get('pluginPackages')?.installedByProfile(packageName) !== true,
     }
     return { packageName, meta }
   }

@@ -6,15 +6,18 @@ export type {} from '@deepseek-ai/dsh-client-product-analytics/remote'
 import agentPresetsRemote from '@deepseek-ai/dsh-agent-preset-registry/remote'
 import userQuestionsRemote from '@deepseek-ai/dsh-user-questions/remote'
 import commandsRemote from '@deepseek-ai/dsh-commands/remote'
-import accountRemote from '@deepseek-ai/dsh-api-account-controller/remote'
+import agentTeamsRemote from '@deepseek-ai/dsh-agent-team/remote'
+export type {} from '@deepseek-ai/dsh-agent-team/remote'
+import accountRemote from '@deepseek-ai/dsh-deepseek-account/remote'
 import settingsControllerRemote from '@deepseek-ai/dsh-api-settings-controller/remote'
-import officeToPdfRemote from '@deepseek-ai/dsh-office-to-pdf/remote'
+import officeKitRemote from '@deepseek-ai/dsh-office-kit/remote'
 import goalsRemote from '@deepseek-ai/dsh-goal/remote'
 import scheduleRemote from '@deepseek-ai/dsh-schedule/remote'
 import llmRemote from '@deepseek-ai/dsh-llm/remote'
 import dynamicRemote from '@deepseek-ai/dsh-cordis-host-runner/remote'
 import pluginManagerRemote from '@deepseek-ai/dsh-plugin-manager/remote'
 import pluginCatalogRemote from '@deepseek-ai/dsh-api-plugin-market-controller/remote'
+import mcpManagerRemote from '@deepseek-ai/dsh-mcp-manager/remote'
 import toolResultsRemote from '@deepseek-ai/dsh-client-ui-trajectory/remote'
 import pluginRegistryProbeRemote from '@deepseek-ai/dsh-client-ui-plugin-manager/remote'
 import pluginMarketRemote from '@deepseek-ai/dsh-plugin-market/remote'
@@ -30,6 +33,7 @@ import jobRemote from '@deepseek-ai/dsh-api-job-controller/remote'
 import workspaceRemote from '@deepseek-ai/dsh-api-workspace-controller/remote'
 import terminalRemote from '@deepseek-ai/dsh-api-terminal-controller/remote'
 import workspaceFilesRemote from '@deepseek-ai/dsh-api-workspace-files/remote'
+import webRemote from '@deepseek-ai/dsh-web/remote'
 import type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
 import type { TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
 
@@ -42,7 +46,9 @@ export type {
   PluginUpdateProgress, PluginUpdateResult, PluginUpdateStep, PluginVersion, PluginVersionList, RegistryAttempt,
   ReadOnlyReason, Registry, RestartReason,
 } from '@deepseek-ai/dsh-plugin-manager/types'
+export type { McpManagedServerStatus, McpManagedServerView } from '@deepseek-ai/dsh-mcp-manager/types'
 export type {} from '@deepseek-ai/dsh-plugin-manager/remote'
+export type {} from '@deepseek-ai/dsh-mcp-manager/remote'
 export type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/remote'
 export type {} from '@deepseek-ai/dsh-client-ui-trajectory/remote'
 export type {} from '@deepseek-ai/dsh-plugin-market/remote'
@@ -54,8 +60,9 @@ export type { PluginInventorySnapshot } from '@deepseek-ai/dsh-host-plugin-inven
 export type {} from '@deepseek-ai/dsh-agent-preset-registry/remote'
 export type {} from '@deepseek-ai/dsh-user-questions/remote'
 export type {} from '@deepseek-ai/dsh-commands/remote'
+export type {} from '@deepseek-ai/dsh-web/remote'
 export type {} from '@deepseek-ai/dsh-api-settings-controller/remote'
-export type {} from '@deepseek-ai/dsh-api-account-controller/remote'
+export type {} from '@deepseek-ai/dsh-deepseek-account/remote'
 export type {} from '@deepseek-ai/dsh-api-plugin-market-controller/remote'
 export type {
   CatalogItem, CatalogPage, CatalogQuery, InstallPreview, InstallReceipt,
@@ -63,7 +70,7 @@ export type {
 } from '@deepseek-ai/dsh-api-plugin-market-controller/types'
 export type {} from '@deepseek-ai/dsh-goal/remote'
 export type {} from '@deepseek-ai/dsh-schedule/remote'
-export type {} from '@deepseek-ai/dsh-office-to-pdf/remote'
+export type {} from '@deepseek-ai/dsh-office-kit/remote'
 export type {} from '@deepseek-ai/dsh-llm/remote'
 export type {} from '@deepseek-ai/dsh-host-plugin-inventory/remote'
 export type {} from '@deepseek-ai/dsh-message-feedback/remote'
@@ -90,6 +97,7 @@ export type { ApiRemoteForwardedEvent } from '../types.ts'
 // signatures `$on` hands to a listener, so a consumer reads the very
 // declaration the Host emits rather than a flattened restatement of it.
 export type {} from '@deepseek-ai/dsh-commands/types'
+export type {} from '@deepseek-ai/dsh-web/types'
 export type {} from '@deepseek-ai/dsh-cordis-host-runner/types'
 export type {} from '@deepseek-ai/dsh-credentials/types'
 export type {} from '@deepseek-ai/dsh-llm/types'
@@ -195,12 +203,14 @@ export const inject = ['remote']
  */
 export const REMOTE_CONTRIBUTIONS: readonly TypertRemoteContribution[] = [
   productAnalyticsRemote,
-  agentPresetsRemote, commandsRemote, settingsControllerRemote, accountRemote, goalsRemote, llmRemote, dynamicRemote, scheduleRemote,
-  pluginInventoryRemote, pluginManagerRemote, pluginMarketRemote, pluginCatalogRemote, pluginRegistryProbeRemote, toolResultsRemote,
+  agentPresetsRemote, commandsRemote, agentTeamsRemote, settingsControllerRemote, accountRemote,
+  goalsRemote, llmRemote, dynamicRemote, scheduleRemote,
+  pluginInventoryRemote, pluginManagerRemote, mcpManagerRemote, pluginMarketRemote, pluginCatalogRemote, pluginRegistryProbeRemote,
+  toolResultsRemote,
   messageFeedbackRemote,
   sessionFeedbackRemote, fileUploadsRemote, sessionReferencesRemote,
   permissionPresetsRemote, subagentsRemote, sessionRemote, jobRemote, workspaceRemote, workspaceFilesRemote, terminalRemote,
-  officeToPdfRemote, userQuestionsRemote,
+  officeKitRemote, userQuestionsRemote, webRemote,
 ]
 
 /**

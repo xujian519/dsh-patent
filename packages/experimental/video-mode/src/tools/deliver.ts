@@ -3,7 +3,7 @@
  * machine checks that stand beside the model's own quality claim. Blocking
  * findings refuse the registration; warnings are recorded because a reviewer
  * may accept them. The tool never writes or converts bytes.
- * @module @deepseek-ai/dsh-experimental-video-mode/tools/deliver
+ * @module @deepseek-ai/dsh-video-mode/tools/deliver
  */
 
 import type { Context } from '@deepseek-ai/cordis'

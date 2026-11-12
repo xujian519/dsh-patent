@@ -2,7 +2,7 @@
  * Shared helpers for the video mode tools: resolve the Session working
  * directory, write one artifact through `ctx.fs`, and reject bytes whose
  * declared media type the signature contradicts.
- * @module @deepseek-ai/dsh-experimental-video-mode/tools/shared
+ * @module @deepseek-ai/dsh-video-mode/tools/shared
  */
 
 import { extname } from 'node:path'

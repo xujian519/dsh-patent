@@ -2,7 +2,7 @@
  * The model-facing `video_assemble` tool: validate an EDL, render it with
  * ffmpeg, and return measured output facts. The EDL is the reproducible
  * contract; re-running it produces the same cut without replaying the chat.
- * @module @deepseek-ai/dsh-experimental-video-mode/tools/assemble
+ * @module @deepseek-ai/dsh-video-mode/tools/assemble
  */
 
 import type { Context } from '@deepseek-ai/cordis'

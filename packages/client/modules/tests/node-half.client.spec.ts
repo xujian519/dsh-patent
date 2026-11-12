@@ -10,7 +10,6 @@ import { runInNewContext } from 'node:vm'
 import { Context, FiberState, type Fiber } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderIndexInjections, type WebServer, type WebResourceRoute, type WebRoute } from '@deepseek-ai/dsh-host-webserver'
-import type { PluginPackages } from '@deepseek-ai/dsh-app-boot'
 import * as modulesClient from '../src/client/index.ts'
 import { ClientModuleRegistry, bootInjections, orderByModuleGraph } from '../src/index.ts'
 import type { ClientModuleLoaderTarget, WebBootEntry, WebBootGraph } from '../src/client/index.ts'
@@ -165,8 +164,6 @@ function constructWithRoute(
     contextBaseUrl?: string
     entryBaseUrl?: string
     internal?: NonNullable<Context['loader']['internal']>
-    /** Package names the active profile installed, as `pluginPackages` reports them. */
-    profileInstalled?: readonly string[]
     onEntries?: () => void
   } = {},
 ): { context: Context; service: ClientModuleRegistry; route: Promise<WebResourceRoute> } {
@@ -198,13 +195,6 @@ function constructWithRoute(
     tapIndex: () => () => {},
   }
   ctx.provide('webServer', webServer as WebServer)
-  if (options.profileInstalled !== undefined) {
-    const installed = new Set(options.profileInstalled)
-    const profilePackages: Pick<PluginPackages, 'installedByProfile'> = {
-      installedByProfile: (name: string) => installed.has(name),
-    }
-    ctx.provide('pluginPackages', profilePackages as PluginPackages)
-  }
   const service = new ClientModuleRegistry(ctx)
   owned.ready = route.promise
   return { context: ctx, service, route: route.promise }
@@ -514,21 +504,6 @@ describe('client bundle activation', () => {
       expect(service.graph().entries.map(entry => entry.id)).toEqual([packageName])
     },
   )
-
-  it('marks only the rows the active profile installed as not required', () => {
-    const shipped = '@fixture/shipped-row'
-    const installed = '@fixture/installed-row'
-    writeBuiltPackage(shipped, {})
-    writeBuiltPackage(installed, {})
-
-    const marked = constructWithRoute([shipped, installed], { profileInstalled: [installed] })
-    expect(marked.service.graph().entries.map(entry => [entry.id, entry.required]))
-      .toEqual([[shipped, undefined], [installed, false]])
-
-    const plain = constructWithRoute([shipped, installed])
-    expect(plain.service.graph().entries.map(entry => [entry.id, entry.required]))
-      .toEqual([[shipped, undefined], [installed, undefined]])
-  })
 
   it('derives the browser module id from a file entry owning manifest', () => {
     const packageName = '@fixture/file-entry'

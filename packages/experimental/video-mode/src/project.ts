@@ -3,7 +3,7 @@
  * the single source of truth for one production: shots, selected attempts,
  * renders, and the budget. Tools mutate it through this module; the client
  * reads the same file, so there is no second state store.
- * @module @deepseek-ai/dsh-experimental-video-mode/project
+ * @module @deepseek-ai/dsh-video-mode/project
  */
 
 import { createHash } from 'node:crypto'

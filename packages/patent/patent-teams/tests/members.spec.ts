@@ -374,33 +374,31 @@ describe('spawnMember', () => {
     expect(member.id).toBe('child-1')
     const spec = started[0] as {
       label: string
-      request: {
-        prompt: unknown[]
-        parent: Agent
-        persona: string
-        toolFilter: { deny: string[] }
-        agentOptions: {
-          provider: string
-          model: string
-          reasoningEffort?: string
-        }
-        maxDepth?: number
+      prompt: unknown[]
+      parent: Agent
+      persona: string
+      toolFilter: { deny: string[] }
+      agentOptions: {
+        provider: string
+        model: string
+        reasoningEffort?: string
       }
+      maxDepth?: number
     }
     expect(spec.label).toBe('patent-teams:team1:alice')
-    expect(spec.request.parent).toBe(captain)
-    expect(spec.request.persona).toContain('You are alice')
-    expect(spec.request.toolFilter.deny).toContain('patent_teams_create')
-    expect(spec.request.toolFilter.deny).toContain('patent_teams_delete')
-    expect(spec.request.toolFilter.deny).toContain('send_message')
-    expect(spec.request.agentOptions).toEqual({ provider: 'p', model: 'm', reasoningEffort: 'high' })
-    expect(spec.request.prompt).toHaveLength(1)
-    expect(spec.request.maxDepth).toBeUndefined()
+    expect(spec.parent).toBe(captain)
+    expect(spec.persona).toContain('You are alice')
+    expect(spec.toolFilter.deny).toContain('patent_teams_create')
+    expect(spec.toolFilter.deny).toContain('patent_teams_delete')
+    expect(spec.toolFilter.deny).toContain('send_message')
+    expect(spec.agentOptions).toEqual({ provider: 'p', model: 'm', reasoningEffort: 'high' })
+    expect(spec.prompt).toHaveLength(1)
+    expect(spec.maxDepth).toBeUndefined()
   })
 
   it('grants a role-scoped member only its role tools and the shared baseline', async () => {
     const ctx = new Context()
-    let captured: { request: { toolFilter: { allow?: string[]; deny: string[] }; persona: string } } | undefined
+    let captured: { toolFilter: { allow?: string[]; deny: string[] }; persona: string } | undefined
     ctx.provide('subagents', makeSubagentsStub({
       getProvider: () => provider(),
       startActivation: async (spec: never) => {
@@ -422,7 +420,7 @@ describe('spawnMember', () => {
     const member: TeamMember = { ...validMember, id: '' }
     await spawnMember(ctx, config, { provider: 'p', model: 'm' }, captain, makeTeam(), member, 'state', new AbortController().signal)
 
-    expect(captured?.request.toolFilter.allow).toEqual([
+    expect(captured?.toolFilter.allow).toEqual([
       'read',
       'bash',
       'mcp__cnlaw__search',
@@ -434,7 +432,7 @@ describe('spawnMember', () => {
       'patent_teams_status',
     ])
     // The deny list still applies on top of the allow list.
-    expect(captured?.request.toolFilter.deny).toContain('patent_teams_create')
+    expect(captured?.toolFilter.deny).toContain('patent_teams_create')
   })
 
   it('drops denied names the composition does not carry', async () => {
@@ -442,8 +440,8 @@ describe('spawnMember', () => {
     const filters: { allow?: string[]; deny: string[] }[] = []
     ctx.provide('subagents', makeSubagentsStub({
       getProvider: () => provider(),
-      startActivation: async (spec: { request: { toolFilter: { allow?: string[]; deny: string[] } } }) => {
-        filters.push(spec.request.toolFilter)
+      startActivation: async (spec: { toolFilter: { allow?: string[]; deny: string[] } }) => {
+        filters.push(spec.toolFilter)
         return { childId: SessionId('child-1'), messageId: 'msg-1' }
       },
     }) as never)
@@ -484,7 +482,7 @@ describe('spawnMember', () => {
 
   it('passes the configured maxDepth through', async () => {
     const ctx = new Context()
-    let captured: { request: { maxDepth?: number } } | undefined
+    let captured: { maxDepth?: number } | undefined
     ctx.provide('subagents', makeSubagentsStub({
       getProvider: () => provider(),
       startActivation: async (spec: never) => {
@@ -494,7 +492,7 @@ describe('spawnMember', () => {
     }) as never)
     const member: TeamMember = { ...validMember, id: '' }
     await spawnMember(ctx, { provider: 'spawn', maxDepth: 2 }, { provider: 'p', model: 'm' }, makeCaptain('captain-1'), makeTeam(), member, 'state', new AbortController().signal)
-    expect(captured!.request.maxDepth).toBe(2)
+    expect(captured!.maxDepth).toBe(2)
   })
 
   it('fails loud when the provider is not registered', async () => {
@@ -585,7 +583,6 @@ describe('deliverToMember and interruptMember', () => {
 
 describe('installRetiredMemberGuard', () => {
   interface GuardRuntime {
-    listChildren: (parentId: SessionId, signal?: AbortSignal) => Promise<Array<{ id: string }>>
     listDescendants: (rootId: SessionId, signal?: AbortSignal) => Promise<Array<{ id: string }>>
     sendMessage: (sender: Agent, targetId: SessionId, content: unknown, options?: unknown) => Promise<unknown>
   }
@@ -598,10 +595,6 @@ describe('installRetiredMemberGuard', () => {
     const ctx = new Context()
     const stateDir = '.patent-teams-guard'
     const runtime = {
-      listChildren: vi.fn(async () => [
-        { id: 'retired-1', createdAt: 1, mode: 'continuable', label: 'x' },
-        { id: 'live-1', createdAt: 1, mode: 'continuable', label: 'y' },
-      ]),
       listDescendants: vi.fn(async () => [
         { kind: 'child', id: 'retired-1', activity: 'inactive', mode: 'continuable', label: 'x', hasChildren: false, parentId: SessionId('root'), depth: 1 },
         { kind: 'child', id: 'live-1', activity: 'inactive', mode: 'continuable', label: 'y', hasChildren: false, parentId: SessionId('root'), depth: 1 },
@@ -619,14 +612,11 @@ describe('installRetiredMemberGuard', () => {
     return { ctx, stateDir, runtime }
   }
 
-  it('filters retired ids from children and descendants listings', async () => {
+  it('filters retired ids from the descendants listing that backs list_agents', async () => {
     const workspace = await tmpWorkspace()
     const captain = makeCaptain('captain-1', workspace)
     await recordRetiredMemberIds(join(workspace, '.patent-teams-guard'), ['retired-1'])
     const { runtime } = await setupGuard(captain)
-
-    const children = await runtime.listChildren(SessionId('captain-1'))
-    expect(children.map(entry => entry.id)).toEqual(['live-1'])
 
     const descendants = await runtime.listDescendants(SessionId('captain-1'))
     expect(descendants.map(entry => entry.id)).toEqual(['live-1'])
@@ -646,14 +636,14 @@ describe('installRetiredMemberGuard', () => {
     await expect(runtime.sendMessage(captain, SessionId('live-1'), [{ type: 'text', text: 'x' }], {})).resolves.toBe('msg')
   })
 
-  it('does not filter when the parent is offline (no retired index to read)', async () => {
+  it('does not filter when the root is offline (no retired index to read)', async () => {
     const { runtime } = await setupGuard(undefined)
-    const children = await runtime.listChildren(SessionId('captain-1'))
-    expect(children.map(entry => entry.id)).toEqual(['retired-1', 'live-1'])
+    const descendants = await runtime.listDescendants(SessionId('captain-1'))
+    expect(descendants.map(entry => entry.id)).toEqual(['retired-1', 'live-1'])
   })
 
-  it('reads the retired index from the process cwd when the parent has none', async () => {
-    // A live parent without a cwd in its session header: the guard falls back
+  it('reads the retired index from the process cwd when the root has none', async () => {
+    // A live root without a cwd in its session header: the guard falls back
     // to process.cwd(), where no retired index exists, so nothing is filtered
     // and a send still delegates.
     const parent = makeCaptain('parent-1')
@@ -667,8 +657,8 @@ describe('installRetiredMemberGuard', () => {
       }),
     }
     const { runtime } = await setupGuard(cwdless)
-    const children = await runtime.listChildren(cwdless.id)
-    expect(children.map(entry => entry.id)).toEqual(['retired-1', 'live-1'])
+    const descendants = await runtime.listDescendants(cwdless.id)
+    expect(descendants.map(entry => entry.id)).toEqual(['retired-1', 'live-1'])
     await expect(runtime.sendMessage(cwdless, SessionId('anything'), [], {})).resolves.toBe('msg')
   })
 
@@ -676,15 +666,12 @@ describe('installRetiredMemberGuard', () => {
     const ctx = new Context()
     const stateDir = '.patent-teams-guard'
     const runtime: {
-      listChildren: unknown
       listDescendants: unknown
       sendMessage: unknown
     } = {
-      listChildren: vi.fn(async () => []),
       listDescendants: vi.fn(async () => []),
       sendMessage: vi.fn(async (_p: Agent, _id: SessionId, _c: unknown, _o: unknown) => 'msg'),
     }
-    const originalChildren = runtime.listChildren
     const originalDescendants = runtime.listDescendants
     const originalSend = runtime.sendMessage
     // The guard installs its wrappers through ctx.effect, so the originals are
@@ -695,11 +682,9 @@ describe('installRetiredMemberGuard', () => {
       installRetiredMemberGuard(scope, stateDir)
     })
     await fiber
-    expect(runtime.listChildren).not.toBe(originalChildren)
     expect(runtime.listDescendants).not.toBe(originalDescendants)
     expect(runtime.sendMessage).not.toBe(originalSend)
     await fiber.dispose()
-    expect(runtime.listChildren).toBe(originalChildren)
     expect(runtime.listDescendants).toBe(originalDescendants)
     expect(runtime.sendMessage).toBe(originalSend)
   })
@@ -708,11 +693,9 @@ describe('installRetiredMemberGuard', () => {
     const ctx = new Context()
     const stateDir = '.patent-teams-guard'
     const runtime: {
-      listChildren: unknown
       listDescendants: unknown
       sendMessage: unknown
     } = {
-      listChildren: vi.fn(async () => []),
       listDescendants: vi.fn(async () => []),
       sendMessage: vi.fn(async (_p: Agent, _id: SessionId, _c: unknown, _o: unknown) => 'msg'),
     }
@@ -725,24 +708,24 @@ describe('installRetiredMemberGuard', () => {
     await fiber
     // Another party replaces the guarded implementation before the fiber
     // unloads; the guard must not clobber the foreign replacement.
-    runtime.listChildren = replacement
     runtime.listDescendants = replacement
     runtime.sendMessage = replacement
     await fiber.dispose()
-    expect(runtime.listChildren).toBe(replacement)
     expect(runtime.listDescendants).toBe(replacement)
     expect(runtime.sendMessage).toBe(replacement)
   })
 })
 
 describe('memberActivity', () => {
-  it('maps live children to their driver activity and marks cold children ready', async () => {
+  it('maps live direct children to their driver activity and skips deeper descendants', async () => {
     const ctx = new Context()
     ctx.provide('subagents', {
-      listChildren: async () => [
-        { id: 'c1', createdAt: 1, mode: 'continuable', label: 'x' },
-        { id: 'c2', createdAt: 1, mode: 'continuable', label: 'y' },
-        { id: 'c3', createdAt: 1, mode: 'one-shot' },
+      listDescendants: async () => [
+        { kind: 'child', id: 'c1', activity: 'inactive', mode: 'continuable', label: 'x', hasChildren: false, parentId: SessionId('captain-1'), depth: 1 },
+        { kind: 'child', id: 'c2', activity: 'inactive', mode: 'continuable', label: 'y', hasChildren: false, parentId: SessionId('captain-1'), depth: 1 },
+        { kind: 'child', id: 'c3', activity: 'inactive', mode: 'one-shot', hasChildren: false, parentId: SessionId('captain-1'), depth: 1 },
+        // A member's own child stays out of the captain's member activity map.
+        { kind: 'child', id: 'grandchild', activity: 'inactive', mode: 'one-shot', hasChildren: false, parentId: SessionId('c1'), depth: 2 },
       ],
     } as never)
     ctx.provide('agents', {
@@ -759,8 +742,8 @@ describe('memberActivity', () => {
   it('marks children without a live agent as ready', async () => {
     const ctx = new Context()
     ctx.provide('subagents', {
-      listChildren: async () => [
-        { id: 'c1', createdAt: 1, mode: 'continuable', label: 'x' },
+      listDescendants: async () => [
+        { kind: 'child', id: 'c1', activity: 'inactive', mode: 'continuable', label: 'x', hasChildren: false, parentId: SessionId('captain-1'), depth: 1 },
       ],
     } as never)
     ctx.provide('agents', { get: () => undefined } as never)

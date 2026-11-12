@@ -76,17 +76,22 @@ interface MountOptions {
   children?: Array<{ id: string }>
 }
 
-function makeSubagentsStub(children: Array<{ id: string }>): Record<string, unknown> {
+function makeSubagentsStub(children: Array<{ id: string }>, captainSessionId: string): Record<string, unknown> {
   const guardProbe = {
-    listChildren: async () => children,
-    listDescendants: async () => children.map(child => ({ kind: 'child', id: child.id })),
+    listDescendants: async () => children.map(child => ({
+      kind: 'child',
+      id: child.id,
+      activity: 'inactive',
+      mode: 'continuable',
+      hasChildren: false,
+      parentId: SessionId(captainSessionId),
+      depth: 1,
+    })),
     sendMessage: async () => 'msg',
   }
   return {
     getProvider: () => undefined,
-    list: () => [],
     startActivation: async () => { throw new Error('unused') },
-    listChildren: guardProbe.listChildren,
     listDescendants: guardProbe.listDescendants,
     sendMessage: guardProbe.sendMessage,
     guardProbe,
@@ -101,7 +106,7 @@ async function mount(options: MountOptions = {}): Promise<Context> {
     get: (id: string) => captain !== undefined && id === captain.id ? captain : undefined,
   })
   ctx.provide('llm', { resolveCallConfig: async (config: unknown) => config })
-  ctx.provide('subagents', makeSubagentsStub(options.children ?? []))
+  ctx.provide('subagents', makeSubagentsStub(options.children ?? [], options.captain?.id ?? 'captain-1'))
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(NativeToolExecutor)
@@ -142,8 +147,6 @@ describe('patent-teams composition', () => {
       children: [{ id: 'retired-1' }, { id: 'live-1' }],
     })
 
-    const children = await ctx.subagents.listChildren(SessionId('captain-1'))
-    expect(children.map(entry => entry.id)).toEqual(['live-1'])
     const descendants = await ctx.subagents.listDescendants(SessionId('captain-1'))
     expect(descendants.map(entry => entry.id)).toEqual(['live-1'])
     await expect(ctx.subagents.sendMessage(
@@ -158,12 +161,10 @@ describe('patent-teams composition', () => {
     const ctx = await mount()
     const stub = ctx.get('subagents') as unknown as ReturnType<typeof makeSubagentsStub>
     const guardProbe = stub.guardProbe as {
-      listChildren: () => Promise<unknown[]>
       listDescendants: () => Promise<unknown[]>
       sendMessage: () => Promise<unknown>
     }
     // The guard wraps the runtime methods while mounted.
-    expect(stub.listChildren).not.toBe(guardProbe.listChildren)
     expect(stub.listDescendants).not.toBe(guardProbe.listDescendants)
     expect(stub.sendMessage).not.toBe(guardProbe.sendMessage)
     const tools = ctx.get('tools') as ToolRuntime
@@ -184,7 +185,6 @@ describe('patent-teams composition', () => {
     const sectionNames = prompt.sections.map(section => section.name)
     expect(sectionNames).not.toContain('patent-teams:usage')
     // The guard restored the original implementations.
-    expect(stub.listChildren).toBe(guardProbe.listChildren)
     expect(stub.listDescendants).toBe(guardProbe.listDescendants)
     expect(stub.sendMessage).toBe(guardProbe.sendMessage)
   })

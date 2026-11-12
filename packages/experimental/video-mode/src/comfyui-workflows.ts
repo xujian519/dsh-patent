@@ -2,7 +2,7 @@
  * Bundled ComfyUI API-format workflows for the local provider. Each string
  * value of the form `{{name}}` is replaced at submission time; the node graphs
  * match the ComfyUI 0.38 native nodes for Wan 2.2 TI2V-5B and Z-Image Turbo.
- * @module @deepseek-ai/dsh-experimental-video-mode/comfyui-workflows
+ * @module @deepseek-ai/dsh-video-mode/comfyui-workflows
  */
 
 /** One node of a ComfyUI API-format workflow. */

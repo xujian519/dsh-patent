@@ -7,7 +7,7 @@
  * SiliconFlow bills per completed video: 2.00 CNY on the mainland site and
  * 0.29 USD on the international site. A deployment selects its site through
  * configuration because the price is not returned by the API.
- * @module @deepseek-ai/dsh-experimental-video-mode/siliconflow
+ * @module @deepseek-ai/dsh-video-mode/siliconflow
  */
 
 import { readFile } from 'node:fs/promises'

@@ -2,19 +2,15 @@
 import { Context } from '@deepseek-ai/cordis'
 import {
   createClientModuleSystem, parseBootManifest,
-  type BootPluginRow, type ClientBundleRegistration, type ClientModuleLoader, type ClientModuleLoaderTarget,
-  type WebBootEntry, type WebBootGraph,
+  type ClientBundleRegistration, type ClientModuleLoader, type ClientModuleLoaderTarget, type WebBootEntry, type WebBootGraph,
 } from '@deepseek-ai/dsh-client-modules/client'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { auditClientActivation, bootClient, type EntryStateLabel } from '../src/boot-client.ts'
+import { assertEntriesActive, bootClient, type EntryStateLabel } from '../src/boot-client.ts'
 import { FIBER_STATE } from '../src/loader-status.ts'
 
 const BOOTSTRAP_ID = '@deepseek-ai/dsh-client-modules'
-
-/** One boot row as the host composes it; these fixtures declare no package edges or prefetch tier. */
-function row(id: string, required = true): BootPluginRow {
-  return { id, inject: [], immediately: false, required }
-}
+const REQUIRED_ID = '@deepseek-ai/dsh-client-ui-chat'
+const OTHER_REQUIRED_ID = '@deepseek-ai/dsh-client-ui-layout'
 
 function graphOf(ids: readonly string[]): WebBootGraph {
   const entries: WebBootEntry[] = ids.map(id => ({ id, url: `/${id}.js`, rev: '1' }))
@@ -72,20 +68,20 @@ describe('bootClient', () => {
     await ctx.fiber.dispose()
   })
 
-  it('reports a row waiting on a service the roster never provides', async () => {
-    const graph = graphOf(['orphan'])
-    const { modules } = modulesOf(graph, { orphan: { inject: ['nothing'], apply: () => {} } })
+  it('rejects a required row waiting on a service the roster never provides', async () => {
+    const graph = graphOf([REQUIRED_ID])
+    const { modules } = modulesOf(graph, { [REQUIRED_ID]: { inject: ['nothing'], apply: () => {} } })
     const ctx = new Context()
+    onTestFinished(() => ctx.fiber.dispose())
 
     await expect(bootClient({ ctx, modules, manifest: modules.manifest })).rejects.toThrow(
-      'orphan (required): pending (waiting for service: nothing)',
+      `${REQUIRED_ID} (required): pending (waiting for service: nothing)`,
     )
-    await ctx.fiber.dispose()
   })
 
-  it('reports and logs an import failure for a row that is neither seeded nor a graph row', async () => {
+  it('reports and logs an import failure for a required row that is neither seeded nor a graph row', async () => {
     const { modules } = modulesOf(graphOf(['seeded']), { seeded: { apply: () => {} } })
-    const manifest = parseBootManifest(graphOf(['ghost']))
+    const manifest = parseBootManifest(graphOf([REQUIRED_ID]))
     const ctx = new Context()
     onTestFinished(() => ctx.fiber.dispose())
     const error = vi.spyOn(ctx.logger, 'error').mockImplementation(() => {})
@@ -93,39 +89,67 @@ describe('bootClient', () => {
     const sink = stateSink()
 
     await expect(bootClient({ ctx, modules, manifest, onEntryState: sink.onEntryState })).rejects.toThrow(
-      'web boot: 1 required entry did not activate\nghost (required): import failed (see console for the import error)',
+      `web boot: 1 required entry did not activate\n${REQUIRED_ID} (required): import failed (see console for the import error)`,
     )
-    expect(sink.states.get('ghost')).toEqual(['loading', 'failed'])
+    expect(sink.states.get(REQUIRED_ID)).toEqual(['loading', 'failed'])
     expect(error).toHaveBeenCalledOnce()
     expect(error.mock.calls[0]?.[0]).toHaveProperty('message', expect.stringContaining('client-modules: cannot resolve'))
   })
 
-  it('starts the application and names the activation error of a row the profile installed', async () => {
-    const graph = graphOf(['local'])
-    const { modules } = modulesOf(graph, {
-      local: { apply: () => { throw new Error('slot "x" is not declared') } },
-    })
-    const manifest = parseBootManifest({
-      ...graph,
-      entries: graph.entries.map(entry => ({ ...entry, required: false })),
-    })
+  it('resolves past an optional row that cannot be imported and warns once', async () => {
+    const { modules } = modulesOf(graphOf(['seeded']), { seeded: { apply: () => {} } })
+    const manifest = parseBootManifest(graphOf(['ghost']))
     const ctx = new Context()
     onTestFinished(() => ctx.fiber.dispose())
+    const error = vi.spyOn(ctx.logger, 'error').mockImplementation(() => {})
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    onTestFinished(() => { warn.mockRestore() })
+    onTestFinished(() => { error.mockRestore(); warn.mockRestore() })
 
-    await expect(bootClient({ ctx, modules, manifest })).resolves.toBeUndefined()
+    await bootClient({ ctx, modules, manifest })
 
-    expect(warn).toHaveBeenCalledExactlyOnceWith([
-      'web boot: warning: 1 entry did not activate',
-      'local: failed: slot "x" is not declared',
-      '',
-    ].join('\n'))
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      'web boot: warning: 1 entry did not activate\nghost: import failed (see console for the import error)',
+    )
+  })
+
+  it('resolves past an optional row whose module exports no plugin and warns once', async () => {
+    const { modules } = modulesOf(graphOf(['invalid']), { invalid: { default: 'invalid' } })
+    const ctx = new Context()
+    onTestFinished(() => ctx.fiber.dispose())
+    const error = vi.spyOn(ctx.logger, 'error').mockImplementation(() => {})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    onTestFinished(() => { error.mockRestore(); warn.mockRestore() })
+
+    await bootClient({ ctx, modules, manifest: modules.manifest })
+
+    expect(error).toHaveBeenCalledOnce()
+    expect(error.mock.calls[0]?.[0]).toHaveProperty('message', expect.stringContaining('invalid plugin'))
+    // The module imported, but an entry without a fiber is reported as an import failure, as the Host audit reports
+    // `failed to import`; the creation error itself is in the log asserted above.
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      'web boot: warning: 1 entry did not activate\ninvalid: import failed (see console for the import error)',
+    )
+  })
+
+  it('rejects a required row whose module exports no plugin and names it', async () => {
+    const { modules } = modulesOf(graphOf([REQUIRED_ID]), { [REQUIRED_ID]: { default: 'invalid' } })
+    const ctx = new Context()
+    onTestFinished(() => ctx.fiber.dispose())
+    const error = vi.spyOn(ctx.logger, 'error').mockImplementation(() => {})
+    onTestFinished(() => { error.mockRestore() })
+
+    // Reported as an import failure like the Host audit's `failed to import`; the creation error goes to the log.
+    await expect(bootClient({ ctx, modules, manifest: modules.manifest })).rejects.toThrow(
+      `web boot: 1 required entry did not activate\n${REQUIRED_ID} (required): import failed (see console for the import error)`,
+    )
   })
 })
 
-describe('auditClientActivation', () => {
+describe('assertEntriesActive', () => {
   interface FakeEntry { name: string; fiber?: { state: number; inject: Record<string, null>; await?: () => Promise<unknown> } }
+
+  /** A settled failed fiber whose `await()` rethrows its recorded activation error, as Cordis does. */
+  const failedFiber = (error: Error) => ({ state: FIBER_STATE.FAILED, inject: {}, await: () => Promise.reject(error) })
 
   /** Loader-shaped double: entries with scripted fiber states, services by name. */
   function auditCtx(entries: readonly FakeEntry[], services: Record<string, unknown> = {}): Context {
@@ -140,102 +164,70 @@ describe('auditClientActivation', () => {
   }
 
   const silent = { importError: () => undefined }
-  const requiredRows = (...ids: string[]): BootPluginRow[] => ids.map(id => row(id))
 
-  it('passes when every entry is active', async () => {
-    await expect(auditClientActivation(
-      auditCtx([{ name: 'a', fiber: { state: FIBER_STATE.ACTIVE, inject: {} } }]),
-      silent,
-      requiredRows('a'),
-    )).resolves.toBeUndefined()
+  it('passes without a warning when every entry is active', async () => {
+    const warn = vi.fn<(message: string) => void>()
+    await assertEntriesActive(auditCtx([{ name: REQUIRED_ID, fiber: { state: FIBER_STATE.ACTIVE, inject: {} } }]), silent, warn)
+    expect(warn).not.toHaveBeenCalled()
   })
 
-  it('names import failures, missing services, other non-active states, and the activation error', async () => {
+  it('ignores required names absent from the boot graph', async () => {
+    const warn = vi.fn<(message: string) => void>()
+    await assertEntriesActive(auditCtx([{ name: 'subset-only', fiber: { state: FIBER_STATE.ACTIVE, inject: {} } }]), silent, warn)
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it('warns about import failures, missing services, and activation errors of optional entries', async () => {
     const ctx = auditCtx([
       { name: 'lost' },
       { name: 'waiting', fiber: { state: FIBER_STATE.PENDING, inject: { present: null, a: null, b: null } } },
       { name: 'opaque', fiber: { state: FIBER_STATE.PENDING, inject: {} } },
-      { name: 'broken', fiber: { state: FIBER_STATE.FAILED, inject: {}, await: () => Promise.reject(new Error('apply threw')) } },
-      { name: 'gone', fiber: { state: FIBER_STATE.DISPOSED, inject: {}, await: () => Promise.resolve() } },
+      { name: 'broken', fiber: failedFiber(new TypeError('apply boom')) },
     ], { present: {} })
+    const warn = vi.fn<(message: string) => void>()
 
-    await expect(auditClientActivation(ctx, silent, requiredRows('lost', 'waiting', 'opaque', 'broken', 'gone'))).rejects.toThrow([
-      'web boot: 5 required entries did not activate',
-      'lost (required): import failed (see console for the import error)',
-      'waiting (required): pending (waiting for services: a, b)',
-      'opaque (required): pending (waiting for services: unknown)',
-      'broken (required): failed: apply threw',
-      'gone (required): disposed',
+    await assertEntriesActive(ctx, silent, warn)
+
+    expect(warn).toHaveBeenCalledExactlyOnceWith([
+      'web boot: warning: 4 entries did not activate',
+      'lost: import failed (see console for the import error)',
+      'waiting: pending (waiting for services: a, b)',
+      'opaque: pending (waiting for services: unknown)',
+      'broken: failed: TypeError: apply boom',
     ].join('\n'))
   })
 
-  it('uses the singular form for one blocking entry', async () => {
-    await expect(auditClientActivation(auditCtx([{ name: 'lost' }]), silent, requiredRows('lost'))).rejects.toThrow(
-      'web boot: 1 required entry did not activate\n',
-    )
+  it('rejects inactive required entries and lists every inactive entry without a separate warning', async () => {
+    const ctx = auditCtx([
+      { name: REQUIRED_ID },
+      { name: 'optional', fiber: failedFiber(new RangeError('out of range')) },
+      { name: OTHER_REQUIRED_ID, fiber: { state: FIBER_STATE.PENDING, inject: { theme: null } } },
+    ])
+    const warn = vi.fn<(message: string) => void>()
+
+    await expect(assertEntriesActive(ctx, silent, warn)).rejects.toThrow([
+      'web boot: 2 required entries did not activate',
+      `${REQUIRED_ID} (required): import failed (see console for the import error)`,
+      'optional: failed: RangeError: out of range',
+      `${OTHER_REQUIRED_ID} (required): pending (waiting for service: theme)`,
+    ].join('\n'))
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it('uses the singular form for one required entry', async () => {
+    await expect(assertEntriesActive(auditCtx([{ name: REQUIRED_ID }]), silent))
+      .rejects.toThrow('web boot: 1 required entry did not activate\n')
   })
 
   it('names the recorded import error of a fiberless entry when the module system is supplied', async () => {
     const recorded = new Map([['lost', new Error('client-modules: could not load "lost": plugins/??lost/client.js&rev=0: bundle script failed to load')]])
     const modules = { importError: (id: string) => recorded.get(id) }
-    await expect(auditClientActivation(auditCtx([{ name: 'lost' }, { name: 'quiet' }]), modules, requiredRows('lost', 'quiet'))).rejects.toThrow([
-      'web boot: 2 required entries did not activate',
-      'lost (required): import failed: client-modules: could not load "lost": plugins/??lost/client.js&rev=0: bundle script failed to load',
-      'quiet (required): import failed (see console for the import error)',
-    ].join('\n'))
-  })
-
-  it('keeps a failed profile-installed entry out of the rejection and lists every failure in the warning', async () => {
-    const ctx = auditCtx([
-      { name: 'mine', fiber: { state: FIBER_STATE.FAILED, inject: {}, await: () => Promise.reject(new Error('cannot register')) } },
-      { name: 'theirs', fiber: { state: FIBER_STATE.PENDING, inject: {} } },
-    ])
-    const warn = vi.fn()
-
-    await expect(auditClientActivation(
-      ctx, silent, [row('mine', false), row('theirs', false)], warn,
-    )).resolves.toBeUndefined()
-
+    const warn = vi.fn<(message: string) => void>()
+    await assertEntriesActive(auditCtx([{ name: 'lost' }, { name: 'quiet' }]), modules, warn)
     expect(warn).toHaveBeenCalledExactlyOnceWith([
       'web boot: warning: 2 entries did not activate',
-      'mine: failed: cannot register',
-      'theirs: pending (waiting for services: unknown)',
-      '',
+      'lost: import failed: client-modules: could not load "lost": plugins/??lost/client.js&rev=0: bundle script failed to load',
+      'quiet: import failed (see console for the import error)',
     ].join('\n'))
-  })
-
-  it('rejects with every inactive entry when one boot-graph row is required and another is optional', async () => {
-    const ctx = auditCtx([
-      { name: 'mine', fiber: { state: FIBER_STATE.FAILED, inject: {}, await: () => Promise.reject(new Error('cannot register')) } },
-      { name: 'shell', fiber: { state: FIBER_STATE.PENDING, inject: { missing: null } } },
-    ])
-
-    await expect(auditClientActivation(
-      ctx, silent, [row('mine', false), row('shell')], vi.fn(),
-    )).rejects.toThrow([
-      'web boot: 1 required entry did not activate',
-      'mine: failed: cannot register',
-      'shell (required): pending (waiting for service: missing)',
-    ].join('\n'))
-  })
-
-  it('reports a failed entry whose fiber rethrows no reason, and one that rethrows a non-Error', async () => {
-    const ctx = auditCtx([
-      { name: 'silent', fiber: { state: FIBER_STATE.FAILED, inject: {}, await: () => Promise.resolve() } },
-      { name: 'primitive', fiber: { state: FIBER_STATE.FAILED, inject: {}, await: async () => { throw 'denied' } } },
-    ])
-
-    await expect(auditClientActivation(ctx, silent, requiredRows('silent', 'primitive'))).rejects.toThrow([
-      'web boot: 2 required entries did not activate',
-      'silent (required): failed',
-      'primitive (required): failed: denied',
-    ].join('\n'))
-  })
-
-  it('treats an entry outside the boot graph as required', async () => {
-    const ctx = auditCtx([{ name: 'child', fiber: { state: FIBER_STATE.FAILED, inject: {}, await: () => Promise.reject(new Error('boom')) } }])
-
-    await expect(auditClientActivation(ctx, silent, [row('rocket', false)], vi.fn()))
-      .rejects.toThrow('child (required): failed: boom')
   })
 })

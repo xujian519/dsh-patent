@@ -60,7 +60,7 @@ The board re-reads when the discovery revision moves or the user presses Refresh
 <a id="further-exploration"></a>
 ## Further Exploration
 
-- [dsh-experimental-video-mode](../../experimental/video-mode/README.md) — the project document, ledger, journal, tools, and providers this board reads.
+- [dsh-video-mode](../../experimental/video-mode/README.md) — the project document, ledger, journal, tools, and providers this board reads.
 - [ui-document-studio](../ui-document-studio/README.md) — the sibling delivery studio over produced files.
 - [ui-conversation](../ui-conversation/README.md) — the `conversation.view` ring and its view definitions.
 - [Client package map](../README.md) — adjacent browser UI packages.
@@ -93,6 +93,6 @@ None; this package neither assembles nor sends a provider request.
 <details>
 <summary>Working context for maintainers — click to expand</summary>
 
-`tests/project-reads.client.spec.ts` owns the parser and read contract, `tests/video-projects.client.spec.ts` the fold and revision semantics, and `tests/StudioView.client.spec.tsx` the board behavior. The project document schema lives in `dsh-experimental-video-mode`; keep these parsers aligned with the fields the board displays rather than duplicating the Host's complete validator.
+`tests/project-reads.client.spec.ts` owns the parser and read contract, `tests/video-projects.client.spec.ts` the fold and revision semantics, and `tests/StudioView.client.spec.tsx` the board behavior. The project document schema lives in `dsh-video-mode`; keep these parsers aligned with the fields the board displays rather than duplicating the Host's complete validator.
 
 </details>

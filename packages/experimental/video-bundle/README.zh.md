@@ -3,7 +3,7 @@ description: "在插件管理器中开启实验性视频制作。"
 kind: "package-bundle"
 ---
 
-# @deepseek-ai/dsh-experimental-video-bundle
+# @deepseek-ai/dsh-video-bundle
 
 [English](README.md) | 中文
 

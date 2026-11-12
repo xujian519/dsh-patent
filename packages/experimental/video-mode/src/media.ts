@@ -7,7 +7,7 @@
  * The shipped synthetic provider produces deterministic fixtures so the whole
  * video pipeline can run without credentials. Cloud providers register the
  * same interface; no consumer changes.
- * @module @deepseek-ai/dsh-experimental-video-mode/media
+ * @module @deepseek-ai/dsh-video-mode/media
  */
 
 import { setTimeout as delay } from 'node:timers/promises'

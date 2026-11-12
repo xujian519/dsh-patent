@@ -3,7 +3,7 @@ description: "Enable experimental video production from the plugin manager."
 kind: "package-bundle"
 ---
 
-# @deepseek-ai/dsh-experimental-video-bundle
+# @deepseek-ai/dsh-video-bundle
 
 English | [中文](README.zh.md)
 

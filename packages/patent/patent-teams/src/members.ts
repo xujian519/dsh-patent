@@ -404,7 +404,7 @@ export async function spawnMember(
   const provider = ctx.subagents.getProvider(config.provider)
   if (provider === undefined) {
     throw new Error(
-      `patent-teams: no subagent provider "${config.provider}" is registered (available: ${ctx.subagents.list().join(', ') || 'none'}) — `
+      `patent-teams: no subagent provider "${config.provider}" is registered — `
       + 'check that the subagent provider row (e.g. subagent-spawn) is mounted in the composition',
     )
   }
@@ -441,23 +441,21 @@ export async function spawnMember(
     provider: config.provider,
     label,
     delivery: 'parent',
-    request: {
-      prompt: [{ type: 'text', text: memberWelcome(team) }],
-      parent: captain,
-      persona: memberPersona(team, member, stateDir, roleContract, grantedTools),
-      toolFilter,
-      agentOptions: {
-        provider: llmSelection.provider,
-        model: llmSelection.model,
-        // The child runs on the resolved route, so its effort must ride the
-        // same request; resolving it here but omitting it would silently run
-        // at the parent's effort while status/output report the explicit one.
-        ...llmSelection.reasoningEffort === undefined
-          ? {}
-          : { reasoningEffort: ReasoningEffortId(llmSelection.reasoningEffort) },
-      },
-      ...config.maxDepth !== undefined ? { maxDepth: config.maxDepth } : {},
+    prompt: [{ type: 'text', text: memberWelcome(team) }],
+    parent: captain,
+    persona: memberPersona(team, member, stateDir, roleContract, grantedTools),
+    toolFilter,
+    agentOptions: {
+      provider: llmSelection.provider,
+      model: llmSelection.model,
+      // The child runs on the resolved route, so its effort must ride the
+      // same request; resolving it here but omitting it would silently run
+      // at the parent's effort while status/output report the explicit one.
+      ...llmSelection.reasoningEffort === undefined
+        ? {}
+        : { reasoningEffort: ReasoningEffortId(llmSelection.reasoningEffort) },
     },
+    ...config.maxDepth !== undefined ? { maxDepth: config.maxDepth } : {},
     signal,
   })
   member.id = start.childId
@@ -558,11 +556,11 @@ async function retiredForParent(ctx: Context, parentId: SessionId, stateDir: str
  *
  * Upstream `interrupt()` deliberately preserves continuable sessions and the
  * upstream seam exposes no targeted forget/retire method. The durable
- * PatentTeams index therefore guards all three public continuation boundaries:
- * retired rows disappear from `list_agents` (children and descendants), and a
- * direct `sendMessage()` is rejected before it can cold-resume the member. Exact
- * ids keep unrelated subagents untouched; transcripts remain in persistence
- * for archived-team review.
+ * PatentTeams index therefore guards both public continuation boundaries:
+ * retired rows disappear from `list_agents`, which enumerates the tree through
+ * `listDescendants`, and a direct `sendMessage()` is rejected before it can
+ * cold-resume the member. Exact ids keep unrelated subagents untouched;
+ * transcripts remain in persistence for archived-team review.
  * @param ctx - registrant context carrying the subagent registry.
  * @param stateDir - configured state directory, where retired ids persist.
  */
@@ -571,19 +569,10 @@ export function installRetiredMemberGuard(ctx: Context, stateDir: string): void 
   ctx.effect(() => {
     // The saved originals are restored on dispose; the .call receivers are explicit.
     // oxlint-disable-next-line typescript/unbound-method
-    const listChildren = runtime.listChildren
-    // oxlint-disable-next-line typescript/unbound-method
     const listDescendants = runtime.listDescendants
     // oxlint-disable-next-line typescript/unbound-method
     const sendMessage = runtime.sendMessage
 
-    const guardedChildren: typeof runtime.listChildren = async (parentId, signal) => {
-      const [entries, retired] = await Promise.all([
-        listChildren.call(runtime, parentId, signal),
-        retiredForParent(ctx, parentId, stateDir),
-      ])
-      return entries.filter(entry => !retired.has(entry.id))
-    }
     const guardedDescendants: typeof runtime.listDescendants = async (rootId, signal) => {
       const [entries, retired] = await Promise.all([
         listDescendants.call(runtime, rootId, signal),
@@ -602,11 +591,9 @@ export function installRetiredMemberGuard(ctx: Context, stateDir: string): void 
       return sendMessage.call(runtime, sender, targetId, content, options)
     }
 
-    runtime.listChildren = guardedChildren
     runtime.listDescendants = guardedDescendants
     runtime.sendMessage = guardedSend
     return () => {
-      if (runtime.listChildren === guardedChildren) runtime.listChildren = listChildren
       if (runtime.listDescendants === guardedDescendants) runtime.listDescendants = listDescendants
       if (runtime.sendMessage === guardedSend) runtime.sendMessage = sendMessage
     }
@@ -626,9 +613,11 @@ export async function memberActivity(
   ctx: Context,
   captainSessionId: string,
 ): Promise<Map<string, 'running' | 'idle' | 'ready'>> {
-  const entries = await ctx.subagents.listChildren(brandedSessionId(captainSessionId))
+  const captain = brandedSessionId(captainSessionId)
+  const entries = await ctx.subagents.listDescendants(captain)
   const activity = new Map<string, 'running' | 'idle' | 'ready'>()
   for (const entry of entries) {
+    if (entry.parentId !== captain) continue
     const live = ctx.get('agents')?.get(entry.id)
     activity.set(entry.id, live === undefined ? 'ready' : live.status)
   }

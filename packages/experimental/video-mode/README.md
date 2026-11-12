@@ -3,7 +3,7 @@ description: "Experimental video production mode: a media provider seam, a durab
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-video-mode
+# @deepseek-ai/dsh-video-mode
 
 English | [中文](README.zh.md)
 
@@ -43,7 +43,7 @@ Mount the service in a composition that also provides `ctx.tools`, `ctx.fs`, and
 
 ```yaml
 - id: video-mode
-  name: '@deepseek-ai/dsh-experimental-video-mode'
+  name: '@deepseek-ai/dsh-video-mode'
   config:
     fakeProvider: true
     waitMs: 30000
@@ -55,7 +55,7 @@ The video preset renders keyframes locally and video in the cloud:
 
 ```yaml
 - id: video-mode
-  name: '@deepseek-ai/dsh-experimental-video-mode'
+  name: '@deepseek-ai/dsh-video-mode'
   config:
     fakeProvider: false
     imageModel: z-image-turbo
@@ -197,7 +197,7 @@ The EDL is the reproducible render contract. `buildFfmpegArgs` emits one filter 
 
 #### What the model sees
 
-The model sees four tools. `media` carries one action discriminator and the shared kind/model/prompt/output vocabulary; `video_project` carries the project actions and the shot/render objects; `video_assemble` accepts the complete EDL object; `video_deliver` accepts files with a format tag and the project path. The exact descriptions and parameters are in the generated [tool catalog](../../../docs/tool-catalog.md#deepseek-aidsh-experimental-video-mode).
+The model sees four tools. `media` carries one action discriminator and the shared kind/model/prompt/output vocabulary; `video_project` carries the project actions and the shot/render objects; `video_assemble` accepts the complete EDL object; `video_deliver` accepts files with a format tag and the project path. The exact descriptions and parameters are in the generated [tool catalog](../../../docs/tool-catalog.md#deepseek-aidsh-video-mode).
 
 #### Token effect
 

@@ -10,7 +10,7 @@ import {
   SiliconFlowMediaProvider,
   resolveSiliconFlow,
   type MediaTask,
-} from '@deepseek-ai/dsh-experimental-video-mode'
+} from '@deepseek-ai/dsh-video-mode'
 
 /**
  * Real-API smoke for the SiliconFlow Wan2.2 image-to-video provider. Self-skips

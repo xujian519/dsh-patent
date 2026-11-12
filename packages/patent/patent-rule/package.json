@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-patent-rule",
   "description": "Patent compliance rule engine and output gates for the DeepSeek Harness: YAML rule packs, evaluation, EVI-011 evidence guards, and post-execute gating",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -26,7 +26,10 @@
     "locale/*.json",
     "lib/index.js",
     "assets",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "dependencies": {

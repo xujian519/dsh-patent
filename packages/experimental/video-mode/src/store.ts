@@ -3,7 +3,7 @@
  * journal that lets a restarted runtime resume provider work, and the budget
  * ledger the media tool appends every settled charge to. Both are validated
  * at read time because they cross the filesystem boundary.
- * @module @deepseek-ai/dsh-experimental-video-mode/store
+ * @module @deepseek-ai/dsh-video-mode/store
  */
 
 import { dirname, join } from 'node:path'

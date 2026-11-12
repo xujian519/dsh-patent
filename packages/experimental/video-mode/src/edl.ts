@@ -4,7 +4,7 @@
  * burned subtitles, and the output path. The assembler validates the document,
  * builds a filter graph, runs ffmpeg through the subprocess seam, and probes
  * the result so delivery checks can trust measured facts.
- * @module @deepseek-ai/dsh-experimental-video-mode/edl
+ * @module @deepseek-ai/dsh-video-mode/edl
  */
 
 import { z } from 'zod'

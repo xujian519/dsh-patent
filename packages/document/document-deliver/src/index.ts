@@ -62,13 +62,13 @@ export const DEFAULT_DOCUMENT_STYLE = 'assistant-neutral'
 
 /**
  * Largest number of entries a checked DOCX package may declare, mirroring
- * `office-to-pdf`'s `maxArchiveEntries` for the same OOXML threat model.
+ * `office-kit`'s `maxArchiveEntries` for the same OOXML threat model.
  */
 export const DEFAULT_MAX_ARCHIVE_ENTRIES = 10_000
 
 /**
  * Largest total uncompressed bytes a checked DOCX package may expand to,
- * mirroring `office-to-pdf`'s `maxUncompressedBytes`. The read is capped at
+ * mirroring `office-kit`'s `maxUncompressedBytes`. The read is capped at
  * `maxCheckBytes` compressed, so this bound only refuses packages that expand
  * far past anything the checks can use; a deployment that delivers large
  * repetitive documents raises it.

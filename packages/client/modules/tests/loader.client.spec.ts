@@ -704,29 +704,6 @@ describe('boot manifest wire', () => {
     ])
   })
 
-  it('carries the required mark and defaults an unmarked row to required', () => {
-    const manifest = parseBootManifest({
-      rev: 'graph',
-      entries: [
-        { id: 'shipped', url: '/shipped.js', rev: '1' },
-        { id: 'installed', url: '/installed.js', rev: '2', required: false },
-      ],
-      batches: [{ phase: 'application', url: '/batch.js', rev: 'batch', entries: ['shipped', 'installed'] }],
-    })
-    expect(manifest.plugins).toEqual([
-      { id: 'shipped', inject: [], immediately: false, required: true },
-      { id: 'installed', inject: [], immediately: false, required: false },
-    ])
-  })
-
-  it('rejects a non-boolean required mark', () => {
-    expect(() => parseBootManifest({
-      rev: 'graph',
-      entries: [{ id: 'a', url: '/a', rev: '1', required: 'no' }],
-      batches: [{ phase: 'application', url: '/batch.js', rev: 'batch', entries: ['a'] }],
-    })).toThrow('client-modules: boot manifest entry "a" required must be a boolean')
-  })
-
   it('rejects a duplicate graph entry', () => {
     expect(() => parseBootManifest({
       rev: 'graph',

@@ -17,8 +17,7 @@ Web 插件表：[dsh-client-modules](../../packages/client/modules) 中 client �
  * `immediately` marks stage-one prefetch. `inject` names package rows whose
  * factories must arrive before this row materializes, while Cordis separately
  * uses the same package edges to compose entries. `external` carries exact
- * non-inject module requests (see {@link WebBootGraph.entries}). `required`
- * marks rows whose package the active profile installed (see its own doc).
+ * non-inject module requests (see {@link WebBootGraph.entries}).
  */
 interface WebBootEntry {
   /** Entry name == package name. */
@@ -36,12 +35,6 @@ interface WebBootEntry {
   immediately?: boolean
   /** Non-baseline module specifiers this row requests; omitted when it requests none. */
   external?: string[]
-  /**
-   * Marks a row the application does not need to activate — the active profile
-   * installed its package, so a broken user-added plugin must not keep the page
-   * from starting. Omitted for rows the deployment ships.
-   */
-  required?: boolean
 }
 ```
 

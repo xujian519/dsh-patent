@@ -709,25 +709,6 @@ function materializeSessionTokens(entry: ReplayEntry, liveSessionIds: readonly (
   return replace(entry) as ReplayEntry
 }
 
-/** Learn a background child id from the stable tool-result text before that child reaches its first model call. */
-function inferStartedSubagents(
-  messages: GenerateOptions['messages'],
-  liveSessionIds: (string | undefined)[],
-): void {
-  const leaves: string[] = []
-  collectStrings(messages, leaves)
-  for (const leaf of leaves) {
-    for (const match of leaf.matchAll(/started subagent ([^\s"'<>]+)/g)) {
-      const id = match[1]
-      /* v8 ignore next -- the fixed regular expression always has capture group 1. */
-      if (id === undefined || liveSessionIds.includes(id)) continue
-      const index = liveSessionIds.findIndex((value, candidate) => candidate > 0 && value === undefined)
-      if (index < 0) return
-      liveSessionIds[index] = id
-    }
-  }
-}
-
 function invalidOverride(file: string, location: string, detail: string): never {
   throw new Error(`llm-replay: invalid override ${file}: ${location} ${detail}`)
 }
@@ -1041,7 +1022,7 @@ async function* replayEntry(entry: ReplayEntry, signal: AbortSignal | undefined,
         if (paceMs > 0) await paceDelay(paceMs, signal)
         yield chunk
       }
-      throw new LlmError(entry.message, entry.code)
+      throw LlmError.fromFailure({ message: entry.message, code: entry.code })
     case 'hang':
       // Replay a stream that stalls until cancelled (mirrors MockAdapter): one
       // chunk, then wait for abort and surface it as the consumer expects.
@@ -1136,7 +1117,6 @@ export function installLlmReplay(ctx: Context, config: ReplayConfig): ReplayHand
           + `but its script has only ${boundState.entries.length}; re-record the scenario`,
         )
       }
-      inferStartedSubagents(options.messages, liveSessionIds)
       const resolved = resolveScriptedEntry(materializeSessionTokens(entry, liveSessionIds), options.messages)
       if (options.provider === 'deepseek-official' && providerAccepted(resolved)) {
         const extensions = ctx.get('deepseekLlmApiExtensions')

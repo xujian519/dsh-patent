@@ -72,7 +72,7 @@ const { text, problems } = extractDocxText(bytes, { maxArchiveEntries: 10_000, m
 ## 延伸阅读
 
 - [document 分组](../README.zh.md) —— 本分组的兄弟包。
-- [Office 转换](../../../docs/subsystems/office-to-pdf.zh.md) —— Office 文件的 Host 侧转换路径。
+- [Office 转换](../../../docs/subsystems/office-kit.zh.md) —— Office 文件的 Host 侧转换路径。
 - [包分组](../../README.zh.md) —— 各分组的职责。
 
 -----

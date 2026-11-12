@@ -358,17 +358,17 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- tech-debt-counters:start -->
 | 计数 | 值 |
 | --- | --- |
-| `structure.long-functions` | 184 |
-| `structure.large-files` | 90 |
+| `structure.long-functions` | 189 |
+| `structure.large-files` | 96 |
 | `structure.patent-large-files` | 10 |
-| `lint.v8-ignore` | 1315 |
-| `lint.ts-expect-error` | 193 |
+| `lint.v8-ignore` | 1332 |
+| `lint.ts-expect-error` | 202 |
 | `packages.patent-directories` | 16 |
 <!-- tech-debt-counters:end -->
 
 ### 专利域 >800 行文件裁定（2026-11-01 复测）
 
-`packages/patent` 当前有 10 个 >800 行源文件，全部保留为「接受」；另有 4 个拆分目标已降到 800 行（2026-11-05 D10 把 `statutes.ts` 拆为数据/计算/查询三层，最大文件 737 行）。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，2026-11-01 附图说明校验把 `validate.ts` 推过 800 行后升至 10 个，2026-11-05 拆分后回落至 9 个，2026-11-08 结构线稿每零件投影占位把 `freecad-structure-script.ts` 从 762 推到 826 后回到 10 个；全仓 >800 行文件相应为 90 个。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
+`packages/patent` 当前有 10 个 >800 行源文件，全部保留为「接受」；另有 4 个拆分目标已降到 800 行（2026-11-05 D10 把 `statutes.ts` 拆为数据/计算/查询三层，最大文件 737 行）。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，2026-11-01 附图说明校验把 `validate.ts` 推过 800 行后升至 10 个，2026-11-05 拆分后回落至 9 个，2026-11-08 结构线稿每零件投影占位把 `freecad-structure-script.ts` 从 762 推到 826 后回到 10 个；全仓 >800 行文件相应为 96 个（2026-11-12 上游 rc.2 同步把 6 个包内文件推过 800 行，专利域 10 个不变）。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
 
 拆分落点：`generate-patent-figure.ts` 拆出 `figure-panels.ts`（多面板路径）、`figure-delivery.ts`（落版/复核/转路径/导出）与 `figure-run.ts`（共享运行参数与标号）；`evidence/engine.ts` 拆出 `signals.ts`、`judgment.ts`、`public-use.ts`、`conditions.ts` 与 `proof-standard.ts`；`generate-structure-figure.ts` 拆出 `structure-types.ts`、`structure-model.ts` 与 `structure-render.ts`。
 
@@ -406,6 +406,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-12 上游 v0.2.2-rc.2 同步**:上游代码带入 5 个新增 >150 行函数与 6 个新增 >800 行文件,`structure.long-functions` 由 184 升至 **189**、`structure.large-files` 由 90 升至 **96**;专利域 >800 行文件数 10 不变;上游同时带入 17 行 `v8 ignore` 与 9 行 `@ts-expect-error`,两个标记计数分别升至 **1332** 与 **202**。这些是上游自身的结构状态,fork 不在同步里拆分上游文件。
 - **2026-11-08 版面利用率提示判据**:`render-check-findings.ts` 由 951 升至 **988** 行并同步重定接受上限;`structure.long-functions`、`structure.large-files`、`structure.patent-large-files` 与 `lint.v8-ignore` 均不变。新增 `sheet-underfill` 判据(内容包围盒面积 ÷ 该图自身画布面积,低于 `Config.figureMinSheetFillRatio` 时报警)约 37 行,只读已量测的墨迹包围盒与画布尺寸,不新增遍历;`RenderCheckFinding` 同时增加 `advisory` 标记,`blockingFindings` 据此把它排除在阻断集之外,故 strict 门禁不会因软指标失败。
 - **2026-11-08 结构线稿分解图**:`freecad-structure-script.ts` 由 985 升至 **1217** 行并同步重定接受上限;`structure.long-functions`、`structure.large-files`、`structure.patent-large-files` 与 `lint.v8-ignore` 均不变。新增 `principal_axis`(包围盒中心点云的幂迭代主轴)、`exploded_part_offsets`(按各零件沿轴尺寸加中位间隙逐段累加,整串居中)、`build_exploded_view_svg`(逐件 `DrawViewPart` + 平移拼接),各 <50 行;`callout_fragments` 改为接收投影函数,使总装图与分解图共用同一套标号放置,`part_metadata` 多收一个可选的排布后矩形。分解图与 `details` 互斥:放大窗口按模型坐标挂在单一基视图上,而分解图每个零件各有一个视图。
 - **2026-11-08 结构线稿评审修正**:`freecad-structure-script.ts` 由 1217 升至 **1233** 行并同步重定接受上限;其余计数器不变。`principal_axis` 的幂迭代种子从固定 `(1,1,1)` 改为协方差矩阵范数最大的那一列——零件恰好沿 `(1,-1,0)` 这类与种子正交的方向排布时,旧种子第一步就塌成零向量,函数返回一个与真实主轴垂直的方向且不报错;`callout_fragments` 的包围盒参数与返回值统一为 `(min_x, max_x, min_y, max_y)`,消除同一函数入参与返回两套元组顺序;`build_exploded_view_svg` 不再返回无人消费的 `axis` 元数据。工具层 `structureAssembly` 在目录批量出多图时不给摘要(摘要只描述其中一张),同时补满 manifest 逐零件事实的负向测试。`principal_axis` 的修复目前只有脚本字符串级回归钉(内嵌 Python 在无 FreeCAD 时不执行)与 FreeCAD 门控的端到端用例,本地没有行为夹具;要补需把主轴算法抽成可在 TS 侧单测的纯函数,代价大于收益,暂记于此。

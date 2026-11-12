@@ -72,7 +72,7 @@ The projection rules of the read direction are stated in full on the module JSDo
 ## Further Exploration
 
 - [Document group](../README.md) — the sibling packages of this group.
-- [Office conversion](../../../docs/subsystems/office-to-pdf.md) — the Host-side conversion path for Office files.
+- [Office conversion](../../../docs/subsystems/office-kit.md) — the Host-side conversion path for Office files.
 - [Package groups](../../README.md) — what each group owns.
 
 -----

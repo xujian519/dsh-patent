@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { SESSION_FORMAT_VERSION, Session, SessionId } from '@deepseek-ai/dsh-session'
-import type { SessionHeader } from '@deepseek-ai/dsh-session'
+import type { SessionEventInput, SessionEventType, SessionHeader } from '@deepseek-ai/dsh-session'
 import type { ShellExecRequest, ShellExecSpec, ShellExecution, ShellExecutor, ShellRunResult } from '@deepseek-ai/dsh-shell'
 import {
   BasicSelfEvolveEngine,
@@ -21,6 +21,19 @@ import type { ProposalValidationOutcome, ReplayEvidence, ValidationScores } from
 
 function sessionFactory(): Session {
   return Session.create(SessionId(`test-${Math.random().toString(36).slice(2, 10)}`))
+}
+
+/**
+ * Replace `session.append` so appends of `eventTypes` throw `thrown` (default
+ * `Error("log closed for <type>")`), leaving every other append to the original.
+ */
+function failingAppend(session: Session, eventTypes: string | readonly string[], thrown?: unknown): void {
+  const types = typeof eventTypes === 'string' ? [eventTypes] : eventTypes
+  const original = session.append.bind(session) as (type: SessionEventType | readonly SessionEventInput[], ...rest: unknown[]) => unknown
+  session.append = ((type: SessionEventType | readonly SessionEventInput[], ...rest: unknown[]) => {
+    if (typeof type === 'string' && types.includes(type)) throw thrown ?? new Error(`log closed for ${type}`)
+    return original(type, ...rest)
+  }) as typeof session.append
 }
 
 function appendShellResult(session: Session, callId: string, text: string): void {
@@ -3405,15 +3418,6 @@ function l2Section(proposalId: string, text: string, patternId: string): EvolveP
 }
 
 describe('apply-failed and registration undo (P0-4)', () => {
-  /** Reject every append of the named event type, as a closed log would. */
-  function failingAppend(session: Session, eventType: string): void {
-    const original = session.append.bind(session) as (...args: unknown[]) => unknown
-    session.append = ((type: string, ...rest: unknown[]) => {
-      if (type === eventType) throw new Error(`log closed for ${type}`)
-      return original(type, ...rest)
-    }) as typeof session.append
-  }
-
   it('records apply-failed when another provider owns the proposed skill name', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'self-evolve-apply-failed-'))
     vi.stubEnv('DSH_HOME', dir)
@@ -3783,11 +3787,7 @@ describe('champion rollback and validation retry (P0-3/P0-4)', () => {
   it('keeps the original error when the end append and end emit both fail', async () => {
     const ctx = new Context()
     const session = sessionWithBoom()
-    const original = session.append.bind(session) as (...args: unknown[]) => unknown
-    session.append = ((type: string, ...rest: unknown[]) => {
-      if (type === 'self-evolve/mined' || type === 'self-evolve/end') throw new Error(`log closed for ${type}`)
-      return original(type, ...rest)
-    }) as typeof session.append
+    failingAppend(session, ['self-evolve/mined', 'self-evolve/end'])
     provideServices(ctx, session)
     const engine = new BasicSelfEvolveEngine(ctx, baseConfig())
     const logs = captureLogs(ctx)
@@ -3801,11 +3801,7 @@ describe('champion rollback and validation retry (P0-3/P0-4)', () => {
   it('leaves no bracket open when the start append itself fails', async () => {
     const ctx = new Context()
     const session = sessionWithBoom()
-    const original = session.append.bind(session) as (...args: unknown[]) => unknown
-    session.append = ((type: string, ...rest: unknown[]) => {
-      if (type === 'self-evolve/start') throw new Error('log closed for self-evolve/start')
-      return original(type, ...rest)
-    }) as typeof session.append
+    failingAppend(session, 'self-evolve/start')
     provideServices(ctx, session)
     const engine = new BasicSelfEvolveEngine(ctx, baseConfig())
     await expect(engine.evolveNow(agentFor(session), new AbortController().signal))
@@ -4238,11 +4234,7 @@ describe('workspace verifier degradation and engine edges (P0-2/P0-4/P1.9b)', ()
   it('keeps the original error when the end append and end emit throw non-Errors', async () => {
     const ctx = new Context()
     const session = sessionWithBoom()
-    const original = session.append.bind(session) as (...args: unknown[]) => unknown
-    session.append = ((type: string, ...rest: unknown[]) => {
-      if (type === 'self-evolve/end') throw 'log closed for self-evolve/end'
-      return original(type, ...rest)
-    }) as typeof session.append
+    failingAppend(session, 'self-evolve/end', 'log closed for self-evolve/end')
     provideServices(ctx, session)
     const engine = new BasicSelfEvolveEngine(ctx, baseConfig())
     const logs = captureLogs(ctx)
@@ -4440,11 +4432,7 @@ describe('workspace verifier degradation and engine edges (P0-2/P0-4/P1.9b)', ()
     provideSkillCatalog(ctx, session, { skills: [], complete: true }, undefined, {
       section: (input: { name: string }) => () => { removed.push(input.name) },
     })
-    const original = session.append.bind(session) as (...args: unknown[]) => unknown
-    session.append = ((type: string, ...rest: unknown[]) => {
-      if (type === 'self-evolve/commit') throw new Error('log closed for self-evolve/commit')
-      return original(type, ...rest)
-    }) as typeof session.append
+    failingAppend(session, 'self-evolve/commit')
     const engine = new ProbeEngine(ctx, baseConfig())
     const [pattern] = await engine.readPatterns(session.id)
     await expect(engine.commit(agentFor(session), proposal({

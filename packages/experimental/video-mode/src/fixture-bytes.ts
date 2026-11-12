@@ -3,7 +3,7 @@
  * encoder, a silent PCM WAV writer, and a stable color derived from a prompt.
  * These keep the end-to-end tests independent of network providers and image
  * tooling while still exercising real container validation.
- * @module @deepseek-ai/dsh-experimental-video-mode/fixture-bytes
+ * @module @deepseek-ai/dsh-video-mode/fixture-bytes
  */
 
 import { deflateSync } from 'node:zlib'

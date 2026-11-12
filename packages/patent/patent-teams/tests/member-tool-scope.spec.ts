@@ -77,7 +77,7 @@ async function bootLayers(cnlaw = true): Promise<{
   preset: { ctx: Context; key: object }
   captain: { ctx: Context; key: object }
   member: { ctx: Context; key: object }
-  activations: { request: { toolFilter: { allow?: string[]; deny: string[] } } }[]
+  activations: { toolFilter: { allow?: string[]; deny: string[] } }[]
 }> {
   const root = await mount()
   if (cnlaw) root.tools.register(standIn('mcp__cnlaw__search'))
@@ -97,7 +97,7 @@ async function bootLayers(cnlaw = true): Promise<{
     preset.ctx.tools.register(standIn(name))
   }
 
-  const activations: { request: { toolFilter: { allow?: string[]; deny: string[] } } }[] = []
+  const activations: { toolFilter: { allow?: string[]; deny: string[] } }[] = []
   root.provide('subagents', {
     getProvider: () => ({
       name: 'spawn',
@@ -105,7 +105,7 @@ async function bootLayers(cnlaw = true): Promise<{
       prepareContinuable: () => undefined,
     }),
     list: () => ['spawn'],
-    startActivation: async (spec: { request: { toolFilter: { allow?: string[]; deny: string[] } } }) => {
+    startActivation: async (spec: { toolFilter: { allow?: string[]; deny: string[] } }) => {
       activations.push(spec)
       return { childId: SessionId('child-1'), messageId: 'msg-1' }
     },
@@ -134,7 +134,7 @@ describe('member tool allow list across preset, captain, and member scopes', () 
       new AbortController().signal,
     )
 
-    const allow = activations[0]?.request.toolFilter.allow
+    const allow = activations[0]?.toolFilter.allow
     expect(allow).toBeDefined()
     for (const name of [
       'read',

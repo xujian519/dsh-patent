@@ -6,7 +6,7 @@
  *
  * MiniMax charges per generated second. Prices are the published CNY rates for
  * `MiniMax-H3`: 0.50 per second at 768P and 0.80 per second at 2K.
- * @module @deepseek-ai/dsh-experimental-video-mode/minimax
+ * @module @deepseek-ai/dsh-video-mode/minimax
  */
 
 import { readFile } from 'node:fs/promises'

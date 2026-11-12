@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-host-plugin-market",
   "description": "Open plugin catalog seam (ctx.pluginCatalog): source registration, catalog search, and managed install/uninstall with snapshot/rollback receipts for the DeepSeek Harness",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -44,7 +44,10 @@
   "files": [
     "lib/index.js",
     "lib/types/**/*.js",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "dependencies": {

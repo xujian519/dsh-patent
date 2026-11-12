@@ -41,6 +41,7 @@
         "tool-web"
       ],
       "explainedAbsences": {
+        "tool-office": "`office_render`, `office_convert`, and `office_recalculate` activate only after an Office skill loads, and this mode mounts no Office skill. Documents leave through `document_deliver` with the document studio's own renderers.",
         "tool-plugin-market": "Read-only plugin catalog browsing over the host `pluginCatalog` service. Installing or removing a plugin is a deployment action taken through the `dsh plugin` CLI, not a step of producing a document.",
         "present": "`present` declares an arbitrary accessible file as a deliverable for the client UI. This mode declares its deliverables through `document_deliver`, which carries the deterministic check results the document studio renders; a second declaration channel would split that state.",
         "tool-plugin-manager": "The plugin-manager tools write profile configuration; the host patch ships this row disabled and a document delivery has no profile-editing step.",
@@ -82,6 +83,7 @@
         "tool-web"
       ],
       "explainedAbsences": {
+        "tool-office": "`office_render`, `office_convert`, and `office_recalculate` activate only after an Office skill loads, and this mode mounts no Office skill. A legal matter's documents reach the delivery studio through `document_deliver`, not through Office conversion.",
         "tool-plugin-market": "Read-only plugin catalog browsing over the host `pluginCatalog` service. Installing or removing a plugin is a deployment action taken through the `dsh plugin` CLI, not a step of a personal legal matter.",
         "present": "`present` declares an arbitrary accessible file as a deliverable for the client UI. This mode declares its deliverables through `document_deliver`, whose records the delivery studio renders, and the persona plus `legal-quality-gate` require the legal checks before delivery; a second declaration channel would split that state.",
         "tool-plugin-manager": "The plugin-manager tools write profile configuration; the host patch ships this row disabled and a legal matter has no profile-editing step.",
@@ -126,6 +128,7 @@
         "tool-web"
       ],
       "explainedAbsences": {
+        "tool-office": "`office_render`, `office_convert`, and `office_recalculate` activate only after an Office skill loads, and this mode mounts no Office skill. Patent deliverables go through `render_patent_document` and `build_patent_filing`, whose layout the deployment's templates own.",
         "tool-plugin-market": "Read-only plugin catalog browsing over the host `pluginCatalog` service. Installing or removing a plugin is a deployment action for the firm's operator, not a step of prosecuting a case.",
         "present": "`present` declares an arbitrary accessible file as a deliverable for the client UI. This mode declares its deliverables through `render_patent_document` and `build_patent_filing`, both of which the delivery gate holds to the rule and citation runs; a second declaration channel would sit outside that gate.",
         "tool-plugin-manager": "The plugin-manager tools write profile configuration; the host patch ships this row disabled and a patent filing has no profile-editing step."

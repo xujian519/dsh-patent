@@ -2,7 +2,7 @@
  * SubRip formatting for speech captions. Providers report cues in seconds; the
  * media tools write them beside the audio as a `.srt` file the assembler burns
  * in or a player loads.
- * @module @deepseek-ai/dsh-experimental-video-mode/subtitles
+ * @module @deepseek-ai/dsh-video-mode/subtitles
  */
 
 import type { MediaSubtitleCue } from './types.ts'

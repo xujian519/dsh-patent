@@ -968,13 +968,11 @@ export class BasicSelfEvolveEngine extends SelfEvolveEngine {
       provider: 'fork',
       label: 'self-evolve-replay',
       delivery: 'caller',
-      request: {
-        prompt: [{
-          type: 'text',
-          text: `你正在验证一个自进化修补提案，请如实重放以下失败场景并应用修补方案，完成一次验证执行。\n失败场景：${caseText}\n修补方案：${candidateText(proposal)}\n请按修补方案实际执行原本失败的操作（必须真的调用工具执行，只描述结果不算验证），完成后用一句话说明结果。`,
-        }],
-        parent,
-      },
+      prompt: [{
+        type: 'text',
+        text: `你正在验证一个自进化修补提案，请如实重放以下失败场景并应用修补方案，完成一次验证执行。\n失败场景：${caseText}\n修补方案：${candidateText(proposal)}\n请按修补方案实际执行原本失败的操作（必须真的调用工具执行，只描述结果不算验证），完成后用一句话说明结果。`,
+      }],
+      parent,
       signal,
     })
     try {

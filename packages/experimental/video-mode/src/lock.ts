@@ -2,7 +2,7 @@
  * In-process serialization for read-modify-write files. Two tool calls in one
  * host can otherwise publish the same document twice; a lock chain per key
  * makes the mutation sequence atomic within the process.
- * @module @deepseek-ai/dsh-experimental-video-mode/lock
+ * @module @deepseek-ai/dsh-video-mode/lock
  */
 
 /** Tail of each key's chain; resolved promises only, so a failure cannot poison later work. */

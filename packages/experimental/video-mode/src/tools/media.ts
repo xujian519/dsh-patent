@@ -3,7 +3,7 @@
  * generation, read its status, or cancel it. One tool with an action
  * discriminator keeps the fixed prompt cost to one schema while the actions
  * share kind, model, and output-path vocabulary.
- * @module @deepseek-ai/dsh-experimental-video-mode/tools/media
+ * @module @deepseek-ai/dsh-video-mode/tools/media
  */
 
 import type { Context } from '@deepseek-ai/cordis'

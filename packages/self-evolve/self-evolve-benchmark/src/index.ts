@@ -204,10 +204,8 @@ function createSubagentExecuteCase(ctx: Context): ExecuteCase {
       provider: 'fork',
       label: 'self-evolve-benchmark',
       delivery: 'caller',
-      request: {
-        prompt: [textMessage(executePrompt(request))],
-        parent,
-      },
+      prompt: [textMessage(executePrompt(request))],
+      parent,
       signal: request.signal,
     })
     try {
@@ -232,10 +230,8 @@ function createSubagentEvaluateCase(ctx: Context): EvaluateCase {
       provider: 'fork',
       label: 'self-evolve-benchmark',
       delivery: 'caller',
-      request: {
-        prompt: [textMessage(evaluatorPrompt(request))],
-        parent,
-      },
+      prompt: [textMessage(evaluatorPrompt(request))],
+      parent,
       signal: request.signal,
     })
     try {
@@ -267,10 +263,8 @@ function createProposeCandidate(ctx: Context): ProposeCandidate {
       provider: 'fork',
       label: 'self-evolve-benchmark',
       delivery: 'caller',
-      request: {
-        prompt: [textMessage(proposePrompt(options))],
-        parent,
-      },
+      prompt: [textMessage(proposePrompt(options))],
+      parent,
       signal: options.signal,
     })
     try {
@@ -297,10 +291,8 @@ function createApplyCandidate(ctx: Context): ApplyCandidate {
       provider: 'fork',
       label: 'self-evolve-benchmark',
       delivery: 'caller',
-      request: {
-        prompt: [textMessage(applyPrompt(options))],
-        parent,
-      },
+      prompt: [textMessage(applyPrompt(options))],
+      parent,
       signal: options.signal,
     })
     try {

@@ -4,7 +4,7 @@
  * one Han character counts as two billing characters, and every other
  * character counts as one. Prices are the published CNY rates per 10,000
  * characters: 2.00 for `speech-2.8-turbo` and 3.50 for `speech-2.8-hd`.
- * @module @deepseek-ai/dsh-experimental-video-mode/minimax-speech
+ * @module @deepseek-ai/dsh-video-mode/minimax-speech
  */
 
 import {

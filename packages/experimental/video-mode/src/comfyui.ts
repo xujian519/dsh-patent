@@ -6,7 +6,7 @@
  *
  * ComfyUI runs on the operator's machine, so a task costs no provider money and
  * the estimate reports zero CNY. GPU time is the real cost.
- * @module @deepseek-ai/dsh-experimental-video-mode/comfyui
+ * @module @deepseek-ai/dsh-video-mode/comfyui
  */
 
 import { readFileSync } from 'node:fs'

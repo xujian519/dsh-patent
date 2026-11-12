@@ -9,7 +9,7 @@
 在视频工作流需要的 standard 通用行（shell、文件系统、后台任务、排程、技能、目标、计划模式、压缩、委派、ask-user、todo 与 web）之外，预设还提供：
 
 - `skills/video/` 下的六个生产技能：`video-brief`（规格）、`video-storyboard`（分镜与资产）、`video-generate`（关键帧优先的媒体生成）、`video-voice`（配音、BGM、字幕）、`video-assemble`（EDL 与 ffmpeg）、`video-deliver`（机器检查与登记）。
-- 一行 `video-mode`，来自 `@deepseek-ai/dsh-experimental-video-mode`。它提供 `ctx.media`、云端 MiniMax-H3 视频 provider、云端 SiliconFlow Wan2.2 图生视频 provider、云端 MiniMax 语音 provider、本地 ComfyUI provider（Z-Image Turbo 关键帧；Wan 2.2 仍可以 `wan2.2-ti2v-5b` 显式选择），以及四个模型工具：`media`、`video_project`、`video_assemble`、`video_deliver`。 进行中的任务会记入项目旁的日志，每次以人民币计价的结算写入账本，因此重启后可以接回轮询，预算门也不会因忘记回写成本而少算。
+- 一行 `video-mode`，来自 `@deepseek-ai/dsh-video-mode`。它提供 `ctx.media`、云端 MiniMax-H3 视频 provider、云端 SiliconFlow Wan2.2 图生视频 provider、云端 MiniMax 语音 provider、本地 ComfyUI provider（Z-Image Turbo 关键帧；Wan 2.2 仍可以 `wan2.2-ti2v-5b` 显式选择），以及四个模型工具：`media`、`video_project`、`video_assemble`、`video_deliver`。 进行中的任务会记入项目旁的日志，每次以人民币计价的结算写入账本，因此重启后可以接回轮询，预算门也不会因忘记回写成本而少算。
 - 视频生产 persona（规格先行、资产先于镜头、关键帧先于片段、先估后生成、机器检查先于交付）与视频版计划模式章节：平台、时长、画幅、预算、脚本、分镜、资产方案与交付清单都属于“计划”；获批前不生成付费媒体或对外成片。
 
 相对 `standard` 的行集，本预设有意省略四行：`tool-plugin-market`、`present`、`tool-plugin-manager`、`openviking`。`tool-plugin-market` 是只读目录浏览，安装插件属于部署动作；`present` 把任意可访问文件声明为交付物，本模式通过 `video_deliver` 声明交付物并携带机器检查；`tool-plugin-manager` 写 profile 配置，Host patch 默认禁用；`openviking` 是面向 HTTP 服务的外部记忆，本组合不运行该服务。

@@ -1,7 +1,7 @@
 {
-  "name": "@deepseek-ai/dsh-experimental-video-bundle",
+  "name": "@deepseek-ai/dsh-video-bundle",
   "description": "Experimental video production switched on from the plugin manager: the video agent preset, six production skills, the media tools, and the Web studio",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.2",
   "icon": "./icon.svg",
   "publishConfig": {
     "access": "public"
@@ -35,12 +35,15 @@
     "presets/video.md",
     "presets/video.zh.md",
     "skills",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "dependencies": {
     "@deepseek-ai/dsh-client-ui-video-studio": "workspace:*",
-    "@deepseek-ai/dsh-experimental-video-mode": "workspace:*"
+    "@deepseek-ai/dsh-video-mode": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~"

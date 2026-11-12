@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-im",
   "description": "Optional IM integration bundle: pins the @xmanrui/dsh-im row over any surface profile, connecting nine IM channels and a public AI Office to a local Harness",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -25,7 +25,10 @@
   "files": [
     "lib/index.js",
     "cordis.patch.yml",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/types/**/*.d.ts.map",
+    "lib/**/*.js.map",
+    "src"
   ],
   "license": "MIT",
   "dsh": {

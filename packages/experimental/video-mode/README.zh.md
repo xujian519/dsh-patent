@@ -3,7 +3,7 @@ description: "实验性视频模式：媒体 provider 能力缝、持久项目�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-video-mode
+# @deepseek-ai/dsh-video-mode
 
 [English](README.md) | 中文
 
@@ -43,7 +43,7 @@ kind: "package-reference"
 
 ```yaml
 - id: video-mode
-  name: '@deepseek-ai/dsh-experimental-video-mode'
+  name: '@deepseek-ai/dsh-video-mode'
   config:
     fakeProvider: true
     waitMs: 30000
@@ -55,7 +55,7 @@ kind: "package-reference"
 
 ```yaml
 - id: video-mode
-  name: '@deepseek-ai/dsh-experimental-video-mode'
+  name: '@deepseek-ai/dsh-video-mode'
   config:
     fakeProvider: false
     imageModel: z-image-turbo
@@ -197,7 +197,7 @@ EDL 是可复现的渲染契约。`buildFfmpegArgs` 生成一张滤镜图：每�
 
 #### 模型看到什么
 
-模型看到四个工具。`media` 带一个 action 判别字段与共享的 kind/model/prompt/output 词汇；`video_project` 带项目 action 与镜头/成片对象；`video_assemble` 接受完整 EDL 对象；`video_deliver` 接受带格式标记的文件与项目路径。准确的描述与参数见生成的[工具目录](../../../docs/tool-catalog.zh.md#deepseek-aidsh-experimental-video-mode)。
+模型看到四个工具。`media` 带一个 action 判别字段与共享的 kind/model/prompt/output 词汇；`video_project` 带项目 action 与镜头/成片对象；`video_assemble` 接受完整 EDL 对象；`video_deliver` 接受带格式标记的文件与项目路径。准确的描述与参数见生成的[工具目录](../../../docs/tool-catalog.zh.md#deepseek-aidsh-video-mode)。
 
 #### Token 影响
 

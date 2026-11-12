@@ -103,13 +103,13 @@
           # these rows register into THIS preset's layer of it, so they need no realm.
           # `skill-filesystem` contributes the six video skills through
           # `customSkillDirs`; the root resolves through the package that ships them —
-          # `@deepseek-ai/dsh-experimental-video-bundle/skills/video` — the way the loader
+          # `@deepseek-ai/dsh-video-bundle/skills/video` — the way the loader
           # resolves plugin specifiers, so it follows the installation.
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
             config:
               customSkillDirs:
-                - !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-experimental-video-bundle/package.json')), 'skills/video')
+                - !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-video-bundle/package.json')), 'skills/video')
           - id: tool-skill
             name: '@deepseek-ai/dsh-tool-skill'
 
@@ -137,7 +137,7 @@
               media: true
             config:
               - id: video-mode
-                name: '@deepseek-ai/dsh-experimental-video-mode'
+                name: '@deepseek-ai/dsh-video-mode'
                 config:
                   fakeProvider: false
                   imageModel: z-image-turbo

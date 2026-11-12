@@ -19,7 +19,7 @@
   max-width: 100%;
   max-height: calc(100vh - 160px);
   border-radius: var(--dsw-radius-md);
-  background: var(--dsw-alias-bg-layer-3, #000);
+  background: var(--dsw-alias-bg-layer-3);
 }
 
 .status {

@@ -5,6 +5,7 @@
     "packages/document/doc-style/src/load.ts|packages/document/doc-template/src/loader.ts",
     "packages/document/doc-template/src/store.ts|packages/document/doc-template/src/tool/render-doc-template.ts",
     "packages/document/doc-template/src/tool/list-doc-templates.ts|packages/document/doc-template/src/types.ts",
+    "packages/document/office-kit/src/queue.ts|packages/document/office-kit/src/types.ts",
     "packages/legal/legal-evidence/src/evaluators/base.ts|packages/legal/legal-evidence/src/evaluators/electronic.ts",
     "packages/legal/legal-evidence/src/evaluators/base.ts|packages/legal/legal-evidence/src/evaluators/expert-opinion.ts",
     "packages/legal/legal-evidence/src/evaluators/base.ts|packages/legal/legal-evidence/src/evaluators/witness-testimony.ts",

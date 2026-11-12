@@ -47,8 +47,7 @@ declare module '@deepseek-ai/cordis' {
  * `immediately` marks stage-one prefetch. `inject` names package rows whose
  * factories must arrive before this row materializes, while Cordis separately
  * uses the same package edges to compose entries. `external` carries exact
- * non-inject module requests (see {@link WebBootGraph.entries}). `required`
- * marks rows whose package the active profile installed (see its own doc).
+ * non-inject module requests (see {@link WebBootGraph.entries}).
  */
 export interface WebBootEntry {
   /** Entry name == package name. */
@@ -66,12 +65,6 @@ export interface WebBootEntry {
   immediately?: boolean
   /** Non-baseline module specifiers this row requests; omitted when it requests none. */
   external?: string[]
-  /**
-   * Marks a row the application does not need to activate — the active profile
-   * installed its package, so a broken user-added plugin must not keep the page
-   * from starting. Omitted for rows the deployment ships.
-   */
-  required?: boolean
 }
 
 /** Initial scheduling phase for one revisioned combo script. */
@@ -137,8 +130,6 @@ export interface BootPluginRow {
   inject: string[]
   /** Stage-one prefetch tier (false when the wire omits it). */
   immediately: boolean
-  /** Whether the application must activate this row (true unless the wire marks it). */
-  required: boolean
 }
 
 /** The parsed boot manifest: one wire, two consumer views. */
@@ -147,7 +138,7 @@ export interface BootManifest {
   rev: string
   /** Host release identity carried by the graph; absent when the Host publishes none. */
   release?: WebBootRelease
-  /** Rows as the module table consumes them; `id` is unique, since the parser rejects a repeat. */
+  /** Rows as the module table consumes them. */
   modules: BootModuleRow[]
   /** Rows as entry composition consumes them. */
   plugins: BootPluginRow[]
@@ -273,9 +264,6 @@ export function parseBootManifest(wire: unknown): BootManifest {
     if (row.immediately !== undefined && typeof row.immediately !== 'boolean') {
       throw new Error(`client-modules: boot manifest entry ${where} immediately must be a boolean`)
     }
-    if (row.required !== undefined && typeof row.required !== 'boolean') {
-      throw new Error(`client-modules: boot manifest entry ${where} required must be a boolean`)
-    }
     moduleFields.push({
       id: row.id,
       url: row.url,
@@ -287,7 +275,6 @@ export function parseBootManifest(wire: unknown): BootManifest {
       id: row.id,
       inject: inject === undefined ? [] : [...inject],
       immediately: row.immediately === true,
-      required: row.required !== false,
     })
   }
 

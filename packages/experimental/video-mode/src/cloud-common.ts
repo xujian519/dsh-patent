@@ -3,7 +3,7 @@
  * classification, response parsing, and video downloads. The MiniMax and
  * SiliconFlow providers share this code so a key-rotation or failure-code fix
  * reaches both capabilities.
- * @module @deepseek-ai/dsh-experimental-video-mode/cloud-common
+ * @module @deepseek-ai/dsh-video-mode/cloud-common
  */
 
 import { extname } from 'node:path'

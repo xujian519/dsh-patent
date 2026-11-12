@@ -51,6 +51,7 @@ function mountRootedShell({ appRoot = true }: { appRoot?: boolean } = {}) {
       startSession={vi.fn()} toggleSidebar={vi.fn()} t={t}
       renderSlot={((_key: string, _owner: unknown, options?: { fallback?: ReactNode }) =>
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
+      renderFactorySlot={() => null}
     />
   )
   const view = render(shell(), { container })

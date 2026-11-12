@@ -27,25 +27,26 @@ describe('gen-tool-catalog collectToolCatalog', () => {
     const catalog = await collectToolCatalog()
     const names = catalog.flatMap(entry => entry.schemas.map(s => s.name)).sort()
     expect(names).toEqual([
-      'add_patent_figure_references', 'analyze_patent_figure', 'apply_patch', 'ask_user_question', 'bash', 'bash', 'build_patent_filing', 'check_patent_figure_consistency',
-      'claim_chart_build', 'claim_lint', 'compare_patent_figure_analysis', 'cordis_inspect_list',
-      'cordis_inspect_query', 'create_goal', 'create_worktree', 'document_deliver', 'domain_check', 'draft_claims', 'draft_specification', 'edit', 'evaluate_evidence', 'evaluate_legal_evidence',
-      'exit_plan_mode', 'flexible_plan', 'generate_patent_figure', 'generate_structure_figure', 'get_goal', 'glob', 'grep', 'interrupt_agent',
-      'interrupt_agent', 'job_kill', 'job_list', 'job_output', 'knowledge_note_save', 'law_search', 'law_verify', 'legal_law_verify', 'list_agents',
-      'list_agents', 'list_doc_templates', 'list_mcp_resource_templates', 'list_mcp_resources', 'list_subagent_models', 'load_workspace_dependencies', 'lsp', 'macos_app',
-      'macos_clipboard_get', 'macos_clipboard_set', 'macos_notify', 'macos_open_path', 'macos_open_url', 'macos_speak', 'market_plugin_preview', 'market_plugin_search',
-      'market_source_list', 'matter_log_append', 'media', 'paper_download', 'paper_list_sources', 'paper_search', 'parse_office_action', 'patent_analysis_report', 'patent_case_search',
+      'add_patent_figure_references', 'analyze_patent_figure', 'apply_patch', 'ask_user_question', 'bash', 'bash', 'build_patent_filing', 'check_patent_figure_consistency', 'claim_chart_build',
+      'claim_lint', 'compare_patent_figure_analysis', 'cordis_inspect_list', 'cordis_inspect_query', 'create_goal', 'create_worktree', 'document_deliver', 'domain_check',
+      'draft_claims', 'draft_specification', 'edit', 'evaluate_evidence', 'evaluate_legal_evidence', 'exit_plan_mode', 'flexible_plan', 'generate_patent_figure',
+      'generate_structure_figure', 'get_goal', 'glob', 'grep', 'interrupt_agent', 'job_kill', 'job_list', 'job_output',
+      'knowledge_note_save', 'law_search', 'law_verify', 'legal_law_verify', 'list_agents', 'list_doc_templates', 'list_mcp_resource_templates', 'list_mcp_resources',
+      'list_subagent_models', 'load_workspace_dependencies', 'lsp', 'macos_app', 'macos_clipboard_get', 'macos_clipboard_set', 'macos_notify', 'macos_open_path',
+      'macos_open_url', 'macos_speak', 'market_plugin_preview', 'market_plugin_search', 'market_source_list', 'matter_log_append', 'media', 'office_convert',
+      'office_recalculate', 'office_render', 'paper_download', 'paper_list_sources', 'paper_search', 'parse_office_action', 'patent_analysis_report', 'patent_case_search',
       'patent_deadlines', 'patent_eval', 'patent_fees', 'patent_kg_query', 'patent_legal_status', 'patent_metadata', 'patent_pdf_download', 'patent_plan_task',
       'patent_search', 'patent_teams_add_member', 'patent_teams_archive', 'patent_teams_claim_task', 'patent_teams_create', 'patent_teams_create_task', 'patent_teams_delete', 'patent_teams_reassign_task',
-      'patent_teams_remove_member', 'patent_teams_send_message', 'patent_teams_status', 'patent_teams_update_task', 'patent_teams_wait', 'patent_wiki_search', 'patent_worker_validate', 'patent_workflow', 'patent_workflow_run',
-      'plugin_manager', 'plugin_market', 'present', 'propose_action', 'pwsh', 'pwsh', 'query_writing_patterns', 'ralph', 'read', 'read_image',
-      'read_mcp_resource', 'recognize_chemical_structure', 'render_doc_template', 'render_patent_document', 'rule_check', 'run_code', 'schedule_create',
-      'schedule_edit', 'schedule_list', 'schedule_view', 'search_patent_figure', 'self_evolve_inspect_patterns', 'self_evolve_now', 'send_message', 'send_message', 'session_event_read',
-      'session_event_search', 'session_event_trace', 'session_search', 'session_trace', 'skill', 'spawn_teammate', 'stagehand_act', 'stagehand_extract',
-      'stagehand_navigate', 'stagehand_observe', 'stagehand_screenshot', 'stagehand_tabs', 'str_replace_editor', 'subagent', 'subagent_oar', 'team_task_create', 'team_task_get',
-      'team_task_list', 'team_task_update', 'terminal_close', 'terminal_list', 'terminal_open', 'terminal_read', 'terminal_send', 'terminal_signal',
-      'todo_write', 'triz', 'triz_contradiction_analysis', 'update_goal', 'validate_specification', 'verify_deliverable', 'verify_patent_figure', 'verify_patent_filing',
-      'video_assemble', 'video_deliver', 'video_project', 'wait_agent', 'web_fetch', 'web_search', 'workbench_link_patent_case', 'workflow', 'working_directory', 'write',
+      'patent_teams_remove_member', 'patent_teams_send_message', 'patent_teams_status', 'patent_teams_update_task', 'patent_teams_wait', 'patent_wiki_search', 'patent_worker_validate', 'patent_workflow',
+      'patent_workflow_run', 'plugin_manager', 'plugin_market', 'present', 'propose_action', 'pwsh', 'pwsh', 'query_writing_patterns', 'ralph',
+      'read', 'read_image', 'read_mcp_resource', 'recognize_chemical_structure', 'render_doc_template', 'render_patent_document', 'rule_check', 'run_code',
+      'schedule_create', 'schedule_edit', 'schedule_list', 'schedule_view', 'search_patent_figure', 'self_evolve_inspect_patterns', 'self_evolve_now', 'send_message',
+      'session_event_read', 'session_event_search', 'session_event_trace', 'session_search', 'session_trace', 'skill', 'stagehand_act',
+      'stagehand_extract', 'stagehand_navigate', 'stagehand_observe', 'stagehand_screenshot', 'stagehand_tabs', 'str_replace_editor', 'subagent', 'subagent_oar',
+      'team_task_create', 'team_task_get', 'team_task_list', 'team_task_update', 'terminal_close', 'terminal_list', 'terminal_open', 'terminal_read',
+      'terminal_send', 'terminal_signal', 'todo_write', 'triz', 'triz_contradiction_analysis', 'update_goal', 'user_terminal_list', 'user_terminal_read',
+      'validate_specification', 'verify_deliverable', 'verify_patent_figure', 'verify_patent_filing', 'video_assemble', 'video_deliver', 'video_project', 'wait_agent',
+      'web_fetch', 'web_search', 'workbench_link_patent_case', 'workflow', 'working_directory', 'write',
     ])
     // Every tool carries a JSON-Schema `parameters` object (what the model sees).
     for (const entry of catalog) {
@@ -82,6 +83,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
       interrupt_agent: 'packages/subagent/tool-subagent-control/src/index.ts',
       list_agents: 'packages/subagent/tool-subagent-control/src/list-agents.ts',
       send_message: 'packages/subagent/tool-subagent-control/src/index.ts',
+      wait_agent: 'packages/subagent/tool-subagent-control/src/wait-agent.ts',
     })
   })
 

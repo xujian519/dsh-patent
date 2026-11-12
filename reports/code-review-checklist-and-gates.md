@@ -1020,3 +1020,63 @@ D18 的判定表共享与 D19 的入口对齐此前各占一张 PR，本轮只�
 - **不删 `patent-core` 的再导出**：外部消费方按包名导入这些符号，删掉就是破坏性变更；本轮只换实现位置。
 - **不借本轮改判定规则**：D18 的坏款拒绝、D19 的 NUL 清洗与上限夹取都已单独成 PR，本轮不叠加新的行为改动。
 - **不动 `reports/` 以外的审查结项**：结项清单只登记 patent 域，legal 与 document 域的结项留给 D21–D25。
+
+## 67. D23 复核范围与方法
+
+D23 对应计划第 184 行「`legal-law` 收尾；`document-deliver`：会话日志可重建性、质量门状态」，交付物是会话事件覆盖检查。范围两块：
+
+1. **`legal-law` 收尾**：判定与索引缺失在 D18 已定，本轮只做「索引版本一致性」——文件头的 `maxArticle` / `maxVerifiedOn` 与条目正文是否描述同一版本。
+2. **`document-deliver` 会话事件覆盖**：逐项核对交付物面板重建所用的每个事实是否有日志来源，质量门状态是否只存在于进程内存。
+
+方法：
+
+- **数据先行**：用一次性脚本扫描 `assets/legal-law` 的 7,910 个索引文件，先确认当前资产本身是否一致，再决定要不要加加载期校验。
+- **覆盖矩阵**：把面板重建的字段逐项映射到 `tool/call` 参数或 `tool/result` 的 `meta`，没有来源的字段即缺口。
+- **测试锁契约**：新加断言锁定投影完整性与加载期拒绝路径，并用条件反转做反向验证。
+
+## 68. legal-law 索引版本一致性
+
+扫描结果（7,910 个文件，其中 17 部已转录）：`maxVerifiedOn` 均不早于任何条目的 `verifiedOn`，`maxArticle` 均不小于索引中的最大条号，`revision` 全部存在，`manifest.json` 无缺失文件，已转录条目的 `sourceDoc` / `verifiedOn` 齐全且日期格式合法。资产本身零不一致。
+
+缺口在代码：`parseLegalLawBaseline` 只做形态校验，文件头与正文不一致时仍会加载，引用门随后按「声明版本」判定。D23 补两条拒绝：
+
+- `maxArticle` 小于索引中的最大条号；
+- `maxVerifiedOn` 早于任一条目的 `verifiedOn`（两者都声明时）。
+
+反向验证：把两条条件反转后，`baseline.spec.ts` 有 15 条失败，包括两条新用例的「expected the parse to fail」与「loads the packaged index without errors」；恢复后 6 个测试文件、135 个用例全通过。引用判定与索引缺失的既有结论未变：`not-indexed` 显式返回，默认策略 `block`。
+
+## 69. document-deliver 会话事件覆盖矩阵
+
+| 重建事实 | 日志来源 | 重建位置 | 覆盖 |
+|---|---|---|---|
+| 交付文件与格式 | `tool/call` 参数 | `normalizeDeliverRegistration` | 既有用例 |
+| 质量门自述 P0 / P1 | `tool/call` 参数 | 同上 | 既有用例 |
+| brief 参考 | `tool/call` 参数 | 同上 | 既有用例 |
+| 文件身份 `identity` | `tool/result` 的 `meta.checks[]` | `parseCheckReports` | 既有用例 |
+| 核验状态、原因、findings | `meta.checks[]` | 同上 | 既有用例 |
+| 已声明原因 `ack` | `meta.checks[]` | 同上（本轮补断言） | 新增「projects every registered file」 |
+| 判定撤销 `checksWithdrawn` | fold 内派生 | `augmented` | 既有用例 |
+| 失败调用不登记 | `tool/result` 的 `isError` | fold 跳过 | 既有用例 |
+
+结论：面板重建的每个事实都有 `tool/call` 或 `tool/result` 来源；`document_deliver` 是纯函数，工具状态只存在于参数、结果与 `presentationMeta` 投影，没有模块级可变状态。本轮新增的覆盖用例断言投影不丢文件、不丢状态、不丢 `ack` 与 findings。
+
+已知展示缺口（不影响可重建性，登记为后续 UI 项）：`ack`、`gate.style` 与登记级 `warnings` 存在于日志与结果文本中，面板暂未展示。
+
+## 70. R-02 结论：保留平行实现
+
+两域的证据评分引擎不共享。理由：
+
+- **评分维度不同**：法律域评三性（真实性、合法性、关联性），专利域评公开时间、证明力组合与证据能力；规则表没有可共享的维度骨架。
+- **D21 已单独锁住法律侧**：`legal-evidence` 有规则表驱动测试与确定性用例，规则修正落在一侧不会静默漂移。
+- **共享会引入双向耦合**：专利侧的凭证、时间与组合规则会迫使法律侧理解专利语义，违反 D18 定下的「判定表共享、语法与数据留各域」边界。
+- **重复基线已定性**：`legal-evidence/src/engine.ts` 与 `patent-core/src/evidence/engine.ts` 的跨域配对照旧保留在基线内，无新增克隆。
+
+状态：已关闭（保留平行实现）。验证：`scripts/duplication-gate.ts` 通过，跨域配对与基线一致。
+
+## 71. D23 不做项
+
+- **不重构 `legal-law` 的模块级名称表**：`_knownNames`、`_knownAliases` 与解析器的 `STATUTE_PATTERNS` 是既有的进程级形态，改成索引实例所有会牵动全部解析入口与五个测试文件，超出收尾日范围；本轮只加加载期一致性校验。
+- **不改 `legal_law_verify` 的模型可见输出**：判定结果不带 `verifiedOn` / `sourceDoc` 是有意设计（门禁检查引用与索引成员，不声明内容正确），加字段会改变模型可见输出并触发快照更新。
+- **不动 `document-deliver` 的面板展示**：`ack`、`style`、`warnings` 的展示属 GUI 变更，另立。
+- **不补录法条款数**：7,910 个索引文件缺 `paragraphs` 列表是数据缺口，需要官方文本，仍按 D18 的结论另立数据 PR。
+- **不合并两域证据引擎**：见 §70。

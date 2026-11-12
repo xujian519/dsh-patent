@@ -1024,6 +1024,51 @@ describe('deliverable identity', () => {
     expect(meta.checks[0]?.path).toBe('a.md')
   })
 
+  it('projects every registered file and its recorded facts into the log metadata', () => {
+    const tool = bareTool()
+    // The delivery panel rebuilds from this projection alone, so a file, a
+    // status, or a declared reason the projection drops is lost on replay.
+    const value: DocumentDeliverResult = {
+      registered: [
+        { path: 'a.md', format: 'markdown' },
+        { path: 'b.pdf', format: 'pdf' },
+        { path: 'c.docx', format: 'docx' },
+      ],
+      gate: {
+        p0: ['命名规范'],
+        p1: [],
+        style: 'assistant-neutral',
+        checks: [
+          {
+            path: 'a.md',
+            identity: '/work/a.md',
+            format: 'markdown',
+            status: 'checked',
+            findings: [{ check: 'anti_pattern', level: 'warn', detail: '禁用词', line: 3 }],
+          },
+          { path: 'b.pdf', format: 'pdf', status: 'unchecked', reason: 'pdf 格式没有文本读取器', findings: [] },
+          {
+            path: 'c.docx',
+            format: 'docx',
+            status: 'unreadable',
+            reason: 'DOCX 结构报告 word/document.xml 未投影，投影文本可能不完整',
+            ack: '甲方要求交付原始 DOCX',
+            findings: [],
+          },
+        ],
+      },
+    }
+    const meta = tool.output.presentationMeta?.({}, value as never) as { checks: Array<Record<string, unknown>> }
+    expect(meta.checks.map(check => check.path)).toEqual(['a.md', 'b.pdf', 'c.docx'])
+    expect(meta.checks[0]).toMatchObject({
+      identity: '/work/a.md',
+      status: 'checked',
+      findings: [{ check: 'anti_pattern', level: 'warn', detail: '禁用词', line: 3 }],
+    })
+    expect(meta.checks[1]).toMatchObject({ status: 'unchecked', reason: 'pdf 格式没有文本读取器' })
+    expect(meta.checks[2]).toMatchObject({ status: 'unreadable', ack: '甲方要求交付原始 DOCX' })
+  })
+
   it('accepts an output value carrying identity through the declared schema', async () => {
     const ctx = await mounted()
     temp = await mkdtemp(join(tmpdir(), 'dsh-deliver-'))

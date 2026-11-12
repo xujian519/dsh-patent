@@ -30,7 +30,7 @@ DeepSeek Harness 的随包中国法条索引：法条引用解析、逐法记录
 
 每部法律是 `assets/legal-law` 下的一个 YAML 文件，`manifest.json` 以 `[law, document, file]` 登记全部文件。文件声明 `law`、`document`、`revision`、`maxArticle`、`maxVerifiedOn`、`maxSource` 与 `articles` 列表；每个条目携带 `article`、可选的 `paragraphs`、`topics`、`text`、`sourceDoc` 与 `verifiedOn`。转录记录是全有或全无：有 `text` 就必须同时有 `sourceDoc` 与 `verifiedOn`，只有来源没有正文同样是加载错误，因此手改索引无法制造核验器要避免的“静默放行”状态。
 
-插件加载时检查目录可读、非空并带有清单，否则让部署失败。第一次核验通过 `createLegalLawIndex().loadNames` 读取清单，把清单里的法律名与文件标题注册进解析器，随后只解析引用点名的法律；每部法律解析一次并缓存，读取失败后下一次调用可重试。两步都接受 `AbortSignal`；取消只结束该调用方的等待，与其他调用方共享的读取继续完成。需要整个语料的调用方仍可使用 `loadLegalLawBaselinesAsync`（逐文件让出事件循环），`loadLegalLawBaselines` 是它的同步版本；`parseLegalLawBaseline` 解析单个文件；`findLegalArticle` 查一个条号。资产声明的任何法律名都会成为引用形式，资产的文件标题同时作为正式全名别名；`legalLawNames` 返回当前集合。`baselineDir` 覆盖会替换随包目录，因此该目录必须在 YAML 文件之外一并提供 `manifest.json`。
+插件加载时检查目录可读、非空并带有清单，否则让部署失败。`maxArticle` 小于索引中的最大条号、或 `maxVerifiedOn` 早于条目的 `verifiedOn` 的文件同样被拒绝，因此文件头与正文不可能描述两个版本的索引。第一次核验通过 `createLegalLawIndex().loadNames` 读取清单，把清单里的法律名与文件标题注册进解析器，随后只解析引用点名的法律；每部法律解析一次并缓存，读取失败后下一次调用可重试。两步都接受 `AbortSignal`；取消只结束该调用方的等待，与其他调用方共享的读取继续完成。需要整个语料的调用方仍可使用 `loadLegalLawBaselinesAsync`（逐文件让出事件循环），`loadLegalLawBaselines` 是它的同步版本；`parseLegalLawBaseline` 解析单个文件；`findLegalArticle` 查一个条号。资产声明的任何法律名都会成为引用形式，资产的文件标题同时作为正式全名别名；`legalLawNames` 返回当前集合。`baselineDir` 覆盖会替换随包目录，因此该目录必须在 YAML 文件之外一并提供 `manifest.json`。
 
 <a id="citation-decision"></a>
 ## 引用判定

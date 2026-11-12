@@ -1,9 +1,9 @@
 /**
  * Case-law search engine for the legal domain (SQLite FTS5 + in-memory backends).
  *
- * Searches case-law records (裁判案例) by keyword matching across case name,
- * court, case number, case type, full text, and summary. Supports filtering
- * by document type, court, and case type.
+ * Searches case-law records (裁判案例) by keyword matching across the columns
+ * the FTS index covers: case name, full text, and summary. Document type, court,
+ * and case type are filters and are not searchable text on either backend.
  *
  * Dual-backend architecture:
  * - SQLite mode (dbPath provided): FTS5 (BM25 ranking) → LIKE fallback → memory
@@ -24,16 +24,12 @@ import type { CaseLawHit, CaseLawRecord, CaseLawSearchOptions } from '../types.t
 /** Maximum result limit for case-law search. */
 const MAX_LIMIT = 50
 
-/** Extract all searchable text from a case-law record. */
+/**
+ * Extract the text the FTS index covers, so the in-memory backend matches the
+ * same columns as the SQLite backend's `case_law_fts` table.
+ */
 function extractSearchableText(record: CaseLawRecord): string {
-  return [
-    record.caseName,
-    record.court,
-    record.caseNumber,
-    record.caseType,
-    record.fullText,
-    record.summary ?? '',
-  ].join(' ')
+  return [record.caseName, record.fullText, record.summary ?? ''].join(' ')
 }
 
 /** Map one SQLite row to a case-law hit. */
@@ -185,9 +181,10 @@ export class CaseLawSearchEngine extends SqliteBackedEngine<CaseLawSearchOptions
 
   protected override searchInMemory(query: string, options: CaseLawSearchOptions, limit: number): CaseLawHit[] {
     let filtered = this.records
-    filtered = filterRecords(filtered, r => r.docType, options.docType)
+    filtered = filterRecords(filtered, r => r.docType, options.docType, 'exact')
+    // `court` is a containment filter in SQL (`LIKE '%值%'`), so it keeps the default match.
     filtered = filterRecords(filtered, r => r.court, options.court)
-    filtered = filterRecords(filtered, r => r.caseType, options.caseType)
+    filtered = filterRecords(filtered, r => r.caseType, options.caseType, 'exact')
 
     const hits = searchInMemory(filtered, query, extractSearchableText, limit)
 

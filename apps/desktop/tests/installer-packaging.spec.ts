@@ -67,6 +67,12 @@ describe('installer preparation preserves application dependencies', () => {
       } else {
         expect(trayIcon).toBeUndefined()
       }
+      // The Office engine ships beside the archive, which copies without the archive's default
+      // matcher; its filter must drop the same names and extensions `verifyBesideArchive` treats
+      // as never reaching the application, or packaging fails on the engine's own source files.
+      const officeEngine = config.extraResources.find(resource => resource.to === 'node_modules/@deepseek-ai')
+      expect(officeEngine).toBeDefined()
+      expect(officeEngine!.filter).toEqual(expect.arrayContaining(['libreoffice-kit-*/**', '!**/*.cc', '!**/.gitignore']))
       const packager = new Packager({ projectDir: tmpdir() })
       // A foreign source-build target avoids rebuilding modules; the real dependency ownership decision still runs.
       Object.defineProperties(packager, {

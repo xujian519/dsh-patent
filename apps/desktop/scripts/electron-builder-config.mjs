@@ -1,3 +1,4 @@
+import { excludedExts, excludedNames } from 'app-builder-lib/out/fileMatcher.js'
 import { readInstallerLocales, renderInstallerStrings } from './installer-locales.mjs'
 import { officePackageDirectories } from '../../../scripts/libreoffice-packages.mjs'
 import { X509Certificate } from 'node:crypto'
@@ -36,6 +37,22 @@ import {
   verifyMacOSAppUpdateConfig,
   writeMacOSAppUpdateConfig,
 } from './macos-app-update-config.mjs'
+
+/**
+ * Build the exclusions electron-builder applies at any depth of a packed source directory.
+ *
+ * `extraResources` copies from a source directory without the archive's default matcher, so a
+ * beside-archive copy would keep files the archive refuses — the Office engine's `sources/*.cc`
+ * for one — and `verifyBesideArchive` reports them as unexpected entries. `isPackagerIgnored`
+ * in `verify-runtime-archive.ts` reads the same two exports.
+ * @returns {string[]} Exclusion patterns for an `extraResources` filter.
+ */
+function packagerExcludedPatterns() {
+  return [
+    ...excludedNames.split(',').map(name => `!**/${name}`),
+    ...excludedExts.split(',').map(extension => `!**/*.${extension}`),
+  ]
+}
 
 /**
  * Create electron-builder configuration from one release environment.
@@ -188,7 +205,7 @@ export function createElectronBuilderConfig(
       // and would hand that helper an archive path it cannot open. Node's
       // resolution from inside `app.asar` walks up to `resources/node_modules`,
       // so the engine resolves there as ordinary files with their modes.
-      { from: join(buildPaths.dsh, 'node_modules', '@deepseek-ai'), to: 'node_modules/@deepseek-ai', filter: ['libreoffice-kit-*/**'] },
+      { from: join(buildPaths.dsh, 'node_modules', '@deepseek-ai'), to: 'node_modules/@deepseek-ai', filter: ['libreoffice-kit-*/**', ...packagerExcludedPatterns()] },
       { from: fileURLToPath(new URL('../resources/icon-windows.png', import.meta.url)), to: 'icon.png' },
       // Windows tray bitmaps; macOS keeps the Dock and ships no menu bar icon.
       ...(packagesWindows ? [{ from: fileURLToPath(new URL('../resources/tray-windows.ico', import.meta.url)), to: 'tray.ico' }] : []),

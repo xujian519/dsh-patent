@@ -35,7 +35,7 @@ export function searchInMemory<T>(
   extractText: (record: T) => string,
   limit: number,
 ): MemoryHit<T>[] {
-  const terms = extractTerms(query)
+  const terms = extractSearchTerms(query)
   if (terms.length === 0) return []
 
   const hits: MemoryHit<T>[] = []
@@ -54,11 +54,13 @@ export function searchInMemory<T>(
 
 /**
  * Extract search terms from a query string (CJK-aware splitting).
- * Splits on whitespace and punctuation, filters short tokens.
+ *
+ * The in-memory backend and the SQLite `LIKE` rung share these terms so both
+ * backends apply the same multi-term OR semantics to one query.
  * @param query - raw query string.
  * @returns lowercased terms of 2+ characters.
  */
-function extractTerms(query: string): string[] {
+export function extractSearchTerms(query: string): string[] {
   return query
     .trim()
     .split(/[\s,，。、；;：:"'（）()【】\[\]]+/)
@@ -67,18 +69,26 @@ function extractTerms(query: string): string[] {
 }
 
 /**
- * Filter records by a field value (substring match on the extracted text).
+ * Filter records by a field value.
+ *
+ * `contains` mirrors the SQL `LIKE '%值%'` the `court` filter uses; `exact`
+ * mirrors the SQL `=` the enum-like filters (`docType`, `caseType`, `level`,
+ * `interpretationType`) use, so the in-memory backend matches the same records
+ * as the SQLite backend.
  * @param records - the record array.
  * @param extractField - function to extract the filterable text from a record.
- * @param value - the filter value (substring match); undefined means no filtering.
+ * @param value - the filter value; undefined means no filtering.
+ * @param match - `contains` for substring matching (default), `exact` for equality.
  * @returns filtered records.
  */
 export function filterRecords<T>(
   records: T[],
   extractField: (record: T) => string | undefined,
   value: string | undefined,
+  match: 'contains' | 'exact' = 'contains',
 ): T[] {
   if (value === undefined) return records
+  if (match === 'exact') return records.filter(record => extractField(record) === value)
   const lower = value.toLowerCase()
   return records.filter((record) => {
     const fieldVal = extractField(record)

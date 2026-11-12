@@ -211,7 +211,7 @@ export class LegalRegulationSearchEngine extends SqliteBackedEngine<LegalSearchO
   // --- Private: In-memory search path ---
 
   protected override searchInMemory(query: string, options: LegalSearchOptions, limit: number): LegalRegulationHit[] {
-    const filtered = filterRecords(this.records, r => r.level, options.level)
+    const filtered = filterRecords(this.records, r => r.level, options.level, 'exact')
     const hits = searchInMemory(filtered, query, extractSearchableText, limit * 2)
     return toVisibleMemoryHits(hits, options, limit)
   }

@@ -121,8 +121,8 @@ const INTERPRETATION_TABLE: SqliteSearchShape<JudicialInterpretationSearchOption
   postFilter: (hits, options) => filterByValidity(hits, options),
 }
 
-/** The guiding case table, matched by LIKE only. */
-const GUIDING_CASE_COLUMNS: readonly string[] = ['case_name', 'key_points', 'full_text']
+/** The guiding case table, matched by LIKE only; columns mirror the in-memory search text. */
+const GUIDING_CASE_COLUMNS: readonly string[] = ['guiding_case_number', 'case_name', 'key_points', 'full_text']
 
 /**
  * Judicial interpretation search engine (SQLite FTS5 + in-memory dual backend).
@@ -273,7 +273,7 @@ export class JudicialInterpretationSearch extends SqliteBackedEngine<JudicialInt
     options: JudicialInterpretationSearchOptions,
     limit: number,
   ): JudicialInterpretationHit[] {
-    const filtered = filterRecords(this.interpretations, r => r.interpretationType, options.interpretationType)
+    const filtered = filterRecords(this.interpretations, r => r.interpretationType, options.interpretationType, 'exact')
     const hits = searchInMemory(filtered, query, extractInterpretationText, limit * 2)
     return toVisibleMemoryHits(hits, options, limit)
   }

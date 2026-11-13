@@ -1175,3 +1175,38 @@ zip 读取预算没有新缺口：声明体积超过预算、以及声明偏小�
 - **不清洗模板自带的原始 HTML**：模板资产是仓库里的文本，变量才来自模型。本轮只拦 Markdown 产生的链接和图片。
 - **不新增变量长度上限**：写入器按输入大小产出文本，不会把短输入膨胀成 zip 炸弹。读取预算仍由调用方给出，超限归档继续报 `too-large`。
 - **不在本轮修 R-87**：验收 DOCX 的 Python 读取预算仍另立，与 `docx-kit` 的 `ZipReadLimits` 对齐后再做。
+
+## 97. D29 验证范围与方法
+
+D29 对应计划第 195 行「全量验证：`build:artifacts` → `build:check`、定向测试、关键快照、`doc-sync`、`duplication`；修复回归」。编号从 §97 起，不占用未合并的 D25 §80–§84、D26 §85–§88、D27 §89–§92、D28 §93–§96。本分支基于 `origin/master`，master 上的执行卡仍止于 §79。
+
+验证对象是已经合并进 master 的审查树，止于 D24。开着的 #803、#804、#805、#806 不在这棵树上，本记录不把它们的改动算进通过结果。以后合并那四个 PR 时，留下各自的执行卡区间，也留下本节 §97–§99。
+
+定向测试按四个领域的包根跑默认 Vitest：`packages/patent`、`packages/legal`、`packages/document`、`packages/experimental/video-mode`、`packages/experimental/video-bundle`、`packages/client/ui-video-studio`。仓库里没有 `packages/video`。默认配置只收集 `*.spec.ts`，不收集 e2e 配置。
+
+关键快照是 headless 会话回放。过滤名称是 `document-deliver`、`legal-evidence-assessment`，以及以 `patent-` 开头的场景，共 13 条。回放发生在 `build:artifacts` 写出 typert 产物之后。video 在这棵树上没有会话快照。`legal-preset`、`video-preset`、`document-preview` 属于浏览器快照 lane。
+
+## 98. 门禁记录
+
+| 门禁 | 命令 | 结果 |
+|---|---|---|
+| 产物 | `pnpm run build:artifacts` | 8 项通过，0 失败，119.80s |
+| 产物上的类型检查 | `pnpm run build:check` | 2 项通过，0 失败，34.47s |
+| 定向测试 | `pnpm exec vitest run` 上述六个包根 | 480 个文件通过，2 个文件跳过；8437 条通过，4 条跳过；40.15s |
+| 关键快照 | `pnpm run test:snapshot snapshots/session/headless.snapshot.ts`，名称过滤见 §97 | 13 条通过；同文件里未选中的 203 条跳过；5.55s |
+| 文档 | `NODE_OPTIONS=--max-old-space-size=8192 pnpm run doc-sync` | 53 项通过，0 失败，96.17s |
+| 仓库级重复 | `pnpm run duplication` | 3853 个文件，0 个 clone |
+| 收紧基线 | `pnpm exec tsx scripts/duplication-gate.ts` | 仓库级 0 个 clone；95 对领域内、13 对跨领域与 `scripts/duplication-baseline.json` 一致 |
+
+跳过的 4 条来自 `figure-graphviz-ci-signal.spec.ts` 和 `figure-cad-ci-signal.spec.ts`。前者只在 CI 的 Linux lane 断言 Graphviz 与中文字体；后者还要 `DSH_CAD_CI_SIGNAL=1`。本机是 macOS，这两份按用例设计跳过。
+
+13 条快照是：`document-deliver`、`legal-evidence-assessment`、`patent-claim-chart`、`patent-deadline`、`patent-infringement`、`patent-infringement-chain`、`patent-invalidation`、`patent-invalidation-chain`、`patent-oa-chain`、`patent-oa-response`、`patent-reexamination`、`patent-reexamination-chain`、`patent-writing-patterns`。
+
+这些门禁没有失败。没有产品代码改动，风险登记册不新增行。
+
+## 99. D29 不做项
+
+- **全仓 `pnpm run test` 与 `pnpm run test:coverage` 留给 CI**。指标 v3 和结项报告是 D30。
+- **#803、#804、#805、#806 仍各自成 PR**。本分支不叠它们的补丁，也不代它们报绿。
+- **浏览器快照 lane 与 `office-skills` 会话不在这次关键快照里**。document 的模型可见锁是 `document-deliver`。
+- **不改产品代码**。上表的门禁没有回归需要修。

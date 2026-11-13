@@ -1278,3 +1278,4 @@ argv 已经是数组。`-i`、输出路径和 `+faststart` 都不经过 shell。
 - **不把 libass 的字体打开失败当成告警**。本机烧录成功时，stderr 仍会报系统字体文件打不开，退出码是 0。交付侧的无音轨和时长偏差告警已有用例，本轮不改。
 - **不改 `/api/file` 的字节上限**。Range 仍先读完整文件再切片。
 - **不把预算门改成预留**。
+- **不在单元车道安装 ffmpeg**。`describe.runIf(FFMPEG)` 里新增的撇号烧录用例在没有 ffmpeg 的 Linux 单元车道记为跳过。`scripts/test-skip-baseline.json` 的 linux `skipped` 是 238。

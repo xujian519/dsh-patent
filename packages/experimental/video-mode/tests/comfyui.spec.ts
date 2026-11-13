@@ -436,6 +436,18 @@ describe('comfyui request validation', () => {
       })
       await submit(fetchImpl)
       expect(calls[1]?.body).toContain('"image":"inputs/frame.png"')
+
+      const unsafe = recorder((call) => {
+        if (call.url.endsWith('/upload/image')) return json({ name: '../secret.png', subfolder: '' })
+        return json({ prompt_id: 'p' })
+      })
+      await expect(submit(unsafe.fetchImpl)).rejects.toThrow(/single path segment/)
+      expect(unsafe.calls.some(call => call.url.endsWith('/prompt'))).toBe(false)
+      const dotdot = recorder((call) => {
+        if (call.url.endsWith('/upload/image')) return json({ name: 'frame.png', subfolder: '..' })
+        return json({ prompt_id: 'p' })
+      })
+      await expect(submit(dotdot.fetchImpl)).rejects.toThrow(/single path segment/)
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
@@ -529,6 +541,32 @@ describe('comfyui settlement edge cases', () => {
     expect((await run(() => new Response(new Uint8Array(4), { headers: { 'content-length': '2048' } }), 10)).error?.code)
       .toBe('MEDIA_ARTIFACT_TOO_LARGE')
     expect((await run(() => new Response(new Uint8Array(8)), 4)).error?.code).toBe('MEDIA_ARTIFACT_TOO_LARGE')
+  })
+
+  it('does not request a history file whose name leaves the output directory', async () => {
+    const files = [
+      { filename: '../secret.mp4', subfolder: '', type: 'output' },
+      { filename: 'a.mp4', subfolder: '.', type: 'output' },
+      { filename: 'a.mp4', subfolder: '', type: '' },
+      { filename: 'a\\b.mp4', subfolder: '', type: 'output' },
+      { filename: 'a.mp4', subfolder: 'dsh\\video', type: 'output' },
+    ]
+    for (const file of files) {
+      const { calls, fetchImpl } = recorder((call) => {
+        if (call.url.endsWith('/prompt')) return json({ prompt_id: 'p' })
+        if (call.url.includes('/history/')) {
+          return json({ p: { status: { completed: true }, outputs: { node: { images: [file] } } } })
+        }
+        return new Response(new Uint8Array([1, 2, 3, 4]))
+      })
+      const provider = new ComfyUiMediaProvider(resolveComfyUi({ enabled: true, pollMs: 1 }, 1024), fetchImpl)
+      const settled = await provider.poll(
+        await provider.submit({ kind: 'video', prompt: 'x' }, new AbortController().signal),
+        new AbortController().signal,
+      )
+      expect(settled.error?.code).toBe('MEDIA_ARTIFACT_INVALID')
+      expect(calls.some(call => call.url.includes('/view'))).toBe(false)
+    }
   })
 
   it('fails a download whose body stream throws a non-Error', async () => {

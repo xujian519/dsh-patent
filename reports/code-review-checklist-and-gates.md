@@ -1249,3 +1249,76 @@ D26 对应计划第 192 行「`video-mode/media.ts`：provider 选择、任务�
 - **不改 ComfyUI、MiniMax、SiliconFlow 的传输**：provider 契约留在 D27。
 - **不关闭 R-08 的 video 部分**：本轮补的是运行时等待与取消，不是 video client。
 - **不修 R-87**。
+
+## 89. D27 复核范围与方法
+
+D27 对应计划第 193 行「`comfyui`、`minimax`、`siliconflow`：占位符类型保持、轮询节流、成本估算、大小上限、错误映射」，交付物是 provider 契约测试和无密钥自跳过复核。编号从 89 起，把 80–84 留给未合并的 D25。§85–§88 是已合并的 D26。
+
+已有用例已经锁住整串占位符的 JSON 类型、轮询节流、人民币估算、产物字节上限，以及 HTTP 错误到失败码的映射。密钥在每次请求重新解析，也已有用例。本轮只补两处还没被拒绝的输入。
+
+方法：先写会失败的用例——上传名 `../secret.png`、历史文件名 `../secret.mp4`、下载地址 `file:///etc/passwd`——确认失败后再拒绝。然后在未设置密钥时跑三条真实 API 测试，确认它们跳过而不是失败。
+
+## 90. ComfyUI 路径段与云端下载地址
+
+修复前，上传响应里的 `name: "../secret.png"` 会写进工作流并继续 `POST /prompt`。历史条目的 `filename: "../secret.mp4"` 会请求 `/view`。MiniMax 返回 `file:///etc/passwd` 时会去取这个地址。
+
+修复后，文件名和类型必须各是一个路径段：不能为空，不能是 `.` 或 `..`，也不能含 `/` 或 `\`。子目录可以是 `dsh/video` 这种嵌套，但每一段同样不能是 `.` 或 `..`。不合规则的名字在下一次请求前拒绝，任务失败码是 `MEDIA_ARTIFACT_INVALID`。MiniMax 与 SiliconFlow 的成片地址必须是 `http:` 或 `https:`；其他协议和相对地址不发起下载，失败码相同。
+
+`inputs/frame.png` 与 `dsh/video/clip.mp4` 仍可用。
+
+## 91. 无密钥自跳过
+
+三条真实 API 测试在文件加载时读取密钥并 `trim`。空值、未设置和纯空白都走 `describe.skip`：
+
+| 文件 | 密钥 | 无密钥时 |
+|---|---|---|
+| `tests/minimax-video.e2e.ts` | `MINIMAX_API_KEY` | 跳过 |
+| `tests/minimax-speech.e2e.ts` | `MINIMAX_API_KEY` | 跳过 |
+| `tests/siliconflow-video.e2e.ts` | `SILICONFLOW_API_KEY` | 跳过 |
+
+它们不在默认的 `*.spec.ts` 集合里，由 `pnpm run test:e2e` 使用 `vitest.e2e.config.ts` 收集。本机未设置这两个密钥时，该命令把三个文件都标为 skipped，0 failed。
+
+## 92. D27 不做项
+
+- **不拆 `media.ts`**：R-07 的「选择 / 台账 / 执行」拆分仍是纯移动，留到 D28 的 video 提升评估一起决定。
+- **不把预算门改成预留**：D26 已确认。
+- **不改占位符、节流、估算和已有的字节上限**：这些行为已有用例，本轮只补路径和下载协议。
+- **不在大小上限之前把响应体整段读进内存**：声明长度和读完后的长度都会拒绝。流式截断另立。
+- **不修 R-87**。
+
+## 97. D29 验证范围与方法
+
+D29 对应计划第 195 行「全量验证：`build:artifacts` → `build:check`、定向测试、关键快照、`doc-sync`、`duplication`；修复回归」。编号从 §97 起，不占用本分支的 D25 §80–§84、已合并的 D26 §85–§88、已合并的 D27 §89–§92 与未合并的 D28 §93–§96。
+
+§98 的数字来自 #804 并入 master 之前的审查树。D29 并入 master 时，执行卡在 §79 之后保留 D26 的 §85–§88，再接 §97。本分支在 §79 之后保留 D25 的 §80–§84，再接 §85–§92 与 §97–§99。并入不改 §98 的数字，那些数字不含 D25、D26、D27 新加的用例。
+
+验证当时止于 D24。当时开着的 #803、#805、#806 不在测量树上。#805 随后并入了 master。本记录不把这些 PR 的改动算进通过结果。以后合并其余 PR 时，留下各自的执行卡区间，也留下 §80–§92 与 §97–§99。
+
+定向测试按四个领域的包根跑默认 Vitest：`packages/patent`、`packages/legal`、`packages/document`、`packages/experimental/video-mode`、`packages/experimental/video-bundle`、`packages/client/ui-video-studio`。仓库里没有 `packages/video`。默认配置只收集 `*.spec.ts`，不收集 e2e 配置。
+
+关键快照是 headless 会话回放。过滤名称是 `document-deliver`、`legal-evidence-assessment`，以及以 `patent-` 开头的场景，共 13 条。回放发生在 `build:artifacts` 写出 typert 产物之后。video 在这棵树上没有会话快照。`legal-preset`、`video-preset`、`document-preview` 属于浏览器快照 lane。
+
+## 98. 门禁记录
+
+| 门禁 | 命令 | 结果 |
+|---|---|---|
+| 产物 | `pnpm run build:artifacts` | 8 项通过，0 失败，119.80s |
+| 产物上的类型检查 | `pnpm run build:check` | 2 项通过，0 失败，34.47s |
+| 定向测试 | `pnpm exec vitest run` 上述六个包根 | 480 个文件通过，2 个文件跳过；8437 条通过，4 条跳过；40.15s |
+| 关键快照 | `pnpm run test:snapshot snapshots/session/headless.snapshot.ts`，名称过滤见 §97 | 13 条通过；同文件里未选中的 203 条跳过；5.55s |
+| 文档 | `NODE_OPTIONS=--max-old-space-size=8192 pnpm run doc-sync` | 53 项通过，0 失败，96.17s |
+| 仓库级重复 | `pnpm run duplication` | 3853 个文件，0 个 clone |
+| 收紧基线 | `pnpm exec tsx scripts/duplication-gate.ts` | 仓库级 0 个 clone；95 对领域内、13 对跨领域与 `scripts/duplication-baseline.json` 一致 |
+
+跳过的 4 条来自 `figure-graphviz-ci-signal.spec.ts` 和 `figure-cad-ci-signal.spec.ts`。前者只在 CI 的 Linux lane 断言 Graphviz 与中文字体；后者还要 `DSH_CAD_CI_SIGNAL=1`。本机是 macOS，这两份按用例设计跳过。
+
+13 条快照是：`document-deliver`、`legal-evidence-assessment`、`patent-claim-chart`、`patent-deadline`、`patent-infringement`、`patent-infringement-chain`、`patent-invalidation`、`patent-invalidation-chain`、`patent-oa-chain`、`patent-oa-response`、`patent-reexamination`、`patent-reexamination-chain`、`patent-writing-patterns`。
+
+这些门禁没有失败。没有产品代码改动，风险登记册不新增行。
+
+## 99. D29 不做项
+
+- **全仓 `pnpm run test` 与 `pnpm run test:coverage` 留给 CI**。指标 v3 和结项报告是 D30。
+- **本分支是 #803**。#806 仍单独成 PR。#804、#805 与 #807 已在 master。本记录不代开着的 PR 报绿。
+- **浏览器快照 lane 与 `office-skills` 会话不在这次关键快照里**。document 的模型可见锁是 `document-deliver`。
+- **不改产品代码**。上表的门禁没有回归需要修。

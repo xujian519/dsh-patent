@@ -2,6 +2,11 @@
 # 移植自 Mady domains/rules/data/rules/evidence-rules.yaml
 # 17 rules: 三性(3) + 类型(6) + 举证责任(1) + 证明标准(1) + 日期认定(1) + 完整性(1) + 程序(1) + 电子证据(1) + 审查指南(2)
 # 消费方：src/patent/evidence/engine.ts（EvidenceEngine.loadRules）
+#
+# 《民事诉讼法》条号按 2023 年修正版书写（证据条款为第 66、67、68、75-78 条）。
+# `law_verify` 目前只解析《专利法》《专利法实施细则》《专利审查指南》，这些跨法引用
+# 不在随包索引的核验范围内，改动前须对照官方原文，并由 evidence-rules-asset.spec.ts
+# 钉住条号。
 
 weights:
   relevance: 0.35
@@ -43,7 +48,7 @@ rules:
   - ruleId: EVI-002
     name: 证据合法性审查
     description: 证据的收集主体、程序和形式必须符合法律规定
-    legalBasis: 民事诉讼法第63条、最高人民法院关于民事诉讼证据的若干规定
+    legalBasis: 民事诉讼法第66条、最高人民法院关于民事诉讼证据的若干规定
     domain: patent
     severity: critical
     action: apply
@@ -182,7 +187,7 @@ rules:
   - ruleId: EVI-012
     name: 证人证言审查规则
     description: 证人证言需审查证人与案件利害关系、证人作证能力、证言一致性
-    legalBasis: 民事诉讼法第72-75条
+    legalBasis: 民事诉讼法第75-78条
     domain: patent
     severity: major
     action: apply
@@ -303,7 +308,7 @@ rules:
   - ruleId: EVI-020
     name: 举证责任分配规则
     description: 主张权利的一方应当提供证据证明其主张的事实
-    legalBasis: 民事诉讼法第64条；专利法第66条（新产品制造方法举证责任倒置）
+    legalBasis: 民事诉讼法第67条；专利法第66条（新产品制造方法举证责任倒置）
     domain: patent
     severity: major
     action: apply
@@ -412,7 +417,7 @@ rules:
   - ruleId: EVI-051
     name: 举证期限规则
     description: 证据应在举证期限内提交，逾期提交可能不被采纳
-    legalBasis: 民事诉讼法第65条
+    legalBasis: 民事诉讼法第68条
     domain: patent
     severity: major
     action: notify

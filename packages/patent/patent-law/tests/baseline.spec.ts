@@ -442,7 +442,7 @@ describe('loadLawBaselines', () => {
 
   it('ships the coverage counts the README documents', () => {
     const baselines = loadLawBaselines()
-    expect(baselines.get('专利法')?.articles).toHaveLength(38)
+    expect(baselines.get('专利法')?.articles).toHaveLength(82)
     expect(baselines.get('专利法实施细则')?.articles).toHaveLength(45)
     expect(baselines.get('专利审查指南')?.sections).toHaveLength(85)
     expect(baselines.get('专利审查指南')?.sections.filter(section => section.text !== null)).toHaveLength(70)
@@ -505,7 +505,7 @@ describe('index lookups', () => {
     const law = baselines.get('专利法')
     expect(law).toBeDefined()
     expect(findArticle(law!, 22)?.topics).toContain('新颖性')
-    expect(findArticle(law!, 78)).toBeUndefined()
+    expect(findArticle(law!, 83)).toBeUndefined()
   })
 
   it('finds an indexed section and reports a missing one', () => {

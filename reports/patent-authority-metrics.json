@@ -12,9 +12,9 @@
     {
       "document": "专利法",
       "extent": 82,
-      "indexed": 38,
-      "transcribed": 38,
-      "coverage": "46.3%",
+      "indexed": 82,
+      "transcribed": 82,
+      "coverage": "100.0%",
       "source": "随包索引 maxArticle"
     },
     {
@@ -58,22 +58,10 @@
       "reason": "untranscribed"
     },
     {
-      "file": "packages/bundle/web-app/skills/legal/ip/legal-ip-ip-clause-review/SKILL.md",
-      "line": 115,
-      "raw": "专利法第17条",
-      "reason": "not-indexed"
-    },
-    {
       "file": "packages/bundle/web-app/skills/patent/inventive-step-analysis/SKILL.md",
       "line": 15,
       "raw": "专利审查指南第二部分第四章",
       "reason": "untranscribed"
-    },
-    {
-      "file": "packages/bundle/web-app/skills/patent/patent-team-composition/SKILL.md",
-      "line": 182,
-      "raw": "专利法第五十九条第一款",
-      "reason": "not-indexed"
     },
     {
       "file": "packages/patent/patent-core/src/atoms/handlers/builtin/amendment-basis.ts",
@@ -122,12 +110,6 @@
       "line": 202,
       "raw": "专利审查指南第二部分第四章",
       "reason": "untranscribed"
-    },
-    {
-      "file": "packages/patent/patent-document/assets/templates/patent/litigation-pleading/references/citation-log.md",
-      "line": 18,
-      "raw": "第六十五条",
-      "reason": "not-indexed"
     },
     {
       "file": "packages/patent/patent-document/assets/templates/patent/patentability-opinion/example.html",
@@ -224,12 +206,6 @@
       "line": 5,
       "raw": "专利审查指南第四部分第八章",
       "reason": "untranscribed"
-    },
-    {
-      "file": "packages/patent/patent-tools/src/atoms/legal-gaps.ts",
-      "line": 358,
-      "raw": "专利法第59条",
-      "reason": "not-indexed"
     },
     {
       "file": "packages/patent/patent-tools/src/figure/dot-builder.ts",

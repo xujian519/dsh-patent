@@ -1,22 +1,16 @@
 # 权威缺口审计报告（D1–D5）
 
-核对日期：2026-11-13
+核对日期：2026-11-14
 基线：`packages/patent/patent-law/assets/authority/authority-baseline.yaml` v1.0
 度量：`reports/patent-authority-metrics.json`、`reports/patent-authority-metrics.md`
 
 ## 摘要
 
-八件核心法源的 9 个载体已登记 SHA-256，全部与知识库原件一致。随包索引覆盖《专利法》38/82 条（46.3%）、《专利法实施细则》45/149 条（30.2%）、《专利审查指南》85/1335 个编号标题（6.4%，其中 70 条带正文）、司法解释 0/7、部门规章 0/9。
+八件核心法源的 9 个载体已登记 SHA-256，全部与知识库原件一致。随包索引覆盖《专利法》82/82 条（100.0%）、《专利法实施细则》45/149 条（30.2%）、《专利审查指南》85/1335 个编号标题（6.4%，其中 70 条带正文）、司法解释 0/7、部门规章 0/9。
 
-机器扫描到 48 处索引无法判定的引用：4 处条号不在索引内，44 处引用了没有节正文的指南容器路径。另有 38 处 `legalBasis` 不含条号或指南节路径。
+机器扫描到 44 处索引无法判定的引用，全部落在没有节正文的指南容器路径上；《专利法》的引用已无条号缺口。另有 38 处 `legalBasis` 不含条号或指南节路径。
 
-本次审计新发现 3 处引用条号错误，均在规则或模板资产中，尚未修复：
-
-| 文件:行 | 现引用 | 现行条号 | 权威原文 |
-| --- | --- | --- | --- |
-| `packages/bundle/web-app/skills/legal/ip/legal-ip-ip-clause-review/SKILL.md:115` | 专利法第 17 条（发明人署名权） | 第 16 条 | 第十六条 发明人或者设计人有权在专利文件中写明自己是发明人或者设计人。 |
-| `packages/patent/patent-tools/src/atoms/legal-gaps.ts:358` | 专利法第 59 条（保护范围与全面覆盖） | 第 64 条 | 第六十四条 发明或者实用新型专利权的保护范围以其权利要求的内容为准，说明书及附图可以用于解释权利要求的内容。 |
-| `packages/bundle/web-app/skills/patent/patent-team-composition/SKILL.md:182` | 专利法第五十九条第一款（解释权利要求） | 第六十四条第一款 | 同上。 |
+前一轮定位的 3 处引用条号错误已按 2020 年修正编号修复：`legal-ip-ip-clause-review/SKILL.md` 的署名权引用由第 17 条改为第 16 条，`legal-gaps.ts` 的保护范围依据由第 59 条改为第 64 条，`patent-team-composition/SKILL.md` 的解释权利要求引用由第五十九条第一款改为第六十四条第一款；同表的现有技术抗辩依据一并由第 62 条改为第 67 条。
 
 ## 版本事实核验
 
@@ -30,7 +24,7 @@
 
 | 文书 | 权威范围 | 索引条目 | 带正文 | 覆盖率 | 口径 |
 | --- | --- | --- | --- | --- | --- |
-| 专利法 | 82 | 38 | 38 | 46.3% | 索引 `maxArticle` |
+| 专利法 | 82 | 82 | 82 | 100.0% | 索引 `maxArticle` |
 | 专利法实施细则 | 149 | 45 | 45 | 30.2% | 索引 `maxArticle` |
 | 专利审查指南 | 1335 | 85 | 70 | 6.4% | 官方 PDF 编号标题数（`guideline-extent.yaml`） |
 | 司法解释 | 7 | 0 | 0 | 0.0% | 索引不含该文书种类 |
@@ -40,14 +34,9 @@
 
 完整清单见 `reports/patent-authority-metrics.json` 的 `unresolved` 数组，每条带文件、行号、原文与原因。
 
-### 条号不在索引内（4 处）
+### 条号不在索引内（0 处）
 
-| 文件:行 | 引用 | 性质 | 权威原文 |
-| --- | --- | --- | --- |
-| `packages/bundle/web-app/skills/legal/ip/legal-ip-ip-clause-review/SKILL.md:115` | 专利法第 17 条 | 条号错误，应为第 16 条 | 第十六条 发明人或者设计人有权在专利文件中写明自己是发明人或者设计人。 |
-| `packages/bundle/web-app/skills/patent/patent-team-composition/SKILL.md:182` | 专利法第五十九条第一款 | 条号错误，应为第六十四条第一款 | 第六十四条 保护范围以权利要求的内容为准。 |
-| `packages/patent/patent-tools/src/atoms/legal-gaps.ts:358` | 专利法第 59 条 | 条号错误，应为第 64 条 | 同上。 |
-| `packages/patent/patent-document/assets/templates/patent/litigation-pleading/references/citation-log.md:18` | 第六十五条 | 索引缺条 | 第六十五条 未经专利权人许可实施其专利引起纠纷的处理。 |
+《专利法》82 条全部入索引后，机器扫描不再留下条号缺口。前一轮的 4 处已消解：3 处按上节改为正确条号，第 4 处（`litigation-pleading/references/citation-log.md:18` 的“第六十五条”）本就在 2020 年文本的有效条号内，现在解析到侵权纠纷的处理途径条文。
 
 `packages/patent/patent-deadline/README.md:116` 与 `README.zh.md:118` 的“细则第 82 条”不在扫描范围内（README 不属于随包资产的引用面），但同样是索引缺条：细则索引尚未收录第 82 条。
 
@@ -78,5 +67,6 @@ npx tsx scripts/patent-authority-metrics.ts --check
 
 - 指南分母 1335 由 `patent-law/tools/guideline-transcript.py --write-extent` 从官方 PDF 数出，结果记在 `guideline-extent.yaml`（1335 个编号标题，其中 1145 节带自己的正文）；此前计划里的 1096 复算不出来，已替换。
 - 紧凑写法 `A22`、`A22.3` 与“《专利法》82 条”这类数量表述不计入引用缺口；它们与 IPC 分类号、覆盖数字同形。
-- 条号错误的三处是人工对照知识库原文得出的，脚本只能发现“索引里没有”，不能判断“引用了错误的条”。
+- 条号错误由人工对照知识库原文判断，脚本只能发现“索引里没有”；《专利法》全覆盖后，脚本连“条号缺失”也不再报警，错号只能靠命题核验与人工复核兜住。
+- `packages/patent/patent-core/src/atoms/handlers/builtin/dispute-framing.ts` 的 `STATUTE_LABELS` 仍按 2008 年编号把 `A59` 标为“保护范围”、`A62` 标为“现有技术抗辩”，按 2020 年文本应为第 64、67 条。这两个键决定候选法条的标识符，改名要连同调用方一起调整，本次未动。
 - 规则资产的 `legalBasis` 分类是机械判定，豁免与判例分类需要 P2 人工登记。

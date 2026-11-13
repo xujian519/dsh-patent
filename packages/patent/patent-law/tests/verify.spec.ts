@@ -644,7 +644,7 @@ describe('the packaged index', () => {
     expect(verifyCitation(articleRef(99), shipped).decision).toBe('out-of-range')
     // An article that exists but is not indexed is a gap in the index, not a
     // claim that the number does not exist.
-    expect(verifyCitation(articleRef(50), shipped).decision).toBe('not-indexed')
+    expect(verifyCitation(articleRef(50, undefined, '专利法实施细则'), shipped).decision).toBe('not-indexed')
   })
 
   it('holds the invalidation chapter the 2023 revision numbers', () => {

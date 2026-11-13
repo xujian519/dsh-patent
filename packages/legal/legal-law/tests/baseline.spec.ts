@@ -162,6 +162,53 @@ describe('parseLegalLawBaseline', () => {
     ].join('\n'))
     expect(error.message).toContain('sourceDoc')
   })
+
+  it('rejects a maxArticle below the highest indexed article', () => {
+    const error = parseFailing([
+      'law: 民法典',
+      'document: 中华人民共和国民法典',
+      'maxArticle: 100',
+      'articles:',
+      '  - article: 143',
+      '    topics: [test]',
+      '    text: null',
+      '    sourceDoc: null',
+      '    verifiedOn: null',
+    ].join('\n'))
+    expect(error.message).toContain('maxArticle=100')
+    expect(error.message).toContain('143')
+  })
+
+  it('rejects a maxVerifiedOn older than an entry verification date', () => {
+    const error = parseFailing([
+      'law: 民法典',
+      'document: 中华人民共和国民法典',
+      'maxVerifiedOn: 2026-10-01',
+      'articles:',
+      '  - article: 143',
+      '    topics: [test]',
+      '    text: 条文',
+      '    sourceDoc: 官方全文',
+      '    verifiedOn: 2026-10-23',
+    ].join('\n'))
+    expect(error.message).toContain('maxVerifiedOn=2026-10-01')
+    expect(error.message).toContain('2026-10-23')
+  })
+
+  it('skips the version checks when the header declares neither bound', () => {
+    const baseline = parseLegalLawBaseline([
+      'law: 民法典',
+      'document: 中华人民共和国民法典',
+      'articles:',
+      '  - article: 143',
+      '    topics: [test]',
+      '    text: 条文',
+      '    sourceDoc: 官方全文',
+      '    verifiedOn: 2026-10-23',
+    ].join('\n'), 'fixture.yaml')
+    expect(baseline.maxArticle).toBeNull()
+    expect(baseline.maxVerifiedOn).toBeNull()
+  })
 })
 
 describe('loadLegalLawBaselines', () => {

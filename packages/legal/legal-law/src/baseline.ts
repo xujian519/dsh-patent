@@ -405,6 +405,23 @@ export function parseLegalLawBaseline(source: string, origin: string): LegalLawB
 
   if (articles.length === 0) throw fail(`${law} 的索引必须声明至少一个 article`)
 
+  // The file-level ceiling and verification date describe the same corpus the
+  // entries belong to. A ceiling below an indexed article, or a verification
+  // date older than an entry's, means the header and the body disagree, so the
+  // index cannot be trusted as one version.
+  const lastArticle = articles.reduce((max, entry) => Math.max(max, entry.article), 0)
+  if (maxArticle !== null && maxArticle < lastArticle) {
+    throw fail(`${law} 的 maxArticle=${String(maxArticle)} 小于索引中的最大条号 ${String(lastArticle)}`)
+  }
+  const latestVerifiedOn = articles
+    .map(entry => entry.verifiedOn)
+    .filter((date): date is string => date !== null)
+    .sort()
+    .at(-1)
+  if (maxVerifiedOn !== null && latestVerifiedOn !== undefined && latestVerifiedOn > maxVerifiedOn) {
+    throw fail(`${law} 的 maxVerifiedOn=${maxVerifiedOn} 早于条目的核验日期 ${latestVerifiedOn}`)
+  }
+
   return {
     law,
     document,

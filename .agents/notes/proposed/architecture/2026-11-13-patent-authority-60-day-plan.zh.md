@@ -52,7 +52,7 @@ Status: proposed
 
 [语料归属与 2026 版排期](2026-11-14-patent-authority-corpus-ownership.zh.md) 纠正下面两处事实：官方 PDF 是 1335 个编号标题，不是 1096；2026 年版已施行，所以被它改过的节标 stale，而不是删掉覆盖。顺序也改了——改动点与分母先落，转录在后，失效标记跟在转录之后。
 
-D6–D8 已完成：《专利法》82 条全部转录进 `assets/law/cn-patent-law.yaml`，覆盖率达到 100%。
+D6–D8 已完成：《专利法》82 条全部转录进 `assets/law/cn-patent-law.yaml`，覆盖率达到 100%。D9–D12 也已完成：《专利法实施细则》149 条全部转录进 `assets/law/cn-implementing-regulations.yaml`，覆盖率达到 100%。
 
 - D6–D8：转录《专利法》全部 82 条，切分到款，附来源文书与核验日期。
 - D9–D12：转录《专利法实施细则》全部 149 条。

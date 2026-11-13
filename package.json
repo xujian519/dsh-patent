@@ -241,6 +241,7 @@
     "verify-patent-team-stages": "tsx scripts/verify-patent-team-stages.ts",
     "verify-patent-document-output": "tsx scripts/verify-patent-document-output.ts",
     "verify-patent-oas-gold": "tsx scripts/verify-patent-oas-gold.ts",
+    "patent-authority-metrics": "tsx scripts/patent-authority-metrics.ts",
     "gate:patent-oas": "tsx scripts/run-patent-oas.ts",
     "verify-ipc-standards-source": "tsx scripts/verify-ipc-standards-source.ts",
     "verify-group-readme-packages": "tsx scripts/verify-group-readme-packages.ts",

@@ -1,0 +1,150 @@
+# 权威法源基线 — 评审基准，不是运行时索引。
+#
+# 这里登记的是「法本身」的核对依据：知识库原件的路径、修订版本、施行日期与
+# SHA-256。运行时只读 assets/law/ 下的随包索引；本文件供 scripts/patent-authority-metrics.ts
+# 与人工复核使用，不会被 law_verify 加载。
+#
+# 版本事实（2026-11-13 核对）：
+# - 《专利审查指南》现行版本为 2026 年修订版，2025-11-13 国家知识产权局令第84号公布，
+#   2026-01-01 施行。知识库没有 2026 年合订全文，只有 2023 版全文与官方修改对照表；
+#   两者合起来构成本基线登记的现行文本依据。
+# - 索引里的 2026 年覆盖（第二部分第一章4.4、第四部分第三章2.1、3.3）来自该对照表，
+#   与官方公告一致。
+#
+# sourceRoot 是知识库根目录的逻辑名；脚本按 --source-root、$DSH_LAW_SOURCE_ROOT、
+# 最后是 ~/projects/宝宸知识库_Raw 的顺序解析。路径都相对该根目录。
+version: "1.0"
+verifiedOn: 2026-11-13
+sourceRoot: 宝宸知识库_Raw
+
+sources:
+  - id: patent-law
+    law: 专利法
+    document: 中华人民共和国专利法
+    revision: 2020 年第四次修正
+    effectiveDate: 2021-06-01
+    authority: 全国人民代表大会常务委员会
+    carriers:
+      - path: 法律法规司法解释/中华人民共和国专利法_20201017.md
+        mediaType: text/markdown
+        sha256: b00794817b50fb7b49899c66b6caeabfbc09028f770694186690a26c6ae17469
+        bytes: 33040
+
+  - id: implementing-regulations
+    law: 专利法实施细则
+    document: 中华人民共和国专利法实施细则
+    revision: 2023 年第三次修订
+    effectiveDate: 2024-01-20
+    authority: 国务院
+    carriers:
+      - path: 法律法规司法解释/中华人民共和国专利法实施细则_20231211.md
+        mediaType: text/markdown
+        sha256: 762130d22b3d9998d532ef50e17a4328192be4369ceb40e384e79a24aba86c17
+        bytes: 77764
+
+  - id: examination-guidelines
+    law: 专利审查指南
+    document: 专利审查指南
+    revision: 2026 年修订版
+    effectiveDate: 2026-01-01
+    authority: 国家知识产权局
+    carriers:
+      - path: 专利审查指南/专利审查指南（2023版-未修改）.pdf
+        role: 2023 年修订版全文
+        mediaType: application/pdf
+        sha256: cf8cdf9af698712add00bb769963318910776fe45e449e27704105dd484e8981
+        bytes: 6777328
+      - path: 专利审查指南/审查指南修改/《专利审查指南》修改对照表.pdf
+        role: 2026 年修订版修改对照表（局令第84号）
+        mediaType: application/pdf
+        sha256: d7ed04b433d993e9278fd838e01a56e24fa4c84ef378001575f79c2917a3c4bd
+        bytes: 655791
+
+  - id: civil-code
+    law: 民法典
+    document: 中华人民共和国民法典
+    revision: 2020 年通过
+    effectiveDate: 2021-01-01
+    authority: 全国人民代表大会
+    carriers:
+      - path: Laws-1.0.0/民法商法/民法典(2020-05-28).md
+        mediaType: text/markdown
+        sha256: e5adbe0e714e58a35ae5b2d4069130c3a5337068517d66374524dc2768b00ed7
+        bytes: 331599
+
+  - id: civil-procedure-law
+    law: 民事诉讼法
+    document: 中华人民共和国民事诉讼法
+    revision: 2023 年第五次修正
+    effectiveDate: 2024-01-01
+    authority: 全国人民代表大会常务委员会
+    carriers:
+      - path: Laws-1.0.0/诉讼与非诉讼程序法/民事诉讼法(2023-09-01).md
+        mediaType: text/markdown
+        sha256: ce8b67f798f21361388a93369ab262ab9c5051d4c56d4f4f558cfbee5eddc52e
+        bytes: 104821
+
+  - id: patent-agency-regulation
+    law: 专利代理条例
+    document: 专利代理条例
+    revision: 2018 年修订
+    effectiveDate: 2019-03-01
+    authority: 国务院
+    carriers:
+      - path: 法律法规司法解释/专利代理条例_20181106.md
+        mediaType: text/markdown
+        sha256: 0bd8c0ba019f54a89eb7ba45e20be29626489b6f5a7a7834be94c832aa5426cf
+        bytes: 10505
+
+  - id: patent-infringement-interpretation
+    law: 最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释
+    document: 最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释
+    revision: 2009 年公布
+    effectiveDate: 2010-01-01
+    authority: 最高人民法院
+    carriers:
+      - path: 法律法规司法解释/最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释_20091228.md
+        mediaType: text/markdown
+        sha256: 3ba81f9059c1fc1ff537012cd703a3ec879a837c603af88639b514e4f4611b5f
+        bytes: 8987
+
+  - id: patent-infringement-interpretation-2
+    law: 最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释（二）
+    document: 最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释（二）
+    revision: 2020 年修正
+    effectiveDate: 2021-01-01
+    authority: 最高人民法院
+    carriers:
+      - path: 法律法规司法解释/最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释（二）_20201229.md
+        mediaType: text/markdown
+        sha256: 0a2e015304b5f7102bfcd44d88f3cb2d9d00c7698879e9086841ff8e98c13019
+        bytes: 14205
+
+# 全量语料的分母。这些文书尚未进随包索引，登记在这里是为了让覆盖率报告的
+# 0/7 与 0/9 有可核对的来源，而不是散在报告正文里。
+extents:
+  - id: judicial-interpretations
+    documentKind: 司法解释
+    count: 7
+    paths:
+      - 法律法规司法解释/最高人民法院关于审理专利授权确权行政案件适用法律若干问题的规定（一）_20200910.md
+      - 法律法规司法解释/最高人民法院关于审理专利纠纷案件适用法律问题的若干规定_20201229.md
+      - 法律法规司法解释/最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释_20091228.md
+      - 法律法规司法解释/最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释（二）_20201229.md
+      - 法律法规司法解释/最高人民法院关于审理涉专利权评价报告案件适用法律问题的批复_20250730.md
+      - 法律法规司法解释/最高人民法院关于审理申请注册的药品相关的专利权纠纷民事案件适用法律若干问题的规定_20210704.md
+      - 法律法规司法解释/最高人民法院关于审理侵害知识产权民事纠纷案件适用惩罚性赔偿的解释（法释〔2026〕7号）.md
+  - id: departmental-regulations
+    documentKind: 部门规章
+    count: 9
+    paths:
+      - 规章/专利代理管理办法.md
+      - 规章/专利实施强制许可办法.md
+      - 规章/专利权质押登记办法.md
+      - 规章/专利标识标注办法.md
+      - 规章/专利申请号标准.md
+      - 规章/专利行政执法办法.md
+      - 规章/关于规范专利申请行为的若干规定.md
+      - 规章/用于专利程序的生物材料保藏办法.md
+      - 规章/山东省专利纠纷行政裁决和行政调解办法.md
+    note: 第 9 件是地方规章；「部门规章 9 件」的口径待 P1 D19 核定。

@@ -1,0 +1,535 @@
+{
+  "version": 1,
+  "sourceRoot": {
+    "name": "宝宸知识库_Raw"
+  },
+  "baseline": {
+    "version": "1.0",
+    "verifiedOn": "2026-11-13",
+    "sources": 8
+  },
+  "coverage": [
+    {
+      "document": "专利法",
+      "extent": 82,
+      "indexed": 38,
+      "transcribed": 38,
+      "coverage": "46.3%",
+      "source": "随包索引 maxArticle"
+    },
+    {
+      "document": "专利法实施细则",
+      "extent": 149,
+      "indexed": 45,
+      "transcribed": 45,
+      "coverage": "30.2%",
+      "source": "随包索引 maxArticle"
+    },
+    {
+      "document": "专利审查指南",
+      "extent": 1096,
+      "indexed": 85,
+      "transcribed": 70,
+      "coverage": "7.8%",
+      "source": "官方 PDF 编号标题数（基线登记）"
+    },
+    {
+      "document": "司法解释",
+      "extent": 7,
+      "indexed": 0,
+      "transcribed": 0,
+      "coverage": "0.0%",
+      "source": "索引不含该文书种类"
+    },
+    {
+      "document": "部门规章",
+      "extent": 9,
+      "indexed": 0,
+      "transcribed": 0,
+      "coverage": "0.0%",
+      "source": "索引不含该文书种类"
+    }
+  ],
+  "unresolved": [
+    {
+      "file": "packages/bundle/web-app/presets/patent.patch.yml",
+      "line": 40,
+      "raw": "专利审查指南第二部分第二章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/bundle/web-app/skills/legal/ip/legal-ip-ip-clause-review/SKILL.md",
+      "line": 115,
+      "raw": "专利法第17条",
+      "reason": "not-indexed"
+    },
+    {
+      "file": "packages/bundle/web-app/skills/patent/inventive-step-analysis/SKILL.md",
+      "line": 15,
+      "raw": "专利审查指南第二部分第四章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/bundle/web-app/skills/patent/patent-team-composition/SKILL.md",
+      "line": 182,
+      "raw": "专利法第五十九条第一款",
+      "reason": "not-indexed"
+    },
+    {
+      "file": "packages/patent/patent-core/src/atoms/handlers/builtin/amendment-basis.ts",
+      "line": 6,
+      "raw": "审查指南第二部分第八章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-core/src/atoms/handlers/builtin/numeric-range.ts",
+      "line": 5,
+      "raw": "审查指南第二部分第三章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-core/src/graph/domains/enablement.ts",
+      "line": 33,
+      "raw": "审查指南第二部分第二章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-core/src/graph/domains/novelty.ts",
+      "line": 127,
+      "raw": "审查指南第二部分第三章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-core/src/novelty/numeric-range.ts",
+      "line": 4,
+      "raw": "审查指南第二部分第三章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-document/assets/templates/patent/invalidation-analysis/example.html",
+      "line": 364,
+      "raw": "专利审查指南第二部分第四章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-document/assets/templates/patent/invalidation-analysis/references/citation-log.md",
+      "line": 20,
+      "raw": "审查指南第二部分第四章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-document/assets/templates/patent/invalidation-opinion/example.html",
+      "line": 202,
+      "raw": "专利审查指南第二部分第四章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-document/assets/templates/patent/litigation-pleading/references/citation-log.md",
+      "line": 18,
+      "raw": "第六十五条",
+      "reason": "not-indexed"
+    },
+    {
+      "file": "packages/patent/patent-document/assets/templates/patent/patentability-opinion/example.html",
+      "line": 286,
+      "raw": "审查指南第二部分第四章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-document/assets/templates/patent/re-examination-request/example.html",
+      "line": 124,
+      "raw": "专利审查指南第二部分第八章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/base/inventiveness.yaml",
+      "line": 21,
+      "raw": "专利审查指南第二部分第四章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/domains/chemical/disclosure.yaml",
+      "line": 2,
+      "raw": "专利审查指南第二部分第十章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/domains/chemical/inventiveness.yaml",
+      "line": 2,
+      "raw": "专利审查指南第二部分第十章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/evidence-rules.yaml",
+      "line": 462,
+      "raw": "专利审查指南第四部分第八章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/mady-gap-rules.yaml",
+      "line": 93,
+      "raw": "审查指南第二部分第七章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/mady-gap-rules.yaml",
+      "line": 272,
+      "raw": "审查指南第二部分第二章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-core-rules.yaml",
+      "line": 13,
+      "raw": "专利审查指南第二部分第四章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-core-rules.yaml",
+      "line": 85,
+      "raw": "审查指南第二部分第七章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-core-rules.yaml",
+      "line": 120,
+      "raw": "审查指南第二部分第二章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-examination-rules.yaml",
+      "line": 458,
+      "raw": "审查指南第二部分第六章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-ipc-rules.yaml",
+      "line": 82,
+      "raw": "审查指南第二部分第四章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-practice-rules.yaml",
+      "line": 207,
+      "raw": "审查指南第二部分第十章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-practice-rules.yaml",
+      "line": 352,
+      "raw": "审查指南第二部分第二章3.1\n    ",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-rule/src/guard/evidenceComplianceGuards.ts",
+      "line": 5,
+      "raw": "专利审查指南第四部分第八章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-tools/src/atoms/legal-gaps.ts",
+      "line": 358,
+      "raw": "专利法第59条",
+      "reason": "not-indexed"
+    },
+    {
+      "file": "packages/patent/patent-tools/src/figure/dot-builder.ts",
+      "line": 7,
+      "raw": "专利审查指南第一部分",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-tools/src/figure/render-check-findings.ts",
+      "line": 753,
+      "raw": "审查指南第一部分第一章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-tools/src/figure/section-diagram.ts",
+      "line": 6,
+      "raw": "专利审查指南第一部分",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-tools/src/tool/generate-patent-figure.ts",
+      "line": 12,
+      "raw": "专利审查指南第一部分第一章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-tools/src/tool/spec-chemical.ts",
+      "line": 153,
+      "raw": "专利审查指南第二部分第十章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-tools/src/tool/spec-style.ts",
+      "line": 8,
+      "raw": "专利审查指南第二部分第二章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-tools/src/tool/spec-style.ts",
+      "line": 239,
+      "raw": "专利审查指南第一部分第一章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/patent-workflow/src/workflow/manifests.ts",
+      "line": 877,
+      "raw": "专利审查指南第四部分第二章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/writing-patterns/assets/patterns/04-invention-content.yaml",
+      "line": 8,
+      "raw": "审查指南第二部分第二章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/writing-patterns/assets/patterns/09-ipc-strategy.yaml",
+      "line": 7,
+      "raw": "审查指南第一部分第四章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/writing-patterns/assets/patterns/14-claim-unity-special-feature.yaml",
+      "line": 7,
+      "raw": "审查指南第二部分第六章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/writing-patterns/assets/patterns/17-claim-markush-equivalents.yaml",
+      "line": 7,
+      "raw": "审查指南第二部分第十章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/writing-patterns/assets/patterns/19-claim-chemical-characterization.yaml",
+      "line": 7,
+      "raw": "审查指南第二部分第十章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/writing-patterns/assets/patterns/20-claim-chemical-markush-scope.yaml",
+      "line": 7,
+      "raw": "审查指南第二部分第十章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/writing-patterns/assets/patterns/21-claim-composition-closed-form.yaml",
+      "line": 7,
+      "raw": "审查指南第二部分第十章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/writing-patterns/assets/patterns/22-claim-medical-use-form.yaml",
+      "line": 7,
+      "raw": "审查指南第二部分第十章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/writing-patterns/assets/patterns/23-spec-tcm-prescription.yaml",
+      "line": 7,
+      "raw": "审查指南第二部分第十章",
+      "reason": "untranscribed"
+    },
+    {
+      "file": "packages/patent/writing-patterns/assets/patterns/24-spec-biotech-deposit-sequence.yaml",
+      "line": 7,
+      "raw": "审查指南第二部分第十章",
+      "reason": "untranscribed"
+    }
+  ],
+  "unstructured": [
+    {
+      "file": "packages/patent/patent-rule/assets/rules/base/citation.yaml",
+      "line": 19,
+      "text": "引用核验 R1：条号不得超出《专利法》（2020 修正，共 82 条）"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/base/compliance.yaml",
+      "line": 19,
+      "text": "执业规范：AI 输出不构成正式法律意见，应由专利代理人/律师确认"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/base/compliance.yaml",
+      "line": 54,
+      "text": "质量门禁：结论性/侵权性/有效性判断需人工确认"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/base/compliance.yaml",
+      "line": 77,
+      "text": "审查规范：回避绝对化断言（绝对可以/一定能够/必然导致等），改用限定性表述"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/base/inventiveness.yaml",
+      "line": 66,
+      "text": "(2025)最高法知行终959号：无公知常识性证据支持认定\"容易想到\"\"易于获得\"，实难令人信服"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/domains/legal/compliance.yaml",
+      "line": 19,
+      "text": "执业规范：AI 辅助法律分析不构成正式法律意见，应附免责声明"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/domains/legal/compliance.yaml",
+      "line": 68,
+      "text": "《民事诉讼法》关于管辖的规定：被告住所地、合同履行地、侵权行为地等"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/domains/legal/compliance.yaml",
+      "line": 91,
+      "text": "法律分析不得给出确定性结果承诺，应使用限定性表述"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/domains/legal/compliance.yaml",
+      "line": 121,
+      "text": "引用规范：法条引用应注明法律名称、条号及款项"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/domains/mechanical/inventiveness.yaml",
+      "line": 25,
+      "text": "无效复审决定585168：名称不同不等于技术实质不同，结构功能等效性须实质分析"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/domains/medical/inventiveness.yaml",
+      "line": 23,
+      "text": "最高法院判例要旨：区别特征仅在于治疗用途且对产品本身没有影响的，不能因用途区别认定产品权利要求具备创造性"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/compliance.yaml",
+      "line": 18,
+      "text": "执业规范：AI 输出不构成正式法律意见，应由专利代理人/律师确认"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/compliance.yaml",
+      "line": 55,
+      "text": "质量门禁：结论性/侵权性/有效性判断需人工确认"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/compliance.yaml",
+      "line": 78,
+      "text": "审查规范：回避绝对化断言（绝对可以/一定能够/必然导致等），改用限定性表述"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/compliance.yaml",
+      "line": 118,
+      "text": "引用核验 R1：条号不得超出《专利法》（2020 修正，共 82 条）"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/evidence-rules.yaml",
+      "line": 109,
+      "text": "最高人民法院关于互联网法院审理案件若干问题的规定"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/evidence-rules.yaml",
+      "line": 400,
+      "text": "最高人民法院关于民事诉讼证据的若干规定"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/evidence-rules.yaml",
+      "line": 435,
+      "text": "电子签名法、最高人民法院关于电子数据证据的规定"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/mady-gap-rules.yaml",
+      "line": 31,
+      "text": "撰写规范：法条引用应精确到条、款"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/mady-gap-rules.yaml",
+      "line": 49,
+      "text": "撰写规范：分析结论应同时给出结论陈述与法律/事实依据"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/mady-gap-rules.yaml",
+      "line": 414,
+      "text": "最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释（禁止反悔原则）"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-core-rules.yaml",
+      "line": 104,
+      "text": "最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-judgment-rules.yaml",
+      "line": 13,
+      "text": "司法实践总结（2023）最高法知民终844号"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-judgment-rules.yaml",
+      "line": 30,
+      "text": "司法实践总结（2023）最高法知民终405号"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-judgment-rules.yaml",
+      "line": 46,
+      "text": "司法实践总结（2024）最高法知民终370号、（2022）最高法知民终2302号"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-judgment-rules.yaml",
+      "line": 63,
+      "text": "司法实践总结（2023）最高法知民终2520号"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-judgment-rules.yaml",
+      "line": 85,
+      "text": "司法实践总结（2019）最高法知民终87号"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-judgment-rules.yaml",
+      "line": 118,
+      "text": "司法实践总结（2022）最高法知民终2920号"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-judgment-rules.yaml",
+      "line": 134,
+      "text": "司法实践总结（2019）沪民终136号"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-judgment-rules.yaml",
+      "line": 168,
+      "text": "司法实践总结（2019）最高法知民终831号"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-judgment-rules.yaml",
+      "line": 185,
+      "text": "司法实践总结（2022）最高法知民终2100号"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-judgment-rules.yaml",
+      "line": 212,
+      "text": "司法实践总结（2020）最高法知民终248号"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/nuo-patent-practice-rules.yaml",
+      "line": 131,
+      "text": "专利代理实务"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/oa-response-form.yaml",
+      "line": 54,
+      "text": "答复撰写规范：同一引文以一处完整引用为限，其后以引文位置指代（\"见前述引文\"），不复述原文"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/oa-response-form.yaml",
+      "line": 126,
+      "text": "答复撰写规范：答复须逐条回应通知书指出的驳回理由"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/oa-response-form.yaml",
+      "line": 138,
+      "text": "答复撰写规范：引用通知书未提出的驳回条款须说明来源，避免自造理由"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/oa-response-form.yaml",
+      "line": 156,
+      "text": "答复撰写规范：无内容的小节整节删除，成品不保留空标题"
+    },
+    {
+      "file": "packages/patent/patent-rule/assets/rules/patent/oa-response-form.yaml",
+      "line": 179,
+      "text": "答复撰写规范：一个结论只写一处，其余以引述位置指代"
+    }
+  ]
+}

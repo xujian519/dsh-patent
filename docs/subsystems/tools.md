@@ -689,7 +689,7 @@ async submit(request: MediaRequest, signal: AbortSignal): Promise<MediaTask>
  * Submit one request and wait up to `waitMs` for settlement.
  * @param request - requested generation.
  * @param signal - caller cancellation, forwarded to the provider.
- * @returns the settled task, or the current running task when the wait expired.
+ * @returns the settled task, or the retained task when `waitMs` expires.
  * @throws {@link MediaFailure} for selection, validation, and provider failures.
  */
 async generate(request: MediaRequest, signal: AbortSignal): Promise<MediaTask>
@@ -698,7 +698,7 @@ async generate(request: MediaRequest, signal: AbortSignal): Promise<MediaTask>
  * Wait up to `waitMs` for one submitted task to settle.
  * @param task - submitted task.
  * @param signal - caller cancellation, forwarded to the provider.
- * @returns the settled task, or the current running task when the wait expired.
+ * @returns the settled task, or the retained task when `waitMs` expires.
  * @throws {@link MediaFailure} when the owning provider disappeared.
  */
 async wait(task: MediaTask, signal: AbortSignal): Promise<MediaTask>

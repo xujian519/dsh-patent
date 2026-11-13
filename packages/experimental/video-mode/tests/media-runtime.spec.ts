@@ -210,6 +210,94 @@ describe('submission and generation', () => {
     await ctx.fiber.dispose()
   })
 
+  it('keeps a cancelled task cancelled when its poll settles later', async () => {
+    const { ctx, media } = await bareRuntime()
+    let releasePoll: () => void = () => {}
+    const pollGate = new Promise<void>((resolve) => { releasePoll = resolve })
+    let enteredPoll: () => void = () => {}
+    const polling = new Promise<void>((resolve) => { enteredPoll = resolve })
+    media.register(stubProvider({
+      id: 'late',
+      submit: async request => ({
+        id: 'late-1', provider: 'late', model: request.model ?? 'late/video', kind: 'video', status: 'running',
+      }),
+      poll: async (task) => {
+        enteredPoll()
+        await pollGate
+        return { ...task, status: 'succeeded' }
+      },
+    }))
+    const submitted = await media.submit({ kind: 'video', prompt: 'x', model: 'late/video' }, new AbortController().signal)
+    const waiting = media.wait(submitted, new AbortController().signal)
+    await polling
+    expect((await media.cancel(submitted.id)).status).toBe('cancelled')
+    releasePoll()
+    expect((await waiting).status).toBe('cancelled')
+    expect(media.status(submitted.id).status).toBe('cancelled')
+    await ctx.fiber.dispose()
+  })
+
+  it('returns the running task when a poll does not settle within waitMs', async () => {
+    const ctx = new Context()
+    await ctx.plugin(VideoMode, { fakeProvider: false, waitMs: 30, pollMs: 1 }).await()
+    ctx.media.register(stubProvider({
+      id: 'stuck',
+      submit: async request => ({
+        id: 'stuck-1', provider: 'stuck', model: request.model ?? 'stuck/video', kind: 'video', status: 'running',
+      }),
+      poll: () => new Promise<MediaTask>(() => {}),
+    }))
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const verdict = await Promise.race([
+      ctx.media.generate({ kind: 'video', prompt: 'x', model: 'stuck/video' }, new AbortController().signal)
+        .then(task => task.status, (error: unknown) => error),
+      new Promise<string>((resolve) => { timer = setTimeout(() => { resolve('hung') }, 500) }),
+    ])
+    clearTimeout(timer)
+    expect(verdict).toBe('running')
+    expect(ctx.media.status('stuck-1').status).toBe('running')
+    await ctx.fiber.dispose()
+  })
+
+  it('does not poll after the wait interval has already passed the deadline', async () => {
+    const ctx = new Context()
+    await ctx.plugin(VideoMode, { fakeProvider: false, waitMs: 5, pollMs: 40 }).await()
+    let polls = 0
+    ctx.media.register(stubProvider({
+      id: 'slow-poll',
+      submit: async request => ({
+        id: 'slow-poll-1', provider: 'slow-poll', model: request.model ?? 'slow-poll/video', kind: 'video', status: 'running',
+      }),
+      poll: async (task) => {
+        polls += 1
+        return { ...task, status: 'succeeded' }
+      },
+    }))
+    const task = await ctx.media.generate(
+      { kind: 'video', prompt: 'x', model: 'slow-poll/video' },
+      new AbortController().signal,
+    )
+    expect(task.status).toBe('running')
+    expect(polls).toBe(0)
+    await ctx.fiber.dispose()
+  })
+
+  it('propagates a poll failure from a bounded wait', async () => {
+    const { ctx, media } = await bareRuntime()
+    media.register(stubProvider({
+      id: 'broken-poll',
+      submit: async request => ({
+        id: 'broken-poll-1', provider: 'broken-poll', model: request.model ?? 'broken-poll/video', kind: 'video', status: 'running',
+      }),
+      poll: async () => { throw new MediaFailure('poll down', 'MEDIA_TASK_FAILED') },
+    }))
+    await expect(media.generate(
+      { kind: 'video', prompt: 'x', model: 'broken-poll/video' },
+      new AbortController().signal,
+    )).rejects.toThrow(/poll down/)
+    await ctx.fiber.dispose()
+  })
+
   it('stops a generation whose provider disappears and one that is aborted', async () => {
     const { ctx, media } = await bareRuntime()
     const dispose = media.register(stubProvider({

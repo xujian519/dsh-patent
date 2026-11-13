@@ -4,7 +4,7 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import { chmod, mkdir, mkdtemp, realpath, rm, stat, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -57,6 +57,23 @@ function optionsOf(overrides: Partial<AssembleOptions> = {}): AssembleOptions {
     signal: new AbortController().signal,
     ...overrides,
   }
+}
+
+/**
+ * Offset of one top-level MP4 atom.
+ * @param bytes - complete file.
+ * @param name - four-character atom type.
+ * @returns the byte offset, or the file length when the atom is absent.
+ */
+function topLevelAtom(bytes: Buffer, name: string): number {
+  let offset = 0
+  while (offset + 8 <= bytes.length) {
+    const size = bytes.readUInt32BE(offset)
+    if (bytes.toString('ascii', offset + 4, offset + 8) === name) return offset
+    if (size < 8) break
+    offset += size
+  }
+  return bytes.length
 }
 
 /** A minimal valid EDL with one color clip. */
@@ -154,6 +171,38 @@ describe('ffmpeg arguments', () => {
     expect(args).toContain('-loop')
   })
 
+  it('keeps an apostrophe in the subtitle filename and in the font name', () => {
+    const edl: Edl = {
+      version: 1,
+      canvas: { width: 64, height: 96, fps: 12 },
+      clips: [{ kind: 'color', color: '000000', durationSec: 1 }],
+      subtitles: "it's a,b;c[1]:d.srt",
+      output: 'out/ep.mp4',
+    }
+    const args = buildFfmpegArgs(edl, { subtitleFont: "Don't" })
+    const graph = args[args.indexOf('-filter_complex') + 1] as string
+    expect(graph).toContain("filename='it'\\\\\\''s\\ a\\,b\\;c\\[1\\]\\:d.srt'")
+    expect(graph).toContain("FontName=Don'\\''t,FontSize=20")
+    expect(graph.endsWith('[vout]')).toBe(true)
+    expect(args).toContain('+faststart')
+    expect(args.at(-1)).toBe('out/ep.mp4')
+  })
+
+  it('rejects a control character in the subtitle path or the font name', () => {
+    const edl: Edl = {
+      version: 1,
+      canvas: { width: 64, height: 96, fps: 12 },
+      clips: [{ kind: 'color', color: '000000', durationSec: 1 }],
+      subtitles: 'a\nb.srt',
+      output: 'out/ep.mp4',
+    }
+    expect(() => buildFfmpegArgs(edl, { subtitleFont: '' })).toThrow(/subtitle path contains a control character/)
+    expect(() => buildFfmpegArgs({ ...edl, subtitles: 'ok.srt' }, { subtitleFont: 'A\nB' })).toThrow(/subtitle font contains a control character/)
+    const leading = buildFfmpegArgs({ ...edl, subtitles: "'clip.srt" }, { subtitleFont: '' })
+    const graph = leading[leading.indexOf('-filter_complex') + 1] as string
+    expect(graph).toContain("filename=\\\\\\''clip.srt'[vout]")
+  })
+
   it('mixes a silent track when the EDL has no audio', () => {
     const args = buildFfmpegArgs(colorEdl(), { subtitleFont: '' })
     const graph = args[args.indexOf('-filter_complex') + 1] as string
@@ -228,6 +277,20 @@ describe.runIf(FFMPEG)('assembly with real ffmpeg', () => {
     expect(result.command).toContain(join(root, 'assets', 'still.png'))
     expect(result.command).toContain(join(root, 'out', 'image.mp4'))
     expect((await stat(join(root, 'out', 'image.mp4'))).size).toBeGreaterThan(0)
+  })
+
+  it('burns a subtitle whose name contains an apostrophe and writes moov before mdat', async () => {
+    await writeFile(join(root, "a b's.srt"), '1\n00:00:00,000 --> 00:00:00,200\nhi\n')
+    const result = await assemble(ctx, {
+      version: 1,
+      canvas: { width: 64, height: 96, fps: 12 },
+      clips: [{ kind: 'color', color: '112233', durationSec: 0.2 }],
+      subtitles: "a b's.srt",
+      output: 'out/titled.mp4',
+    }, optionsOf({ subtitleFont: "Don't" }))
+    expect(result.bytes).toBeGreaterThan(0)
+    const bytes = await readFile(join(root, 'out/titled.mp4'))
+    expect(topLevelAtom(bytes, 'moov')).toBeLessThan(topLevelAtom(bytes, 'mdat'))
   })
 
   it('keeps an existing output placeholder instead of rewriting it', async () => {

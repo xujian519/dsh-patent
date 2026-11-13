@@ -1175,3 +1175,39 @@ zip 读取预算没有新缺口：声明体积超过预算、以及声明偏小�
 - **不清洗模板自带的原始 HTML**：模板资产是仓库里的文本，变量才来自模型。本轮只拦 Markdown 产生的链接和图片。
 - **不新增变量长度上限**：写入器按输入大小产出文本，不会把短输入膨胀成 zip 炸弹。读取预算仍由调用方给出，超限归档继续报 `too-large`。
 - **不在本轮修 R-87**：验收 DOCX 的 Python 读取预算仍另立，与 `docx-kit` 的 `ZipReadLimits` 对齐后再做。
+
+## 93. D28 复核范围与方法
+
+D28 对应计划第 194 行「EDL/ffmpeg、字幕、faststart、参数注入安全；`ui-video-studio`；video 提升评估」。编号从 §93 起，不占用未合并的 D25 §80–§84、D26 §85–§88、D27 §89–§92。本分支基于 `origin/master`，master 上的执行卡仍止于 §79。
+
+1. ffmpeg 参数是数组还是拼进 shell；字幕路径和字体名进入滤镜图时会不会改写滤镜结构。
+2. `+faststart` 是否把顶层 `moov` 写在 `mdat` 前面。
+3. 交付检查里已有的时长偏差与无音轨告警。
+4. `ui-video-studio` 的只读、Range 预览、没有项目的会话空状态。
+5. video 能否离开 experimental，以及 `media.ts` 与 provider 的拆分是否现在做。
+
+方法：用 ffmpeg 7.1 对撇号路径和带撇号的字体名跑滤镜图，确认失败后再改转义，并让同一条渲染检查 `moov` 与 `mdat` 的顺序。
+
+## 94. 字幕路径的两次转义与 faststart
+
+argv 已经是数组。`-i`、输出路径和 `+faststart` 都不经过 shell。进入滤镜图的是字幕路径和 `subtitleFont`。
+
+修复前，撇号被写成 `\'` 再包进单引号。`it's.srt` 被 ffmpeg 7.1 打开成 `its.srt[vout]`，输出垫进了文件名。字体名 `Don't` 让 `force_style` 的引号提前结束，解析停在 `No option name near '20[vout]'`。
+
+修复后，字幕路径按两次解析转义：引号里的空格、冒号、方括号、逗号和分号留着反斜杠给第二次解析；撇号放在两段引号之间，写成第二次解析会吃掉的三个反斜杠。字体名只过一次解析，撇号用 `'\''` 断开再接上。路径或字体名里的 ASCII 控制字符抛 `MEDIA_EDL_INVALID`。不含撇号的路径，滤镜文本与修复前相同。
+
+`edl.spec.ts` 在本机 ffmpeg 7.1 上烧录 `a b's.srt`，并用字体名 `Don't`。成片顶层 `moov` 在 `mdat` 之前。
+
+## 95. 工作室复核与提升结论
+
+`ui-video-studio` 不写项目文件。预览地址是 `api/file?path=…&v=<version>`，单段 Range 由 `SessionMediaReferences` 回 206。本轮不改这条路由。没有 `video_project` 结果时，`StudioView` 渲染 `data-video-studio-empty`；`StudioView.client.spec.tsx` 已有该空状态。本 PR 不改工作室，这些用例没有重跑。
+
+提升结论：video 留在 `experimental`。它仍依赖宿主机 ffmpeg、可选的云端密钥，以及只读的 Web 工作室。`media.ts` 1250 行，`comfyui.ts` 910 行，选择、台账和执行还在同一文件里。D26 与 D27 的行为修复还在未合并的 PR 上。现在拆文件会和那两处改动冲突，也会把纯移动和这次转义修复放进同一次提交。拆分留到那两个 PR 合并之后，单独做纯移动。
+
+## 96. D28 不做项
+
+- **不拆 `media.ts`，也不拆 provider**。R-07 保持待验证。
+- **不把 `video-mode` 移出 experimental**，不新建 `packages/video`。
+- **不把 libass 的字体打开失败当成告警**。本机烧录成功时，stderr 仍会报系统字体文件打不开，退出码是 0。交付侧的无音轨和时长偏差告警已有用例，本轮不改。
+- **不改 `/api/file` 的字节上限**。Range 仍先读完整文件再切片。
+- **不把预算门改成预留**。

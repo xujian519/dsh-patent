@@ -188,7 +188,7 @@ MiniMax 语音 provider 以 `stream: false` 提交 `text`，并在同一次调�
 
 `media` 工具把每个未终结的生成任务记入 `video/<id>/tasks.json`：任务 id、provider、模型、提交时间、恢复所需的请求字段，以及声明的输出路径。带 `project_path` 的 `media status` 在运行时不再持有该任务时找到记录，让 provider 通过 `resume` 重建待轮询状态并继续轮询；任务结算后删除记录。每次以人民币计价的结算都按任务 id 追加一条到 `video/<id>/budget.json`，因此重复调用 status 不会重复计费。预算门与 `video_deliver` 取已记录镜头成本与账本总额中的较大者。
 
-EDL 是可复现的渲染契约。`buildFfmpegArgs` 生成一张滤镜图：每个视觉片段裁切、等比补边到画布、重采样到画布帧率并拼接；可选音频片段裁切、增益并混音；字幕按安全区样式烧录；输出 H.264/AAC 并带 `+faststart`。汇编器先通过 `ctx.fs` 发布空输出占位文件，让父目录在同一写入策略下存在。
+EDL 是可复现的渲染契约。`buildFfmpegArgs` 生成一张滤镜图：每个视觉片段裁切、等比补边到画布、重采样到画布帧率并拼接；可选音频片段裁切、增益并混音；字幕按安全区样式烧录；输出 H.264/AAC 并带 `+faststart`。字幕路径会按滤镜图和 subtitles 滤镜各转义一次，撇号留在文件名里，输出垫仍是垫。该路径或配置的字体名含控制字符时会被拒绝。汇编器先通过 `ctx.fs` 发布空输出占位文件，让父目录在同一写入策略下存在。
 
 <a id="model-experience"></a>
 ## 模型体验

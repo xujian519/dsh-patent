@@ -1237,19 +1237,56 @@ D27 对应计划第 193 行「`comfyui`、`minimax`、`siliconflow`：占位符�
 
 ## 92. D27 不做项
 
-- **不拆 `media.ts`**：R-07 的「选择 / 台账 / 执行」拆分仍是纯移动，留到 D28 的 video 提升评估一起决定。
+- **不拆 `media.ts`**：R-07 的「选择 / 台账 / 执行」拆分仍是纯移动，不进 D28 的转义修复。
 - **不把预算门改成预留**：D26 已确认。
 - **不改占位符、节流、估算和已有的字节上限**：这些行为已有用例，本轮只补路径和下载协议。
 - **不在大小上限之前把响应体整段读进内存**：声明长度和读完后的长度都会拒绝。流式截断另立。
 - **不修 R-87**。
 
+## 93. D28 复核范围与方法
+
+D28 对应计划第 194 行「EDL/ffmpeg、字幕、faststart、参数注入安全；`ui-video-studio`；video 提升评估」。编号从 §93 起。§85–§88 是已合并的 D26，§89–§92 是已合并的 D27，§97–§99 是已合并的 D29。未合并的 D25 仍占用 §80–§84。
+
+1. ffmpeg 参数是数组还是拼进 shell；字幕路径和字体名进入滤镜图时会不会改写滤镜结构。
+2. `+faststart` 是否把顶层 `moov` 写在 `mdat` 前面。
+3. 交付检查里已有的时长偏差与无音轨告警。
+4. `ui-video-studio` 的只读、Range 预览、没有项目的会话空状态。
+5. video 能否离开 experimental，以及 `media.ts` 与 provider 的拆分是否现在做。
+
+方法：用 ffmpeg 7.1 对撇号路径和带撇号的字体名跑滤镜图，确认失败后再改转义，并让同一条渲染检查 `moov` 与 `mdat` 的顺序。
+
+## 94. 字幕路径的两次转义与 faststart
+
+argv 已经是数组。`-i`、输出路径和 `+faststart` 都不经过 shell。进入滤镜图的是字幕路径和 `subtitleFont`。
+
+修复前，撇号被写成 `\'` 再包进单引号。`it's.srt` 被 ffmpeg 7.1 打开成 `its.srt[vout]`，输出垫进了文件名。字体名 `Don't` 让 `force_style` 的引号提前结束，解析停在 `No option name near '20[vout]'`。
+
+修复后，字幕路径按两次解析转义：引号里的空格、冒号、方括号、逗号和分号留着反斜杠给第二次解析；撇号放在两段引号之间，写成第二次解析会吃掉的三个反斜杠。字体名只过一次解析，撇号用 `'\''` 断开再接上。路径或字体名里的 ASCII 控制字符抛 `MEDIA_EDL_INVALID`。不含撇号的路径，滤镜文本与修复前相同。
+
+`edl.spec.ts` 在本机 ffmpeg 7.1 上烧录 `a b's.srt`，并用字体名 `Don't`。成片顶层 `moov` 在 `mdat` 之前。
+
+## 95. 工作室复核与提升结论
+
+`ui-video-studio` 不写项目文件。预览地址是 `api/file?path=…&v=<version>`，单段 Range 由 `SessionMediaReferences` 回 206。本轮不改这条路由。没有 `video_project` 结果时，`StudioView` 渲染 `data-video-studio-empty`；`StudioView.client.spec.tsx` 已有该空状态。本 PR 不改工作室，这些用例没有重跑。
+
+提升结论：video 留在 `experimental`。它仍依赖宿主机 ffmpeg、可选的云端密钥，以及只读的 Web 工作室。`media.ts` 1,265 行，`comfyui.ts` 940 行，选择、台账和执行还在同一文件里。D27 的路径与下载协议修复已经在本分支。拆分是纯移动，不与这次转义修复放进同一次提交。
+
+## 96. D28 不做项
+
+- **不拆 `media.ts`，也不拆 provider**。R-07 保持待验证。
+- **不把 `video-mode` 移出 experimental**，不新建 `packages/video`。
+- **不把 libass 的字体打开失败当成告警**。本机烧录成功时，stderr 仍会报系统字体文件打不开，退出码是 0。交付侧的无音轨和时长偏差告警已有用例，本轮不改。
+- **不改 `/api/file` 的字节上限**。Range 仍先读完整文件再切片。
+- **不把预算门改成预留**。
+- **不在单元车道安装 ffmpeg**。`describe.runIf(FFMPEG)` 里新增的撇号烧录用例在没有 ffmpeg 的 Linux 单元车道记为跳过。`scripts/test-skip-baseline.json` 的 linux `skipped` 是 238。
+
 ## 97. D29 验证范围与方法
 
-D29 对应计划第 195 行「全量验证：`build:artifacts` → `build:check`、定向测试、关键快照、`doc-sync`、`duplication`；修复回归」。编号从 §97 起，不占用未合并的 D25 §80–§84、已合并的 D26 §85–§88、已合并的 D27 §89–§92、未合并的 D28 §93–§96 与本分支的 D30 §100–§104。
+D29 对应计划第 195 行「全量验证：`build:artifacts` → `build:check`、定向测试、关键快照、`doc-sync`、`duplication`；修复回归」。编号从 §97 起，不占用未合并的 D25 §80–§84、已合并的 D26 §85–§88、已合并的 D27 §89–§92、未合并的 D28 §93–§96 与已合并的 D30 §100–§104。
 
-§98 的数字来自 #804 并入 master 之前的审查树。D29 并入 master 时，执行卡在 §79 之后保留 D26 的 §85–§88，再接 §97。本分支在 §92 之后保留 §97–§99，再接 D30 的 §100–§104。并入不改 §98 的数字，那些数字不含 D26 与 D27 新加的用例。
+§98 的数字来自 #804 并入 master 之前的审查树。D29 并入 master 时，执行卡在 §79 之后保留 D26 的 §85–§88，再接 §97。当前执行卡同时留下未合并的 D25 §80–§84、未合并的 D28 §93–§96，以及已合并的 §85–§92、§97–§99 与 §100–§104。并入不改 §98 的数字，那些数字不含 D25、D26、D27、D28 新加的用例。
 
-验证当时止于 D24。当时开着的 #803、#805、#806 不在测量树上。#805 随后并入了 master。本记录不把这些 PR 的改动算进通过结果。以后合并其余 PR 时，留下各自的执行卡区间，也留下 §85–§92、§97–§99 与 §100–§104。
+验证当时止于 D24。当时开着的 #803、#805、#806 不在测量树上。#805 随后并入了 master。本记录不把这些 PR 的改动算进通过结果。以后合并其余 PR 时，留下各自的执行卡区间，也留下 §80–§84、§85–§92、§93–§96、§97–§99 与 §100–§104。
 
 定向测试按四个领域的包根跑默认 Vitest：`packages/patent`、`packages/legal`、`packages/document`、`packages/experimental/video-mode`、`packages/experimental/video-bundle`、`packages/client/ui-video-studio`。仓库里没有 `packages/video`。默认配置只收集 `*.spec.ts`，不收集 e2e 配置。
 
@@ -1276,7 +1313,7 @@ D29 对应计划第 195 行「全量验证：`build:artifacts` → `build:check`
 ## 99. D29 不做项
 
 - **全仓 `pnpm run test` 与 `pnpm run test:coverage` 留给 CI**。指标 v3 和结项报告是 D30。
-- **#803 与 #806 仍各自成 PR**。#804、#805 与 #807 已在 master。本分支是 #808。本记录不代开着的 PR 报绿。
+- **#803 与 #806 仍各自成 PR**。#804、#805、#807 与 #808 已在 master。本记录不代开着的 PR 报绿。
 - **浏览器快照 lane 与 `office-skills` 会话不在这次关键快照里**。document 的模型可见锁是 `document-deliver`。
 - **不改产品代码**。上表的门禁没有回归需要修。
 

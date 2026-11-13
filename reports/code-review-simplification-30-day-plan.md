@@ -183,7 +183,7 @@
 | D22 | `legal-knowledge`：FTS5 与内存回退的一致性、查询上限、空结果 | 双后端一致性测试（已完成） |
 | D23 | `legal-law` 收尾；`document-deliver`：会话日志可重建性、质量门状态 | 会话事件覆盖检查（已完成） |
 | D24 | `docx-kit`、`doc-template`：XML 转义、zip 边界、模板变量注入、CJK 字体 | 恶意/超限模板测试（已完成） |
-| D25 | `office-to-pdf`：队列上限、缓存失效、LibreOffice 进程与临时目录清理、大小上限；周复盘 | 清理/超时测试；指标 v2.5 |
+| D25 | `office-to-pdf`：队列上限、缓存失效、LibreOffice 进程与临时目录清理、大小上限；周复盘 | 清理/超时测试；指标 v2.5（已完成） |
 
 ### 第 6 周：video 与全局收口
 
@@ -191,7 +191,7 @@
 |---|---|---|
 | D26 | `video-mode/media.ts`：provider 选择、任务保留、journal/ledger、预算门、取消/超时 | 并发与重启恢复测试（已完成） |
 | D27 | `comfyui`、`minimax`、`siliconflow`：占位符类型保持、轮询节流、成本估算、大小上限、错误映射 | provider 契约测试；无密钥自跳过复核（已完成） |
-| D28 | EDL/ffmpeg、字幕、faststart、参数注入安全；`ui-video-studio`；video 提升评估（media/ + video/ 拆分是否具备条件） | 渲染快照；提升评估结论 |
+| D28 | EDL/ffmpeg、字幕、faststart、参数注入安全；`ui-video-studio`；video 提升评估（media/ + video/ 拆分是否具备条件） | 渲染快照；提升评估结论（已完成：video 留在 experimental，拆分待纯移动） |
 | D29 | 全量验证：`build:artifacts` → `build:check`、定向测试、关键快照、`doc-sync`、`duplication`；修复回归 | 全绿门禁记录（已完成：见执行卡 §97–§99） |
 | D30 | 指标 v3 对比、最终报告、升级指南（如有破坏性变更）、遗留项与下一轮建议 | 结项报告（已完成：见执行卡 §100–§104） |
 

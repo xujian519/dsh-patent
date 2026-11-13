@@ -23,12 +23,13 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { homedir } from 'node:os'
 import { join, relative, resolve } from 'node:path'
 import {
+  extractLawReferences,
   findArticle,
   findSection,
   loadLawBaselines,
-  extractLawReferences,
   type LawBaseline,
 } from '@deepseek-ai/dsh-patent-law'
+import { coversSection } from '../packages/patent/patent-law/src/section-path.ts'
 import {
   IndexAssetError,
   parseYamlMapping,
@@ -389,7 +390,9 @@ export function buildCoverage(
   }
   rows.push(statute('专利法'), statute('专利法实施细则'))
   const guidelines = baselines.get('专利审查指南')
-  const sections = guidelines?.sections ?? []
+  // The extent counts numbered headings, so the part and chapter containers that
+  // carry no heading of their own stay out of the numerator.
+  const sections = (guidelines?.sections ?? []).filter(section => /\d/u.test(section.path))
   rows.push({
     document: '专利审查指南',
     extent: guidelineExtent.headings,
@@ -492,7 +495,7 @@ export function findUnresolved(
         const section = findSection(document, reference.path)
         if (section === undefined) {
           unresolved.push({ file, line: locateLine(text, reference.raw), raw: reference.raw, reason: 'not-indexed' })
-        } else if (section.text === null) {
+        } else if (section.text === null && !hasTranscribedDescendant(document, reference.path)) {
           unresolved.push({ file, line: locateLine(text, reference.raw), raw: reference.raw, reason: 'untranscribed' })
         }
       }
@@ -507,6 +510,21 @@ export function findUnresolved(
       return true
     })
     .sort((left, right) => left.file.localeCompare(right.file) || left.line - right.line)
+}
+
+/**
+ * Whether a section without text of its own is still decidable through its
+ * subsections.
+ *
+ * A part, a chapter or a heading whose whole body is its subsections carries no
+ * text of its own; the verifier decides such a citation against the transcribed
+ * sections under it, so counting it as a gap would overstate the corpus.
+ * @param document - the guideline baseline.
+ * @param path - the cited normalized section path.
+ * @returns true when at least one transcribed section sits under the path.
+ */
+function hasTranscribedDescendant(document: LawBaseline, path: string): boolean {
+  return document.sections.some(section => section.text !== null && coversSection(path, section.path))
 }
 
 /**

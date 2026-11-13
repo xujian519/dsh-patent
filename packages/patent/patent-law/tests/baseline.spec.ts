@@ -444,8 +444,8 @@ describe('loadLawBaselines', () => {
     const baselines = loadLawBaselines()
     expect(baselines.get('专利法')?.articles).toHaveLength(82)
     expect(baselines.get('专利法实施细则')?.articles).toHaveLength(149)
-    expect(baselines.get('专利审查指南')?.sections).toHaveLength(85)
-    expect(baselines.get('专利审查指南')?.sections.filter(section => section.text !== null)).toHaveLength(70)
+    expect(baselines.get('专利审查指南')?.sections).toHaveLength(1348)
+    expect(baselines.get('专利审查指南')?.sections.filter(section => section.text !== null)).toHaveLength(1145)
   })
 
   it('transcribes every packaged statute entry and states where the text came from', () => {

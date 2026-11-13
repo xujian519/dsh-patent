@@ -111,7 +111,7 @@ describe('buildCoverage', () => {
     )
     expect(rows[0]).toMatchObject({ document: '专利法', extent: 82, indexed: 82, coverage: '100.0%' })
     expect(rows[1]).toMatchObject({ document: '专利法实施细则', extent: 149, indexed: 149, coverage: '100.0%' })
-    expect(rows[2]).toMatchObject({ document: '专利审查指南', extent: 1335, indexed: 85, transcribed: 70 })
+    expect(rows[2]).toMatchObject({ document: '专利审查指南', extent: 1335, indexed: 1335, transcribed: 1145 })
     expect(rows[3]).toMatchObject({ document: '司法解释', extent: 7, indexed: 0, coverage: '0.0%' })
   })
 })
@@ -151,20 +151,35 @@ describe('findUnresolved', () => {
     // 随包细则已覆盖第 1 至 149 条，这里从随包索引里摘掉一条，单独验证缺口分支。
     const shipped = loadLawBaselines()
     const rules = shipped.get('专利法实施细则')!
+    const guideline = shipped.get('专利审查指南')!
     const partial = new Map(shipped)
     partial.set('专利法实施细则', {
       ...rules,
       articles: rules.articles.filter(entry => entry.article !== 50),
     })
+    // 指南全量转录后，随包索引里已经没有「有路径但无正文、且其下也没有正文」的节；
+    // 补一条叶子节来覆盖这个分支。
+    partial.set('专利审查指南', {
+      ...guideline,
+      sections: [
+        ...guideline.sections,
+        { path: '第九部分第九章9.9', topics: ['未转录'], text: null, sourceDoc: null, verifiedOn: null },
+      ],
+    })
     const files = [
       { file: 'a.md', text: '依据《专利法实施细则》第五十条。' },
-      { file: 'b.md', text: '见《专利审查指南》第二部分第二章。' },
+      { file: 'b.md', text: '见《专利审查指南》第九部分第九章9.9。' },
     ]
     expect(findUnresolved(files, partial)).toEqual([
       { file: 'a.md', line: 1, raw: '专利法实施细则第五十条', reason: 'not-indexed' },
-      { file: 'b.md', line: 1, raw: '专利审查指南第二部分第二章', reason: 'untranscribed' },
+      { file: 'b.md', line: 1, raw: '专利审查指南第九部分第九章9.9', reason: 'untranscribed' },
     ])
     expect(findUnresolved([files[0]!], shipped)).toEqual([])
+  })
+
+  it('不把带已转录子节的容器当作缺口', () => {
+    // 章、部分一级条目自身没有正文，但引用它们可由其下各节判定。
+    expect(findUnresolved([{ file: 'b.md', text: '见《专利审查指南》第二部分第二章。' }], baselines)).toEqual([])
   })
 
   it('已索引且已转录的条号不报告', () => {

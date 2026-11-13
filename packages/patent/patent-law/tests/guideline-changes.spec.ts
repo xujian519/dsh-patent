@@ -8,12 +8,13 @@
  */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { IndexAssetError, parseYamlMapping, readMapping, readString } from '@deepseek-ai/dsh-patent-index-asset'
+import { IndexAssetError, parseYamlMapping, readCount, readMapping, readString } from '@deepseek-ai/dsh-patent-index-asset'
 import { loadLawBaselines } from '../src/baseline.ts'
 import type { AssetFail } from '@deepseek-ai/dsh-patent-index-asset'
 
 const CHANGES = new URL('../assets/authority/guideline-changes-2026.yaml', import.meta.url)
 const AUTHORITY = new URL('../assets/authority/authority-baseline.yaml', import.meta.url)
+const EXTENT = new URL('../assets/authority/guideline-extent.yaml', import.meta.url)
 
 const fail: AssetFail = message => new IndexAssetError(message, null)
 
@@ -123,5 +124,21 @@ describe('2026 年改动点资产', () => {
     const stale = guideline?.staleSections ?? []
     expect(stale.length).toBeGreaterThan(0)
     expect(stale.filter(section => !known.has(section.path))).toEqual([])
+  })
+})
+
+describe('指南标题枚举', () => {
+  it('indexes exactly the headings the recorded extent counts, part by part', () => {
+    const extent = parseYamlMapping(readFileSync(EXTENT, 'utf8'), '指南规模', fail)
+    const sections = loadLawBaselines().get('专利审查指南')?.sections ?? []
+    const headings = sections.filter(section => /\d/u.test(section.path))
+    // 分母来自官方 PDF；分子必须是索引里带编号的路径，部分与章一级容器不计入。
+    expect(headings).toHaveLength(readCount(extent['headings'], 'headings', fail))
+    expect(new Set(headings.map(section => section.path)).size).toBe(headings.length)
+    expect(headings.filter(section => section.text !== null)).toHaveLength(readCount(extent['headingsWithBody'], 'headingsWithBody', fail))
+    for (const row of readList(extent, 'byPart')) {
+      const part = readString(row, 'part', fail)
+      expect(headings.filter(section => section.path.startsWith(part))).toHaveLength(readCount(row['headings'], 'headings', fail))
+    }
   })
 })

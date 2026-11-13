@@ -712,9 +712,12 @@ describe('the packaged index', () => {
     // 路径指向的节存在，且该节讲的是它标题所称的内容。
     expect(text('第二部分第二章2.2.2')).toContain('发明或者实用新型的技术领域应当是要求保护的')
     expect(text('第二部分第九章2')).toContain('审查应当针对要求保护的解决方案')
+    // 2.2.1 也在 2023 版里，但它是「名称」，不是「技术领域」。
+    expect(text('第二部分第二章2.2.1')).toContain('发明或者实用新型的名称应当清楚')
+    expect(text('第二部分第二章2.2.1')).not.toContain('技术领域应当是要求保护的')
     expect(verifyCitation(sectionRef('第二部分第二章2.2.2'), shipped).decision).toBe('valid')
     expect(verifyCitation(sectionRef('第二部分第九章2'), shipped).decision).toBe('valid')
-    expect(verifyCitation(sectionRef('第二部分第二章2.2.1'), shipped).decision).toBe('not-indexed')
+    expect(verifyCitation(sectionRef('第二部分第二章2.2.1'), shipped).decision).toBe('valid')
     expect(verifyCitation(sectionRef('第二部分第九章2.0'), shipped).decision).toBe('not-indexed')
     expect(verifyCitation(sectionRef('第一部分第一章2.3'), shipped).decision).toBe('not-indexed')
   })
@@ -859,21 +862,36 @@ describe('the packaged index', () => {
     expect(citation.reason).toContain('第五部分第六章2.3.1')
   })
 
-  it('reports a container section whose sections do not carry the proposition', () => {
+  it('decides a container section by the sections under it', () => {
     const shipped = loadLawBaselines()
-    // 第二部分第二章 只登记了章一级条目：章正文未单独转录，命题由该章各节判定。
-    const citation = verifyCitation(sectionRef('第二部分第二章'), shipped, {
+    // 第二部分第二章 只登记了章一级条目：章自身没有正文，命题由该章各节判定。
+    const supported = verifyCitation(sectionRef('第二部分第二章'), shipped, {
+      proposition: '技术领域应当是要求保护的发明或者实用新型技术方案所属或者直接应用的具体技术领域',
+    })
+    expect(supported.decision).toBe('valid')
+    expect(supported.reason).toContain('第二部分第二章2.2.2')
+    const unrelated = verifyCitation(sectionRef('第二部分第二章'), shipped, {
       proposition: '本章规定了基因序列的保藏要求',
+    })
+    expect(unrelated.decision).toBe('mismatch')
+    expect(unrelated.reason).toContain('第二部分第十章')
+  })
+
+  it('reports a container whose sections do not carry the proposition', () => {
+    const shipped = loadLawBaselines()
+    // 命题与指南任何已转录节都不重合时，容器引用落在「其下各节都不相符」。
+    const citation = verifyCitation(sectionRef('第二部分第二章'), shipped, {
+      proposition: '本章规定了船舶螺旋桨的防腐涂层工艺',
     })
     expect(citation.decision).toBe('unmatched')
     expect(citation.reason).toContain('节正文未转录')
   })
 
-  it('reports a section whose indexed sections are not transcribed', () => {
+  it('transcribes every heading of the rulebook, so no shipped section citation is unverified', () => {
     const shipped = loadLawBaselines()
     const citation = verifyCitation(sectionRef('第二部分第十章'), shipped)
-    expect(citation.decision).toBe('unverified')
-    expect(citation.reason).toContain('尚未转录核验')
+    expect(citation.decision).toBe('valid')
+    expect(citation.reason).toContain('判定依据其下各节')
   })
 
   it('attaches each guideline topic list to the section it indexes', () => {

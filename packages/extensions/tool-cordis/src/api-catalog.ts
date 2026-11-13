@@ -2415,14 +2415,14 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         signature: 'async generate(request: MediaRequest, signal: AbortSignal): Promise<MediaTask>',
         description: 'Submit one request and wait up to `waitMs` for settlement.',
         parameters: [{ name: 'request', description: 'requested generation.' }, { name: 'signal', description: 'caller cancellation, forwarded to the provider.' }],
-        returns: 'the settled task, or the current running task when the wait expired.',
+        returns: 'the settled task, or the retained task when `waitMs` expires.',
         throws: ['{@link MediaFailure} for selection, validation, and provider failures.'],
       },
       {
         signature: 'async wait(task: MediaTask, signal: AbortSignal): Promise<MediaTask>',
         description: 'Wait up to `waitMs` for one submitted task to settle.',
         parameters: [{ name: 'task', description: 'submitted task.' }, { name: 'signal', description: 'caller cancellation, forwarded to the provider.' }],
-        returns: 'the settled task, or the current running task when the wait expired.',
+        returns: 'the settled task, or the retained task when `waitMs` expires.',
         throws: ['{@link MediaFailure} when the owning provider disappeared.'],
       },
       {

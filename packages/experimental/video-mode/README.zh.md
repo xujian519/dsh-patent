@@ -170,7 +170,7 @@ video_deliver { files: [{ path: "out/ep01.mp4", format: "video" }] }
 <a id="understand-the-implementation"></a>
 ## 实现说明
 
-媒体运行时是注册为 `ctx.media` 的 Cordis 服务。provider 通过 `register()` 注册；返回的 disposer 在 fiber 卸载时移除它。选择时先读取请求 capability 的默认模型，再只接受 `models()` 中声明了该 id 与 capability 的 provider。运行时负责任务保留与有界等待，provider 负责传输、取消与计费。合成 provider 在提交时结算；ComfyUI provider 返回 `submitted`，再通过 `poll` 结算。
+媒体运行时是注册为 `ctx.media` 的 Cordis 服务。provider 通过 `register()` 注册；返回的 disposer 在 fiber 卸载时移除它。选择时先读取请求 capability 的默认模型，再只接受 `models()` 中声明了该 id 与 capability 的 provider。运行时负责任务保留与有界等待，provider 负责传输、取消与计费。已记为取消的任务在之后的轮询结束时仍保持取消。轮询未在剩余 `waitMs` 内结束时，等待返回运行中的任务，并且不采用这次轮询的结果。合成 provider 在提交时结算；ComfyUI provider 返回 `submitted`，再通过 `poll` 结算。
 
 ComfyUI provider 用提示词、种子、画布、帧数与模型文件名填充工作流中的 `{{name}}` 占位符。整串占位符保留 JSON 类型，因此 `width`、`length`、`seed` 以整数送达。`first_frame_path` 参考会经 `/upload/image` 上传，新增 `LoadImage` 节点，并把输出接到 Wan latent 节点的 `start_image`。`submit` 向 `/prompt` 提交，`poll` 读取 `/history/<id>`，必要时回落到 `/queue` 判断 running 或 queued；完成条目经 `/view` 下载为产物字节。`cancel` 删除排队任务并中断运行中任务。提交超过 `timeoutMs` 的任务以 `MEDIA_TASK_TIMEOUT` 失败。
 
@@ -230,6 +230,8 @@ EDL 是可复现的渲染契约。`buildFfmpegArgs` 生成一张滤镜图：每�
 - **ffmpeg 是 Host 前置条件** —— 可执行文件无法解析时，汇编器以 `MEDIA_FFMPEG_MISSING` 失败。烧录中文字幕需要 libass 与 CJK 字体。
 - **预算门取两份记录中的较大者** —— `media generate` 用估算值与 `project.budgetCny` 减去“`video_project` 记录的镜头成本”与“媒体账本”中的较大者比较。忘记回写不会少算，手工调低镜头成本也不能把门限降到账本已计费额度以下。
 - **预算门不是预留额度** —— 两个生成在任一结算前同时启动时，会读到同一份账本，因此并发提交可能超支；预算紧张时逐个执行。
+- **取消之后保持取消** —— `cancel` 之后才结束的轮询不会替换已取消的任务。
+- **单次轮询受 `waitMs` 限制** —— 轮询未在剩余等待时间内结束时，`generate` 返回运行中的任务。之后的 `status` 会再次轮询。
 - **跨进程项目写入仍可能竞争** —— 修改在同一 Host 内串行化，并且只在文件仍与读取时的文本一致时发布；但其他进程的写入若恰好落在此检查与写入之间，仍可能丢失。三次失败后报告 `MEDIA_PROJECT_CONFLICT`。
 - **ffmpeg 运行在 Host 执行世界** —— 汇编器通过 `ctx.fs` 解析输出，但在其旁边运行二进制；远程文件系统 provider 需要匹配的 subprocess provider。
 - **没有新的 Session 事件** —— 项目文件是事实源，工具调用与结果是审计面。如果文件不足，客户端投影随工作台一起加入。

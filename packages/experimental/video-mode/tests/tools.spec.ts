@@ -24,6 +24,7 @@ import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import VideoMode, {
   forgetTask,
+  ledgerCost,
   readLedger,
   readTaskRecords,
   recordTask,
@@ -834,6 +835,44 @@ describe('durable tasks and the budget ledger', () => {
     }))
     expect(error).toContain('exceeds the 2.00 CNY remaining')
     expect(await readLedger(created, projectPath, root)).toHaveLength(1)
+  })
+
+  it('lets two generations compare the same ledger and then blocks the next one', async () => {
+    const created = await boot({ approvalThresholdCny: 100 })
+    let started = 0
+    let releaseBoth: () => void = () => {}
+    const bothStarted = new Promise<void>((resolve) => { releaseBoth = resolve })
+    created.media.register(providerOf({
+      id: 'race',
+      models: [{ id: 'race/video', kind: 'video', provider: 'race' }],
+      estimate: () => ({ confidence: 'exact', cost: { amountMinor: 200, currency: 'CNY' } }),
+      submit: async (request) => {
+        started += 1
+        const id = `race-${started}`
+        if (started === 2) releaseBoth()
+        await bothStarted
+        return {
+          id, provider: 'race', model: request.model ?? '', kind: request.kind, status: 'succeeded',
+          artifacts: [{ id: 'clip', kind: 'video', mediaType: 'video/mp4', bytes: MP4 }],
+        }
+      },
+    }))
+    const project = valueOf(await call(created, 'video_project', { action: 'init', title: 'Race', budget_cny: 3 }))
+    const projectPath = project.path as string
+    const generate = (name: string): ReturnType<typeof call> => call(created, 'media', {
+      action: 'generate', kind: 'video', prompt: 'x', model: 'race/video', output_path: `out/${name}.mp4`,
+      project_path: projectPath, confirm_cost: true,
+    })
+    const concurrent = Promise.all([generate('a'), generate('b')])
+    await bothStarted
+    const [first, second] = await concurrent
+    expect(first.isError).toBe(false)
+    expect(second.isError).toBe(false)
+    const charges = await readLedger(created, projectPath, root)
+    expect(charges).toHaveLength(2)
+    expect(ledgerCost(charges)).toBe(4)
+    expect(errorOf(await generate('c'))).toContain('remaining in the project budget')
+    expect(await readLedger(created, projectPath, root)).toHaveLength(2)
   })
 
   it('journals only pending tasks and clears a record on failure or cancel', async () => {

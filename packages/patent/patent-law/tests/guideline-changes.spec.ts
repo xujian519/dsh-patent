@@ -103,14 +103,41 @@ describe('2026 年改动点资产', () => {
     expect(added.filter(item => changed.has(item.path))).toEqual([])
   })
 
-  it('grounds every transcribed 2026 section in a recorded change point', () => {
-    const changed = new Set(readChanges().points.map(point => point.path))
+  it('grounds every transcribed 2026 section in a recorded change, renumbering, or addition', () => {
+    const { points, renames, added } = readChanges()
+    const known = new Set([
+      ...points.map(point => point.path),
+      ...renames.flatMap(rename => [rename.from, rename.to]),
+      ...added.map(item => item.path),
+    ])
     const guideline = loadLawBaselines().get('专利审查指南')
     expect(guideline).toBeDefined()
     const transcribed = (guideline?.versions ?? []).flatMap(version =>
-      version.sections.map(section => section.path))
+      version.sections.filter(section => section.text !== null).map(section => section.path))
     expect(transcribed.length).toBeGreaterThan(0)
-    expect(transcribed.filter(path => !changed.has(path))).toEqual([])
+    expect(transcribed.filter(path => !known.has(path))).toEqual([])
+  })
+
+  it('never leaves an amended section both unoverridden and unmarked', () => {
+    const { points } = readChanges()
+    const guideline = loadLawBaselines().get('专利审查指南')
+    const overridden = new Set((guideline?.versions ?? []).flatMap(version =>
+      version.sections.filter(section => section.text !== null).map(section => section.path)))
+    const stale = new Set((guideline?.staleSections ?? []).map(section => section.path))
+    // 每一处正文修改要么有 2026 年正文覆盖，要么标了 stale；否则 2023 年文本会被当成现行文本。
+    expect(points.filter(point => !overridden.has(point.path) && !stale.has(point.path))).toEqual([])
+  })
+
+  it('overrides each renumbering target and marks the old path', () => {
+    const { renames } = readChanges()
+    const guideline = loadLawBaselines().get('专利审查指南')
+    const overridden = new Set((guideline?.versions ?? []).flatMap(version =>
+      version.sections.filter(section => section.text !== null).map(section => section.path)))
+    const stale = new Set((guideline?.staleSections ?? []).map(section => section.path))
+    for (const rename of renames) {
+      expect(overridden.has(rename.to)).toBe(true)
+      expect(stale.has(rename.from)).toBe(true)
+    }
   })
 
   it('grounds every stale section in a recorded change, renumbering, or addition', () => {

@@ -887,11 +887,16 @@ describe('the packaged index', () => {
     expect(citation.reason).toContain('节正文未转录')
   })
 
-  it('transcribes every heading of the rulebook, so no shipped section citation is unverified', () => {
+  it('decides a container whose subsections are current, and refuses one covering a modified subsection', () => {
     const shipped = loadLawBaselines()
-    const citation = verifyCitation(sectionRef('第二部分第十章'), shipped)
-    expect(citation.decision).toBe('valid')
-    expect(citation.reason).toContain('判定依据其下各节')
+    // 第四部分第八章没有 2026 年改过的节，容器由其下各节判定。
+    const current = verifyCitation(sectionRef('第四部分第八章'), shipped)
+    expect(current.decision).toBe('valid')
+    expect(current.reason).toContain('判定依据其下各节')
+    // 第二部分第十章9 已被 2026 年修订版修改、尚无 2026 正文，整章引用因此不能按现行条文核验。
+    const superseded = verifyCitation(sectionRef('第二部分第十章'), shipped)
+    expect(superseded.decision).toBe('unverified')
+    expect(superseded.reason).toContain('第二部分第十章9')
   })
 
   it('attaches each guideline topic list to the section it indexes', () => {

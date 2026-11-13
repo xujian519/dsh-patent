@@ -245,6 +245,23 @@ it('reserves the input cap for an unknown stat size and rejects known overflow b
   expect(a.read.mock.calls[0]![1]).toBe(2)
 })
 
+it.each([Number.NaN, Number.POSITIVE_INFINITY, -1, 1.5])('rejects a declared size of %s before reading or occupying the queue', async (bytes) => {
+  const h = harness({ maxInputBytes: 4, maxSourceBytes: 4, maxQueuedJobs: 1, maxConcurrentConversions: 1 })
+  const rejected = source('rejected')
+  const pending = h.queue.read({ ...rejected.request, source: { ...rejected.request.source, bytes } })
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const verdict = await Promise.race([
+    pending.then(() => 'settled', (error: unknown) => error),
+    new Promise<string>((resolve) => { timer = setTimeout(() => { resolve('hung') }, 200) }),
+  ])
+  clearTimeout(timer)
+  expect(verdict).toMatchObject({ code: 'input-too-large' })
+  expect(rejected.read).not.toHaveBeenCalled()
+  expect(h.convert).not.toHaveBeenCalled()
+  await h.queue.read(source('next').request)
+  expect(h.convert).toHaveBeenCalledOnce()
+})
+
 it('evicts least-recently-used content and bounds pre-read aliases independently', async () => {
   const h = harness({ maxCachedEntries: 2, maxCachedBytes: 8, maxSourceEntries: 1 })
   const a = source('a', 1), alias = source('alias', 1), b = source('b', 2), c = source('c', 3)

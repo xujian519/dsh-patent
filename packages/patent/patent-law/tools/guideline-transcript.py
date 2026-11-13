@@ -22,8 +22,10 @@ This script derives the text mechanically:
 - A line whose text repeats the tail of the previous line on the same baseline is a
   duplicated run of the source PDF, not content, and is dropped.
 
-The body-column threshold is measured on Parts I, II, IV and V; the PDF sets Part III
-at a different left edge, and no Part III path is indexed. The source PDF is not
+The body-column threshold is measured per part: the body starts at x≈155 in Parts I,
+II, IV, V and VI, and at x≈135 in Part III, whose pages are set further left. A single
+threshold drops every Part III line, so the threshold is chosen per part and the margin
+column of statute numbers (x≈55–101) is what the cut removes. The source PDF is not
 shipped with this repository, so `--check` reports the absent source instead of
 passing silently, and the shipped index stays the only record of the transcription. Run `--write` after changing any rule above; it rewrites the
 `text`, `sourceDoc` and `verifiedOn` fields only, leaving the hand-verified `topics`
@@ -46,6 +48,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import hashlib
 import os
 import re
 import sys
@@ -54,8 +57,17 @@ from pathlib import Path
 from typing import Iterator, NoReturn
 
 # Bounding boxes of the body column and of the text zone, in PDF points.
-BODY_LEFT = 145.0
-INDENT_LEFT = 170.0
+#
+# The body column starts at x≈155 in Parts I, II, IV, V and VI, and at x≈135 in
+# Part III, whose pages are set 20 points further left. One threshold for the
+# whole PDF drops every Part III line as if it were the margin column, which is
+# why Part III yielded no headings under a single 145-point threshold. The
+# margin column of statute numbers sits at x≈55–101 in every part, so a
+# per-part threshold separates the two.
+BODY_LEFT = {'第一部分': 145.0, '第二部分': 145.0, '第三部分': 110.0}
+DEFAULT_BODY_LEFT = 145.0
+INDENT_LEFT = {'第三部分': 150.0}
+DEFAULT_INDENT_LEFT = 170.0
 TOP_ZONE = 60.0
 BOTTOM_ZONE = 660.0
 HEAD_FONTS = ('ºÚÌå', '·½Õý´óºÚ¼òÌå')
@@ -70,6 +82,7 @@ DEFAULT_PDF = Path(
     or Path.home() / 'projects/宝宸知识库_Raw/专利审查指南/专利审查指南（2023版-未修改）.pdf'
 )
 DEFAULT_YAML = Path(__file__).resolve().parent.parent / 'assets/law/cn-examination-guidelines.yaml'
+DEFAULT_EXTENT = Path(__file__).resolve().parent.parent / 'assets/authority/guideline-extent.yaml'
 
 SOURCE_DOC = (
     '《专利审查指南》2023 年修订版（2024-01-20 施行）——本机 PDF 全文抽取的节正文'
@@ -98,6 +111,21 @@ def fail(message: str) -> NoReturn:
     """Exit with a concise, user-correctable error."""
     print(f'guideline-transcript: {message}', file=sys.stderr)
     raise SystemExit(1)
+
+
+def part_of(chapter: str) -> str:
+    """The part a part-and-chapter label belongs to, e.g. `第三部分`."""
+    return chapter[:4]
+
+
+def body_left(chapter: str) -> float:
+    """x of the body column's left edge on the pages of one part and chapter."""
+    return BODY_LEFT.get(part_of(chapter), DEFAULT_BODY_LEFT)
+
+
+def indent_left(chapter: str) -> float:
+    """x at which a paragraph's first line starts on the pages of one part and chapter."""
+    return INDENT_LEFT.get(part_of(chapter), DEFAULT_INDENT_LEFT)
 
 
 def line_text(spans: list[dict]) -> str:
@@ -166,11 +194,12 @@ class Source:
         """
         if page not in self._lines:
             kept: list[dict] = []
+            left = body_left(self._chapter(page) or '第一部分')
             for block in self.doc[page].get_text('rawdict')['blocks']:
                 if block['type'] != 0:
                     continue
                 for line in block['lines']:
-                    spans = [span for span in line['spans'] if span['bbox'][0] >= BODY_LEFT]
+                    spans = [span for span in line['spans'] if span['bbox'][0] >= left]
                     if not spans:
                         continue
                     text = line_text(spans)
@@ -271,7 +300,7 @@ def section(source: Source, path: str) -> list[str] | None:
                 break
             if Source.heading(line) or Source.heading_material(line):
                 continue
-            if current and line['x0'] >= INDENT_LEFT:
+            if current and line['x0'] >= indent_left(chapter):
                 paragraphs.append(''.join(current))
                 current = []
             current.append(line['text'].rstrip())
@@ -365,13 +394,76 @@ def rebuild(text: str, entries: list[Entry], sections: dict[str, list[str]], sta
     return '\n'.join(out).rstrip('\n') + '\n'
 
 
+def extent(source: 'Source', pdf: Path) -> dict:
+    """The PDF's countable extent: numbered headings, and how many carry their own body.
+
+    The coverage report needs a denominator taken from the law itself rather than from a
+    planning note. A heading that is followed by another heading before any body line is a
+    structural row (`3`, `4.1`, parts whose content sits in subsections), so counting it as a
+    section would understate coverage forever.
+    """
+    total = 0
+    with_body = 0
+    by_part: dict[str, dict[str, int]] = {}
+    for chapter in sorted(source.chapters):
+        part = part_of(chapter)
+        rows = by_part.setdefault(part, {'headings': 0, 'withBody': 0})
+        for _, _, number in headings(source, chapter):
+            total += 1
+            rows['headings'] += 1
+            if section(source, f'{chapter}{number}'):
+                with_body += 1
+                rows['withBody'] += 1
+    return {
+        'sha256': hashlib.sha256(pdf.read_bytes()).hexdigest(),
+        'pages': source.doc.page_count,
+        'headings': total,
+        'headingsWithBody': with_body,
+        'byPart': [{'part': p, **by_part[p]} for p in sorted(by_part)],
+    }
+
+
+def render_extent(data: dict) -> str:
+    """Render the extent asset as YAML."""
+    out = [
+        '# 《专利审查指南》2023 年修订版全文的规模 — 覆盖率分母，不是运行时索引。',
+        '#',
+        '# 覆盖率的分子是随包索引的节数，分母必须取自法本身。分母此前是计划里的登记值，',
+        '# 复算不出来；本文件由 tools/guideline-transcript.py --write-extent 从官方 PDF 数出，',
+        '# 与索引的节正文同源。',
+        '#',
+        '# headings 是官方 PDF 中带编号的标题数；headingsWithBody 是其中在下一个标题之前',
+        '# 有自己的正文的节数。紧跟下一个标题的结构标题（如 `3`、`4.1`）计入分母、不贡献正文，',
+        '# 转录时按容器条目处理。',
+        '#',
+        f'# 源文件 SHA-256：{data["sha256"]}',
+        'version: "1.0"',
+        'revision: 2023 年修订版（2024-01-20 施行）',
+        'sourceDoc: 《专利审查指南》2023 年修订版官方 PDF 全文',
+        f'sourceSha256: {data["sha256"]}',
+        'verifiedOn: 2026-11-14',
+        f'pages: {data["pages"]}',
+        f'headings: {data["headings"]}',
+        f'headingsWithBody: {data["headingsWithBody"]}',
+        'byPart:',
+    ]
+    for row in data['byPart']:
+        out.append(f'  - part: {row["part"]}')
+        out.append(f'    headings: {row["headings"]}')
+        out.append(f'    withBody: {row["withBody"]}')
+    return '\n'.join(out) + '\n'
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--check', action='store_true', help='verify the index against the source (default)')
     parser.add_argument('--write', action='store_true', help='rewrite the index instead of checking it')
+    parser.add_argument('--write-extent', action='store_true',
+                        help='rewrite the extent asset the coverage report uses as its denominator')
     parser.add_argument('--verified-on', help='date --write records, default today')
     parser.add_argument('--pdf', type=Path, default=DEFAULT_PDF, help='official guideline PDF')
     parser.add_argument('--yaml', type=Path, default=DEFAULT_YAML, help='shipped section index')
+    parser.add_argument('--extent', type=Path, default=DEFAULT_EXTENT, help='coverage denominator asset')
     args = parser.parse_args()
 
     if not args.pdf.exists():
@@ -381,6 +473,12 @@ def main() -> None:
         fail(f'索引不在 {args.yaml}')
 
     source = Source(args.pdf)
+    if args.write_extent:
+        counted = extent(source, args.pdf)
+        args.extent.write_text(render_extent(counted), encoding='utf-8')
+        print(f'已写入 {args.extent}：{counted["headings"]} 个编号标题')
+        return
+
     text = args.yaml.read_text(encoding='utf-8')
     entries = read_entries(text)
     if not entries:
@@ -427,10 +525,12 @@ def main() -> None:
               f'{len(entries) - transcribed} 条为部分、章或节的容器路径，转录日期 {stamp}')
         return
 
-    if rebuilt == text:
-        print(f'一致：{transcribed}/{len(entries)} 条节正文与源 PDF 抽取结果逐字相同')
-        return
-    fail(f'{args.yaml} 与源 PDF 的抽取结果不一致；运行 --write 重写')
+    if rebuilt != text:
+        fail(f'{args.yaml} 与源 PDF 的抽取结果不一致；运行 --write 重写')
+    if args.extent.exists():
+        if args.extent.read_text(encoding='utf-8') != render_extent(extent(source, args.pdf)):
+            fail(f'{args.extent} 与源 PDF 的计数不一致；运行 --write-extent 重写')
+    print(f'一致：{transcribed}/{len(entries)} 条节正文与源 PDF 抽取结果逐字相同')
 
 
 def arg_date(args: argparse.Namespace) -> str:

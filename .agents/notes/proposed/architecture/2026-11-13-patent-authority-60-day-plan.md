@@ -50,6 +50,8 @@ Exit: every number in the report is reproducible from the script, every error op
 
 ### Phase 1 — Authority corpus, D6–D20 (2026-11-19 to 2026-12-03)
 
+[Corpus ownership and 2026 sequencing](2026-11-14-patent-authority-corpus-ownership.md) supersedes two facts below: the official PDF has 1,335 numbered headings, not 1,096, and the 2026 revision is in force, so its changed sections are marked stale rather than removed. The order also changes — change points and denominators land before the transcription, and the stale marking follows it.
+
 - D6–D8: transcribe all 82 articles of 《专利法》 with paragraph-level splits, source document and verification date.
 - D9–D12: transcribe all 149 articles of 《专利法实施细则》。
 - D13–D16: enumerate every numbered heading in the official PDF, then transcribe the sections with the existing `tools/guideline-transcript.py`. That script extracts only paths the index already lists and refuses an entry without curated `topics`, so enumeration and topic assignment are part of this step. The loader rejects two files of the same law (`baseline.ts`), so splitting the index by part requires merging same-law files in the loader first.

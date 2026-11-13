@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-14-patent-authority-corpus-ownership.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-11-14-patent-authority-corpus-ownership.md
+/agent-note-patent-authority-corpus-ownership-and-2026-sequencing:
+  en: 246d5386ea979925
+  zh: 56c2574926f5d243
+/agent-note-patent-authority-corpus-ownership-and-2026-sequencing/problem:
+  en: 2e4106d2bb73ef1b
+  zh: e35c3669cbacd446
+/agent-note-patent-authority-corpus-ownership-and-2026-sequencing/proposal:
+  en: d603023a1147170f
+  zh: 00c77a7ce0ae3881
+/agent-note-patent-authority-corpus-ownership-and-2026-sequencing/alternatives-considered:
+  en: f1f0b79f51e28576
+  zh: 396d1fcd981462e0
+/agent-note-patent-authority-corpus-ownership-and-2026-sequencing/acceptance-criteria:
+  en: 8c842582b143cbd7
+  zh: 3b468fa60dfa1c26
+/agent-note-patent-authority-corpus-ownership-and-2026-sequencing/risks:
+  en: 305b8aafa76df5db
+  zh: fb492050981e3ddc

@@ -69,7 +69,11 @@ function collect(dir: string, out: string[]): string[] {
     const dot = entry.lastIndexOf('.')
     if (dot < 0) continue
     if (!SCANNED_EXTENSIONS.has(entry.slice(dot))) continue
-    if (!INCLUDED_SEGMENTS.some(segment => path.includes(segment))) continue
+    // The scope predicates read repository-relative paths: an absolute path whose
+    // checkout directory happens to be named `src` would match `/src/` everywhere
+    // and scan the whole tree.
+    const file = path.slice(REPO_ROOT.length + 1)
+    if (!INCLUDED_SEGMENTS.some(segment => file.includes(segment))) continue
     out.push(path)
   }
   return out

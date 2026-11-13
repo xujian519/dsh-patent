@@ -71,6 +71,8 @@ The shipped statutes index 38 of 《专利法》's 82 articles and 45 of 《专�
 
 `versions` currently holds one revision, `2026 年修订版（2026-01-01 施行）`, with the three confirmed changed sections (第二部分第一章4.4, 第四部分第三章2.1, 第四部分第三章3.3). Their text is transcribed from the new column of the official 2025-11-13 change table (局令第84号), using its colour marks to drop deleted wording; the other 61 named sections keep the 2023 text and are not claimed to have been updated. `verifyCitation` uses the latest transcribed override when no revision is named and the current revision is among the transcribed ones; when `supersededBy` names a revision the index has not transcribed, the base text and its stale marks decide. Naming the 2023 revision uses the base text and `staleSections`; naming a revision the index does not carry reports 未核验 rather than falling back.
 
+`assets/authority/authority-baseline.yaml` records the eight core sources a review is measured against: the corpus-relative path, revision, effective date, and SHA-256 of every carrier. `authority-ranks.yaml` records the authority order of the six case types as data. Neither file is loaded at runtime; `law_verify` decides against `assets/law/` alone, and `scripts/patent-authority-metrics.ts` reads the baseline. A deployment without the external corpus reports the carriers as unavailable instead of passing the hash check.
+
 <a id="library-api"></a>
 ## Library API
 

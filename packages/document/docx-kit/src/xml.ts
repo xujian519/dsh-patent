@@ -28,6 +28,13 @@ const HEX_ENTITY = /^&#x([0-9a-fA-F]+);$/u
 /** Highest Unicode code point a numeric reference may name. */
 const MAX_CODE_POINT = 0x10ffff
 
+/**
+ * Characters XML 1.0 forbids in text and in quoted attribute values.
+ * Tab, line feed, and carriage return stay; the rest of the C0 controls, and
+ * the two noncharacters at U+FFFE and U+FFFF, do not.
+ */
+const XML_FORBIDDEN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/gu
+
 /** Opening delimiter of a CDATA section. */
 const CDATA_OPEN = '<![CDATA['
 
@@ -55,12 +62,14 @@ function escapedCharacter(character: string): string {
 
 /**
  * Escape XML text and quoted attribute values.
+ * Characters XML 1.0 forbids are dropped before escaping, so a value that
+ * contains a NUL or another C0 control still produces well-formed text.
  * @param value - raw text.
- * @returns the text with the five predefined entities escaped.
+ * @returns the text with forbidden characters removed and the five predefined entities escaped.
  */
 export function escapeXmlText(value: string): string {
   let escaped = ''
-  for (const character of value) escaped += escapedCharacter(character)
+  for (const character of value.replaceAll(XML_FORBIDDEN, '')) escaped += escapedCharacter(character)
   return escaped
 }
 

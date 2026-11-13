@@ -185,6 +185,16 @@ describe('extractDocxText headers and footers', () => {
 })
 
 describe('extractDocxText failures', () => {
+  it('does not treat a part whose name leaves word/ as the document', () => {
+    const result = extractDocxText(packageOf([
+      part('../word/document.xml', '<w:document xmlns:w="urn:w"><w:body><w:p><w:r><w:t>越界</w:t></w:r></w:p></w:body></w:document>'),
+      part('word/document.xml/../secrets.xml', '<w:document xmlns:w="urn:w"><w:body><w:p><w:r><w:t>机密</w:t></w:r></w:p></w:body></w:document>'),
+    ]), LIMITS)
+    expect(result.text).not.toContain('越界')
+    expect(result.text).not.toContain('机密')
+    expect(codes(result.problems)).toContain('missing-document')
+  })
+
   it('reports a package without a document part', () => {
     const result = extractDocxText(packageOf([
       part('word/header1.xml', '<w:document><w:body><w:p><w:r><w:t>页眉</w:t></w:r></w:p></w:body></w:document>'),

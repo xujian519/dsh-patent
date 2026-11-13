@@ -50,6 +50,14 @@ describe('run fragments', () => {
         + '<w:t xml:space="preserve">x</w:t></w:r></w:p>')
   })
 
+  it('names an East Asian font on a run that contains CJK text', () => {
+    expect(paragraphXml([{ text: '权利要求', bold: false, code: false }]))
+      .toContain('<w:rFonts w:eastAsia="Noto Sans CJK SC"/>')
+    expect(paragraphXml([{ text: '代码甲', bold: false, code: true }]))
+      .toContain('<w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:eastAsia="Noto Sans CJK SC"/>')
+    expect(headingXml('标题', 1)).toContain('<w:rFonts w:eastAsia="Noto Sans CJK SC"/>')
+  })
+
   it('forces every run bold for a header row', () => {
     expect(runsXml([PLAIN_RUN], true)).toBe('<w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">a</w:t></w:r>')
   })

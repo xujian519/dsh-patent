@@ -77,7 +77,7 @@ Upstream returned both lists to the caller and stopped there. This package keeps
 Three renderers ship, registered by format.
 
 - `markdown` passes the resolved body through, prefixed with the style disclaimer and, when the body has no level-1 heading of its own, the document title.
-- `html` converts the body with `marked` (GFM, hard line breaks) into a standalone document, with the patent A4 stylesheet for a patent style name and a screen stylesheet otherwise. Variable values are HTML-escaped before substitution in this format only, because the converter passes the templates' own raw HTML through.
+- `html` converts the body with `marked` (GFM, hard line breaks) into a standalone document, with the patent A4 stylesheet for a patent style name and a screen stylesheet otherwise. Variable values are HTML-escaped before substitution in this format only, because the converter passes the templates' own raw HTML through. A Markdown link or image is written as an element only when its URL is http, https, mailto, or relative; `javascript:`, `data:`, `vbscript:`, and protocol-relative URLs become text. A placeholder introduced by a value is not expanded.
 - `docx` delegates to `@deepseek-ai/dsh-docx-kit`, which writes the same OOXML package the upstream renderer wrote.
 
 No PDF renderer ships. The upstream project had three: a Chrome one, a LibreOffice one, and a third of its own. The harness already owns a Chrome path and a LibreOffice path, so a third would duplicate both, and `pdf` is not an output format of this package.

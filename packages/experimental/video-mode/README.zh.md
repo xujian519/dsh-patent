@@ -172,11 +172,11 @@ video_deliver { files: [{ path: "out/ep01.mp4", format: "video" }] }
 
 媒体运行时是注册为 `ctx.media` 的 Cordis 服务。provider 通过 `register()` 注册；返回的 disposer 在 fiber 卸载时移除它。选择时先读取请求 capability 的默认模型，再只接受 `models()` 中声明了该 id 与 capability 的 provider。运行时负责任务保留与有界等待，provider 负责传输、取消与计费。已记为取消的任务在之后的轮询结束时仍保持取消。轮询未在剩余 `waitMs` 内结束时，等待返回运行中的任务，并且不采用这次轮询的结果。合成 provider 在提交时结算；ComfyUI provider 返回 `submitted`，再通过 `poll` 结算。
 
-ComfyUI provider 用提示词、种子、画布、帧数与模型文件名填充工作流中的 `{{name}}` 占位符。整串占位符保留 JSON 类型，因此 `width`、`length`、`seed` 以整数送达。`first_frame_path` 参考会经 `/upload/image` 上传，新增 `LoadImage` 节点，并把输出接到 Wan latent 节点的 `start_image`。`submit` 向 `/prompt` 提交，`poll` 读取 `/history/<id>`，必要时回落到 `/queue` 判断 running 或 queued；完成条目经 `/view` 下载为产物字节。`cancel` 删除排队任务并中断运行中任务。提交超过 `timeoutMs` 的任务以 `MEDIA_TASK_TIMEOUT` 失败。
+ComfyUI provider 用提示词、种子、画布、帧数与模型文件名填充工作流中的 `{{name}}` 占位符。整串占位符保留 JSON 类型，因此 `width`、`length`、`seed` 以整数送达。`first_frame_path` 参考会经 `/upload/image` 上传，新增 `LoadImage` 节点，并把输出接到 Wan latent 节点的 `start_image`。上传文件名必须是一个路径段，子目录只能由 `.` 和 `..` 以外的段组成。历史文件只在其文件名、子目录和类型满足同一规则时才下载。`submit` 向 `/prompt` 提交，`poll` 读取 `/history/<id>`，必要时回落到 `/queue` 判断 running 或 queued；完成条目经 `/view` 下载为产物字节。`cancel` 删除排队任务并中断运行中任务。提交超过 `timeoutMs` 的任务以 `MEDIA_TASK_TIMEOUT` 失败。
 
 随包 Wan 工作流把无分类器引导固定为 1。在 Apple MPS 上，CFG>1 的批量分支会让解码后的颜色失真（构图仍在）；CFG 1 保持颜色正常、使负向提示失效，但本地片段在数秒内仍会出现拖影与漂移。CUDA 部署可通过 `comfyui.video.workflowPath` 挂载自己的 CFG 5 工作流。
 
-MiniMax provider 发送 `content` 数组：一个 text 项，随后零个或多个 `image_url` 项。首帧或尾帧参考会把 `ratio` 设为 `adaptive`；纯文本请求使用配置的画幅。`submit` 返回 `submitted`，运行时任务 id 带远端 `task_id` 前缀；`poll` 读取查询接口并按 `pollMs` 节流；成功任务先下载 `content.url`，再交给运行时写入。API 没有负向提示字段，因此负向提示会以 `Avoid:` 句式追加到正向提示后。provider 限制图片 30 MB、参考图 9 张、提示词 7000 字符，单次请求体（含 base64 图片）为 64 MiB。
+MiniMax provider 发送 `content` 数组：一个 text 项，随后零个或多个 `image_url` 项。首帧或尾帧参考会把 `ratio` 设为 `adaptive`；纯文本请求使用配置的画幅。`submit` 返回 `submitted`，运行时任务 id 带远端 `task_id` 前缀；`poll` 读取查询接口并按 `pollMs` 节流；成功任务先下载 `content.url`，再交给运行时写入。下载地址必须使用 http 或 https。MiniMax 与 SiliconFlow 共用这一检查。API 没有负向提示字段，因此负向提示会以 `Avoid:` 句式追加到正向提示后。provider 限制图片 30 MB、参考图 9 张、提示词 7000 字符，单次请求体（含 base64 图片）为 64 MiB。
 
 SiliconFlow provider 提交 `model`、`prompt`、`image_size`，并把首帧 `image` 作为 data URI 发送；`negative_prompt` 与 `seed` 使用各自的字段。画幅比例决定 `1280x720`、`720x1280` 或 `960x960`，本地任务 id 带远端 `requestId` 前缀。`poll` 把 id 发到 `/video/status`，映射 `InQueue`、`InProgress`、`Succeed` 与 `Failed`；成功任务先下载 `results.videos[0].url`，再交给运行时写入。图片上限 10 MB，提示词上限 7000 字符。provider 校验模型 id，拒绝“恰好一张首帧图”之外的参考组合，并拒绝 5 秒以外的时长，而不是静默截短片长。
 

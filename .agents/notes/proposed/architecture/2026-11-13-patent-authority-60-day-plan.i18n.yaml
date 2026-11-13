@@ -1,0 +1,49 @@
+# Bilingual-pair consistency record for 2026-11-13-patent-authority-60-day-plan.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-11-13-patent-authority-60-day-plan.md
+/agent-note-patent-domain-authority-spine-60-day-plan:
+  en: 5f5d9b9936a70a01
+  zh: 88fc9ac9cfe4d42d
+/agent-note-patent-domain-authority-spine-60-day-plan/problem:
+  en: f1a168f4734cff98
+  zh: 5e5fa550b0a00d9b
+/agent-note-patent-domain-authority-spine-60-day-plan/proposal:
+  en: 986dd8097aac4d3d
+  zh: 986dd8097aac4d3d
+/agent-note-patent-domain-authority-spine-60-day-plan/proposal/target-definition:
+  en: 820e38691c1044b5
+  zh: 8ef63475c5b72261
+/agent-note-patent-domain-authority-spine-60-day-plan/proposal/phase-0-baseline-d1-d5-2026-11-14-to-2026-11-18:
+  en: 80bbdbd019178dd0
+  zh: 5581c8789771e823
+/agent-note-patent-domain-authority-spine-60-day-plan/proposal/phase-1-authority-corpus-d6-d20-2026-11-19-to-2026-12-03:
+  en: e187a60d043b0cda
+  zh: ad3dc03dc456c366
+/agent-note-patent-domain-authority-spine-60-day-plan/proposal/phase-2-verification-loop-d21-d32-2026-12-04-to-2026-12-15:
+  en: 9f30b3267f6fc8bd
+  zh: 35323be4b4bbb309
+/agent-note-patent-domain-authority-spine-60-day-plan/proposal/phase-3-rules-and-procedure-d33-d46-2026-12-16-to-2026-12-29:
+  en: 77f33749d0cd224e
+  zh: 79226327d10300d4
+/agent-note-patent-domain-authority-spine-60-day-plan/proposal/phase-4-evaluation-d47-d55-2026-12-30-to-2027-01-07:
+  en: e484fbe6719590ef
+  zh: bb3974fb4a0aa90e
+/agent-note-patent-domain-authority-spine-60-day-plan/proposal/phase-5-governance-d56-d60-2027-01-08-to-2027-01-12:
+  en: 75b54c9c106e6530
+  zh: 33a2fe8380a36c77
+/agent-note-patent-domain-authority-spine-60-day-plan/proposal/gates-and-metrics:
+  en: 7c41342d986f3e33
+  zh: 2b2a2e8f98d9e866
+/agent-note-patent-domain-authority-spine-60-day-plan/proposal/rhythm:
+  en: 81bf55c3d52d0a81
+  zh: a69f801cb7483eb0
+/agent-note-patent-domain-authority-spine-60-day-plan/alternatives-considered:
+  en: df2b381dae78ad5a
+  zh: fcb987a124bc0da2
+/agent-note-patent-domain-authority-spine-60-day-plan/acceptance-criteria:
+  en: 7f7e5b53474b221d
+  zh: e40857176c60e54b
+/agent-note-patent-domain-authority-spine-60-day-plan/risks:
+  en: ec2e909384c6ad9c
+  zh: c530577cd353b1f5

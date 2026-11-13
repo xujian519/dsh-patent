@@ -46,6 +46,20 @@ describe('packaged evidence rules asset', () => {
     expect(engine.getRules().length).toBeGreaterThan(0)
   })
 
+  /**
+   * 2023 年修正的《民事诉讼法》重排了证据条款：2017 年版的第 63、64、65、72–75 条
+   * 现为第 66、67、68、75–78 条。资产曾按旧条号书写，而 `law_verify` 只解析三部专利
+   * 文书，跨法引用不会被任何门禁发现，因此在这里钉住现行条号。
+   */
+  it('cites the current civil-procedure numbering for evidence rules', () => {
+    const { engine } = loadPackagedEngine()
+    const basis = new Map(engine.getRules().map(rule => [rule.ruleId, rule.legalBasis ?? '']))
+    expect(basis.get('EVI-002')).toContain('民事诉讼法第66条')
+    expect(basis.get('EVI-012')).toContain('民事诉讼法第75-78条')
+    expect(basis.get('EVI-020')).toContain('民事诉讼法第67条')
+    expect(basis.get('EVI-051')).toContain('民事诉讼法第68条')
+  })
+
   it('carries rules for internet publication and public use', () => {
     const { engine } = loadPackagedEngine()
     expect(engine.getRulesByType('internet_publication').map(r => r.ruleId)).toEqual(['EVI-014'])

@@ -1,5 +1,5 @@
 /** Disk output, resource bounds, and cancellation around the external kit. */
-import { access, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -27,6 +27,30 @@ vi.mock('../src/locate.ts', async (original) => {
 
 const kit = vi.hoisted(() => ({ create: vi.fn<(options?: ConverterOptions) => Promise<Converter>>() }))
 vi.mock('@deepseek-ai/libreoffice-kit', () => ({ createConverter: kit.create }))
+
+/** When set, removing this exact scratch directory fails once so the conversion outcome stays visible. */
+const scratchRm = vi.hoisted(() => ({ path: undefined as string | undefined }))
+/** When set, inspecting this exact scratch directory fails so the startup sweep reports it. */
+const scratchLstat = vi.hoisted(() => ({ path: undefined as string | undefined }))
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
+  return {
+    ...actual,
+    async lstat(...args: Parameters<typeof actual.lstat>) {
+      if (scratchLstat.path !== undefined && args[0] === scratchLstat.path) {
+        throw Object.assign(new Error('scratch busy'), { code: 'EBUSY' })
+      }
+      return actual.lstat(...args)
+    },
+    async rm(...args: Parameters<typeof actual.rm>) {
+      const [path] = args
+      if (scratchRm.path !== undefined && path === scratchRm.path) {
+        throw Object.assign(new Error('scratch busy'), { code: 'EBUSY' })
+      }
+      return actual.rm(...args)
+    },
+  }
+})
 
 const absentKit = Object.assign(new Error('Cannot find package'), { code: 'ERR_MODULE_NOT_FOUND' })
 const pdf = Buffer.from('%PDF-1.7\npreview\n%%EOF\n')
@@ -69,6 +93,22 @@ async function mount(config: Partial<Config> = {}): Promise<OfficeKit> {
   await ctx.plugin(OfficeKit, { ...config, outputDirectory })
   return ctx.officeKit
 }
+
+it('reports a scratch directory that the startup sweep cannot inspect', async () => {
+  const warn = vi.fn()
+  ctx.logger.warn = warn
+  const expired = await mkdtemp(join(tmpdir(), 'dsh-office-kit-'))
+  const past = new Date(Date.now() - 10 * 60_000)
+  await utimes(expired, past, past)
+  onTestFinished(() => {
+    scratchLstat.path = undefined
+    return rm(expired, { recursive: true, force: true })
+  })
+  scratchLstat.path = expired
+  await mount()
+  await vi.waitFor(() => { expect(warn).toHaveBeenCalledOnce() })
+  expect(warn.mock.calls[0]?.[0]).toContain(expired)
+})
 
 function resolvedKit(): Extract<KitModuleResolution, { kind: 'available' }> {
   const resolution = vi.mocked(resolveKitModule).mock.results[0]
@@ -217,6 +257,45 @@ it('retries initialization after a failed kit factory and reports unclassified e
   expect(kit.create).toHaveBeenCalledTimes(2)
   render.mockRejectedValueOnce(new Error('unexpected engine failure'))
   await expect(provider.convert(distinct(9))).rejects.toMatchObject({ code: 'failed' })
+})
+
+it('removes the scratch directory when the kit reports timeout and accepts the next conversion', async () => {
+  const provider = await mount()
+  let scratch = ''
+  render.mockImplementationOnce(async ({ inputPath }) => {
+    scratch = dirname(inputPath)
+    throw Object.assign(new Error('deadline'), { code: 'timeout' })
+  })
+  await expect(provider.convert(request)).rejects.toMatchObject({ code: 'timeout' })
+  await expect(access(scratch)).rejects.toMatchObject({ code: 'ENOENT' })
+  await expect(provider.convert(distinct(3))).resolves.toHaveProperty('pdf')
+  expect(kit.create).toHaveBeenCalledOnce()
+})
+
+it.each(['success', 'timeout'] as const)('keeps the conversion outcome when scratch removal fails and frees the converter slot', async (outcome) => {
+  const warn = vi.fn()
+  ctx.logger.warn = warn
+  const provider = await mount()
+  let scratch = ''
+  render.mockImplementation(async ({ inputPath, outputPath }) => {
+    scratch = dirname(inputPath)
+    scratchRm.path = scratch
+    if (outcome === 'timeout') throw Object.assign(new Error('deadline'), { code: 'timeout' })
+    await writeFile(outputPath, pdf)
+    return { backend: 'native', missingFonts: [] }
+  })
+  if (outcome === 'timeout') await expect(provider.convert(request)).rejects.toMatchObject({ code: 'timeout' })
+  else await expect(provider.convert(request)).resolves.toMatchObject({ pdf: Uint8Array.from(pdf) })
+  expect(warn.mock.calls.some(([message]) => typeof message === 'string' && message.includes(scratch))).toBe(true)
+  await access(scratch)
+  scratchRm.path = undefined
+  await rm(scratch, { recursive: true, force: true })
+  render.mockImplementation(async ({ outputPath }) => {
+    await writeFile(outputPath, pdf)
+    return { backend: 'native', missingFonts: [] }
+  })
+  await expect(provider.convert(distinct(4))).resolves.toHaveProperty('pdf')
+  expect(kit.create).toHaveBeenCalledOnce()
 })
 
 it.each([

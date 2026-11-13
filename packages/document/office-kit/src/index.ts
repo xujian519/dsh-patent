@@ -22,6 +22,10 @@ import type {
 import { readOutput, readPdf, readPng } from './output.ts'
 import { OutputStore } from './outputs.ts'
 import { ConversionQueue, type OfficeOperation, type OfficeOperationOutput, type QueueRequest } from './queue.ts'
+import { sweepScratchDirectories } from './scratch.ts'
+
+/** A live conversion may run for `timeoutMs`; do not sweep another process's scratch before twice that, and never before two minutes. */
+const SCRATCH_SWEEP_MIN_AGE_MS = 120_000
 
 export * from './errors.ts'
 export * from './identity.ts'
@@ -138,6 +142,8 @@ export class OfficeKit extends TypertRemoteService {
   private readonly options: Omit<ConverterOptions, 'resolveEnginePackage'>
   private loadedKit?: Promise<LoadedKit>
   private readonly reportedKitFailures = new Set<string>()
+  /** Removes scratch directories left by an earlier process; the first conversion and disposal both wait for it. */
+  private readonly scratchSweep: Promise<void>
 
   /**
    * @param ctx - owning Host context.
@@ -156,6 +162,8 @@ export class OfficeKit extends TypertRemoteService {
       ...(fontFallbacks === undefined ? {} : { fontFallbacks }),
     }
     this.queue = new ConversionQueue(config, this.generation, (bytes, request, signal) => this.runOperation(bytes, request, signal))
+    this.scratchSweep = sweepScratchDirectories(tmpdir(), Math.max(config.timeoutMs * 2, SCRATCH_SWEEP_MIN_AGE_MS),
+      (message) => { this.ctx.logger.warn(message) })
     this.outputDirectory = config.outputDirectory
     this.outputs = new OutputStore({ root: config.outputDirectory, retentionMs: config.outputRetentionMs,
       maxBytes: config.maxOutputStoreBytes }, ctx.logger.warn.bind(ctx.logger))
@@ -163,6 +171,7 @@ export class OfficeKit extends TypertRemoteService {
     ctx.on('session/disposed', (session) => { void this.outputs.release(session.id) })
     ctx.effect(() => async () => {
       this.remoteLifetime.abort()
+      await this.scratchSweep
       await this.queue.dispose()
       await this.outputs.dispose()
       await Promise.allSettled(this.remoteRequests)
@@ -370,6 +379,8 @@ export class OfficeKit extends TypertRemoteService {
     bytes: Uint8Array, request: Pick<QueueRequest, 'extension' | 'operation'>, signal: AbortSignal,
   ): Promise<OfficeOperationOutput> {
     signal.throwIfAborted()
+    await this.scratchSweep
+    signal.throwIfAborted()
     let slot = this.slots.find(candidate => !candidate.busy)
     if (slot === undefined) { slot = { busy: false }; this.slots.push(slot) }
     slot.busy = true
@@ -403,8 +414,11 @@ export class OfficeKit extends TypertRemoteService {
         default: throw new OfficeKitError('failed', 'LibreOffice conversion failed.', { cause })
       }
     } finally {
-      try { if (directory !== undefined) await rm(directory, { recursive: true, force: true }) }
-      finally { slot.busy = false }
+      try {
+        if (directory !== undefined) await rm(directory, { recursive: true, force: true })
+      } catch (error) {
+        this.ctx.logger.warn(`office-kit: could not delete scratch ${directory}: ${String(error)}`)
+      } finally { slot.busy = false }
     }
   }
 

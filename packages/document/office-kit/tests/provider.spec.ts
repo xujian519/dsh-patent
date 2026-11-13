@@ -1,5 +1,5 @@
 /** Disk output, resource bounds, and cancellation around the external kit. */
-import { access, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -30,10 +30,18 @@ vi.mock('@deepseek-ai/libreoffice-kit', () => ({ createConverter: kit.create }))
 
 /** When set, removing this exact scratch directory fails once so the conversion outcome stays visible. */
 const scratchRm = vi.hoisted(() => ({ path: undefined as string | undefined }))
+/** When set, inspecting this exact scratch directory fails so the startup sweep reports it. */
+const scratchLstat = vi.hoisted(() => ({ path: undefined as string | undefined }))
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>()
   return {
     ...actual,
+    async lstat(...args: Parameters<typeof actual.lstat>) {
+      if (scratchLstat.path !== undefined && args[0] === scratchLstat.path) {
+        throw Object.assign(new Error('scratch busy'), { code: 'EBUSY' })
+      }
+      return actual.lstat(...args)
+    },
     async rm(...args: Parameters<typeof actual.rm>) {
       const [path] = args
       if (scratchRm.path !== undefined && path === scratchRm.path) {
@@ -85,6 +93,22 @@ async function mount(config: Partial<Config> = {}): Promise<OfficeKit> {
   await ctx.plugin(OfficeKit, { ...config, outputDirectory })
   return ctx.officeKit
 }
+
+it('reports a scratch directory that the startup sweep cannot inspect', async () => {
+  const warn = vi.fn()
+  ctx.logger.warn = warn
+  const expired = await mkdtemp(join(tmpdir(), 'dsh-office-kit-'))
+  const past = new Date(Date.now() - 10 * 60_000)
+  await utimes(expired, past, past)
+  onTestFinished(() => {
+    scratchLstat.path = undefined
+    return rm(expired, { recursive: true, force: true })
+  })
+  scratchLstat.path = expired
+  await mount()
+  await vi.waitFor(() => { expect(warn).toHaveBeenCalledOnce() })
+  expect(warn.mock.calls[0]?.[0]).toContain(expired)
+})
 
 function resolvedKit(): Extract<KitModuleResolution, { kind: 'available' }> {
   const resolution = vi.mocked(resolveKitModule).mock.results[0]

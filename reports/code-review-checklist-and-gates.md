@@ -1245,7 +1245,7 @@ D27 对应计划第 193 行「`comfyui`、`minimax`、`siliconflow`：占位符�
 
 ## 93. D28 复核范围与方法
 
-D28 对应计划第 194 行「EDL/ffmpeg、字幕、faststart、参数注入安全；`ui-video-studio`；video 提升评估」。编号从 §93 起。§85–§88 是 D26，§89–§92 是 D27。未合并的 D25 仍占用 §80–§84。
+D28 对应计划第 194 行「EDL/ffmpeg、字幕、faststart、参数注入安全；`ui-video-studio`；video 提升评估」。编号从 §93 起。§85–§88 是已合并的 D26，§89–§92 是已合并的 D27，§97–§99 是已合并的 D29。未合并的 D25 仍占用 §80–§84。
 
 1. ffmpeg 参数是数组还是拼进 shell；字幕路径和字体名进入滤镜图时会不会改写滤镜结构。
 2. `+faststart` 是否把顶层 `moov` 写在 `mdat` 前面。
@@ -1279,3 +1279,40 @@ argv 已经是数组。`-i`、输出路径和 `+faststart` 都不经过 shell。
 - **不改 `/api/file` 的字节上限**。Range 仍先读完整文件再切片。
 - **不把预算门改成预留**。
 - **不在单元车道安装 ffmpeg**。`describe.runIf(FFMPEG)` 里新增的撇号烧录用例在没有 ffmpeg 的 Linux 单元车道记为跳过。`scripts/test-skip-baseline.json` 的 linux `skipped` 是 238。
+
+## 97. D29 验证范围与方法
+
+D29 对应计划第 195 行「全量验证：`build:artifacts` → `build:check`、定向测试、关键快照、`doc-sync`、`duplication`；修复回归」。编号从 §97 起，不占用未合并的 D25 §80–§84、已合并的 D26 §85–§88、已合并的 D27 §89–§92 与本分支的 D28 §93–§96。
+
+§98 的数字来自 #804 并入 master 之前的审查树。D29 并入 master 时，执行卡在 §79 之后保留 D26 的 §85–§88，再接 §97。本分支在 §92 之后保留 D28 的 §93–§96，再接 §97–§99。并入不改 §98 的数字，那些数字不含 D26、D27、D28 新加的用例。
+
+验证当时止于 D24。当时开着的 #803、#805、#806 不在测量树上。#805 随后并入了 master。本记录不把这些 PR 的改动算进通过结果。以后合并其余 PR 时，留下各自的执行卡区间，也留下 §85–§99。
+
+定向测试按四个领域的包根跑默认 Vitest：`packages/patent`、`packages/legal`、`packages/document`、`packages/experimental/video-mode`、`packages/experimental/video-bundle`、`packages/client/ui-video-studio`。仓库里没有 `packages/video`。默认配置只收集 `*.spec.ts`，不收集 e2e 配置。
+
+关键快照是 headless 会话回放。过滤名称是 `document-deliver`、`legal-evidence-assessment`，以及以 `patent-` 开头的场景，共 13 条。回放发生在 `build:artifacts` 写出 typert 产物之后。video 在这棵树上没有会话快照。`legal-preset`、`video-preset`、`document-preview` 属于浏览器快照 lane。
+
+## 98. 门禁记录
+
+| 门禁 | 命令 | 结果 |
+|---|---|---|
+| 产物 | `pnpm run build:artifacts` | 8 项通过，0 失败，119.80s |
+| 产物上的类型检查 | `pnpm run build:check` | 2 项通过，0 失败，34.47s |
+| 定向测试 | `pnpm exec vitest run` 上述六个包根 | 480 个文件通过，2 个文件跳过；8437 条通过，4 条跳过；40.15s |
+| 关键快照 | `pnpm run test:snapshot snapshots/session/headless.snapshot.ts`，名称过滤见 §97 | 13 条通过；同文件里未选中的 203 条跳过；5.55s |
+| 文档 | `NODE_OPTIONS=--max-old-space-size=8192 pnpm run doc-sync` | 53 项通过，0 失败，96.17s |
+| 仓库级重复 | `pnpm run duplication` | 3853 个文件，0 个 clone |
+| 收紧基线 | `pnpm exec tsx scripts/duplication-gate.ts` | 仓库级 0 个 clone；95 对领域内、13 对跨领域与 `scripts/duplication-baseline.json` 一致 |
+
+跳过的 4 条来自 `figure-graphviz-ci-signal.spec.ts` 和 `figure-cad-ci-signal.spec.ts`。前者只在 CI 的 Linux lane 断言 Graphviz 与中文字体；后者还要 `DSH_CAD_CI_SIGNAL=1`。本机是 macOS，这两份按用例设计跳过。
+
+13 条快照是：`document-deliver`、`legal-evidence-assessment`、`patent-claim-chart`、`patent-deadline`、`patent-infringement`、`patent-infringement-chain`、`patent-invalidation`、`patent-invalidation-chain`、`patent-oa-chain`、`patent-oa-response`、`patent-reexamination`、`patent-reexamination-chain`、`patent-writing-patterns`。
+
+这些门禁没有失败。没有产品代码改动，风险登记册不新增行。
+
+## 99. D29 不做项
+
+- **全仓 `pnpm run test` 与 `pnpm run test:coverage` 留给 CI**。指标 v3 和结项报告是 D30。
+- **#803 仍单独成 PR**。本分支是 #806。#804 与 #805 已在 master。本记录不代开着的 PR 报绿。
+- **浏览器快照 lane 与 `office-skills` 会话不在这次关键快照里**。document 的模型可见锁是 `document-deliver`。
+- **不改产品代码**。上表的门禁没有回归需要修。

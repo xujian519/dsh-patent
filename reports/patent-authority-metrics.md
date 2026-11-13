@@ -10,61 +10,13 @@
 | --- | --- | --- | --- | --- | --- |
 | 专利法 | 82 | 82 | 82 | 100.0% | 随包索引 maxArticle |
 | 专利法实施细则 | 149 | 149 | 149 | 100.0% | 随包索引 maxArticle |
-| 专利审查指南 | 1335 | 85 | 70 | 6.4% | 官方 PDF 编号标题数（guideline-extent.yaml：1145 节带正文） |
+| 专利审查指南 | 1335 | 1335 | 1145 | 100.0% | 官方 PDF 编号标题数（guideline-extent.yaml：1145 节带正文） |
 | 司法解释 | 7 | 0 | 0 | 0.0% | 索引不含该文书种类 |
 | 部门规章 | 9 | 0 | 0 | 0.0% | 索引不含该文书种类 |
 
 ## 无法判定的引用
 
-共 44 处；紧凑写法 A22 / A22.3 未计入（IPC 分类号与模板占位符同形）。
-
-| 文件:行 | 引用 | 原因 |
-| --- | --- | --- |
-| `packages/bundle/web-app/presets/patent.patch.yml:40` | 专利审查指南第二部分第二章 | untranscribed |
-| `packages/bundle/web-app/skills/patent/inventive-step-analysis/SKILL.md:15` | 专利审查指南第二部分第四章 | untranscribed |
-| `packages/patent/patent-core/src/atoms/handlers/builtin/amendment-basis.ts:6` | 审查指南第二部分第八章 | untranscribed |
-| `packages/patent/patent-core/src/atoms/handlers/builtin/numeric-range.ts:5` | 审查指南第二部分第三章 | untranscribed |
-| `packages/patent/patent-core/src/graph/domains/enablement.ts:33` | 审查指南第二部分第二章 | untranscribed |
-| `packages/patent/patent-core/src/graph/domains/novelty.ts:127` | 审查指南第二部分第三章 | untranscribed |
-| `packages/patent/patent-core/src/novelty/numeric-range.ts:4` | 审查指南第二部分第三章 | untranscribed |
-| `packages/patent/patent-document/assets/templates/patent/invalidation-analysis/example.html:364` | 专利审查指南第二部分第四章 | untranscribed |
-| `packages/patent/patent-document/assets/templates/patent/invalidation-analysis/references/citation-log.md:20` | 审查指南第二部分第四章 | untranscribed |
-| `packages/patent/patent-document/assets/templates/patent/invalidation-opinion/example.html:202` | 专利审查指南第二部分第四章 | untranscribed |
-| `packages/patent/patent-document/assets/templates/patent/patentability-opinion/example.html:286` | 审查指南第二部分第四章 | untranscribed |
-| `packages/patent/patent-document/assets/templates/patent/re-examination-request/example.html:124` | 专利审查指南第二部分第八章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/base/inventiveness.yaml:21` | 专利审查指南第二部分第四章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/domains/chemical/disclosure.yaml:2` | 专利审查指南第二部分第十章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/domains/chemical/inventiveness.yaml:2` | 专利审查指南第二部分第十章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/patent/evidence-rules.yaml:462` | 专利审查指南第四部分第八章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/patent/mady-gap-rules.yaml:93` | 审查指南第二部分第七章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/patent/mady-gap-rules.yaml:272` | 审查指南第二部分第二章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/patent/nuo-patent-core-rules.yaml:13` | 专利审查指南第二部分第四章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/patent/nuo-patent-core-rules.yaml:85` | 审查指南第二部分第七章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/patent/nuo-patent-core-rules.yaml:120` | 审查指南第二部分第二章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/patent/nuo-patent-examination-rules.yaml:458` | 审查指南第二部分第六章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/patent/nuo-patent-ipc-rules.yaml:82` | 审查指南第二部分第四章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/patent/nuo-patent-practice-rules.yaml:207` | 审查指南第二部分第十章 | untranscribed |
-| `packages/patent/patent-rule/assets/rules/patent/nuo-patent-practice-rules.yaml:352` | 审查指南第二部分第二章3.1
-     | untranscribed |
-| `packages/patent/patent-rule/src/guard/evidenceComplianceGuards.ts:5` | 专利审查指南第四部分第八章 | untranscribed |
-| `packages/patent/patent-tools/src/figure/dot-builder.ts:7` | 专利审查指南第一部分 | untranscribed |
-| `packages/patent/patent-tools/src/figure/render-check-findings.ts:753` | 审查指南第一部分第一章 | untranscribed |
-| `packages/patent/patent-tools/src/figure/section-diagram.ts:6` | 专利审查指南第一部分 | untranscribed |
-| `packages/patent/patent-tools/src/tool/generate-patent-figure.ts:12` | 专利审查指南第一部分第一章 | untranscribed |
-| `packages/patent/patent-tools/src/tool/spec-chemical.ts:153` | 专利审查指南第二部分第十章 | untranscribed |
-| `packages/patent/patent-tools/src/tool/spec-style.ts:8` | 专利审查指南第二部分第二章 | untranscribed |
-| `packages/patent/patent-tools/src/tool/spec-style.ts:239` | 专利审查指南第一部分第一章 | untranscribed |
-| `packages/patent/patent-workflow/src/workflow/manifests.ts:877` | 专利审查指南第四部分第二章 | untranscribed |
-| `packages/patent/writing-patterns/assets/patterns/04-invention-content.yaml:8` | 审查指南第二部分第二章 | untranscribed |
-| `packages/patent/writing-patterns/assets/patterns/09-ipc-strategy.yaml:7` | 审查指南第一部分第四章 | untranscribed |
-| `packages/patent/writing-patterns/assets/patterns/14-claim-unity-special-feature.yaml:7` | 审查指南第二部分第六章 | untranscribed |
-| `packages/patent/writing-patterns/assets/patterns/17-claim-markush-equivalents.yaml:7` | 审查指南第二部分第十章 | untranscribed |
-| `packages/patent/writing-patterns/assets/patterns/19-claim-chemical-characterization.yaml:7` | 审查指南第二部分第十章 | untranscribed |
-| `packages/patent/writing-patterns/assets/patterns/20-claim-chemical-markush-scope.yaml:7` | 审查指南第二部分第十章 | untranscribed |
-| `packages/patent/writing-patterns/assets/patterns/21-claim-composition-closed-form.yaml:7` | 审查指南第二部分第十章 | untranscribed |
-| `packages/patent/writing-patterns/assets/patterns/22-claim-medical-use-form.yaml:7` | 审查指南第二部分第十章 | untranscribed |
-| `packages/patent/writing-patterns/assets/patterns/23-spec-tcm-prescription.yaml:7` | 审查指南第二部分第十章 | untranscribed |
-| `packages/patent/writing-patterns/assets/patterns/24-spec-biotech-deposit-sequence.yaml:7` | 审查指南第二部分第十章 | untranscribed |
+共 0 处；紧凑写法 A22 / A22.3 未计入（IPC 分类号与模板占位符同形）。
 
 ## 无条号或无节路径的 legalBasis
 

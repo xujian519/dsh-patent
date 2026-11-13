@@ -1546,10 +1546,18 @@ describe('forgePanel removed worktrees', () => {
     sendPrompt(opened.agent, 'inside')
     await opened.agent.whenIdle()
     await rm(created.path, { recursive: true, force: true })
+    // The branch lookup owns maintenance until the restoration hold parks, so leaving during it is session-busy.
+    // vi.waitFor's 1s default ends before Git answers on the coverage lane; that lane publishes its budget in the env.
+    const branchCheck = hold(opened.sandbox, 'show-ref')
     sendPrompt(opened.agent, 'removed')
-    await vi.waitFor(() => { expect(() => opened.agent.runMaintenance(() => Promise.resolve())).toThrow('already has active work') })
+    await branchCheck.reached
+    expect(() => opened.agent.runMaintenance(() => Promise.resolve())).toThrow('already has active work')
     const waiting = opened.agent.wakes
-    await vi.waitFor(async () => { await expect(opened.ctx.forgePanel.continueInProject(opened.session, signal)).resolves.toBeUndefined() })
+    await expect(opened.ctx.forgePanel.continueInProject(opened.session, signal)).rejects.toMatchObject({ code: 'forgePanel/session-busy' })
+    branchCheck.release()
+    await vi.waitFor(async () => {
+      await opened.ctx.forgePanel.continueInProject(opened.session, signal)
+    }, { timeout: Math.max(5_000, Number(process.env.DSH_COVERAGE_TEST_TIMEOUT_MS ?? 0)) })
     await opened.agent.whenIdle()
     sendPrompt(opened.agent, 'outside')
 

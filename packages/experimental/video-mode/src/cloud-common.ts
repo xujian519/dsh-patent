@@ -163,6 +163,15 @@ export async function downloadVideo(
   url: string,
   options: DownloadVideoOptions,
 ): Promise<MediaArtifact> {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch (error) {
+    throw new MediaFailure(`${options.label} download URL is not absolute`, 'MEDIA_ARTIFACT_INVALID', { cause: error })
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new MediaFailure(`${options.label} download URL must use http or https`, 'MEDIA_ARTIFACT_INVALID')
+  }
   const response = await fetchImpl(url, { signal: options.signal })
   if (!response.ok) {
     throw new MediaFailure(`${options.label} video download failed with HTTP ${response.status}`, 'MEDIA_TASK_FAILED')

@@ -1206,3 +1206,39 @@ D26 对应计划第 192 行「`video-mode/media.ts`：provider 选择、任务�
 - **不改 ComfyUI、MiniMax、SiliconFlow 的传输**：provider 契约留在 D27。
 - **不关闭 R-08 的 video 部分**：本轮补的是运行时等待与取消，不是 video client。
 - **不修 R-87**。
+
+## 89. D27 复核范围与方法
+
+D27 对应计划第 193 行「`comfyui`、`minimax`、`siliconflow`：占位符类型保持、轮询节流、成本估算、大小上限、错误映射」，交付物是 provider 契约测试和无密钥自跳过复核。编号从 89 起，把 80–84 留给未合并的 D25，把 85–88 留给未合并的 D26。
+
+已有用例已经锁住整串占位符的 JSON 类型、轮询节流、人民币估算、产物字节上限，以及 HTTP 错误到失败码的映射。密钥在每次请求重新解析，也已有用例。本轮只补两处还没被拒绝的输入。
+
+方法：先写会失败的用例——上传名 `../secret.png`、历史文件名 `../secret.mp4`、下载地址 `file:///etc/passwd`——确认失败后再拒绝。然后在未设置密钥时跑三条真实 API 测试，确认它们跳过而不是失败。
+
+## 90. ComfyUI 路径段与云端下载地址
+
+修复前，上传响应里的 `name: "../secret.png"` 会写进工作流并继续 `POST /prompt`。历史条目的 `filename: "../secret.mp4"` 会请求 `/view`。MiniMax 返回 `file:///etc/passwd` 时会去取这个地址。
+
+修复后，文件名和类型必须各是一个路径段：不能为空，不能是 `.` 或 `..`，也不能含 `/` 或 `\`。子目录可以是 `dsh/video` 这种嵌套，但每一段同样不能是 `.` 或 `..`。不合规则的名字在下一次请求前拒绝，任务失败码是 `MEDIA_ARTIFACT_INVALID`。MiniMax 与 SiliconFlow 的成片地址必须是 `http:` 或 `https:`；其他协议和相对地址不发起下载，失败码相同。
+
+`inputs/frame.png` 与 `dsh/video/clip.mp4` 仍可用。
+
+## 91. 无密钥自跳过
+
+三条真实 API 测试在文件加载时读取密钥并 `trim`。空值、未设置和纯空白都走 `describe.skip`：
+
+| 文件 | 密钥 | 无密钥时 |
+|---|---|---|
+| `tests/minimax-video.e2e.ts` | `MINIMAX_API_KEY` | 跳过 |
+| `tests/minimax-speech.e2e.ts` | `MINIMAX_API_KEY` | 跳过 |
+| `tests/siliconflow-video.e2e.ts` | `SILICONFLOW_API_KEY` | 跳过 |
+
+它们不在默认的 `*.spec.ts` 集合里，由 `pnpm run test:e2e` 使用 `vitest.e2e.config.ts` 收集。本机未设置这两个密钥时，该命令把三个文件都标为 skipped，0 failed。
+
+## 92. D27 不做项
+
+- **不拆 `media.ts`**：R-07 的「选择 / 台账 / 执行」拆分仍是纯移动，留到 D28 的 video 提升评估一起决定。
+- **不把预算门改成预留**：D26 已确认。
+- **不改占位符、节流、估算和已有的字节上限**：这些行为已有用例，本轮只补路径和下载协议。
+- **不在大小上限之前把响应体整段读进内存**：声明长度和读完后的长度都会拒绝。流式截断另立。
+- **不修 R-87**。

@@ -1021,7 +1021,69 @@ D18 的判定表共享与 D19 的入口对齐此前各占一张 PR，本轮只�
 - **不借本轮改判定规则**：D18 的坏款拒绝、D19 的 NUL 清洗与上限夹取都已单独成 PR，本轮不叠加新的行为改动。
 - **不动 `reports/` 以外的审查结项**：结项清单只登记 patent 域，legal 与 document 域的结项留给 D21–D25。
 
-## 67. D23 复核范围与方法
+## 67. D22 复核范围与方法
+
+D22 对应计划第 183 行「`legal-knowledge`：FTS5 与内存回退的一致性、查询上限、空结果」，交付物是双后端一致性测试。D19 与 D20 已完成入口清洗、上限夹取与查询内核迁包，本轮不重开这两项，只回答一个问题：同一个查询在 SQLite 与内存后端是否返回同一组记录。
+
+范围三块：案例检索（含法院、案件类型、文书类型过滤）、法规检索（含层级过滤与时间效力）、司法解释与指导案例检索。三个引擎共用 `shared/sqlite-search.ts` 的检索阶梯与 `shared/memory-store.ts` 的内存检索。
+
+方法：
+
+- **同一份记录同时注入两种后端**：SQLite 侧建与部署同形的表与 FTS5 虚拟表；内存侧用构造参数或 `addRecords`。
+- **断言命中集合而不是顺序**：SQLite 按 BM25 排序、内存按命中词数排序，顺序本就不同，README 已写明。一致性指集合、过滤、上限与空结果。
+- **先写测试跑红，再改实现**：`tests/dual-backend-parity.spec.ts` 的 12 个用例先在当前实现上失败两条，改完转绿。
+- **反向验证**：临时回退多词 LIKE 与案例检索字段集两处修复，对应测试必须重新转红，证明测试锁的是行为而不是实现。
+
+## 68. 双后端一致性矩阵
+
+| 查询场景 | 修复前 SQLite | 修复前内存 | 修复后两侧 |
+|---|---|---|---|
+| 单关键词（≥3 字符） | FTS 命中，无命中走 LIKE | 子串包含 | 一致（原本一致） |
+| 单关键词（<3 字符） | 直接 LIKE | 子串包含 | 一致（原本一致） |
+| 多词查询「合同 违约」 | phrase 不命中 → 切词丢弃 2 字词 → LIKE 整句子串 → 空 | 按词 OR 命中 | LIKE 兜底改按同一套词条 OR，两侧同集合 |
+| 按法院名、案号、案件类型检索 | 不在 FTS 索引列与 LIKE 列 → 空 | 在检索文本 → 命中 | 内存检索文本收窄到 FTS 索引列，两侧均为空 |
+| `docType` / `caseType` / `level` / `interpretationType` 过滤 | SQL `=` 精确 | 子串包含 | `filterRecords` 增加 `exact` 模式，两侧一致 |
+| `court` 过滤 | SQL `LIKE '%值%'` | 子串包含 | 保持包含匹配，两侧一致 |
+| 指导案例按编号 | LIKE 列缺 `guiding_case_number` → 空 | 在检索文本 → 命中 | LIKE 列补上编号，两侧命中 |
+| 结果上限 | `resolveResultLimit` | 同一函数 | 一致（D19/D20 已对齐） |
+| 空查询、纯 NUL、纯标点、无命中 | 空 | 空 | 一致 |
+
+字段级结论：案例检索的文本列是案名、全文与摘要（`case_law_fts` 的三列）；法规是法规名称与条文；司法解释是解释名称、文号与条文；指导案例没有 FTS 表，按编号、案名、裁判要点与全文做 LIKE。法院、案号、案件类型是过滤字段而不是检索文本，两个后端都不再匹配它们。
+
+一致性边界：SQLite 的检索阶梯保留「整句短语优先」，短语命中时不再走 OR 档；内存在没有分词器的前提下按词条 OR。因此当查询的各个词恰好构成同一短语、且该短语出现在索引列中时，SQLite 侧可以返回更窄的集合。取消短语档能抹平这一处差异，代价是牺牲短查询的精确命中与排序质量，本轮不做，写进 README 的已知限制。
+
+## 69. 落地改动与验证
+
+| 文件 | 改动 |
+|---|---|
+| `src/shared/memory-store.ts` | 导出 `extractSearchTerms` 给 SQL 的 LIKE 兜底复用；`filterRecords` 增加 `contains`/`exact` 匹配模式 |
+| `src/shared/sqlite-search.ts` | LIKE 兜底从整句子串改为按同一套词条 OR；切词后为空的查询直接返回空 |
+| `src/case-law/search.ts` | 检索文本收窄到 FTS 索引列；`docType`、`caseType` 改精确匹配 |
+| `src/legal/search.ts` | `level` 改精确匹配 |
+| `src/judicial-interpretation/search.ts` | `interpretationType` 改精确匹配；指导案例 LIKE 列补 `guiding_case_number` |
+| `tests/dual-backend-parity.spec.ts` | 新增 12 个双后端对照用例 |
+| `README.md` / `README.zh.md` / `README.i18n.yaml` | 在后端段落写明两侧共享的列、过滤与上限；已知限制补排序差异 |
+
+| 验证项 | 方法 | 结果 |
+|---|---|---|
+| 包内回归 | `vitest run packages/legal/legal-knowledge` | 10 个文件、127 个用例通过 |
+| 反向验证 | 临时回退多词 LIKE 与案例检索字段集 | 两条用例分别报 `[]` 对 `['case-1','case-3','case-4']` 与 `[]` 对 `['case-2']`，恢复后转绿 |
+| 覆盖率 | 限定 `packages/legal/legal-knowledge/src/**` 统计 | 语句、分支、函数、行均 100% |
+| 类型检查 | `scripts/build.ts --scope typecheck` | 5 passed / 0 failed |
+| 静态检查 | `scripts/run-oxlint.ts .` | 0 errors |
+| 重复实现 | `scripts/duplication-gate.ts` | 0 个仓库级克隆；95 个收紧域配对与 13 个跨域配对与基线一致 |
+| 双语配对 | `verify-translation-pairing packages/legal/legal-knowledge/README.md` | 1 个配对一致 |
+
+## 70. D22 不做项
+
+- **不合并两套排序**：BM25 与命中词数是不同机制，强行对齐会牺牲其中一侧的排序质量；一致性只覆盖集合、过滤、上限与空结果，排序差异写进 README 的已知限制。
+- **不给部署库的 FTS 表加列**：`case_law_fts`、`legal_regulations_fts` 与 `judicial_interpretations_fts` 的列由源库决定，`installLegalKnowledgeDb` 只复制与裁剪，不改 schema。内存后端向索引列对齐，而不是反过来扩展索引。
+- **不把内存后端改成 phrase 优先，也不取消 SQLite 的短语档**：内存没有分词器，模拟 phrase 只会让两侧都丢掉多词命中；取消短语档则会牺牲 SQLite 短查询的精确命中与排序质量。该处差异与排序差异一并写进 README 的已知限制。
+- **不改工具层 1–20 上限与空结果文案**：工具契约比引擎上限更紧，D20 已定。
+- **不重开 NUL 清洗与入口夹取**：D19、D20 已完成，本轮回归用例只确认行为未回退。
+- **不结项 `legal-law` 与 R-02**：法条引用收尾属 D23；证据评分引擎与规则表的跨域重复仍待 D21–D23 的复盘结论。
+
+## 71. D23 复核范围与方法
 
 D23 对应计划第 184 行「`legal-law` 收尾；`document-deliver`：会话日志可重建性、质量门状态」，交付物是会话事件覆盖检查。范围两块：
 
@@ -1034,7 +1096,7 @@ D23 对应计划第 184 行「`legal-law` 收尾；`document-deliver`：会话�
 - **覆盖矩阵**：把面板重建的字段逐项映射到 `tool/call` 参数或 `tool/result` 的 `meta`，没有来源的字段即缺口。
 - **测试锁契约**：新加断言锁定投影完整性与加载期拒绝路径，并用条件反转做反向验证。
 
-## 68. legal-law 索引版本一致性
+## 72. legal-law 索引版本一致性
 
 扫描结果（7,910 个文件，其中 17 部已转录）：`maxVerifiedOn` 均不早于任何条目的 `verifiedOn`，`maxArticle` 均不小于索引中的最大条号，`revision` 全部存在，`manifest.json` 无缺失文件，已转录条目的 `sourceDoc` / `verifiedOn` 齐全且日期格式合法。资产本身零不一致。
 
@@ -1045,7 +1107,7 @@ D23 对应计划第 184 行「`legal-law` 收尾；`document-deliver`：会话�
 
 反向验证：把两条条件反转后，`baseline.spec.ts` 有 15 条失败，包括两条新用例的「expected the parse to fail」与「loads the packaged index without errors」；恢复后 6 个测试文件、135 个用例全通过。引用判定与索引缺失的既有结论未变：`not-indexed` 显式返回，默认策略 `block`。
 
-## 69. document-deliver 会话事件覆盖矩阵
+## 73. document-deliver 会话事件覆盖矩阵
 
 | 重建事实 | 日志来源 | 重建位置 | 覆盖 |
 |---|---|---|---|
@@ -1062,7 +1124,7 @@ D23 对应计划第 184 行「`legal-law` 收尾；`document-deliver`：会话�
 
 已知展示缺口（不影响可重建性，登记为后续 UI 项）：`ack`、`gate.style` 与登记级 `warnings` 存在于日志与结果文本中，面板暂未展示。
 
-## 70. R-02 结论：保留平行实现
+## 74. R-02 结论：保留平行实现
 
 两域的证据评分引擎不共享。理由：
 
@@ -1073,10 +1135,10 @@ D23 对应计划第 184 行「`legal-law` 收尾；`document-deliver`：会话�
 
 状态：已关闭（保留平行实现）。验证：`scripts/duplication-gate.ts` 通过，跨域配对与基线一致。
 
-## 71. D23 不做项
+## 75. D23 不做项
 
 - **不重构 `legal-law` 的模块级名称表**：`_knownNames`、`_knownAliases` 与解析器的 `STATUTE_PATTERNS` 是既有的进程级形态，改成索引实例所有会牵动全部解析入口与五个测试文件，超出收尾日范围；本轮只加加载期一致性校验。
 - **不改 `legal_law_verify` 的模型可见输出**：判定结果不带 `verifiedOn` / `sourceDoc` 是有意设计（门禁检查引用与索引成员，不声明内容正确），加字段会改变模型可见输出并触发快照更新。
 - **不动 `document-deliver` 的面板展示**：`ack`、`style`、`warnings` 的展示属 GUI 变更，另立。
 - **不补录法条款数**：7,910 个索引文件缺 `paragraphs` 列表是数据缺口，需要官方文本，仍按 D18 的结论另立数据 PR。
-- **不合并两域证据引擎**：见 §70。
+- **不合并两域证据引擎**：见 §74。

@@ -13,6 +13,7 @@ import { createFtsLadder, resolveResultLimit, type FtsSearchOps } from '@deepsee
 import { errorMessage } from '@deepseek-ai/dsh-value'
 import { escapeFtsPhrase, joinFtsOrTerms, prepareSearchText, sqliteHasFts5 } from './fts.ts'
 import { runFtsSearch } from './fts-search.ts'
+import { extractSearchTerms } from './memory-store.ts'
 
 /** 没有更紧家族上限的引擎所用的最大结果条数。 */
 const OPEN_RESULT_MAX = Number.MAX_SAFE_INTEGER
@@ -271,20 +272,31 @@ export class SqliteFtsTable<TOptions, THit> {
     }
   }
 
+  /**
+   * Match any query term against any LIKE column.
+   *
+   * The in-memory backend ranks records by how many terms they contain, so the
+   * `LIKE` rung must apply the same multi-term OR instead of requiring the whole
+   * query to appear as one substring; otherwise the same query returns records
+   * on one backend and nothing on the other.
+   */
   private searchLike(keyword: string, options: TOptions, limit: number): THit[] {
+    const terms = extractSearchTerms(keyword)
+    if (terms.length === 0) return []
     const { alias, table } = this.shape
-    const pattern = likePattern(keyword)
     const { sql: filterSql, params: filterParams } = this.shape.filterClause(options, alias)
-    const columns = this.shape.likeColumns.map(column => `${alias}.${column} LIKE ? ESCAPE '\\'`).join('\n             OR ')
+    const columnClause = this.shape.likeColumns
+      .map(column => `${alias}.${column} LIKE ? ESCAPE '\\'`)
+      .join(' OR ')
     const sql = `
       SELECT ${alias}.*
       FROM ${table} ${alias}
-      WHERE (${columns})
+      WHERE ${terms.map(() => `(${columnClause})`).join(' OR ')}
       ${filterSql}
       LIMIT ?
     `
     const params: Array<string | number> = [
-      ...this.shape.likeColumns.map(() => pattern),
+      ...terms.flatMap(term => this.shape.likeColumns.map(() => likePattern(term))),
       ...filterParams,
       limit * (this.shape.fetchFactor ?? 1),
     ]

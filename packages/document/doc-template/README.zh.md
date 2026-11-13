@@ -77,7 +77,7 @@ front-matter 字段如下，读取自上游模板约定：
 随包分发三个渲染器，按格式注册。
 
 - `markdown` 原样输出解析后的正文，前面加上样式免责声明，以及正文自身没有一级标题时的文档标题。
-- `html` 用 `marked`（GFM、硬换行）把正文转成独立文档，样式名指向专利类时用 A4 打印样式表，否则用屏幕样式表。只在这个格式下，变量值在替换前先做 HTML 转义，因为转换器会放行模板自带的原始 HTML。
+- `html` 用 `marked`（GFM、硬换行）把正文转成独立文档，样式名指向专利类时用 A4 打印样式表，否则用屏幕样式表。只在这个格式下，变量值在替换前先做 HTML 转义，因为转换器会放行模板自带的原始 HTML。Markdown 链接或图片只在 URL 为 http、https、mailto 或相对地址时写成元素；`javascript:`、`data:`、`vbscript:` 与协议相对地址改成纯文本。变量值里带进来的占位符不会再展开。
 - `docx` 委托给 `@deepseek-ai/dsh-docx-kit`，它产出的 OOXML 包与上游渲染器一致。
 
 不提供 PDF 渲染器。上游项目有三条：一条 Chrome、一条 LibreOffice、一条自研。harness 已经拥有 Chrome 与 LibreOffice 两条路径，第三条会与两者重复，因此 `pdf` 不是本包的输出格式。

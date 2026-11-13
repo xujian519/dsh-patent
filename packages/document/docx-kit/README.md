@@ -42,6 +42,8 @@ const { text, problems } = extractDocxText(bytes, { maxArchiveEntries: 10_000, m
 
 The read budgets are a required argument rather than a default: one deflate stream can expand a small file thousands of times, so a reader that bounds nothing turns a bounded input into an arbitrary allocation. An archive over either budget is reported as `too-large` and left out, never truncated.
 
+`renderDocx` drops characters XML 1.0 forbids — the C0 controls other than tab, line feed, and carriage return, plus U+FFFE and U+FFFF — and escapes the five predefined entities. A run whose text contains Han, kana, or Hangul names `Noto Sans CJK SC` as `w:eastAsia`. A part whose name is not exactly `word/document.xml` is not the document body.
+
 -----
 
 <a id="understand-the-implementation"></a>

@@ -5,6 +5,7 @@
 // 针对 Go 的 nil 接收者，TS 侧无对应形态。
 
 import { describe, expect, it } from 'vitest'
+import { extractDocxText } from '../src/docx-read.ts'
 import { renderDocx } from '../src/docx-write.ts'
 import { readZip } from '../src/zip.ts'
 import type { ZipReadLimits } from '../src/types.ts'
@@ -62,6 +63,17 @@ describe('renderDocx', () => {
     expect(xml).toContain('&amp;')
     expect(xml).toContain('&gt;')
     expect(xml).not.toContain('a < b')
+  })
+
+  it('writes a well-formed document when the body mixes CJK text, markup, and illegal XML characters', () => {
+    const bytes = renderDocx('甲\u0000乙 <丙>')
+    const xml = bodyXml(bytes)
+    expect(xml).not.toContain('\u0000')
+    expect(xml).toContain('&lt;')
+    expect(xml).toContain('<w:rFonts w:eastAsia="Noto Sans CJK SC"/>')
+    const projected = extractDocxText(bytes, LIMITS)
+    expect(projected.problems).toEqual([])
+    expect(projected.text).toContain('甲乙 <丙>')
   })
 
   it('injects no title heading when the title is absent or empty', () => {

@@ -126,6 +126,10 @@ describe('substitutePlaceholders', () => {
     expect(substitutePlaceholders('{{a}}', { b: '2' })).toBe('{{a}}')
   })
 
+  it('does not expand a placeholder that a supplied value introduces', () => {
+    expect(substitutePlaceholders('{{a}}', { a: '见 {{b}}', b: '秘密' })).toBe('见 {{b}}')
+  })
+
   it('fills a CJK name and a padded name, which the quality gate blocks until filled', () => {
     // 门禁按共享的 {{…}} 形式判残余；替换若只认 \w，这两种就永远填不掉（能力死锁）。
     expect(substitutePlaceholders('{{客户名称}} 与 {{ case_id }}', { 客户名称: '示例公司', case_id: 'C-1' }))

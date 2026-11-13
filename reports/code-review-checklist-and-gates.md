@@ -1142,3 +1142,36 @@ D23 对应计划第 184 行「`legal-law` 收尾；`document-deliver`：会话�
 - **不动 `document-deliver` 的面板展示**：`ack`、`style`、`warnings` 的展示属 GUI 变更，另立。
 - **不补录法条款数**：7,910 个索引文件缺 `paragraphs` 列表是数据缺口，需要官方文本，仍按 D18 的结论另立数据 PR。
 - **不合并两域证据引擎**：见 §74。
+
+## 76. D24 复核范围与方法
+
+D24 对应计划第 185 行「`docx-kit`、`doc-template`：XML 转义、zip 边界、模板变量注入、CJK 字体」，交付物是恶意与超限模板测试。范围两块：
+
+1. **`docx-kit`**：写入侧的 XML 文本与中文 run 字体；读取侧的条目预算与正文部件名。
+2. **`doc-template`**：变量替换进 HTML 之后，Markdown 链接和图片会不会变成可执行地址；值里的占位符会不会再展开。
+
+方法：先读现有 `zip.spec.ts` 的预算用例，再对三个可疑输入写会失败的用例——NUL 与尖括号、中文 run、`javascript:` / `data:` / 协议相对地址——确认失败后再改写入与 HTML 渲染。
+
+## 77. DOCX 文本与中文字体
+
+修复前 `escapeXmlText` 保留 U+0000。`renderDocx('甲\u0000乙 <丙>')` 的 `word/document.xml` 含 NUL，尖括号已转义，中文 run 没有 `w:rFonts`。
+
+修复后：转义前丢掉 XML 1.0 禁止的 C0 控制符以及 U+FFFE、U+FFFF；制表符、换行与回车保留。含汉字、假名或谚文的 run 增加 `w:eastAsia="Noto Sans CJK SC"`，与 HTML 默认样式表的第一个中文族一致。拉丁 run 与纯等宽 run 的 XML 不变。
+
+投影：`extractDocxText` 对上述包返回空 `problems`，正文为 `甲乙 <丙>`。
+
+## 78. 模板变量、HTML 地址与 zip 部件名
+
+变量替换是单次的。`{{a}}` 的值 `见 {{b}}` 在 `b` 也有值时仍是字面量 `见 {{b}}`，不会展开成秘密。这条是原行为，本轮用 `vars.spec.ts` 锁住。
+
+HTML 只对变量做 HTML 转义，再交给 `marked`。修复前变量 `[点我](javascript:alert(1))`、`![图](data:text/html,x)`、`[协议相对](//evil.example/a)` 会写成带这些 URL 的元素。修复后这三处只留可见文字。模板自己的 `https://example.com/doc`、`#notes` 与 `https://example.com/a.png` 仍是元素。
+
+zip 读取预算没有新缺口：声明体积超过预算、以及声明偏小但 deflate 膨胀超过预算，都已由 `zip.spec.ts` 拒绝。部件名 `../word/document.xml` 与 `word/document.xml/../secrets.xml` 不是正文，提取报 `missing-document`，文本里没有这两段。
+
+## 79. D24 不做项
+
+- **不嵌入字体文件**：只声明 `w:eastAsia`。嵌入字体会把最小 DOCX 写成字体包，超出 D17 留下的三部件写入器。
+- **不给每个拉丁 run 加字体**：没有中文的 run 保持上游 XML，避免无意义地改动既有字节。
+- **不清洗模板自带的原始 HTML**：模板资产是仓库里的文本，变量才来自模型。本轮只拦 Markdown 产生的链接和图片。
+- **不新增变量长度上限**：写入器按输入大小产出文本，不会把短输入膨胀成 zip 炸弹。读取预算仍由调用方给出，超限归档继续报 `too-large`。
+- **不在本轮修 R-87**：验收 DOCX 的 Python 读取预算仍另立，与 `docx-kit` 的 `ZipReadLimits` 对齐后再做。

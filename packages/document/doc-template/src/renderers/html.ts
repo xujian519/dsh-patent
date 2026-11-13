@@ -7,16 +7,53 @@
  * Raw HTML in a template body passes through, as it did upstream. That is why a
  * variable substituted into HTML output is escaped first: the value comes from
  * the model, and the template's own markup must survive while an injected
- * element must not.
+ * element must not. A Markdown link or image is still an element, so its URL
+ * is kept only for http, https, mailto, or a relative reference.
  * @module @deepseek-ai/dsh-doc-template/renderers/html
  */
 
 import { Marked } from 'marked'
+import type { Tokens } from 'marked'
 import type { Renderer, RenderMeta, RenderStyle } from '../types.ts'
 import { applyDisclaimer } from './markdown.ts'
 
+/** Schemes a rendered link or image may use. A relative URL has no scheme. */
+const DELIVERABLE_SCHEME = /^(?:https?|mailto):/iu
+
+/**
+ * Whether a Markdown link or image URL may be written into the HTML document.
+ * `javascript:`, `data:`, `vbscript:`, and protocol-relative URLs are refused.
+ * Whitespace and C0 controls are removed before the scheme is read, so a break
+ * inside `javascript` does not hide the scheme.
+ * @param href - the URL the Markdown parser produced.
+ * @returns true for http, https, mailto, and a relative URL.
+ */
+function isDeliverableUrl(href: string): boolean {
+  const compact = href.trim().replace(/[\u0000-\u0020]+/gu, '')
+  if (compact.startsWith('//')) return false
+  const scheme = /^[a-z][a-z0-9+.-]*:/iu.exec(compact)
+  return scheme === null || DELIVERABLE_SCHEME.test(compact)
+}
+
 /** Markdown converter of this renderer: GFM with hard line breaks, as upstream. */
 const HTML_CONVERTER = new Marked({ gfm: true, breaks: true })
+HTML_CONVERTER.use({
+  renderer: {
+    link(this: { parser: { parseInline(tokens: Tokens.Link['tokens']): string } }, token: Tokens.Link): string {
+      const text = this.parser.parseInline(token.tokens)
+      if (!isDeliverableUrl(token.href)) return text
+      const title = token.title === null || token.title === undefined || token.title === ''
+        ? ''
+        : ` title="${escapeHtmlText(token.title)}"`
+      return `<a href="${escapeHtmlText(token.href)}"${title}>${text}</a>`
+    },
+    image(token: Tokens.Image): string {
+      const alt = escapeHtmlText(token.text)
+      if (!isDeliverableUrl(token.href)) return alt
+      return `<img src="${escapeHtmlText(token.href)}" alt="${alt}">`
+    },
+  },
+})
 
 /** Default stylesheet of a rendered document. */
 const DEFAULT_HTML_STYLE_BLOCK = `<style>

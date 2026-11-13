@@ -31,6 +31,26 @@ const TABLE_EDGES = ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'] as 
 /** Monospace font the upstream renderer used for code spans. */
 const CODE_FONT = 'Consolas'
 
+/** East Asian font named on a run that contains Han, kana, or Hangul text. */
+const CJK_FONT = 'Noto Sans CJK SC'
+
+/** Han, kana, or Hangul text, which needs an East Asian font in WordprocessingML. */
+const CJK_TEXT = /\p{Script=Han}|\p{Script=Hiragana}|\p{Script=Katakana}|\p{Script=Hangul}/u
+
+/**
+ * Font element of one run.
+ * A code run keeps the monospace Latin fonts. A run that contains CJK text also
+ * names {@link CJK_FONT} as `w:eastAsia`; a Latin run without code names no font.
+ * @param text - the run text.
+ * @param code - whether the run carries the monospace font.
+ * @returns the `w:rFonts` element, or the empty string when the run names no font.
+ */
+function fontXml(text: string, code: boolean): string {
+  const eastAsia = CJK_TEXT.test(text) ? ` w:eastAsia="${CJK_FONT}"` : ''
+  if (code) return `<w:rFonts w:ascii="${CODE_FONT}" w:hAnsi="${CODE_FONT}"${eastAsia}/>`
+  return eastAsia === '' ? '' : `<w:rFonts${eastAsia}/>`
+}
+
 /**
  * Half-point run size of a heading level.
  * @param level - heading level.
@@ -54,7 +74,7 @@ function runXml(text: string, bold: boolean, code: boolean): string {
   if (text === '') return ''
   let properties = ''
   if (bold) properties += '<w:b/>'
-  if (code) properties += `<w:rFonts w:ascii="${CODE_FONT}" w:hAnsi="${CODE_FONT}"/>`
+  properties += fontXml(text, code)
   const opening = properties === '' ? '' : `<w:rPr>${properties}</w:rPr>`
   return `<w:r>${opening}<w:t xml:space="preserve">${escapeXmlText(text)}</w:t></w:r>`
 }
@@ -80,7 +100,7 @@ export function runsXml(runs: readonly DocxInlineRun[], forceBold: boolean): str
 export function headingXml(text: string, level: HeadingLevel): string {
   const size = headingSize(level)
   return `<w:p><w:pPr><w:spacing w:before="240" w:after="120"/><w:outlineLvl w:val="${level - 1}"/></w:pPr>`
-    + `<w:r><w:rPr><w:b/><w:sz w:val="${size}"/><w:szCs w:val="${size}"/></w:rPr>`
+    + `<w:r><w:rPr><w:b/>${fontXml(text, false)}<w:sz w:val="${size}"/><w:szCs w:val="${size}"/></w:rPr>`
     + `<w:t xml:space="preserve">${escapeXmlText(text)}</w:t></w:r></w:p>`
 }
 

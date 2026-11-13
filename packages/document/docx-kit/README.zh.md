@@ -42,6 +42,8 @@ const { text, problems } = extractDocxText(bytes, { maxArchiveEntries: 10_000, m
 
 读取预算为必填参数而非缺省值：一条 deflate 流能把小文件膨胀上千倍，不设界的读取器会把有界的输入变成任意大小的分配。超出任一预算的归档以 `too-large` 报出并整条剔除，绝不截断。
 
+`renderDocx` 会丢掉 XML 1.0 禁止的字符——除制表符、换行与回车以外的 C0 控制符，以及 U+FFFE 与 U+FFFF——并转义五个预定义实体。含汉字、假名或谚文的 run 把 `Noto Sans CJK SC` 标为 `w:eastAsia`。部件名不是恰好 `word/document.xml` 的，不算正文。
+
 -----
 
 <a id="understand-the-implementation"></a>

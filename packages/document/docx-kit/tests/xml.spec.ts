@@ -18,6 +18,12 @@ describe('escapeXmlText', () => {
   it('leaves text without escapable characters unchanged', () => {
     expect(escapeXmlText('')).toBe('')
     expect(escapeXmlText('第一段 plain')).toBe('第一段 plain')
+    expect(escapeXmlText('甲\t乙\n丙\r丁')).toBe('甲\t乙\n丙\r丁')
+  })
+
+  it('drops characters XML 1.0 forbids, including a NUL beside markup', () => {
+    expect(escapeXmlText('甲\u0000乙\u0008丙\u000B丁\u000C戊\u000E己\uFFFE庚\uFFFF')).toBe('甲乙丙丁戊己庚')
+    expect(escapeXmlText('\u0000<script>')).toBe('&lt;script&gt;')
   })
 })
 

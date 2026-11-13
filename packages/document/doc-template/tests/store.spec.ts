@@ -221,6 +221,32 @@ describe('TemplateStore.render', () => {
     expect(outcome.residual).toEqual(['机构名称', 'doc-no'])
   })
 
+  it('does not turn a variable into an HTML link or image with an unsafe URL', async () => {
+    const root = await tempDir()
+    await writeTemplate(
+      root,
+      'a.md',
+      'name: a\nformats: [html]\nvars:\n  - name: body\n    description: 正文\n',
+      '见 {{body}}\n\n[官网](https://example.com/doc "文档")\n\n[本节](#notes)\n\n![说明](https://example.com/a.png)\n',
+    )
+    const outcome = storeOf({ templateDirs: [root], styles: [] }).render({
+      template: 'a',
+      format: 'html',
+      variables: {
+        body: '[点我](javascript:alert(1)) 与 ![图](data:text/html,x) 与 [协议相对](//evil.example/a)',
+      },
+    })
+    expect(outcome.content).not.toContain('javascript:')
+    expect(outcome.content).not.toContain('data:text/html')
+    expect(outcome.content).not.toContain('evil.example')
+    expect(outcome.content).toContain('点我')
+    expect(outcome.content).toContain('图')
+    expect(outcome.content).toContain('协议相对')
+    expect(outcome.content).toContain('href="https://example.com/doc" title="文档"')
+    expect(outcome.content).toContain('href="#notes"')
+    expect(outcome.content).toContain('src="https://example.com/a.png"')
+  })
+
   it('renders HTML with the escaped variables, the author metadata, and the patent stylesheet', async () => {
     const outcome = (await styledStore()).render({
       template: 'search-report',

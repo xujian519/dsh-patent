@@ -109,7 +109,7 @@ describe('buildCoverage', () => {
       parseAuthorityBaseline(requireBaselineText()),
       parseGuidelineExtent(requireExtentText()),
     )
-    expect(rows[0]).toMatchObject({ document: '专利法', extent: 82, indexed: 38, coverage: '46.3%' })
+    expect(rows[0]).toMatchObject({ document: '专利法', extent: 82, indexed: 82, coverage: '100.0%' })
     expect(rows[1]).toMatchObject({ document: '专利法实施细则', extent: 149, indexed: 45, coverage: '30.2%' })
     expect(rows[2]).toMatchObject({ document: '专利审查指南', extent: 1335, indexed: 85, transcribed: 70 })
     expect(rows[3]).toMatchObject({ document: '司法解释', extent: 7, indexed: 0, coverage: '0.0%' })
@@ -149,11 +149,11 @@ describe('findUnresolved', () => {
 
   it('报告索引没有的条号与被引但没有正文的指南节', () => {
     const files = [
-      { file: 'a.md', text: '依据《专利法》第八十二条。' },
+      { file: 'a.md', text: '依据《专利法实施细则》第五十条。' },
       { file: 'b.md', text: '见《专利审查指南》第二部分第二章。' },
     ]
     expect(findUnresolved(files, baselines)).toEqual([
-      { file: 'a.md', line: 1, raw: '专利法第八十二条', reason: 'not-indexed' },
+      { file: 'a.md', line: 1, raw: '专利法实施细则第五十条', reason: 'not-indexed' },
       { file: 'b.md', line: 1, raw: '专利审查指南第二部分第二章', reason: 'untranscribed' },
     ])
   })

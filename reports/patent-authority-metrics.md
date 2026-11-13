@@ -8,7 +8,7 @@
 
 | 文书 | 权威范围 | 索引条目 | 带正文 | 覆盖率 | 口径 |
 | --- | --- | --- | --- | --- | --- |
-| 专利法 | 82 | 38 | 38 | 46.3% | 随包索引 maxArticle |
+| 专利法 | 82 | 82 | 82 | 100.0% | 随包索引 maxArticle |
 | 专利法实施细则 | 149 | 45 | 45 | 30.2% | 随包索引 maxArticle |
 | 专利审查指南 | 1335 | 85 | 70 | 6.4% | 官方 PDF 编号标题数（guideline-extent.yaml：1145 节带正文） |
 | 司法解释 | 7 | 0 | 0 | 0.0% | 索引不含该文书种类 |
@@ -16,14 +16,12 @@
 
 ## 无法判定的引用
 
-共 48 处；紧凑写法 A22 / A22.3 未计入（IPC 分类号与模板占位符同形）。
+共 44 处；紧凑写法 A22 / A22.3 未计入（IPC 分类号与模板占位符同形）。
 
 | 文件:行 | 引用 | 原因 |
 | --- | --- | --- |
 | `packages/bundle/web-app/presets/patent.patch.yml:40` | 专利审查指南第二部分第二章 | untranscribed |
-| `packages/bundle/web-app/skills/legal/ip/legal-ip-ip-clause-review/SKILL.md:115` | 专利法第17条 | not-indexed |
 | `packages/bundle/web-app/skills/patent/inventive-step-analysis/SKILL.md:15` | 专利审查指南第二部分第四章 | untranscribed |
-| `packages/bundle/web-app/skills/patent/patent-team-composition/SKILL.md:182` | 专利法第五十九条第一款 | not-indexed |
 | `packages/patent/patent-core/src/atoms/handlers/builtin/amendment-basis.ts:6` | 审查指南第二部分第八章 | untranscribed |
 | `packages/patent/patent-core/src/atoms/handlers/builtin/numeric-range.ts:5` | 审查指南第二部分第三章 | untranscribed |
 | `packages/patent/patent-core/src/graph/domains/enablement.ts:33` | 审查指南第二部分第二章 | untranscribed |
@@ -32,7 +30,6 @@
 | `packages/patent/patent-document/assets/templates/patent/invalidation-analysis/example.html:364` | 专利审查指南第二部分第四章 | untranscribed |
 | `packages/patent/patent-document/assets/templates/patent/invalidation-analysis/references/citation-log.md:20` | 审查指南第二部分第四章 | untranscribed |
 | `packages/patent/patent-document/assets/templates/patent/invalidation-opinion/example.html:202` | 专利审查指南第二部分第四章 | untranscribed |
-| `packages/patent/patent-document/assets/templates/patent/litigation-pleading/references/citation-log.md:18` | 第六十五条 | not-indexed |
 | `packages/patent/patent-document/assets/templates/patent/patentability-opinion/example.html:286` | 审查指南第二部分第四章 | untranscribed |
 | `packages/patent/patent-document/assets/templates/patent/re-examination-request/example.html:124` | 专利审查指南第二部分第八章 | untranscribed |
 | `packages/patent/patent-rule/assets/rules/base/inventiveness.yaml:21` | 专利审查指南第二部分第四章 | untranscribed |
@@ -50,7 +47,6 @@
 | `packages/patent/patent-rule/assets/rules/patent/nuo-patent-practice-rules.yaml:352` | 审查指南第二部分第二章3.1
      | untranscribed |
 | `packages/patent/patent-rule/src/guard/evidenceComplianceGuards.ts:5` | 专利审查指南第四部分第八章 | untranscribed |
-| `packages/patent/patent-tools/src/atoms/legal-gaps.ts:358` | 专利法第59条 | not-indexed |
 | `packages/patent/patent-tools/src/figure/dot-builder.ts:7` | 专利审查指南第一部分 | untranscribed |
 | `packages/patent/patent-tools/src/figure/render-check-findings.ts:753` | 审查指南第一部分第一章 | untranscribed |
 | `packages/patent/patent-tools/src/figure/section-diagram.ts:6` | 专利审查指南第一部分 | untranscribed |

@@ -179,7 +179,7 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 
 技术调查官（可选）插入 t3 后：对特征比对/等同判断出中立技术事实意见，交 t6 裁判采信评估。
 
-无效与诉讼包不纳入制图员：这两类场景的附图是比对与解释材料（专利法第五十九条第一款用于解释权利要求），不是产出物；确需重绘图面时由 captain 在 `maxMembers` 上限内临时 `patent_teams_add_member(role="illustrator")`。
+无效与诉讼包不纳入制图员：这两类场景的附图是比对与解释材料（专利法第六十四条第一款用于解释权利要求），不是产出物；确需重绘图面时由 captain 在 `maxMembers` 上限内临时 `patent_teams_add_member(role="illustrator")`。
 
 ## 创建序列
 

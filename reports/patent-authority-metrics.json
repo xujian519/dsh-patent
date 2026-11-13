@@ -27,11 +27,11 @@
     },
     {
       "document": "专利审查指南",
-      "extent": 1096,
+      "extent": 1335,
       "indexed": 85,
       "transcribed": 70,
-      "coverage": "7.8%",
-      "source": "官方 PDF 编号标题数（基线登记）"
+      "coverage": "6.4%",
+      "source": "官方 PDF 编号标题数（guideline-extent.yaml：1145 节带正文）"
     },
     {
       "document": "司法解释",

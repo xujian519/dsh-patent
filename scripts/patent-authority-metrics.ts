@@ -48,6 +48,9 @@ export const AUTHORITY_BASELINE_PATH = 'packages/patent/patent-law/assets/author
 /** Authority rank table, relative to the repository root. */
 export const AUTHORITY_RANKS_PATH = 'packages/patent/patent-law/assets/authority/authority-ranks.yaml'
 
+/** Recorded size of the guideline PDF's heading set, the coverage denominator, relative to the repository root. */
+export const GUIDELINE_EXTENT_PATH = 'packages/patent/patent-law/assets/authority/guideline-extent.yaml'
+
 /** Default directory the generated JSON and Markdown land in. */
 const DEFAULT_OUT_DIR = 'reports'
 
@@ -75,8 +78,20 @@ const CITATION_SCAN_EXCLUDES: readonly string[] = [
 /** Text extensions the citation scan reads. */
 const SCANNED_EXTENSIONS = new Set(['.ts', '.md', '.yaml', '.yml', '.json', '.html'])
 
-/** Coverage denominator of the guideline, whose division is a part and a chapter rather than an article. */
-const GUIDELINE_HEADING_EXTENT = 1096
+/**
+ * The guideline's countable extent, recorded from the official PDF by
+ * `patent-law/tools/guideline-transcript.py --write-extent`. It is the coverage
+ * denominator: a heading count stated in planning prose cannot be reproduced, and one
+ * taken from the PDF can.
+ */
+export interface GuidelineExtent {
+  /** Numbered headings in the PDF. */
+  headings: number
+  /** Headings that carry body text of their own. */
+  headingsWithBody: number
+  /** The PDF revision the count was taken from. */
+  revision: string
+}
 
 /** The error factory the shared asset readers expect. */
 const fail: AssetFail = message => new IndexAssetError(message, AUTHORITY_BASELINE_PATH)
@@ -333,14 +348,30 @@ function percent(part: number, whole: number): string {
 }
 
 /**
+ * Parse the recorded guideline extent.
+ * @param text - the extent asset's text.
+ * @returns the recorded heading counts.
+ * @throws IndexAssetError when a required field is missing or not a positive count.
+ */
+export function parseGuidelineExtent(text: string): GuidelineExtent {
+  const root = parseYamlMapping(text, '指南规模', fail)
+  const headings = readCount(root.headings, 'headings', fail)
+  const headingsWithBody = readCount(root.headingsWithBody, 'headingsWithBody', fail)
+  if (headingsWithBody > headings) throw fail('headingsWithBody 不能大于 headings')
+  return { headings, headingsWithBody, revision: readString(root, 'revision', fail) }
+}
+
+/**
  * Build the coverage rows from the loaded index and the recorded baseline.
  * @param baselines - the shipped index, keyed by law name.
  * @param baseline - the recorded authority baseline.
+ * @param guidelineExtent - the guideline's recorded extent, its coverage denominator.
  * @returns one row per indexed document plus one per recorded corpus.
  */
 export function buildCoverage(
   baselines: ReadonlyMap<string, LawBaseline>,
   baseline: AuthorityBaseline,
+  guidelineExtent: GuidelineExtent,
 ): CoverageRow[] {
   const rows: CoverageRow[] = []
   const statute = (name: string): CoverageRow => {
@@ -361,11 +392,11 @@ export function buildCoverage(
   const sections = guidelines?.sections ?? []
   rows.push({
     document: '专利审查指南',
-    extent: GUIDELINE_HEADING_EXTENT,
+    extent: guidelineExtent.headings,
     indexed: sections.length,
     transcribed: sections.filter(section => section.text !== null).length,
-    coverage: percent(sections.length, GUIDELINE_HEADING_EXTENT),
-    source: '官方 PDF 编号标题数（基线登记）',
+    coverage: percent(sections.length, guidelineExtent.headings),
+    source: `官方 PDF 编号标题数（guideline-extent.yaml：${guidelineExtent.headingsWithBody} 节带正文）`,
   })
   for (const extent of baseline.extents) {
     rows.push({
@@ -565,13 +596,14 @@ export function verifyCarriers(baseline: AuthorityBaseline, sourceRoot: { path: 
  */
 export function buildMetrics(root: string): AuthorityMetrics {
   const baseline = parseAuthorityBaseline(readFileSync(join(root, AUTHORITY_BASELINE_PATH), 'utf8'))
+  const guidelineExtent = parseGuidelineExtent(readFileSync(join(root, GUIDELINE_EXTENT_PATH), 'utf8'))
   const baselines = loadLawBaselines()
   const files = scanFiles(root)
   return {
     version: 1,
     sourceRoot: { name: baseline.sourceRoot },
     baseline: { version: baseline.version, verifiedOn: baseline.verifiedOn, sources: baseline.sources.length },
-    coverage: buildCoverage(baselines, baseline),
+    coverage: buildCoverage(baselines, baseline, guidelineExtent),
     unresolved: findUnresolved(files, baselines),
     unstructured: findUnstructuredBasis(files),
   }

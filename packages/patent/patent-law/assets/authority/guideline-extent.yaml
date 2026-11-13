@@ -1,0 +1,38 @@
+# 《专利审查指南》2023 年修订版全文的规模 — 覆盖率分母，不是运行时索引。
+#
+# 覆盖率的分子是随包索引的节数，分母必须取自法本身。分母此前是计划里的登记值，
+# 复算不出来；本文件由 tools/guideline-transcript.py --write-extent 从官方 PDF 数出，
+# 与索引的节正文同源。
+#
+# headings 是官方 PDF 中带编号的标题数；headingsWithBody 是其中在下一个标题之前
+# 有自己的正文的节数。紧跟下一个标题的结构标题（如 `3`、`4.1`）计入分母、不贡献正文，
+# 转录时按容器条目处理。
+#
+# 源文件 SHA-256：cf8cdf9af698712add00bb769963318910776fe45e449e27704105dd484e8981
+version: "1.0"
+revision: 2023 年修订版（2024-01-20 施行）
+sourceDoc: 《专利审查指南》2023 年修订版官方 PDF 全文
+sourceSha256: cf8cdf9af698712add00bb769963318910776fe45e449e27704105dd484e8981
+verifiedOn: 2026-11-14
+pages: 613
+headings: 1335
+headingsWithBody: 1145
+byPart:
+  - part: 第一部分
+    headings: 286
+    withBody: 251
+  - part: 第三部分
+    headings: 105
+    withBody: 83
+  - part: 第二部分
+    headings: 406
+    withBody: 351
+  - part: 第五部分
+    headings: 296
+    withBody: 249
+  - part: 第六部分
+    headings: 64
+    withBody: 50
+  - part: 第四部分
+    headings: 178
+    withBody: 161

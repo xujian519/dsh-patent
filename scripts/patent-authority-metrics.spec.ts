@@ -18,6 +18,7 @@ import {
   findUnstructuredBasis,
   parseArgs,
   parseAuthorityBaseline,
+  parseGuidelineExtent,
   renderMarkdown,
   resolveSourceRoot,
   scanFiles,
@@ -103,11 +104,29 @@ describe('parseAuthorityBaseline', () => {
 
 describe('buildCoverage', () => {
   it('用随包索引与 maxArticle 算出三部法的覆盖', () => {
-    const rows = buildCoverage(loadLawBaselines(), parseAuthorityBaseline(requireBaselineText()))
+    const rows = buildCoverage(
+      loadLawBaselines(),
+      parseAuthorityBaseline(requireBaselineText()),
+      parseGuidelineExtent(requireExtentText()),
+    )
     expect(rows[0]).toMatchObject({ document: '专利法', extent: 82, indexed: 38, coverage: '46.3%' })
     expect(rows[1]).toMatchObject({ document: '专利法实施细则', extent: 149, indexed: 45, coverage: '30.2%' })
-    expect(rows[2]).toMatchObject({ document: '专利审查指南', extent: 1096, indexed: 85, transcribed: 70 })
+    expect(rows[2]).toMatchObject({ document: '专利审查指南', extent: 1335, indexed: 85, transcribed: 70 })
     expect(rows[3]).toMatchObject({ document: '司法解释', extent: 7, indexed: 0, coverage: '0.0%' })
+  })
+})
+
+describe('parseGuidelineExtent', () => {
+  it('读数取自指南 PDF 的编号标题与带正文节', () => {
+    const extent = parseGuidelineExtent(requireExtentText())
+    expect(extent.headings).toBe(1335)
+    expect(extent.headingsWithBody).toBe(1145)
+    expect(extent.revision).toContain('2023 年修订版')
+  })
+
+  it('拒绝带正文节数超过标题数的记录', () => {
+    expect(() => parseGuidelineExtent(requireExtentText().replace('headingsWithBody: 1145', 'headingsWithBody: 1336')))
+      .toThrow('headingsWithBody 不能大于 headings')
   })
 })
 
@@ -208,4 +227,8 @@ describe('renderMarkdown', () => {
 /** Read the shipped baseline so the assertions face the file the script reads. */
 function requireBaselineText(): string {
   return readFileSync(new URL('../packages/patent/patent-law/assets/authority/authority-baseline.yaml', import.meta.url), 'utf8')
+}
+
+function requireExtentText(): string {
+  return readFileSync(new URL('../packages/patent/patent-law/assets/authority/guideline-extent.yaml', import.meta.url), 'utf8')
 }

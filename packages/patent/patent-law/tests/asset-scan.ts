@@ -21,6 +21,16 @@ const INCLUDED_SEGMENTS: readonly string[] = ['/assets/', '/src/', '/skills/', '
 /** 扫描时跳过的路径片段。 */
 const EXCLUDED_SEGMENTS: readonly string[] = ['/lib/', '/node_modules/', '/tests/']
 
+/**
+ * 随包法源资产自己的正文会引用条文；那是被转录或摘录的引文，不是本仓库作出的引用。
+ * `assets/law/` 是运行时索引，`assets/authority/` 是评审基准（含官方对照表的摘录），
+ * 两者都不在引用面内。
+ */
+const TRANSCRIBED_ASSET_SEGMENTS: readonly string[] = [
+  'packages/patent/patent-law/assets/law/',
+  'packages/patent/patent-law/assets/authority/',
+]
+
 /** 可扫描的文本扩展名。 */
 const SCANNED_EXTENSIONS = new Set(['.ts', '.md', '.yaml', '.yml', '.json', '.html'])
 
@@ -74,6 +84,7 @@ function collect(dir: string, out: string[]): string[] {
     // and scan the whole tree.
     const file = path.slice(REPO_ROOT.length + 1)
     if (!INCLUDED_SEGMENTS.some(segment => file.includes(segment))) continue
+    if (TRANSCRIBED_ASSET_SEGMENTS.some(segment => file.includes(segment))) continue
     out.push(path)
   }
   return out

@@ -110,7 +110,7 @@ describe('buildCoverage', () => {
       parseGuidelineExtent(requireExtentText()),
     )
     expect(rows[0]).toMatchObject({ document: '专利法', extent: 82, indexed: 82, coverage: '100.0%' })
-    expect(rows[1]).toMatchObject({ document: '专利法实施细则', extent: 149, indexed: 45, coverage: '30.2%' })
+    expect(rows[1]).toMatchObject({ document: '专利法实施细则', extent: 149, indexed: 149, coverage: '100.0%' })
     expect(rows[2]).toMatchObject({ document: '专利审查指南', extent: 1335, indexed: 85, transcribed: 70 })
     expect(rows[3]).toMatchObject({ document: '司法解释', extent: 7, indexed: 0, coverage: '0.0%' })
   })
@@ -148,14 +148,23 @@ describe('findUnresolved', () => {
   const baselines = loadLawBaselines()
 
   it('报告索引没有的条号与被引但没有正文的指南节', () => {
+    // 随包细则已覆盖第 1 至 149 条，这里从随包索引里摘掉一条，单独验证缺口分支。
+    const shipped = loadLawBaselines()
+    const rules = shipped.get('专利法实施细则')!
+    const partial = new Map(shipped)
+    partial.set('专利法实施细则', {
+      ...rules,
+      articles: rules.articles.filter(entry => entry.article !== 50),
+    })
     const files = [
       { file: 'a.md', text: '依据《专利法实施细则》第五十条。' },
       { file: 'b.md', text: '见《专利审查指南》第二部分第二章。' },
     ]
-    expect(findUnresolved(files, baselines)).toEqual([
+    expect(findUnresolved(files, partial)).toEqual([
       { file: 'a.md', line: 1, raw: '专利法实施细则第五十条', reason: 'not-indexed' },
       { file: 'b.md', line: 1, raw: '专利审查指南第二部分第二章', reason: 'untranscribed' },
     ])
+    expect(findUnresolved([files[0]!], shipped)).toEqual([])
   })
 
   it('已索引且已转录的条号不报告', () => {

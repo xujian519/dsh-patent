@@ -604,13 +604,13 @@ describe('the packaged index', () => {
     expect(verifyCitation(articleRef(75), shipped, { proposition: unlisted }).decision).toBe('valid')
   })
 
-  it('reports a boilerplate-heavy proposition under the wrong article as a mismatch naming the right one', () => {
+  it('reports a proposition drawn from another article as a mismatch naming that article', () => {
     const shipped = loadLawBaselines()
-    const referencing = articleRef(71, undefined, '专利法实施细则')
-    const proposition = '国务院专利行政部门不予受理'
+    const referencing = articleRef(60, undefined, '专利法实施细则')
+    const proposition = '国务院专利行政部门对专利公告、专利单行本中出现的错误，一经发现，应当及时更正'
     const finding = verifyCitation(referencing, shipped, { proposition })
     expect(finding.decision).toBe('mismatch')
-    expect(finding.reason).toContain('第 70 条')
+    expect(finding.reason).toContain('第 64 条')
   })
 
   it('moves a paraphrase between undecided and supported with the support threshold', () => {
@@ -642,9 +642,11 @@ describe('the packaged index', () => {
     // A verified article ceiling turns a fabricated number into a blocked
     // decision instead of a report that nothing here can say.
     expect(verifyCitation(articleRef(99), shipped).decision).toBe('out-of-range')
-    // An article that exists but is not indexed is a gap in the index, not a
-    // claim that the number does not exist.
-    expect(verifyCitation(articleRef(50, undefined, '专利法实施细则'), shipped).decision).toBe('not-indexed')
+    // Every article of the 2023 revision is transcribed, so any number inside the
+    // verified ceiling resolves against its text instead of reporting an index gap.
+    for (let article = 1; article <= 149; article += 1) {
+      expect(verifyCitation(articleRef(article, undefined, '专利法实施细则'), shipped).decision).toBe('valid')
+    }
   })
 
   it('holds the invalidation chapter the 2023 revision numbers', () => {

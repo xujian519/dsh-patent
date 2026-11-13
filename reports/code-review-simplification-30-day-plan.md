@@ -190,7 +190,7 @@
 | 日 | 主任务 | 交付 / 门禁 |
 |---|---|---|
 | D26 | `video-mode/media.ts`：provider 选择、任务保留、journal/ledger、预算门、取消/超时 | 并发与重启恢复测试（已完成） |
-| D27 | `comfyui`、`minimax`、`siliconflow`：占位符类型保持、轮询节流、成本估算、大小上限、错误映射 | provider 契约测试；无密钥自跳过复核 |
+| D27 | `comfyui`、`minimax`、`siliconflow`：占位符类型保持、轮询节流、成本估算、大小上限、错误映射 | provider 契约测试；无密钥自跳过复核（已完成） |
 | D28 | EDL/ffmpeg、字幕、faststart、参数注入安全；`ui-video-studio`；video 提升评估（media/ + video/ 拆分是否具备条件） | 渲染快照；提升评估结论（已完成：video 留在 experimental，拆分待纯移动） |
 | D29 | 全量验证：`build:artifacts` → `build:check`、定向测试、关键快照、`doc-sync`、`duplication`；修复回归 | 全绿门禁记录 |
 | D30 | 指标 v3 对比、最终报告、升级指南（如有破坏性变更）、遗留项与下一轮建议 | 结项报告 |

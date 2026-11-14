@@ -15752,6 +15752,12 @@ importers:
 
   packages/patent/patent-rule:
     dependencies:
+      '@deepseek-ai/dsh-legal-law':
+        specifier: workspace:*
+        version: link:../../legal/legal-law
+      '@deepseek-ai/dsh-patent-law':
+        specifier: workspace:*
+        version: link:../patent-law
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../util/values

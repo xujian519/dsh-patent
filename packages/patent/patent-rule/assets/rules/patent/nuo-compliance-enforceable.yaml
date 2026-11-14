@@ -10,6 +10,7 @@ rules:
     phase: post_execution
     severity: critical
     action: block
+    basisKind: practice-note
     check:
       type: keyword_blocklist
       # 「不得使用 CNXXXXXX」是合规警示，不是占位号本身；引文同理。
@@ -37,6 +38,7 @@ rules:
     phase: post_execution
     severity: critical
     action: block
+    basisKind: practice-note
     check:
       type: structural_analysis
       requiresAll:
@@ -53,6 +55,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法实施细则第二十条第三款；审查指南第二部分第二章2.2.7
+    basisKind: statute
     check:
       type: keyword_blocklist
       negationContext: true

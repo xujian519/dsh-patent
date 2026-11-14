@@ -12,6 +12,7 @@
  * @module @deepseek-ai/dsh-patent-law/citator
  */
 
+import { articleCitationFocus } from '@deepseek-ai/dsh-patent-core'
 import { findArticle, findSection } from './baseline.ts'
 import { coversSection } from './section-path.ts'
 import { parseLawReference } from './reference.ts'
@@ -146,7 +147,7 @@ function decideArticleValidity(
       }))
       // An active article still cannot vouch for a paragraph the index knows does
       // not exist; the other lineage states already answer for the article.
-      const gap = articleLineage.currentStatus === 'active' ? paragraphGap(reference, entry, baseline.law) : null
+      const gap = articleLineage.currentStatus === 'active' ? narrowingGap(reference, entry, baseline.law) : null
       if (gap !== null) return { reference, state: 'unverified', reason: gap, entry, revisionHistory }
       return {
         reference,
@@ -165,7 +166,7 @@ function decideArticleValidity(
       entry,
     }
   }
-  const gap = paragraphGap(reference, entry, baseline.law)
+  const gap = narrowingGap(reference, entry, baseline.law)
   if (gap !== null) return { reference, state: 'unverified', reason: gap, entry }
 
   return {
@@ -184,6 +185,28 @@ function decideArticleValidity(
  * @param law - the law name, as the reason states it.
  * @returns the reason, or null.
  */
+/**
+ * The reason a cited paragraph or item cannot be accepted, or null when the
+ * citation stays inside the entry.
+ * @param reference - the parsed article reference.
+ * @param entry - the indexed article.
+ * @param law - the law name, as the reason states it.
+ * @returns the reason, or null.
+ */
+function narrowingGap(
+  reference: { paragraph?: number; item?: number },
+  entry: { article: number; paragraphs?: number[]; text: string | null },
+  law: string,
+): string | null {
+  const gap = paragraphGap(reference, entry, law)
+  if (gap !== null || entry.text === null || reference.item === undefined) return gap
+  return articleCitationFocus({
+    article: entry.article,
+    ...(entry.paragraphs === undefined ? {} : { paragraphs: entry.paragraphs }),
+    text: entry.text,
+  }, reference).missingItem
+}
+
 function paragraphGap(
   reference: { paragraph?: number },
   entry: { article: number; paragraphs?: number[] },

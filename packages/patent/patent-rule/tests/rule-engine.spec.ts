@@ -348,6 +348,21 @@ describe('RuleEngine', () => {
     expect(result.violations[0]?.evidence).toEqual(['专利法实施细则第99条'])
   })
 
+  it('citation_analysis reads an omitted ceiling from the shipped index', () => {
+    const set = ruleSet([
+      {
+        id: 'CON-304',
+        name: '索引上限',
+        severity: 'major',
+        action: 'warn',
+        check: { type: 'citation_analysis', statutes: { 专利法: {}, 专利法实施细则: {} } },
+      },
+    ])
+    expect(evaluateText('依据专利法第22条与专利法实施细则第149条。', set).violations.length).toBe(0)
+    const result = evaluateText('依据专利法第99条与专利法实施细则第200条。', set)
+    expect(result.violations[0]?.evidence).toEqual(['专利法第99条', '专利法实施细则第200条'])
+  })
+
   it('citation_analysis skips unparsable article numbers', () => {
     const set = ruleSet([
       { id: 'CON-303', name: '混合数字', severity: 'major', action: 'warn', check: { type: 'citation_analysis', statutes: { 专利法: { max: 78 } } } },

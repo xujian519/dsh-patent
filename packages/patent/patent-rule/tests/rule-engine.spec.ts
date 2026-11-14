@@ -363,6 +363,21 @@ describe('RuleEngine', () => {
     expect(result.violations[0]?.evidence).toEqual(['专利法第99条', '专利法实施细则第200条'])
   })
 
+  it('citation_analysis ignores a guideline section and a statute the rule did not name', () => {
+    const set = ruleSet([
+      {
+        id: 'CON-305',
+        name: '只核专利',
+        severity: 'major',
+        action: 'warn',
+        check: { type: 'citation_analysis', statutes: { 专利法: { max: 78 } } },
+      },
+    ])
+    const result = evaluateText('参见审查指南第二部分第四章3.2与专利法实施细则第99条，专利法第99条。', set)
+    expect(result.violations).toHaveLength(1)
+    expect(result.violations[0]?.evidence).toEqual(['专利法第99条'])
+  })
+
   it('citation_analysis skips unparsable article numbers', () => {
     const set = ruleSet([
       { id: 'CON-303', name: '混合数字', severity: 'major', action: 'warn', check: { type: 'citation_analysis', statutes: { 专利法: { max: 78 } } } },

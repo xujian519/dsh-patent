@@ -218,9 +218,91 @@ describe('verifyCitation on statutes', () => {
     })]])
     expect(verifyCitation(itemRef(2), opening, { proposition: '地址' }).decision).toBe('valid')
     const malformed = new Map<LawName, LawBaseline>([['专利法', statute({
-      articles: [{ ...entry, text: '（第十二三条）不是项。\n正文仍是同一条。' }],
+      articles: [{ ...entry, text: '（第十二三条）不是项。\n（十十）也不是项。\n正文仍是同一条。' }],
     })]])
     expect(verifyCitation(articleRef(22), malformed).decision).toBe('valid')
+  })
+
+  it('names the paragraph when an item citation is narrowed inside it', () => {
+    const itemRef = (item: number): LawReference => ({
+      kind: 'law-article',
+      law: '专利法',
+      article: 22,
+      paragraph: 1,
+      item,
+      raw: `专利法第22条第1款第${item}项`,
+    })
+    const index = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{
+        ...VERIFIED_ARTICLE,
+        paragraphs: [1],
+        text: '申请人应当写明下列事项：\n（一）名称。\n（二）地址。',
+      }],
+    })]])
+    const supported = verifyCitation(itemRef(2), index, { proposition: '地址' })
+    expect(supported.decision).toBe('valid')
+    expect(supported.reason).toContain('第 1 款')
+    expect(supported.reason).toContain('第 2 项')
+    const missing = verifyCitation(itemRef(3), index)
+    expect(missing.decision).toBe('mismatch')
+    expect(missing.reason).toContain('第 1 款')
+    expect(missing.reason).toContain('不含第 3 项')
+    const sibling = verifyCitation(itemRef(1), index, { proposition: '地址' })
+    expect(sibling.decision).toBe('mismatch')
+    expect(sibling.reason).toContain('第 1 款第 2 项')
+  })
+
+  it('keeps the whole article when a named item has no item markers to isolate', () => {
+    const itemRef: LawReference = {
+      kind: 'law-article',
+      law: '专利法',
+      article: 22,
+      item: 2,
+      raw: '专利法第22条第2项',
+    }
+    const single = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{ ...withoutParagraphs(VERIFIED_ARTICLE), topics: ['整条主题'], text: '只有一段正文。' }],
+    })]])
+    const whole = verifyCitation(itemRef, single, { proposition: '整条主题' })
+    expect(whole.decision).toBe('valid')
+    expect(whole.reason).not.toContain('第 2 项')
+    const several = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{
+        ...withoutParagraphs(VERIFIED_ARTICLE),
+        topics: ['整条主题'],
+        text: '第一段。\n第二段。',
+      }],
+    })]])
+    const unsplit = verifyCitation(itemRef, several, { proposition: '整条主题' })
+    expect(unsplit.decision).toBe('valid')
+    expect(unsplit.reason).not.toContain('第 2 项')
+  })
+
+  it('does not narrow when the paragraph list is not 1..N in order', () => {
+    const index = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{
+        ...VERIFIED_ARTICLE,
+        paragraphs: [1, 3],
+        topics: ['整条主题'],
+        text: '第一段写申请日。\n第二段写优先权。',
+      }],
+    })]])
+    const finding = verifyCitation(articleRef(22, 1), index, { proposition: '整条主题' })
+    expect(finding.decision).toBe('valid')
+    expect(finding.reason).not.toContain('第 1 款')
+  })
+
+  it('does not let an article topic stand in for the named paragraph', () => {
+    const index = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{
+        ...VERIFIED_ARTICLE,
+        paragraphs: [1, 2],
+        topics: ['整条主题'],
+        text: '第一款只写申请日。\n\n第二款只写优先权。',
+      }],
+    })]])
+    const finding = verifyCitation(articleRef(22, 2), index, { proposition: '整条主题' })
+    expect(finding.decision).toBe('unmatched')
   })
 
   it('reports an indexed article whose text has not been transcribed', () => {

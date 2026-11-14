@@ -611,10 +611,20 @@ rules:
     expect(fromIndex.issues).toEqual([])
     expect(fromIndex.ruleSet.rules[0]?.basisKind).toBe('statute')
     expect(fromIndex.ruleSet.rules[0]?.check).toEqual({ type: 'citation_analysis', statutes: { 专利法: {} } })
+    const explicitMax = parseRuleSetFromYaml(
+      'rules:\n  - id: CA3B\n    name: n\n    severity: minor\n    action: warn\n    check:\n      type: citation_analysis\n      statutes:\n        专利法: { max: 82 }\n',
+    )
+    expect(explicitMax.issues).toEqual([])
+    expect(explicitMax.ruleSet.rules[0]?.check).toEqual({ type: 'citation_analysis', statutes: { 专利法: { max: 82 } } })
     const badKind = parseRuleSetFromYaml(
       'rules:\n  - id: CA4\n    name: n\n    severity: minor\n    action: warn\n    basisKind: prose\n    check:\n      type: citation_analysis\n      statutes:\n        专利法: {}\n',
     )
     expect(badKind.issues.some(i => i.message.includes('basisKind'))).toBe(true)
+    const numericKind = parseRuleSetFromYaml(
+      'rules:\n  - id: CA5\n    name: n\n    severity: minor\n    action: warn\n    basisKind: 1\n    check:\n      type: citation_analysis\n      statutes:\n        专利法: {}\n',
+    )
+    expect(numericKind.ruleSet.rules).toEqual([])
+    expect(numericKind.issues.some(i => i.message.includes('basisKind'))).toBe(true)
   })
 
   it('citation_analysis rejects a topics declaration instead of ignoring it', () => {

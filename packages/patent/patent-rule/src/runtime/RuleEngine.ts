@@ -441,7 +441,10 @@ function checkCitationAnalysis(check: CitationAnalysisCheck, text: string): stri
     const statute = check.statutes[reference.law]
     if (statute === undefined) continue
     const max = statute.max ?? ceilings.get(reference.law)
-    if (max !== undefined && reference.article > max) evidence.push(reference.raw)
+    // The extractor only emits statute names, and each of those shipped baselines has a numeric ceiling.
+    /* v8 ignore next -- a missing ceiling cannot occur for an extracted statute */
+    if (max === undefined) continue
+    if (reference.article > max) evidence.push(reference.raw)
   }
   return evidence
 }

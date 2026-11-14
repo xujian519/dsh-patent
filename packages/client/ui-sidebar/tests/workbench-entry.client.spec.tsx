@@ -49,8 +49,8 @@ function mountRootedShell({ appRoot = true }: { appRoot?: boolean } = {}) {
       useResource={useResource} useWorkspaces={neverHook}
       useRemoteAccess={() => true} useSessionAccess={neverHook} useWorkspaceAccess={neverHook}
       startSession={vi.fn()} toggleSidebar={vi.fn()} t={t}
-      renderSlot={((_key: string, _owner: unknown, options?: { fallback?: ReactNode }) =>
-        options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
+      renderSlot={((_key: string, _owner: unknown, options?: { fallback?: ReactNode; children?: ReactNode }) =>
+        options?.children ?? options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
       renderFactorySlot={() => null}
     />
   )

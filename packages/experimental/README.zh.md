@@ -47,6 +47,7 @@ kind: "package-group"
 | [`video-mode`](video-mode/README.zh.md) | 视频生产：媒体 provider 能力缝、项目与 EDL 契约、生成/合成/交付工具、合成、本地 ComfyUI、云端 MiniMax-H3 与 SiliconFlow Wan2.2 provider | `ctx.media` |
 | [`video-bundle`](video-bundle/README.zh.md) | 组合 video 预设、其制作技能、媒体工具与 Web 视频工作室的可选组合包 | — |
 | [`session-search`](session-search/README.zh.md) | 可选实验性全局会话搜索工具 | — |
+| [`deepseek-chat-import`](deepseek-chat-import/README.zh.md) | 可选上传 DeepSeek 官网会话导出，存为所选工作区中的会话 | `ctx.deepseekChatImport` |
 | [`ralph-bundle`](ralph-bundle/README.zh.md) | 带隔离 workflow 引擎的可选重复委派 | — |
 | [`terminal-bundle`](terminal-bundle/README.zh.md) | 可选全局持久终端工具 | — |
 | [`badge-skill-bundle`](badge-skill-bundle/README.zh.md) | 可选 powered-by-dsh 徽章技能 | — |

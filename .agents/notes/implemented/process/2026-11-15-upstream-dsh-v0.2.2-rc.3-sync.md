@@ -1,0 +1,39 @@
+# Agent Note: upstream v0.2.2-rc.3 sync
+
+Status: implemented
+
+English | [中文](2026-11-15-upstream-dsh-v0.2.2-rc.3-sync.zh.md)
+
+## Problem
+
+Upstream published `dsh-v0.2.2-rc.3` three days after `dsh-v0.2.2-rc.2`, six commits later. The fork's merge base against the tag is the rc.2 tag commit itself, because the rc.2 sync landed as a merge commit, so the release needs one content merge and no ancestry repair. The release carries one new optional experimental package, `@deepseek-ai/dsh-deepseek-chat-import`, a CI download helper shared by the sandbox preparation scripts, and the usual version bump across every published manifest.
+
+The merge collides with fork-owned code on eleven paths. Two of them are generated or recorded files (`docs/config-catalog.md` and its Chinese pair, two translation-pairing hash files, one `pnpm-lock.yaml`), four are manifest and compiler registrations the fork extends (`apps/cli/package.json`, `packages/lsp/tool-lsp/package.json`, `tsconfig.client.json`, `scripts/experimental-package-policy.ts`), and the rest carry competing implementations on both sides: the sidebar stylesheet and the bubblewrap preparation script.
+
+## Decision
+
+- **Merge forward in one content merge and land the pull request as a merge commit.** The merge base already sits on the rc.2 tag, so a single merge keeps the tag reachable from master and leaves the next release's base correct.
+- **Adopt the new `deepseek-chat-import` package as upstream ships it.** The package registers `ctx.deepseekChatImport`, an owner-only upload route that turns each conversation of a DeepSeek website export into a Session. Upstream lists it in `OPTIONAL_BUNDLES`, `MORE_BUNDLES`, and `EXPERIMENTAL_BUNDLES`, so it stays an opt-in experimental bundle the fork's profiles do not mount; the fork adds no composition of its own.
+- **Re-record the new package's Web pins under the fork's profile.** Upstream recorded `snapshots/web/deepseek-chat-import/` against its own profile, whose system prompt carries neither the fork's plugin-market discovery section nor its language policy, so the continuation case failed the system-prompt pin. `DSH_SNAPSHOT=refresh` rewrote the system prompt and tool schemas from the merged tree; both diffs only add the discovery guidance, its three market tools, and the language line. The catalog line of `snapshots/web/creation-recommendations/session.v4.jsonl` gained one entry for the new package, which upstream recorded when the package joined the catalog the profile discovers.
+- **Keep the fork's mirror fallback for bubblewrap while adopting upstream's verified-download helper.** The release replaces the inline `curl` call with `acquire_verified_archive` from the new `scripts/ci-verified-download.sh`, which verifies into an atomic cache file and tries the pinned digest before replacing anything. The fork keeps its three ordered hosts — the pinned Launchpad build first, then two Ubuntu pool copies — because `launchpad.net` answers 503 often enough to fail the job; each attempt now goes through the helper, so a cached verified payload skips the network entirely and a dead host spends one bounded attempt. The fork's spec assertion on the old inline `sha256sum --check --status` line is dropped, since verification moved into the helper and the neighboring case already asserts the helper call; the mirror-ordering assertion stays.
+- **Keep the fork's brand block in the sidebar stylesheet and take upstream's new session row.** The release adds `.buildVersion` beside a `.newSessionRow` wrapper; the fork's brand plugin replaced the build-version badge, so the merge keeps the wrapper the merged component renders and drops the badge class text it no longer references.
+- **Align the promoted workbench entry with the row-wrapped New Session.** The release moves the New Session button into the `sidebar.session.action` HOC slot inside `.newSessionRow`, which carries the outer margin while `.newSession` drops to `margin: 0` and grows to fill the row. The fork's promoted entry copies that surface declaration for declaration, so its rule drops the row margin, and the promotion spec's `renderSlot` stand-in renders the slot's `children`, what the renderer shows when no layer claims the slot.
+- **Replace the calendar dates in the owner credential horizon spec with clock-relative bounds.** The host judges a horizon against the real clock, but the spec pinned its live horizon to a date that has now passed, so every `verified` expectation reads `expired`. `PAST` and `LIVE` are offsets from `Date.now()`.
+- **Re-record the two translation hash files and regenerate the configuration catalog instead of hand-merging them.** Both sides changed the same generated or recorded regions, so `pnpm run gen-config-catalog` rewrote the catalog pair from source and `pnpm run verify-translation-pairing --write` re-recorded the section hashes of `docs/capability-seams.md` and `packages/experimental/README.md` after the English and Chinese rows for the new package merged.
+- **Raise the long-function counter to 190.** The new package's `importDeepseekChatExport` spans 160 lines. The other five tracked counters are unchanged, and the fork does not split upstream files during a sync.
+- **Move the fork-owned manifests to `0.2.2-rc.3`.** The root version moved with the release, and `pnpm run constraints` requires every workspace manifest to match it; the version bump does not touch `pnpm-lock.yaml`.
+
+## Alternatives considered
+
+- **Keep upstream's single bubblewrap download URL.** Rejected: the fork added the mirror list because a 503 from Launchpad fails the job, and the helper only retries one host. Dropping the mirrors would reintroduce the failure the fork already fixed.
+- **Update the upstream spec assertion to the loop form instead of keeping a literal primary call.** Rejected: the fork's script calls the helper directly with `BUBBLEWRAP_URL` first and only falls back to a mirror array, so upstream's assertion stays true and the next sync does not re-derive this conflict.
+- **Restore the `.buildVersion` class.** Rejected: no merged component references it, so it would sit in the stylesheet as unexplained residue.
+- **Mount `deepseek-chat-import` in a fork profile.** Rejected: it imports DeepSeek website conversations into Sessions, which no fork profile asks for, and every mount raises the profile's plugin and test surface.
+
+## Consequences
+
+Master shares a reachable merge base with the rc.3 tag. The fork carries the upstream chat-export importer as an unmounted optional bundle; enabling it is a profile edit, not a code change. The sandbox preparation script now depends on `scripts/ci-verified-download.sh` and the `~/.cache/dsh-ci/bubblewrap` cache directory that upstream's workflows restore. Fork-owned manifests stay in the `0.2.2-rc.3` release family. The `structure.long-functions` ledger carries one upstream function the fork does not split.
+
+## Testing
+
+`pnpm run build:artifacts` regenerated the catalogs, module graph, client metadata, and bundle output, and `pnpm run typecheck` compiled the host and client aggregates against it. `pnpm run lint`, `pnpm run duplication`, `pnpm run duplication:baseline` (95 tightened and 13 cross-domain pairs), `pnpm run constraints`, `pnpm run hygiene`, and `pnpm run verify-translation-pairing` (1721 pairs) pass, as do the six generated-artifact checks (`verify-config-catalog`, `verify-cordis-catalog`, `verify-cordis-api`, `verify-cordis-inspect-catalog`, `verify-module-graph`, `verify-tech-debt-counters`) and `pnpm run doc-sync` (53 gates). `pnpm run test:snapshot` replays the merged behavior, and the Web suite keeps the red set its lane already records in `ci-fork.yml` (67 files on master against goldens that predate the fork's added client plugins); the new package's two cases pass after their pins were re-recorded.

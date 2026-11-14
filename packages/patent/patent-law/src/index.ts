@@ -120,6 +120,7 @@ export type {
   CitationPolicySet,
   GuidelineReference,
   GuidelineVersion,
+  InterpretationName,
   LawArticleReference,
   LawBaseline,
   LawLineageSnapshot,

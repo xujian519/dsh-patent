@@ -7,11 +7,25 @@
 
 import type { DecisionArticle } from '@deepseek-ai/dsh-patent-core'
 
+/**
+ * Patent judicial interpretations, named by their official titles. Their text is
+ * indexed article by article like a statute; the title is long because it is the
+ * name a citation uses.
+ */
+export type InterpretationName =
+  | '最高人民法院关于审理专利授权确权行政案件适用法律若干问题的规定（一）'
+  | '最高人民法院关于审理专利纠纷案件适用法律问题的若干规定'
+  | '最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释'
+  | '最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释（二）'
+  | '最高人民法院关于审理涉专利权评价报告案件适用法律问题的批复'
+  | '最高人民法院关于审理申请注册的药品相关的专利权纠纷民事案件适用法律若干问题的规定'
+  | '最高人民法院关于审理侵害知识产权民事纠纷案件适用惩罚性赔偿的解释'
+
 /** Law documents the index covers. */
-export type LawName = '专利法' | '专利法实施细则' | '专利审查指南'
+export type LawName = '专利法' | '专利法实施细则' | '专利审查指南' | InterpretationName
 
 /** Statute whose text is indexed article by article. */
-export type StatuteName = '专利法' | '专利法实施细则'
+export type StatuteName = '专利法' | '专利法实施细则' | InterpretationName
 
 /**
  * A reference to one article of a statute, optionally narrowed to a paragraph

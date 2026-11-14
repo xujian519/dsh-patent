@@ -402,13 +402,20 @@ export function buildCoverage(
     source: `官方 PDF 编号标题数（guideline-extent.yaml：${guidelineExtent.headingsWithBody} 节带正文）`,
   })
   for (const extent of baseline.extents) {
+    // The judicial interpretations are indexed one file per document; the
+    // regulations are not indexed yet and stay at zero.
+    const indexed = extent.documentKind === '司法解释'
+      ? [...baselines.values()].filter(document => document.law.startsWith('最高人民法院'))
+      : []
+    const transcribed = indexed.filter(document =>
+      document.articles.length > 0 && document.articles.every(article => article.text !== null))
     rows.push({
       document: extent.documentKind,
       extent: extent.count,
-      indexed: 0,
-      transcribed: 0,
-      coverage: percent(0, extent.count),
-      source: '索引不含该文书种类',
+      indexed: indexed.length,
+      transcribed: transcribed.length,
+      coverage: percent(indexed.length, extent.count),
+      source: indexed.length > 0 ? '随包索引（一件文书一个文件）' : '索引不含该文书种类',
     })
   }
   return rows

@@ -814,7 +814,8 @@ export class MediaRuntime extends Service {
   }
 
   /**
-   * Wait up to `waitMs` for one submitted task to settle.
+   * Wait up to `waitMs` for one submitted task to settle. A poll that outlives the wait keeps running,
+   * and a terminal result it reaches is retained for later `status` and `refresh` calls.
    * @param task - submitted task.
    * @param signal - caller cancellation, forwarded to the provider.
    * @returns the settled task, or the retained task when `waitMs` expires.
@@ -841,7 +842,14 @@ export class MediaRuntime extends Service {
         delay(deadline - Date.now(), { kind: 'timeout' as const }, { signal }),
       ])
       signal.throwIfAborted()
-      if (outcome.kind === 'timeout') return this.status(current.id)
+      if (outcome.kind === 'timeout') {
+        // Providers forget a task once a poll settles it, so a dropped terminal result makes the next
+        // status request report the finished task as untracked.
+        void polled.then((settled) => {
+          if (settled.kind === 'task' && TERMINAL.has(settled.task.status)) this.remember(settled.task)
+        })
+        return this.status(current.id)
+      }
       if (outcome.kind === 'error') throw outcome.error
       current = this.remember(outcome.task)
     }

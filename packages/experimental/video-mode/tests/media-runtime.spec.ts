@@ -259,6 +259,36 @@ describe('submission and generation', () => {
     await ctx.fiber.dispose()
   })
 
+  it('retains a settlement that arrives after the bounded wait expires', async () => {
+    const ctx = new Context()
+    await ctx.plugin(VideoMode, { fakeProvider: false, waitMs: 30, pollMs: 1 }).await()
+    let releasePoll: () => void = () => {}
+    const pollGate = new Promise<void>((resolve) => { releasePoll = resolve })
+    let enteredPoll: () => void = () => {}
+    const polling = new Promise<void>((resolve) => { enteredPoll = resolve })
+    ctx.media.register(stubProvider({
+      id: 'late-settle',
+      submit: async request => ({
+        id: 'late-settle-1', provider: 'late-settle', model: request.model ?? 'late-settle/video', kind: 'video', status: 'running',
+      }),
+      poll: async (task) => {
+        enteredPoll()
+        await pollGate
+        return { ...task, status: 'succeeded' }
+      },
+    }))
+    const waiting = ctx.media.generate(
+      { kind: 'video', prompt: 'x', model: 'late-settle/video' },
+      new AbortController().signal,
+    )
+    await polling
+    expect((await waiting).status).toBe('running')
+    releasePoll()
+    await delay(10)
+    expect(ctx.media.status('late-settle-1').status).toBe('succeeded')
+    await ctx.fiber.dispose()
+  })
+
   it('does not poll after the wait interval has already passed the deadline', async () => {
     const ctx = new Context()
     await ctx.plugin(VideoMode, { fakeProvider: false, waitMs: 5, pollMs: 40 }).await()

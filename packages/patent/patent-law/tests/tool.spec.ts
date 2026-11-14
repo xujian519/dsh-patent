@@ -55,6 +55,20 @@ const twoArticleIndex = new Map<LawName, LawBaseline>([['专利法', {
   ],
 }]])
 
+/** The packaged index with one extra section that has neither text nor subsections. */
+function withUntranscribedSection(): Map<LawName, LawBaseline> {
+  const index = new Map(shipped)
+  const guideline = shipped.get('专利审查指南')!
+  index.set('专利审查指南', {
+    ...guideline,
+    sections: [
+      ...guideline.sections,
+      { path: '第九部分第九章9.9', topics: ['未转录'], text: null, sourceDoc: null, verifiedOn: null },
+    ],
+  })
+  return index
+}
+
 async function host(index = shipped, policies = POLICIES): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
@@ -97,7 +111,7 @@ describe('law_verify tool', () => {
   })
 
   it('reports a guideline section whose indexed sections are not transcribed', async () => {
-    const value = await run(await host(), { references: ['审查指南第二部分第十章'] })
+    const value = await run(await host(withUntranscribedSection()), { references: ['审查指南第九部分第九章9.9'] })
     expect(value.findings[0]).toMatchObject({ decision: 'unverified', policy: 'warn' })
     expect(value.blocked).toBe(false)
     expect(value.counts.unverified).toBe(1)
@@ -191,8 +205,8 @@ describe('law_verify tool', () => {
   })
 
   it('renders a decision table with the unverified warning', async () => {
-    const ctx = await host()
-    const result = await execute(ctx, { text: '依据审查指南第二部分第十章。' })
+    const ctx = await host(withUntranscribedSection())
+    const result = await execute(ctx, { text: '依据审查指南第九部分第九章9.9。' })
     expect(JSON.stringify(result.content)).toContain('| 引用 | 判定 | 处置 | 说明 |')
     expect(JSON.stringify(result.content)).toContain('存在未核验引用')
   })

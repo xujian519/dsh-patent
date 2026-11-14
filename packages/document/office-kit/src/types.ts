@@ -14,7 +14,10 @@ export type OfficeKitPriority = 'foreground' | 'background'
 export interface OfficeKitSource {
   readonly key: OfficeSourceKey
   readonly version: string
-  /** Authorized stat size; omission reserves the provider's entire input limit. */
+  /**
+   * Authorized stat size. Omission reserves the provider's entire input limit.
+   * A declared size is admitted only when it is a non-negative safe integer within `maxInputBytes`.
+   */
   readonly bytes?: number
   /**
    * Read only after provider admission; do not capture already-buffered input in queued production requests.

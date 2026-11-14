@@ -127,7 +127,7 @@ Schemastery 配置。
 - **随包制品门禁条目是模板专用的** — `patent` 预置在 `render_patent_document` 的 `template=oa-response` 上启用 `PR-OA-007`，判定 `draft` 中作者撰写的论证文本。其余缺失规则仍要求入参承载文书全文；模板生成的标题/权项固定措辞不是它们的安全目标。
 - **交付台账不跨恢复保留** — 台账保存在插件挂载内、以活动 agent 对象为键，故在新进程里恢复的会话从零开始，即使此前已跑过前置调用也会要求重跑。失败方向是多跑一次闸门，不是少跑。
 - **前置条件认「成功调用且未声明 `blocked: true` 且满足条目证据」而非「通过结论」** — 台账记录的是某工具未报错返回、且结果没有 `blocked: true`。`rule_check` 结果里报了违规、或 `patent_workflow_run` 停在人工确认门，仍算满足，除非条目要求的证据不在该结果里；`law_verify` 的 `blocked: true` 不算，因为那是该检查自己的拒绝。没有声明 `evidence` 的条目强制的是这次闸门在本会话跑过且没有自报拒绝；结论由交付报告承载供人核阅。
-- **指南引用是自由文本** — `legalBasis` 原样进入输出，没有任何环节解析它，故规则引的《专利审查指南》节号只与其转录来源一样正确；`tests/guideline-citations.spec.ts` 只守住节号的写法（带零段、例如「2.0」的不是节号）；节号是否在索引里由 patent-law 的 `guideline-citation-coverage.spec.ts` 回答；命题是否落在所引节及其子节内需用 `law_verify` 带命题核对（该覆盖测试只查路径存在）。
+- **规则引用对照索引核验** — 每条随包规则声明 `basisKind`。`statute` 与 `guideline` 用和 `law_verify` 相同的解析器拆开，必须落到已转录的条、款、项或节；`judgment` 与 `practice-note` 说明这条规则为什么没有条号。`citation_analysis` 的条号上限读随包索引，不再把条数写死在资产里。`render_patent_document` 上的 `citationGate` 会拒绝引用未能通过该核验的草稿。命题是否被所引正文支撑，仍要带命题调用 `law_verify`。
 
 ### 开发备注
 

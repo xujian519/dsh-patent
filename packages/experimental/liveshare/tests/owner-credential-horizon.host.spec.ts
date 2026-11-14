@@ -17,10 +17,8 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import type {} from '../src/index.ts'
 import { apply } from '../src/host/share-host.ts'
 
-/* The host judges a horizon against the wall clock, so these bounds cannot be fixed
-   calendar dates: one that has already passed turns every 'verified' expectation red. */
 const NOW = Date.now()
-const PAST = new Date(NOW - 24 * 60 * 60_000).toISOString()
+const PAST = new Date(NOW - 30 * 24 * 60 * 60_000).toISOString()
 const LIVE = new Date(NOW + 30 * 24 * 60 * 60_000).toISOString()
 const STORED_TOKEN = 'stored-payload.stored-signature'
 

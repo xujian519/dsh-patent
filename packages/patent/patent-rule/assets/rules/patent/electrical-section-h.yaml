@@ -16,6 +16,7 @@ rules:
     severity: minor
     action: warn
     legalBasis: 审查指南第一部分第一章 4.3；GB/T 4728 / IEC 60617 电气简图用图形符号
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -46,6 +47,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第26条第3款；审查指南第二部分第二章 2.1
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -80,6 +82,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第26条第4款；审查指南第二部分第二章 3.2.1
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -112,6 +115,7 @@ rules:
     severity: minor
     action: warn
     legalBasis: 专利法第26条第4款；审查指南第二部分第二章 3.2.2
+    basisKind: statute
     check:
       type: keyword_blocklist
       keywords:
@@ -132,6 +136,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 专利法第22条第3款；通信领域SEP创造性判断需结合标准版本与必要性声明
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:

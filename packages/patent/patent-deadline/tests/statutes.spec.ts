@@ -269,6 +269,20 @@ describe('statutory deadline set', () => {
     expect(find(query, 'substantive-exam-request')).toBeUndefined()
   })
 
+  it('gives a utility model the ten-year term of 专利法第42条第1款', () => {
+    const utility: DeadlineQuery = {
+      kind: 'utility-model',
+      filingDate: date('2024-01-10'),
+      claimsPriority: false,
+      today: date('2026-09-20'),
+    }
+    expect(find(utility, 'patent-term')).toMatchObject({
+      rawDueDate: '2034-01-10',
+      legalBasis: '专利法第42条第1款',
+      label: '专利权期限届满（10年，自申请日起算）',
+    })
+  })
+
   it('applies the 10-year term to a design filed before the 2021 transition', () => {
     const oldDesign: DeadlineQuery = {
       kind: 'design',

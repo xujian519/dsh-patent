@@ -649,6 +649,8 @@ export class ComfyUiMediaProvider implements MediaProvider {
       throw new MediaFailure('ComfyUI accepted the upload without returning a file name', 'MEDIA_REQUEST_INVALID')
     }
     const subfolder = isRecord(body) && typeof body.subfolder === 'string' ? body.subfolder : ''
+    assertPathSegment(name, 'upload name')
+    if (subfolder.length > 0) assertRelativeDirectory(subfolder, 'upload subfolder')
     return subfolder.length === 0 ? name : `${subfolder}/${name}`
   }
 
@@ -705,6 +707,9 @@ export class ComfyUiMediaProvider implements MediaProvider {
    * @throws {@link MediaFailure} for oversized or unreadable output.
    */
   private async download(file: SavedFile, pending: PendingTask, signal: AbortSignal): Promise<MediaArtifact> {
+    assertPathSegment(file.filename, 'file name')
+    if (file.subfolder.length > 0) assertRelativeDirectory(file.subfolder, 'subfolder')
+    assertPathSegment(file.type, 'type')
     const query = new URLSearchParams({ filename: file.filename, subfolder: file.subfolder, type: file.type })
     const response = await this.request(`/view?${query.toString()}`, { signal })
     if (!response.ok) {
@@ -842,6 +847,31 @@ function savedFiles(outputs: unknown): SavedFile[] {
     }
   }
   return files
+}
+
+/**
+ * Reject a ComfyUI path part that could leave its directory.
+ * @param value - one file name, subfolder, or output type.
+ * @param label - name of the field in the failure message.
+ * @throws {@link MediaFailure} `MEDIA_ARTIFACT_INVALID` when the part is empty, `.`, `..`, or contains a slash.
+ */
+function assertPathSegment(value: string, label: string): void {
+  if (value.length === 0 || value === '.' || value === '..' || value.includes('/') || value.includes('\\')) {
+    throw new MediaFailure(`ComfyUI returned a ${label} that is not a single path segment`, 'MEDIA_ARTIFACT_INVALID')
+  }
+}
+
+/**
+ * Reject a relative directory that climbs out of its root. Nested segments such as `dsh/video` stay allowed.
+ * @param value - subfolder returned by ComfyUI.
+ * @param label - name of the field in the failure message.
+ * @throws {@link MediaFailure} `MEDIA_ARTIFACT_INVALID` when any segment is empty, `.`, or `..`.
+ */
+function assertRelativeDirectory(value: string, label: string): void {
+  if (value.includes('\\')) {
+    throw new MediaFailure(`ComfyUI returned a ${label} that is not a single path segment`, 'MEDIA_ARTIFACT_INVALID')
+  }
+  for (const segment of value.split('/')) assertPathSegment(segment, label)
 }
 
 /** Whether one output file matches the requested capability. */

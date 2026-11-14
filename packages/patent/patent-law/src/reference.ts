@@ -27,6 +27,45 @@ import type { LawReference, StatuteName } from './types.ts'
 
 export { formatCnNumber, parseCnNumber }
 
+const STATUTE_NAMES: Record<string, StatuteName> = {
+  '中华人民共和国专利法实施细则': '专利法实施细则',
+  '专利法实施细则': '专利法实施细则',
+  '实施细则': '专利法实施细则',
+  '中华人民共和国专利法': '专利法',
+  '专利法': '专利法',
+  '细则': '专利法实施细则',
+  '最高人民法院关于审理专利授权确权行政案件适用法律若干问题的规定（一）': '最高人民法院关于审理专利授权确权行政案件适用法律若干问题的规定（一）',
+  '最高人民法院关于审理专利纠纷案件适用法律问题的若干规定': '最高人民法院关于审理专利纠纷案件适用法律问题的若干规定',
+  '最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释': '最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释',
+  '最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释（二）': '最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释（二）',
+  '最高人民法院关于审理涉专利权评价报告案件适用法律问题的批复': '最高人民法院关于审理涉专利权评价报告案件适用法律问题的批复',
+  '最高人民法院关于审理申请注册的药品相关的专利权纠纷民事案件适用法律若干问题的规定': '最高人民法院关于审理申请注册的药品相关的专利权纠纷民事案件适用法律若干问题的规定',
+  '最高人民法院关于审理侵害知识产权民事纠纷案件适用惩罚性赔偿的解释': '最高人民法院关于审理侵害知识产权民事纠纷案件适用惩罚性赔偿的解释',
+  '专利代理管理办法': '专利代理管理办法',
+  '专利实施强制许可办法': '专利实施强制许可办法',
+  '专利权质押登记办法': '专利权质押登记办法',
+  '专利标识标注办法': '专利标识标注办法',
+  '专利行政执法办法': '专利行政执法办法',
+  '关于规范专利申请行为的若干规定': '关于规范专利申请行为的若干规定',
+  '用于专利程序的生物材料保藏办法': '用于专利程序的生物材料保藏办法',
+  '专利申请号标准': '专利申请号标准',
+}
+
+// Citations are NFKC-normalized before matching, so the table keys are too: the
+// official titles write （二） in full width and the normalized text writes (二).
+const STATUTE_ALIASES: Record<string, StatuteName> = Object.fromEntries(
+  Object.entries(STATUTE_NAMES).map(([name, law]) => [name.normalize('NFKC'), law]),
+)
+
+/**
+ * The law names as one alternation. Longest first, so 解释（二） wins over 解释 and
+ * 专利法实施细则 over 专利法 at the same position.
+ */
+const STATUTE_NAME_PATTERN = Object.keys(STATUTE_ALIASES)
+  .sort((left, right) => right.length - left.length)
+  .map(name => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  .join('|')
+
 /** Number written in Chinese numerals or Arabic digits. */
 const NUMBER = '[〇零一二三四五六七八九十百0-9]{1,6}'
 
@@ -35,7 +74,7 @@ const NUMBER = '[〇零一二三四五六七八九十百0-9]{1,6}'
 // normalized before matching, so the grammar below allows whitespace at every
 // token joint and receives ASCII digits.
 const STATUTE_PATTERN = new RegExp(
-  '(?<law>中华人民共和国专利法实施细则|专利法实施细则|实施细则|中华人民共和国专利法|专利法|细则)'
+  `(?<law>${STATUTE_NAME_PATTERN})`
   // A formal citation wraps the law name in 《》 and omits 第 (专利法第二十二条); the
   // compact one writes 专利法第22条. Both are accepted; the closing 》 is dropped
   // from the written form by stripBookMarks.
@@ -64,14 +103,6 @@ const GUIDELINE_PATTERN = new RegExp(
  * citation.
  */
 const COMPACT_PATTERN = /(?<![0-9A-Za-z])A(?<article>[0-9]{1,3})(?:\.(?<paragraph>[0-9]{1,2}))?(?![0-9A-Za-z\u4e00-\u9fff])/g
-
-const STATUTE_NAMES: Record<string, StatuteName> = {
-  '专利法': '专利法',
-  '中华人民共和国专利法': '专利法',
-  '专利法实施细则': '专利法实施细则',
-  '实施细则': '专利法实施细则',
-  '细则': '专利法实施细则',
-}
 
 /** The groups {@link STATUTE_PATTERN} always captures, typed for direct use. */
 type StatuteGroups = {
@@ -153,7 +184,7 @@ export function extractLawReferences(text: string): LawReference[] {
   for (const match of normalized.matchAll(STATUTE_PATTERN)) {
     const groups = match.groups as StatuteGroups
     // A number the pattern allows but the numeral parser rejects, e.g. 第十十条.
-    const candidate = readStatuteArticleCandidate(match, groups, STATUTE_NAMES[groups.law] as StatuteName)
+    const candidate = readStatuteArticleCandidate(match, groups, STATUTE_ALIASES[groups.law] as StatuteName)
     if (candidate !== null) candidates.push(candidate)
   }
 

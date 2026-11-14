@@ -11,6 +11,8 @@
  * date to the delivery date, and the guideline presumes the dispatch date to be
  * that delivery date. Electronic delivery therefore carries no 15-day
  * extension; the 15-day presumption applies to postal delivery only.
+ * 细则第4条第1款、第2款的递交日不在本引擎推算：申请日由调用方给出。
+ * 第3款的送达对象（代理机构或联系人）不产生日期。
  * @module @deepseek-ai/dsh-patent-deadline/delivery
  */
 

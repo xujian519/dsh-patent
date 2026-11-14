@@ -139,7 +139,8 @@ export class ConversionQueue {
   private async readStored(request: QueueRequest, signal?: AbortSignal): Promise<Stored> {
     signal?.throwIfAborted()
     if (this.disposed) throw this.unavailable()
-    if (request.source.bytes !== undefined && request.source.bytes > this.config.maxInputBytes) {
+    const declared = request.source.bytes
+    if (declared !== undefined && (!Number.isSafeInteger(declared) || declared < 0 || declared > this.config.maxInputBytes)) {
       throw new OfficeKitError('input-too-large', 'The Office source exceeds maxInputBytes.')
     }
     const operation = JSON.stringify(request.operation)

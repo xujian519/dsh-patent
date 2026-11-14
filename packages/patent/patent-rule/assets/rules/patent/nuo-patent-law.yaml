@@ -11,6 +11,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第二条第二款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -44,6 +45,7 @@ rules:
     phase: post_execution
     severity: critical
     action: block
+    basisKind: practice-note
     check:
       type: keyword_blocklist
       # 「不得编造/禁止虚构」是否定式合规要求，不是编造行为本身。
@@ -61,6 +63,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第二十二条
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -77,6 +80,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第二十二条第三款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -105,6 +109,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第二十六条第三款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -125,6 +130,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第二十六条第四款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -143,6 +149,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第二十六条第四款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -163,6 +170,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法实施细则第二十三条第二款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -178,6 +186,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第二十二条第三款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -198,6 +207,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第二十二条第三款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -216,6 +226,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第三十三条
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -235,6 +246,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第三十三条；审查指南第四部分第三章4.6.1
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -252,6 +264,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第二十二条第三款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -268,6 +281,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第三十七条
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -286,6 +300,7 @@ rules:
     phase: post_execution
     severity: major
     action: warn
+    basisKind: practice-note
     check:
       type: structural_analysis
       requiresAll:

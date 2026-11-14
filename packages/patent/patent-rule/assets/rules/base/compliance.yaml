@@ -17,6 +17,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 执业规范：AI 输出不构成正式法律意见，应由专利代理人/律师确认
+    basisKind: practice-note
     check:
       type: keyword_blocklist
       # 否定语境（"不构成侵权"/"避免侵权"）不误报
@@ -52,6 +53,7 @@ rules:
     severity: critical
     action: review
     legalBasis: 质量门禁：结论性/侵权性/有效性判断需人工确认
+    basisKind: practice-note
     check:
       type: keyword_blocklist
       # 「不应给出最终建议」不是结论；引文里的条款词也不是本模型的主张。
@@ -75,6 +77,7 @@ rules:
     severity: minor
     action: warn
     legalBasis: 审查规范：回避绝对化断言（绝对可以/一定能够/必然导致等），改用限定性表述
+    basisKind: practice-note
     check:
       type: keyword_blocklist
       # 否定语境（"不一定"/"绝非绝对"）不误报

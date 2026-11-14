@@ -32,6 +32,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第二十六条第三款：说明书充分公开以所属技术领域的技术人员能够实现为准；字词出现次数不是法定判准
+    basisKind: statute
     description: 命中词频/条数统计式表述；计数可用于检索留痕，不能作为"公开是否充分"的论证依据——应按 26.3 判准改以"本领域技术人员能否实现"陈述
     check:
       type: pattern_analysis
@@ -52,6 +53,7 @@ rules:
     severity: minor
     action: warn
     legalBasis: 答复撰写规范：同一引文以一处完整引用为限，其后以引文位置指代（"见前述引文"），不复述原文
+    basisKind: practice-note
     description: 同一引述片段重复出现；重复引证不增加论证，只增加篇幅，并让逐点答复的线索被打散
     check:
       type: quote_repetition
@@ -70,6 +72,7 @@ rules:
     severity: major
     action: block
     legalBasis: 专利法第二十六条第三款；《专利审查指南》第二部分第二章第 2.1.3 节：以所属技术领域的技术人员能够实现为准，判断依据为说明书记载的内容
+    basisKind: statute
     description: 26.3 答复须落到法定判准（本领域技术人员 / 能否实现 / 说明书记载的内容）；只陈述"说明书未记载某特征"而未回到判准，等于把技术方案要件审查混入充分公开审查
     premise:
       - "第二十六条\\s*第三款"
@@ -124,6 +127,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 答复撰写规范：答复须逐条回应通知书指出的驳回理由
+    basisKind: practice-note
     description: 通知书提出的每条驳回理由（简称）须在答复中覆盖；漏答即以本条提示补答。按简称核验，覆盖不等于论证成立
     check:
       type: notice_ground_coverage
@@ -136,6 +140,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 答复撰写规范：引用通知书未提出的驳回条款须说明来源，避免自造理由
+    basisKind: practice-note
     description: 答复引用的驳回条款（22.2/22.3/26.3/26.4/33）不在通知书援引范围内时提示说明来源；通知书未识别到具体条款时不评估
     check:
       type: unraised_statute_citation
@@ -154,6 +159,7 @@ rules:
     severity: minor
     action: warn
     legalBasis: 答复撰写规范：无内容的小节整节删除，成品不保留空标题
+    basisKind: practice-note
     description: 小节标题后没有正文，或正文只有「无」一类占位语；无内容的争点不设节、不留标题（模板槽位置空即整节折叠）。只含子标题的父节不算空
     premise:
       # 标题锚点：引擎按无 m 标志编译正则，故同时写行首与换行两种入口。
@@ -177,6 +183,7 @@ rules:
     severity: minor
     action: warn
     legalBasis: 答复撰写规范：一个结论只写一处，其余以引述位置指代
+    basisKind: practice-note
     description: 同一句（≥12 字）在全文出现 3 次以上；总体立场、论证末句与结论与请求三处改写同一结论是篇幅膨胀的主要来源
     check:
       type: sentence_repetition

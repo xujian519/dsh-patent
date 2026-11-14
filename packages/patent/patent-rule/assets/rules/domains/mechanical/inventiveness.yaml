@@ -23,6 +23,7 @@ rules:
     severity: minor
     action: warn
     legalBasis: 无效复审决定585168：名称不同不等于技术实质不同，结构功能等效性须实质分析
+    basisKind: judgment
     premise:
       - 等效
       - 等同

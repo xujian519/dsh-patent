@@ -21,6 +21,7 @@ rules:
     severity: minor
     action: warn
     legalBasis: 最高法院判例要旨：区别特征仅在于治疗用途且对产品本身没有影响的，不能因用途区别认定产品权利要求具备创造性
+    basisKind: judgment
     check:
       type: synonym_match
       minConfidence: 1

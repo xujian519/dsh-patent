@@ -1,0 +1,62 @@
+# 权威位阶表 — A3 的数据落点。
+#
+# 位阶回答一个判定问题：两处法源对同一命题给出不同口径时，按什么顺序取舍。
+# 这里只登记顺序与案件类型的映射，不复制条文；法源本身由
+# authority-baseline.yaml 的 source id 引用。
+#
+# 六类案型是本案型的工作分类，覆盖 patent-workflow 的八个内置 manifest。
+# manifest 的 caseType 值见 packages/patent/patent-workflow/src/workflow/manifests.ts。
+version: "1.0"
+verifiedOn: 2026-11-13
+
+caseTypes:
+  - id: drafting
+    label: 撰写
+    manifests: [patent_disclosure_v1]
+    order: [patent-law, implementing-regulations, examination-guidelines]
+    note: 撰写以专利法关于说明书与权利要求的规定为授权基础，细则给出提交与撰写形式，指南给出审查口径。
+
+  - id: prosecution-response
+    label: 审查意见答复
+    manifests: [patent_oa_response_v1]
+    order: [patent-law, implementing-regulations, examination-guidelines]
+    note: 答复针对审查意见，指南的审查口径直接约束答复方向；法与本细则优先于指南。
+
+  - id: reexamination
+    label: 复审
+    manifests: [patent_reexamination_v1]
+    order: [patent-law, implementing-regulations, examination-guidelines]
+    note: 复审程序由专利法与细则确立，指南第四部分规定复审的具体审查。
+
+  - id: invalidation
+    label: 无效宣告
+    manifests: [patent_invalidation_v1]
+    order: [patent-law, implementing-regulations, examination-guidelines]
+    note: 无效理由限于专利法与细则列举的情形；指南第四部分第三章规定审查基准。
+
+  - id: infringement
+    label: 侵权诉讼
+    manifests: [patent_infringement_v1]
+    order: [patent-law, patent-infringement-interpretation, patent-infringement-interpretation-2, civil-code, civil-procedure-law]
+    reference: [examination-guidelines]
+    note: 侵权判定以专利法关于保护范围的规定为准；两部司法解释细化等同、禁止反悔与赔偿；民法典与民事诉讼法补充时效与程序。指南只作参考，不作为裁判依据。
+
+  - id: search-analysis
+    label: 检索与分析
+    manifests: [patent_novelty_v1, patent_inventiveness_v1, patent_patentability_v1]
+    order: [patent-law, implementing-regulations, examination-guidelines]
+    note: 新颖性、创造性与可专利性判断落在专利法关于新颖性、创造性与可专利客体的规定，以及指南第二部分。
+
+rules:
+  - id: higher-authority-wins
+    label: 上位法优先
+    note: 法律高于行政法规，行政法规高于部门规章；司法解释与被解释的法律一并适用，冲突时以法律为准。
+  - id: special-provision-wins
+    label: 特别规定优先
+    note: 同一机关制定的规范，特别规定与一般规定不一致的，适用特别规定。
+  - id: later-provision-wins
+    label: 新规定优先
+    note: 同一机关制定的规范，新的规定与旧的规定不一致的，适用新的规定。
+  - id: guideline-never-overrides-statute
+    label: 指南不得越过法律与细则
+    note: 审查指南是国家知识产权局的部门规章，与专利法、细则冲突时无效；它只解释审查口径。

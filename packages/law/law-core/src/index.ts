@@ -33,6 +33,7 @@ export {
 } from './text-overlap.ts'
 export type { ComparableEntry, OverlapIndex } from './text-overlap.ts'
 export {
+  articleCitationFocus,
   articleComparableEntries,
   decideArticleCitation,
   findCompetingLabels,
@@ -42,6 +43,7 @@ export {
   truncateProposition,
 } from './article-decision.ts'
 export type {
+  ArticleCitationFocus,
   ArticleBaseline,
   ArticleDecision,
   ArticleProposition,

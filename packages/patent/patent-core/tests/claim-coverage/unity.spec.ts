@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+
 import { describe, expect, it } from 'vitest'
 import {
   checkClaimUnity,
@@ -30,6 +32,11 @@ const UNRELATED_CLAIMS: UnityClaim[] = [
 ]
 
 describe('checkClaimUnity: 独立权利要求数量', () => {
+  it('外观设计合案（专利法第31条第2款）不在本判定中', () => {
+    const source = readFileSync(new URL('../../src/claim-coverage/unity.ts', import.meta.url), 'utf8')
+    expect(source).toContain('专利法第31条第2款的外观设计合案不在本判定中')
+  })
+
   it('单项独立权利要求天然满足单一性，无配对且评分满分', () => {
     const verdict = checkClaimUnity([
       { number: 1, kind: 'independent', preamble: '一种加热装置', characterized: '包括加热元件' },

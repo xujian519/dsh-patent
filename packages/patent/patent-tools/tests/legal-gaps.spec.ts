@@ -374,11 +374,11 @@ describe('legal-gaps 原子', () => {
     const items = out['legal_gaps_items'] as LegalGapItem[]
     expect(items.find(item => item.id === 'protection-scope')).toMatchObject({
       status: 'passed',
-      provision: '专利法第59条',
+      provision: '专利法第64条',
     })
     expect(items.find(item => item.id === 'prior-art-defense')).toMatchObject({
       status: 'not-assessed',
-      provision: '专利法第62条',
+      provision: '专利法第67条',
     })
   })
 

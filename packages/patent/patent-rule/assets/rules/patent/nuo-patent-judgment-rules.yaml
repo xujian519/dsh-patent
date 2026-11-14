@@ -11,6 +11,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 司法实践总结（2023）最高法知民终844号
+    basisKind: judgment
     check:
       type: structural_analysis
       requiresAll:
@@ -28,6 +29,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 司法实践总结（2023）最高法知民终405号
+    basisKind: judgment
     check:
       type: structural_analysis
       requiresAll:
@@ -44,6 +46,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 司法实践总结（2024）最高法知民终370号、（2022）最高法知民终2302号
+    basisKind: judgment
     check:
       type: structural_analysis
       requiresAll:
@@ -61,6 +64,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 司法实践总结（2023）最高法知民终2520号
+    basisKind: judgment
     check:
       type: structural_analysis
       requiresAll:
@@ -83,6 +87,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 司法实践总结（2019）最高法知民终87号
+    basisKind: judgment
     check:
       type: structural_analysis
       requiresAll:
@@ -100,6 +105,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第七十一条第一款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -116,6 +122,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 司法实践总结（2022）最高法知民终2920号
+    basisKind: judgment
     check:
       type: structural_analysis
       requiresAll:
@@ -132,6 +139,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 司法实践总结（2019）沪民终136号
+    basisKind: judgment
     check:
       type: structural_analysis
       requiresAll:
@@ -149,6 +157,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 最高人民法院关于民事诉讼证据的若干规定第九十五条；最高人民法院关于知识产权民事诉讼证据的若干规定第十三条
+    basisKind: practice-note
     check:
       type: structural_analysis
       requiresAll:
@@ -166,6 +175,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 司法实践总结（2019）最高法知民终831号
+    basisKind: judgment
     check:
       type: structural_analysis
       requiresAll:
@@ -183,6 +193,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 司法实践总结（2022）最高法知民终2100号
+    basisKind: judgment
     check:
       type: structural_analysis
       requiresAll:
@@ -210,6 +221,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 司法实践总结（2020）最高法知民终248号
+    basisKind: judgment
     check:
       type: structural_analysis
       requiresAll:
@@ -233,6 +245,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第六条；专利法实施细则第十三条
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -252,6 +265,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第六条
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:

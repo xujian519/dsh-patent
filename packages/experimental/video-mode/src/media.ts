@@ -805,7 +805,7 @@ export class MediaRuntime extends Service {
    * Submit one request and wait up to `waitMs` for settlement.
    * @param request - requested generation.
    * @param signal - caller cancellation, forwarded to the provider.
-   * @returns the settled task, or the current running task when the wait expired.
+   * @returns the settled task, or the retained task when `waitMs` expires.
    * @throws {@link MediaFailure} for selection, validation, and provider failures.
    */
   async generate(request: MediaRequest, signal: AbortSignal): Promise<MediaTask> {
@@ -817,7 +817,7 @@ export class MediaRuntime extends Service {
    * Wait up to `waitMs` for one submitted task to settle.
    * @param task - submitted task.
    * @param signal - caller cancellation, forwarded to the provider.
-   * @returns the settled task, or the current running task when the wait expired.
+   * @returns the settled task, or the retained task when `waitMs` expires.
    * @throws {@link MediaFailure} when the owning provider disappeared.
    */
   async wait(task: MediaTask, signal: AbortSignal): Promise<MediaTask> {
@@ -826,11 +826,24 @@ export class MediaRuntime extends Service {
     while (!TERMINAL.has(current.status) && Date.now() < deadline) {
       signal.throwIfAborted()
       await delay(this.config.pollMs, undefined, { signal })
+      signal.throwIfAborted()
+      if (Date.now() >= deadline) return this.status(current.id)
       const provider = this.providers.get(current.provider)
       if (provider === undefined) {
         throw new MediaFailure(`provider ${current.provider} disappeared while task ${current.id} was running`, 'MEDIA_PROVIDER_UNAVAILABLE')
       }
-      current = this.remember(await provider.poll(current, signal))
+      const polled = provider.poll(current, signal).then(
+        (polledTask): { kind: 'task'; task: MediaTask } => ({ kind: 'task', task: polledTask }),
+        (error: unknown): { kind: 'error'; error: unknown } => ({ kind: 'error', error }),
+      )
+      const outcome = await Promise.race([
+        polled,
+        delay(deadline - Date.now(), { kind: 'timeout' as const }, { signal }),
+      ])
+      signal.throwIfAborted()
+      if (outcome.kind === 'timeout') return this.status(current.id)
+      if (outcome.kind === 'error') throw outcome.error
+      current = this.remember(outcome.task)
     }
     return current
   }
@@ -1015,11 +1028,13 @@ export class MediaRuntime extends Service {
   /**
    * Retain one task record, pricing a successful settlement from the estimate
    * captured at submission when the provider reports no cost, and evicting the
-   * oldest settled record at the cap.
+   * oldest settled record at the cap. A cancelled record is not replaced.
    * @param task - latest task snapshot.
    * @returns the retained snapshot, priced when an estimate was recorded.
    */
   private remember(task: MediaTask): MediaTask {
+    const previous = this.tasks.get(task.id)
+    if (previous?.status === 'cancelled') return previous
     let stored = task
     if (task.status === 'succeeded' && task.cost === undefined) {
       const cost = this.costs.get(task.id)

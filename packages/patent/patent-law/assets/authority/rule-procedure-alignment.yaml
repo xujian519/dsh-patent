@@ -1,0 +1,347 @@
+# 规则族、程序计算、文书模板与工作流 manifest 的条文对照。
+#
+# 计划里的两条条号按现行索引改指：
+# - 细则第41条是撤回专利申请，复审请求在专利法第41条与细则第65条，无效请求在细则第69条。
+# - 细则第7条是保密专利，不产生送达或期限。
+#
+# 运行时不读本文件。scripts/verify-patent-rule-alignment.ts 对照索引、随包规则和用例核验它。
+
+families:
+  - id: drafting
+    label: 撰写
+    links:
+      - provision: { law: 专利法, article: 26, paragraph: 3, proposition: 清楚、完整的说明 }
+        rule: { kind: packaged, id: CON-201 }
+        test: { file: packages/patent/patent-rule/tests/rule-parity.spec.ts, title: 映射的资产 id 全部存在；partial 必须有资产，none 必须为空 }
+      - provision: { law: 专利法, article: 26, paragraph: 4, proposition: 清楚、简要地限定要求专利保护的范围 }
+        rule: { kind: packaged, id: CON-301 }
+        test: { file: packages/patent/patent-rule/tests/rule-parity.spec.ts, title: 映射的资产 id 全部存在；partial 必须有资产，none 必须为空 }
+      - provision: { law: 专利法, article: 33, proposition: 不得超出原说明书和权利要求书记载的范围 }
+        rule: { kind: packaged, id: CON-501 }
+        test: { file: packages/patent/patent-rule/tests/rule-parity.spec.ts, title: 映射的资产 id 全部存在；partial 必须有资产，none 必须为空 }
+  - id: subject-matter
+    label: 客体
+    links:
+      - provision: { law: 专利法, article: 2, paragraph: 2, proposition: 对产品、方法或者其改进所提出的新的技术方案 }
+        rule: { kind: packaged, id: CON-101 }
+        test: { file: packages/patent/patent-rule/tests/rule-engine.spec.ts, title: structural_analysis flags missing elements below minConfidence }
+      - provision: { law: 专利法, article: 2, paragraph: 3, proposition: 对产品的形状、构造或者其结合所提出的适于实用的新的技术方案 }
+        rule: { kind: packaged, id: LAW-UM-SUBJECT-001 }
+        test: { file: packages/patent/patent-rule/tests/rule-parity.spec.ts, title: 映射的资产 id 全部存在；partial 必须有资产，none 必须为空 }
+      - provision: { law: 专利法, article: 25, paragraph: 1, item: 2, proposition: 智力活动的规则和方法 }
+        rule: { kind: packaged, id: EX-SEL-001 }
+        test: { file: packages/patent/patent-rule/tests/guideline-citations.spec.ts, title: cites the section the 2023 revision holds each subject in }
+  - id: novelty-inventiveness
+    label: 新颖性与创造性
+    links:
+      - provision: { law: 专利法, article: 22, paragraph: 2, proposition: 不属于现有技术 }
+        rule: { kind: packaged, id: PR-OA-004 }
+        test: { file: packages/patent/patent-rule/tests/patent-full-rule-set.spec.ts, title: 前提评审落地：只讨论 26.3 的答复不触发无关主题的完整性规则 }
+      - provision: { law: 专利法, article: 22, paragraph: 3, proposition: 突出的实质性特点和显著的进步 }
+        rule: { kind: packaged, id: EX-INV-001 }
+        test: { file: packages/patent/patent-rule/tests/patent-full-rule-set.spec.ts, title: 前提是主题词表而非全局静音：答复一旦讨论创造性，创造性族的完整性检查回归 }
+  - id: unity-division
+    label: 单一性与分案
+    links:
+      - provision: { law: 专利法, article: 31, paragraph: 1, proposition: 应当限于一项发明或者实用新型 }
+        rule: { kind: source, file: packages/patent/patent-tools/src/tool/spec-claim-coverage.ts, anchor: 专利法第31条第1款 }
+        test: { file: packages/patent/patent-tools/tests/validate-specification.spec.ts, title: 技术主题无关的独立权利要求 → error，未通过 }
+      - provision: { law: 专利法, article: 31, paragraph: 2, proposition: 一件外观设计专利申请应当限于一项外观设计 }
+        rule: { kind: source, file: packages/patent/patent-core/src/claim-coverage/unity.ts, anchor: 专利法第31条第2款的外观设计合案不在本判定中 }
+        test: { file: packages/patent/patent-core/tests/claim-coverage/unity.spec.ts, title: 外观设计合案（专利法第31条第2款）不在本判定中 }
+      - provision: { law: 专利法实施细则, article: 48, paragraph: 1, proposition: 可以向国务院专利行政部门提出分案申请 }
+        rule: { kind: packaged, id: EX-PRC-002 }
+        test: { file: packages/patent/patent-rule/tests/guideline-citations.spec.ts, title: cites the section the 2023 revision holds each subject in }
+  - id: reexamination-invalidation
+    label: 复审与无效
+    links:
+      - provision: { law: 专利法, article: 41, paragraph: 1, proposition: 可以自收到通知之日起三个月内向国务院专利行政部门请求复审 }
+        rule: { kind: packaged, id: P-PRC-004 }
+        test: { file: packages/patent/patent-rule/tests/guideline-citations.spec.ts, title: cites the section the 2023 revision holds each subject in }
+      - provision: { law: 专利法实施细则, article: 65, paragraph: 1, proposition: 应当提交复审请求书，说明理由 }
+        rule: { kind: packaged, id: P-PRC-004 }
+        test: { file: packages/patent/patent-rule/tests/guideline-citations.spec.ts, title: cites the section the 2023 revision holds each subject in }
+      - provision: { law: 专利法实施细则, article: 69, paragraph: 1, proposition: 应当向国务院专利行政部门提交专利权无效宣告请求书和必要的证据一式两份 }
+        rule: { kind: packaged, id: EVI-001 }
+        test: { file: packages/patent/patent-core/tests/evidence-engine.spec.ts, title: loadRules：加载证据规则资产后权重生效且规则可查 }
+  - id: design
+    label: 外观设计
+    links:
+      - provision: { law: 专利法, article: 23, paragraph: 1, proposition: 不属于现有设计 }
+        rule: { kind: source, file: packages/patent/patent-core/src/notice/grounds.ts, anchor: "article: '专利法第23条第1款'" }
+        test: { file: packages/patent/patent-core/tests/notice/grounds.spec.ts, title: 三条理由逐条识别 }
+      - provision: { law: 专利法, article: 23, paragraph: 2, proposition: 应当具有明显区别 }
+        rule: { kind: source, file: packages/patent/patent-core/src/notice/grounds.ts, anchor: "article: '专利法第23条第2款'" }
+        test: { file: packages/patent/patent-core/tests/notice/grounds.spec.ts, title: 三条理由逐条识别 }
+      - provision: { law: 专利法, article: 23, paragraph: 3, proposition: 不得与他人在申请日以前已经取得的合法权利相冲突 }
+        rule: { kind: source, file: packages/patent/patent-core/src/notice/grounds.ts, anchor: "article: '专利法第23条第3款'" }
+        test: { file: packages/patent/patent-core/tests/notice/grounds.spec.ts, title: 三条理由逐条识别 }
+  - id: term-compensation
+    label: 期限补偿
+    links:
+      - provision: { law: 专利法, article: 42, paragraph: 1, proposition: 发明专利权的期限为二十年 }
+        rule: { kind: source, file: packages/patent/patent-deadline/src/statutes-data.ts, anchor: "case 'invention': return 20" }
+        test: { file: packages/patent/patent-deadline/tests/statutes.spec.ts, title: computes the periods that run from the filing date }
+      - provision: { law: 专利法, article: 42, paragraph: 2, proposition: 就发明专利在授权过程中的不合理延迟给予专利权期限补偿 }
+        rule: { kind: source, file: packages/patent/patent-deadline/src/deadline-entries.ts, anchor: 专利法第42条第2款、专利法实施细则第77条 }
+        test: { file: packages/patent/patent-deadline/tests/statutes.spec.ts, title: computes the term-compensation request from the grant publication date }
+      - provision: { law: 专利法, article: 42, paragraph: 3, proposition: 补偿期限不超过五年 }
+        rule: { kind: source, file: packages/patent/patent-deadline/src/statutes-data.ts, anchor: MAX_TERM_COMPENSATION_YEARS = 5 }
+        test: { file: packages/patent/patent-deadline/tests/statutes.spec.ts, title: rejects compensation and paid-through values outside their domain }
+  - id: service-periods
+    label: 送达与期限
+    links:
+      - provision: { law: 专利法实施细则, article: 4, paragraph: 4, proposition: 自文件发出之日起满15日 }
+        rule: { kind: source, file: packages/patent/patent-deadline/src/delivery.ts, anchor: "addCalendarDays(request.dispatchDate, 15)" }
+        test: { file: packages/patent/patent-deadline/tests/delivery.spec.ts, title: adds 15 days for postal delivery }
+      - provision: { law: 专利法实施细则, article: 5, proposition: 开始的当日不计算在期限内 }
+        rule: { kind: source, file: packages/patent/patent-deadline/src/period.ts, anchor: The start day itself is not counted }
+        test: { file: packages/patent/patent-deadline/tests/period.spec.ts, title: "ends a day period N days after the start, not counting the start day" }
+      - provision: { law: 专利法实施细则, article: 6, paragraph: 1, proposition: 自障碍消除之日起2个月内且自期限届满之日起2年内 }
+        rule: { kind: source, file: packages/patent/patent-deadline/src/report.ts, anchor: 自障碍消除之日起2个月内 }
+        test: { file: packages/patent/patent-deadline/tests/report.spec.ts, title: states the recovery and extension rules once an entry is overdue }
+      - provision: { law: 专利法实施细则, article: 7, paragraph: 1, proposition: 涉及国防利益需要保密的，由国防专利机构受理并进行审查 }
+        rule: { kind: source, file: packages/patent/patent-law/assets/law/cn-examination-guidelines.yaml, anchor: 根据专利法实施细则第七条第一款的规定 }
+        test: { file: scripts/verify-patent-rule-alignment.spec.ts, title: 细则第7条是保密专利，期限引擎不把它当作期限 }
+  - id: fees
+    label: 费用
+    links:
+      - provision: { law: 专利法实施细则, article: 110, paragraph: 1, proposition: 应当缴纳下列费用 }
+        rule: { kind: source, file: packages/patent/patent-fees/assets/fees/cn-fees.yaml, anchor: 专利法实施细则第110条第1款 }
+        test: { file: packages/patent/patent-fees/tests/tool.spec.ts, title: prices the shipped index and refuses a total while one item has no amount }
+
+computations:
+  - id: postal-presumed-receipt
+    provision: { law: 专利法实施细则, article: 4, paragraph: 4, quote: 自文件发出之日起满15日 }
+    code: { file: packages/patent/patent-deadline/src/delivery.ts, anchor: "addCalendarDays(request.dispatchDate, 15)" }
+    test: { file: packages/patent/patent-deadline/tests/delivery.spec.ts, title: adds 15 days for postal delivery }
+  - id: postal-actual-receipt
+    provision: { law: 专利法实施细则, article: 4, paragraph: 4, quote: 以实际收到日为准 }
+    code: { file: packages/patent/patent-deadline/src/delivery.ts, anchor: 以实际收到日为准 }
+    test: { file: packages/patent/patent-deadline/tests/delivery.spec.ts, title: prefers an evidenced actual receipt date for postal delivery }
+  - id: personal-handover
+    provision: { law: 专利法实施细则, article: 4, paragraph: 5, quote: 以交付日为送达日 }
+    code: { file: packages/patent/patent-deadline/src/delivery.ts, anchor: 以交付日为送达日 }
+    test: { file: packages/patent/patent-deadline/tests/delivery.spec.ts, title: takes the hand-over date for direct delivery }
+  - id: publication-month
+    provision: { law: 专利法实施细则, article: 4, paragraph: 6, quote: 自公告之日起满1个月 }
+    code: { file: packages/patent/patent-deadline/src/delivery.ts, anchor: 自公告之日起满1个月 }
+    test: { file: packages/patent/patent-deadline/tests/delivery.spec.ts, title: "adds one month for service by publication, clamped to the month end" }
+  - id: electronic-entry
+    provision: { law: 专利法实施细则, article: 4, paragraph: 7, quote: 以进入当事人认可的电子系统的日期为送达日 }
+    code: { file: packages/patent/patent-deadline/src/delivery.ts, anchor: 以进入当事人认可的电子系统的日期为送达日 }
+    test: { file: packages/patent/patent-deadline/tests/delivery.spec.ts, title: takes an evidenced entry date over the dispatch date }
+  - id: filing-post
+    gap: true
+    provision: { law: 专利法实施细则, article: 4, paragraph: 1, quote: 以寄出的邮戳日为递交日 }
+    code: { file: packages/patent/patent-deadline/src/delivery.ts, anchor: 细则第4条第1款、第2款的递交日不在本引擎推算 }
+    test: { file: scripts/verify-patent-rule-alignment.spec.ts, title: 细则第4条第1款和第2款的递交日由调用方给出 }
+  - id: filing-electronic
+    gap: true
+    provision: { law: 专利法实施细则, article: 4, paragraph: 2, quote: 以进入国务院专利行政部门指定的特定电子系统的日期为递交日 }
+    code: { file: packages/patent/patent-deadline/src/delivery.ts, anchor: 细则第4条第1款、第2款的递交日不在本引擎推算 }
+    test: { file: scripts/verify-patent-rule-alignment.spec.ts, title: 细则第4条第1款和第2款的递交日由调用方给出 }
+  - id: service-addressee
+    gap: true
+    provision: { law: 专利法实施细则, article: 4, paragraph: 3, quote: 文件送交专利代理机构 }
+    code: { file: packages/patent/patent-deadline/src/delivery.ts, anchor: 第3款的送达对象（代理机构或联系人）不产生日期 }
+    test: { file: scripts/verify-patent-rule-alignment.spec.ts, title: 细则第4条第1款和第2款的递交日由调用方给出 }
+  - id: period-excludes-start-day
+    provision: { law: 专利法实施细则, article: 5, quote: 开始的当日不计算在期限内 }
+    code: { file: packages/patent/patent-deadline/src/period.ts, anchor: The start day itself is not counted }
+    test: { file: packages/patent/patent-deadline/tests/period.spec.ts, title: "ends a day period N days after the start, not counting the start day" }
+  - id: period-corresponding-day
+    provision: { law: 专利法实施细则, article: 5, quote: 以其最后一月的相应日为期限届满日 }
+    code: { file: packages/patent/patent-deadline/src/calendar.ts, anchor: 细则第5条第2句 }
+    test: { file: packages/patent/patent-deadline/tests/period.spec.ts, title: ends a year period on the corresponding day }
+  - id: period-month-end
+    provision: { law: 专利法实施细则, article: 5, quote: 该月无相应日的，以该月最后一日为期限届满日 }
+    code: { file: packages/patent/patent-deadline/src/calendar.ts, anchor: 细则第5条第2句 }
+    test: { file: packages/patent/patent-deadline/tests/period.spec.ts, title: uses the last day of the month when there is no corresponding day }
+  - id: period-holiday
+    provision: { law: 专利法实施细则, article: 5, quote: 期限届满日是法定休假日的，以休假日后的第一个工作日为期限届满日 }
+    code: { file: packages/patent/patent-deadline/src/report.ts, anchor: 顺延至其后第一个工作日 }
+    test: { file: packages/patent/patent-deadline/tests/boundaries.spec.ts, title: rolls an end date inside the 2025 eight-day National Day holiday }
+  - id: restoration-force-majeure
+    provision: { law: 专利法实施细则, article: 6, paragraph: 1, quote: 自障碍消除之日起2个月内且自期限届满之日起2年内 }
+    code: { file: packages/patent/patent-deadline/src/report.ts, anchor: 自障碍消除之日起2个月内 }
+    test: { file: packages/patent/patent-deadline/tests/report.spec.ts, title: states the recovery and extension rules once an entry is overdue }
+  - id: restoration-other-reason
+    provision: { law: 专利法实施细则, article: 6, paragraph: 2, quote: 自收到国务院专利行政部门的通知之日起2个月内 }
+    code: { file: packages/patent/patent-deadline/src/report.ts, anchor: 自收到通知之日起2个月内 }
+    test: { file: packages/patent/patent-deadline/tests/report.spec.ts, title: states the recovery and extension rules once an entry is overdue }
+  - id: restoration-reexamination
+    provision: { law: 专利法实施细则, article: 6, paragraph: 2, quote: 自复审请求期限届满之日起2个月内 }
+    code: { file: packages/patent/patent-deadline/src/report.ts, anchor: 自该期限届满之日起2个月内 }
+    test: { file: packages/patent/patent-deadline/tests/report.spec.ts, title: states the recovery and extension rules once an entry is overdue }
+  - id: restoration-fee
+    provision: { law: 专利法实施细则, article: 6, paragraph: 3, quote: 还应当缴纳恢复权利请求费 }
+    indexIds: [restoration-fee]
+  - id: extension-before-expiry
+    provision: { law: 专利法实施细则, article: 6, paragraph: 4, quote: 应当在期限届满前 }
+    code: { file: packages/patent/patent-deadline/src/report.ts, anchor: 指定期限在届满前还可请求延长 }
+    test: { file: packages/patent/patent-deadline/tests/report.spec.ts, title: states the recovery and extension rules once an entry is overdue }
+  - id: restoration-excluded
+    provision: { law: 专利法实施细则, article: 6, paragraph: 5, quote: 本条第一款和第二款的规定不适用 }
+    code: { file: packages/patent/patent-deadline/src/report.ts, anchor: 第24条与第74条规定的期限不是本引擎计算的期限项 }
+    test: { file: packages/patent/patent-deadline/tests/report.spec.ts, title: does not offer recovery for a period excluded by 细则第6条第5款 }
+  - id: term-invention
+    provision: { law: 专利法, article: 42, paragraph: 1, quote: 发明专利权的期限为二十年 }
+    code: { file: packages/patent/patent-deadline/src/statutes-data.ts, anchor: "case 'invention': return 20" }
+    test: { file: packages/patent/patent-deadline/tests/statutes.spec.ts, title: computes the periods that run from the filing date }
+  - id: term-utility
+    provision: { law: 专利法, article: 42, paragraph: 1, quote: 实用新型专利权的期限为十年 }
+    code: { file: packages/patent/patent-deadline/src/statutes-data.ts, anchor: "case 'utility-model': return 10" }
+    test: { file: packages/patent/patent-deadline/tests/statutes.spec.ts, title: gives a utility model the ten-year term of 专利法第42条第1款 }
+  - id: term-design
+    provision: { law: 专利法, article: 42, paragraph: 1, quote: 外观设计专利权的期限为十五年 }
+    code: { file: packages/patent/patent-deadline/src/statutes-data.ts, anchor: "? 10 : 15" }
+    test: { file: packages/patent/patent-deadline/tests/statutes.spec.ts, title: uses the 6-month priority window and 15-year term for a design patent }
+  - id: term-design-before-transition
+    gap: true
+    provision: { law: 专利法, article: 42, paragraph: 1, quote: 外观设计专利权的期限为十五年 }
+    code: { file: packages/patent/patent-deadline/src/statutes-data.ts, anchor: 2021-06-01 之前申请的外观设计仍按十年，不适用现行第42条第1款的十五年 }
+    test: { file: packages/patent/patent-deadline/tests/statutes.spec.ts, title: applies the 10-year term to a design filed before the 2021 transition }
+  - id: term-compensation-request
+    provision: { law: 专利法实施细则, article: 77, quote: 自公告授予专利权之日起3个月内 }
+    code: { file: packages/patent/patent-deadline/src/deadline-entries.ts, anchor: 自公告授予专利权之日起3个月内 }
+    test: { file: packages/patent/patent-deadline/tests/statutes.spec.ts, title: computes the term-compensation request from the grant publication date }
+  - id: new-drug-compensation-request
+    provision: { law: 专利法实施细则, article: 81, quote: 自该新药在中国获得上市许可之日起3个月内 }
+    code: { file: packages/patent/patent-deadline/src/deadline-entries.ts, anchor: 专利法实施细则第81条 }
+    test: { file: packages/patent/patent-deadline/tests/statutes.spec.ts, title: computes the new-drug compensation request from the marketing approval date }
+  - id: compensation-five-year-ceiling
+    provision: { law: 专利法, article: 42, paragraph: 3, quote: 补偿期限不超过五年 }
+    code: { file: packages/patent/patent-deadline/src/statutes-data.ts, anchor: MAX_TERM_COMPENSATION_YEARS = 5 }
+    test: { file: packages/patent/patent-deadline/tests/statutes.spec.ts, title: rejects compensation and paid-through values outside their domain }
+  - id: new-drug-fourteen-year-cap
+    gap: true
+    provision: { law: 专利法, article: 42, paragraph: 3, quote: 总有效专利权期限不超过十四年 }
+    code: { file: packages/patent/patent-deadline/src/statutes-data.ts, anchor: 新药批准上市后总有效专利权期限不超过十四年，不在本计算中 }
+    test: { file: packages/patent/patent-deadline/tests/statutes.spec.ts, title: extends the term and its fee years by a granted compensation period }
+  - id: fee-application
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 1, quote: 申请费 }
+    indexIds: [application-fee, application-fee-utility-design]
+    legalBasisIncludes: 第110条第1款第（一）项
+  - id: fee-surcharge
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 1, quote: 申请附加费 }
+    indexIds: [claims-surcharge, specification-surcharge]
+    legalBasisIncludes: 第110条第1款第（一）项
+  - id: fee-publication
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 1, quote: 公布印刷费 }
+    indexIds: [publication-printing-fee]
+    legalBasisIncludes: 第110条第1款第（一）项
+  - id: fee-priority
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 1, quote: 优先权要求费 }
+    indexIds: [priority-claim-fee]
+    legalBasisIncludes: 第110条第1款第（一）项
+  - id: fee-substantive-examination
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 2, quote: 发明专利申请实质审查费 }
+    indexIds: [substantive-examination-fee]
+    legalBasisIncludes: 第110条第1款第（二）项
+  - id: fee-reexamination
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 2, quote: 复审费 }
+    indexIds: [reexamination-fee, reexamination-fee-utility-design]
+    legalBasisIncludes: 第110条第1款第（二）项
+  - id: fee-annual
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 3, quote: 年费 }
+    indexIds: [annual-fee, annual-fee-utility-model, annual-fee-design]
+    legalBasisIncludes: 第110条第1款第（三）项
+  - id: fee-restoration
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 4, quote: 恢复权利请求费 }
+    indexIds: [restoration-fee]
+    legalBasisIncludes: 第110条第1款第（四）项
+  - id: fee-extension
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 4, quote: 延长期限请求费 }
+    indexIds: [extension-fee]
+    legalBasisIncludes: 第110条第1款第（四）项
+  - id: fee-record-change
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 5, quote: 著录事项变更费 }
+    indexIds: [record-change-fee]
+    legalBasisIncludes: 第110条第1款第（五）项
+  - id: fee-evaluation-report
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 5, quote: 专利权评价报告请求费 }
+    indexIds: [evaluation-report-fee]
+    legalBasisIncludes: 第110条第1款第（五）项
+  - id: fee-invalidation
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 5, quote: 无效宣告请求费 }
+    indexIds: [invalidation-fee, invalidation-fee-utility-design]
+    legalBasisIncludes: 第110条第1款第（五）项
+  - id: fee-certified-copy
+    provision: { law: 专利法实施细则, article: 110, paragraph: 1, item: 5, quote: 专利文件副本证明费 }
+    absent: true
+
+templates:
+  - id: claims-spec
+    provisions: [{ law: 专利法, article: 26, paragraph: 3, proposition: 清楚、完整的说明 }]
+    formatTest: { file: packages/patent/patent-document/tests/draft-skeleton.spec.ts, title: claims-spec 最小草案渲染后模板标题全部保留，且无伪造编号占位 }
+  - id: patentability-opinion
+    provisions: [{ law: 专利法, article: 22, paragraph: 1, proposition: 应当具备新颖性、创造性和实用性 }]
+    formatTest: { file: packages/patent/patent-document/tests/draft-schema-conformance.spec.ts, title: 注册表槽位集合与模板 id 集合完全一致（双向锁定）, binds: GENERIC_TEMPLATE_IDS, idSource: packages/patent/patent-document/src/document/draftSchema/generic.ts }
+  - id: search-report
+    provisions: [{ law: 专利法, article: 22, paragraph: 5, proposition: 申请日以前在国内外为公众所知的技术 }]
+    formatTest: { file: packages/patent/patent-document/tests/draft-schema-conformance.spec.ts, title: 注册表槽位集合与模板 id 集合完全一致（双向锁定）, binds: GENERIC_TEMPLATE_IDS, idSource: packages/patent/patent-document/src/document/draftSchema/generic.ts }
+  - id: oa-response
+    provisions: [{ law: 专利法, article: 33, proposition: 不得超出原说明书和权利要求书记载的范围 }]
+    formatTest: { file: packages/patent/patent-document/tests/oa-template-structure.spec.ts, title: template 恰有八个 h2 小节，且以中文序数一~八连续编号 }
+  - id: invalidation-opinion
+    provisions: [{ law: 专利法实施细则, article: 69, paragraph: 1, proposition: 专利权无效宣告请求书 }]
+    formatTest: { file: packages/patent/patent-document/tests/invalidation-template-structure.spec.ts, title: 恰有六个 h2 小节，按中文序数一~六连续编号 }
+  - id: invalidation-analysis
+    provisions: [{ law: 专利法实施细则, article: 69, paragraph: 1, proposition: 专利权无效宣告请求书 }]
+    formatTest: { file: packages/patent/patent-document/tests/invalidation-template-structure.spec.ts, title: 七个中文序数小节加一个不带序数的收尾小结 }
+  - id: invalidation-defense
+    provisions: [{ law: 专利法实施细则, article: 72, paragraph: 1, proposition: 要求其在指定的期限内陈述意见 }]
+    formatTest: { file: packages/patent/patent-document/tests/invalidation-template-structure.spec.ts, title: 八个中文序数小节，按一~八连续编号 }
+  - id: rectification-response
+    provisions: [{ law: 专利法, article: 37, proposition: 要求其在指定的期限内陈述意见，或者对其申请进行修改 }]
+    formatTest: { file: packages/patent/patent-document/tests/draft-schema-conformance.spec.ts, title: 注册表槽位集合与模板 id 集合完全一致（双向锁定）, binds: GENERIC_TEMPLATE_IDS, idSource: packages/patent/patent-document/src/document/draftSchema/generic.ts }
+  - id: re-examination-request
+    provisions: [{ law: 专利法, article: 41, paragraph: 1, proposition: 可以自收到通知之日起三个月内向国务院专利行政部门请求复审 }]
+    formatTest: { file: packages/patent/patent-document/tests/draft-schema-conformance.spec.ts, title: 注册表槽位集合与模板 id 集合完全一致（双向锁定）, binds: GENERIC_TEMPLATE_IDS, idSource: packages/patent/patent-document/src/document/draftSchema/generic.ts }
+  - id: infringement-opinion
+    provisions: [{ law: 专利法, article: 64, paragraph: 1, proposition: 以其权利要求的内容为准 }]
+    formatTest: { file: packages/patent/patent-document/tests/draft-schema-conformance.spec.ts, title: 注册表槽位集合与模板 id 集合完全一致（双向锁定）, binds: GENERIC_TEMPLATE_IDS, idSource: packages/patent/patent-document/src/document/draftSchema/generic.ts }
+  - id: litigation-pleading
+    provisions: [{ law: 专利法, article: 65, proposition: 侵犯其专利权，引起纠纷的，由当事人协商解决 }]
+    formatTest: { file: packages/patent/patent-document/tests/draft-schema-conformance.spec.ts, title: 注册表槽位集合与模板 id 集合完全一致（双向锁定）, binds: GENERIC_TEMPLATE_IDS, idSource: packages/patent/patent-document/src/document/draftSchema/generic.ts }
+  - id: right-evaluation-report
+    provisions: [{ law: 专利法实施细则, article: 63, paragraph: 1, proposition: 作出专利权评价报告 }]
+    formatTest: { file: packages/patent/patent-document/tests/draft-schema-conformance.spec.ts, title: 模板每个元素槽位都被注册表 fields/sections 覆盖, binds: FORM_TEMPLATE_IDS, idSource: packages/patent/patent-document/src/document/draftSchema/index.ts }
+  - id: search-report-form
+    provisions: [{ law: 专利法, article: 22, paragraph: 5, proposition: 申请日以前在国内外为公众所知的技术 }]
+    formatTest: { file: packages/patent/patent-document/tests/draft-schema-conformance.spec.ts, title: 模板每个元素槽位都被注册表 fields/sections 覆盖, binds: FORM_TEMPLATE_IDS, idSource: packages/patent/patent-document/src/document/draftSchema/index.ts }
+
+manifests:
+  - id: patent_novelty_v1
+    provisions: [{ law: 专利法, article: 22, paragraph: 2, proposition: 不属于现有技术 }]
+  - id: patent_disclosure_v1
+    provisions: [{ law: 专利法, article: 26, paragraph: 3, proposition: 清楚、完整的说明 }]
+  - id: patent_inventiveness_v1
+    provisions: [{ law: 专利法, article: 22, paragraph: 3, proposition: 突出的实质性特点和显著的进步 }]
+  - id: patent_patentability_v1
+    provisions: [{ law: 专利法, article: 25, paragraph: 1, proposition: 不授予专利权 }]
+  - id: patent_oa_response_v1
+    provisions: [{ law: 专利法, article: 33, proposition: 不得超出原说明书和权利要求书记载的范围 }]
+  - id: patent_invalidation_v1
+    provisions: [{ law: 专利法实施细则, article: 69, paragraph: 1, proposition: 专利权无效宣告请求书 }]
+  - id: patent_reexamination_v1
+    provisions: [{ law: 专利法, article: 41, paragraph: 1, proposition: 请求复审 }]
+  - id: patent_infringement_v1
+    provisions: [{ law: 专利法, article: 64, paragraph: 1, proposition: 以其权利要求的内容为准 }]
+
+corrections:
+  - id: rule-41-withdrawal
+    law: 专利法实施细则
+    article: 41
+    paragraph: 1
+    contains: 申请人撤回专利申请的
+    excludes: 请求复审
+    test: { file: scripts/verify-patent-rule-alignment.spec.ts, title: 细则第41条是撤回专利申请，不是复审请求 }
+  - id: rule-7-not-a-period
+    law: 专利法实施细则
+    article: 7
+    paragraph: 1
+    contains: 涉及国防利益需要保密
+    sourceAbsent: { dir: packages/patent/patent-deadline/src, text: 实施细则第7条 }
+    test: { file: scripts/verify-patent-rule-alignment.spec.ts, title: 细则第7条是保密专利，期限引擎不把它当作期限 }

@@ -19,6 +19,7 @@ rules:
     severity: minor
     action: warn
     legalBasis: 专利审查指南第二部分第四章 §3.2.1.1（三步法）
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -64,6 +65,7 @@ rules:
     severity: major
     action: review
     legalBasis: (2025)最高法知行终959号：无公知常识性证据支持认定"容易想到""易于获得"，实难令人信服
+    basisKind: judgment
     check:
       type: keyword_blocklist
       negationContext: true

@@ -29,6 +29,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 撰写规范：法条引用应精确到条、款
+    basisKind: practice-note
     check:
       type: keyword_blocklist
       keywords:
@@ -47,6 +48,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 撰写规范：分析结论应同时给出结论陈述与法律/事实依据
+    basisKind: practice-note
     check:
       type: structural_analysis
       requiresAll:
@@ -91,6 +93,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第七章
+    basisKind: guideline
     check:
       type: keyword_blocklist
       keywords:
@@ -109,6 +112,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第22条第5款；审查指南第二部分第三章2.1.2
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -142,6 +146,7 @@ rules:
     severity: critical
     action: warn
     legalBasis: 专利法第22条第2款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -173,6 +178,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第22条第5款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -201,6 +207,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第22条第2款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -229,6 +236,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第22条第4款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -270,6 +278,7 @@ rules:
     severity: critical
     action: warn
     legalBasis: 专利法实施细则关于说明书撰写的规定；审查指南第二部分第二章
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -308,6 +317,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 审查指南第二部分第二章2.4
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -338,6 +348,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第四章3.2.1.1
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -373,6 +384,7 @@ rules:
     severity: critical
     action: warn
     legalBasis: 法释〔2009〕20 号第 17 条（2016 修正）
+    basisKind: practice-note
     check:
       type: structural_analysis
       requiresAll:
@@ -412,6 +424,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释（禁止反悔原则）
+    basisKind: practice-note
     check:
       type: structural_analysis
       requiresAll:
@@ -447,6 +460,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第26条第3款；第20174号决定
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:

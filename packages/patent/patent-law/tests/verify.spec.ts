@@ -160,6 +160,151 @@ describe('verifyCitation on statutes', () => {
     expect(verifyCitation(articleRef(22, 9), index).decision).toBe('valid')
   })
 
+  it('matches a proposition against the named paragraph and names a sibling paragraph', () => {
+    const index = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{
+        ...VERIFIED_ARTICLE,
+        paragraphs: [1, 2],
+        text: '第一款只写申请日。\n\n第二款只写优先权。',
+      }],
+    })]])
+    const cited = articleRef(22, 2)
+    const supported = verifyCitation(cited, index, { proposition: '第二款只写优先权' })
+    expect(supported.decision).toBe('valid')
+    expect(supported.reason).toContain('第 2 款')
+    const sibling = verifyCitation(cited, index, { proposition: '第一款只写申请日' })
+    expect(sibling.decision).toBe('mismatch')
+    expect(sibling.reason).toContain('第 1 款')
+  })
+
+  it('keeps the whole article when the paragraph list does not line up with the text', () => {
+    const index = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{
+        ...VERIFIED_ARTICLE,
+        paragraphs: [1, 2],
+        topics: ['整条主题'],
+        text: '第一款规定一般规则。第二款规定例外情形。',
+      }],
+    })]])
+    const finding = verifyCitation(articleRef(22, 1), index, { proposition: '整条主题' })
+    expect(finding.decision).toBe('valid')
+    expect(finding.reason).not.toContain('第 1 款')
+  })
+
+  it('matches a proposition against the named item and rejects an absent item', () => {
+    const entry = {
+      ...VERIFIED_ARTICLE,
+      text: '申请人应当写明下列事项：\n（一）名称。\n（二）地址。',
+    }
+    const index = new Map<LawName, LawBaseline>([['专利法', statute({ articles: [entry] })]])
+    const itemRef = (item: number): LawReference => ({
+      kind: 'law-article',
+      law: '专利法',
+      article: 22,
+      item,
+      raw: `专利法第22条第${item}项`,
+    })
+    const supported = verifyCitation(itemRef(2), index, { proposition: '地址' })
+    expect(supported.decision).toBe('valid')
+    expect(supported.reason).toContain('第 2 项')
+    const finding = verifyCitation(itemRef(3), index)
+    expect(finding.decision).toBe('mismatch')
+    expect(finding.reason).toContain('不含第 3 项')
+    const otherItem = verifyCitation(itemRef(1), index, { proposition: '地址' })
+    expect(otherItem.decision).toBe('mismatch')
+    expect(otherItem.reason).toContain('第 2 项')
+    const opening = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{ ...entry, text: '（一）名称。\n（二）地址。' }],
+    })]])
+    expect(verifyCitation(itemRef(2), opening, { proposition: '地址' }).decision).toBe('valid')
+    const malformed = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{ ...entry, text: '（第十二三条）不是项。\n（十十）也不是项。\n正文仍是同一条。' }],
+    })]])
+    expect(verifyCitation(articleRef(22), malformed).decision).toBe('valid')
+  })
+
+  it('names the paragraph when an item citation is narrowed inside it', () => {
+    const itemRef = (item: number): LawReference => ({
+      kind: 'law-article',
+      law: '专利法',
+      article: 22,
+      paragraph: 1,
+      item,
+      raw: `专利法第22条第1款第${item}项`,
+    })
+    const index = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{
+        ...VERIFIED_ARTICLE,
+        paragraphs: [1],
+        text: '申请人应当写明下列事项：\n（一）名称。\n（二）地址。',
+      }],
+    })]])
+    const supported = verifyCitation(itemRef(2), index, { proposition: '地址' })
+    expect(supported.decision).toBe('valid')
+    expect(supported.reason).toContain('第 1 款')
+    expect(supported.reason).toContain('第 2 项')
+    const missing = verifyCitation(itemRef(3), index)
+    expect(missing.decision).toBe('mismatch')
+    expect(missing.reason).toContain('第 1 款')
+    expect(missing.reason).toContain('不含第 3 项')
+    const sibling = verifyCitation(itemRef(1), index, { proposition: '地址' })
+    expect(sibling.decision).toBe('mismatch')
+    expect(sibling.reason).toContain('第 1 款第 2 项')
+  })
+
+  it('keeps the whole article when a named item has no item markers to isolate', () => {
+    const itemRef: LawReference = {
+      kind: 'law-article',
+      law: '专利法',
+      article: 22,
+      item: 2,
+      raw: '专利法第22条第2项',
+    }
+    const single = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{ ...withoutParagraphs(VERIFIED_ARTICLE), topics: ['整条主题'], text: '只有一段正文。' }],
+    })]])
+    const whole = verifyCitation(itemRef, single, { proposition: '整条主题' })
+    expect(whole.decision).toBe('valid')
+    expect(whole.reason).not.toContain('第 2 项')
+    const several = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{
+        ...withoutParagraphs(VERIFIED_ARTICLE),
+        topics: ['整条主题'],
+        text: '第一段。\n第二段。',
+      }],
+    })]])
+    const unsplit = verifyCitation(itemRef, several, { proposition: '整条主题' })
+    expect(unsplit.decision).toBe('valid')
+    expect(unsplit.reason).not.toContain('第 2 项')
+  })
+
+  it('does not narrow when the paragraph list is not 1..N in order', () => {
+    const index = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{
+        ...VERIFIED_ARTICLE,
+        paragraphs: [1, 3],
+        topics: ['整条主题'],
+        text: '第一段写申请日。\n第二段写优先权。',
+      }],
+    })]])
+    const finding = verifyCitation(articleRef(22, 1), index, { proposition: '整条主题' })
+    expect(finding.decision).toBe('valid')
+    expect(finding.reason).not.toContain('第 1 款')
+  })
+
+  it('does not let an article topic stand in for the named paragraph', () => {
+    const index = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{
+        ...VERIFIED_ARTICLE,
+        paragraphs: [1, 2],
+        topics: ['整条主题'],
+        text: '第一款只写申请日。\n\n第二款只写优先权。',
+      }],
+    })]])
+    const finding = verifyCitation(articleRef(22, 2), index, { proposition: '整条主题' })
+    expect(finding.decision).toBe('unmatched')
+  })
+
   it('reports an indexed article whose text has not been transcribed', () => {
     const finding = verifyCitation(articleRef(5, undefined, '专利法实施细则'), baselines())
     expect(finding.decision).toBe('unverified')
@@ -538,13 +683,16 @@ describe('versioned guideline sections', () => {
     expect(verifyCitation(sectionRef('第四部分第三章3.3'), partial).decision).toBe('unverified')
   })
 
-  it('uses the shipped 2026 overrides for the three transcribed sections', () => {
+  it('serves the shipped 2026 text for every amended section', () => {
     const shipped = new Map<LawName, LawBaseline>([['专利审查指南', loadLawBaselines().get('专利审查指南')!]])
-    for (const path of ['第二部分第一章4.4', '第四部分第三章2.1', '第四部分第三章3.3']) {
+    for (const path of ['第二部分第一章4.4', '第四部分第三章2.1', '第四部分第三章3.3', '第二部分第九章6.2']) {
       const current = verifyCitation(sectionRef(path), shipped)
       expect(current.decision).toBe('valid')
       expect(current.entry?.sourceDoc).toContain('2026 年修订版')
-      expect(verifyCitation(sectionRef(path), shipped, { revision: BASE }).decision).toBe('unverified')
+      // 明确要求 2023 年修订版时返回该版自己的文本。
+      const base = verifyCitation(sectionRef(path), shipped, { revision: BASE })
+      expect(base.decision).toBe('valid')
+      expect(base.entry?.sourceDoc).toContain('2023 年修订版')
     }
   })
 })
@@ -604,13 +752,13 @@ describe('the packaged index', () => {
     expect(verifyCitation(articleRef(75), shipped, { proposition: unlisted }).decision).toBe('valid')
   })
 
-  it('reports a boilerplate-heavy proposition under the wrong article as a mismatch naming the right one', () => {
+  it('reports a proposition drawn from another article as a mismatch naming that article', () => {
     const shipped = loadLawBaselines()
-    const referencing = articleRef(71, undefined, '专利法实施细则')
-    const proposition = '国务院专利行政部门不予受理'
+    const referencing = articleRef(60, undefined, '专利法实施细则')
+    const proposition = '国务院专利行政部门对专利公告、专利单行本中出现的错误，一经发现，应当及时更正'
     const finding = verifyCitation(referencing, shipped, { proposition })
     expect(finding.decision).toBe('mismatch')
-    expect(finding.reason).toContain('第 70 条')
+    expect(finding.reason).toContain('第 64 条')
   })
 
   it('moves a paraphrase between undecided and supported with the support threshold', () => {
@@ -642,9 +790,11 @@ describe('the packaged index', () => {
     // A verified article ceiling turns a fabricated number into a blocked
     // decision instead of a report that nothing here can say.
     expect(verifyCitation(articleRef(99), shipped).decision).toBe('out-of-range')
-    // An article that exists but is not indexed is a gap in the index, not a
-    // claim that the number does not exist.
-    expect(verifyCitation(articleRef(50), shipped).decision).toBe('not-indexed')
+    // Every article of the 2023 revision is transcribed, so any number inside the
+    // verified ceiling resolves against its text instead of reporting an index gap.
+    for (let article = 1; article <= 149; article += 1) {
+      expect(verifyCitation(articleRef(article, undefined, '专利法实施细则'), shipped).decision).toBe('valid')
+    }
   })
 
   it('holds the invalidation chapter the 2023 revision numbers', () => {
@@ -710,9 +860,12 @@ describe('the packaged index', () => {
     // 路径指向的节存在，且该节讲的是它标题所称的内容。
     expect(text('第二部分第二章2.2.2')).toContain('发明或者实用新型的技术领域应当是要求保护的')
     expect(text('第二部分第九章2')).toContain('审查应当针对要求保护的解决方案')
+    // 2.2.1 也在 2023 版里，但它是「名称」，不是「技术领域」。
+    expect(text('第二部分第二章2.2.1')).toContain('发明或者实用新型的名称应当清楚')
+    expect(text('第二部分第二章2.2.1')).not.toContain('技术领域应当是要求保护的')
     expect(verifyCitation(sectionRef('第二部分第二章2.2.2'), shipped).decision).toBe('valid')
     expect(verifyCitation(sectionRef('第二部分第九章2'), shipped).decision).toBe('valid')
-    expect(verifyCitation(sectionRef('第二部分第二章2.2.1'), shipped).decision).toBe('not-indexed')
+    expect(verifyCitation(sectionRef('第二部分第二章2.2.1'), shipped).decision).toBe('valid')
     expect(verifyCitation(sectionRef('第二部分第九章2.0'), shipped).decision).toBe('not-indexed')
     expect(verifyCitation(sectionRef('第一部分第一章2.3'), shipped).decision).toBe('not-indexed')
   })
@@ -857,21 +1010,72 @@ describe('the packaged index', () => {
     expect(citation.reason).toContain('第五部分第六章2.3.1')
   })
 
-  it('reports a container section whose sections do not carry the proposition', () => {
+  it('decides a container section by the sections under it', () => {
     const shipped = loadLawBaselines()
-    // 第二部分第二章 只登记了章一级条目：章正文未单独转录，命题由该章各节判定。
-    const citation = verifyCitation(sectionRef('第二部分第二章'), shipped, {
+    // 第二部分第二章 只登记了章一级条目：章自身没有正文，命题由该章各节判定。
+    const supported = verifyCitation(sectionRef('第二部分第二章'), shipped, {
+      proposition: '技术领域应当是要求保护的发明或者实用新型技术方案所属或者直接应用的具体技术领域',
+    })
+    expect(supported.decision).toBe('valid')
+    expect(supported.reason).toContain('第二部分第二章2.2.2')
+    const unrelated = verifyCitation(sectionRef('第二部分第二章'), shipped, {
       proposition: '本章规定了基因序列的保藏要求',
+    })
+    expect(unrelated.decision).toBe('mismatch')
+    expect(unrelated.reason).toContain('第二部分第十章')
+  })
+
+  it('reports a container whose sections do not carry the proposition', () => {
+    const shipped = loadLawBaselines()
+    // 命题与指南任何已转录节都不重合时，容器引用落在「其下各节都不相符」。
+    const citation = verifyCitation(sectionRef('第二部分第二章'), shipped, {
+      proposition: '本章规定了船舶螺旋桨的防腐涂层工艺',
     })
     expect(citation.decision).toBe('unmatched')
     expect(citation.reason).toContain('节正文未转录')
   })
 
-  it('reports a section whose indexed sections are not transcribed', () => {
+  it('decides a container whose subsections are current', () => {
     const shipped = loadLawBaselines()
-    const citation = verifyCitation(sectionRef('第二部分第十章'), shipped)
-    expect(citation.decision).toBe('unverified')
-    expect(citation.reason).toContain('尚未转录核验')
+    // 第四部分第八章没有 2026 年改过的节，容器由其下各节判定。
+    const current = verifyCitation(sectionRef('第四部分第八章'), shipped)
+    expect(current.decision).toBe('valid')
+    expect(current.reason).toContain('判定依据其下各节')
+  })
+
+  it('decides a judicial interpretation article and its ceiling', () => {
+    const shipped = loadLawBaselines()
+    const law = '最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释'
+    const finding = verifyCitation(
+      { kind: 'law-article', law, article: 6, raw: `${law}第六条` },
+      shipped,
+      { proposition: '通过对权利要求、说明书的修改或者意见陈述而放弃的技术方案' },
+    )
+    expect(finding.decision).toBe('valid')
+    expect(finding.entry?.sourceDoc).toContain('知识库原件')
+    const beyond = verifyCitation({ kind: 'law-article', law, article: 21, raw: `${law}第二十一条` }, shipped)
+    expect(beyond.decision).toBe('out-of-range')
+  })
+
+  it('refuses the renumbered-away path and serves the section at its 2026 number', () => {
+    const shipped = loadLawBaselines()
+    // 4.2.1.3「不予退款的情形」在 2026 年版改号为 4.2.1.2，旧路径不能按现行条文核验。
+    const old = verifyCitation(sectionRef('第五部分第二章4.2.1.3'), shipped)
+    expect(old.decision).toBe('unverified')
+    expect(old.reason).toContain('2026 年修订版')
+    const moved = verifyCitation(sectionRef('第五部分第二章4.2.1.2'), shipped, {
+      proposition: '当事人在自缴费日起三年后才提出退款请求的',
+    })
+    expect(moved.decision).toBe('valid')
+    expect(moved.entry?.sourceDoc).toContain('2026 年修订版')
+  })
+
+  it('drops the deleted section instead of serving its old text at 4.2.1.2', () => {
+    const shipped = loadLawBaselines()
+    const moved = verifyCitation(sectionRef('第五部分第二章4.2.1.2'), shipped, {
+      proposition: '下列情形一经核实，专利局应当主动退款',
+    })
+    expect(moved.decision).toBe('mismatch')
   })
 
   it('attaches each guideline topic list to the section it indexes', () => {

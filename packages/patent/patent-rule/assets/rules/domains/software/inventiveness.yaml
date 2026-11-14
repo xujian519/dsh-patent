@@ -21,6 +21,7 @@ rules:
     severity: minor
     action: warn
     legalBasis: 《专利审查指南》第二部分第一章 4.2、第二部分第九章 2：涉及算法或商业规则的方案须同时解决技术问题、采用技术手段、达到技术效果
+    basisKind: guideline
     premise:
       - 客体
       - 智力活动

@@ -26,7 +26,7 @@ The [document package family](../../packages/document/README.md) renders, conver
 | `cacheKey` | Opaque converter generation plus extension/source-content identity |
 | `generation` | Provider lifetime; replacement invalidates cached PDF reuse |
 
-The provider admits the deferred read before allocating source bytes, shares conversions by content identity, and removes its private scratch directory before returning. Returned PDF bytes remain valid after provider disposal. Source and PDF bytes do not enter Session storage. Consumers can use [Workspace Files](../../packages/api/workspace-files/README.md) for authorized bounded reads.
+The provider admits the deferred read before allocating source bytes, shares conversions by content identity, and removes its private scratch directory before returning. A failed scratch removal is logged and does not replace the conversion result or error. Returned PDF bytes remain valid after provider disposal. Source and PDF bytes do not enter Session storage. Consumers can use [Workspace Files](../../packages/api/workspace-files/README.md) for authorized bounded reads.
 
 ## Preview reads
 

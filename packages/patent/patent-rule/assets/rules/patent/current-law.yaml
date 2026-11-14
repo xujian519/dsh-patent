@@ -25,6 +25,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 民法典第188条：向人民法院请求保护民事权利的诉讼时效期间为三年
+    basisKind: statute
     check:
       type: pattern_analysis
       patterns:
@@ -43,6 +44,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 法释〔2009〕20 号第 17 条（2016 修正）
+    basisKind: practice-note
     check:
       type: pattern_analysis
       patterns:
@@ -60,6 +62,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第二条第三款：实用新型是指对产品的形状、构造或者其结合所提出的适于实用的新的技术方案
+    basisKind: statute
     check:
       type: pattern_analysis
       patterns:

@@ -95,13 +95,14 @@ export type StructuralAnalysisCheck = {
 }
 
 /**
- * citation_analysis — 法条引用范围核验：引用条号不得超过 statute.max。
+ * citation_analysis — 法条引用范围核验：引用条号不得超过该法的条号上限。
+ * 随包规则不写死上限，评估时改读法条索引的 `maxArticle`；测试夹具仍可写 `max`。
  * 没有主题相关性判定；声明 `topics` 的规则会在加载期被拒绝。
  */
 export type CitationAnalysisCheck = {
   type: 'citation_analysis'
-  /** 法条名 → 该法有效的最大条号。 */
-  statutes: Record<string, { max: number }>
+  /** 法条名 → 可选的显式上限。缺省时用索引里的 `maxArticle`。 */
+  statutes: Record<string, { max?: number }>
 }
 
 /**
@@ -225,6 +226,13 @@ export type ConstitutionalRule = {
   action: RuleAction
   /** 法律/规范依据原文。 */
   legalBasis?: string
+  /**
+   * Why `legalBasis` is or is not a statute citation.
+   * `statute` and `guideline` carry citations `law_verify` must resolve.
+   * `judgment` and `practice-note` explain the absence of an article number.
+   * `exempt` is a registered exception from the index.
+   */
+  basisKind?: 'statute' | 'guideline' | 'judgment' | 'practice-note' | 'exempt'
   /**
    * 适用前提（正则，任一命中即评估该规则；大小写不敏感；缺省始终评估）。
    *

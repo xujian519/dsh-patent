@@ -11,6 +11,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 专利审查指南第二部分第四章
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -29,6 +30,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第29条
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -46,6 +48,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第41条；专利法实施细则第65条；审查指南第四部分第二章4.1
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -66,6 +69,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第22条、第26条、第33条
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -83,6 +87,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第七章（检索）
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -102,6 +107,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释
+    basisKind: practice-note
     check:
       type: keyword_blocklist
       # 「不得编造（202X）…」是合规警示；引文同样不算本模型编造。
@@ -118,6 +124,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 审查指南第二部分第二章
+    basisKind: guideline
     check:
       type: keyword_blocklist
       keywords:
@@ -133,6 +140,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第八章5.1
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -163,6 +171,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第26条第4款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -180,6 +189,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 审查指南第二部分第二章
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:

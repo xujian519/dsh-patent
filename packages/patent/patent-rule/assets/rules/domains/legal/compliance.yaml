@@ -17,6 +17,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 执业规范：AI 辅助法律分析不构成正式法律意见，应附免责声明
+    basisKind: practice-note
     check:
       type: keyword_blocklist
       # 否定语境（"本文件不构成法律意见"）不误报
@@ -42,6 +43,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 《民法典》第 188 条：向人民法院请求保护民事权利的诉讼时效期间为三年
+    basisKind: statute
     check:
       type: keyword_blocklist
       negationContext: true
@@ -66,6 +68,7 @@ rules:
     severity: minor
     action: warn
     legalBasis: 《民事诉讼法》关于管辖的规定：被告住所地、合同履行地、侵权行为地等
+    basisKind: practice-note
     check:
       type: keyword_blocklist
       negationContext: true
@@ -89,6 +92,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 法律分析不得给出确定性结果承诺，应使用限定性表述
+    basisKind: practice-note
     check:
       type: keyword_blocklist
       negationContext: true
@@ -119,6 +123,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 引用规范：法条引用应注明法律名称、条号及款项
+    basisKind: practice-note
     check:
       type: keyword_blocklist
       negationContext: true

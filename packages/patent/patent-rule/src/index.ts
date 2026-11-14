@@ -52,6 +52,11 @@ import type {
   RuleSetValidationIssue,
 } from '@deepseek-ai/dsh-patent-core'
 import { patentAssetDir } from './asset-location.ts'
+import {
+  citationGateBlocking,
+  renderCitationGateDenial,
+  type CitationGateEntry,
+} from './runtime/citation-gate.ts'
 import { createEvidenceComplianceGuards } from './guard/evidenceComplianceGuards.ts'
 import {
   ARTIFACT_GATE_CHECK_TYPES,
@@ -287,6 +292,14 @@ export interface Config {
    * this package's.
    */
   deliveryGate?: DeliveryGateEntry[]
+  /**
+   * Citation gate: before a listed delivery tool runs, every citation in its
+   * text arguments must pass the shipped patent index and, for 民法典 and
+   * 民事诉讼法, the legal-law index. A citation that is out of range, absent
+   * from the index, unverified, or narrowed to a missing paragraph or item
+   * denies the call.
+   */
+  citationGate?: CitationGateEntry[]
   /** When true, review-level violations block without an approval round-trip (unattended fail-closed). */
   approvalDisabled?: boolean
 }
@@ -313,6 +326,11 @@ export const Config: z<Config> = z.object({
       equals: z.union([z.string(), z.boolean(), z.array(z.string())]),
       minItems: z.number(),
     }))),
+  })).default([]),
+  citationGate: z.array(z.object({
+    tool: z.string().required(),
+    textArgs: z.array(z.string()).required(),
+    whenArgs: z.dict(z.union([z.string(), z.array(z.string())])),
   })).default([]),
   approvalDisabled: z.boolean().default(false),
 })
@@ -479,6 +497,15 @@ export function apply(ctx: Context, config: Config): void {
       const violations = structuralGateViolations(structuralGate, exec.name, exec.arguments, synonyms.synonyms)
       if (violations.length === 0) return next()
       return { kind: 'deny', reason: renderStructuralGateDenial(exec.name, violations) }
+    })
+  }
+
+  const citationGate = config.citationGate ?? []
+  if (citationGate.length > 0) {
+    ctx.on('tools/pre-execute', async (exec, next) => {
+      const blocking = citationGateBlocking(citationGate, exec.name, exec.arguments)
+      if (blocking.length === 0) return next()
+      return { kind: 'deny', reason: renderCitationGateDenial(exec.name, blocking) }
     })
   }
 

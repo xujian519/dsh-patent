@@ -426,6 +426,23 @@ describe('minimax edge cases', () => {
     expect((await run(() => new Response(new Uint8Array(8)), 4)).error?.code).toBe('MEDIA_ARTIFACT_TOO_LARGE')
   })
 
+  it('does not fetch a settled video whose URL is not http or https', async () => {
+    for (const videoUrl of ['file:///etc/passwd', 'out.mp4']) {
+      let downloads = 0
+      const provider = new MiniMaxMediaProvider(settingsOf(), async (url) => {
+        if (url.endsWith('/v2/video_generation')) return json({ task_id: 't-1' })
+        if (url.includes('/v2/query/')) {
+          return json({ task: { id: 't-1', status: 'succeeded', content: { url: videoUrl } } })
+        }
+        downloads += 1
+        return new Response(new Uint8Array([1]))
+      })
+      const settled = await provider.poll(await submitVideo(provider), new AbortController().signal)
+      expect(settled.error?.code).toBe('MEDIA_ARTIFACT_INVALID')
+      expect(downloads).toBe(0)
+    }
+  })
+
   it('fails a download whose transport throws a non-Error', async () => {
     const provider = new MiniMaxMediaProvider(settingsOf(), async (url) => {
       if (url.endsWith('/v2/video_generation')) return json({ task_id: 't-1' })

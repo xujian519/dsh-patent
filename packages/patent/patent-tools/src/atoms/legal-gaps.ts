@@ -355,14 +355,14 @@ export const LEGAL_GAP_CHECKS: Record<LegalGapProfile, readonly LegalGapCheckpoi
   infringement: [
     {
       id: 'protection-scope',
-      provision: '专利法第59条',
+      provision: '专利法第64条',
       label: '保护范围与全面覆盖',
       severity: 'warn',
       assessKeys: ['claim_chart_doc', 'coverage_report'],
     },
     {
       id: 'prior-art-defense',
-      provision: '专利法第62条',
+      provision: '专利法第67条',
       label: '现有技术抗辩',
       severity: 'warn',
       assessKeys: ['prior_art_defense_report'],

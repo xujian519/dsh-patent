@@ -170,13 +170,13 @@ video_deliver { files: [{ path: "out/ep01.mp4", format: "video" }] }
 <a id="understand-the-implementation"></a>
 ## 实现说明
 
-媒体运行时是注册为 `ctx.media` 的 Cordis 服务。provider 通过 `register()` 注册；返回的 disposer 在 fiber 卸载时移除它。选择时先读取请求 capability 的默认模型，再只接受 `models()` 中声明了该 id 与 capability 的 provider。运行时负责任务保留与有界等待，provider 负责传输、取消与计费。合成 provider 在提交时结算；ComfyUI provider 返回 `submitted`，再通过 `poll` 结算。
+媒体运行时是注册为 `ctx.media` 的 Cordis 服务。provider 通过 `register()` 注册；返回的 disposer 在 fiber 卸载时移除它。选择时先读取请求 capability 的默认模型，再只接受 `models()` 中声明了该 id 与 capability 的 provider。运行时负责任务保留与有界等待，provider 负责传输、取消与计费。已记为取消的任务在之后的轮询结束时仍保持取消。轮询未在剩余 `waitMs` 内结束时，等待返回运行中的任务，并且不采用这次轮询的结果。合成 provider 在提交时结算；ComfyUI provider 返回 `submitted`，再通过 `poll` 结算。
 
-ComfyUI provider 用提示词、种子、画布、帧数与模型文件名填充工作流中的 `{{name}}` 占位符。整串占位符保留 JSON 类型，因此 `width`、`length`、`seed` 以整数送达。`first_frame_path` 参考会经 `/upload/image` 上传，新增 `LoadImage` 节点，并把输出接到 Wan latent 节点的 `start_image`。`submit` 向 `/prompt` 提交，`poll` 读取 `/history/<id>`，必要时回落到 `/queue` 判断 running 或 queued；完成条目经 `/view` 下载为产物字节。`cancel` 删除排队任务并中断运行中任务。提交超过 `timeoutMs` 的任务以 `MEDIA_TASK_TIMEOUT` 失败。
+ComfyUI provider 用提示词、种子、画布、帧数与模型文件名填充工作流中的 `{{name}}` 占位符。整串占位符保留 JSON 类型，因此 `width`、`length`、`seed` 以整数送达。`first_frame_path` 参考会经 `/upload/image` 上传，新增 `LoadImage` 节点，并把输出接到 Wan latent 节点的 `start_image`。上传文件名必须是一个路径段，子目录只能由 `.` 和 `..` 以外的段组成。历史文件只在其文件名、子目录和类型满足同一规则时才下载。`submit` 向 `/prompt` 提交，`poll` 读取 `/history/<id>`，必要时回落到 `/queue` 判断 running 或 queued；完成条目经 `/view` 下载为产物字节。`cancel` 删除排队任务并中断运行中任务。提交超过 `timeoutMs` 的任务以 `MEDIA_TASK_TIMEOUT` 失败。
 
 随包 Wan 工作流把无分类器引导固定为 1。在 Apple MPS 上，CFG>1 的批量分支会让解码后的颜色失真（构图仍在）；CFG 1 保持颜色正常、使负向提示失效，但本地片段在数秒内仍会出现拖影与漂移。CUDA 部署可通过 `comfyui.video.workflowPath` 挂载自己的 CFG 5 工作流。
 
-MiniMax provider 发送 `content` 数组：一个 text 项，随后零个或多个 `image_url` 项。首帧或尾帧参考会把 `ratio` 设为 `adaptive`；纯文本请求使用配置的画幅。`submit` 返回 `submitted`，运行时任务 id 带远端 `task_id` 前缀；`poll` 读取查询接口并按 `pollMs` 节流；成功任务先下载 `content.url`，再交给运行时写入。API 没有负向提示字段，因此负向提示会以 `Avoid:` 句式追加到正向提示后。provider 限制图片 30 MB、参考图 9 张、提示词 7000 字符，单次请求体（含 base64 图片）为 64 MiB。
+MiniMax provider 发送 `content` 数组：一个 text 项，随后零个或多个 `image_url` 项。首帧或尾帧参考会把 `ratio` 设为 `adaptive`；纯文本请求使用配置的画幅。`submit` 返回 `submitted`，运行时任务 id 带远端 `task_id` 前缀；`poll` 读取查询接口并按 `pollMs` 节流；成功任务先下载 `content.url`，再交给运行时写入。下载地址必须使用 http 或 https。MiniMax 与 SiliconFlow 共用这一检查。API 没有负向提示字段，因此负向提示会以 `Avoid:` 句式追加到正向提示后。provider 限制图片 30 MB、参考图 9 张、提示词 7000 字符，单次请求体（含 base64 图片）为 64 MiB。
 
 SiliconFlow provider 提交 `model`、`prompt`、`image_size`，并把首帧 `image` 作为 data URI 发送；`negative_prompt` 与 `seed` 使用各自的字段。画幅比例决定 `1280x720`、`720x1280` 或 `960x960`，本地任务 id 带远端 `requestId` 前缀。`poll` 把 id 发到 `/video/status`，映射 `InQueue`、`InProgress`、`Succeed` 与 `Failed`；成功任务先下载 `results.videos[0].url`，再交给运行时写入。图片上限 10 MB，提示词上限 7000 字符。provider 校验模型 id，拒绝“恰好一张首帧图”之外的参考组合，并拒绝 5 秒以外的时长，而不是静默截短片长。
 
@@ -188,7 +188,7 @@ MiniMax 语音 provider 以 `stream: false` 提交 `text`，并在同一次调�
 
 `media` 工具把每个未终结的生成任务记入 `video/<id>/tasks.json`：任务 id、provider、模型、提交时间、恢复所需的请求字段，以及声明的输出路径。带 `project_path` 的 `media status` 在运行时不再持有该任务时找到记录，让 provider 通过 `resume` 重建待轮询状态并继续轮询；任务结算后删除记录。每次以人民币计价的结算都按任务 id 追加一条到 `video/<id>/budget.json`，因此重复调用 status 不会重复计费。预算门与 `video_deliver` 取已记录镜头成本与账本总额中的较大者。
 
-EDL 是可复现的渲染契约。`buildFfmpegArgs` 生成一张滤镜图：每个视觉片段裁切、等比补边到画布、重采样到画布帧率并拼接；可选音频片段裁切、增益并混音；字幕按安全区样式烧录；输出 H.264/AAC 并带 `+faststart`。汇编器先通过 `ctx.fs` 发布空输出占位文件，让父目录在同一写入策略下存在。
+EDL 是可复现的渲染契约。`buildFfmpegArgs` 生成一张滤镜图：每个视觉片段裁切、等比补边到画布、重采样到画布帧率并拼接；可选音频片段裁切、增益并混音；字幕按安全区样式烧录；输出 H.264/AAC 并带 `+faststart`。字幕路径会按滤镜图和 subtitles 滤镜各转义一次，撇号留在文件名里，输出垫仍是垫。该路径或配置的字体名含控制字符时会被拒绝。汇编器先通过 `ctx.fs` 发布空输出占位文件，让父目录在同一写入策略下存在。
 
 <a id="model-experience"></a>
 ## 模型体验
@@ -230,6 +230,8 @@ EDL 是可复现的渲染契约。`buildFfmpegArgs` 生成一张滤镜图：每�
 - **ffmpeg 是 Host 前置条件** —— 可执行文件无法解析时，汇编器以 `MEDIA_FFMPEG_MISSING` 失败。烧录中文字幕需要 libass 与 CJK 字体。
 - **预算门取两份记录中的较大者** —— `media generate` 用估算值与 `project.budgetCny` 减去“`video_project` 记录的镜头成本”与“媒体账本”中的较大者比较。忘记回写不会少算，手工调低镜头成本也不能把门限降到账本已计费额度以下。
 - **预算门不是预留额度** —— 两个生成在任一结算前同时启动时，会读到同一份账本，因此并发提交可能超支；预算紧张时逐个执行。
+- **取消之后保持取消** —— `cancel` 之后才结束的轮询不会替换已取消的任务。
+- **单次轮询受 `waitMs` 限制** —— 轮询未在剩余等待时间内结束时，`generate` 返回运行中的任务。之后的 `status` 会再次轮询。
 - **跨进程项目写入仍可能竞争** —— 修改在同一 Host 内串行化，并且只在文件仍与读取时的文本一致时发布；但其他进程的写入若恰好落在此检查与写入之间，仍可能丢失。三次失败后报告 `MEDIA_PROJECT_CONFLICT`。
 - **ffmpeg 运行在 Host 执行世界** —— 汇编器通过 `ctx.fs` 解析输出，但在其旁边运行二进制；远程文件系统 provider 需要匹配的 subprocess provider。
 - **没有新的 Session 事件** —— 项目文件是事实源，工具调用与结果是审计面。如果文件不足，客户端投影随工作台一起加入。

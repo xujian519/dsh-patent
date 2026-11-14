@@ -120,14 +120,13 @@ describe('@deepseek-ai/dsh-patent-law plugin surface', () => {
   })
 
   it('applies the configured citation policy', async () => {
-    const { ctx } = await install({ onUnverified: 'block' })
+    const { ctx } = await install({ onNotIndexed: 'block' })
     const result = await executeToolFixture(ctx, {
       signal: new AbortController().signal,
       callId: ToolCallId('law-verify-policy'),
       name: 'law_verify',
-      // 第二部分第十章只登记了章一级条目，该章各节不在本索引中，因此这条引用
-      // 没有可判定的正文，`onUnverified` 策略要处置的就是它。
-      arguments: { references: ['审查指南第二部分第十章'] },
+      // 第九部分第九章9.9 不在随包索引里；默认策略只警告，这里配置成拦截。
+      arguments: { references: ['审查指南第九部分第九章9.9'] },
     })
     expect(result.isError).toBe(false)
     expect((result.value as { blocked: boolean }).blocked).toBe(true)

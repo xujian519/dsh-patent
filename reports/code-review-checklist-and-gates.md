@@ -1175,3 +1175,223 @@ zip 读取预算没有新缺口：声明体积超过预算、以及声明偏小�
 - **不清洗模板自带的原始 HTML**：模板资产是仓库里的文本，变量才来自模型。本轮只拦 Markdown 产生的链接和图片。
 - **不新增变量长度上限**：写入器按输入大小产出文本，不会把短输入膨胀成 zip 炸弹。读取预算仍由调用方给出，超限归档继续报 `too-large`。
 - **不在本轮修 R-87**：验收 DOCX 的 Python 读取预算仍另立，与 `docx-kit` 的 `ZipReadLimits` 对齐后再做。
+
+## 80. D25 复核范围与方法
+
+D25 对应计划第 186 行。计划里的包名是 `office-to-pdf`；该包已经改名为 `office-kit`，本轮审的是现包。交付物是清理与超时测试，以及指标 v2.5。范围四块：
+
+1. **队列与大小**：声明的源字节数怎样占用排队名额。
+2. **临时目录与超时**：kit 报 `timeout` 之后临时目录是否删除；删除失败会不会盖住转换结果；崩溃留下的目录有没有启动清扫。
+3. **进程**：转换器在超时后是否仍可复用，卸载时是否等待 `dispose()`。进程本身由 `@deepseek-ai/libreoffice-kit` 创建和退出。
+4. **缓存**：键与失效是否仍按 generation、扩展名、操作参数和源字节 SHA-256。
+
+方法：先对三个会失败的输入写用例——`NaN` / `-1` / `1.5`、临时目录 `rm` 抛 `EBUSY`、过期的 `dsh-office-kit-` 加六个字母数字的目录——确认失败后再改准入和清理。`Infinity` 与 kit `timeout` 后删除目录是原行为，同一批用例锁住。
+
+## 81. 声明大小与队列名额
+
+修复前，`bytes > maxInputBytes` 才拒绝。`NaN` 比上限不大，`Math.max(1, NaN)` 是 `NaN`，源容量比较恒为假，任务留在队列里直到卸载。`-1` 和 `1.5` 按很小的预留进入读取，1 字节的读取可以转换成功。
+
+修复后，声明大小必须是不超过 `maxInputBytes` 的非负安全整数。`NaN`、`Infinity`、`-1`、`1.5` 都在读取前以 `input-too-large` 拒绝，不占排队名额，下一笔合法转换照常执行。省略 `bytes` 仍预留整个 `maxInputBytes`。`0` 仍是合法声明。
+
+## 82. 临时目录、超时与进程
+
+kit 报 `timeout` 时，临时目录在返回前删除，下一笔转换复用同一个转换器。这是原行为，`provider.spec.ts` 锁住。
+
+修复前，`finally` 里的 `rm` 抛错会替换掉已经得到的 PDF，也会替换 kit 的 `timeout`。调用方看到的是 `EBUSY`。
+
+修复后，删除失败只记一条日志，PDF 或 `timeout` 原样返回，槽位照样释放，下一笔转换可以开始。启动时清扫操作系统临时目录里名称匹配 `dsh-office-kit-` 加六个字母数字、且修改时间早于 `max(timeoutMs * 2, 120_000)` 毫秒的真实目录。符号链接、联接、普通文件和其他名称不动。缺席的根目录当作没有残留。
+
+卸载仍等待转换器 `dispose()`。本轮不在超时时另起一个计时器，也不在超时后丢掉转换器。截止时间仍由 kit 在拿到转换槽之后计算。
+
+## 83. 缓存身份与本周指标
+
+缓存键仍是转换 generation、输入扩展名、操作及其参数、源字节的 SHA-256。别名键是源身份、版本、扩展名和操作。版本变化不会命中旧别名；同一版本的别名命中不重读字节。新的提供方实例用新的 generation 和新的空队列，配置替换因此不会复用旧输出。这是原行为，`queue.spec.ts` 已有用例，本轮不改。
+
+本周复盘的数字在 [指标快照 v2.5](code-review-metrics-v2.5.md)。
+
+## 84. D25 不做项
+
+- **不把队列等待算进 `timeoutMs`**：等待时间不受转换截止时间限制，README 已写明。
+- **不在提供方再套一层截止时间**：kit 收到 `timeoutMs`，并在自己的槽位上计时。本轮只保证 kit 报出的 `timeout` 会删临时目录并释放槽位。
+- **超时后不重建转换器**：一次渲染的进程由 kit 结束。转换器对象继续复用，卸载时 `dispose()` 等待它自己的工作结束。
+- **不把别名改成每次重读**：别名避免对未变版本做第二次读取。版本由调用方更新。
+- **不拆 `index.ts`**：该文件在本轮之前已经超过 400 行。拆分另立。
+- **不关闭 R-08 的 video 部分**：legal 与 document 的失败路径在 D21–D25 补了测试；video 留到 D26–D28。
+- **不修 R-87**：验收 DOCX 的读取预算仍另立。
+
+## 85. D26 复核范围与方法
+
+D26 对应计划第 192 行「`video-mode/media.ts`：provider 选择、任务保留、journal/ledger、预算门、取消/超时」，交付物是并发与重启恢复测试。编号从 85 起，把 80–84 留给未合并的 D25。范围四块：
+
+1. **取消的最终状态**：`cancel` 之后才结束的 `poll` 会不会把任务改回成功。
+2. **等待截止**：`waitMs` 能不能限制一次已经开始的 `poll`。
+3. **预算门**：两个生成在结算前是否读同一份账本，随后的一笔是否被挡住。这是现有语义，不改成预留。
+4. **重启**：已有用例覆盖日志恢复与一笔记账。本轮不重写那条路径。
+
+方法：先写会失败的两例——取消后放行成功的轮询、轮询永不返回——确认失败后再改 `remember` 与 `wait`。并发超支用例在修改前已经通过，用来锁住「不是预留」。
+
+## 86. 取消保持取消，等待限制单次轮询
+
+修复前，`wait` 在 `poll` 返回后无条件 `remember`。`cancel` 已经把任务写成 `cancelled` 时，迟到的 `succeeded` 会盖掉它。`poll` 若一直不返回，`waitMs` 只在两次轮询之间检查，等待可以超过截止时间。
+
+修复后，已记录为 `cancelled` 的任务不再被后到的快照替换。一次轮询若未在剩余 `waitMs` 内结束，`wait` 返回当时保留的任务，并且不采用这次轮询的结果。轮询抛出的错误仍原样抛出。间隔本身已经超过截止时间时，不再发起下一次轮询。
+
+## 87. 预算门与重启
+
+两个各 2.00 CNY 的生成在预算 3.00 CNY 上同时通过准入，账本记下 4.00 CNY。下一笔同样的估算被 `MEDIA_BUDGET_EXCEEDED` 拒绝，账本仍是两笔。这与 README「预算门不是预留额度」一致。R-06 因此标为已确认，不关闭：超支仍可能发生。
+
+重启恢复仍由 `tools.spec.ts` 的「journals a pending task, recovers it after a restart, and ledgers one charge」覆盖：第二个运行时按日志 `resume`，结算只记一笔，再次 `status` 不重复记账。
+
+## 88. D26 不做项
+
+- **不把预算门改成预留**：并发超支是已写明的行为。改成预留要同时改工具描述和限制条目，另立。
+- **不拆 `media.ts`**：R-07 的「选择 / 台账 / 执行」拆分留在 D27。本轮只改等待与取消的最终状态。
+- **不改 ComfyUI、MiniMax、SiliconFlow 的传输**：provider 契约留在 D27。
+- **不关闭 R-08 的 video 部分**：本轮补的是运行时等待与取消，不是 video client。
+- **不修 R-87**。
+
+## 89. D27 复核范围与方法
+
+D27 对应计划第 193 行「`comfyui`、`minimax`、`siliconflow`：占位符类型保持、轮询节流、成本估算、大小上限、错误映射」，交付物是 provider 契约测试和无密钥自跳过复核。编号从 89 起，把 80–84 留给未合并的 D25。§85–§88 是已合并的 D26。
+
+已有用例已经锁住整串占位符的 JSON 类型、轮询节流、人民币估算、产物字节上限，以及 HTTP 错误到失败码的映射。密钥在每次请求重新解析，也已有用例。本轮只补两处还没被拒绝的输入。
+
+方法：先写会失败的用例——上传名 `../secret.png`、历史文件名 `../secret.mp4`、下载地址 `file:///etc/passwd`——确认失败后再拒绝。然后在未设置密钥时跑三条真实 API 测试，确认它们跳过而不是失败。
+
+## 90. ComfyUI 路径段与云端下载地址
+
+修复前，上传响应里的 `name: "../secret.png"` 会写进工作流并继续 `POST /prompt`。历史条目的 `filename: "../secret.mp4"` 会请求 `/view`。MiniMax 返回 `file:///etc/passwd` 时会去取这个地址。
+
+修复后，文件名和类型必须各是一个路径段：不能为空，不能是 `.` 或 `..`，也不能含 `/` 或 `\`。子目录可以是 `dsh/video` 这种嵌套，但每一段同样不能是 `.` 或 `..`。不合规则的名字在下一次请求前拒绝，任务失败码是 `MEDIA_ARTIFACT_INVALID`。MiniMax 与 SiliconFlow 的成片地址必须是 `http:` 或 `https:`；其他协议和相对地址不发起下载，失败码相同。
+
+`inputs/frame.png` 与 `dsh/video/clip.mp4` 仍可用。
+
+## 91. 无密钥自跳过
+
+三条真实 API 测试在文件加载时读取密钥并 `trim`。空值、未设置和纯空白都走 `describe.skip`：
+
+| 文件 | 密钥 | 无密钥时 |
+|---|---|---|
+| `tests/minimax-video.e2e.ts` | `MINIMAX_API_KEY` | 跳过 |
+| `tests/minimax-speech.e2e.ts` | `MINIMAX_API_KEY` | 跳过 |
+| `tests/siliconflow-video.e2e.ts` | `SILICONFLOW_API_KEY` | 跳过 |
+
+它们不在默认的 `*.spec.ts` 集合里，由 `pnpm run test:e2e` 使用 `vitest.e2e.config.ts` 收集。本机未设置这两个密钥时，该命令把三个文件都标为 skipped，0 failed。
+
+## 92. D27 不做项
+
+- **不拆 `media.ts`**：R-07 的「选择 / 台账 / 执行」拆分仍是纯移动，不进 D28 的转义修复。
+- **不把预算门改成预留**：D26 已确认。
+- **不改占位符、节流、估算和已有的字节上限**：这些行为已有用例，本轮只补路径和下载协议。
+- **不在大小上限之前把响应体整段读进内存**：声明长度和读完后的长度都会拒绝。流式截断另立。
+- **不修 R-87**。
+
+## 93. D28 复核范围与方法
+
+D28 对应计划第 194 行「EDL/ffmpeg、字幕、faststart、参数注入安全；`ui-video-studio`；video 提升评估」。编号从 §93 起。§85–§88 是已合并的 D26，§89–§92 是已合并的 D27，§97–§99 是已合并的 D29。未合并的 D25 仍占用 §80–§84。
+
+1. ffmpeg 参数是数组还是拼进 shell；字幕路径和字体名进入滤镜图时会不会改写滤镜结构。
+2. `+faststart` 是否把顶层 `moov` 写在 `mdat` 前面。
+3. 交付检查里已有的时长偏差与无音轨告警。
+4. `ui-video-studio` 的只读、Range 预览、没有项目的会话空状态。
+5. video 能否离开 experimental，以及 `media.ts` 与 provider 的拆分是否现在做。
+
+方法：用 ffmpeg 7.1 对撇号路径和带撇号的字体名跑滤镜图，确认失败后再改转义，并让同一条渲染检查 `moov` 与 `mdat` 的顺序。
+
+## 94. 字幕路径的两次转义与 faststart
+
+argv 已经是数组。`-i`、输出路径和 `+faststart` 都不经过 shell。进入滤镜图的是字幕路径和 `subtitleFont`。
+
+修复前，撇号被写成 `\'` 再包进单引号。`it's.srt` 被 ffmpeg 7.1 打开成 `its.srt[vout]`，输出垫进了文件名。字体名 `Don't` 让 `force_style` 的引号提前结束，解析停在 `No option name near '20[vout]'`。
+
+修复后，字幕路径按两次解析转义：引号里的空格、冒号、方括号、逗号和分号留着反斜杠给第二次解析；撇号放在两段引号之间，写成第二次解析会吃掉的三个反斜杠。字体名只过一次解析，撇号用 `'\''` 断开再接上。路径或字体名里的 ASCII 控制字符抛 `MEDIA_EDL_INVALID`。不含撇号的路径，滤镜文本与修复前相同。
+
+`edl.spec.ts` 在本机 ffmpeg 7.1 上烧录 `a b's.srt`，并用字体名 `Don't`。成片顶层 `moov` 在 `mdat` 之前。
+
+## 95. 工作室复核与提升结论
+
+`ui-video-studio` 不写项目文件。预览地址是 `api/file?path=…&v=<version>`，单段 Range 由 `SessionMediaReferences` 回 206。本轮不改这条路由。没有 `video_project` 结果时，`StudioView` 渲染 `data-video-studio-empty`；`StudioView.client.spec.tsx` 已有该空状态。本 PR 不改工作室，这些用例没有重跑。
+
+提升结论：video 留在 `experimental`。它仍依赖宿主机 ffmpeg、可选的云端密钥，以及只读的 Web 工作室。`media.ts` 1,265 行，`comfyui.ts` 940 行，选择、台账和执行还在同一文件里。D27 的路径与下载协议修复已经在本分支。拆分是纯移动，不与这次转义修复放进同一次提交。
+
+## 96. D28 不做项
+
+- **不拆 `media.ts`，也不拆 provider**。R-07 保持待验证。
+- **不把 `video-mode` 移出 experimental**，不新建 `packages/video`。
+- **不把 libass 的字体打开失败当成告警**。本机烧录成功时，stderr 仍会报系统字体文件打不开，退出码是 0。交付侧的无音轨和时长偏差告警已有用例，本轮不改。
+- **不改 `/api/file` 的字节上限**。Range 仍先读完整文件再切片。
+- **不把预算门改成预留**。
+- **不在单元车道安装 ffmpeg**。`describe.runIf(FFMPEG)` 里新增的撇号烧录用例在没有 ffmpeg 的 Linux 单元车道记为跳过。`scripts/test-skip-baseline.json` 的 linux `skipped` 是 238。
+
+## 97. D29 验证范围与方法
+
+D29 对应计划第 195 行「全量验证：`build:artifacts` → `build:check`、定向测试、关键快照、`doc-sync`、`duplication`；修复回归」。编号从 §97 起，不占用未合并的 D25 §80–§84、已合并的 D26 §85–§88、已合并的 D27 §89–§92、未合并的 D28 §93–§96 与已合并的 D30 §100–§104。
+
+§98 的数字来自 #804 并入 master 之前的审查树。D29 并入 master 时，执行卡在 §79 之后保留 D26 的 §85–§88，再接 §97。当前执行卡同时留下未合并的 D25 §80–§84、未合并的 D28 §93–§96，以及已合并的 §85–§92、§97–§99 与 §100–§104。并入不改 §98 的数字，那些数字不含 D25、D26、D27、D28 新加的用例。
+
+验证当时止于 D24。当时开着的 #803、#805、#806 不在测量树上。#805 随后并入了 master。本记录不把这些 PR 的改动算进通过结果。以后合并其余 PR 时，留下各自的执行卡区间，也留下 §80–§84、§85–§92、§93–§96、§97–§99 与 §100–§104。
+
+定向测试按四个领域的包根跑默认 Vitest：`packages/patent`、`packages/legal`、`packages/document`、`packages/experimental/video-mode`、`packages/experimental/video-bundle`、`packages/client/ui-video-studio`。仓库里没有 `packages/video`。默认配置只收集 `*.spec.ts`，不收集 e2e 配置。
+
+关键快照是 headless 会话回放。过滤名称是 `document-deliver`、`legal-evidence-assessment`，以及以 `patent-` 开头的场景，共 13 条。回放发生在 `build:artifacts` 写出 typert 产物之后。video 在这棵树上没有会话快照。`legal-preset`、`video-preset`、`document-preview` 属于浏览器快照 lane。
+
+## 98. 门禁记录
+
+| 门禁 | 命令 | 结果 |
+|---|---|---|
+| 产物 | `pnpm run build:artifacts` | 8 项通过，0 失败，119.80s |
+| 产物上的类型检查 | `pnpm run build:check` | 2 项通过，0 失败，34.47s |
+| 定向测试 | `pnpm exec vitest run` 上述六个包根 | 480 个文件通过，2 个文件跳过；8437 条通过，4 条跳过；40.15s |
+| 关键快照 | `pnpm run test:snapshot snapshots/session/headless.snapshot.ts`，名称过滤见 §97 | 13 条通过；同文件里未选中的 203 条跳过；5.55s |
+| 文档 | `NODE_OPTIONS=--max-old-space-size=8192 pnpm run doc-sync` | 53 项通过，0 失败，96.17s |
+| 仓库级重复 | `pnpm run duplication` | 3853 个文件，0 个 clone |
+| 收紧基线 | `pnpm exec tsx scripts/duplication-gate.ts` | 仓库级 0 个 clone；95 对领域内、13 对跨领域与 `scripts/duplication-baseline.json` 一致 |
+
+跳过的 4 条来自 `figure-graphviz-ci-signal.spec.ts` 和 `figure-cad-ci-signal.spec.ts`。前者只在 CI 的 Linux lane 断言 Graphviz 与中文字体；后者还要 `DSH_CAD_CI_SIGNAL=1`。本机是 macOS，这两份按用例设计跳过。
+
+13 条快照是：`document-deliver`、`legal-evidence-assessment`、`patent-claim-chart`、`patent-deadline`、`patent-infringement`、`patent-infringement-chain`、`patent-invalidation`、`patent-invalidation-chain`、`patent-oa-chain`、`patent-oa-response`、`patent-reexamination`、`patent-reexamination-chain`、`patent-writing-patterns`。
+
+这些门禁没有失败。没有产品代码改动，风险登记册不新增行。
+
+## 99. D29 不做项
+
+- **全仓 `pnpm run test` 与 `pnpm run test:coverage` 留给 CI**。指标 v3 和结项报告是 D30。
+- **#803 与 #806 仍各自成 PR**。#804、#805、#807 与 #808 已在 master。本记录不代开着的 PR 报绿。
+- **浏览器快照 lane 与 `office-skills` 会话不在这次关键快照里**。document 的模型可见锁是 `document-deliver`。
+- **不改产品代码**。上表的门禁没有回归需要修。
+
+## 100. D30 范围与方法
+
+D30 对应计划第 196 行「指标 v3 对比、最终报告、升级指南（如有破坏性变更）、遗留项与下一轮建议」，交付物是结项报告。编号从 100 起，不占用未合并的 D25 §80–§84、已合并的 D26 §85–§88、已合并的 D27 §89–§92、未合并的 D28 §93–§96 与已合并的 D29 §97–§99。
+
+采集树是当时已合入 master 的审查结果，包含 D26。当时开着的 #803、#805、#806、#807 不在这棵树上。#805 与 #807 随后并入了 master。它们当时的行数、用例和风险关闭都不记进本快照。
+
+完整数字在 [指标快照 v3](code-review-metrics-v3.md)。完成项、未合入项、未关闭风险和下一轮建议在 [结项报告](code-review-closeout.md)。
+
+## 101. 指标 v3 与成功判据
+
+路径没变的 26 个包，源码 130,057 → 132,596（+2.0%）。v2 之后这 26 包只多 138 行。`office-to-pdf` 已在 2026-11-04 重组为 `office-kit`（1,394 行）和 `tool-office`（672 行）。把 `office-kit` 放回原来的第 27 包位置后，源码是 133,990，相对基线 130,713 为 +2.5%。下降 8%–12% 未达成。
+
+超长文件（审查范围内超过 400 行）91 → 95 → 97。相对 v2 没有文件掉出名单，新增的两个是 `office-kit/src/index.ts`（484）和 `tool-office/src/index.ts`（427）。超过 600 行的仍是 33 个。最大文件是 `video-mode/src/media.ts`，1,265 行。
+
+P0 两项都已关闭。采集时登记册 93 项：已关闭 29、已确认 60、待验证 4。本分支并入 master 后带上已关闭的 R-95，登记册是 94 项，已关闭 30。R-93 仍只在未合并的 D25。R-96 仍只在未合并的 D28。
+
+`pnpm run duplication` 为 0 个克隆。收紧域 95 对、跨域 13 对，与 `scripts/duplication-baseline.json` 一致。写完本记录后，`pnpm run doc-sync` 为 53 项通过、0 失败（90.29s）。
+
+## 102. 升级指南
+
+本结项不新建升级指南。审查引入且已经写好的外部可感知变更是无法读取的款/项数字，指南在 `docs/upgrade-guide/v0.2.2-rc.1/malformed-citation-numerals/`。D26 把取消状态保持为 cancelled，与已写明的取消语义一致，不改命令、配置、Session 格式或已发布包入口。
+
+## 103. 遗留与下一轮
+
+仍开着的是 D25 #803 与 D28 #806。#805 与 #807 已在 master。合并时保留各自的执行卡编号和风险行，也保留 §85–§92、§97–§99 与本段 §100–§104。
+
+下一轮先合入 #803 与 #806。R-07 的拆分等 D28 合入后再做纯移动，video 留在 experimental。R-06 保持已确认。R-05、R-09、R-87 各自单独做。12 处 adversary TODO（R-04、R-13）仍待验证。行数下降不再当作成功判据。Issues #688 与 #689 仍未开始。
+
+## 104. D30 不做项
+
+- **不改产品代码**，不新增风险行，不重写登记册里已有条目的状态。
+- **不重跑构建、定向测试、快照和覆盖率**。那些是 D29 的交付，记录在 PR #807，测的是并入 #804 之前的树。
+- **不把 D29 的用例数写成含 D26 的结果**。
+- **不编写指标 v2.5**。那是 D25 的交付，随 #803。
+- **不把 video 移出 experimental**，不拆 `media.ts`。

@@ -145,27 +145,77 @@ export function edlDuration(edl: Edl): number {
   return edl.clips.reduce((sum, clip) => sum + clipDuration(clip), 0)
 }
 
+/** Characters the subtitles filter still treats as syntax after the filtergraph parse. */
+const SUBTITLE_FILENAME_SPECIAL = new Set([' ', ':', '[', ']', ',', ';'])
+
 /**
- * Escape one value for an ffmpeg filter argument.
- * @param value - raw path or style value.
- * @returns the escaped value.
+ * Reject a value that would split a filtergraph outside a quoted run.
+ * @param value - path or font name.
+ * @param label - the field named in the failure.
+ * @throws {@link MediaFailure} `MEDIA_EDL_INVALID` when `value` contains an ASCII control character.
  */
-function escapeFilter(value: string): string {
+function rejectFilterControl(value: string, label: string): void {
+  if (/[\u0000-\u001f\u007f]/u.test(value)) {
+    throw new MediaFailure(`${label} contains a control character`, 'MEDIA_EDL_INVALID')
+  }
+}
+
+/**
+ * Escape a subtitle path for both parses. The filtergraph parser removes one
+ * quoting layer, then the subtitles filter parses the filename again, so
+ * backslash escapes stay inside quotes. An apostrophe cannot, because it ends
+ * the quoted run; it is emitted between runs as the three backslashes the
+ * second parse consumes.
+ * @param value - subtitle path ffmpeg will open.
+ * @returns the `filename=` value, including its quotes.
+ * @throws {@link MediaFailure} `MEDIA_EDL_INVALID` when `value` contains an ASCII control character.
+ */
+function escapeSubtitleFilename(value: string): string {
+  rejectFilterControl(value, 'subtitle path')
+  let quoted = ''
+  const chunks: string[] = []
+  const flush = (): void => {
+    if (quoted.length === 0) return
+    chunks.push(`'${quoted}'`)
+    quoted = ''
+  }
+  for (const char of value.replaceAll('\\', '/')) {
+    if (char === "'") {
+      flush()
+      chunks.push("\\\\\\'")
+      continue
+    }
+    quoted += SUBTITLE_FILENAME_SPECIAL.has(char) ? `\\${char}` : char
+  }
+  flush()
+  return chunks.join('')
+}
+
+/**
+ * Escape a font name for one filtergraph parse inside `force_style` quotes.
+ * An apostrophe closes that quote, adds an escaped quote, and reopens it.
+ * @param value - configured font family.
+ * @returns the `FontName` value.
+ * @throws {@link MediaFailure} `MEDIA_EDL_INVALID` when `value` contains an ASCII control character.
+ */
+function escapeStyleValue(value: string): string {
+  rejectFilterControl(value, 'subtitle font')
   return value
     .replaceAll('\\', '/')
     .replaceAll(':', '\\:')
-    .replaceAll("'", "\\'")
     .replaceAll('[', '\\[')
     .replaceAll(']', '\\]')
     .replaceAll(',', '\\,')
     .replaceAll(';', '\\;')
+    .replaceAll("'", "'\\''")
 }
 
 /**
  * Build the ffmpeg argument vector for one EDL.
  * @param edl - validated EDL.
  * @param options - runtime options.
- * @returns argv without the executable.
+ * @returns argv without the executable. The vector is passed to `spawn`, not a shell.
+ * @throws {@link MediaFailure} `MEDIA_EDL_INVALID` for a control character in the subtitle path or font.
  */
 export function buildFfmpegArgs(edl: Edl, options: Pick<AssembleOptions, 'subtitleFont'>): string[] {
   const { width, height, fps } = edl.canvas
@@ -201,9 +251,9 @@ export function buildFfmpegArgs(edl: Edl, options: Pick<AssembleOptions, 'subtit
 
   if (edl.subtitles !== undefined) {
     const style = options.subtitleFont.length > 0
-      ? `:force_style='FontName=${escapeFilter(options.subtitleFont)},FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,MarginV=48,Alignment=2'`
+      ? `:force_style='FontName=${escapeStyleValue(options.subtitleFont)},FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,MarginV=48,Alignment=2'`
       : ''
-    filters.push(`[vcat]subtitles=filename='${escapeFilter(edl.subtitles)}'${style}[vout]`)
+    filters.push(`[vcat]subtitles=filename=${escapeSubtitleFilename(edl.subtitles)}${style}[vout]`)
   } else {
     filters.push('[vcat]null[vout]')
   }

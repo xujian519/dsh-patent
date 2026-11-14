@@ -109,6 +109,29 @@ describe('parseLawReference', () => {
     expect(parseLawReference('中华人民共和国专利法第22条')?.law).toBe('专利法')
   })
 
+  it('parses a judicial interpretation by its official title', () => {
+    expect(parseLawReference('《最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释》第十九条'))
+      .toMatchObject({
+        kind: 'law-article',
+        law: '最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释',
+        article: 19,
+      })
+    // 解释（二）必须胜过同前缀的解释（一）的简称形式。
+    expect(parseLawReference('最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释（二）第三十一条')?.law)
+      .toBe('最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释（二）')
+    expect(parseLawReference('最高人民法院关于审理侵害知识产权民事纠纷案件适用惩罚性赔偿的解释第五条'))
+      .toMatchObject({ law: '最高人民法院关于审理侵害知识产权民事纠纷案件适用惩罚性赔偿的解释', article: 5 })
+  })
+
+  it('parses a departmental regulation by its official title', () => {
+    expect(parseLawReference('《专利代理管理办法》第八条')).toMatchObject({
+      kind: 'law-article',
+      law: '专利代理管理办法',
+      article: 8,
+    })
+    expect(parseLawReference('专利行政执法办法第53条')?.law).toBe('专利行政执法办法')
+  })
+
   it('parses the compact examination form', () => {
     expect(parseLawReference('A22.3')).toEqual({
       kind: 'law-article',

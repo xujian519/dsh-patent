@@ -1,0 +1,13 @@
+# Bilingual-pair consistency record for patent-authority-amendment.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/cookbook/patent-authority-amendment.md
+/:
+  en: eec88aad951d43b4
+  zh: 54bbe30c3d3fcaca
+/cookbook-amending-the-patent-authority-index:
+  en: 0becf96469b838fa
+  zh: a112f57b7f0b8548
+/cookbook-amending-the-patent-authority-index/steps:
+  en: 629cfffb00b86049
+  zh: b0fadbe9a0a6c16d

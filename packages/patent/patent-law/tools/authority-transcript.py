@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Transcribe the patent judicial interpretations into the shipped article index.
+"""Transcribe the patent judicial interpretations and departmental regulations into the article index.
 
 《专利审查指南》之外的专利法源没有随包的合订 PDF：本仓库的做法是把知识库原件的
-Markdown 转录成 `assets/law/` 下的条级索引，一份文书一个文件。司法解释的原文按
-「第X条」分条，因此可以机械转录：
+Markdown 转录成 `assets/law/` 下的条级索引，一份文书一个文件。司法解释与部门规章的
+原文按「第X条」分条，因此可以机械转录：
 
 - 去掉 markdown 的 `**` 强调与引用块 `>` 前缀；
 - 以 `第X条` 行开始一条，条文到下一个同级标记或章标题为止；
-- 官方文本不分条的批复登记为第一条，并在文件头写明——批复本身只有一段答复；
+- 官方文本不分条的批复与行业标准登记为第一条，并在文件头写明；
 - 条文的 `topics` 取首句：截到第一个句读（。；，）并去掉开头的主语套话，未经人工
   核定；主题词只用于命题匹配，条文正文才是判定依据。
 
 用法：
-  python3 tools/interpretation-transcript.py --check
-  python3 tools/interpretation-transcript.py --write
+  python3 tools/authority-transcript.py --check
+  python3 tools/authority-transcript.py --write
 
 源文件不在仓库中，缺失时脚本报「未核验」而不是静默通过；每个索引文件头记录源文件的
 SHA-256，`--check` 同时比对哈希与逐条正文。
@@ -104,6 +104,71 @@ DOCUMENTS = (
         '法释〔2026〕7号（2026-05-01 施行）',
         '最高人民法院关于审理侵害知识产权民事纠纷案件适用惩罚性赔偿的解释',
     ),
+    Document(
+        '规章/专利代理管理办法.md',
+        'cn-regulation-patent-agency.yaml',
+        '专利代理管理办法',
+        '专利代理管理办法',
+        '国家市场监督管理总局令第6号（2019-05-01 施行）',
+        '专利代理管理办法',
+    ),
+    Document(
+        '规章/专利实施强制许可办法.md',
+        'cn-regulation-compulsory-license.yaml',
+        '专利实施强制许可办法',
+        '专利实施强制许可办法',
+        '国家知识产权局令第64号（2012-05-01 施行）',
+        '专利实施强制许可办法',
+    ),
+    Document(
+        '规章/专利权质押登记办法.md',
+        'cn-regulation-patent-pledge.yaml',
+        '专利权质押登记办法',
+        '专利权质押登记办法',
+        '国家知识产权局令第56号（2010-10-01 施行）',
+        '专利权质押登记办法',
+    ),
+    Document(
+        '规章/专利标识标注办法.md',
+        'cn-regulation-patent-marking.yaml',
+        '专利标识标注办法',
+        '专利标识标注办法',
+        '国家知识产权局令第63号（2012-05-01 施行）',
+        '专利标识标注办法',
+    ),
+    Document(
+        '规章/专利行政执法办法.md',
+        'cn-regulation-patent-enforcement.yaml',
+        '专利行政执法办法',
+        '专利行政执法办法',
+        '国家知识产权局令第60号公布，第71号修正（2011-02-01 施行）',
+        '专利行政执法办法',
+    ),
+    Document(
+        '规章/关于规范专利申请行为的若干规定.md',
+        'cn-regulation-application-conduct.yaml',
+        '关于规范专利申请行为的若干规定',
+        '关于规范专利申请行为的若干规定',
+        '国家知识产权局令第45号（2007-10-01 施行）',
+        '关于规范专利申请行为的若干规定',
+    ),
+    Document(
+        '规章/用于专利程序的生物材料保藏办法.md',
+        'cn-regulation-biological-material.yaml',
+        '用于专利程序的生物材料保藏办法',
+        '用于专利程序的生物材料保藏办法',
+        '国家知识产权局令第69号（2015-03-01 施行）',
+        '用于专利程序的生物材料保藏办法',
+    ),
+    Document(
+        '规章/专利申请号标准.md',
+        'cn-regulation-application-number-standard.yaml',
+        '专利申请号标准',
+        '专利申请号标准',
+        'ZC 0006-2003（国家知识产权局令第32号，2003-10-01 施行）',
+        '专利申请号标准',
+        '行业标准不分条，按编号条款编排（1 范围、2.1 专利申请……），全文登记为第一条。',
+    ),
 )
 
 NUMERALS = '〇零一二三四五六七八九十百'
@@ -112,7 +177,7 @@ CHAPTER = re.compile(rf'^#{{0,3}}\s*第[{NUMERALS}]+章')
 DIGITS = {'〇': 0, '零': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
 def fail(message: str) -> NoReturn:
     """Exit with a concise, user-correctable error."""
-    print(f'interpretation-transcript: {message}', file=sys.stderr)
+    print(f'authority-transcript: {message}', file=sys.stderr)
     raise SystemExit(1)
 
 
@@ -143,7 +208,7 @@ def clean(line: str) -> str:
 
 def topics_of(text: str) -> list[str]:
     """The mechanical topic keyword: the article's opening clause."""
-    clause = re.split(r'[。；，：]', text, maxsplit=1)[0].strip('，。；：、')
+    clause = re.split(r'[。；，：:\n]', text, maxsplit=1)[0].strip('，。；：、')
     if len(clause) > 24:
         clause = clause[:24]
     return [clause or text[:24]]
@@ -160,18 +225,29 @@ def parse(text: str, note: str) -> list[dict]:
             continue
         match = ARTICLE.match(line)
         if match:
-            current = {'article': numeral(match.group(1)), 'lines': []}
-            if match.group(2):
-                current['lines'].append(match.group(2).strip())
-            articles.append(current)
-            continue
+            number = numeral(match.group(1))
+            # 条文正文会引用别的条（「……违反本办法第二十七条规定」），折行后
+            # 引用可能落在行首。条号必须紧接上一条，否则这行是正文。
+            expected = articles[-1]['article'] + 1 if articles else 1
+            if number == expected:
+                current = {'article': number, 'lines': []}
+                if match.group(2):
+                    current['lines'].append(match.group(2).strip())
+                articles.append(current)
+                continue
+            if articles:
+                articles[-1]['lines'].append(line)
+                continue
         if current is not None:
             current['lines'].append(line)
     if not articles:
         # 批复不分条：全文登记为第一条。
         lines = [clean(raw) for raw in text.split('\n')]
-        paragraph = ''.join(line for line in lines if line and not line.startswith('#') and line != '---')
-        return [{'article': 1, 'lines': [paragraph], 'note': note}]
+        paragraph = ''.join(
+            line for line in lines
+            if line and not line.startswith('#') and line not in ('---', '<!-- INFO END -->')
+        )
+        return [{'article': 1, 'lines': [paragraph], 'note': note, 'documentLevel': True}]
     for article in articles:
         if not article['lines']:
             fail(f'第{article["article"]}条没有正文')
@@ -204,13 +280,20 @@ def render(document: Document, sha256: str, articles: list[dict]) -> str:
     for article in articles:
         text = '\n'.join(article['lines'])
         lines.append(f'  - article: {article["article"]}')
-        topics = topics_of(text)
-        lines.append(f'    topics: [{", ".join(topics)}]')
+        topics = [document.document] if article.get('documentLevel') else topics_of(text)
+        lines.append(f'    topics: [{", ".join(scalar(topic) for topic in topics)}]')
         lines.extend(render_text(text))
         lines.append(f"    sourceDoc: '{document.source}（知识库原件 Markdown）'")
         lines.append('    verifiedOn: 2026-11-14')
         lines.append('')
     return '\n'.join(lines).rstrip('\n') + '\n'
+
+
+def scalar(text: str) -> str:
+    """Quote a topic so a colon or comma in the clause keeps the flow list valid."""
+    if any(char in text for char in ':,[]{}#&*!|>\'"%@`') or text != text.strip():
+        return "'" + text.replace("'", "''") + "'"
+    return text
 
 
 def render_text(text: str) -> list[str]:
@@ -229,7 +312,7 @@ def main() -> None:
 
     missing = [document.file for document in DOCUMENTS if not (args.corpus / document.file).exists()]
     if missing:
-        print(f'interpretation-transcript: 未核验——源文件不在 {args.corpus}：{missing[0]}',
+        print(f'authority-transcript: 未核验——源文件不在 {args.corpus}：{missing[0]}',
               file=sys.stderr)
         return
 
@@ -249,7 +332,7 @@ def main() -> None:
     if args.write:
         print(f'已写入 {written} 个索引文件')
     else:
-        print(f'一致：{len(DOCUMENTS)} 份司法解释与源文件相同')
+        print(f'一致：{len(DOCUMENTS)} 份文书与源文件相同')
 
 
 if __name__ == '__main__':

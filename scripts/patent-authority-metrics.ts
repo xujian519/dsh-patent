@@ -401,12 +401,19 @@ export function buildCoverage(
     coverage: percent(sections.length, guidelineExtent.headings),
     source: `官方 PDF 编号标题数（guideline-extent.yaml：${guidelineExtent.headingsWithBody} 节带正文）`,
   })
+  /** The documents one recorded corpus contributes beyond the three core sources. */
+  const corpusDocuments = (kind: string): LawBaseline[] => {
+    const values = [...baselines.values()]
+    const core = ['专利法', '专利法实施细则', '专利审查指南']
+    if (kind === '司法解释') return values.filter(document => document.law.startsWith('最高人民法院'))
+    if (kind === '部门规章') {
+      return values.filter(document => !core.includes(document.law) && !document.law.startsWith('最高人民法院'))
+    }
+    return []
+  }
   for (const extent of baseline.extents) {
-    // The judicial interpretations are indexed one file per document; the
-    // regulations are not indexed yet and stay at zero.
-    const indexed = extent.documentKind === '司法解释'
-      ? [...baselines.values()].filter(document => document.law.startsWith('最高人民法院'))
-      : []
+    // Each indexed document is one file, so the corpus row counts documents.
+    const indexed = corpusDocuments(extent.documentKind)
     const transcribed = indexed.filter(document =>
       document.articles.length > 0 && document.articles.every(article => article.text !== null))
     rows.push({

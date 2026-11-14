@@ -36,14 +36,14 @@ const STATUTE = [
 const REGULATIONS = STATUTE.replace('law: 专利法', 'law: 专利法实施细则')
 
 /**
- * Minimal index files for the judicial interpretations, so an override directory
- * can satisfy the loader's all-documents rule.
+ * Minimal index files for the interpretations and regulations, so an override
+ * directory can satisfy the loader's all-documents rule.
  */
-function interpretationFixtures(): Record<string, string> {
+function supplementaryFixtures(): Record<string, string> {
   const files: Record<string, string> = {}
   let index = 0
   for (const name of LAW_NAMES) {
-    if (!name.startsWith('最高人民法院')) continue
+    if (['专利法', '专利法实施细则', '专利审查指南'].includes(name)) continue
     index += 1
     files[`interpretation-${String(index)}.yaml`] = [
       `law: ${name}`,
@@ -480,6 +480,21 @@ describe('loadLawBaselines', () => {
       .toBe(true)
   })
 
+  it('indexes the departmental regulations and the application-number standard', () => {
+    const baselines = loadLawBaselines()
+    const regulations = [...baselines.values()].filter(baseline =>
+      ['专利代理管理办法', '专利实施强制许可办法', '专利权质押登记办法', '专利标识标注办法',
+        '专利行政执法办法', '关于规范专利申请行为的若干规定', '用于专利程序的生物材料保藏办法',
+        '专利申请号标准'].includes(baseline.law))
+    expect(regulations).toHaveLength(8)
+    expect(regulations.reduce((total, baseline) => total + baseline.articles.length, 0)).toBe(214)
+    // 行业标准不分条，全文登记为第一条。
+    expect(baselines.get('专利申请号标准')?.articles).toHaveLength(1)
+    expect(regulations.every(baseline =>
+      baseline.articles.every(entry => entry.text !== null && entry.sourceDoc !== null && entry.verifiedOn !== null)))
+      .toBe(true)
+  })
+
   it('ships the coverage counts the README documents', () => {
     const baselines = loadLawBaselines()
     expect(baselines.get('专利法')?.articles).toHaveLength(82)
@@ -525,7 +540,7 @@ describe('loadLawBaselines', () => {
       'law.yaml': STATUTE,
       'regulations.yaml': REGULATIONS,
       'guidelines.yaml': GUIDELINES,
-      ...interpretationFixtures(),
+      ...supplementaryFixtures(),
     })
     expect(loadLawBaselines(dir).get('专利法')?.maxArticle).toBe(82)
     expect(loadLawBaselines(dir).size).toBe(LAW_NAMES.length)
@@ -539,7 +554,7 @@ describe('loadLawBaselines', () => {
   })
 
   it('rejects a directory missing one of the documents', () => {
-    const dir = fixtureDir({ 'law.yaml': STATUTE, 'guidelines.yaml': GUIDELINES, ...interpretationFixtures() })
+    const dir = fixtureDir({ 'law.yaml': STATUTE, 'guidelines.yaml': GUIDELINES, ...supplementaryFixtures() })
     expect(() => loadLawBaselines(dir)).toThrow(/缺少：专利法实施细则/)
   })
 })

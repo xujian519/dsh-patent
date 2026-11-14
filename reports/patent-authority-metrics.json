@@ -43,11 +43,11 @@
     },
     {
       "document": "部门规章",
-      "extent": 9,
-      "indexed": 0,
-      "transcribed": 0,
-      "coverage": "0.0%",
-      "source": "索引不含该文书种类"
+      "extent": 8,
+      "indexed": 8,
+      "transcribed": 8,
+      "coverage": "100.0%",
+      "source": "随包索引（一件文书一个文件）"
     }
   ],
   "unresolved": [],

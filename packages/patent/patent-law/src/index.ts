@@ -126,6 +126,7 @@ export type {
   LawLineageSnapshot,
   LawName,
   LawReference,
+  RegulationName,
   RevisionDescriptor,
   SectionEntry,
   StaleSection,

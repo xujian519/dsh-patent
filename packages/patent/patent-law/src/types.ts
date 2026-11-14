@@ -21,11 +21,22 @@ export type InterpretationName =
   | '最高人民法院关于审理申请注册的药品相关的专利权纠纷民事案件适用法律若干问题的规定'
   | '最高人民法院关于审理侵害知识产权民事纠纷案件适用惩罚性赔偿的解释'
 
+/** Departmental regulations and standards the index covers, by their official titles. */
+export type RegulationName =
+  | '专利代理管理办法'
+  | '专利实施强制许可办法'
+  | '专利权质押登记办法'
+  | '专利标识标注办法'
+  | '专利行政执法办法'
+  | '关于规范专利申请行为的若干规定'
+  | '用于专利程序的生物材料保藏办法'
+  | '专利申请号标准'
+
 /** Law documents the index covers. */
-export type LawName = '专利法' | '专利法实施细则' | '专利审查指南' | InterpretationName
+export type LawName = '专利法' | '专利法实施细则' | '专利审查指南' | InterpretationName | RegulationName
 
 /** Statute whose text is indexed article by article. */
-export type StatuteName = '专利法' | '专利法实施细则' | InterpretationName
+export type StatuteName = '专利法' | '专利法实施细则' | InterpretationName | RegulationName
 
 /**
  * A reference to one article of a statute, optionally narrowed to a paragraph

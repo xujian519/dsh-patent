@@ -31,7 +31,10 @@ const STATUS_LABEL = {
   normal: '🟢 正常',
 } as const
 
-/** Periods that 专利法实施细则第6条第5款 excludes from restoration. */
+/**
+ * Periods that 专利法实施细则第6条第5款 excludes from restoration.
+ * 第24条与第74条规定的期限不是本引擎计算的期限项。
+ */
 const RECOVERY_EXCLUDED_IDS: ReadonlySet<string> = new Set(['patent-term', 'priority-window'])
 
 /**

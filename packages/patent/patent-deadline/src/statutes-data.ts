@@ -19,10 +19,16 @@ import type { NoticeKind, OfficeActionStage, PatentKind } from './types.ts'
  * Day the 2020 amendment to 专利法 took effect. A design filed before this day
  * keeps the 10-year term of the earlier 专利法第42条; one filed on or after it
  * has the 15-year term. The filing date, not the grant date, selects the term.
+ * 2021-06-01 之前申请的外观设计仍按十年，不适用现行第42条第1款的十五年。
  */
 const DESIGN_TERM_TRANSITION: CalendarDate = { year: 2021, month: 6, day: 1 }
 
-/** Maximum granted patent-term compensation in whole years (专利法第42条第2款). */
+/**
+ * Maximum granted patent-term compensation in whole years.
+ * 专利法第42条第3款把「补偿期限不超过五年」写在新药相关发明专利上。
+ * 本引擎不计算补偿长度，只拒绝超过五年的已授予年数。
+ * 新药批准上市后总有效专利权期限不超过十四年，不在本计算中。
+ */
 export const MAX_TERM_COMPENSATION_YEARS = 5
 
 /**

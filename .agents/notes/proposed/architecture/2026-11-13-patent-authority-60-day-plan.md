@@ -79,6 +79,8 @@ The thirteen document templates and eight workflow manifests receive an inventor
 
 Exit: every rule family shows a provision, a rule and a test; every procedural computation has a line-by-line comparison table against its provision.
 
+The inventory is `packages/patent/patent-law/assets/authority/rule-procedure-alignment.yaml`, checked by `scripts/verify-patent-rule-alignment.ts`. Implementing Regulations article 41 is withdrawal of an application, so reexamination aligns to Patent Law article 41 and Implementing Regulations article 65, and invalidation to article 69. Article 7 is a secrecy rule and produces no period. The certified-copy fee named in article 110 is not in the fee index, because no amount is transcribed.
+
 ### Phase 4 — Evaluation, D47–D55 (2026-12-30 to 2027-01-07)
 
 Build thirty golden tasks, five per case type, each carrying the provisions it must cite and the wrong formulations it must not produce. Measure citation accuracy, proposition support, currency, refusal rate and rank-conflict resolution, and compare against the Phase 0 baseline.

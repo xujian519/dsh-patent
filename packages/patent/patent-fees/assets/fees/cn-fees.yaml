@@ -148,7 +148,7 @@ items:
     basis: per-case
     amount: '2500'
     reducible: true
-    legalBasis: 专利法第35条、专利法实施细则第113条
+    legalBasis: 专利法第35条、专利法实施细则第110条第1款第（二）项、第113条
     sourceDoc: 国家知识产权局《专利和集成电路布图设计缴费服务指南》附件2 发明专利费用标准
     effectiveFrom: null
     verifiedOn: 2026-09-26

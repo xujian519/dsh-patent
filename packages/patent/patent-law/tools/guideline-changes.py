@@ -14,6 +14,9 @@
   的判据是「没有任何宋体 span，且有黑体 span」。
 - 编号后移的节在右栏同一行印出「旧编号 新编号」两个数字 span，例如 `6.1.1` `6.1.2`；
   按行取全部数字 span 即可得到这条重编号。
+- 增删标记编码在 span 上：插入是红色（0xFF0000），删除是蓝色（0x0070C0）或黑色加横线
+  穿过字身中部。登记前按标记过滤，`newColumnText` 因此是右栏读下来的现行文本；一整节
+  的标记全是删除时记 `deleted`。
 - 新增节只在右栏出现，删除节只在左栏出现。
 - 有些改动的节标题没有重复印出，只在左栏以正文的样子写出节路径（如 `1.3.2.6 专利权期限
   的补偿`）；这类行按「栏首编号 + 标题」识别，登记为 `amended`。
@@ -28,9 +31,8 @@
 `kind` 与 `note`；`--check` 只比对，不写文件。源 PDF 不在仓库中，缺失时脚本报「未核验」
 而不是静默通过，所以随包资产本身是唯一存证。
 
-右栏不是可以直接引用的现行条文：对照表用增删标记排版，文字图层把删除的词与插入的词都
-输出成正文，肉眼可辨、机器不可辨。因此本资产只登记「改动落在哪一节、改动前后的栏文本」，
-把标记还原成条文仍要人工完成；索引 `versions` 里已转录的三节就是按标记人工还原的结果。
+右栏的行仍按 PDF 的固定列折行保留：换行是排版边界，不是段落边界。索引 `versions` 的正文是
+按标记过滤后的右栏文本拼回 2023 年底本得到的，段落边界取自行首缩进。
 """
 
 from __future__ import annotations
@@ -65,6 +67,7 @@ RENAMES_BY_HAND = {
     '第二部分第九章6.1.3': ('第二部分第九章6.1.4', '右栏同一行印出 6.1.3 与 6.1.4，标题「新颖性和创造性的审查」'),
     '第五部分第七章8.3': ('第五部分第七章8.4', '左栏 8.3「延迟审查」在右栏印为 8.4，正文未改'),
     '第五部分第七章8.4': ('第五部分第七章8.5', '左栏 8.4「专利局自行启动」在右栏印为 8.5，正文未改'),
+    '第五部分第二章4.2.1.3': ('第五部分第二章4.2.1.2', '右栏把旧编号末位 3 印为删除、末位 2 印为插入，标题「不予退款的情形」正文未改；原 4.2.1.2「专利局主动退款的情形」整节删除'),
 }
 
 # 新增节只在右栏出现；这些节名在左栏没有对应编号，登记为 `added`。
@@ -120,9 +123,50 @@ def line_text(group: list[dict]) -> str:
     return ''.join(span['text'] for span in group).strip()
 
 
-def read_column(document, page: int, left: bool) -> list[tuple[float, str, bool, list[str]]]:
-    """Rows of one column: y, text, whether it is a heading, and the row's number spans."""
+def strike_rules(page) -> list[tuple[float, float, float, float]]:
+    """Horizontal rules drawn through text on one page, as (x0, x1, y0, y1)."""
+    rules = []
+    for drawing in page.get_drawings():
+        if drawing.get('width') in (None, 0):
+            continue
+        for item in drawing['items']:
+            if item[0] == 'l':
+                first, second = item[1], item[2]
+                if abs(first.y - second.y) < 1.0:
+                    rules.append((min(first.x, second.x), max(first.x, second.x), first.y, second.y))
+            elif item[0] == 're':
+                rect = item[1]
+                if rect.height < 2.0:
+                    rules.append((rect.x0, rect.x1, rect.y0, rect.y1))
+    return rules
+
+
+def is_struck(box, rules) -> bool:
+    """True when a rule crosses the middle of this span, which marks deleted text."""
+    height = box[3] - box[1]
+    width = box[2] - box[0]
+    middle = (box[0] + box[2]) / 2
+    for x0, x1, y0, y1 in rules:
+        if not (y0 <= box[1] + height * 0.8 and y1 >= box[1] + height * 0.3):
+            continue
+        overlap = min(box[2], x1) - max(box[0], x0)
+        if overlap >= width * 0.6 and abs((x0 + x1) / 2 - middle) <= max(4.0, width * 0.4):
+            return True
+    return False
+
+
+def kept_text(group: list[dict], rules) -> str:
+    """The text of one span group after dropping the deletion marks (blue or struck)."""
+    return ''.join(
+        span['text'] for span in group
+        if span['color'] == 0xff0000 or (span['color'] != 0x0070c0 and not is_struck(span['bbox'], rules))
+    ).strip()
+
+
+def read_column(document, page: int, left: bool) -> list[tuple[float, str, str, bool, list[str]]]:
+    """Rows of one column: y, printed text, text without deletion marks, heading, number spans."""
     rows = []
+    rules = strike_rules(document[page])
     for block in document[page].get_text('dict')['blocks']:
         if block['type'] != 0:
             continue
@@ -132,11 +176,11 @@ def read_column(document, page: int, left: bool) -> list[tuple[float, str, bool,
             for group in split_sides(line):
                 if (group[0]['bbox'][0] < GUTTER) != left:
                     continue
-                text = line_text(group)
-                if not text or PAGE_NUMBER.match(text):
+                raw = line_text(group)
+                if not raw or PAGE_NUMBER.match(raw):
                     continue
                 numbers = [span['text'].strip() for span in group if NUMBER_ONLY.match(span['text'].strip())]
-                rows.append((line['bbox'][1], text, heading_span(group), numbers))
+                rows.append((line['bbox'][1], raw, kept_text(group, rules), heading_span(group), numbers))
     return sorted(rows)
 
 
@@ -158,11 +202,11 @@ class Stream:
         self.current: Segment | None = None
         self.part: str | None = None
 
-    def feed(self, rows: list[tuple[float, str, bool, list[str]]]) -> None:
+    def feed(self, rows: list[tuple[float, str, str, bool, list[str]]]) -> None:
         """Append one page's rows to the stream."""
-        for _, text, heading, numbers in rows:
+        for _, printed, text, heading, numbers in rows:
             if heading:
-                match = PART_PATTERN.match(text)
+                match = PART_PATTERN.match(printed)
                 if match:
                     self.part = f'第{match.group(1)}部分' + (
                         f'第{match.group(2)}章' if match.group(2) else ''
@@ -170,22 +214,22 @@ class Stream:
                     self.current = Segment(self.part, '', '', numbers=numbers)
                     self.segments.append(self.current)
                     continue
-                match = SECTION_PATTERN.match(text)
+                match = SECTION_PATTERN.match(printed)
                 if match:
                     self.current = Segment(self.part or '', match.group(1), match.group(2).strip(),
                                            numbers=numbers)
                     self.segments.append(self.current)
                     continue
                 if self.current is not None and self.current.number and not self.current.lines:
-                    self.current.title = (self.current.title + text).strip()
+                    self.current.title = (self.current.title + printed).strip()
                     continue
-            match = SECTION_PATTERN.match(text)
+            match = SECTION_PATTERN.match(printed)
             if match and match.group(2) and len(match.group(1).split('.')) > 1:
                 # 栏首以正文样式写出的节路径（标题未被重复印出）。
                 self.current = Segment(self.part or '', match.group(1), match.group(2).strip())
                 self.segments.append(self.current)
                 continue
-            if self.current is not None:
+            if self.current is not None and text:
                 self.current.lines.append(text)
 
 
@@ -207,8 +251,14 @@ def merge(segments: list[Segment]) -> dict[tuple[str, str], Segment]:
     return merged
 
 
-def content(lines: list[str]) -> list[str]:
-    """The text lines of one segment without the table's omission markers."""
+def content(lines: list[str], keep_markers: bool = False) -> list[str]:
+    """The text lines of one segment without the table's omission markers.
+
+    An added section is printed in full, so a standalone `……` line there is part of its
+    example text (an elided claim step), not an omission marker.
+    """
+    if keep_markers:
+        return list(lines)
     return [line for line in lines if line.strip() not in ('……', '......')]
 
 
@@ -243,7 +293,7 @@ def read_changes(pdf: Path) -> dict:
             'path': key,
             'title': segment.title,
             'note': ADDED_BY_HAND[key],
-            'newColumnText': content(segment.lines),
+            'newColumnText': content(segment.lines, keep_markers=True),
         }
         added.append(added_paths[key])
 
@@ -307,9 +357,9 @@ def render(data: dict, curated: dict[str, dict]) -> str:
         '# 对照表把节标题印成黑体、正文印成宋体，编号用 Times New Roman 印在标题行首；',
         '# 编号后移的节在右栏同一行印出两个数字。正文按 PDF 固定列折行保留，换行不是段落边界。',
         '#',
-        '# oldColumnText / newColumnText 是左右两栏的文字层内容。右栏用增删标记排版，文字层把',
-        '# 删除的词与插入的词都输出成正文，因此 newColumnText 不是可直接引用的现行条文，只用来说明',
-        '# 改动落在哪一节；把标记还原成条文要人工完成（索引 versions 的三节即人工还原结果）。',
+        '# oldColumnText / newColumnText 是左右两栏的文字，右栏已按增删标记过滤：插入是红色',
+        '# span，删除是蓝色 span 或横线穿过字身。newColumnText 因此是这一节在 2026 年版里读下来',
+        '# 的文本，行按 PDF 固定列折行保留；索引 versions 的正文由它拼回 2023 年底本得到。',
         '#',
         '# 源文件不在仓库中，缺失时脚本报「未核验」；随包资产是唯一存证。',
         f'#',

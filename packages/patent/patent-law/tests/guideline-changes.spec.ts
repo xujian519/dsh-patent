@@ -118,14 +118,26 @@ describe('2026 年改动点资产', () => {
     expect(transcribed.filter(path => !known.has(path))).toEqual([])
   })
 
-  it('never leaves an amended section both unoverridden and unmarked', () => {
+  it('never leaves a changed 2023 section both unoverridden and unmarked', () => {
     const { points } = readChanges()
     const guideline = loadLawBaselines().get('专利审查指南')
     const overridden = new Set((guideline?.versions ?? []).flatMap(version =>
       version.sections.filter(section => section.text !== null).map(section => section.path)))
     const stale = new Set((guideline?.staleSections ?? []).map(section => section.path))
-    // 每一处正文修改要么有 2026 年正文覆盖，要么标了 stale；否则 2023 年文本会被当成现行文本。
+    // 每一处正文修改或删除要么有 2026 年正文覆盖，要么标了 stale；否则 2023 年文本会被当成现行文本。
     expect(points.filter(point => !overridden.has(point.path) && !stale.has(point.path))).toEqual([])
+  })
+
+  it('reuses a deleted section number or marks the path stale', () => {
+    const { points, renames } = readChanges()
+    const guideline = loadLawBaselines().get('专利审查指南')
+    const overridden = new Set((guideline?.versions ?? []).flatMap(version =>
+      version.sections.filter(section => section.text !== null).map(section => section.path)))
+    const stale = new Set((guideline?.staleSections ?? []).map(section => section.path))
+    for (const point of points.filter(candidate => candidate.kind === 'deleted')) {
+      const reused = renames.some(rename => rename.to === point.path)
+      expect(reused || stale.has(point.path) || overridden.has(point.path)).toBe(true)
+    }
   })
 
   it('overrides each renumbering target and marks the old path', () => {

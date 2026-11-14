@@ -538,13 +538,16 @@ describe('versioned guideline sections', () => {
     expect(verifyCitation(sectionRef('第四部分第三章3.3'), partial).decision).toBe('unverified')
   })
 
-  it('uses the shipped 2026 overrides for the three transcribed sections', () => {
+  it('serves the shipped 2026 text for every amended section', () => {
     const shipped = new Map<LawName, LawBaseline>([['专利审查指南', loadLawBaselines().get('专利审查指南')!]])
-    for (const path of ['第二部分第一章4.4', '第四部分第三章2.1', '第四部分第三章3.3']) {
+    for (const path of ['第二部分第一章4.4', '第四部分第三章2.1', '第四部分第三章3.3', '第二部分第九章6.2']) {
       const current = verifyCitation(sectionRef(path), shipped)
       expect(current.decision).toBe('valid')
       expect(current.entry?.sourceDoc).toContain('2026 年修订版')
-      expect(verifyCitation(sectionRef(path), shipped, { revision: BASE }).decision).toBe('unverified')
+      // 明确要求 2023 年修订版时返回该版自己的文本。
+      const base = verifyCitation(sectionRef(path), shipped, { revision: BASE })
+      expect(base.decision).toBe('valid')
+      expect(base.entry?.sourceDoc).toContain('2023 年修订版')
     }
   })
 })
@@ -887,16 +890,33 @@ describe('the packaged index', () => {
     expect(citation.reason).toContain('节正文未转录')
   })
 
-  it('decides a container whose subsections are current, and refuses one covering a modified subsection', () => {
+  it('decides a container whose subsections are current', () => {
     const shipped = loadLawBaselines()
     // 第四部分第八章没有 2026 年改过的节，容器由其下各节判定。
     const current = verifyCitation(sectionRef('第四部分第八章'), shipped)
     expect(current.decision).toBe('valid')
     expect(current.reason).toContain('判定依据其下各节')
-    // 第二部分第十章9 已被 2026 年修订版修改、尚无 2026 正文，整章引用因此不能按现行条文核验。
-    const superseded = verifyCitation(sectionRef('第二部分第十章'), shipped)
-    expect(superseded.decision).toBe('unverified')
-    expect(superseded.reason).toContain('第二部分第十章9')
+  })
+
+  it('refuses the renumbered-away path and serves the section at its 2026 number', () => {
+    const shipped = loadLawBaselines()
+    // 4.2.1.3「不予退款的情形」在 2026 年版改号为 4.2.1.2，旧路径不能按现行条文核验。
+    const old = verifyCitation(sectionRef('第五部分第二章4.2.1.3'), shipped)
+    expect(old.decision).toBe('unverified')
+    expect(old.reason).toContain('2026 年修订版')
+    const moved = verifyCitation(sectionRef('第五部分第二章4.2.1.2'), shipped, {
+      proposition: '当事人在自缴费日起三年后才提出退款请求的',
+    })
+    expect(moved.decision).toBe('valid')
+    expect(moved.entry?.sourceDoc).toContain('2026 年修订版')
+  })
+
+  it('drops the deleted section instead of serving its old text at 4.2.1.2', () => {
+    const shipped = loadLawBaselines()
+    const moved = verifyCitation(sectionRef('第五部分第二章4.2.1.2'), shipped, {
+      proposition: '下列情形一经核实，专利局应当主动退款',
+    })
+    expect(moved.decision).toBe('mismatch')
   })
 
   it('attaches each guideline topic list to the section it indexes', () => {

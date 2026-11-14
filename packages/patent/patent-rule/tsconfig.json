@@ -25,6 +25,12 @@
     },
     {
       "path": "../patent-core"
+    },
+    {
+      "path": "../patent-law"
+    },
+    {
+      "path": "../../legal/legal-law"
     }
   ]
 }

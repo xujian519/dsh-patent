@@ -3,10 +3,9 @@
 # 17 rules: 三性(3) + 类型(6) + 举证责任(1) + 证明标准(1) + 日期认定(1) + 完整性(1) + 程序(1) + 电子证据(1) + 审查指南(2)
 # 消费方：src/patent/evidence/engine.ts（EvidenceEngine.loadRules）
 #
-# 《民事诉讼法》条号按 2023 年修正版书写（证据条款为第 66、67、68、75-78 条）。
-# `law_verify` 目前只解析《专利法》《专利法实施细则》《专利审查指南》，这些跨法引用
-# 不在随包索引的核验范围内，改动前须对照官方原文，并由 evidence-rules-asset.spec.ts
-# 钉住条号。
+# 《民事诉讼法》条号按 2023 年修正版书写（证据条款为第 66、67、68、75、76、77、78 条）。
+# 规则引用门禁用 legal-law 的索引核验这些条号；patent-law 的 `law_verify` 不解析民事诉讼法。
+# evidence-rules-asset.spec.ts 钉住条号。
 
 weights:
   relevance: 0.35
@@ -20,6 +19,7 @@ rules:
     name: 证据相关性审查
     description: 证据必须与待证事实具有关联性，能够影响法官对事实的认定
     legalBasis: 专利法实施细则第69条第1款
+    basisKind: statute
     domain: patent
     severity: major
     action: apply
@@ -49,6 +49,7 @@ rules:
     name: 证据合法性审查
     description: 证据的收集主体、程序和形式必须符合法律规定
     legalBasis: 民事诉讼法第66条、最高人民法院关于民事诉讼证据的若干规定
+    basisKind: statute
     domain: patent
     severity: critical
     action: apply
@@ -77,6 +78,7 @@ rules:
     name: 证据真实性审查
     description: 证据必须是真实的，非伪造、变造或虚构
     legalBasis: 最高人民法院关于民事诉讼证据的若干规定第90条
+    basisKind: practice-note
     domain: patent
     severity: critical
     action: apply
@@ -107,6 +109,7 @@ rules:
     name: 电子证据审查规则
     description: 电子证据需审查其生成、存储、传输、收集的可靠性和完整性
     legalBasis: 最高人民法院关于互联网法院审理案件若干问题的规定
+    basisKind: practice-note
     domain: patent
     severity: major
     action: apply
@@ -154,6 +157,7 @@ rules:
     name: 域外证据审查规则
     description: 域外形成的证据须经公证认证或履行相关证明手续
     legalBasis: 最高人民法院关于民事诉讼证据的若干规定第16条、第17条
+    basisKind: practice-note
     domain: patent
     severity: major
     action: notify
@@ -187,7 +191,8 @@ rules:
   - ruleId: EVI-012
     name: 证人证言审查规则
     description: 证人证言需审查证人与案件利害关系、证人作证能力、证言一致性
-    legalBasis: 民事诉讼法第75-78条
+    legalBasis: 民事诉讼法第75条、第76条、第77条、第78条
+    basisKind: statute
     domain: patent
     severity: major
     action: apply
@@ -220,6 +225,7 @@ rules:
     name: 公知常识免证规则
     description: 公知常识属于免证事实，当事人无需举证
     legalBasis: 最高人民法院关于民事诉讼证据的若干规定第10条
+    basisKind: practice-note
     domain: patent
     severity: minor
     action: exempt
@@ -240,6 +246,7 @@ rules:
     name: 互联网公开证据审查规则
     description: 以互联网公开主张现有技术，须审查公开日、来源平台可信度、内容完整性与公开意图
     legalBasis: 专利法第22条第5款、专利审查指南第二部分第三章第2.1.2节、第四部分第八章5.1
+    basisKind: statute
     domain: patent
     severity: major
     action: apply
@@ -276,6 +283,7 @@ rules:
     name: 使用公开证据审查规则
     description: 以使用公开主张现有技术，四要件（时间/地点/方式/公众可获取）须逐项认定，缺一即须补证
     legalBasis: 专利审查指南第二部分第三章第2.1.2节
+    basisKind: guideline
     domain: patent
     severity: major
     action: apply
@@ -309,6 +317,7 @@ rules:
     name: 举证责任分配规则
     description: 主张权利的一方应当提供证据证明其主张的事实
     legalBasis: 民事诉讼法第67条；专利法第66条（新产品制造方法举证责任倒置）
+    basisKind: statute
     domain: patent
     severity: major
     action: apply
@@ -335,6 +344,7 @@ rules:
     name: 证明标准规则
     description: 根据案件类型和待证事实确定适用的证明标准
     legalBasis: 最高人民法院关于适用民事诉讼法的解释第108条
+    basisKind: practice-note
     domain: patent
     severity: major
     action: apply
@@ -368,6 +378,7 @@ rules:
     name: 公开日期认定规则
     description: 以证据的公开日作为现有技术的时间基准，公开日须早于现有技术截止日（申请日；有优先权的为优先权日）
     legalBasis: 专利法第22条第5款、第22条第2款（新颖性）、第22条第3款（创造性）
+    basisKind: statute
     domain: patent
     severity: major
     action: apply
@@ -398,6 +409,7 @@ rules:
     name: 证据链完整性规则
     description: 证据链应完整，从取证到举证的每个环节应当衔接
     legalBasis: 最高人民法院关于民事诉讼证据的若干规定
+    basisKind: practice-note
     domain: patent
     severity: major
     action: apply
@@ -418,6 +430,7 @@ rules:
     name: 举证期限规则
     description: 证据应在举证期限内提交，逾期提交可能不被采纳
     legalBasis: 民事诉讼法第68条
+    basisKind: statute
     domain: patent
     severity: major
     action: notify
@@ -433,6 +446,7 @@ rules:
     name: 电子证据完整性审查规则
     description: 电子证据完整性是可信性的基础，需通过技术手段验证
     legalBasis: 电子签名法、最高人民法院关于电子数据证据的规定
+    basisKind: practice-note
     domain: patent
     severity: major
     action: apply
@@ -460,6 +474,7 @@ rules:
     name: 审查指南证据规则参照
     description: 参照专利审查指南第二部分第三章第2.1节关于证据的规定
     legalBasis: 专利审查指南第四部分第八章2.2.1
+    basisKind: guideline
     domain: patent
     severity: minor
     action: reference
@@ -476,6 +491,7 @@ rules:
     name: 审查指南证据认定规则参照
     description: 参照专利审查指南关于证据效力的认定标准和证明力的判断规则
     legalBasis: 专利审查指南第四部分第八章
+    basisKind: guideline
     domain: patent
     severity: minor
     action: reference

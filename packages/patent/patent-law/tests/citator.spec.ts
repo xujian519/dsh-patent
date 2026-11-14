@@ -113,6 +113,20 @@ describe('queryValidity — unverified', () => {
     expect(entry !== undefined && 'article' in entry ? entry.article : undefined).toBe(22)
   })
 
+  it('returns unverified for an item the transcribed paragraph does not contain', () => {
+    const article = { ...VERIFIED_ARTICLE_22 }
+    delete article.paragraphs
+    const index = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{
+        ...article,
+        text: '申请人应当写明下列事项：\n（一）名称。',
+      }],
+    })]])
+    const result = queryValidity({ provision: '专利法第22条第（二）项' }, index)
+    expect(result.state).toBe('unverified')
+    expect(result.reason).toContain('不含第 2 项')
+  })
+
   it('keeps an article verifiable when the entry does not list its paragraphs', () => {
     const withoutParagraphs = { ...VERIFIED_ARTICLE_22 }
     delete withoutParagraphs.paragraphs
@@ -236,6 +250,19 @@ describe('decideValidity — lineage narrowing', () => {
     expect(result.state).toBe('unverified')
     expect(result.reason).toContain('不含第 9 款')
     expect(result.revisionHistory).toHaveLength(1)
+  })
+
+  it('does not read items from an article the lineage record has not transcribed', () => {
+    const index = new Map<LawName, LawBaseline>([['专利法', statute({
+      articles: [{ ...VERIFIED_ARTICLE_22, text: null, sourceDoc: null, verifiedOn: null }],
+    })]])
+    const result = decideValidity(
+      { kind: 'law-article', law: '专利法', article: 22, item: 2, raw: '专利法第22条第2项' },
+      index,
+      {},
+      lineage,
+    )
+    expect(result.state).toBe('active')
   })
 
   it('keeps an existing paragraph active through the lineage record', () => {

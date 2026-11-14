@@ -340,11 +340,11 @@ function parseCheck(raw: unknown, issues: RuleSetValidationIssue[], ruleId: stri
         issues.push({ ruleId, message: `rule ${ruleId}: citation_analysis 需要非空 statutes` })
         return null
       }
-      const parsed: Record<string, { max: number }> = {}
+      const parsed: Record<string, { max?: number }> = {}
       for (const [name, value] of Object.entries(statutes)) {
         const def = asRecord(value)
-        if (def === null || typeof def.max !== 'number') {
-          issues.push({ ruleId, message: `rule ${ruleId}: 法条 "${name}" 需要 max 数字` })
+        if (def === null || (def.max !== undefined && typeof def.max !== 'number')) {
+          issues.push({ ruleId, message: `rule ${ruleId}: 法条 "${name}" 的 max 必须是数字` })
           return null
         }
         // topics（主题相关性）没有执行实现。忽略该字段会让作者以为它在判定，
@@ -356,7 +356,7 @@ function parseCheck(raw: unknown, issues: RuleSetValidationIssue[], ruleId: stri
           })
           return null
         }
-        parsed[name] = { max: def.max }
+        parsed[name] = typeof def.max === 'number' ? { max: def.max } : {}
       }
       return { type, statutes: parsed }
     }
@@ -442,6 +442,28 @@ function parseCheck(raw: unknown, issues: RuleSetValidationIssue[], ruleId: stri
  * @param where - 条目位置，用于非对象条目的诊断（如 `rules[0]`）。
  * @returns 解析出的规则；条目非法时为 null。
  */
+const BASIS_KINDS = ['statute', 'guideline', 'judgment', 'practice-note', 'exempt'] as const
+
+/**
+ * Read `basisKind` when the asset declares one.
+ * @param value - the raw field.
+ * @param ruleId - the rule id, for the diagnostic.
+ * @param issues - the load diagnostics.
+ * @returns the kind, undefined when omitted, or null when the value is not a known kind.
+ */
+function parseBasisKind(
+  value: unknown,
+  ruleId: string,
+  issues: RuleSetValidationIssue[],
+): (typeof BASIS_KINDS)[number] | undefined | null {
+  if (value === undefined) return undefined
+  if (typeof value === 'string' && (BASIS_KINDS as readonly string[]).includes(value)) {
+    return value as (typeof BASIS_KINDS)[number]
+  }
+  issues.push({ ruleId, message: `rule ${ruleId}: basisKind 必须是 ${BASIS_KINDS.join('/')}` })
+  return null
+}
+
 function parseRule(raw: unknown, issues: RuleSetValidationIssue[], where: string): ConstitutionalRule | null {
   const record = asRecord(raw)
   if (record === null) {
@@ -471,6 +493,8 @@ function parseRule(raw: unknown, issues: RuleSetValidationIssue[], where: string
   const check = parseCheck(record.check, issues, id)
   if (check === null) return null
   const premise = parsePremise(record.premise, id, issues)
+  const basisKind = parseBasisKind(record.basisKind, id, issues)
+  if (basisKind === null) return null
   return {
     id,
     name: record.name,
@@ -480,6 +504,7 @@ function parseRule(raw: unknown, issues: RuleSetValidationIssue[], where: string
     severity,
     action,
     ...(typeof record.legalBasis === 'string' ? { legalBasis: record.legalBasis } : {}),
+    ...(basisKind === undefined ? {} : { basisKind }),
     ...(premise !== undefined ? { premise } : {}),
     check,
   }

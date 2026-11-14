@@ -494,6 +494,13 @@
                       textArgs:
                         - draft
                       strict: true
+                  # 交付物引用门禁：渲染前核验 draft 里的每一处引用，而不只要求会话里
+                  # 曾经跑过 law_verify。专利法、实施细则、指南、司法解释与部门规章走
+                  # patent-law 索引；民法典与民事诉讼法走 legal-law 索引。
+                  citationGate:
+                    - tool: render_patent_document
+                      textArgs:
+                        - draft
 
               # The always-on section carries only a pattern index; the full steps and
               # rules arrive through query_writing_patterns. The stage map decides which

@@ -11,6 +11,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第二章2.2.4
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -36,6 +37,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第二章2.2.3
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -54,6 +56,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第26条第3款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -70,6 +73,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第二章2.2.4
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -89,6 +93,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第二章2.2.7
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -108,6 +113,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法实施细则第24条
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -129,6 +135,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利代理实务
+    basisKind: practice-note
     check:
       type: structural_analysis
       requiresAll:
@@ -149,6 +156,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第二章3.2.2
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -168,6 +176,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第二章3.2.1
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -187,6 +196,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 审查指南第二部分第二章3.2.1
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -205,6 +215,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 审查指南第二部分第十章
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -223,6 +234,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 审查指南第二部分第八章5.1
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -254,6 +266,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第33条
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -270,6 +283,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第四章3.2
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -295,6 +309,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第22条第2款
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -313,6 +328,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第四部分第三章3.3
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -333,6 +349,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第二章2.3
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -350,6 +367,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法实施细则第二十二条第二款；审查指南第二部分第二章3.1
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:

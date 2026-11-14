@@ -11,6 +11,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第25条第1款第(二)项；审查指南第二部分第一章4.2
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -30,6 +31,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第25条第1款第(三)项；审查指南第二部分第一章4.3
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -49,6 +51,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第25条第1款第(二)项；审查指南第二部分第九章2
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -67,6 +70,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第5条；审查指南第二部分第一章3.1.1
+    basisKind: statute
     check:
       type: keyword_blocklist
       keywords:
@@ -83,6 +87,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第25条第1款第(四)项；审查指南第二部分第一章4.4
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -100,6 +105,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第二章2.2.4
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -128,6 +134,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第26条第3款；审查指南第二部分第二章2.2.6
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -145,6 +152,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第二章2.2.5
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -164,6 +172,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第26条第4款；审查指南第二部分第二章3.2.2
+    basisKind: statute
     check:
       type: keyword_blocklist
       # 「应避免使用大约」是撰写建议，不是权利要求本身的用语。
@@ -181,6 +190,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 专利法第26条第4款；审查指南第二部分第二章3.2.2
+    basisKind: statute
     check:
       type: pattern_analysis
       patterns:
@@ -194,6 +204,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第26条第4款；审查指南第二部分第二章3.2.1
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -210,6 +221,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第二章3.3.2
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -227,6 +239,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第二章3.2.1
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -246,6 +259,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第三章3.2.2
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -264,6 +278,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 审查指南第二部分第三章3.2.4
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -282,6 +297,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 审查指南第二部分第三章3.2.5
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -299,6 +315,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第22条第3款；审查指南第二部分第四章3.2
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -329,6 +346,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第四章3.2.1.1
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -344,6 +362,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 审查指南第二部分第四章5.3
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -363,6 +382,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第四章6.2
+    basisKind: guideline
     check:
       type: keyword_blocklist
       # 指南自己的表述是「避免事后诸葛亮」；不豁免会把规范表述判成违规。
@@ -378,6 +398,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 审查指南第二部分第九章2
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -400,6 +421,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第九章5.1
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -420,6 +442,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第九章5.2
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -439,6 +462,7 @@ rules:
     severity: critical
     action: block
     legalBasis: 专利法第33条；审查指南第二部分第八章5.2.1
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -456,6 +480,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 专利法实施细则第48条；审查指南第二部分第六章
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:
@@ -473,6 +498,7 @@ rules:
     severity: major
     action: warn
     legalBasis: 审查指南第二部分第八章5.1
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -498,6 +524,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 审查指南第二部分第二章2.2.3
+    basisKind: guideline
     check:
       type: structural_analysis
       requiresAll:
@@ -520,6 +547,7 @@ rules:
     severity: minor
     action: log
     legalBasis: 专利法实施细则第二十条第四款；审查指南第一部分第一章4.2
+    basisKind: statute
     check:
       type: structural_analysis
       requiresAll:

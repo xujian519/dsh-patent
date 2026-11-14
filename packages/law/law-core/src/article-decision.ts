@@ -7,6 +7,7 @@
  * @module @deepseek-ai/dsh-law-core/article-decision
  */
 
+import { parseCnNumber } from './cn-number.ts'
 import {
   createOverlapIndex,
   PROPOSITION_SUPPORT_DEFAULT,
@@ -170,6 +171,132 @@ export function findCompetingLabels(
     .slice(0, 3)
 }
 
+/** One paragraph of an article, with the item lines that belong to it. */
+type ParagraphSpan = {
+  paragraph: number
+  text: string
+  items: { item: number; text: string }[]
+}
+
+/** A proposition match limited to the cited paragraph or item. */
+export type ArticleCitationFocus = {
+  /** The text the proposition is matched against. */
+  text: string
+  /** True when that text is the named paragraph or item, not the whole article. */
+  narrowed: boolean
+  /** Other paragraphs or items of the same article the proposition might belong to. */
+  siblings: { label: string; text: string }[]
+  /** Set when the citation names an item the transcribed text does not contain. */
+  missingItem: string | null
+}
+
+const ITEM_LINE = /^[（(]\s*([〇零一二三四五六七八九十百0-9]+)\s*[）)]/
+
+/**
+ * Read the item number at the start of a line, or null when the line is not an item.
+ * @param line - one trimmed line of an article.
+ * @returns the item, or null.
+ */
+function readItemLine(line: string): { item: number; text: string } | null {
+  const match = ITEM_LINE.exec(line)
+  const raw = match?.[1]
+  if (raw === undefined) return null
+  const item = parseCnNumber(raw)
+  if (item === null) return null
+  return { item, text: line }
+}
+
+/**
+ * Split transcribed article text into paragraphs.
+ *
+ * A line that does not open with an item marker starts a paragraph. An item
+ * line belongs to the paragraph before it; an article that opens with an item
+ * keeps that item on the first paragraph.
+ * @param text - the article text.
+ * @returns the paragraphs, in order.
+ */
+function paragraphSpans(text: string): ParagraphSpan[] {
+  const spans: ParagraphSpan[] = []
+  let current: ParagraphSpan | null = null
+  for (const raw of text.split('\n')) {
+    const line = raw.trim()
+    if (line === '') continue
+    const item = readItemLine(line)
+    if (item !== null) {
+      if (current === null) {
+        current = { paragraph: spans.length + 1, text: line, items: [item] }
+        spans.push(current)
+      } else {
+        current.items.push(item)
+        current.text = `${current.text}\n${line}`
+      }
+      continue
+    }
+    current = { paragraph: spans.length + 1, text: line, items: [] }
+    spans.push(current)
+  }
+  return spans
+}
+
+/**
+ * The text a paragraph- or item-level citation is decided against.
+ *
+ * Paragraph existence still comes from the entry's `paragraphs` list: a listed
+ * paragraph is isolated only when the text has one span per listed paragraph,
+ * in order. An item is isolated only when the host paragraph's text marks items.
+ * Otherwise the whole article stays the match text, which is the behavior of an
+ * entry that has not recorded its paragraphs.
+ * @param entry - the indexed article.
+ * @param reference - the cited paragraph and item, when the citation names them.
+ * @returns the match text, the sibling spans, and a missing-item reason.
+ */
+export function articleCitationFocus(
+  entry: { article: number; paragraphs?: number[]; text: string },
+  reference: { paragraph?: number; item?: number },
+): ArticleCitationFocus {
+  const spans = paragraphSpans(entry.text)
+  const listed = entry.paragraphs
+  const aligned = listed !== undefined
+    && spans.length === listed.length
+    && listed.every((number, index) => number === index + 1)
+  const citedParagraph = reference.paragraph
+  const span = citedParagraph !== undefined && aligned ? spans[citedParagraph - 1] : undefined
+  const host = span ?? (reference.item !== undefined && spans.length === 1 ? spans[0] : undefined)
+  const whole = { text: entry.text, narrowed: false, siblings: [], missingItem: null }
+  if (host === undefined) return whole
+  const paragraphLabel = citedParagraph === undefined ? '' : `第 ${citedParagraph} 款`
+  if (reference.item !== undefined && host.items.length > 0) {
+    const item = host.items.find(candidate => candidate.item === reference.item)
+    if (item === undefined) {
+      return {
+        text: host.text,
+        narrowed: false,
+        siblings: [],
+        missingItem: `第 ${entry.article} 条${paragraphLabel}的正文不含第 ${reference.item} 项`,
+      }
+    }
+    const siblings = host.items
+      .filter(candidate => candidate.item !== item.item)
+      .map(candidate => ({
+        label: `第 ${entry.article} 条${paragraphLabel}第 ${candidate.item} 项`,
+        text: candidate.text,
+      }))
+    return { text: item.text, narrowed: true, siblings, missingItem: null }
+  }
+  if (span === undefined) return whole
+  return {
+    text: span.text,
+    narrowed: true,
+    siblings: spans
+      .filter(candidate => candidate.paragraph !== span.paragraph)
+      .map(candidate => ({
+        label: `第 ${entry.article} 条第 ${candidate.paragraph} 款`,
+        text: candidate.text,
+      })),
+    missingItem: null,
+  }
+}
+
 /** Report a cited paragraph the entry knows to be absent, or null when it is consistent. */
 function checkNarrowing(reference: { article: number; paragraph?: number }, entry: DecisionArticle): string | null {
   if (reference.paragraph === undefined || entry.paragraphs === undefined) return null
@@ -195,22 +322,32 @@ function checkNarrowing(reference: { article: number; paragraph?: number }, entr
  * @returns the verdict, with the reason and the entry it used.
  */
 function decideTranscribed<TEntry extends DecisionArticle>(
-  reference: { article: number },
+  reference: { article: number; paragraph?: number; item?: number },
   entry: TEntry,
   text: string,
   sourceDoc: string,
   baseline: ArticleBaseline & { articles: readonly TEntry[] },
   options: ArticleProposition,
+  focus: ArticleCitationFocus,
 ): ArticleVerdict<TEntry> {
-  const validReason = `与《${baseline.law}》第 ${reference.article} 条一致（来源：${sourceDoc}）`
+  const paragraph = focus.narrowed && reference.paragraph !== undefined ? `第 ${reference.paragraph} 款` : ''
+  const item = focus.narrowed && reference.item !== undefined ? `第 ${reference.item} 项` : ''
+  const validReason = `与《${baseline.law}》第 ${reference.article} 条${paragraph}${item}一致（来源：${sourceDoc}）`
   const proposition = options.proposition?.trim()
   if (proposition === undefined || proposition === '') return { decision: 'valid', reason: validReason, entry }
   const threshold = options.supportThreshold ?? PROPOSITION_SUPPORT_DEFAULT
   const entries = articleComparableEntries(baseline.articles)
   const index = articleIndex(baseline, entries)
   const overlap = textOverlap(index, proposition, text)
-  if (topicOverlap(entry.topics, proposition) || overlap >= threshold) {
+  // A citation narrowed to a paragraph or item is supported only by that text.
+  // The article's topic keywords name the whole article, so they must not make
+  // another paragraph's proposition pass.
+  if ((!focus.narrowed && topicOverlap(entry.topics, proposition)) || overlap >= threshold) {
     return { decision: 'valid', reason: validReason, entry }
+  }
+  const sibling = focus.siblings.find(candidate => textOverlap(index, proposition, candidate.text) >= threshold)
+  if (sibling !== undefined) {
+    return { decision: 'mismatch', reason: supportMismatchReason(baseline.law, proposition, [sibling.label]), entry }
   }
   const elsewhere = findCompetingLabels(entries, index, proposition, threshold, `第 ${entry.article} 条`)
   if (elsewhere.length > 0) {
@@ -259,7 +396,7 @@ function articleGap(
  * @returns the verdict, with the entry it used when one was found.
  */
 export function decideArticleCitation<TEntry extends DecisionArticle>(
-  reference: { article: number; paragraph?: number },
+  reference: { article: number; paragraph?: number; item?: number },
   baseline: ArticleBaseline & { articles: readonly TEntry[] },
   entry: TEntry | undefined,
   options: ArticleProposition,
@@ -274,5 +411,12 @@ export function decideArticleCitation<TEntry extends DecisionArticle>(
   }
   const narrowing = checkNarrowing(reference, entry)
   if (narrowing !== null) return { decision: 'mismatch', reason: narrowing, entry }
-  return decideTranscribed(reference, entry, entry.text, entry.sourceDoc, baseline, options)
+  const text = entry.text
+  const focus = articleCitationFocus({
+    article: entry.article,
+    ...(entry.paragraphs === undefined ? {} : { paragraphs: entry.paragraphs }),
+    text,
+  }, reference)
+  if (focus.missingItem !== null) return { decision: 'mismatch', reason: focus.missingItem, entry }
+  return decideTranscribed(reference, entry, focus.text, entry.sourceDoc, baseline, options, focus)
 }

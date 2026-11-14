@@ -122,6 +122,7 @@ export type { MatchLocation, NegationContextOptions } from './rule/text-utils.ts
 // consumes it without depending on this package; re-exported here so existing
 // patent-domain consumers keep one import surface.
 export {
+  articleCitationFocus,
   articleComparableEntries,
   articleReferenceIdentity,
   ARTICLE_CONTINUATION_PATTERN,
@@ -165,6 +166,7 @@ export {
   truncateProposition,
 } from '@deepseek-ai/dsh-law-core'
 export type {
+  ArticleCitationFocus,
   ArticleBaseline,
   ArticleCandidate,
   ArticleDecision,

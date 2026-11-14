@@ -20,7 +20,8 @@ import type {
   SentenceRepetitionCheck,
   StructuralAnalysisCheck,
 } from '@deepseek-ai/dsh-patent-core'
-import { hasNegationContext, locateMatch, locationAt, parseCnNumber } from '@deepseek-ai/dsh-patent-core'
+import { hasNegationContext, locateMatch, locationAt } from '@deepseek-ai/dsh-patent-core'
+import { extractLawReferences, loadLawBaselines } from '@deepseek-ai/dsh-patent-law'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 import { checkSynonymRequirements, type SynonymMap } from './synonym-engine.ts'
 
@@ -413,26 +414,37 @@ function checkStructuralAnalysis(
  * 同时接受不带书名号的 `专利法第22条` 与中文文书通行的 `《专利法》第二十二条`；
  * N 支持阿拉伯数字与中文数字。书名号只作为可选外层，不进入法名分组。
  */
-const CITATION_RE = /(?:《\s*)?(专利法实施细则|专利法)\s*》?\s*第\s*([0-9零一二三四五六七八九十百]+)\s*条/g
+/** Article ceilings from the shipped index, filled on the first citation check that needs them. */
+let shippedCeilings: Map<string, number> | undefined
+
+/**
+ * The shipped index's article ceilings.
+ *
+ * A rule that names a statute without `max` uses this map, so the asset does not
+ * keep its own copy of the article count.
+ * @returns law name to `maxArticle`.
+ */
+function statuteCeilings(): Map<string, number> {
+  if (shippedCeilings !== undefined) return shippedCeilings
+  shippedCeilings = new Map()
+  for (const [law, baseline] of loadLawBaselines()) {
+    if (baseline.maxArticle !== null) shippedCeilings.set(law, baseline.maxArticle)
+  }
+  return shippedCeilings
+}
 
 function checkCitationAnalysis(check: CitationAnalysisCheck, text: string): string[] {
   const evidence: string[] = []
-  // 模块级 g 正则的 lastIndex 会在多次评估间保留；每次从 0 开始，避免前一次扫描
-  // 的游标让后续文本漏掉开头的引用。
-  CITATION_RE.lastIndex = 0
-  let match: RegExpExecArray | null
-  while ((match = CITATION_RE.exec(text)) !== null) {
-    const fullMatch = match[0]
-    const articleText = match[2]
-    /* v8 ignore next -- the citation regex always captures a non-empty article group. */
-    if (articleText === undefined) break
-    const statuteName = match[1] === '专利法实施细则' ? '专利法实施细则' : '专利法'
-    const article = parseCnNumber(articleText)
-    if (article === null) continue
-    const statute = check.statutes[statuteName]
-    if (statute !== undefined && article > statute.max) {
-      evidence.push(fullMatch)
-    }
+  const ceilings = statuteCeilings()
+  for (const reference of extractLawReferences(text)) {
+    if (reference.kind !== 'law-article') continue
+    const statute = check.statutes[reference.law]
+    if (statute === undefined) continue
+    const max = statute.max ?? ceilings.get(reference.law)
+    // The extractor only emits statute names, and each of those shipped baselines has a numeric ceiling.
+    /* v8 ignore next -- a missing ceiling cannot occur for an extracted statute */
+    if (max === undefined) continue
+    if (reference.article > max) evidence.push(reference.raw)
   }
   return evidence
 }

@@ -55,7 +55,7 @@ describe('packaged evidence rules asset', () => {
     const { engine } = loadPackagedEngine()
     const basis = new Map(engine.getRules().map(rule => [rule.ruleId, rule.legalBasis ?? '']))
     expect(basis.get('EVI-002')).toContain('民事诉讼法第66条')
-    expect(basis.get('EVI-012')).toContain('民事诉讼法第75-78条')
+    expect(basis.get('EVI-012')).toContain('民事诉讼法第75条、第76条、第77条、第78条')
     expect(basis.get('EVI-020')).toContain('民事诉讼法第67条')
     expect(basis.get('EVI-051')).toContain('民事诉讼法第68条')
   })

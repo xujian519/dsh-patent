@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-11-13-patent-authority-60-day-plan.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-13-patent-authority-60-day-plan.md
+/agent-note-patent-domain-authority-spine-60-day-plan:
+  en: 09fc352a50ba1a78
+  zh: 53446f3b95d8b6f0
+/agent-note-patent-domain-authority-spine-60-day-plan/problem:
+  en: d05e6d7f08179353
+  zh: b26926f64a588c3c
+/agent-note-patent-domain-authority-spine-60-day-plan/decision:
+  en: e532f410dcf52200
+  zh: 3e3561b2e377d46c
+/agent-note-patent-domain-authority-spine-60-day-plan/alternatives-considered:
+  en: da1da57cc00b2a5d
+  zh: 9322520235f5a484
+/agent-note-patent-domain-authority-spine-60-day-plan/consequences:
+  en: fe793a49514a94a3
+  zh: 7b80ffa65959501c

@@ -2874,7 +2874,7 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-office-kit`
 
-- `source`: [`packages/document/office-kit/src/index.ts:38`](../packages/document/office-kit/src/index.ts)
+- `source`: [`packages/document/office-kit/src/index.ts:42`](../packages/document/office-kit/src/index.ts)
 
 ```ts config-catalog
 /** Provider concurrency and kit rendering/font configuration. */
@@ -3221,7 +3221,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-patent-law`
 
 - `inject`: `tools`
-- `source`: [`packages/patent/patent-law/src/index.ts:144`](../packages/patent/patent-law/src/index.ts)
+- `source`: [`packages/patent/patent-law/src/index.ts:146`](../packages/patent/patent-law/src/index.ts)
 
 ```ts config-catalog
 /** Model-facing patent-law plugin configuration. */
@@ -3264,7 +3264,7 @@ export type CitationPolicy = 'block' | 'warn' | 'allow'
 ## `@deepseek-ai/dsh-patent-rule`
 
 - `inject`: `tools`
-- `source`: [`packages/patent/patent-rule/src/index.ts:229`](../packages/patent/patent-rule/src/index.ts)
+- `source`: [`packages/patent/patent-rule/src/index.ts:234`](../packages/patent/patent-rule/src/index.ts)
 
 ```ts config-catalog
 /** Plugin config. */
@@ -3329,6 +3329,14 @@ export interface Config {
    * this package's.
    */
   deliveryGate?: DeliveryGateEntry[]
+  /**
+   * Citation gate: before a listed delivery tool runs, every citation in its
+   * text arguments must pass the shipped patent index and, for 民法典 and
+   * 民事诉讼法, the legal-law index. A citation that is out of range, absent
+   * from the index, unverified, or narrowed to a missing paragraph or item
+   * denies the call.
+   */
+  citationGate?: CitationGateEntry[]
   /** When true, review-level violations block without an approval round-trip (unattended fail-closed). */
   approvalDisabled?: boolean
 }
@@ -3372,6 +3380,16 @@ export type DeliveryGateEntry = {
    * 与本次模板要求的 manifest 一致。未声明的前置工具仍只按成功返回判定。
    */
   evidence?: Record<string, DeliveryEvidenceRequirement[]>
+}
+
+/** 一条交付物引用门禁：哪个工具的哪些入参是制品文本。 */
+export type CitationGateEntry = {
+  /** 被门禁的交付工具名。 */
+  tool: string
+  /** 承载制品文本的入参名。 */
+  textArgs: string[]
+  /** 精确匹配才生效的入参；缺省表示该工具的每次调用都核验。 */
+  whenArgs?: Record<string, DeclaredArgValue>
 }
 
 /** 一条声明的入参取值：字符串为精确匹配，字符串数组为取值集合。 */

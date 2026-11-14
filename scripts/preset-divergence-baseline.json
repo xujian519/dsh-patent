@@ -49,7 +49,7 @@
     },
     "patent-rule": {
       "legal.patch.yml": "aa0853add4",
-      "patent.patch.yml": "800e54e29d"
+      "patent.patch.yml": "ded9ea2be8"
     },
     "persona": {
       "cordis.patch.yml": "6ee949142b",

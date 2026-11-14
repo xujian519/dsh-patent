@@ -28,6 +28,7 @@ export const EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS: Readonly<Record<string, strin
   'packages/experimental/personalized-recommendations': '@deepseek-ai/dsh-personalized-recommendations',
   'packages/experimental/video-mode': '@deepseek-ai/dsh-video-mode',
   'packages/experimental/video-bundle': '@deepseek-ai/dsh-video-bundle',
+  'packages/experimental/deepseek-chat-import': '@deepseek-ai/dsh-deepseek-chat-import',
 } satisfies Record<`packages/experimental/${string}`, `@deepseek-ai/dsh-${string}`>
 
 /** Legacy npm namespace, allowed only in `LEGACY_PREFIXED_EXPERIMENTAL_PACKAGE_DIRECTORIES`. */

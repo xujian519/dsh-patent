@@ -358,7 +358,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- tech-debt-counters:start -->
 | 计数 | 值 |
 | --- | --- |
-| `structure.long-functions` | 189 |
+| `structure.long-functions` | 190 |
 | `structure.large-files` | 96 |
 | `structure.patent-large-files` | 10 |
 | `lint.v8-ignore` | 1332 |
@@ -406,6 +406,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-15 上游 v0.2.2-rc.3 同步**:上游新增的实验包 `deepseek-chat-import` 带入 1 个新增 >150 行函数(`importer.ts` 的 `importDeepseekChatExport`,160 行),`structure.long-functions` 由 189 升至 **190**;`structure.large-files`(96)、`structure.patent-large-files`(10)、`v8 ignore`(1332)与 `@ts-expect-error`(202)均不变。这是上游自身的结构状态,fork 不在同步里拆分上游文件。
 - **2026-11-12 上游 v0.2.2-rc.2 同步**:上游代码带入 5 个新增 >150 行函数与 6 个新增 >800 行文件,`structure.long-functions` 由 184 升至 **189**、`structure.large-files` 由 90 升至 **96**;专利域 >800 行文件数 10 不变;上游同时带入 17 行 `v8 ignore` 与 9 行 `@ts-expect-error`,两个标记计数分别升至 **1332** 与 **202**。这些是上游自身的结构状态,fork 不在同步里拆分上游文件。
 - **2026-11-08 版面利用率提示判据**:`render-check-findings.ts` 由 951 升至 **988** 行并同步重定接受上限;`structure.long-functions`、`structure.large-files`、`structure.patent-large-files` 与 `lint.v8-ignore` 均不变。新增 `sheet-underfill` 判据(内容包围盒面积 ÷ 该图自身画布面积,低于 `Config.figureMinSheetFillRatio` 时报警)约 37 行,只读已量测的墨迹包围盒与画布尺寸,不新增遍历;`RenderCheckFinding` 同时增加 `advisory` 标记,`blockingFindings` 据此把它排除在阻断集之外,故 strict 门禁不会因软指标失败。
 - **2026-11-08 结构线稿分解图**:`freecad-structure-script.ts` 由 985 升至 **1217** 行并同步重定接受上限;`structure.long-functions`、`structure.large-files`、`structure.patent-large-files` 与 `lint.v8-ignore` 均不变。新增 `principal_axis`(包围盒中心点云的幂迭代主轴)、`exploded_part_offsets`(按各零件沿轴尺寸加中位间隙逐段累加,整串居中)、`build_exploded_view_svg`(逐件 `DrawViewPart` + 平移拼接),各 <50 行;`callout_fragments` 改为接收投影函数,使总装图与分解图共用同一套标号放置,`part_metadata` 多收一个可选的排布后矩形。分解图与 `details` 互斥:放大窗口按模型坐标挂在单一基视图上,而分解图每个零件各有一个视图。

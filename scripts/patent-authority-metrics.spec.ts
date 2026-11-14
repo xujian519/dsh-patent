@@ -103,7 +103,7 @@ describe('parseAuthorityBaseline', () => {
 })
 
 describe('buildCoverage', () => {
-  it('用随包索引与 maxArticle 算出三部法的覆盖', () => {
+  it('用随包索引与 maxArticle 算出法源覆盖', () => {
     const rows = buildCoverage(
       loadLawBaselines(),
       parseAuthorityBaseline(requireBaselineText()),
@@ -112,7 +112,8 @@ describe('buildCoverage', () => {
     expect(rows[0]).toMatchObject({ document: '专利法', extent: 82, indexed: 82, coverage: '100.0%' })
     expect(rows[1]).toMatchObject({ document: '专利法实施细则', extent: 149, indexed: 149, coverage: '100.0%' })
     expect(rows[2]).toMatchObject({ document: '专利审查指南', extent: 1335, indexed: 1335, transcribed: 1145 })
-    expect(rows[3]).toMatchObject({ document: '司法解释', extent: 7, indexed: 0, coverage: '0.0%' })
+    expect(rows[3]).toMatchObject({ document: '司法解释', extent: 7, indexed: 7, transcribed: 7, coverage: '100.0%' })
+    expect(rows[4]).toMatchObject({ document: '部门规章', extent: 8, indexed: 8, transcribed: 8, coverage: '100.0%' })
   })
 })
 

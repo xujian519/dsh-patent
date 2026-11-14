@@ -401,14 +401,28 @@ export function buildCoverage(
     coverage: percent(sections.length, guidelineExtent.headings),
     source: `官方 PDF 编号标题数（guideline-extent.yaml：${guidelineExtent.headingsWithBody} 节带正文）`,
   })
+  /** The documents one recorded corpus contributes beyond the three core sources. */
+  const corpusDocuments = (kind: string): LawBaseline[] => {
+    const values = [...baselines.values()]
+    const core = ['专利法', '专利法实施细则', '专利审查指南']
+    if (kind === '司法解释') return values.filter(document => document.law.startsWith('最高人民法院'))
+    if (kind === '部门规章') {
+      return values.filter(document => !core.includes(document.law) && !document.law.startsWith('最高人民法院'))
+    }
+    return []
+  }
   for (const extent of baseline.extents) {
+    // Each indexed document is one file, so the corpus row counts documents.
+    const indexed = corpusDocuments(extent.documentKind)
+    const transcribed = indexed.filter(document =>
+      document.articles.length > 0 && document.articles.every(article => article.text !== null))
     rows.push({
       document: extent.documentKind,
       extent: extent.count,
-      indexed: 0,
-      transcribed: 0,
-      coverage: percent(0, extent.count),
-      source: '索引不含该文书种类',
+      indexed: indexed.length,
+      transcribed: transcribed.length,
+      coverage: percent(indexed.length, extent.count),
+      source: indexed.length > 0 ? '随包索引（一件文书一个文件）' : '索引不含该文书种类',
     })
   }
   return rows

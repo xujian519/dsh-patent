@@ -100,7 +100,7 @@ export type LawVerifyToolOptions = {
 }
 
 const DESCRIPTION = [
-  '- Checks law citations against the law index shipped with this deployment: 《专利法》《专利法实施细则》 by article (and paragraph), 《专利审查指南》 by normalized section path.',
+  '- Checks law citations against the law index shipped with this deployment: 《专利法》《专利法实施细则》, seven patent judicial interpretations, and eight departmental regulations by article (and paragraph); 《专利审查指南》 by normalized section path.',
   '- Each citation is decided as 已核验 / 与所引命题不符 / 未与条文对应（未判定）/ 条号超出有效范围 / 索引中不存在 / 条文未转录（未核验）. A decision is never reported as checked when it was not: an indexed article whose text has not been transcribed comes back as 未核验, and an article beyond an article ceiling that has itself not been verified also comes back as 未核验.',
   '- Pass the text whose citations you want checked (citations are extracted from it), or pass exact references. A reference that is not exactly one reference is a tool error, so a typo surfaces instead of being skipped. Blank text without references is an input error, so a zero-byte call cannot stand in for a completed check.',
   '- A citation-like fragment in the text that the parser cannot resolve is returned in `unrecognized` and was not checked. A result with findings is not a complete check while that list is non-empty: rewrite the fragment as a full reference or verify it separately.',

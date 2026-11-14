@@ -898,6 +898,20 @@ describe('the packaged index', () => {
     expect(current.reason).toContain('判定依据其下各节')
   })
 
+  it('decides a judicial interpretation article and its ceiling', () => {
+    const shipped = loadLawBaselines()
+    const law = '最高人民法院关于审理侵犯专利权纠纷案件应用法律若干问题的解释'
+    const finding = verifyCitation(
+      { kind: 'law-article', law, article: 6, raw: `${law}第六条` },
+      shipped,
+      { proposition: '通过对权利要求、说明书的修改或者意见陈述而放弃的技术方案' },
+    )
+    expect(finding.decision).toBe('valid')
+    expect(finding.entry?.sourceDoc).toContain('知识库原件')
+    const beyond = verifyCitation({ kind: 'law-article', law, article: 21, raw: `${law}第二十一条` }, shipped)
+    expect(beyond.decision).toBe('out-of-range')
+  })
+
   it('refuses the renumbered-away path and serves the section at its 2026 number', () => {
     const shipped = loadLawBaselines()
     // 4.2.1.3「不予退款的情形」在 2026 年版改号为 4.2.1.2，旧路径不能按现行条文核验。

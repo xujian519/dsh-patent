@@ -8,7 +8,7 @@ Tracking issue: [#811](https://github.com/xujian519/dsh-patent/issues/811)
 
 ## Problem
 
-[The 60-day plan](2026-11-13-patent-authority-60-day-plan.md) sets out to index the law itself: 82 articles of 《专利法》 (Patent Law), 149 articles of the Implementing Regulations, and every numbered heading of 《专利审查指南》 (Examination Guidelines). Three facts make the plan's phase 1 unexecutable as written.
+[The 60-day plan](../../implemented/architecture/2026-11-13-patent-authority-60-day-plan.md) sets out to index the law itself: 82 articles of 《专利法》 (Patent Law), 149 articles of the Implementing Regulations, and every numbered heading of 《专利审查指南》 (Examination Guidelines). Three facts make the plan's phase 1 unexecutable as written.
 
 **The corpus already has two owners and they disagree.** `@deepseek-ai/dsh-legal-law` ships 7,910 law documents from a manifest, including 《专利法》 at 82/82 articles with text, 《民事诉讼法》 at 306/306 with text, 《民法典》 at 1,260/1,260 with text, and 4 of the 7 patent judicial interpretations — with every article's `text` null for the interpretations it does carry. Its 《专利法实施细则》 file records `maxArticle: 149` while holding articles 1–100 and 110–149: articles 101–109 are missing. `@deepseek-ai/dsh-patent-law` ships the same 实施细则 law name at 45 articles with text. Two indexes answer the same citation differently depending on which preset the session loaded.
 

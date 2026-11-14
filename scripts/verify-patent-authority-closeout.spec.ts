@@ -85,9 +85,10 @@ describe('authority closeout', () => {
     expect(rows.find(entry => entry.id === 'rule-references')?.reading).toContain('38')
   })
 
+  // v8 coverage on this corpus check exceeds the 180s uninstrumented budget.
   it('matches the packaged corpus, rehearsal, and committed report', () => {
     const { report, problems } = checkPatentAuthorityCloseout(root)
     expect(problems).toEqual([])
     expect(readFileSync(join(root, AUTHORITY_CLOSEOUT_REPORT_PATH), 'utf8')).toBe(report)
-  }, 180_000)
+  }, 420_000)
 })

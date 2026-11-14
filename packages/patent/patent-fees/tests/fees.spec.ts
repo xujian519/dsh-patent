@@ -236,6 +236,8 @@ items:
       patentTypes: ['invention', 'utility-model'],
     })
     expect(annual?.latePayment).toMatchObject({ monthlyPercent: 5, maxMonths: 6 })
+    expect(shipped.items.find(entry => entry.id === 'substantive-examination-fee')?.legalBasis)
+      .toContain('专利法实施细则第110条第1款第（二）项')
     expect(annual?.tiers).toEqual([
       { fromYear: 1, toYear: 3, amount: '900' },
       { fromYear: 4, toYear: 6, amount: '1200' },

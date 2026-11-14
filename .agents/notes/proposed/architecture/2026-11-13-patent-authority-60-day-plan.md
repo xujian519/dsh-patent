@@ -87,6 +87,8 @@ Build thirty golden tasks, five per case type, each carrying the provisions it m
 
 Exit: citation accuracy at or above 98%, zero wrong formulations, and a reproducible report.
 
+The thirty tasks are `packages/patent/patent-law/assets/authority/authority-eval-tasks.yaml`, scored by `scripts/verify-patent-authority-eval.ts` without calling a model. A citation the task requires must verify, and a wrong formulation must receive its recorded refusal. Implementing Regulations article 41 does not support a reexamination claim, article 7 does not support a service period, Patent Law article 59 does not state the scope of protection, the old guideline path 4.2.1.3 does not verify as current text, and Civil Procedure Law article 63 does not state the kinds of evidence. Rank follows `authority-ranks.yaml`. Phase 0 recorded 0 golden tasks and 5 known citation errors; the report compares against that baseline.
+
 ### Phase 5 — Governance, D56–D60 (2027-01-08 to 2027-01-12)
 
 Write the amendment runbook that carries a statutory change through lineage, index, rules, templates and evaluation. Update the patent subsystem page, the `patent-law` README and the upgrade guide, and move this note to `implemented`.

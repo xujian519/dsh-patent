@@ -87,6 +87,8 @@ D6–D8 已完成：《专利法》82 条全部转录进 `assets/law/cn-patent-l
 
 退出条件：引用正确率不低于 98%，错误口径为零，报告可复跑。
 
+三十个任务在 `packages/patent/patent-law/assets/authority/authority-eval-tasks.yaml`，由 `scripts/verify-patent-authority-eval.ts` 复跑，不调用模型。任务要求引用的条文必须核验通过，错误口径必须得到登记的拒答。细则第41条支撑不了复审命题，细则第7条支撑不了送达期限，专利法第59条不是保护范围，旧编号的指南路径 4.2.1.3 不能按现行文本核验，民事诉讼法第63条不是证据种类。位阶按 `authority-ranks.yaml` 取先。阶段 0 记录的基准任务是 0、已知引用错误是 5，报告与该基线对照。
+
 ### 阶段 5 — 治理，D56–D60（2027-01-08 至 2027-01-12）
 
 写出修法运行手册，把一次法条变更依次带过沿革、索引、规则、模板与评测。更新专利子系统文档、`patent-law` README 与升级指南，并把本笔记移入 `implemented`。

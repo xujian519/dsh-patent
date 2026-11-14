@@ -73,7 +73,7 @@ law_verify 读取一段文本中的法条引用（或直接传入的引用），
 
 `versions` 目前只有一项 `2026 年修订版（2026-01-01 施行）`，收录 43 节：26 节按 2025-11-13 局令第84号修改对照表的新栏转录的修改、11 个新增节、6 个改编号后的节（改号后沿用原文，移到新编号下）；新增节里有两个是章内容器，自身不带正文。原 4.2.1.2「专利局主动退款的情形」在 2026 年版整节删除，所述情形并入 4.2.1.1 第（5）至（7）项；4.2.1.3「不予退款的情形」改号为 4.2.1.2，正文未改。`staleSections` 只剩 6 条：5 个改编号前的旧路径与原 4.2.1.3，核验时按「已被 2026 年修订版修改」处置，而不是拿 2023 年文本放行。`verifyCitation` 未指定 `revision` 时，如果现行修订版（`supersededBy`）已有转录，则按顺序应用截至最新已转录版本的每个覆盖；如果 `supersededBy` 指向尚未转录的版本，则使用基础文本与过时标记。指定 2023 年修订版时使用基础文本，指定索引没有的版本时报「未核验」而不是回退。
 
-`assets/authority/authority-baseline.yaml` 登记评审所依据的八件核心法源：知识库相对路径、修订版本、施行日期与每个载体的 SHA-256。`authority-ranks.yaml` 把六类案型的权威位阶记录为数据。`guideline-changes-2026.yaml` 登记 2026 年版的每一处改动——正文修改、改编号与新增节——附官方对照表两栏的文本；右栏把删除与插入的措辞混排，因此它只定位改动，不提供可直接引用的条文。`guideline-extent.yaml` 记录 PDF 的标题数。这些文件都不在运行时加载；`law_verify` 只依据 `assets/law/` 判定，指标由 `scripts/patent-authority-metrics.ts` 读取。没有外部知识库的部署会把载体报为不可用，而不是让哈希校验通过。`rule-procedure-alignment.yaml` 给每个规则族和每项程序计算写明条文、实现该条文的规则与用例；`scripts/verify-patent-rule-alignment.ts` 对照索引、随包规则以及模板和 manifest 集合核验这份清单。
+`assets/authority/authority-baseline.yaml` 登记评审所依据的八件核心法源：知识库相对路径、修订版本、施行日期与每个载体的 SHA-256。`authority-ranks.yaml` 把六类案型的权威位阶记录为数据。`guideline-changes-2026.yaml` 登记 2026 年版的每一处改动——正文修改、改编号与新增节——附官方对照表两栏的文本；右栏把删除与插入的措辞混排，因此它只定位改动，不提供可直接引用的条文。`guideline-extent.yaml` 记录 PDF 的标题数。这些文件都不在运行时加载；`law_verify` 只依据 `assets/law/` 判定，指标由 `scripts/patent-authority-metrics.ts` 读取。没有外部知识库的部署会把载体报为不可用，而不是让哈希校验通过。`rule-procedure-alignment.yaml` 给每个规则族和每项程序计算写明条文、实现该条文的规则与用例；`scripts/verify-patent-rule-alignment.ts` 对照索引、随包规则以及模板和 manifest 集合核验这份清单。`authority-eval-tasks.yaml` 登记六类案型各五个基准任务，写明应当引用的条文与不得出现的错误口径；`scripts/verify-patent-authority-eval.ts` 用索引核验这些任务并写出可复跑的报告。
 
 <a id="library-api"></a>
 ## 库 API

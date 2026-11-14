@@ -496,7 +496,7 @@ export function checkRuleProcedureAlignment(root = ROOT): string[] {
 function loadPackagedBases(root: string): Map<string, string> {
   const bases = new Map<string, string>()
   const rulesDir = join(root, 'packages/patent/patent-rule/assets/rules')
-  for (const file of yamlFiles(rulesDir)) {
+  for (const file of ruleYamlFiles(rulesDir)) {
     const text = readFileSync(file, 'utf8')
     if (!/^rules:/m.test(text) || file.endsWith('/evidence-rules.yaml')) continue
     const loaded = loadRuleSetFromFile(file)
@@ -527,17 +527,14 @@ function loadPackagedBases(root: string): Map<string, string> {
 }
 
 /**
- * @param dir - the directory to walk.
- * @returns the yaml files under it.
+ * @param dir - the rules directory.
+ * @returns every YAML file under it, directories included by Node's recursive listing and then dropped.
  */
-function yamlFiles(dir: string): string[] {
-  const files: string[] = []
-  for (const entry of readdirSync(dir).sort()) {
-    const path = join(dir, entry)
-    if (statSync(path).isDirectory()) files.push(...yamlFiles(path))
-    else if (entry.endsWith('.yaml') || entry.endsWith('.yml')) files.push(path)
-  }
-  return files
+function ruleYamlFiles(dir: string): string[] {
+  return readdirSync(dir, { recursive: true, encoding: 'utf8' })
+    .filter(entry => entry.endsWith('.yaml') || entry.endsWith('.yml'))
+    .map(entry => join(dir, entry))
+    .sort()
 }
 
 /**

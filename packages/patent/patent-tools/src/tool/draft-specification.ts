@@ -6,12 +6,13 @@
  */
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { ParameterPropertySpec, ParameterSchemaSpec, ToolDefinition } from '@deepseek-ai/dsh-tools'
+import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { resolveDomain as resolveClaimDomain } from '@deepseek-ai/dsh-patent-core'
 import { createToolInputReader } from './internal/tool-input.ts'
 import type { PatentType, TechDomain } from './draft-claims.ts'
 import { WARNINGS_SCHEMA } from './internal/tool-output.ts'
 import {
+  AMENDMENT_RESERVE_KINDS,
   amendmentReserveWarnings,
   buildAmendmentReserve,
   type AmendmentReserveResult,
@@ -405,16 +406,16 @@ function parseDraftSpecificationInput(args: DraftSpecificationArgs): DraftSpecif
  * @param extra - 该列表独有的字段。
  * @returns 工具输出 schema 中的数组字段。
  */
-function amendmentReserveList(extra: ParameterSchemaSpec): ParameterPropertySpec {
+function amendmentReserveList<const Extra extends Record<string, { type: 'string' | 'number'; required?: true; enum?: readonly string[] }>>(extra: Extra) {
   return {
-    type: 'array',
-    required: true,
+    type: 'array' as const,
+    required: true as const,
     items: {
-      type: 'object',
-      additionalProperties: false,
+      type: 'object' as const,
+      additionalProperties: false as const,
       properties: {
-        claim_no: { type: 'number', required: true },
-        kind: { type: 'string', required: true, enum: ['结构等同', '步骤替换', '数值上下界'] },
+        claim_no: { type: 'number' as const, required: true as const },
+        kind: { type: 'string' as const, required: true as const, enum: AMENDMENT_RESERVE_KINDS },
         ...extra,
       },
     },

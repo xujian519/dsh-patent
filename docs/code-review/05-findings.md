@@ -46,6 +46,11 @@
 | F-PAT-011 | `pending`/`rounds` 为进程内状态且未声明单进程语义 | PAT | E | Medium | 中 | confirmed |
 | F-PAT-012 | 51 处 `as unknown as` 与两个零引用导出类型 | PAT | B | Low | 高 | confirmed |
 | F-PAT-013 | `patent-core` 导出面过宽，大量内部符号对外 | PAT | B | Low | 高 | confirmed |
+| F-PAT-014 | `patent_pdf_download` 的输出目录不受部署文件策略约束 | PAT | A | High | 中 | fixed |
+| F-PAT-015 | PDF 兜底下载的临时文件路径可预测且不独占创建 | PAT | A/B | Medium | 中 | fixed |
+| F-PAT-016 | ego-browser 子进程继承完整 `process.env` | PAT | A | Low | 中 | confirmed |
+| F-PAT-017 | 交付前引用门禁只覆盖 `render_patent_document`，立案构建不经引用核验 | PAT | A/E | High | 低 | confirmed |
+| F-PAT-018 | 后台运行接受模型自报的 `approveStageIds`，HITL 审批可绕过 | PAT | A | High | 中 | confirmed |
 | F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | confirmed |
 | F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | confirmed |
 | F-DOC-003 | OOXML 读取限额两包各写一份字面量 | DOC | B | Low | 高 | fixed |
@@ -62,6 +67,7 @@
 | F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | confirmed |
 | F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | confirmed |
 | F-VID-006 | `StrictRequest` 与 `MediaTaskRequest` 字段完全重复 | VID | B | Low | 高 | confirmed |
+| F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | confirmed |
 
 ## 专利域
 
@@ -233,6 +239,109 @@
 - 预估工作量：M
 - 是否可自动化：是
 - 状态：confirmed
+
+### F-PAT-014 `patent_pdf_download` 的输出目录不受部署文件策略约束
+
+- 位置：`packages/patent/patent-tools/src/tool/patent-pdf-download.ts:511`、`packages/patent/patent-core/src/pdf-download.ts:67`、`packages/patent/patent-tools/src/tool/patent-pdf-download-ego.ts:154`
+- 维度：A
+- 严重度：High（判定依赖威胁模型，见下）
+- 可能性：中
+- 证据：`resolveDatedOutputDir` 只做 `resolve(cwd, outputDir)`，绝对路径原样接受、相对路径可含 `..`；模型的 `outputDir` 参数描述也写明"绝对或相对当前工作目录"。随后 `mkdir(outputDir)`、`writeFile`/`rename` 全走 `node:fs`，同一路径还作为 ego-browser 子进程的 `cwd`。对照同域 `patent-document`（`renderPatentDocument.ts:86`）与 `patent-filing`（`engine.ts:133`）都走 `resolveConfinedPath`。
+- 影响：部署若通过 `ctx.fs` 的 sandbox 策略限制写入范围，本工具可以绕开——模型被页面内容或提示注入影响时，可把 PDF 与截图写到工作区之外的任意可写目录，并让第三方浏览器进程以该目录为 cwd 运行。
+- 最小修复建议：与同域其它工具一致，用 `resolveConfinedPath(outputDir, cwd, '输出目录', …)`；若产品确实需要写任意目录，改为部署级 `Config` 白名单，而不是模型参数。
+- 预估工作量：S
+- 是否可自动化：是（`..`、绝对路径与符号链接越界用例）
+- 状态：confirmed
+
+### F-PAT-015 PDF 兜底下载的临时文件路径可预测且不独占创建
+
+- 位置：`packages/patent/patent-tools/src/tool/patent-pdf-download.ts:332`
+- 维度：A、B
+- 严重度：Medium
+- 可能性：中
+- 证据：临时文件路径固定为 `` `${target}.tmp` ``，随后 `writeFile(tmp, buf)` 再 `rename(tmp, target)`；没有随机后缀、没有 `wx` 独占创建、没有文件与父目录 fsync，也没有 Windows `EPERM`/`EACCES` 重试。同批次 A 已收口的共享 `writeFileAtomic` 四项俱全。
+- 影响：能写该输出目录的本地进程可预先在 `<target>.tmp` 放置符号链接，让下载内容写到别处；崩溃时目标可能是半写状态；Windows 上目标已存在时 rename 会失败。这是批次 A 遗漏的第五份原子写。
+- 最小修复建议：改用 `@deepseek-ai/dsh-atomic-write` 的 `writeFileAtomic(target, buf, { mode: 0o644 })`；同时并入批次 A 的复用收口。
+- 预估工作量：S
+- 是否可自动化：是（预置符号链接的用例）
+- 状态：confirmed
+
+### F-PAT-016 ego-browser 子进程继承完整 `process.env`
+
+- 位置：`packages/patent/patent-data/src/ego-session.ts:51`、`:121`、`:193`
+- 维度：A
+- 严重度：Low
+- 可能性：中
+- 证据：`this.env = options.env ?? process.env`，`buildEnv` 在复制全部变量后只追加 `PATH` 条目，再作为子进程环境传入；同一批 `patent-tools/src/figure/freecad-renderer.ts:271` 的 FreeCAD 相反，只传 `HOME`/`XDG_*`/`TEMP`。
+- 影响：第三方浏览器二进制及其启动的页面进程拿到 `DEEPSEEK_API_KEY` 等全部进程级凭据。浏览器本就能读用户文件，所以这是最小权限问题而非直接泄露；但同一仓库两个子进程的凭据暴露面不一致，缺少统一约定。
+- 最小修复建议：ego-browser 只传白名单（`PATH`、`HOME`、语言与显示相关变量），需要登录态时由 ego 自己的配置承担。
+- 预估工作量：S
+- 是否可自动化：是（断言子进程环境不含未列入白名单的变量）
+- 状态：confirmed
+
+### F-PAT-017 交付前引用门禁只覆盖 `render_patent_document`，立案构建不经引用核验
+
+- 位置：`packages/bundle/web-app/presets/patent.patch.yml:500`、`:383`、`packages/patent/patent-rule/src/index.ts:425`
+- 维度：A、E
+- 严重度：High
+- 可能性：低
+- 证据：`citationGate` 只有一条，`tool: render_patent_document`；`build_patent_filing` 的 `deliveryGate` 只要求本会话跑过 `law_verify`，且 `isBlockedResult` 只看结果里的 `blocked: true`。而 `patent-law` 的默认策略把 `notIndexed` 与 `unverified` 判为 `warn`（`verify.ts:55-60`），warn 不产生 `blocked`，因此不满足「阻断」但满足「跑过」。真正重读制品文本的 `BLOCKING` 判定只在 `citation-gate.ts:37`，且只被 render 路径调用。
+- 影响：申请文件 `draft` 里若出现伪造或索引未收录的法条引用，交付门禁不会阻断——只要同一会话里另有一次能识别到引用的 `law_verify`。申请文件是直接递交 CNIPA 的成品，错误引用属于对外可见的业务结论错误。
+- 最小修复建议：在 preset 的 `citationGate` 增加 `tool: build_patent_filing`、`textArgs: [draft]`；`structuralGateText` 的 `collectText` 已能递归草案对象，不需要改代码。
+- 预估工作量：S
+- 是否可自动化：是（preset 断言 + 一条含伪造引用的构建用例）
+- 状态：confirmed
+
+### F-PAT-018 后台运行接受模型自报的 `approveStageIds`，HITL 审批可绕过
+
+- 位置：`packages/patent/patent-tools/src/tool/patent-workflow-run.ts:442`、`:446`；`packages/patent/patent-tools/README.zh.md:83`；`packages/bundle/web-app/presets/patent.patch.yml:301`
+- 维度：A
+- 严重度：High
+- 可能性：中
+- 证据：拒绝 `approveStageIds` 的条件是 `approveStageGates && !background && approveStageIds.length > 0`；错误文案自认「关闭 approveStageGates 或改用后台运行时才接受该参数」。README 同一句写「后台运行保持『暂停后由 approveStageIds 续跑』契约」。而 `TRANSITIONS.awaiting_approval` 允许直接迁移到 `executing`，`patent_plan_task` 的无状态 `transition` 也会把 `awaiting_approval → executing` 判为合法并返回 `ok: true`。
+- 影响：模型可以选 `run_in_background: true`，在审批门暂停后用自己列的 `approveStageIds` 续跑，人类从未被询问。交付前置门禁只要求本会话成功跑过一次 `patent_workflow_run`，自批产生的收口记录同样满足证据要求，因此这条路径能一路走到交付。shipped preset 已开 `approveStageGates: true`，但后台分支把这道开关绕开了。
+- 最小修复建议：后台运行同样拒绝 `approveStageIds`——到达审批门即暂停并让调用方在前台续跑；若必须支持后台续跑，把模型自报的列表换成由审批服务在回合内签发的一次性凭据，模型只转交不生成。
+- 预估工作量：M
+- 是否可自动化：是（后台 + approveStageIds 的用例应被拒绝；现有用例断言了相反行为，需要同步改）
+- 状态：confirmed
+
+### Day 10 定向结论：法律域与共享层无安全发现
+
+- **SQL 全部参数化**：`MATCH ?` 与 `LIKE ?` 绑定，`likePattern` 转义 `%`、`_`、反斜杠并配合 `ESCAPE '\'`；唯一的表名插值取自包内固定数组；安装 API 的源库与输出目录来自 options/CLI，不注册为工具。
+- **索引与策略来自部署**：`baselineDir` 与五个引用策略只由 `Config` 提供；shipped legal preset 把 `mismatch`、`unverified`、`notIndexed` 全部设为 `block`。
+- **证据评分不收回合策略**：`evaluate_legal_evidence` 只收证据属性，没有策略、权重或"跳过"入参；规则资产缺失时插件在加载期失败。
+- **共享层不放大风险**：两域共用同一份 FTS/LIKE 转义与阶梯实现；当前实现正确，未发现单域特化分支。
+
+### Day 9 定向结论：文档域无安全发现
+
+- **office-kit**：每次转换一个 `mkdtemp` 私有目录，输入以 `wx` + `0o600` 写入，`finally` 递归删除；启动清扫按名字正则、真实目录、mtime 截止过滤并跳过链接。本包不拼 argv，LibreOffice 调用在 `@deepseek-ai/libreoffice-kit` 内，入口由使用方的 `import.meta.resolve` 解析。
+- **docx-kit**：`readZip` 限条目数与非压缩总字节；entry 名只解码、不当文件路径，包内也没有按键名落盘的 API，因此 ZIP 穿越当前不可达。`readZip` 经 `./src/*` 子路径可达，将来加解压能力时需自带名字校验。
+- **doc-template**：模板 id 按 manifest 白名单校验；HTML 变量经 `escapeVariables`，链接与图片经 `isDeliverableUrl` 拒绝 `javascript:`、`data:`、`vbscript:` 与协议相对地址；`output_path` 经 `ctx.fs` 写入，受部署文件策略约束。
+
+### Day 8 定向结论：已处理的身份与注入面
+
+- **审批失败方向（前台）**：`LiveApprovalGateHandler` 只在 `allowed-once` 时放行；拒绝、取消、审批服务缺失、`never` 策略或异常一律暂停并带结果名（`approval-gate.ts:107`）。开启后 `approveStageIds` 被拒绝，模型无法自批。
+- **团队身份**：`patent_teams_send_message` 的 `from` 只能是调用者自己的身份，传别人会抛错（`service.ts:369-371`）；移除成员等 captain-only 操作走 `captainTeam`/`freshCaptainTeam` 校验；成员更新任务必须携带当前 `attempt_id`，接管或重派后旧 attempt 失效。
+- **模板注入**：模板 id 先按 `manifest.json` 的 `templates` 白名单校验再拼路径，未知 id 直接抛错；草案文本（文本槽位、blocks、rows、表格单元格、理由节）统一经 `escapeHtmlText` 转义，标题与表格结构由转换器独占生成。
+- **输出路径**：`outputName` 走 `SAFE_NAME_PATTERN`；`outputDir` 与 `brandPath` 走 `resolveConfinedPath`；`build_patent_filing` 的 `outputDir` 同样按工作目录包含性校验。
+
+### Day 7 定向结论：已处理的外部输入与收敛的失败方向
+
+- **SQL/FTS 参数化**：`MATCH ?` 与 `LIKE ?` 全部走绑定；多词 LIKE 的 OR 子句按词数生成占位符，值经 `likePattern` 转义 `%`、`_`、`\`；`doc_type IN (...)` 的取值先按闭集常量校验再拼入，注释也写明只接受类型值。
+- **表名与列名插值**：`pragma_table_info('${table}')` 的 `table` 注释明确「仅包内字面量」，调用点也确实只有字面量；`ALTER TABLE ... ADD COLUMN` 的列名与类型来自包内常量数组；`VACUUM INTO '${path}'` 经 `sqlQuote` 转义单引号。
+- **资产路径**：`rulesDir`、`baselineDir`、费用表目录都只来自部署 `Config`；这四个包的模型可见工具没有任何路径参数，输入无法影响资产位置。
+- **费用失败方向**：`patent-fees` 的 `failOnUnverified` 默认 `true`，未核验时不给合计。
+- **渲染路径的引用门禁是 fail-closed**：`citation-gate.ts:37` 的 `BLOCKING` 含 `not-indexed`、`unverified`、`out-of-range`、`mismatch`，比 `law_verify` 工具的默认策略更严——工具负责让模型看见缺口，门禁负责不让它落盘。缺口只在立案构建路径（F-PAT-017）。
+
+### Day 6 定向结论：已处理的外部输入
+
+以下为复核后确认**没有**发现问题的部分，记录以免后续重复怀疑：
+
+- CNIPR 三个脚本的参数（`numbers`、`query`、`pages`、预算数值）全部经 `JSON.stringify` 嵌入脚本体，脚本走 stdin 而不是 shell；`page.fill` 不解释内容。
+- ego-browser 与渲染子进程的 `argv` 全是数组，没有字符串拼接的 shell 调用。
+- CNIPR 直链模式锁定 `pic\.cnipr\.com/pdfcn/…\.PDF` 并强制补齐 `http://`；Google Patents 侧的选择器锁定 `patentimages.storage.googleapis.com`，`Network.responseReceived` 还要求 `response.url === pdfUrl`。
+- `normalizePatentNumber` 会剥离 `/`、`:`、空白与连字符，`validatePatents` 另行拒绝 `\` 与 `..`，落盘文件名无法穿越目录。
+- FreeCAD 的 Python 脚本载荷经双重 `JSON.stringify` 注入，字符串转义规则与 Python 字面量一致；子进程用最小环境。
 
 ## 文档模式
 
@@ -470,6 +579,42 @@
 - **F-VID-005**：视频 `resolveMediaConfig` 的 13 个 `??` 与 schema 默认值重复，属实验包且改动面独立，留待批次 B。
 
 验证：`pnpm run typecheck` 5/5 通过；`pnpm run lint` exit 0；`pnpm exec vitest run` 覆盖 document 全部包与专利核心/文档/工具包，267 个测试文件、5128 个用例通过、4 skipped；`verify-module-graph` 与 `gen-module-graph` 均通过。
+
+### 批次 A2：Day 6 安全修复（2026-11-15）
+
+用户确认「先修这两条」后完成。改动只涉及 `patent_pdf_download` 一条链路。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-014 | `defaultResolveOutputDir` 的显式分支改用 `resolveConfinedPath`，与 `patent-document`、`patent-filing` 一致；`outputDir` 参数描述同步改为「相对当前工作目录；越出工作目录的路径会被拒绝」 | `patent-tools/src/tool/patent-pdf-download.ts` |
+| F-PAT-015 | 兜底下载的落盘改为 `writeFileAtomic(target, buf, { mode: 0o644 })`，删除固定的 `<target>.tmp`、`writeFile`+`rename` 与手工 `unlink` 清理 | 同上 |
+
+**行为变化**：`outputDir` 传工作目录之外的绝对路径现在会被拒绝（`invalid_tool_input`，消息含「输出目录 越出工作目录」）；相对路径与默认的 `<cwd>/专利原文/YYYY-MM-DD` 不变。这是有意的收紧——该目录同时是 ego-browser 子进程的 `cwd`。
+
+**既有测试行为**：`index.spec.ts` 的接线用例原本传绝对临时目录，改为传 `.`（解析后即 cwd，`mkdir` 无副作用，且该用例只验证接线）。新增两条用例覆盖收紧后的行为。
+
+未纳入本批：F-PAT-016（ego-browser 继承完整环境，Low），留待批次 B 一并处理子进程环境白名单。
+
+### F-VID-007 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算
+
+- 位置：`packages/experimental/video-mode/src/store.ts:27`、`:233`、`:260`；`packages/experimental/video-mode/src/tools/media.ts:466`
+- 维度：A
+- 严重度：Medium
+- 可能性：中
+- 证据：账本是工程目录下的明文 `budget.json`，`appendLedgerEntry` 只在进程内按 `taskId` 去重后整份重写；`ledgerCost` 直接求和；预算判定取 `max(projectCost, ledgerCost)`。工程目录位于会话工作区，模型的文件工具可以读写同一路径，账本没有签名、校验和或外部对账。
+- 影响：预算保护依赖模型自觉。模型可以先调低 `project.json` 的镜头费用，再改写 `budget.json` 删掉已结算条目，`max()` 两侧同时变小，`MEDIA_BUDGET_EXCEEDED` 不再触发。花的是真实费用，而视频模式只是实验特性。
+- 最小修复建议：账本移出模型可写目录（按工程 id 存在应用数据目录），或由宿主持有密钥对条目签名并在读取时校验；更彻底的做法是与 provider 的用量对账，而不是只信本地文件。
+- 预估工作量：M
+- 是否可自动化：是（改写 `budget.json` 后断言预算仍被拒）
+- 状态：confirmed
+
+### Day 11 定向结论：视频域已处理的面
+
+- **ffmpeg 参数注入**：`color` 受 `^[0-9a-fA-F]{6}$` 约束，画布与帧率都是整数并限定区间，`inSec`/`outSec` 是数字；字幕路径经 `escapeSubtitleFilename`（控制字符直接拒绝、引号分段转义），字体名经 `escapeStyleValue`；所有输入以 argv 传入，不经 shell。
+- **路径策略**：EDL 的每个输入、字幕与输出都先经 `ctx.fs.resolve` + `processPath`，ffmpeg 拿到的是策略已批准的处理路径。
+- **provider 下载**：`downloadVideo` 只接受 `http:`/`https:`，按 `content-length` 与实测字节双重上限拒绝超大响应，空响应直接失败。
+- **凭据**：`apiKey` 只出现在 `Authorization` 头；错误消息带状态码与 provider 文本，不拼接密钥。
+- **客户端**：`ui-video-studio` 没有 `dangerouslySetInnerHTML` 或 `innerHTML`，读取统一走 `workspaceFiles` Remote。
 
 ## 复核记录
 

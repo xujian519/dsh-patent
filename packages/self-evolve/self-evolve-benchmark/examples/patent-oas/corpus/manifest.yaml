@@ -1,6 +1,6 @@
 # 公开授权文本的去法律化转述。不是金标 case，不进入 goldDigest，没有 rubric。
 kind: public-grant
-plannedDelegalizedGrants: 20
+plannedDelegalizedGrants: 30
 plannedAttorneyRevisions: 5
 items:
   - id: cn214853374u
@@ -103,3 +103,53 @@ items:
     source: https://patents.google.com/patent/CN217406948U/zh
     figures: 6
     title: 散热装置
+  - id: cn205266432u
+    publication: CN205266432U
+    source: https://patents.google.com/patent/CN205266432U/zh
+    figures: 3
+    title: 一种花盆
+  - id: cn204403910u
+    publication: CN204403910U
+    source: https://patents.google.com/patent/CN204403910U/zh
+    figures: 6
+    title: 空气过滤台灯
+  - id: cn210103899u
+    publication: CN210103899U
+    source: https://patents.google.com/patent/CN210103899U/zh
+    figures: 4
+    title: 一种具滤光作用的培养皿架
+  - id: cn220720647u
+    publication: CN220720647U
+    source: https://patents.google.com/patent/CN220720647U/zh
+    figures: 3
+    title: 一种电缆喷码装置
+  - id: cn210273458u
+    publication: CN210273458U
+    source: https://patents.google.com/patent/CN210273458U/zh
+    figures: 5
+    title: 一种工字钢滑车
+  - id: cn208923376u
+    publication: CN208923376U
+    source: https://patents.google.com/patent/CN208923376U/zh
+    figures: 4
+    title: 一种C型线夹
+  - id: cn213787220u
+    publication: CN213787220U
+    source: https://patents.google.com/patent/CN213787220U/zh
+    figures: 3
+    title: 拖把
+  - id: cn203058772u
+    publication: CN203058772U
+    source: https://patents.google.com/patent/CN203058772U/zh
+    figures: 5
+    title: 喷雾牙刷
+  - id: cn212591832u
+    publication: CN212591832U
+    source: https://patents.google.com/patent/CN212591832U/zh
+    figures: 6
+    title: 一种带杀菌离子净化加香的牙刷架
+  - id: cn208876330u
+    publication: CN208876330U
+    source: https://patents.google.com/patent/CN208876330U/zh
+    figures: 7
+    title: 一种洗漱用品架

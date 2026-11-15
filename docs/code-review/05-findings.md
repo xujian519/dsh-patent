@@ -557,6 +557,27 @@
 - 是否可自动化：是
 - 状态：confirmed
 
+### F-VID-007 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算
+
+- 位置：`packages/experimental/video-mode/src/store.ts:27`、`:233`、`:260`；`packages/experimental/video-mode/src/tools/media.ts:466`
+- 维度：A
+- 严重度：Medium
+- 可能性：中
+- 证据：账本是工程目录下的明文 `budget.json`，`appendLedgerEntry` 只在进程内按 `taskId` 去重后整份重写；`ledgerCost` 直接求和；预算判定取 `max(projectCost, ledgerCost)`。工程目录位于会话工作区，模型的文件工具可以读写同一路径，账本没有签名、校验和或外部对账。
+- 影响：预算保护依赖模型自觉。模型可以先调低 `project.json` 的镜头费用，再改写 `budget.json` 删掉已结算条目，`max()` 两侧同时变小，`MEDIA_BUDGET_EXCEEDED` 不再触发。花的是真实费用，而视频模式只是实验特性。
+- 最小修复建议：账本移出模型可写目录（按工程 id 存在应用数据目录），或由宿主持有密钥对条目签名并在读取时校验；更彻底的做法是与 provider 的用量对账，而不是只信本地文件。
+- 预估工作量：M
+- 是否可自动化：是（改写 `budget.json` 后断言预算仍被拒）
+- 状态：confirmed
+
+### Day 11 定向结论：视频域已处理的面
+
+- **ffmpeg 参数注入**：`color` 受 `^[0-9a-fA-F]{6}$` 约束，画布与帧率都是整数并限定区间，`inSec`/`outSec` 是数字；字幕路径经 `escapeSubtitleFilename`（控制字符直接拒绝、引号分段转义），字体名经 `escapeStyleValue`；所有输入以 argv 传入，不经 shell。
+- **路径策略**：EDL 的每个输入、字幕与输出都先经 `ctx.fs.resolve` + `processPath`，ffmpeg 拿到的是策略已批准的处理路径。
+- **provider 下载**：`downloadVideo` 只接受 `http:`/`https:`，按 `content-length` 与实测字节双重上限拒绝超大响应，空响应直接失败。
+- **凭据**：`apiKey` 只出现在 `Authorization` 头；错误消息带状态码与 provider 文本，不拼接密钥。
+- **客户端**：`ui-video-studio` 没有 `dangerouslySetInnerHTML` 或 `innerHTML`，读取统一走 `workspaceFiles` Remote。
+
 ## 修复记录
 
 ### 批次 A：复用收口（2026-11-15）
@@ -594,27 +615,6 @@
 **既有测试行为**：`index.spec.ts` 的接线用例原本传绝对临时目录，改为传 `.`（解析后即 cwd，`mkdir` 无副作用，且该用例只验证接线）。新增两条用例覆盖收紧后的行为。
 
 未纳入本批：F-PAT-016（ego-browser 继承完整环境，Low），留待批次 B 一并处理子进程环境白名单。
-
-### F-VID-007 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算
-
-- 位置：`packages/experimental/video-mode/src/store.ts:27`、`:233`、`:260`；`packages/experimental/video-mode/src/tools/media.ts:466`
-- 维度：A
-- 严重度：Medium
-- 可能性：中
-- 证据：账本是工程目录下的明文 `budget.json`，`appendLedgerEntry` 只在进程内按 `taskId` 去重后整份重写；`ledgerCost` 直接求和；预算判定取 `max(projectCost, ledgerCost)`。工程目录位于会话工作区，模型的文件工具可以读写同一路径，账本没有签名、校验和或外部对账。
-- 影响：预算保护依赖模型自觉。模型可以先调低 `project.json` 的镜头费用，再改写 `budget.json` 删掉已结算条目，`max()` 两侧同时变小，`MEDIA_BUDGET_EXCEEDED` 不再触发。花的是真实费用，而视频模式只是实验特性。
-- 最小修复建议：账本移出模型可写目录（按工程 id 存在应用数据目录），或由宿主持有密钥对条目签名并在读取时校验；更彻底的做法是与 provider 的用量对账，而不是只信本地文件。
-- 预估工作量：M
-- 是否可自动化：是（改写 `budget.json` 后断言预算仍被拒）
-- 状态：confirmed
-
-### Day 11 定向结论：视频域已处理的面
-
-- **ffmpeg 参数注入**：`color` 受 `^[0-9a-fA-F]{6}$` 约束，画布与帧率都是整数并限定区间，`inSec`/`outSec` 是数字；字幕路径经 `escapeSubtitleFilename`（控制字符直接拒绝、引号分段转义），字体名经 `escapeStyleValue`；所有输入以 argv 传入，不经 shell。
-- **路径策略**：EDL 的每个输入、字幕与输出都先经 `ctx.fs.resolve` + `processPath`，ffmpeg 拿到的是策略已批准的处理路径。
-- **provider 下载**：`downloadVideo` 只接受 `http:`/`https:`，按 `content-length` 与实测字节双重上限拒绝超大响应，空响应直接失败。
-- **凭据**：`apiKey` 只出现在 `Authorization` 头；错误消息带状态码与 provider 文本，不拼接密钥。
-- **客户端**：`ui-video-studio` 没有 `dangerouslySetInnerHTML` 或 `innerHTML`，读取统一走 `workspaceFiles` Remote。
 
 ## 复核记录
 

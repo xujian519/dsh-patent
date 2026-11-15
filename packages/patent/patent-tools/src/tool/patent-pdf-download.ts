@@ -70,7 +70,7 @@ function rateLimitHint(retryAfterMs: number): string {
 export type PatentPdfDownloadInput = {
   /** 专利公开号/授权公告号列表（CN/US/EP/WO…），1-50 篇。 */
   patents: string[]
-  /** 输出目录（绝对或相对当前工作目录）；默认 <cwd>/专利原文/YYYY-MM-DD。 */
+  /** 输出目录（相对当前工作目录，或留在工作目录内的绝对路径；越界会被拒绝）；默认 <cwd>/专利原文/YYYY-MM-DD。 */
   outputDir?: string
   /** 每页打开超时（秒），默认 20。 */
   pageTimeoutSec?: number

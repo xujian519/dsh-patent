@@ -1,6 +1,6 @@
 # 公开授权文本的去法律化转述。不是金标 case，不进入 goldDigest，没有 rubric。
 kind: public-grant
-plannedDelegalizedGrants: 10
+plannedDelegalizedGrants: 20
 plannedAttorneyRevisions: 5
 items:
   - id: cn214853374u
@@ -53,3 +53,53 @@ items:
     source: https://patents.google.com/patent/CN209141755U/zh
     figures: 4
     title: 一款可折叠的便携式绘图板
+  - id: cn210716109u
+    publication: CN210716109U
+    source: https://patents.google.com/patent/CN210716109U/zh
+    figures: 9
+    title: 阀门
+  - id: cn211398642u
+    publication: CN211398642U
+    source: https://patents.google.com/patent/CN211398642U/zh
+    figures: 3
+    title: 阀门
+  - id: cn207392166u
+    publication: CN207392166U
+    source: https://patents.google.com/patent/CN207392166U/zh
+    figures: 3
+    title: 一种装配式U型渠灌排两用放水口
+  - id: cn219492042u
+    publication: CN219492042U
+    source: https://patents.google.com/patent/CN219492042U/zh
+    figures: 4
+    title: 一种用于特殊型材门铰链结构
+  - id: cn222910358u
+    publication: CN222910358U
+    source: https://patents.google.com/patent/CN222910358U/zh
+    figures: 8
+    title: 用于PC及服务器水冷的水泵
+  - id: cn202023432u
+    publication: CN202023432U
+    source: https://patents.google.com/patent/CN202023432U/zh
+    figures: 4
+    title: 执手推拉锁
+  - id: cn217020165u
+    publication: CN217020165U
+    source: https://patents.google.com/patent/CN217020165U/zh
+    figures: 2
+    title: 扳手
+  - id: cn213405636u
+    publication: CN213405636U
+    source: https://patents.google.com/patent/CN213405636U/zh
+    figures: 4
+    title: 水壶
+  - id: cn221887010u
+    publication: CN221887010U
+    source: https://patents.google.com/patent/CN221887010U/zh
+    figures: 3
+    title: 一种液冷连接器
+  - id: cn217406948u
+    publication: CN217406948U
+    source: https://patents.google.com/patent/CN217406948U/zh
+    figures: 6
+    title: 散热装置

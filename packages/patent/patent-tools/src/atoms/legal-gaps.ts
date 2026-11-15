@@ -168,6 +168,20 @@ const DRAFT_REVIEW_CHECK: LegalGapCheckpoint = {
   revisionTarget: false,
 }
 
+/**
+ * 33 条替代预埋：独权的三条替代必须已经写在交底原文里。
+ * 缺项不能靠回退采集补写，否则会把说明书里没有的方案写进原始申请文件。
+ */
+const AMENDMENT_RESERVE_CHECK: LegalGapCheckpoint = {
+  id: 'amendment-reserve',
+  provision: '专利法第33条',
+  label: '替代实施方式预埋',
+  severity: 'warn',
+  assessKeys: ['amendment_reserve_report'],
+  failureKey: 'amendment_reserve_passed',
+  revisionTarget: false,
+}
+
 /** 证据审查：无效与复审共用。 */
 const EVIDENCE_CHECK: LegalGapCheckpoint = {
   id: 'evidence',
@@ -251,6 +265,7 @@ export const LEGAL_GAP_CHECKS: Record<LegalGapProfile, readonly LegalGapCheckpoi
     CLAIM_SUPPORT_BREADTH_CHECK,
     ENABLEMENT_CHECK,
     DRAFT_REVIEW_CHECK,
+    AMENDMENT_RESERVE_CHECK,
   ],
   inventiveness: [
     {

@@ -183,6 +183,85 @@ describe('SlopGateHandler', () => {
       expect(String(out._error)).toMatch(/char_budget 必须是正整数/)
     }
   })
+
+  it('budgets each feature-cited embodiment block and still scores absolute slogans on the whole text', async () => {
+    const slogan = '具有显著进步。质的飞跃。革命性。'
+    const specification = `${CLEAN_DRAFT}\n\n${slogan}`
+    const blocks = [{ index: 1, text: slogan, feature_ids: ['F1'] }]
+    const within = await handler.execute({
+      state: {
+        text_keys: ['specification'],
+        specification,
+        embodiment_char_budget: 1500,
+        embodiment_blocks: blocks,
+      },
+    })
+    expect(within.slop_score).toBe(analyzeSlop(specification).score.total)
+    expect(within.slop_score).toBeLessThan(analyzeSlop(CLEAN_DRAFT).score.total)
+    expect(String(within.slop_report)).toContain('实施例1')
+    expect(String(within.slop_report)).toContain('未超出预算')
+
+    const oversized = '甲'.repeat(1501)
+    const over = await handler.execute({
+      state: {
+        text_keys: ['specification'],
+        specification: CLEAN_DRAFT,
+        embodiment_char_budget: 1500,
+        embodiment_blocks: [{ index: 2, text: oversized, feature_ids: ['F1'] }],
+      },
+    })
+    expect(over.slop_score).toBe(analyzeSlop(CLEAN_DRAFT).score.total)
+    expect(String(over.slop_report)).toMatch(/需修订/)
+    expect(String(over.slop_report)).toContain('超出预算')
+    expect(over.slop_revision_hint).toBeUndefined()
+  })
+
+  it('ignores blocks without feature ids and rejects a malformed embodiment budget', async () => {
+    const skipped = await handler.execute({
+      state: {
+        text_keys: ['specification'],
+        specification: CLEAN_DRAFT,
+        embodiment_char_budget: 1500,
+        embodiment_blocks: [{ index: 1, text: '甲'.repeat(2000), feature_ids: [] }],
+      },
+    })
+    expect(String(skipped.slop_report)).toContain('无带特征编号的实施例块')
+    expect(String(skipped.slop_report)).toMatch(/通过/)
+
+    const absent = await handler.execute({
+      state: { text_keys: ['specification'], specification: CLEAN_DRAFT, embodiment_char_budget: 1500 },
+    })
+    expect(String(absent.slop_report)).toContain('无带特征编号的实施例块')
+
+    for (const embodimentBlocks of [
+      'nope',
+      [null],
+      ['甲'],
+      [[]],
+      [{ index: 1, text: 1, feature_ids: ['F1'] }],
+      [{ index: 1, text: '甲', feature_ids: [1] }],
+      [{ index: 1, text: '甲', feature_ids: 'F1' }],
+      [{ index: 0, text: '甲', feature_ids: ['F1'] }],
+      [{ index: '1', text: '甲', feature_ids: ['F1'] }],
+      [{ index: 1.5, text: '甲', feature_ids: ['F1'] }],
+    ]) {
+      const out = await handler.execute({
+        state: {
+          text_keys: ['specification'],
+          specification: CLEAN_DRAFT,
+          embodiment_char_budget: 1500,
+          embodiment_blocks: embodimentBlocks,
+        },
+      })
+      expect(String(out._error)).toMatch(/embodiment_blocks/)
+    }
+    for (const embodimentCharBudget of [0, -1, 1.5, '1500']) {
+      const badBudget = await handler.execute({
+        state: { claims_draft: CLEAN_DRAFT, embodiment_char_budget: embodimentCharBudget },
+      })
+      expect(String(badBudget._error)).toMatch(/embodiment_char_budget 必须是正整数/)
+    }
+  })
 })
 
 describe('buildSlopRevisionHint secrecy contract', () => {

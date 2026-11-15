@@ -17,6 +17,8 @@
  *   `['draft_tightened']`，披露链传 `['specification']`。
  * - `char_budget`：该文书的篇幅预算（可见字符）。声明后 concision 按预算归一，
  *   未声明则沿用段数口径（见 slop 引擎 scoreConcision）。
+ * - `embodiment_char_budget`：带特征编号的实施例块各自的可见字符预算。只改变
+ *   这些块的篇幅结论，不把绝对化套话从全文评分里豁免。
  */
 
 import {
@@ -27,7 +29,7 @@ import {
   degraded,
   getStateString,
 } from '@deepseek-ai/dsh-patent-core'
-import { analyzeSlop, SLOP_PASS_LINE } from '../internal/slop-engine.ts'
+import { analyzeSlop, SLOP_PASS_LINE, visibleChars } from '../internal/slop-engine.ts'
 import { buildSlopRevisionHint } from '../internal/retry-hints.ts'
 import { readCharBudget } from '../internal/stage-params.ts'
 
@@ -57,12 +59,65 @@ function resolveTextKeys(state: PipelineState): string[] | undefined {
   return keys
 }
 
+/** 一个带特征编号、需要单独计篇幅的实施例块。 */
+type FeatureCitedBlock = { index: number; text: string }
+
+/**
+ * 读取阶段参数 `embodiment_char_budget`。
+ * @param state - 阶段执行态。
+ * @returns 预算；未声明时 `value` 为 undefined，非法时返回 invalid。
+ */
+function readEmbodimentBudget(state: PipelineState): { kind: 'ok'; value?: number } | { kind: 'invalid' } {
+  const raw = state['embodiment_char_budget']
+  if (raw === undefined) return { kind: 'ok' }
+  if (typeof raw !== 'number' || !Number.isInteger(raw) || raw <= 0) return { kind: 'invalid' }
+  return { kind: 'ok', value: raw }
+}
+
+/**
+ * 读出带特征编号的实施例块。没有该键时按空表处理。
+ * @param state - 阶段执行态。
+ * @returns 块列表；结构不符合实施例块时返回 undefined。
+ */
+function readFeatureCitedBlocks(state: PipelineState): FeatureCitedBlock[] | undefined {
+  const raw = state['embodiment_blocks']
+  if (raw === undefined) return []
+  if (!Array.isArray(raw)) return undefined
+  const blocks: FeatureCitedBlock[] = []
+  for (const item of raw) {
+    if (item === null || typeof item !== 'object' || Array.isArray(item)) return undefined
+    const record = item as Record<string, unknown>
+    const text = record['text']
+    const featureIds = record['feature_ids']
+    const index = record['index']
+    if (typeof text !== 'string') return undefined
+    if (!Array.isArray(featureIds) || featureIds.some(id => typeof id !== 'string')) return undefined
+    if (featureIds.length === 0) continue
+    if (typeof index !== 'number' || !Number.isInteger(index) || index <= 0) return undefined
+    blocks.push({ index, text })
+  }
+  return blocks
+}
+
+/**
+ * 逐块比较可见字符与预算。
+ * @param blocks - 带特征编号的实施例块。
+ * @param budget - 每块可见字符预算。
+ * @returns 写入报告的一行，以及是否有块超出预算。
+ */
+function embodimentBudgetLine(blocks: readonly FeatureCitedBlock[], budget: number): { text: string; exceeded: boolean } {
+  if (blocks.length === 0) return { text: '实施例块篇幅：无带特征编号的实施例块', exceeded: false }
+  const exceeded = blocks.some(block => visibleChars(block.text) > budget)
+  const parts = blocks.map(block => `实施例${block.index} ${visibleChars(block.text)}/${budget}`)
+  return { text: `实施例块篇幅：${parts.join('，')}${exceeded ? '，超出预算' : '，未超出预算'}`, exceeded }
+}
+
 /** slop-gate 原子：对草稿文本做确定性套话检测，未通过时输出「需修订」并附证据提示。 */
 export const slopGateAtom: Atom = {
   name: 'slop-gate',
   description: '反套话评分门：对权利要求草稿、说明书正文或意见陈述书正文做确定性套话检测；未通过时输出「需修订」并写入证据型修订提示（声明 retry 的 manifest 据此回退重写）',
   category: 'gate',
-  inputSchema: ['claims_draft', 'draft', 'draft_tightened', 'specification', 'text_keys', 'char_budget'],
+  inputSchema: ['claims_draft', 'draft', 'draft_tightened', 'specification', 'text_keys', 'char_budget', 'embodiment_char_budget', 'embodiment_blocks'],
   outputSchema: ['slop_report', 'slop_score'],
 }
 
@@ -87,6 +142,14 @@ export class SlopGateHandler implements StageHandler {
     if (budget.kind === 'invalid') {
       return degraded('slop-gate', 'params.char_budget 必须是正整数')
     }
+    const embodimentBudget = readEmbodimentBudget(state)
+    if (embodimentBudget.kind === 'invalid') {
+      return degraded('slop-gate', 'params.embodiment_char_budget 必须是正整数')
+    }
+    const featureBlocks = embodimentBudget.value === undefined ? [] : readFeatureCitedBlocks(state)
+    if (featureBlocks === undefined) {
+      return degraded('slop-gate', 'embodiment_blocks 必须是实施例块数组')
+    }
     const draft = keys
       .map(key => getStateString(state, key))
       .filter(text => text.trim().length > 0)
@@ -97,12 +160,16 @@ export class SlopGateHandler implements StageHandler {
     }
     const analysis = analyzeSlop(draft, budget.value === undefined ? {} : { charBudget: budget.value })
     const { score } = analysis
-    const passed = score.passed
+    const blockBudget = embodimentBudget.value === undefined
+      ? undefined
+      : embodimentBudgetLine(featureBlocks, embodimentBudget.value)
+    const passed = score.passed && blockBudget?.exceeded !== true
+    const headline = `反套话评分门: ${passed ? '✅ 通过' : '⚠️ 需修订'}（总分 ${score.total}，通过线 ${SLOP_GATE_PASS_THRESHOLD}）`
     const segment: PipelineState = {
-      slop_report: `反套话评分门: ${passed ? '✅ 通过' : '⚠️ 需修订'}（总分 ${score.total}，通过线 ${SLOP_GATE_PASS_THRESHOLD}）`,
+      slop_report: blockBudget === undefined ? headline : `${headline}\n${blockBudget.text}`,
       slop_score: score.total,
     }
-    if (!passed) {
+    if (!score.passed) {
       const hint = buildSlopRevisionHint(analysis)
       if (hint !== undefined) segment.slop_revision_hint = hint
     }

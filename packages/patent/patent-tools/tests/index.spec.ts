@@ -276,7 +276,9 @@ describe('patent-tools plugin wiring', () => {
       }),
     })
     await ctx.plugin(tool, {})
-    const result = await exec(ctx, 'patent_pdf_download', { patents: ['US1A'], outputDir: temp }, 'w-10')
+    // 本用例只验证接线：输出目录受限于进程工作目录，传 '.' 解析后就是它本身，
+    // mkdir 无副作用；ego 假实现回报 ok，工具不会落盘到仓库里。
+    const result = await exec(ctx, 'patent_pdf_download', { patents: ['US1A'], outputDir: '.' }, 'w-10')
     expect(result.isError).toBe(false)
     if (result.isError) throw new Error('expected success')
     expect(JSON.stringify(result.content)).toContain('下载完成：1/1 成功')

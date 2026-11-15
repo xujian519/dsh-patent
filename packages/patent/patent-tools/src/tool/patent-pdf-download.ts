@@ -13,12 +13,19 @@
  * @module @deepseek-ai/dsh-patent-tools/tool/patent-pdf-download
  */
 
-import { appendFile, mkdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, readFile, stat } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { inspectPdfBody, isHtmlContentType, resolveDatedOutputDir, type PdfBodyFault } from '@deepseek-ai/dsh-patent-core'
+import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
+import {
+  inspectPdfBody,
+  isHtmlContentType,
+  resolveConfinedPath,
+  resolveDatedOutputDir,
+  type PdfBodyFault,
+} from '@deepseek-ai/dsh-patent-core'
 import {
   networkFetch,
   NetworkFetchError,
@@ -63,7 +70,7 @@ function rateLimitHint(retryAfterMs: number): string {
 export type PatentPdfDownloadInput = {
   /** 专利公开号/授权公告号列表（CN/US/EP/WO…），1-50 篇。 */
   patents: string[]
-  /** 输出目录（绝对或相对当前工作目录）；默认 <cwd>/专利原文/YYYY-MM-DD。 */
+  /** 输出目录（相对当前工作目录，或留在工作目录内的绝对路径；越界会被拒绝）；默认 <cwd>/专利原文/YYYY-MM-DD。 */
   outputDir?: string
   /** 每页打开超时（秒），默认 20。 */
   pageTimeoutSec?: number
@@ -197,9 +204,21 @@ function pdfBodyFaultMessage(fault: PdfBodyFault): string {
     : `response too small (${fault.bytes} bytes), likely an error page`
 }
 
-/** 默认输出目录解析：显式 outputDir 相对 cwd，否则 <cwd>/专利原文/YYYY-MM-DD。 */
+/**
+ * 默认输出目录解析：显式 outputDir 要求真实位置留在 cwd 内，否则 <cwd>/专利原文/YYYY-MM-DD。
+ *
+ * 该目录既接收下载的 PDF 与截图，又作为 ego-browser 子进程的 cwd，因此与
+ * `patent-document`、`patent-filing` 一致走 {@link resolveConfinedPath}：`../` 串联、
+ * 根外绝对路径与根内指向根外的 symlink 都会在这里被拒。
+ */
 function defaultResolveOutputDir(outputDir: string | undefined, cwd: string): string {
-  return resolveDatedOutputDir(outputDir, cwd, '专利原文')
+  if (outputDir === undefined) return resolveDatedOutputDir(undefined, cwd, '专利原文')
+  return resolveConfinedPath(
+    outputDir,
+    cwd,
+    '输出目录',
+    message => new PatentToolError('invalid_tool_input', message, { tool: 'patent_pdf_download' }),
+  )
 }
 
 /** 校验 + 归一化 + 去重专利号（含目录穿越拒绝）。 */
@@ -329,7 +348,6 @@ async function fetchPdfFallback(
   const pdfUrl: string = item.pdfUrl
   const start = Date.now()
   const target = join(outputDir, `${item.patent}.pdf`)
-  const tmp = `${target}.tmp`
   const base = item.error ? `${item.error}; ` : ''
   let networkErrorCode: string | undefined
   let retryAfterMs: number | undefined
@@ -372,8 +390,7 @@ async function fetchPdfFallback(
     const buf = Buffer.from(await res.arrayBuffer())
     const fault = inspectPdfBody(buf)
     if (fault !== undefined) return failed(pdfBodyFaultMessage(fault))
-    await writeFile(tmp, buf)
-    await rename(tmp, target)
+    await writeFileAtomic(target, buf, { mode: 0o644 })
     return {
       patent: item.patent,
       status: 'ok',
@@ -384,9 +401,6 @@ async function fetchPdfFallback(
       durationMs: Date.now() - start,
     }
   } catch (fetchErr) {
-    // The fetch failure returned below is the reported one; a failed temp
-    // cleanup must not replace it.
-    await unlink(tmp).catch(() => {})
     networkErrorCode = fetchErr instanceof NetworkFetchError ? fetchErr.code : undefined
     return failed(fetchErr instanceof Error ? fetchErr.message : String(fetchErr))
   }
@@ -467,7 +481,7 @@ export function createPatentPdfDownloadTool(deps: PatentPdfDownloadDeps): ToolDe
     description: DESCRIPTION,
     parameters: {
       patents: { type: 'array', required: true, items: { type: 'string' }, description: '专利公开号列表（1-50 篇）' },
-      outputDir: { type: 'string', description: '输出目录（绝对或相对当前工作目录）；默认 <cwd>/专利原文/YYYY-MM-DD' },
+      outputDir: { type: 'string', description: '输出目录（相对当前工作目录；越出工作目录的路径会被拒绝）；默认 <cwd>/专利原文/YYYY-MM-DD' },
       pageTimeoutSec: { type: 'number', description: '每页打开超时（秒），默认 20' },
       downloadTimeoutMs: { type: 'number', description: '每篇取回 PDF 响应体的超时（毫秒），默认 60000' },
       timeoutMs: { type: 'number', description: '整体执行超时（毫秒）；默认 clamp(篇数 × (pageTimeoutSec × 1000 + downloadTimeoutMs) + 15000, 60000, 300000)，上限 300000' },

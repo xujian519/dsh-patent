@@ -36,7 +36,14 @@
 - Day 2–5 已完成：专利核心与外围、文档/法律/共享机制、视频模式的定向；Node 24 下构建 10/10、typecheck 5/5、lint 均通过，覆盖率运行见 OBS-006。
 - Day 5b 补充轮已完成：D1–D5 代码质量复审，产出 29 条发现、7 组根因与 5 个修复批次候选，见 [05-findings.md](05-findings.md) 与 [06-priority.md](06-priority.md)。
 - 批次 A（复用收口）已实施：原子写 3/4 包、OOXML 限额与文档域插件默认值收口；typecheck、lint 与 5128 个用例通过。这是本计划唯一一次业务代码改动，记录见 [05-findings.md](05-findings.md) 的修复记录。
-- 当前进度：Day 1–5 与补充轮完成；下一日为 Day 6（A 安全维度，外部输入到危险汇点）。
+- Day 6 已完成：A 安全维度第一轮（patent-data、patent-tools 的外部输入到危险汇点），新增 3 条发现；其中两条安全发现已修复。
+- Day 7 已完成：专利域-2（SQL/FTS 参数化、资产路径、引用核验失败方向），新增 1 条发现；SQL 与资产路径均无问题。
+- Day 8 已完成：专利域-3（HITL 审批、团队身份边界、模板注入），新增 1 条发现；团队身份与模板注入无问题，审批存在后台绕过路径。
+- Day 9 已完成：文档模式 A 维度，未发现可执行缺陷；office-kit 的临时目录与清理、docx-kit 的解压边界、doc-template 的注入面均已处理。
+- Day 10 已完成：法律模式与共享机制的 A 维度，未发现可执行缺陷；SQL 参数化、索引路径与未核验策略均 fail closed。
+- Day 11 已完成：视频模式 A 维度，新增 1 条发现；ffmpeg 注入面与 provider 下载已处理，成本账本可被模型改写。
+- Day 12 已完成：A 维度横向收尾，密钥扫描 0 命中、凭据不落日志、外部件仅 4 个成熟包；A 维度共 7 条发现（3 已修、4 未修）。
+- 当前进度：A 安全维度（Day 6–12）完成；下一阶段为 B 代码质量与精简，Day 13 从 `patent-tools`/`patent-core` 开始。
 - 已确认：45 天周期、包含 `packages/law`、视频按实验特性、在 Node 24 补跑构建与覆盖率基线。
 - 本目录的中文单语文档已加入 `scripts/translation-pairing.manifest.json` 的豁免清单；`verify-translation-pairing` 复跑通过。
 

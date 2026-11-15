@@ -6,7 +6,7 @@
  */
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import type { ParameterPropertySpec, ParameterSchemaSpec, ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { resolveDomain as resolveClaimDomain } from '@deepseek-ai/dsh-patent-core'
 import { createToolInputReader } from './internal/tool-input.ts'
 import type { PatentType, TechDomain } from './draft-claims.ts'
@@ -401,6 +401,27 @@ function parseDraftSpecificationInput(args: DraftSpecificationArgs): DraftSpecif
 }
 
 /**
+ * 33 条替代的命中条目和缺口共用权利要求编号与替代种类。
+ * @param extra - 该列表独有的字段。
+ * @returns 工具输出 schema 中的数组字段。
+ */
+function amendmentReserveList(extra: ParameterSchemaSpec): ParameterPropertySpec {
+  return {
+    type: 'array',
+    required: true,
+    items: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        claim_no: { type: 'number', required: true },
+        kind: { type: 'string', required: true, enum: ['结构等同', '步骤替换', '数值上下界'] },
+        ...extra,
+      },
+    },
+  }
+}
+
+/**
  * Build the `draft_specification` tool (pure, no dependencies).
  * @returns a registry-ready tool definition.
  */
@@ -447,33 +468,13 @@ export function createDraftSpecificationTool(): ToolDefinition {
             description: '33 条替代索引。缺口只记录，不包含补写的替代正文',
             properties: {
               status: { type: 'string', required: true, enum: ['passed', 'failed', 'not-assessed'] },
-              entries: {
-                type: 'array',
-                required: true,
-                items: {
-                  type: 'object',
-                  additionalProperties: false,
-                  properties: {
-                    claim_no: { type: 'number', required: true },
-                    kind: { type: 'string', required: true, enum: ['结构等同', '步骤替换', '数值上下界'] },
-                    embodiment_index: { type: 'number' },
-                    quote: { type: 'string', required: true },
-                  },
-                },
-              },
-              gaps: {
-                type: 'array',
-                required: true,
-                items: {
-                  type: 'object',
-                  additionalProperties: false,
-                  properties: {
-                    claim_no: { type: 'number', required: true },
-                    kind: { type: 'string', required: true, enum: ['结构等同', '步骤替换', '数值上下界'] },
-                    reason: { type: 'string', required: true, enum: ['missing', 'empty', 'anchor-not-found'] },
-                  },
-                },
-              },
+              entries: amendmentReserveList({
+                embodiment_index: { type: 'number' },
+                quote: { type: 'string', required: true },
+              }),
+              gaps: amendmentReserveList({
+                reason: { type: 'string', required: true, enum: ['missing', 'empty', 'anchor-not-found'] },
+              }),
               indexText: { type: 'string', required: true },
             },
           },

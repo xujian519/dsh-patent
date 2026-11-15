@@ -31,7 +31,7 @@ import {
 } from '@deepseek-ai/dsh-patent-core'
 import { analyzeSlop, SLOP_PASS_LINE, visibleChars } from '../internal/slop-engine.ts'
 import { buildSlopRevisionHint } from '../internal/retry-hints.ts'
-import { readCharBudget } from '../internal/stage-params.ts'
+import { readCharBudget, readEmbodimentCharBudget } from '../internal/stage-params.ts'
 
 /** 反套话评分门通过线（单一来源为 slop 引擎的 SLOP_PASS_LINE；改判定须改 engine）。 */
 export const SLOP_GATE_PASS_THRESHOLD = SLOP_PASS_LINE
@@ -61,18 +61,6 @@ function resolveTextKeys(state: PipelineState): string[] | undefined {
 
 /** 一个带特征编号、需要单独计篇幅的实施例块。 */
 type FeatureCitedBlock = { index: number; text: string }
-
-/**
- * 读取阶段参数 `embodiment_char_budget`。
- * @param state - 阶段执行态。
- * @returns 预算；未声明时 `value` 为 undefined，非法时返回 invalid。
- */
-function readEmbodimentBudget(state: PipelineState): { kind: 'ok'; value?: number } | { kind: 'invalid' } {
-  const raw = state['embodiment_char_budget']
-  if (raw === undefined) return { kind: 'ok' }
-  if (typeof raw !== 'number' || !Number.isInteger(raw) || raw <= 0) return { kind: 'invalid' }
-  return { kind: 'ok', value: raw }
-}
 
 /**
  * 读出带特征编号的实施例块。没有该键时按空表处理。
@@ -142,7 +130,7 @@ export class SlopGateHandler implements StageHandler {
     if (budget.kind === 'invalid') {
       return degraded('slop-gate', 'params.char_budget 必须是正整数')
     }
-    const embodimentBudget = readEmbodimentBudget(state)
+    const embodimentBudget = readEmbodimentCharBudget(state)
     if (embodimentBudget.kind === 'invalid') {
       return degraded('slop-gate', 'params.embodiment_char_budget 必须是正整数')
     }

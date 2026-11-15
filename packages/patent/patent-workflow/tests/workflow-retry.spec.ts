@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { EMBODIMENT_FEATURE_BLOCK_CHAR_BUDGET } from '../src/workflow/manifests.ts'
 import {
-  EMBODIMENT_FEATURE_BLOCK_CHAR_BUDGET,
   patentDisclosureManifest,
   patentOaResponseManifest,
   runWorkflow,

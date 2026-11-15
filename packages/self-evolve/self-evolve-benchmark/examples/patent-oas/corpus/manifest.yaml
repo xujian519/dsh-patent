@@ -1,6 +1,6 @@
 # 公开授权文本的去法律化转述。不是金标 case，不进入 goldDigest，没有 rubric。
 kind: public-grant
-plannedDelegalizedGrants: 40
+plannedDelegalizedGrants: 50
 plannedAttorneyRevisions: 5
 items:
   - id: cn214853374u
@@ -203,3 +203,53 @@ items:
     source: https://patents.google.com/patent/CN203633935U/zh
     figures: 1
     title: 一种鞋架
+  - id: cn222581586u
+    publication: CN222581586U
+    source: https://patents.google.com/patent/CN222581586U/zh
+    figures: 10
+    title: 插座
+  - id: cn202604191u
+    publication: CN202604191U
+    source: https://patents.google.com/patent/CN202604191U/zh
+    figures: 1
+    title: 椅子
+  - id: cn205021626u
+    publication: CN205021626U
+    source: https://patents.google.com/patent/CN205021626U/zh
+    figures: 6
+    title: 一种剪刀
+  - id: cn205457878u
+    publication: CN205457878U
+    source: https://patents.google.com/patent/CN205457878U/zh
+    figures: 2
+    title: 一种挂钩
+  - id: cn210010076u
+    publication: CN210010076U
+    source: https://patents.google.com/patent/CN210010076U/zh
+    figures: 7
+    title: 一种花洒
+  - id: cn218238595u
+    publication: CN218238595U
+    source: https://patents.google.com/patent/CN218238595U/zh
+    figures: 5
+    title: 一种卷尺
+  - id: cn210768574u
+    publication: CN210768574U
+    source: https://patents.google.com/patent/CN210768574U/zh
+    figures: 2
+    title: 一种梯子
+  - id: cn211658005u
+    publication: CN211658005U
+    source: https://patents.google.com/patent/CN211658005U/zh
+    figures: 5
+    title: 一种砧板
+  - id: cn222667943u
+    publication: CN222667943U
+    source: https://patents.google.com/patent/CN222667943U/zh
+    figures: 8
+    title: 门吸
+  - id: cn218199559u
+    publication: CN218199559U
+    source: https://patents.google.com/patent/CN218199559U/zh
+    figures: 6
+    title: 一种收纳盒

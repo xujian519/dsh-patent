@@ -1782,19 +1782,41 @@ describe('specification workflow gates', () => {
   }
 
   it('passes a complete invention draft without drawings through spec-check and legal-gaps', async () => {
-    const value = await runDisclosure({
-      title: '一种检测装置',
-      abstract: '摘要内容。关键词：检测。',
-      background: '现有检测装置的检测精度不足。',
-      patentType: 'invention',
-      hasDrawings: false,
+    const quotedFeature = '包括壳体和设置在壳体内的弹簧'
+    const tool = createPatentWorkflowRunTool({
+      model: {
+        stream: async function* (request) {
+          const prompt = request.messages.map(message => message.content).join('\n')
+          const text = prompt.includes('problem_insight')
+            ? '{"problem_insight": [{"id": "P1", "problem": "p1", "insight": "i1"}]}'
+            : `{"features": ["${quotedFeature}"], "problems": ["p1"], "effects": ["e1"]}`
+          yield { type: 'delta', text }
+          yield { type: 'done' }
+        },
+      },
+      search: fakeSearch,
     })
+    const value = (await tool.execute(
+      {
+        manifestId: 'patent_disclosure_v1',
+        input: `本实施例提供一种检测装置，${quotedFeature}。`,
+        approveStageIds: ['review_gate'],
+        title: '一种检测装置',
+        abstract: '摘要内容。关键词：检测。',
+        background: '现有检测装置的检测精度不足。',
+        patentType: 'invention',
+        hasDrawings: false,
+      },
+      exec,
+    )) as PatentWorkflowRunOutput
     expect(value.ok).toBe(true)
     const stages = (value.stages ?? []) as WorkflowStageResult[]
     const draft = stages.find(stage => stage.stageId === 'draft_specification')
     expect(draft?.output).toContain('现有检测装置的检测精度不足。')
     expect(draft?.output).toContain('专利类型: invention')
     expect(draft?.output).toContain('**说明书草案（一种检测装置）**')
+    expect(draft?.output).toContain(quotedFeature)
+    expect(draft?.output).not.toContain('【撰写指引】')
     const specCheck = stages.find(stage => stage.stageId === 'spec_check')
     expect(specCheck?.degraded).toBe(false)
     expect(specCheck?.output).toContain('说明书合规检查（A26.3/A26.4）：通过')

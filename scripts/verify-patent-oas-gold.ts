@@ -1,11 +1,13 @@
 /**
  * 无 key 门禁:把 `patent-oas` 金标与它的问题空间 DAG、门槛策略钉在一起。
  *
- * 判定三件事:
+ * 判定四件事:
  *   1. 金标与 DAG 互相钉住(rubric 维度全部有映射、映射权重等于满分、节点都有观测面、
  *      先决边无环);
  *   2. 门槛策略可满足(金标摘要已记录且相符、门槛取值合法、每条已落盘的基线自身不低于门槛);
- *   3. 若给出 run 记录(`--run <path>`),按门槛判定它是否回退,失败按节点归因。
+ *   3. 若给出 run 记录(`--run <path>`),按门槛判定它是否回退,失败按节点归因;
+ *   4. `corpus/` 里的公开授权文本按清单件数登记,每件有公开号、来源网址和正的附图幅数,
+ *      没有 rubric,客户文稿与代理师改稿不入库。`--write` 与 `--accept` 也先过这一关。
  *
  * 基线未记录时第三件事无从判定:门禁以非 0 退出并打印记录基线的命令,而不是静默通过。
  * 「休眠」与「通过」必须在退出码上分开,否则「有脚本 + `verify-*` 命名 + exit 0」会被
@@ -50,6 +52,7 @@ import {
   type ProblemSpace,
   type RunRecord,
 } from './patent-oas-gate-core.ts'
+import { loadPublicGrantCorpus } from './patent-oas-corpus.ts'
 
 const root = resolve(import.meta.dirname, '..')
 const exampleDir = resolve(root, PATENT_OAS_EXAMPLE_DIR)
@@ -194,6 +197,15 @@ export async function acceptBaseline(
  * @returns 进程退出码;`--run` 的记录未过门槛,或基线未记录而无 `--accept` 时为 1。
  */
 export async function main(args: string[]): Promise<number> {
+  const corpus = await loadPublicGrantCorpus(resolve(exampleDir, 'corpus'))
+  if (corpus.problems.length > 0) {
+    for (const problem of corpus.problems) console.error(`verify-patent-oas-gold: ${problem}`)
+    return 1
+  }
+  console.log(
+    `verify-patent-oas-gold: 公开授权文本 ${corpus.grants} 件，附图合计 ${corpus.figures} 幅；代理师改稿 ${corpus.attorneyRevisions}/${corpus.plannedAttorneyRevisions}，未入库。`,
+  )
+
   const gold = await loadGold(exampleDir)
   const space = await loadProblemSpace(problemSpacePath)
   const config = await loadGateConfig(gatePath)

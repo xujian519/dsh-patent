@@ -37,6 +37,7 @@ describe('verify-patent-oas-gold', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     await expect(main([])).resolves.toBe(0)
     expect(log.mock.calls.flat().join('\n')).toContain('基线已记录')
+    expect(log.mock.calls.flat().join('\n')).toContain('公开授权文本 40 件，附图合计 178 幅；代理师改稿 0/5，未入库。')
     expect(error.mock.calls.flat().join('\n')).toBe('')
   })
 

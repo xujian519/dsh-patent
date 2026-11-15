@@ -43,7 +43,14 @@
 - Day 10 已完成：法律模式与共享机制的 A 维度，未发现可执行缺陷；SQL 参数化、索引路径与未核验策略均 fail closed。
 - Day 11 已完成：视频模式 A 维度，新增 1 条发现；ffmpeg 注入面与 provider 下载已处理，成本账本可被模型改写。
 - Day 12 已完成：A 维度横向收尾，密钥扫描 0 命中、凭据不落日志、外部件仅 4 个成熟包；A 维度共 7 条发现（3 已修、4 未修）。
-- 当前进度：A 安全维度（Day 6–12）完成；下一阶段为 B 代码质量与精简，Day 13 从 `patent-tools`/`patent-core` 开始。
+- Day 13 已完成：B 维度专利域-1（`patent-tools`、`patent-core`），新增 5 条发现并全部给出净减少量；死代码、未导出模块与未使用配置为零，claim/draft/rule 的 jscpd 克隆为 0，H01 判为推翻（不需要搬迁）。
+- Day 14 已完成：B 维度专利域-2（`patent-workflow`、`patent-rule`、`patent-teams`），新增 3 条发现；状态机、两套存储、审批 seam、规则加载与转发面均判为非重复，重复集中在插件默认值与事件载荷。
+- Day 15 已完成：B 维度专利域-3（`patent-knowledge`、`patent-data`、`patent-document`、`patent-filing`、`writing-patterns`），新增 5 条发现并把 F-PAT-024 扩到七个包；provider/mapper/cache 与写作范式的选择/编译均判为非重复，重复集中在子进程骨架、安全名判定与短函数。
+- Day 16 已完成：B 维度文档模式全域（`docx-kit`、`office-kit`、`doc-template`、`doc-style`、`document-deliver`、`tool-office`），新增 1 条发现并给出净减少量；ZIP/OOXML 读写、模板变量与样式投影、office-kit 队列与磁盘存储、document-deliver 的三层职责均判为非重复，唯一重复是跨模块请求类型按字段重写。
+- Day 17 已完成：B 维度法律模式与共享机制全域（`legal-evidence`、`legal-knowledge`、`legal-law`、`knowledge-core`、`law-core`），新增 4 条发现并给出净减少量；YAML 资产读取、引用文法与工具注册、SQLite+FTS 索引均判为非重复，`knowledge-core` 的跨域原语有 5–13 个消费者，分叉只在引擎骨架层（数据驱动 vs 抽象模板），因此不合并；4 类兼容层候选（两处空 `override search`、构造归一、`shared/` 再导出文件）逐个判定后全部保留。
+- Day 18 已完成：B 维度视频模式全域（`video-mode`、`video-bundle`、`ui-video-studio`），新增 3 条发现并给出净减少量；`cloud-common`/`minimax-common` 的凭据、错误分类与下载已单源，未收口的是 submit/poll 骨架（ignore 标记掩盖，拷贝已漂移）、`messageOf` 三份与失败助手异序；工具动作分发与 sibling studio 骨架均判为非重复，重复集中在客户端第二份文档文法与 store 的写路径骨架。
+- Day 19 已完成：B 维度横向复核与汇总。D13–D18 的 21 条新发现连同 2 条跨域发现按修法收敛为四簇（固定前导/尾部、schema 双源、同一概念多接受集、共享原语未复用），新增 2 条跨域发现：F-CROSS-001（四域另有 4 份 `messageOf`/`errorText` 与 1 份可并的 `asRecord`，而 `dsh-value` 已有原语）与 F-CROSS-002（`patent-tools` 导入未声明的 `dsh-value`，`verify-package-dependencies` 只校验「声明→使用」方向，运行产物靠打包内联掩盖）；净减少去重后合计 −487~−572 行，按「零架构风险 → 需人工确认 → 需形态决策」切成 4 个批次；四域 63 条零外部提及导出中零死代码（62 条为多余 `export`、1 条为已登记的公开面）；preset 实为 8 个而非 4 个、56 个不同包，四道 preset 门禁已覆盖漂移，H09 判为推翻。
+- 当前进度：A 安全维度（Day 6–12）与 B 维度（Day 13–19）已完成；下一日为 Day 20，C 优化开始（专利域-1：`patent-tools`、`patent-core` 的热点路径）。
 - 已确认：45 天周期、包含 `packages/law`、视频按实验特性、在 Node 24 补跑构建与覆盖率基线。
 - 本目录的中文单语文档已加入 `scripts/translation-pairing.manifest.json` 的豁免清单；`verify-translation-pairing` 复跑通过。
 

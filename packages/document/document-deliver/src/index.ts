@@ -9,6 +9,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import { findStyleByName, loadStyles, styleDirectories, type DocumentStyle } from '@deepseek-ai/dsh-doc-style'
+import { DEFAULT_ZIP_READ_LIMITS } from '@deepseek-ai/dsh-docx-kit'
 import z from '@deepseek-ai/schemastery'
 import { DEFAULT_LENGTH_TOLERANCE, DEFAULT_MAX_FINDINGS_PER_CHECK } from './checks.ts'
 import { createDocumentDeliverTool, DEFAULT_MAX_CHECK_BYTES } from './tool.ts'
@@ -61,40 +62,40 @@ export const inject = ['tools', 'fs']
 export const DEFAULT_DOCUMENT_STYLE = 'assistant-neutral'
 
 /**
- * Largest number of entries a checked DOCX package may declare, mirroring
- * `office-kit`'s `maxArchiveEntries` for the same OOXML threat model.
+ * Largest number of entries a checked DOCX package may declare, stated by the
+ * shared OOXML read budgets so every reader of the same threat model moves
+ * together.
  */
-export const DEFAULT_MAX_ARCHIVE_ENTRIES = 10_000
+export const DEFAULT_MAX_ARCHIVE_ENTRIES = DEFAULT_ZIP_READ_LIMITS.maxArchiveEntries
 
 /**
- * Largest total uncompressed bytes a checked DOCX package may expand to,
- * mirroring `office-kit`'s `maxUncompressedBytes`. The read is capped at
- * `maxCheckBytes` compressed, so this bound only refuses packages that expand
- * far past anything the checks can use; a deployment that delivers large
- * repetitive documents raises it.
+ * Largest total uncompressed bytes a checked DOCX package may expand to. The
+ * read is capped at `maxCheckBytes` compressed, so this bound only refuses
+ * packages that expand far past anything the checks can use; a deployment that
+ * delivers large repetitive documents raises it.
  */
-export const DEFAULT_MAX_UNCOMPRESSED_BYTES = 250 * 1024 * 1024
+export const DEFAULT_MAX_UNCOMPRESSED_BYTES = DEFAULT_ZIP_READ_LIMITS.maxUncompressedBytes
 
-/** Document-delivery plugin configuration. */
+/** Document-delivery plugin configuration, resolved with every default applied. */
 export interface Config {
   /** Style directories layered over the packaged one, in ascending precedence. */
-  styleDirs?: string[]
+  styleDirs: string[]
   /** Style name the checks use when a registration names no style. */
-  defaultStyle?: string
+  defaultStyle: string
   /** Largest deliverable the checker reads, in bytes. */
-  maxCheckBytes?: number
+  maxCheckBytes: number
   /** Fraction of a declared character budget a document may fall short of or exceed. */
-  lengthTolerance?: number
+  lengthTolerance: number
   /** Findings kept per check before the rest are summarized into one line. */
-  maxFindingsPerCheck?: number
+  maxFindingsPerCheck: number
   /** Largest number of entries a checked DOCX package may declare. */
-  maxArchiveEntries?: number
+  maxArchiveEntries: number
   /** Largest total uncompressed bytes a checked DOCX package may expand to. */
-  maxUncompressedBytes?: number
+  maxUncompressedBytes: number
 }
 
 /** Schemastery configuration: style roots, the default style, and the DOCX read budgets. */
-export const Config: z<Config> = z.object({
+export const Config: z<Partial<Config>, Config> = z.object({
   styleDirs: z.array(z.string()).default([]),
   defaultStyle: z.string().default(DEFAULT_DOCUMENT_STYLE),
   maxCheckBytes: z.natural().min(1).max(Number.MAX_SAFE_INTEGER - 1).default(DEFAULT_MAX_CHECK_BYTES),
@@ -129,17 +130,17 @@ function requireDefaultStyle(styles: readonly DocumentStyle[], name: string): Do
  * @param ctx - plugin context carrying the tools registry and the fs service.
  * @param config - style roots, the default style name, the read cap and length tolerance, and the DOCX read budgets.
  */
-export function apply(ctx: Context, config: Config = {}): void {
+export function apply(ctx: Context, config: Config): void {
   const styles = loadStyles(styleDirectories(config.styleDirs))
   ctx.tools.register(createDocumentDeliverTool(ctx, {
     styles,
-    defaultStyle: requireDefaultStyle(styles, config.defaultStyle ?? DEFAULT_DOCUMENT_STYLE),
-    maxCheckBytes: config.maxCheckBytes ?? DEFAULT_MAX_CHECK_BYTES,
-    lengthTolerance: config.lengthTolerance ?? DEFAULT_LENGTH_TOLERANCE,
-    maxFindingsPerCheck: config.maxFindingsPerCheck ?? DEFAULT_MAX_FINDINGS_PER_CHECK,
+    defaultStyle: requireDefaultStyle(styles, config.defaultStyle),
+    maxCheckBytes: config.maxCheckBytes,
+    lengthTolerance: config.lengthTolerance,
+    maxFindingsPerCheck: config.maxFindingsPerCheck,
     docxReadLimits: {
-      maxArchiveEntries: config.maxArchiveEntries ?? DEFAULT_MAX_ARCHIVE_ENTRIES,
-      maxUncompressedBytes: config.maxUncompressedBytes ?? DEFAULT_MAX_UNCOMPRESSED_BYTES,
+      maxArchiveEntries: config.maxArchiveEntries,
+      maxUncompressedBytes: config.maxUncompressedBytes,
     },
   }))
 }

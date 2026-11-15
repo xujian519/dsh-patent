@@ -4,8 +4,9 @@
  */
 
 import { existsSync } from 'node:fs'
-import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import { caseOutputsDir, resolveConfinedPath } from '@deepseek-ai/dsh-patent-core'
 import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import { buildBrandStyle, loadBrandFromPath, mergeBrand } from './brandInjector.ts'
@@ -103,26 +104,6 @@ function resolveOutputDir(input: DocumentRenderInput, cwd: string, defaultOutput
 function resolveBrandPath(input: DocumentRenderInput, cwd: string): string | undefined {
   if (input.brandPath === undefined) return undefined
   return resolveConfinedPath(input.brandPath, cwd, '品牌配置路径', message => new DocumentRenderError(message))
-}
-
-/**
- * 原子写文件（先 tmp 再 rename；Windows 上 rename 不覆盖已存在文件，先清理目标）。
- * 任一步失败都清理 tmp，避免遗留垃圾文件。
- * @param file - 目标文件路径。
- * @param content - 文件文本内容。
- */
-async function atomicWriteFile(file: string, content: string): Promise<void> {
-  const tmp = `${file}.tmp-${process.pid}-${Math.random().toString(36).slice(2)}`
-  try {
-    await writeFile(tmp, content, 'utf8')
-    await rm(file, { force: true })
-    await rename(tmp, file)
-  } catch (error) {
-    // The step failure thrown below is the reported one; a failed tmp cleanup
-    // must not replace it.
-    await rm(tmp, { force: true }).catch(() => {})
-    throw error
-  }
 }
 
 /**
@@ -279,7 +260,7 @@ export async function renderPatentDocument(
     warnings.push(issue.message)
   }
 
-  await atomicWriteFile(htmlPath, html)
+  await writeFileAtomic(htmlPath, html, { mode: 0o644 })
 
   const format: RenderFormat = input.format ?? 'both'
   let renderedPdfPath: string | undefined

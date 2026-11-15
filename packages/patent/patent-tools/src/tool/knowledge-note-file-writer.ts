@@ -13,7 +13,7 @@
 
 import { access, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { atomicWriteJson } from '@deepseek-ai/dsh-patent-data'
+import { atomicWriteJson } from '@deepseek-ai/dsh-patent-core'
 import type { KnowledgeNote, KnowledgeNoteSaveDeps, WriteNoteResult } from './knowledge-note-save.ts'
 
 /**

@@ -9,7 +9,8 @@
  *   save/load/list 三接口 + ENOENT 映射，parse 回调注入反序列化/校验
  */
 
-import { mkdir, open, readFile, readdir, rename, rm } from 'node:fs/promises'
+import { mkdir, readFile, readdir } from 'node:fs/promises'
+import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import { isJsonRecord } from './llm-json.ts'
 
 /**
@@ -96,26 +97,13 @@ export function assertSafePathSegment(value: string, what: string): void {
 }
 
 /**
- * 原子写 JSON：先写同目录临时文件、fsync 落盘后 rename；失败时清理临时文件。
+ * 原子写 JSON：委托 `@deepseek-ai/dsh-atomic-write` 的 `writeFileAtomic`，
+ * 由该包统一提供 `wx` 独占创建、文件与父目录 fsync、Windows 瞬态重试。
  * @param file - 目标文件路径。
  * @param content - 待写入的文本内容。
  */
 export async function atomicWriteJson(file: string, content: string): Promise<void> {
-  const tmp = `${file}.tmp-${process.pid}-${Math.random().toString(36).slice(2)}`
-  let handle
-  try {
-    handle = await open(tmp, 'w')
-    await handle.writeFile(content, 'utf8')
-    await handle.sync()
-    await handle.close()
-    await rename(tmp, file)
-  } catch (error) {
-    /* v8 ignore next -- best-effort close can settle without rejecting on an already-closed handle */
-    await handle?.close().catch(() => {})
-    /* v8 ignore next -- rm with force swallows missing files, so this rejection cannot be forced */
-    await rm(tmp, { force: true }).catch(() => {})
-    throw error
-  }
+  await writeFileAtomic(file, content, { mode: 0o644 })
 }
 
 /**

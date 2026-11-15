@@ -82,7 +82,7 @@ afterEach(async () => {
  * @param config - plugin configuration.
  * @returns the mounted context.
  */
-async function mountedAt(cwd: string, config: plugin.Config = {}): Promise<Context> {
+async function mountedAt(cwd: string, config: Partial<plugin.Config> = {}): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
@@ -91,7 +91,7 @@ async function mountedAt(cwd: string, config: plugin.Config = {}): Promise<Conte
   return ctx
 }
 
-async function mounted(config: plugin.Config = {}): Promise<Context> {
+async function mounted(config: Partial<plugin.Config> = {}): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
@@ -398,7 +398,7 @@ describe('document_deliver plugin configuration', () => {
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(LocalFileSystem)
-    plugin.apply(ctx, {})
+    plugin.apply(ctx, plugin.Config({}))
     temp = await mkdtemp(join(tmpdir(), 'dsh-deliver-'))
     const path = join(temp, 'report.md')
     await writeFile(path, '# 报告\n\n正文。\n')

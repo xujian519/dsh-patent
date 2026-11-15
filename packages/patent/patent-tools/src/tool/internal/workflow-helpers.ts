@@ -19,8 +19,8 @@
  * @module @deepseek-ai/dsh-patent-tools/tool/internal/workflow-helpers
  */
 
-import { rename, writeFile } from 'node:fs/promises'
 import { basename, isAbsolute, join } from 'node:path'
+import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import {
   caseWorkflowRunsDir,
   collectPortText,
@@ -113,18 +113,6 @@ function caseKeyOf(caseId: string): string {
   return caseId
 }
 
-/**
- * Write a file atomically: write a sibling temp file then rename over the
- * target, so a concurrent or interrupted write never leaves a half-written file.
- * @param file - the destination path.
- * @param content - the complete UTF-8 content.
- */
-export async function atomicWriteFile(file: string, content: string): Promise<void> {
-  const tmp = `${file}.tmp-${process.pid}-${Math.random().toString(36).slice(2)}`
-  await writeFile(tmp, content, 'utf8')
-  await rename(tmp, file)
-}
-
 /** Resolved persistence destination for one workflow run. */
 interface WorkflowRunPersistTarget {
   /** Directory the run JSON and Mermaid diagram land in. */
@@ -167,12 +155,12 @@ export async function writeRunArtifacts(
   result: WorkflowRunResult,
 ): Promise<string> {
   try {
-    await atomicWriteFile(join(target.runsDir, `${target.runId}.mmd`), workflowManifestToMermaid(manifest))
+    await writeFileAtomic(join(target.runsDir, `${target.runId}.mmd`), workflowManifestToMermaid(manifest), { mode: 0o644 })
     const note = `持久化: ${join(target.runsDir, `${target.runId}.json`)} + ${join(target.runsDir, `${target.runId}.mmd`)}`
     /* v8 ignore next -- the built-in run stores surface no persist warning in this build. */
     return result.persistWarning ? `${note}\n${result.persistWarning}` : note
   } catch (err) {
-    /* v8 ignore next -- atomicWriteFile only rejects with Error values. */
+    /* v8 ignore next -- writeFileAtomic only rejects with Error values. */
     return `持久化失败: ${err instanceof Error ? err.message : String(err)}`
   }
 }

@@ -64,7 +64,7 @@ describe('buildEmbodimentBlocks', () => {
     expect(build.dropped).toEqual([
       { text: '本实施例采用另一种未记载的结构。', reason: 'anchor-not-found' },
     ])
-    expect(build.warnings).toEqual(['具体实施方式丢弃 1 个未命中原文或为空的实施例块'])
+    expect(build.warnings).toEqual(['具体实施方式丢弃 1 个实施例块'])
   })
 
   it('drops empty blocks instead of rendering them', () => {
@@ -76,16 +76,59 @@ describe('buildEmbodimentBlocks', () => {
     expect(build.blocks).toHaveLength(1)
   })
 
-  it('warns when a block cites neither a feature nor a figure mark', () => {
+  it('drops an embodiment that matches no supplied feature', () => {
+    const source = '实施例1：一种未编号的结构。'
     const build = buildEmbodimentBlocks({
-      sourceText: '实施例1：一种未编号的结构。',
+      sourceText: source,
+      features: numberFeatures(['壳体1']),
+    })
+    expect(build.blocks).toEqual([])
+    expect(build.dropped).toEqual([{ text: source, reason: 'feature-not-found' }])
+    expect(build.warnings).toEqual(['具体实施方式丢弃 1 个实施例块'])
+  })
+
+  it('drops an embodiment that matches no supplied figure mark', () => {
+    const source = '实施例1：壳体1内设置弹簧2。'
+    const build = buildEmbodimentBlocks({
+      sourceText: source,
       features: numberFeatures(['壳体1']),
       figureMarks: [{ figure_number: 1, ref_number: '9' }],
     })
-    expect(build.warnings).toEqual([
-      '实施例 1 未匹配到 PFIE 特征，未标注特征编号',
-      '实施例 1 未匹配到附图标记',
-    ])
+    expect(build.blocks).toEqual([])
+    expect(build.dropped).toEqual([{ text: source, reason: 'figure-mark-not-found' }])
+  })
+
+  it('records feature-not-found when a block matches neither features nor figure marks', () => {
+    const source = '实施例1：一种未编号的结构。'
+    const build = buildEmbodimentBlocks({
+      sourceText: source,
+      features: numberFeatures(['壳体1']),
+      figureMarks: [{ figure_number: 1, ref_number: '9' }],
+    })
+    expect(build.blocks).toEqual([])
+    expect(build.dropped).toEqual([{ text: source, reason: 'feature-not-found' }])
+  })
+
+  it('keeps the preamble when it cites neither a feature nor a figure mark', () => {
+    const build = buildEmbodimentBlocks({
+      sourceText: '本发明提供一种检测装置。\n实施例1：壳体1内设置弹簧2。',
+      features: numberFeatures(['壳体1']),
+      figureMarks: [{ figure_number: 1, ref_number: '1' }],
+    })
+    expect(build.dropped).toEqual([])
+    expect(build.blocks[0]).toMatchObject({ preamble: true, feature_ids: [], figure_marks: [] })
+    expect(build.blocks[1]?.feature_ids).toEqual(['F1'])
+    expect(build.blocks[1]?.figure_marks).toEqual([{ figure_number: 1, ref_number: '1' }])
+  })
+
+  it('renumbers kept blocks after dropping an uncited embodiment', () => {
+    const build = buildEmbodimentBlocks({
+      sourceText: '实施例1：一种未编号的结构。\n实施例2：壳体1内设置弹簧2。',
+      features: numberFeatures(['壳体1']),
+    })
+    expect(build.dropped.map(block => block.reason)).toEqual(['feature-not-found'])
+    expect(build.blocks.map(block => block.index)).toEqual([1])
+    expect(build.blocks[0]?.feature_ids).toEqual(['F1'])
   })
 
   it('keeps the legacy single block when the source has no embodiment heading', () => {
@@ -172,6 +215,29 @@ describe('draftSpecification embodiment blocks', () => {
     }).violations.filter(violation => violation.rule === 'figure_mark_parentheses'
       || violation.rule === 'figure_number_spacing')
     expect(violations).toEqual([])
+  })
+
+  it('drops a sourced embodiment that matches none of the supplied features', () => {
+    const source = '实施例1：一种未编号的结构。'
+    const out = draftSpecification({
+      title: '一种检测装置',
+      patent_type: 'invention',
+      technical_solution: source,
+      source_text: source,
+      technical_problem: '检测精度不足',
+      beneficial_effects: '提高检测精度',
+      background: '现有检测装置精度不足。',
+      features: ['壳体1'],
+      embodiments: [source],
+    })
+    const section = out.sections.find(item => item.name === '具体实施方式')
+    expect(out.embodiment_blocks).toEqual([])
+    expect(out.dropped_embodiment_blocks).toEqual([{ text: source, reason: 'feature-not-found' }])
+    expect(section?.placeholder).toBe(true)
+    expect(section?.content).not.toContain('未编号的结构')
+    expect(out.missing_inputs).toContain('具体实施方式')
+    expect(out.complete).toBe(false)
+    expect(out.warnings).toContain('具体实施方式丢弃 1 个实施例块')
   })
 
   it('keeps the section incomplete when every block is dropped', () => {

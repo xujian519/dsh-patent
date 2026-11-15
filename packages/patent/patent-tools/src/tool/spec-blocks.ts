@@ -2,8 +2,10 @@
  * 说明书「具体实施方式」的实施例分块。
  *
  * 分块只搬运原文：每个块先按实施例标题切分，再用 `locateQuote` 复核它确实出现在
- * 交底书原文中；未命中的块整块丢弃并记录原因，不与相邻块拼接。特征编号按 PFIE
- * 特征顺序稳定分配（`F1`、`F2`…），附图标记只在块正文出现该标记时才写入引用。
+ * 交底书原文中；未命中的块整块丢弃并记录原因，不与相邻块拼接。给出特征表时，
+ * 非总述块必须至少命中一条特征；给出附图标记表时，非总述块必须至少命中一个标记。
+ * 对不上的块整块丢弃。总述段不要求这些引用。特征编号按 PFIE 特征顺序稳定分配
+ * （`F1`、`F2`…），附图标记只在块正文出现该标记时才写入引用。
  *
  * @module @deepseek-ai/dsh-patent-tools/tool/spec-blocks
  */
@@ -48,8 +50,11 @@ export type EmbodimentBlock = {
 export type DroppedEmbodimentBlock = {
   /** 被丢弃的块正文。 */
   text: string
-  /** 丢弃原因：空块，或摘录未命中原文。 */
-  reason: 'empty' | 'anchor-not-found'
+  /**
+   * 丢弃原因：空块、摘录未命中原文、有特征表却未命中特征、有附图标记表却未命中标记。
+   * 两项都未命中时记 `feature-not-found`。
+   */
+  reason: 'empty' | 'anchor-not-found' | 'feature-not-found' | 'figure-mark-not-found'
 }
 
 /** 实施例分块结果。 */
@@ -149,7 +154,7 @@ export function numberFeatures(features: readonly string[] | undefined): SpecFea
  *
  * 调用方给出 `embodiments` 时逐个复核；否则按原文字段切分。锚点原文缺省取
  * `sourceText` 自身（切分路径）或调用方给出的 `sourceText`（直接给出实施例的路径）。
- * 没有原文时跳过锚点复核，保留直接调用方的既有行为。
+ * 没有原文时跳过锚点复核。给出特征表或附图标记表时，非总述块对不上就整块丢弃。
  * @param input - 原文、显式实施例、特征与附图标记。
  * @returns 保留块、丢弃块与撰写警告。
  */
@@ -188,15 +193,17 @@ export function buildEmbodimentBlocks(input: EmbodimentBuildInput): EmbodimentBu
       .filter(feature => locateQuote(feature.text, candidate.text).matched)
       .map(feature => feature.id))]
     const marks = figureMarks.filter(mark => containsReference(candidate.matchText, mark.ref_number))
-    const index = blocks.length + 1
     if (candidate.preamble !== true) {
       if (features.length > 0 && featureIds.length === 0) {
-        warnings.push(`实施例 ${index} 未匹配到 PFIE 特征，未标注特征编号`)
+        dropped.push({ text: candidate.text, reason: 'feature-not-found' })
+        continue
       }
       if (figureMarks.length > 0 && marks.length === 0) {
-        warnings.push(`实施例 ${index} 未匹配到附图标记`)
+        dropped.push({ text: candidate.text, reason: 'figure-mark-not-found' })
+        continue
       }
     }
+    const index = blocks.length + 1
     blocks.push({
       index,
       ...(candidate.heading === undefined ? {} : { heading: candidate.heading }),
@@ -208,7 +215,7 @@ export function buildEmbodimentBlocks(input: EmbodimentBuildInput): EmbodimentBu
     })
   }
   if (dropped.length > 0) {
-    warnings.push(`具体实施方式丢弃 ${dropped.length} 个未命中原文或为空的实施例块`)
+    warnings.push(`具体实施方式丢弃 ${dropped.length} 个实施例块`)
   }
   return { blocks, dropped, warnings }
 }

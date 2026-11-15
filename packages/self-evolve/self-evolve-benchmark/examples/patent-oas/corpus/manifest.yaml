@@ -1,0 +1,55 @@
+# 公开授权文本的去法律化转述。不是金标 case，不进入 goldDigest，没有 rubric。
+kind: public-grant
+plannedDelegalizedGrants: 10
+plannedAttorneyRevisions: 5
+items:
+  - id: cn214853374u
+    publication: CN214853374U
+    source: https://patents.google.com/patent/CN214853374U/zh
+    figures: 6
+    title: 一种智能浇灌控制器
+  - id: cn213535478u
+    publication: CN213535478U
+    source: https://patents.google.com/patent/CN213535478U/zh
+    figures: 12
+    title: 一种折叠箱
+  - id: cn204306477u
+    publication: CN204306477U
+    source: https://patents.google.com/patent/CN204306477U/zh
+    figures: 2
+    title: 折叠、连体式子母床
+  - id: cn218117378u
+    publication: CN218117378U
+    source: https://patents.google.com/patent/CN218117378U/zh
+    figures: 10
+    title: 一种折叠、伸展形成的擂台架构
+  - id: cn201914298u
+    publication: CN201914298U
+    source: https://patents.google.com/patent/CN201914298U/zh
+    figures: 3
+    title: 折叠式儿童推车
+  - id: cn215127991u
+    publication: CN215127991U
+    source: https://patents.google.com/patent/CN215127991U/zh
+    figures: 8
+    title: 一种折叠式手持吸尘器
+  - id: cn210478734u
+    publication: CN210478734U
+    source: https://patents.google.com/patent/CN210478734U/zh
+    figures: 3
+    title: 一种折叠车
+  - id: cn203676789u
+    publication: CN203676789U
+    source: https://patents.google.com/patent/CN203676789U/zh
+    figures: 4
+    title: 折叠式衣架
+  - id: cn219321470u
+    publication: CN219321470U
+    source: https://patents.google.com/patent/CN219321470U/zh
+    figures: 3
+    title: 一种电池壳体结构
+  - id: cn209141755u
+    publication: CN209141755U
+    source: https://patents.google.com/patent/CN209141755U/zh
+    figures: 4
+    title: 一款可折叠的便携式绘图板

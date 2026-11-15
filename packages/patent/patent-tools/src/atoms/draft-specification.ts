@@ -25,7 +25,7 @@ import { firstStateString, resolvePatentType, resolveTechDomain } from './state-
 /** draft-specification 原子：从工作流状态生成五部分说明书草案。 */
 export const draftSpecificationAtom: Atom = {
   name: 'draft-specification',
-  description: '生成说明书草案与摘要（技术领域/背景技术/发明内容/具体实施方式，有附图时含附图说明，确定性）：读取技术方案、问题、效果、实施例、PFIE 特征与附图分析，按实施例标题切分具体实施方式并复核每块原文锚点，标注命中的特征编号（F1、F2…）与附图标记；未命中原文的块整块丢弃并报告，输出 ≤300 字摘要、完整度与缺失章节，供 spec-check 的 spec 模式检查 A26.3/A26.4',
+  description: '生成说明书草案与摘要（技术领域/背景技术/发明内容/具体实施方式，有附图时含附图说明，确定性）：读取技术方案、问题、效果、实施例、PFIE 特征与附图分析，按实施例标题切分具体实施方式并复核每块原文锚点，标注命中的特征编号（F1、F2…）与附图标记；摘录未命中原文、有特征表却未命中特征、或有附图标记表却未命中标记的块整块丢弃并报告，标题前的总述段不要求这些引用，输出 ≤300 字摘要、完整度与缺失章节，供 spec-check 的 spec 模式检查 A26.3/A26.4',
   category: 'extract',
   inputSchema: [
     'title',

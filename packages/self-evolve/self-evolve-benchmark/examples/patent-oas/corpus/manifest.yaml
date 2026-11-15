@@ -1,6 +1,6 @@
 # 公开授权文本的去法律化转述。不是金标 case，不进入 goldDigest，没有 rubric。
 kind: public-grant
-plannedDelegalizedGrants: 30
+plannedDelegalizedGrants: 40
 plannedAttorneyRevisions: 5
 items:
   - id: cn214853374u
@@ -153,3 +153,53 @@ items:
     source: https://patents.google.com/patent/CN208876330U/zh
     figures: 7
     title: 一种洗漱用品架
+  - id: cn214362341u
+    publication: CN214362341U
+    source: https://patents.google.com/patent/CN214362341U/zh
+    figures: 5
+    title: 一种晾衣架
+  - id: cn204580462u
+    publication: CN204580462U
+    source: https://patents.google.com/patent/CN204580462U/zh
+    figures: 2
+    title: 一种书架
+  - id: cn206324465u
+    publication: CN206324465U
+    source: https://patents.google.com/patent/CN206324465U/zh
+    figures: 2
+    title: 一种书架
+  - id: cn203455786u
+    publication: CN203455786U
+    source: https://patents.google.com/patent/CN203455786U/zh
+    figures: 3
+    title: 一种鼠标
+  - id: cn222420926u
+    publication: CN222420926U
+    source: https://patents.google.com/patent/CN222420926U/zh
+    figures: 3
+    title: 一种鼠标
+  - id: cn202681423u
+    publication: CN202681423U
+    source: https://patents.google.com/patent/CN202681423U/zh
+    figures: 1
+    title: 一种水杯
+  - id: cn209528147u
+    publication: CN209528147U
+    source: https://patents.google.com/patent/CN209528147U/zh
+    figures: 6
+    title: 一种雨伞
+  - id: cn204599888u
+    publication: CN204599888U
+    source: https://patents.google.com/patent/CN204599888U/zh
+    figures: 3
+    title: 一种凳子
+  - id: cn206358691u
+    publication: CN206358691U
+    source: https://patents.google.com/patent/CN206358691U/zh
+    figures: 5
+    title: 一种垃圾桶
+  - id: cn203633935u
+    publication: CN203633935U
+    source: https://patents.google.com/patent/CN203633935U/zh
+    figures: 1
+    title: 一种鞋架

@@ -47,8 +47,8 @@ describe('loadPublicGrantCorpus', () => {
   it('counts the checked-in public grants and their figures', async () => {
     const status = await loadPublicGrantCorpus(checkedInCorpus)
     expect(status.problems).toEqual([])
-    expect(status.grants).toBe(30)
-    expect(status.figures).toBe(147)
+    expect(status.grants).toBe(40)
+    expect(status.figures).toBe(178)
     expect(status.attorneyRevisions).toBe(0)
     expect(status.plannedAttorneyRevisions).toBe(5)
   })

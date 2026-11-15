@@ -77,7 +77,7 @@ export type DraftSpecificationOutput = {
   sections: SpecificationSection[]
   /** Kept embodiment blocks with their feature and figure citations. */
   embodiment_blocks: EmbodimentBlock[]
-  /** Blocks dropped because their excerpt did not occur in the source text. */
+  /** Blocks left out of the specification: empty, unanchored, or missing a required citation. */
   dropped_embodiment_blocks: DroppedEmbodimentBlock[]
   /** Whether every section carries written content rather than a drafting guide. */
   complete: boolean
@@ -86,7 +86,7 @@ export type DraftSpecificationOutput = {
   warnings: string[]
 }
 
-const DESCRIPTION = '根据技术交底书或技术方案撰写符合要求的专利说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式五部分，无附图发明省略附图说明），具体实施方式按实施例标题分块并复核原文锚点，标注命中的 PFIE 特征编号与附图标记，未命中原文的块整块丢弃；同时生成不超过 300 字、含关键词行的确定性摘要。当用户要求撰写说明书、写专利申请文件时使用，避免自行手写说明书文本。'
+const DESCRIPTION = '根据技术交底书或技术方案撰写符合要求的专利说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式五部分，无附图发明省略附图说明），具体实施方式按实施例标题分块并复核原文锚点，标注命中的 PFIE 特征编号与附图标记；摘录未命中原文、有特征表却未命中特征、或有附图标记表却未命中标记的实施例块整块丢弃，两项都未命中时记为未命中特征，标题前的总述段不要求这些引用；同时生成不超过 300 字、含关键词行的确定性摘要。当用户要求撰写说明书、写专利申请文件时使用，避免自行手写说明书文本。'
 
 /**
  * Render the canonical draft into model-facing Markdown.
@@ -320,7 +320,7 @@ const DROPPED_EMBODIMENT_BLOCK_SCHEMA = {
   additionalProperties: false,
   properties: {
     text: { type: 'string', required: true },
-    reason: { type: 'string', required: true, enum: ['empty', 'anchor-not-found'] },
+    reason: { type: 'string', required: true, enum: ['empty', 'anchor-not-found', 'feature-not-found', 'figure-mark-not-found'] },
   },
 } as const
 
@@ -416,7 +416,7 @@ export function createDraftSpecificationTool(): ToolDefinition {
           abstract: { type: 'string', required: true, description: '确定性摘要（≤300 字，含关键词行，不引用权利要求编号）' },
           sections: { type: 'array', required: true, items: SECTION_SCHEMA },
           embodiment_blocks: { type: 'array', required: true, items: EMBODIMENT_BLOCK_SCHEMA, description: '保留的实施例块及其特征/附图引用' },
-          dropped_embodiment_blocks: { type: 'array', required: true, items: DROPPED_EMBODIMENT_BLOCK_SCHEMA, description: '因摘录未命中原文而丢弃的实施例块' },
+          dropped_embodiment_blocks: { type: 'array', required: true, items: DROPPED_EMBODIMENT_BLOCK_SCHEMA, description: '未进入说明书的实施例块：空块、摘录未命中原文、有特征表却未命中特征、有附图标记表却未命中标记' },
           complete: { type: 'boolean', required: true },
           missing_inputs: { type: 'array', required: true, items: { type: 'string' } },
           warnings: WARNINGS_SCHEMA,

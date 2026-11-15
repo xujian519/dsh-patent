@@ -94,7 +94,10 @@ export async function writeFileAtomic(filename: string, content: string | Uint8A
     await renameAtomicTemp(temp, filename)
     await syncDirectoryDurably(dirname(filename))
   } catch (error) {
-    await rm(temp, { force: true })
+    await rm(temp, { force: true }).catch((cleanupError: unknown) => {
+      // The write failure is the reported one; a failed temp cleanup must not replace it.
+      void cleanupError
+    })
     throw error
   }
 }

@@ -123,6 +123,16 @@ export interface ZipReadLimits {
   readonly maxUncompressedBytes: number
 }
 
+/**
+ * Default budgets for reading one OOXML package. Every deployment-facing
+ * reader of the same threat model states its `ZipReadLimits` from this value
+ * rather than restating the numbers, so a budget change reaches all of them.
+ */
+export const DEFAULT_ZIP_READ_LIMITS: ZipReadLimits = {
+  maxArchiveEntries: 10_000,
+  maxUncompressedBytes: 250 * 1024 * 1024,
+}
+
 /** Decompressed archive plus the entries that could not be read. */
 export interface ZipArchive {
   /** Entries that decompressed; an unreadable entry is reported, not thrown. */

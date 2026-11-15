@@ -109,24 +109,24 @@ export const STYLE_GUIDE_SECTION_NAME = 'doc-template:style-guide'
 /** Position of the injected style guide: with the persona, ahead of the plan and tool sections. */
 const DEFAULT_STYLE_SECTION_ORDER = 100
 
-/** Model-facing document-template plugin configuration. */
+/** Model-facing document-template plugin configuration, resolved with every default applied. */
 export interface Config {
   /** Template roots layered over the packaged root; a later root overrides an earlier template of the same name. */
-  templateDirs?: string[]
+  templateDirs: string[]
   /** Style directories layered over the packaged one, in ascending precedence. */
-  styleDirs?: string[]
+  styleDirs: string[]
   /** Language a template that declares none renders in. */
-  defaultLanguage?: string
+  defaultLanguage: string
   /** Whether the style disclaimer is injected into rendered documents. */
-  includeDisclaimer?: boolean
+  includeDisclaimer: boolean
   /** Loaded style name whose guide this agent reads before writing; empty for no section. */
-  styleGuide?: string
+  styleGuide: string
   /** Position of the injected style guide in the assembled system prompt. */
-  styleSectionOrder?: number
+  styleSectionOrder: number
 }
 
 /** Schemastery configuration: asset roots, document defaults, and the optional style guide. */
-export const Config: z<Config> = z.object({
+export const Config: z<Partial<Config>, Config> = z.object({
   templateDirs: z.array(z.string()).default([]),
   styleDirs: z.array(z.string()).default([]),
   defaultLanguage: z.string().default(DEFAULT_TEMPLATE_LANGUAGE),
@@ -164,19 +164,19 @@ function registerStyleGuide(
 export function apply(ctx: Context, config: Config): void {
   const templateDirs = [
     templatesDirectory(),
-    ...(config.templateDirs ?? []).map(resolveTemplateDirectory),
+    ...config.templateDirs.map(resolveTemplateDirectory),
   ]
   const styles = loadStyles(styleDirectories(config.styleDirs))
   const store = createTemplateStore({
     templateDirs,
     styles,
-    defaultLanguage: config.defaultLanguage ?? DEFAULT_TEMPLATE_LANGUAGE,
-    includeDisclaimer: config.includeDisclaimer ?? DEFAULT_INCLUDE_DISCLAIMER,
+    defaultLanguage: config.defaultLanguage,
+    includeDisclaimer: config.includeDisclaimer,
   })
   ctx.tools.register(createListDocTemplatesTool(store))
   ctx.tools.register(createRenderDocTemplateTool(ctx, store))
   registerStyleGuide(ctx, styles, {
-    name: config.styleGuide ?? '',
-    order: config.styleSectionOrder ?? DEFAULT_STYLE_SECTION_ORDER,
+    name: config.styleGuide,
+    order: config.styleSectionOrder,
   })
 }

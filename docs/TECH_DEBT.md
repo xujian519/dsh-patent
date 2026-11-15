@@ -361,7 +361,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `structure.long-functions` | 190 |
 | `structure.large-files` | 96 |
 | `structure.patent-large-files` | 10 |
-| `lint.v8-ignore` | 1339 |
+| `lint.v8-ignore` | 1337 |
 | `lint.ts-expect-error` | 202 |
 | `packages.patent-directories` | 16 |
 <!-- tech-debt-counters:end -->
@@ -406,6 +406,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-15 原子写收口**:`persist-utils.ts` 的 `atomicWriteJson` 改为委托 `@deepseek-ai/dsh-atomic-write`,删掉自研实现里的两行 `v8 ignore`(关闭句柄与清理临时文件的 best-effort 分支),`lint.v8-ignore` 由 1339 降至 **1337**。其余计数不变。
 - **2026-11-15 33 条替代索引**:`manifests.ts` 由 953 升至 **960** 行并同步重定接受上限，新增的是披露链 `slop_clean` 使用的 `EMBODIMENT_FEATURE_BLOCK_CHAR_BUDGET`（1500，尚未按交底语料定标）及其说明，阶段描述仍各占一行；`lint.v8-ignore` 由 1332 升至 **1339**。新增 7 条都在 `amendment-reserve.ts`：同行与单行标签正则只捕获三种固定标签、正文捕获组总在、`matchAll` 命中项总有下标、实施例标题捕获组必有数字、`locateQuote` 在 `matched` 时带回原文区间。这些分支由正则与定位结果的不变量排除，其余扫描、缺口与索引分支由用例覆盖。`structure.long-functions`、`structure.large-files` 与 `structure.patent-large-files` 不变。
 - **2026-11-15 上游 v0.2.2-rc.3 同步**:上游新增的实验包 `deepseek-chat-import` 带入 1 个新增 >150 行函数(`importer.ts` 的 `importDeepseekChatExport`,160 行),`structure.long-functions` 由 189 升至 **190**;`structure.large-files`(96)、`structure.patent-large-files`(10)、`v8 ignore`(1332)与 `@ts-expect-error`(202)均不变。这是上游自身的结构状态,fork 不在同步里拆分上游文件。
 - **2026-11-12 上游 v0.2.2-rc.2 同步**:上游代码带入 5 个新增 >150 行函数与 6 个新增 >800 行文件,`structure.long-functions` 由 184 升至 **189**、`structure.large-files` 由 90 升至 **96**;专利域 >800 行文件数 10 不变;上游同时带入 17 行 `v8 ignore` 与 9 行 `@ts-expect-error`,两个标记计数分别升至 **1332** 与 **202**。这些是上游自身的结构状态,fork 不在同步里拆分上游文件。

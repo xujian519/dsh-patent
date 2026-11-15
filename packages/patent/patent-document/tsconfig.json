@@ -22,6 +22,9 @@
     },
     {
       "path": "../patent-core"
+    },
+    {
+      "path": "../../util/atomic-write"
     }
   ]
 }

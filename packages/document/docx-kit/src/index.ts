@@ -8,6 +8,7 @@ export { renderDocx } from './docx-write.ts'
 export { extractDocxText } from './docx-read.ts'
 export { parseInline, parseMarkdown } from './markdown.ts'
 export {
+  DEFAULT_ZIP_READ_LIMITS,
   DOCUMENT_PART,
   FOOTER_PART_LABEL,
   FOOTER_PART_PREFIX,

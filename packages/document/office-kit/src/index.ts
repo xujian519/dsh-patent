@@ -10,6 +10,7 @@ import type { WorkspaceFileScope, WorkspaceFileStat } from '@deepseek-ai/dsh-api
 import type {} from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-session'
 import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
+import { DEFAULT_ZIP_READ_LIMITS } from '@deepseek-ai/dsh-docx-kit'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import { resolveKitModule } from './locate.ts'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
@@ -103,8 +104,8 @@ export const Config: z<Partial<Config>, Config> = z.object({
   maxInputBytes: z.natural().min(1).max(Number.MAX_SAFE_INTEGER - 1).default(50 * 1024 * 1024),
   maxOutputBytes: z.natural().min(1).max(Number.MAX_SAFE_INTEGER - 1).default(100 * 1024 * 1024),
   maxImageResolution: z.natural().min(1).max(2_147_483_647).default(192),
-  maxArchiveEntries: z.natural().min(1).max(Number.MAX_SAFE_INTEGER).default(10_000),
-  maxUncompressedBytes: z.natural().min(1).max(Number.MAX_SAFE_INTEGER).default(250 * 1024 * 1024),
+  maxArchiveEntries: z.natural().min(1).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_ZIP_READ_LIMITS.maxArchiveEntries),
+  maxUncompressedBytes: z.natural().min(1).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_ZIP_READ_LIMITS.maxUncompressedBytes),
   fontDirectories: z.array(z.string().min(1)).extra('default', undefined),
   fontFallbacks: z.array(z.array(z.string().pattern(/\S/)).min(2)).extra('default', undefined),
   maxFontFiles: z.natural().min(1).max(Number.MAX_SAFE_INTEGER).default(20_000),

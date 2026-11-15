@@ -105,7 +105,7 @@ describe('@deepseek-ai/dsh-doc-template plugin surface', () => {
 
   it('registers through apply directly, taking the defaults', async () => {
     const ctx = await toolContext()
-    Pkg.apply(ctx, {})
+    Pkg.apply(ctx, Pkg.Config({}))
     expect(toolNames(ctx)).toContain('render_doc_template')
     const listed = await executeToolFixture(ctx, {
       signal: new AbortController().signal,

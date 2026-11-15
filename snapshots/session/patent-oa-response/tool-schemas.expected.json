@@ -3089,7 +3089,7 @@
           },
           "outputDir": {
             "type": "string",
-            "description": "输出目录（绝对或相对当前工作目录）；默认 <cwd>/专利原文/YYYY-MM-DD"
+            "description": "输出目录（相对当前工作目录；越出工作目录的路径会被拒绝）；默认 <cwd>/专利原文/YYYY-MM-DD"
           },
           "pageTimeoutSec": {
             "type": "number",

@@ -401,7 +401,7 @@ describe('legal-gaps 原子', () => {
       },
     })
     expect(out['legal_gaps_passed']).toBe(true)
-    expect(out['legal_gaps_unassessed']).toEqual(['claim-support-breadth', 'draft-review'])
+    expect(out['legal_gaps_unassessed']).toEqual(['claim-support-breadth', 'draft-review', 'amendment-reserve'])
     const items = out['legal_gaps_items'] as LegalGapItem[]
     expect(items.find(item => item.id === 'grace-period')?.status).toBe('passed')
     expect(items.find(item => item.id === 'spec-form')?.status).toBe('passed')
@@ -520,6 +520,27 @@ describe('legal-gaps 原子', () => {
     expect(items.find(item => item.id === 'claim-support-breadth')?.status).toBe('passed')
     const targets = out['revision_targets'] as Array<{ checkId: string }>
     expect(targets.map(target => target.checkId)).not.toContain('claim-support-breadth')
+  })
+
+  it('披露清单：33 条替代未通过只警告，未评估时不回退采集', async () => {
+    const failed = await new LegalGapsHandler().execute({
+      state: {
+        profile: 'disclosure',
+        amendment_reserve_report: '33 条替代实施方式：未通过',
+        amendment_reserve_passed: false,
+      },
+    })
+    expect(failed['legal_gaps_passed']).toBe(true)
+    const failedItems = failed['legal_gaps_items'] as LegalGapItem[]
+    expect(failedItems.find(item => item.id === 'amendment-reserve')).toMatchObject({
+      status: 'failed',
+      severity: 'warn',
+      provision: '专利法第33条',
+    })
+    const missing = await new LegalGapsHandler().execute({ state: { profile: 'disclosure' } })
+    const targets = missing['revision_targets'] as Array<{ checkId: string }>
+    expect(targets.map(target => target.checkId)).not.toContain('amendment-reserve')
+    expect(missing['legal_gaps_unassessed']).toContain('amendment-reserve')
   })
 
   it('创造性清单：技术问题校验失败形成阻断项，结论阶段产出覆盖 A22.3', async () => {

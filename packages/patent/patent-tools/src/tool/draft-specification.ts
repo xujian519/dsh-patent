@@ -12,6 +12,12 @@ import { createToolInputReader } from './internal/tool-input.ts'
 import type { PatentType, TechDomain } from './draft-claims.ts'
 import { WARNINGS_SCHEMA } from './internal/tool-output.ts'
 import {
+  AMENDMENT_RESERVE_KINDS,
+  amendmentReserveWarnings,
+  buildAmendmentReserve,
+  type AmendmentReserveResult,
+} from './amendment-reserve.ts'
+import {
   buildEmbodimentBlocks,
   numberFeatures,
   renderEmbodimentBlocks,
@@ -57,6 +63,11 @@ export type DraftSpecificationInput = {
   figure_marks?: SpecFigureMark[]
   /** Whether drawings exist (utility models require them). */
   has_drawings?: boolean
+  /**
+   * Claim text. Independent claims are checked for three disclosure-grounded
+   * alternatives. Omit it and the check stays unassessed.
+   */
+  claims?: string
 }
 
 /** One specification section (name, content, and placeholder flag). */
@@ -84,9 +95,11 @@ export type DraftSpecificationOutput = {
   /** Sections still holding a drafting guide. */
   missing_inputs: string[]
   warnings: string[]
+  /** Article 33 reserve index. Missing alternatives are gaps, not generated text. */
+  amendment_reserve: AmendmentReserveResult
 }
 
-const DESCRIPTION = '根据技术交底书或技术方案撰写符合要求的专利说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式五部分，无附图发明省略附图说明），具体实施方式按实施例标题分块并复核原文锚点，标注命中的 PFIE 特征编号与附图标记；摘录未命中原文、有特征表却未命中特征、或有附图标记表却未命中标记的实施例块整块丢弃，两项都未命中时记为未命中特征，标题前的总述段不要求这些引用；同时生成不超过 300 字、含关键词行的确定性摘要。当用户要求撰写说明书、写专利申请文件时使用，避免自行手写说明书文本。'
+const DESCRIPTION = '根据技术交底书或技术方案撰写符合要求的专利说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式五部分，无附图发明省略附图说明），具体实施方式按实施例标题分块并复核原文锚点，标注命中的 PFIE 特征编号与附图标记；摘录未命中原文、有特征表却未命中特征、或有附图标记表却未命中标记的实施例块整块丢弃，两项都未命中时记为未命中特征，标题前的总述段不要求这些引用。给出权利要求书时，把交底原文里按「权利要求N」与「结构等同 / 步骤替换 / 数值上下界」写明的替代抄入实施例索引；定位不到的只记缺口，不补写。同时生成不超过 300 字、含关键词行的确定性摘要。当用户要求撰写说明书、写专利申请文件时使用，避免自行手写说明书文本。'
 
 /**
  * Render the canonical draft into model-facing Markdown.
@@ -175,11 +188,12 @@ function buildDrawings(
   return undefined
 }
 
-function buildEmbodiments(build: EmbodimentBuild, patentType?: PatentType): SpecificationSection {
-  if (build.blocks.length > 0) {
-    return { name: '具体实施方式', content: renderEmbodimentBlocks(build.blocks), placeholder: false }
-  }
-  return { name: '具体实施方式', content: `【撰写指引】撰写至少一个实施例，使所属领域技术人员能够实现：① 实施例的操作步骤/参数/条件记载完整；② 数值范围给出端点值和至少一个中间值的实施例；③ 有益效果有定量效果数据；④ 有与最接近现有技术的对比实验数据（${patentType === 'utility_model' ? '实用新型' : '创造性'}判断的关键支撑）。`, placeholder: true }
+function buildEmbodiments(build: EmbodimentBuild, patentType: PatentType | undefined, indexText: string): SpecificationSection {
+  const base = build.blocks.length > 0
+    ? { name: '具体实施方式', content: renderEmbodimentBlocks(build.blocks), placeholder: false }
+    : { name: '具体实施方式', content: `【撰写指引】撰写至少一个实施例，使所属领域技术人员能够实现：① 实施例的操作步骤/参数/条件记载完整；② 数值范围给出端点值和至少一个中间值的实施例；③ 有益效果有定量效果数据；④ 有与最接近现有技术的对比实验数据（${patentType === 'utility_model' ? '实用新型' : '创造性'}判断的关键支撑）。`, placeholder: true }
+  if (indexText.length === 0) return base
+  return { ...base, content: `${base.content}\n\n实施例索引\n${indexText}` }
 }
 
 /** Trim to a codepoint budget, never splitting a surrogate pair. */
@@ -260,12 +274,17 @@ export function draftSpecification(input: DraftSpecificationInput): DraftSpecifi
     ...(input.figure_marks === undefined ? {} : { figureMarks: input.figure_marks }),
   })
   warnings.push(...embodimentBuild.warnings)
+  const amendmentReserve = buildAmendmentReserve({
+    sourceText: splitSource ?? '',
+    claimsText: input.claims ?? '',
+  })
+  warnings.push(...amendmentReserveWarnings(amendmentReserve))
   const sections = [
     buildTechField(title, domain),
     buildBackground(input.background),
     buildContent(input),
     buildDrawings(drawingDescriptions, input.has_drawings, patentType),
-    buildEmbodiments(embodimentBuild, patentType),
+    buildEmbodiments(embodimentBuild, patentType, amendmentReserve.indexText),
   ].filter((section): section is SpecificationSection => section !== undefined)
   const missingInputs = sections.filter(section => section.placeholder).map(section => section.name)
   return {
@@ -279,6 +298,7 @@ export function draftSpecification(input: DraftSpecificationInput): DraftSpecifi
     complete: missingInputs.length === 0,
     missing_inputs: missingInputs,
     warnings,
+    amendment_reserve: amendmentReserve,
   }
 }
 
@@ -382,6 +402,27 @@ function parseDraftSpecificationInput(args: DraftSpecificationArgs): DraftSpecif
 }
 
 /**
+ * 33 条替代的命中条目和缺口共用权利要求编号与替代种类。
+ * @param extra - 该列表独有的字段。
+ * @returns 工具输出 schema 中的数组字段。
+ */
+function amendmentReserveList<const Extra extends Record<string, { type: 'string' | 'number'; required?: true; enum?: readonly string[] }>>(extra: Extra) {
+  return {
+    type: 'array' as const,
+    required: true as const,
+    items: {
+      type: 'object' as const,
+      additionalProperties: false as const,
+      properties: {
+        claim_no: { type: 'number' as const, required: true as const },
+        kind: { type: 'string' as const, required: true as const, enum: AMENDMENT_RESERVE_KINDS },
+        ...extra,
+      },
+    },
+  }
+}
+
+/**
  * Build the `draft_specification` tool (pure, no dependencies).
  * @returns a registry-ready tool definition.
  */
@@ -402,6 +443,7 @@ export function createDraftSpecificationTool(): ToolDefinition {
       embodiments: { type: 'array', items: { type: 'string' }, description: '具体实施方式（可选，可多个实施例；未给出时按 source_text 的实施例标题切分）' },
       features: { type: 'array', items: { type: 'string' }, description: 'PFIE 特征文本（可选，按数组顺序编号 F1、F2…；实施例块引用命中特征的编号）' },
       source_text: { type: 'string', description: '交底书原文（可选，用于复核实施例摘录；缺省取 technical_solution）' },
+      claims: { type: 'string', description: '权利要求书原文（可选）。给出时核对每条独权在交底原文中是否已有结构等同、步骤替换、数值上下界三条替代；缺省则不评估，也不补写' },
       figure_marks: { type: 'array', items: FIGURE_MARK_SCHEMA, description: '附图标记（可选，图号 + 数字标记；实施例块正文出现该标记时写入引用）' },
       has_drawings: { type: 'boolean', description: '是否有附图（实用新型必须有附图）' },
     },
@@ -420,6 +462,23 @@ export function createDraftSpecificationTool(): ToolDefinition {
           complete: { type: 'boolean', required: true },
           missing_inputs: { type: 'array', required: true, items: { type: 'string' } },
           warnings: WARNINGS_SCHEMA,
+          amendment_reserve: {
+            type: 'object',
+            required: true,
+            additionalProperties: false,
+            description: '33 条替代索引。缺口只记录，不包含补写的替代正文',
+            properties: {
+              status: { type: 'string', required: true, enum: ['passed', 'failed', 'not-assessed'] },
+              entries: amendmentReserveList({
+                embodiment_index: { type: 'number' },
+                quote: { type: 'string', required: true },
+              }),
+              gaps: amendmentReserveList({
+                reason: { type: 'string', required: true, enum: ['missing', 'empty', 'anchor-not-found'] },
+              }),
+              indexText: { type: 'string', required: true },
+            },
+          },
         },
       },
       render: (_args, value) => [{ type: 'text', text: renderDraftSpecification(value) }],

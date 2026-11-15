@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { EMBODIMENT_FEATURE_BLOCK_CHAR_BUDGET } from '../src/workflow/manifests.ts'
 import {
   patentDisclosureManifest,
   patentOaResponseManifest,
@@ -819,7 +820,13 @@ describe('workflow retry validation', () => {
     // 未通过只报告，不声明回退。
     const slopClean = patentDisclosureManifest.stages.find(s => s.id === 'slop_clean')!
     expect(slopClean.atom).toBe('slop-gate')
-    expect(slopClean.params).toEqual({ text_keys: ['specification'] })
+    expect(slopClean.params).toEqual({
+      text_keys: ['specification'],
+      embodiment_char_budget: EMBODIMENT_FEATURE_BLOCK_CHAR_BUDGET,
+    })
+    expect(patentDisclosureManifest.stages.find(s => s.id === 'review_gate')?.params).toEqual({
+      review_keys: ['draft_claims', 'specification', 'amendment_reserve_report'],
+    })
     expect(slopClean.retry).toBeUndefined()
     expect(ids.indexOf('draft_claims') < ids.indexOf('slop_clean')).toBe(true)
     // 说明书草案接在权项草稿之后；spec_check 以草案为说明书文本、权项草稿为权利要求文本。

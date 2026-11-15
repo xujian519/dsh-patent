@@ -79,7 +79,7 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 | t3 | 附图与附图标记表：按图面类型出图（`generate_patent_figure`，标号随 `labels[]` 内嵌；三维模型走 `generate_structure_figure`）、外部 SVG 标号回填（`add_patent_figure_references`，仅自绘/外部来源图需要）、图文双向一致性核验（`validate_specification` + `analyze_patent_figure`），产出 `figure-deliverable.md` | 团队 | 制图员 | t1 |
 | t4 | 披露链执行：`preprocess` → `eligibility` → `extract_problem/features/effects` → `merge` → `groundedness` → `consistency` → `generate_keywords` → `time_baseline` → `search` → `prior_art_filter` → `novelty` → `citation_check` → `report` → `claim_strategy` → `draft_claims` → `figure_analysis`/`figure_analysis_parse` → `draft_specification` → `spec_check` → `enablement_report` → `claim_breadth` → `slop_clean` → `draft_review` → `legal_gaps`，停在 `review_gate` | manifest | captain | t2, t3 |
 | t5 | 权项复核：只读 `claim_strategy` 策略表与 `draft_claims` 草稿，核对特征编号、原文锚点、多路从权引用方向；指出越界或漏特征，**不重写权项** | 团队 | 申请人代理 | t4 |
-| t6 | 说明书互证：`enablement_report`（A26.3 充分公开）与 `claim_breadth`（A26.4 概括范围）逐条复核，核对实施例摘录与原文锚点 | 团队 | 对立审查员 | t4 |
+| t6 | 说明书互证：`enablement_report`（A26.3 充分公开）与 `claim_breadth`（A26.4 概括范围）逐条复核，核对实施例摘录与原文锚点，并核对实施例索引只收录交底原文已定位的替代，缺口不补写 | 团队 | 对立审查员 | t4 |
 | t7 | 技术真实性核验：实施例、效果数据、参数合理性（与 t6 并行，输入不同） | 团队 | 技术专家 | t4 |
 | t8 | `draft_review` 结果处置：按回退类别定位返工面（`draft-review:enablement`/`support`/`amendment`→说明书，`clarity`→权项，`unity`→策略），由 captain 重跑 manifest 对应段；两轮后仍有争议交人工复核 | 团队判定 + manifest 执行 | captain | t5, t6, t7 |
 | t9 | 过 `review_gate`（HITL 确认权项布局与说明书）并重跑收口 | manifest | captain | t8 |
@@ -88,7 +88,7 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 
 返工纪律：t8 的返工**只能重跑 manifest**（重跑时审批门再次询问用户；`approveStageIds` 只在关闭 `approveStageGates` 的部署使用，本部署传入会被拒绝），成员不得手写替换说明书或权利要求。成员的职责是判断「缺哪一类、由谁解释」，不是代写。
 
-`slop_clean` 是 warn 级：未通过只报告，不阻断交付，不得据此打回。质量判定由 `spec_check`/`enablement_report`/`claim_breadth` 承担。
+`slop_clean` 是 warn 级：未通过只报告，不阻断交付，不得据此打回。带特征编号的实施例块另按部署给出的每块可见字符预算计篇幅，超预算同样只报告；绝对化套话仍计入整篇评分。质量判定由 `spec_check`/`enablement_report`/`claim_breadth` 承担。33 条替代未在交底原文定位时，`legal_gaps` 以 warn 级报告，不回退、不补写。
 
 附图信息的消费侧：附图与附图标记表服务于说明书侧的一致性核验（细则 21.2 双向一致），**不作为权利要求撰写的输入**——附图对权项质量没有增益，却会把说明书的表述带进权项范围；权项范围由交底书技术特征与检索结论决定。
 
@@ -249,7 +249,7 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 - 期限与流程：答复期限、复审 3 个月与恢复窗口、补正期限、送达推定日（+15 日）由案件管理员或 captain 核验，禁止心算。
 - HITL 确认点不可跳过：组队方案、权利要求布局、修改方案、无效理由组合、诉请金额、答复策略按「人工确认点」一节先确认再动手，成员阶段产出在进下一阶段前汇总给用户过目；文档专员交付放行与收口放行合并为一次 ask_user_question，不重复打扰。
 - 质量门禁：契约化任务（创建时指定 worker）完成后须过组合质量门禁（worker 契约字段 + 内容充分性 + patent-rule 规则；`patent_eval` 综合评分仅作反馈提示），未过按 `gate_feedback` 修订后重新提交；反复未过由 captain 用 `patent_teams_reassign_task` 处理。文档专员任务（`patent-document-renderer`）同样按契约验收：交付场景/矫正清单/渲染产物缺一即打回。制图员任务（`patent-illustrator`）按契约验收：附图文件/附图标记表/图文一致性/形式要件核验缺一即打回。
-- 撰写与答复的实体判定以 manifest 记录为准：`spec_check`、`enablement_report`（A26.3）、`claim_breadth`（A26.4）、`draft_review`（按类别回退）、`response_check`、`amendment_basis`（A33）的通过状态进交付依据；`slop_clean`（披露链，warn 级）只报告不阻断，`slop_gate`（答复链）未过会回退 `draft` 重写。
+- 撰写与答复的实体判定以 manifest 记录为准：`spec_check`、`enablement_report`（A26.3）、`claim_breadth`（A26.4）、`draft_review`（按类别回退）、`response_check`、`amendment_basis`（A33）的通过状态进交付依据；`slop_clean`（披露链，warn 级）只报告不阻断，带特征编号的实施例块超篇幅同样只报告；交底原文未定位的 33 条替代只警告、不回退、不补写。`slop_gate`（答复链）未过会回退 `draft` 重写。
 - 文档交付：正式文档按专利文书输出规范（`patent-document-polish` 技能）走场景→模板映射，渲染 html/pdf（或 docx，officecli 可用时），产物登记 `_matter-log.md`；附图以制图员产出的附图附件页随附（`figure-deliverable.md` 列明各图路径与图号），交付说明里写明附图是渲染文档之外的独立附件——`render_patent_document` 的模板只承载附图说明文字，不嵌入图片。
 - 收口必经：每个场景的最终收口任务必须包含 `patent_workflow_run`（按场景 manifest：立案=patent_patentability_v1、撰写=patent_disclosure_v1 并跑到 `review_gate` 放行、答复=patent_oa_response_v1 并跑到 `approval` 放行、复审=patent_reexamination_v1、无效=patent_invalidation_v1、诉讼=patent_infringement_v1）；交付依据是 stage 记录，不是口头结论；补正类无内置 manifest 入口，以替换页逐项核验记录替代。
 - 收口：全部任务完成后 `patent_teams_delete` 归档团队；归档保留完整成员与任务历史，可随时复查。

@@ -14,6 +14,7 @@ import {
   type StageExecuteInput,
   type StageHandler,
 } from '@deepseek-ai/dsh-patent-core'
+import { renderAmendmentReserveReport } from '../tool/amendment-reserve.ts'
 import {
   draftSpecification,
   renderDraftSpecification,
@@ -25,7 +26,7 @@ import { firstStateString, resolvePatentType, resolveTechDomain } from './state-
 /** draft-specification 原子：从工作流状态生成五部分说明书草案。 */
 export const draftSpecificationAtom: Atom = {
   name: 'draft-specification',
-  description: '生成说明书草案与摘要（技术领域/背景技术/发明内容/具体实施方式，有附图时含附图说明，确定性）：读取技术方案、问题、效果、实施例、PFIE 特征与附图分析，按实施例标题切分具体实施方式并复核每块原文锚点，标注命中的特征编号（F1、F2…）与附图标记；摘录未命中原文、有特征表却未命中特征、或有附图标记表却未命中标记的块整块丢弃并报告，标题前的总述段不要求这些引用，输出 ≤300 字摘要、完整度与缺失章节，供 spec-check 的 spec 模式检查 A26.3/A26.4',
+  description: '生成说明书草案与摘要（技术领域/背景技术/发明内容/具体实施方式，有附图时含附图说明，确定性）：读取技术方案、问题、效果、实施例、PFIE 特征与附图分析，按实施例标题切分具体实施方式并复核每块原文锚点，标注命中的特征编号（F1、F2…）与附图标记；摘录未命中原文、有特征表却未命中特征、或有附图标记表却未命中标记的块整块丢弃并报告，标题前的总述段不要求这些引用。读取权利要求书，把交底原文里写明的结构等同、步骤替换、数值上下界抄入实施例索引，定位不到的记缺口且不补写。输出 ≤300 字摘要、完整度与缺失章节，供 spec-check 的 spec 模式检查 A26.3/A26.4',
   category: 'extract',
   inputSchema: [
     'title',
@@ -45,6 +46,7 @@ export const draftSpecificationAtom: Atom = {
     'tech_domain',
     'patent_type',
     'has_drawings',
+    'claims_draft',
   ],
   // title/patent_type 是调用方输入：同名键不能声明为输出，否则阶段回退清理会先删掉输入。
   outputSchema: [
@@ -57,6 +59,9 @@ export const draftSpecificationAtom: Atom = {
     'draft_patent_type',
     'complete',
     'missing_inputs',
+    'amendment_reserve_report',
+    'amendment_reserve_passed',
+    'amendment_reserve_gaps',
   ],
 }
 
@@ -172,8 +177,10 @@ export class DraftSpecificationHandler implements StageHandler {
       ...(drawingDescriptions.length > 0 ? { drawing_descriptions: drawingDescriptions } : {}),
       ...(techDomain !== undefined ? { tech_domain: techDomain } : {}),
       ...(patentType !== undefined ? { patent_type: patentType } : {}),
+      claims: firstStateString(state, ['claims_draft']),
     }
     const draft = draftSpecification(draftInput)
+    const reserve = draft.amendment_reserve
     return {
       specification: renderDraftSpecification(draft),
       abstract: draft.abstract,
@@ -184,6 +191,9 @@ export class DraftSpecificationHandler implements StageHandler {
       draft_patent_type: draft.patent_type,
       complete: draft.complete,
       missing_inputs: draft.missing_inputs,
+      amendment_reserve_report: renderAmendmentReserveReport(reserve),
+      amendment_reserve_gaps: reserve.gaps,
+      ...(reserve.status === 'not-assessed' ? {} : { amendment_reserve_passed: reserve.status === 'passed' }),
     }
   }
 }

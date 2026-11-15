@@ -97,7 +97,7 @@ const FIGURE_ANALYSIS_STAGES: readonly WorkflowStage[] = [
 const DRAFT_SPECIFICATION_STAGE: WorkflowStage = {
   id: 'draft_specification',
   strategy: 'chain',
-  description: '生成五部分说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式，确定性）：具体实施方式按实施例标题分块，复核每块原文锚点并标注特征编号与附图标记；摘录未命中原文、有特征表却未命中特征、或有附图标记表却未命中标记的块整块丢弃，标题前的总述段除外',
+  description: '生成五部分说明书草案（技术领域/背景技术/发明内容/附图说明/具体实施方式，确定性）：具体实施方式按实施例标题分块，复核每块原文锚点并标注特征编号与附图标记；摘录未命中原文、有特征表却未命中特征、或有附图标记表却未命中标记的块整块丢弃，标题前的总述段除外；交底原文中已写明的三条替代抄入实施例索引，定位不到的记缺口且不补写',
   atom: 'draft-specification',
 }
 
@@ -185,6 +185,13 @@ export const patentNoveltyManifest: WorkflowManifest = {
   ],
   validation: { requireAllSteps: true, maxRetries: 2 },
 }
+
+/**
+ * 带特征编号的实施例块的可见字符预算。披露链 `slop_clean` 按块使用，不按整篇说明书使用。
+ *
+ * 1500 是初版标定值，尚未按交底语料的篇幅分布调整。要改只改这里。
+ */
+export const EMBODIMENT_FEATURE_BLOCK_CHAR_BUDGET = 1500
 
 /**
  * 内置：技术交底书披露分析 manifest（移植 Mady disclosure/graph.go 的 PFIE 管线）。
@@ -306,9 +313,9 @@ export const patentDisclosureManifest: WorkflowManifest = {
       // 不会改分；因此这里评说明书正文，未通过只报告，不阻断交付（由 rubric 的 26.3/26.4
       // 维度承担质量判定）。
       strategy: 'chain',
-      description: '反套话评分门（说明书正文，warn 级：未通过只报告，确定性撰写不重跑）',
+      description: '反套话评分门（说明书正文，warn 级：未通过只报告，确定性撰写不重跑；带特征编号的实施例块另按可见字符预算计篇幅，绝对化套话仍计入全文评分）',
       atom: 'slop-gate',
-      params: { text_keys: ['specification'] },
+      params: { text_keys: ['specification'], embodiment_char_budget: EMBODIMENT_FEATURE_BLOCK_CHAR_BUDGET },
     },
     {
       id: 'draft_review',
@@ -333,7 +340,7 @@ export const patentDisclosureManifest: WorkflowManifest = {
     {
       id: 'legal_gaps',
       strategy: 'chain',
-      description: '法条缺口汇总：客体、时间基准、宽限期、新颖性、权利要求支持与充分公开对应法条的覆盖状态',
+      description: '法条缺口汇总：客体、时间基准、宽限期、新颖性、权利要求支持与充分公开对应法条的覆盖状态；33 条替代未在交底原文定位时只警告，不回退',
       atom: 'legal-gaps',
       params: { profile: 'disclosure' },
       // 未评估项反哺采集：回退到提取链重新抽取，最多一轮（legal_gaps 共执行两次）。
@@ -347,9 +354,9 @@ export const patentDisclosureManifest: WorkflowManifest = {
       // 现场取用户决策时要展示的产出，与上下文来源无关。
       id: 'review_gate',
       strategy: 'chain',
-      description: '人工复核披露分析报告、权利要求特征表/从权树与说明书草案（中断等待确认）',
+      description: '人工复核披露分析报告、权利要求特征表/从权树、说明书草案与替代实施方式索引（中断等待确认）',
       atom: 'approval-gate',
-      params: { review_keys: ['draft_claims', 'specification'] },
+      params: { review_keys: ['draft_claims', 'specification', 'amendment_reserve_report'] },
     },
   ],
   validation: { requireAllSteps: true, maxRetries: 2 },

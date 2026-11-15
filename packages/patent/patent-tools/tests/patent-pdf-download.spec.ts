@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { appendFile, mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -245,6 +245,52 @@ describe('patent_pdf_download', () => {
       expect(text(result)).toContain(join(temp, 'out'))
     } finally {
       await rm(temp, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects an outputDir that escapes the working directory', async () => {
+    const temp = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
+    const outside = await mkdtemp(join(tmpdir(), 'dsh-patent-outside-'))
+    try {
+      const tool = createPatentPdfDownloadTool({ runEgo: async () => ({ items: [] }), cwd: temp })
+      const ctx = await ctxWith(tool)
+      // 该目录既接收 PDF 与截图，又作为 ego-browser 的 cwd，因此与 patent-document 一致
+      // 要求真实位置留在工作目录内。
+      const absolute = await execute(ctx, 'patent_pdf_download', { patents: ['US1A'], outputDir: outside }, 'p-12')
+      expect(absolute.isError).toBe(true)
+      const traversal = await execute(ctx, 'patent_pdf_download', { patents: ['US1A'], outputDir: '../escape' }, 'p-13')
+      expect(traversal.isError).toBe(true)
+    } finally {
+      await rm(temp, { recursive: true, force: true })
+      await rm(outside, { recursive: true, force: true })
+    }
+  })
+
+  it('writes the fallback PDF without touching a predictable temp path', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
+    try {
+      const victim = join(dir, 'victim.txt')
+      await writeFile(victim, 'untouched')
+      // 旧实现把临时文件固定为 <target>.tmp：预置同名符号链接就能把内容写到别处。
+      await symlink(victim, join(dir, 'US1A.pdf.tmp'))
+      const body = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(600, 0x20)])
+      const fetchImpl = async () => new Response(new Uint8Array(body), {
+        status: 200,
+        headers: { 'content-type': 'application/pdf' },
+      })
+      const tool = createPatentPdfDownloadTool({
+        runEgo: async () => ({ items: [{ channel: GOOGLE, patent: 'US1A', status: 'fallback', pdfUrl: 'https://cdn/US1A.pdf' }] }),
+        resolveOutputDir: () => dir,
+        fetchImpl,
+      })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'patent_pdf_download', { patents: ['US1A'] }, 'p-14')
+      expect(result.isError).toBe(false)
+      expect(await readFile(victim, 'utf8')).toBe('untouched')
+      const written = await readFile(join(dir, 'US1A.pdf'))
+      expect(written.subarray(0, 5).toString('latin1')).toBe('%PDF-')
+    } finally {
+      await rm(dir, { recursive: true, force: true })
     }
   })
 

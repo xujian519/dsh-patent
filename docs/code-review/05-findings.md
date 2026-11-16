@@ -98,7 +98,7 @@
 | F-DOC-008 | 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题 | DOC | E | Medium | 高 | new |
 | F-DOC-009 | DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃 | DOC | E | Medium | 中 | new |
 | F-DOC-010 | `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断 | DOC | E | Medium | 中 | new |
-| F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | confirmed |
+| F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | fixed |
 | F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | confirmed |
 | F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | confirmed |
 | F-LEG-004 | 两域默认引用策略分叉，缺对照说明与回归护栏 | LEG | E | Low | 中 | confirmed |
@@ -1654,6 +1654,19 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`engine-tools.spec.ts` 新增一条用例注入带警告的资产结果，断言 `assetWarnings` 与渲染文本；`patent-oa-response` 的固定工具 schema 只更新了 `rule_check` 描述一行，其余快照不变。
 
 验证：`pnpm exec vitest run packages/patent/patent-tools/tests/engine-tools.spec.ts packages/patent/patent-tools/tests/drafting-engine.spec.ts` 通过；`rule-check.ts` 聚焦覆盖率 100%；`pnpm run test:snapshot -t patent-` 11 passed；`pnpm run typecheck` 5/5；`pnpm run lint` 0。
+### 批次 E7：法条索引名字表复位（2026-11-17）
+
+用户要求继续修复后完成。只改 `legal-law` 名字表的生命周期，不改索引格式与引用判定策略。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-LEG-001 | 每次加载索引前（同步加载、异步加载、`createLegalLawIndex` 首次读清单）把名字表复位为手工索引的四部法，再注册本次索引声明的法律名与标题别名；上一次目录的名字与别名不再残留 | `legal-law/src/baseline.ts`、`legal-law/src/reference.ts` |
+
+**行为变化**：同进程先加载 A 目录、再加载 B 目录时，解析器只识别 B 声明的法律名。A 独有的法律名不再被识别成法条引用，其「第 N 条」片段改由 `unrecognized` 报告，不再因 `not-indexed` 命中默认 `block`；`legalLawNames()` 返回最近一次加载的集合。
+
+**既有测试行为**：`baseline.spec.ts` 新增三条用例（同步加载、异步加载、先后读取两个清单），锁定名字替换与「旧名字退化为未识别片段」的失败方向。
+
+验证：`pnpm exec vitest run packages/legal/legal-law/tests` 138 用例通过；`baseline.ts`、`reference.ts` 在聚焦 `--coverage.include` 下均为 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`verify-translation-pairing` 重录后通过。
 
 ## 复核记录
 

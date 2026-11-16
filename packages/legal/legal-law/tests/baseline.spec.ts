@@ -15,6 +15,7 @@ import {
   parseLegalLawManifest,
 } from '../src/baseline.ts'
 import { LEGAL_LAW_MANIFEST_FILE, legalLawBaselineDir, listLegalLawFiles } from '../src/asset-location.ts'
+import { extractLegalLawReferences, scanUnrecognizedLegalCitations } from '../src/reference.ts'
 
 const tempDirs: string[] = []
 
@@ -33,6 +34,13 @@ function fixtureDir(files: Record<string, string>): string {
 /** Manifest text for the given `[law, document, file]` rows. */
 function manifestText(rows: Array<[string, string, string]>): string {
   return JSON.stringify({ laws: rows })
+}
+
+/** An index file for one law, reusing the civil-code fixture body. */
+function lawIndex(law: string, document: string): string {
+  return CIVIL_CODE
+    .replace('law: 民法典', `law: ${law}`)
+    .replace('document: 中华人民共和国民法典', `document: ${document}`)
 }
 
 const CIVIL_CODE = [
@@ -262,6 +270,26 @@ describe('loadLegalLawBaselines', () => {
     expect(Object.isFrozen(legalLawNames())).toBe(true)
   })
 
+  it('forgets a previous directory names when another index loads', () => {
+    loadLegalLawBaselines(fixtureDir({ 'accounting.yaml': lawIndex('会计法', '中华人民共和国会计法') }))
+    expect(extractLegalLawReferences('会计法第1条')).toHaveLength(1)
+
+    loadLegalLawBaselines(fixtureDir({ 'securities.yaml': lawIndex('证券法', '中华人民共和国证券法') }))
+    expect(legalLawNames()).toContain('证券法')
+    expect(legalLawNames()).not.toContain('会计法')
+    // The stale name is no longer read as a citation of the current index; the
+    // fragment surfaces as unrecognized instead of a load-history-dependent block.
+    expect(extractLegalLawReferences('会计法第1条')).toEqual([])
+    expect(scanUnrecognizedLegalCitations('会计法第1条', [])).toEqual(['第1条'])
+  })
+
+  it('forgets a previous directory names when another index loads asynchronously', async () => {
+    await loadLegalLawBaselinesAsync(fixtureDir({ 'accounting.yaml': lawIndex('会计法', '中华人民共和国会计法') }))
+    await loadLegalLawBaselinesAsync(fixtureDir({ 'securities.yaml': lawIndex('证券法', '中华人民共和国证券法') }))
+    expect(legalLawNames()).not.toContain('会计法')
+    expect(legalLawNames()).toContain('证券法')
+  })
+
   // Loading 7,900+ YAML files takes minutes under coverage instrumentation.
   it('loads the packaged index without errors', () => {
     // Loading 7900+ YAML files takes time
@@ -353,6 +381,23 @@ describe('createLegalLawIndex', () => {
     expect(names).toEqual(['民法典', '会计法'])
     expect(Object.isFrozen(names)).toBe(true)
     expect(legalLawNames()).toContain('会计法')
+  })
+
+  it('forgets names from an index whose manifest was read earlier', async () => {
+    const accounting = fixtureDir({
+      'accounting.yaml': lawIndex('会计法', '中华人民共和国会计法'),
+      'manifest.json': manifestText([['会计法', '中华人民共和国会计法', 'accounting.yaml']]),
+    })
+    await createLegalLawIndex(accounting).loadNames()
+    expect(legalLawNames()).toContain('会计法')
+
+    const securities = fixtureDir({
+      'securities.yaml': lawIndex('证券法', '中华人民共和国证券法'),
+      'manifest.json': manifestText([['证券法', '中华人民共和国证券法', 'securities.yaml']]),
+    })
+    await createLegalLawIndex(securities).loadNames()
+    expect(legalLawNames()).not.toContain('会计法')
+    expect(legalLawNames()).toContain('证券法')
   })
 
   it('parses only the laws a call names', async () => {

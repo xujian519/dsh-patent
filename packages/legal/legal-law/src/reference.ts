@@ -123,7 +123,7 @@ function escapeRegExp(s: string): string {
 }
 
 /** The initial set of law names used before baselines are loaded. */
-const INITIAL_LAW_NAMES: readonly LegalLawName[] = ['民法典', '民事诉讼法', '劳动合同法', '公司法']
+export const INITIAL_LAW_NAMES: readonly LegalLawName[] = ['民法典', '民事诉讼法', '劳动合同法', '公司法']
 
 /** The active statute patterns; rebuilt when new baselines are loaded. */
 let STATUTE_PATTERNS: readonly RegExp[] = buildStatutePatterns(INITIAL_LAW_NAMES)

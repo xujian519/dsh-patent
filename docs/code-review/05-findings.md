@@ -523,13 +523,13 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 
 ### F-PAT-032 判例零命中检索整表解压 LIKE，约 4.6 秒
 
-- 位置：`packages/patent/patent-knowledge/src/case-law/case-law-search.ts:137`–`146`（`stmtSearchLike` 在 WHERE 里对每篇最长 chunk 调用 `sati_uncompress`）、`:352`–`364`（没有 `search_prefix` 时走这条）；`packages/law/knowledge-core/src/fts-search.ts:39`（不足 3 字、无 FTS 或 FTS 已降级时直接 LIKE）、`:53`–`:55`（FTS 空结果再 LIKE）；`packages/patent/patent-knowledge/src/install.ts:175`（`searchPrefix ?? false`）；`packages/patent/patent-knowledge/src/config.ts:31`–`32`（查询库优先 `knowledge-lite.db`）
+- 位置：`packages/patent/patent-knowledge/src/case-law/case-law-search.ts:137`–`146`（`stmtSearchLike` 在 WHERE 里对每篇最长 chunk 调用 `sati_uncompress`）、`:352`–`364`（没有 `search_prefix` 时走这条）；`packages/law/knowledge-core/src/fts-search.ts:39`（不足 3 字、无 FTS 或 FTS 已降级时直接 LIKE）、`:53`–`:55`（FTS 空结果再 LIKE）；`packages/patent/patent-knowledge/src/install.ts:175`（`searchPrefix ?? false`）；`packages/patent/patent-knowledge/src/config.ts:31`–`32`（候选顺序是数据目录下的 `knowledge.db`、`knowledge-lite.db`，然后源库）
 - 维度：C
 - 严重度：Medium
 - 可能性：中
-- 证据：Day 21，Node `v24.19.0`，只读打开本机查询库 `~/.dsh/knowledge/knowledge-lite.db`（3543654400 字节）。`documents` 81551 行，`chunks` 144188 行，`docs_fts` 为 trigram contentless、144079 行。查询库和 `~/.sati/knowledge/knowledge.db` 都没有 `search_prefix`。EXPLAIN 为 `SCAN documents`，再用 `idx_chunks_document` 取最长 chunk。`CaseLawSearchEngine.search`：`创造性` 走 FTS，5 条，8 次中位数 75.15ms；`专利`（2 字，标题凑满）0.72ms；`锆钚`（2 字，0 条）4772.49ms；`锆钚钨`（3 字，FTS 未命中后再 LIKE，0 条）4569.07ms。同一词在 `KnowledgeLawSearch` 上 0 条、4.18ms（`law_article` 96 行、`guideline_rule` 112 行）。
+- 证据：Day 21，Node `v24.19.0`，数据目录下没有 `knowledge.db`，只读打开的查询库是 `~/.dsh/knowledge/knowledge-lite.db`（3543654400 字节）。`documents` 81551 行，`chunks` 144188 行，`docs_fts` 为 trigram contentless、144079 行，比 `chunks` 少 109 行。查询库和 `~/.sati/knowledge/knowledge.db` 都没有 `search_prefix`。EXPLAIN 为 `SCAN documents`，再用 `idx_chunks_document` 取最长 chunk。`CaseLawSearchEngine.search`：`创造性` 走 FTS，5 条，8 次中位数 75.15ms；`专利`（2 字，标题凑满）0.72ms；`锆钚`（2 字，0 条）4772.49ms；`锆钚钨`（3 字，FTS 未命中后再 LIKE，0 条）4569.07ms。同一词在 `KnowledgeLawSearch` 上 0 条、4.18ms（`law_article` 96 行、`guideline_rule` 112 行）。
 - 影响：对判例库的短查询，或 trigram 没有命中的词，会在返回空结果前扫描全部文档并解压每篇最长分块。标题能很快凑满条数的常见词停留在 1ms 内，FTS 命中停留在 75ms 一带。法规引擎的文档类型范围小，同一条回退是 4ms 级。
-- 最小修复建议：三字及以上的 trigram 未命中，改为只检查 `docs_fts` 没覆盖的那 109 个 chunk，停止对 81551 篇调用 `sati_uncompress`。改动放在判例引擎。共享阶梯同时服务法律域，法律域这次的零命中是 4.18ms，留到 Day 24。不足三字的全文子串仍会扫表；要消掉这 4.8 秒，使用已有的 `--search-prefix`。该开关把召回限制在每篇最长 chunk 的前 512 个码点，`searchPrefix` 保持默认关闭。
+- 最小修复建议：三字及以上的 FTS 未命中时，不要对全部文档调用 `sati_uncompress`。修改只放在判例引擎。共享阶梯同时服务法律域。Day 21 在已安装法规库上的零命中是 4.18ms。Day 24 把法律域合成库的 LIKE 记为可选观察，法规零命中中位数 8.47ms，判例 18.73ms。不足三字的全文子串仍会扫表；要消掉这 4.8 秒，使用已有的 `--search-prefix`。该开关把召回限制在每篇最长 chunk 的前 512 个码点，`searchPrefix` 保持默认关闭。
 - 预估工作量：S
 - 是否可自动化：是（小型夹具断言三字零命中不再执行 `stmtSearchLike`。本机 4.6 秒的数字不写进单测）
 - 状态：new

@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
@@ -154,5 +154,19 @@ describe('交付物引用门禁', () => {
     ctx.tools.register(documentTool())
     const result = await call(ctx, '依照专利法第99条。')
     expect(result.isError).toBe(false)
+  })
+
+  it('加载期把与工具入参不一致的声明记成告警', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    ctx.tools.register(documentTool())
+    const warnSpy = vi.spyOn(ctx.logger, 'warn')
+    await ctx.plugin(PatentRule, {
+      rulesDir: rulesDir(),
+      citationGate: [{ tool: 'render_patent_document', textArgs: ['draftt'] }],
+    })
+    expect(warnSpy.mock.calls.flat().join('\n')).toContain('交付物引用门禁')
+    expect(warnSpy.mock.calls.flat().join('\n')).toContain('draftt')
   })
 })

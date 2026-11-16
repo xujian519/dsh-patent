@@ -16,7 +16,7 @@
  */
 
 import type { ConstitutionalRule, RuleSet, RuleViolation } from '@deepseek-ai/dsh-patent-core'
-import { declaredArgsMatch, jsonRecord } from './args-match.ts'
+import { declaredArgsMatch, jsonRecord, type DeclaredArgValue } from './args-match.ts'
 import { evaluateText } from './RuleEngine.ts'
 import type { SynonymMap } from './synonym-engine.ts'
 
@@ -175,6 +175,39 @@ export function gateTextIssues(
   return issues
 }
 
+/** 声明了「哪个工具的哪些入参承载制品文本」的门禁条目。 */
+export type TextArgGateEntry = {
+  /** 被门禁的工具名。 */
+  tool: string
+  /** 承载制品文本的入参名。 */
+  textArgs: readonly string[]
+  /** 精确匹配才生效的入参；缺省表示该工具的每次调用都核对。 */
+  whenArgs?: Record<string, DeclaredArgValue>
+}
+
+/**
+ * 按声明核对本次调用承载制品文本的入参：条目适用但入参缺失或名字不在工具声明里时，
+ * 门禁无法执行。
+ * @param entries - 本次门禁的条目。
+ * @param tool - 本次调用的工具名。
+ * @param args - 本次调用的入参。
+ * @param parameters - 工具入参声明；调用方能取到时传入。
+ * @returns 去重后的原因；可执行时为空数组。
+ */
+export function gateUnresolvedIssues(
+  entries: readonly TextArgGateEntry[],
+  tool: string,
+  args: unknown,
+  parameters?: Record<string, unknown>,
+): string[] {
+  const issues: string[] = []
+  for (const entry of entries) {
+    if (entry.tool !== tool || !declaredArgsMatch(entry.whenArgs, args)) continue
+    issues.push(...gateTextIssues(tool, entry.textArgs, args, parameters))
+  }
+  return [...new Set(issues)]
+}
+
 /**
  * 从工具入参取出制品文本：按声明顺序拼接各入参里的全部字符串。
  * @param args - 工具调用入参（模型侧的 JSON 值——按解析边界做类型收窄）。
@@ -294,12 +327,7 @@ export function structuralGateUnresolved(
   args: unknown,
   parameters?: Record<string, unknown>,
 ): string[] {
-  const issues: string[] = []
-  for (const { entry } of plan.entries) {
-    if (entry.tool !== tool || !declaredArgsMatch(entry.whenArgs, args)) continue
-    issues.push(...gateTextIssues(tool, entry.textArgs, args, parameters))
-  }
-  return [...new Set(issues)]
+  return gateUnresolvedIssues(plan.entries.map(({ entry }) => entry), tool, args, parameters)
 }
 
 /**

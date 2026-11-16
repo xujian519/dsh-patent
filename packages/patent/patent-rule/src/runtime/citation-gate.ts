@@ -22,7 +22,7 @@ import { extractLawReferences, loadLawBaselines, verifyCitation } from '@deepsee
 import type { LawBaseline, LawName } from '@deepseek-ai/dsh-patent-law'
 
 import { declaredArgsMatch, type DeclaredArgValue } from './args-match.ts'
-import { gateTextIssues, structuralGateText } from './structural-gate.ts'
+import { gateUnresolvedIssues, structuralGateText } from './structural-gate.ts'
 
 /** 一条交付物引用门禁：哪个工具的哪些入参是制品文本。 */
 export type CitationGateEntry = {
@@ -116,12 +116,7 @@ export function citationGateUnresolved(
   args: unknown,
   parameters?: Record<string, unknown>,
 ): string[] {
-  const issues: string[] = []
-  for (const entry of entries) {
-    if (entry.tool !== tool || !declaredArgsMatch(entry.whenArgs, args)) continue
-    issues.push(...gateTextIssues(tool, entry.textArgs, args, parameters))
-  }
-  return [...new Set(issues)]
+  return gateUnresolvedIssues(entries, tool, args, parameters)
 }
 
 /**

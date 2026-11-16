@@ -88,9 +88,6 @@
 | F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | new |
 | F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | new |
 | F-PAT-055 | 上游 JSON 字符串含 null 元素时 `mapPatentData` 抛 TypeError | PAT | E | Low | 低 | new |
-| F-DOC-008 | 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题 | DOC | E | Medium | 高 | new |
-| F-DOC-009 | DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃 | DOC | E | Medium | 中 | new |
-| F-DOC-010 | `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断 | DOC | E | Medium | 中 | new |
 | F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | confirmed |
 | F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | confirmed |
 | F-DOC-003 | OOXML 读取限额两包各写一份字面量 | DOC | B | Low | 高 | fixed |
@@ -98,6 +95,9 @@
 | F-DOC-005 | `tool-office` 用 9 处 `as` 断言担保跨模块不变量 | DOC | B | Low | 低 | confirmed |
 | F-DOC-006 | 跨模块请求类型按字段重写而非组合（`RenderRequest`、`OfficeImagesRequest`） | DOC | B | Low | 高 | confirmed |
 | F-DOC-007 | Office 转换成功返回后不检查 abort 监听是否摘掉 | DOC | D | Medium | 中 | new |
+| F-DOC-008 | 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题 | DOC | E | Medium | 高 | new |
+| F-DOC-009 | DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃 | DOC | E | Medium | 中 | new |
+| F-DOC-010 | `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断 | DOC | E | Medium | 中 | new |
 | F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | confirmed |
 | F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | confirmed |
 | F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | confirmed |
@@ -872,45 +872,6 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 是否可自动化：是（上面两条断言）
 - 状态：new
 
-### F-DOC-008 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题
-
-- 位置：`packages/document/doc-template/src/renderers/markdown.ts:38`；`packages/document/doc-template/src/renderers/html.ts:173`、`:184`；`packages/document/doc-template/src/renderers/docx.ts:23`–`:29`；`packages/document/docx-kit/src/docx-write.ts:75`–`:79`
-- 维度：E
-- 严重度：Medium
-- 可能性：高
-- 证据：`pnpm exec tsx d37-repro.mts` 退出码 0。用随包模板与样式构造 `TemplateStore` 后调用 `store.render({ template: 'prd', variables: {} })`：Markdown 的 `content` 只有一行一级标题 `# {{product_name}} 产品需求文档`；HTML 的 `<h1>` 有两个（`产品需求文档` 与 `{{product_name}} 产品需求文档`）；DOCX 投影出两条 `headingLevel: 1`（`# 产品需求文档` 与 `# {{product_name}} 产品需求文档`）。随包模板的正文都以一级标题开头（`disclosure/simplified.md`、`disclosure/standard-9-section.md`、`document/prd.md`、`document/release-notes.md`、`document/report.md`、`document/faq.md`、`document/meeting-notes.md`、`oa-response/*` 等），且都声明了非空 `title`（如 `prd.md:3`）；`disclosure/simplified.md` 的 front-matter 标题是「简化版技术交底书」，正文一级标题是「技术交底书（简化版）」，HTML/DOCX 成品因此出现两个措辞不同的标题；`store.render` 把 `meta.title` 定为 `request.title ?? template.title`（`store.ts:283`）。README:79 只把「正文已有一级标题时不重复注入」写成 Markdown 的行为。
-- 影响：同一份模板在 HTML 与 DOCX 成品里出现两个互相竞争的一级标题；正文标题含变量时两行文字还不一样（元数据标题与动态标题）。Markdown 只有一行，三种格式对同一请求给出不同的文档结构；读者或下游转换器会看到重复标题，转换器也可能选错标题。
-- 最小修复建议：把 Markdown 的守卫应用到 HTML 与 DOCX（正文以一级标题开头时不注入 `meta.title`），或删掉模板正文的一级标题并统一用 `meta.title`。新增跨格式用例：同一模板分别渲染 Markdown、HTML、DOCX，断言各成品恰有一个一级标题且文字一致。
-- 预估工作量：S
-- 是否可自动化：是（三格式标题数量的用例）
-- 状态：new
-
-### F-DOC-009 DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃
-
-- 位置：`packages/document/docx-kit/src/markdown.ts:99`–`:113`（`isTableSeparator`、`parseTableRow`）、`:142`–`:147`（表格行收集）；`packages/document/docx-kit/src/ooxml.ts:132`–`:140`（按最宽行补空单元格）、`:145`–`:155`（表格组装）
-- 维度：E
-- 严重度：Medium
-- 可能性：中
-- 证据：同一次脚本。输入表格：`| 特征 | 说明 |`、`| --- | --- |`、`| A\|B | 含有竖线 |`、`| - | - |`、`| C | 末行 |`。`parseMarkdown` 得到的行是 `[['特征','说明'], ['A\\','B','含有竖线'], ['C','末行']]`：转义竖线被当成单元格边界，整行破折号被当作分隔行丢弃。`tableXml` 取最宽行 3 列，为其余行补空单元格。同一份 Markdown 交给 HTML 渲染器（`marked`）得到 2 列、3 个数据行，`- | -` 行保留。
-- 影响：DOCX 成品表格静默多出一列并少一行数据，HTML 版同一文档却是对的。转义竖线是 GFM 表格的合法写法（单元格要引用正则或「A|B」时常用），整行「-」是常见的「无」占位；两类输入都会让交付表格错位。
-- 最小修复建议：按未转义的 `|` 切分单元格（`\|` 还原为字面竖线），只把表头之后紧邻的那一行分隔行当分隔符，之后的全破折号行按数据保留。补这两条解析用例与一条 HTML/DOCX 表格同形的跨格式用例。
-- 预估工作量：S
-- 是否可自动化：是（上面的表格输入）
-- 状态：new
-
-### F-DOC-010 `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断
-
-- 位置：`packages/document/document-deliver/src/checks.ts:238`–`:270`（`fenceRanges` 与 `quotedRanges` 只认 Markdown 围栏和行内代码）、`:485`–`:499`（`placeholderDrafts` 直接在原始文本上匹配）、`:594`–`:601`（`checkDocumentText` 不区分 HTML 正文与标记）；对照 `:319`–`:360`（`htmlBodyText` 已有 HTML 正文投影，只用于字数预算与空节）
-- 维度：E
-- 严重度：Medium
-- 可能性：中
-- 证据：同一次脚本。Markdown 的 ` ```\n{{case_id}}\n``` ` 得到 `placeholder` 的 `warn`（第 2 行）；HTML 的 `<pre><code>{{case_id}}</code></pre>`、`<code>{{case_id}}</code>`、`<!-- {{case_id}} -->` 以及 `<img src="x.png" alt="[TBD]">` 都得到 `block`。`checks.ts` 的模块注释写明：代码块或行内代码里的占位符只报 `warn`，`block` 只留给引用文本之外的残余占位符。`render_doc_template` 的 HTML 输出会把 Markdown 围栏转成 `<pre><code>`，所以同一份模板内容以 Markdown 交付时是 `warn`，以 HTML 交付时是 `block`。
-- 影响：一份合法的 HTML 交付件，只要展示了代码示例、引用了占位符写法，或保留一条编辑注释，就会被 P0 门禁拒绝登记；模型只能删掉示例或改写内容才过。同一内容换成 Markdown 就能通过，门禁结论取决于导出格式而不是文档内容。注释与属性里的文字并不可见，按「残余占位符」阻断与检查范围声明不符。
-- 最小修复建议：`format: 'html'` 时先投影可见正文（`htmlBodyText` 已实现注释、标记与 script/style 的剥离），再从 `<pre>`/`<code>` 元素推导引用范围；保留行号映射，或在结果里注明行号对应投影文本。另一种做法是只剥离注释与属性值，并把 HTML 代码元素加入 `quotedRanges`。把上面五个输入补成用例。
-- 预估工作量：M
-- 是否可自动化：是（五条输入 + 一条 Markdown/HTML 同内容对照）
-- 状态：new
-
 ### Day 10 定向结论：法律域与共享层无安全发现
 
 - **SQL 全部参数化**：`MATCH ?` 与 `LIKE ?` 绑定，`likePattern` 转义 `%`、`_`、反斜杠并配合 `ESCAPE '\'`；唯一的表名插值取自包内固定数组；安装 API 的源库与输出目录来自 options/CLI，不注册为工具。
@@ -1041,6 +1002,45 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：加一条成功用例。输入是未中止的 `AbortSignal`，假转换器立即返回 PDF。期望 `read` 成功返回后，`getEventListeners(signal, 'abort')` 的长度为 0；随后中止这个信号，已返回的结果保持成功。删掉 `:184` 的 `removeEventListener` 时监听数断言失败。
 - 预估工作量：S
 - 是否可自动化：是（假转换器上的一条监听数用例）
+- 状态：new
+
+### F-DOC-008 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题
+
+- 位置：`packages/document/doc-template/src/renderers/markdown.ts:38`；`packages/document/doc-template/src/renderers/html.ts:173`、`:184`；`packages/document/doc-template/src/renderers/docx.ts:23`–`:29`；`packages/document/docx-kit/src/docx-write.ts:75`–`:79`
+- 维度：E
+- 严重度：Medium
+- 可能性：高
+- 证据：`pnpm exec tsx d37-repro.mts` 退出码 0。用随包模板与样式构造 `TemplateStore` 后调用 `store.render({ template: 'prd', variables: {} })`：Markdown 的 `content` 只有一行一级标题 `# {{product_name}} 产品需求文档`；HTML 的 `<h1>` 有两个（`产品需求文档` 与 `{{product_name}} 产品需求文档`）；DOCX 投影出两条 `headingLevel: 1`（`# 产品需求文档` 与 `# {{product_name}} 产品需求文档`）。随包模板的正文都以一级标题开头（`disclosure/simplified.md`、`disclosure/standard-9-section.md`、`document/prd.md`、`document/release-notes.md`、`document/report.md`、`document/faq.md`、`document/meeting-notes.md`、`oa-response/*` 等），且都声明了非空 `title`（如 `prd.md:3`）；`disclosure/simplified.md` 的 front-matter 标题是「简化版技术交底书」，正文一级标题是「技术交底书（简化版）」，HTML/DOCX 成品因此出现两个措辞不同的标题；`store.render` 把 `meta.title` 定为 `request.title ?? template.title`（`store.ts:283`）。README:79 只把「正文已有一级标题时不重复注入」写成 Markdown 的行为。
+- 影响：同一份模板在 HTML 与 DOCX 成品里出现两个互相竞争的一级标题；正文标题含变量时两行文字还不一样（元数据标题与动态标题）。Markdown 只有一行，三种格式对同一请求给出不同的文档结构；读者或下游转换器会看到重复标题，转换器也可能选错标题。
+- 最小修复建议：把 Markdown 的守卫应用到 HTML 与 DOCX（正文以一级标题开头时不注入 `meta.title`），或删掉模板正文的一级标题并统一用 `meta.title`。新增跨格式用例：同一模板分别渲染 Markdown、HTML、DOCX，断言各成品恰有一个一级标题且文字一致。
+- 预估工作量：S
+- 是否可自动化：是（三格式标题数量的用例）
+- 状态：new
+
+### F-DOC-009 DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃
+
+- 位置：`packages/document/docx-kit/src/markdown.ts:99`–`:113`（`isTableSeparator`、`parseTableRow`）、`:142`–`:147`（表格行收集）；`packages/document/docx-kit/src/ooxml.ts:132`–`:140`（按最宽行补空单元格）、`:145`–`:155`（表格组装）
+- 维度：E
+- 严重度：Medium
+- 可能性：中
+- 证据：同一次脚本。输入表格：`| 特征 | 说明 |`、`| --- | --- |`、`| A\|B | 含有竖线 |`、`| - | - |`、`| C | 末行 |`。`parseMarkdown` 得到的行是 `[['特征','说明'], ['A\\','B','含有竖线'], ['C','末行']]`：转义竖线被当成单元格边界，整行破折号被当作分隔行丢弃。`tableXml` 取最宽行 3 列，为其余行补空单元格。同一份 Markdown 交给 HTML 渲染器（`marked`）得到 2 列、3 个数据行，`- | -` 行保留。
+- 影响：DOCX 成品表格静默多出一列并少一行数据，HTML 版同一文档却是对的。转义竖线是 GFM 表格的合法写法（单元格要引用正则或「A|B」时常用），整行「-」是常见的「无」占位；两类输入都会让交付表格错位。
+- 最小修复建议：按未转义的 `|` 切分单元格（`\|` 还原为字面竖线），只把表头之后紧邻的那一行分隔行当分隔符，之后的全破折号行按数据保留。补这两条解析用例与一条 HTML/DOCX 表格同形的跨格式用例。
+- 预估工作量：S
+- 是否可自动化：是（上面的表格输入）
+- 状态：new
+
+### F-DOC-010 `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断
+
+- 位置：`packages/document/document-deliver/src/checks.ts:238`–`:270`（`fenceRanges` 与 `quotedRanges` 只认 Markdown 围栏和行内代码）、`:485`–`:499`（`placeholderDrafts` 直接在原始文本上匹配）、`:594`–`:601`（`checkDocumentText` 不区分 HTML 正文与标记）；对照 `:319`–`:360`（`htmlBodyText` 已有 HTML 正文投影，只用于字数预算与空节）
+- 维度：E
+- 严重度：Medium
+- 可能性：中
+- 证据：同一次脚本。Markdown 的 ` ```\n{{case_id}}\n``` ` 得到 `placeholder` 的 `warn`（第 2 行）；HTML 的 `<pre><code>{{case_id}}</code></pre>`、`<code>{{case_id}}</code>`、`<!-- {{case_id}} -->` 以及 `<img src="x.png" alt="[TBD]">` 都得到 `block`。`checks.ts` 的模块注释写明：代码块或行内代码里的占位符只报 `warn`，`block` 只留给引用文本之外的残余占位符。`render_doc_template` 的 HTML 输出会把 Markdown 围栏转成 `<pre><code>`，所以同一份模板内容以 Markdown 交付时是 `warn`，以 HTML 交付时是 `block`。
+- 影响：一份合法的 HTML 交付件，只要展示了代码示例、引用了占位符写法，或保留一条编辑注释，就会被 P0 门禁拒绝登记；模型只能删掉示例或改写内容才过。同一内容换成 Markdown 就能通过，门禁结论取决于导出格式而不是文档内容。注释与属性里的文字并不可见，按「残余占位符」阻断与检查范围声明不符。
+- 最小修复建议：`format: 'html'` 时先投影可见正文（`htmlBodyText` 已实现注释、标记与 script/style 的剥离），再从 `<pre>`/`<code>` 元素推导引用范围；保留行号映射，或在结果里注明行号对应投影文本。另一种做法是只剥离注释与属性值，并把 HTML 代码元素加入 `quotedRanges`。把上面五个输入补成用例。
+- 预估工作量：M
+- 是否可自动化：是（五条输入 + 一条 Markdown/HTML 同内容对照）
 - 状态：new
 
 ## 法律模式

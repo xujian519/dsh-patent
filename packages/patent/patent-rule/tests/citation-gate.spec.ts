@@ -90,6 +90,18 @@ describe('blockingCitationDecisions', () => {
     expect(renderCitationGateDenial('render_patent_document', reasons)).toContain('另有 1 处')
     expect(renderCitationGateDenial('render_patent_document', ['专利法第99条'])).not.toContain('另有')
   })
+
+  it('reads nested strings from a filing draft', () => {
+    const entries = [{ tool: 'build_patent_filing', textArgs: ['draft'] }]
+    const reasons = citationGateBlocking(entries, 'build_patent_filing', {
+      draft: { sections: { claims: '依据专利法第999条。', description: '无引用。' } },
+    })
+    expect(reasons).toHaveLength(1)
+    expect(reasons[0]).toContain('第999条')
+    expect(citationGateBlocking(entries, 'build_patent_filing', {
+      draft: { sections: { claims: '依据专利法第22条第3款。' } },
+    })).toEqual([])
+  })
 })
 
 describe('citationGateUnresolved', () => {

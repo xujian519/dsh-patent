@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-rc.3/patent-workflow-background-approval/guide.md
+/:
+  en: 45a72b718ee8cbf6
+  zh: b3f2a99724166425
+/background-workflow-runs-no-longer-accept-self-declared-approvals:
+  en: c745f9a6dd443fdd
+  zh: ddcb51c97256a594
+/background-workflow-runs-no-longer-accept-self-declared-approvals/change:
+  en: 7ec25ae175da07c8
+  zh: df06b9aa0f63aa7a
+/background-workflow-runs-no-longer-accept-self-declared-approvals/migration:
+  en: 8c490a335e75c204
+  zh: b8fd7482b084325a

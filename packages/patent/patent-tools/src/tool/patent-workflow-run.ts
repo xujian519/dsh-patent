@@ -222,15 +222,16 @@ export interface PatentWorkflowRunDeps extends WorkflowProviderDeps {
   jobs?: () => WorkflowRunJobRegistry | undefined
   /**
    * Read the deployment approval service at gate time. A foreground run asks it
-   * before continuing past an `approval-gate` stage; an absent service (or an
-   * absent lookup, as in a bare tool construction) keeps the pause contract,
-   * including `approveStageIds`.
+   * before continuing past an `approval-gate` stage; an absent service leaves the
+   * gate as a pause. When `approveStageGates` is on, `approveStageIds` is refused
+   * on every run, including a background one.
    */
   approval?: () => ApprovalFace | undefined
   /**
    * Ask that service at each manifest approval gate. Deployment opt-in: off
    * keeps the pause-and-`approveStageIds` contract, so an existing composition
-   * never starts blocking on a prompt it did not configure.
+   * never starts blocking on a prompt it did not configure. On, `approveStageIds`
+   * is refused on every run so a background job cannot self-approve the gate.
    */
   approveStageGates?: boolean
 }
@@ -251,7 +252,7 @@ const DESCRIPTION = [
   'Pass conflictingApplications (a JSON array) to run the A22.2 second-sentence conflicting-application check; entries need filingDate/publicationDate and a caller-judged sameInvention boolean. Conflicting applications are filed before but published on or after the target date, so the prior-art search cannot find them.',
   'Pass evidence (a JSON array) and evidenceDeadline to run the invalidation/reexamination evidence-check stage; it reports form defects, late submissions without a justification, prior-art dates at or after the cutoff, and evidence not linked to a ground or claim.',
   'Pass rejectionDecisionDate and requestDate to run the reexamination admissibility period check, recoveryRequested when a right-recovery procedure was filed, requester and patentee to run its party check, and priorInvalidationDecision (`{grounds, evidenceIds}`) to run the res-judicata check on an invalidation manifest.',
-  'A manifest approval gate either asks the deployment\'s approval service and continues when the user allows it (deployments with approveStageGates on; approveStageIds is refused there, so the decision cannot be self-declared), or — with the switch off, or in a background run — pauses the run for a later re-invoke with approveStageIds; a refusal pauses the run with the decision named. A background run always pauses at the gate, because the approval service only answers inside an open turn. Graph runs pause at their checkpoint and continue with resumeCheckpointId. When caseId is provided, run results, the Mermaid diagram, and graph checkpoints are persisted under `<caseDir>/workflow-runs/`. Requires a model port.',
+  'A manifest approval gate either asks the deployment\'s approval service and continues when the user allows it (deployments with approveStageGates on; approveStageIds is refused there on every run, including a background one, so the decision cannot be self-declared), or — with the switch off — pauses the run for a later re-invoke with approveStageIds; a refusal pauses the run with the decision named. With the switch on, a background run pauses at the gate because the approval service only answers inside an open turn; rerun it in the foreground so the gate can ask. Graph runs pause at their checkpoint and continue with resumeCheckpointId. When caseId is provided, run results, the Mermaid diagram, and graph checkpoints are persisted under `<caseDir>/workflow-runs/`. Requires a model port.',
   'A manifest run holds the turn until it finishes or pauses at an approval gate, so pass run_in_background: true to get a job id at once and keep working (collect with job_output; job_kill stops it at the next stage boundary); graph runs are foreground-only.',
 ].join(' ')
 /** Rule-gate status from the structured `rule_gate` state entry. */
@@ -438,12 +439,14 @@ export function createPatentWorkflowRunTool(deps: PatentWorkflowRunDeps = {}): T
         }
       }
 
-      if (liveGateTarget(deps, input, exec.agent) !== undefined
+      if (deps.approveStageGates === true
         && input.approveStageIds !== undefined
         && input.approveStageIds.length > 0) {
+        // 部署已选择由审批服务取用户决策：模型自报的放行列表一律不作为依据，
+        // 后台运行同样如此，否则换个运行方式就能绕开审批门。
         throw new PatentToolError(
           'invalid_tool_input',
-          'patent_workflow_run: 本部署的审批门直接询问 approval 服务（approveStageGates），approveStageIds 不再作为放行依据；去掉该参数后重跑，让每个审批门自行取用户决策。关闭 approveStageGates 或改用后台运行时才接受该参数。',
+          'patent_workflow_run: 本部署的审批门直接询问 approval 服务（approveStageGates），approveStageIds 不再作为放行依据；去掉该参数后重跑，让每个审批门自行取用户决策。关闭 approveStageGates 才接受该参数。',
           { tool: 'patent_workflow_run' },
         )
       }
@@ -529,8 +532,9 @@ function buildManifestProvider(
  * the approval lookup is wired and resolves a service, a calling agent exists
  * to attribute the question, and the run stays in the caller's turn (a
  * background job outlives it, and the service only answers inside an open
- * turn). A deployment that opted in without mounting the service keeps the
- * pause-and-`approveStageIds` contract, so that route stays available.
+ * turn). A deployment that opted in without a mounted service leaves the gate
+ * as a pause; `approveStageIds` is still refused because the opt-in was
+ * declared.
  * @param deps - tool dependencies carrying the opt-in and the approval lookup.
  * @param input - the tool call arguments.
  * @param agent - the calling agent, when the call has one.

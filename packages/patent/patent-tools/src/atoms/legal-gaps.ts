@@ -275,6 +275,11 @@ export const LEGAL_GAP_CHECKS: Record<LegalGapProfile, readonly LegalGapCheckpoi
       severity: 'block',
       assessKeys: ['problem_check_report'],
       failureKey: 'problem_check_passed',
+      // 未提取到技术问题时检查没有判定对象：报告写明未执行，不能按通过计入。
+      notAssessed: (state) => {
+        const report = state['problem_check_report']
+        return typeof report === 'string' && report.includes('未提取到实际解决的技术问题')
+      },
     },
     {
       id: 'inventiveness',
@@ -511,6 +516,17 @@ function evaluateCheckpoint(
   if (checkpoint.notApplicable?.(state) === true) {
     return { ...base, status: 'not-applicable', evidence: '本程序未触发该法条' }
   }
+  // 「报告说未执行」先于失败判定：没有判定对象的检查不能算实体失败，否则缺输入会被
+  // 读成检出违规。两条既有检查（证据、受理）的 notAssessed 也依赖这一顺序。
+  if (checkpoint.notAssessed?.(state) === true) {
+    const keys = checkpoint.assessKeys.join(' / ')
+    return {
+      ...base,
+      status: 'not-assessed',
+      // 声明了 notAssessed 的检查同时声明评估键：报告存在但本次未执行时，键名可复核。
+      evidence: supplemented(`${keys} 报告本次未执行`),
+    }
+  }
   if (checkpoint.failureKey !== undefined && state[checkpoint.failureKey] === false) {
     return { ...base, status: 'failed', evidence: `state.${checkpoint.failureKey} = false` }
   }
@@ -522,15 +538,6 @@ function evaluateCheckpoint(
         status: 'not-assessed',
         evidence: supplemented(`state.${checkpoint.pendingKey} 有 ${pending} 项待核`),
       }
-    }
-  }
-  if (checkpoint.notAssessed?.(state) === true) {
-    const keys = checkpoint.assessKeys.join(' / ')
-    return {
-      ...base,
-      status: 'not-assessed',
-      // 声明了 notAssessed 的检查同时声明评估键：报告存在但本次未执行时，键名可复核。
-      evidence: supplemented(`${keys} 报告本次未执行`),
     }
   }
   const assessedKey = checkpoint.assessKeys.find(key => hasValue(state[key]))

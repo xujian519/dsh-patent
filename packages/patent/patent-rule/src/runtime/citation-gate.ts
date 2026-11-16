@@ -22,7 +22,7 @@ import { extractLawReferences, loadLawBaselines, verifyCitation } from '@deepsee
 import type { LawBaseline, LawName } from '@deepseek-ai/dsh-patent-law'
 
 import { declaredArgsMatch, type DeclaredArgValue } from './args-match.ts'
-import { structuralGateText } from './structural-gate.ts'
+import { gateTextIssues, structuralGateText } from './structural-gate.ts'
 
 /** 一条交付物引用门禁：哪个工具的哪些入参是制品文本。 */
 export type CitationGateEntry = {
@@ -100,6 +100,28 @@ export function citationGateBlocking(
     reasons.push(...blockingCitationDecisions(structuralGateText(args, entry.textArgs)))
   }
   return reasons
+}
+
+/**
+ * 本次调用无法执行引用门禁的原因（适用条目的制品入参缺失或名字不存在）。
+ * @param entries - the deployment's citation gate.
+ * @param tool - the tool about to run.
+ * @param args - its arguments.
+ * @param parameters - 工具入参声明；调用方能取到时传入。
+ * @returns 去重后的原因；可执行时为空数组。
+ */
+export function citationGateUnresolved(
+  entries: readonly CitationGateEntry[],
+  tool: string,
+  args: unknown,
+  parameters?: Record<string, unknown>,
+): string[] {
+  const issues: string[] = []
+  for (const entry of entries) {
+    if (entry.tool !== tool || !declaredArgsMatch(entry.whenArgs, args)) continue
+    issues.push(...gateTextIssues(tool, entry.textArgs, args, parameters))
+  }
+  return [...new Set(issues)]
 }
 
 /**

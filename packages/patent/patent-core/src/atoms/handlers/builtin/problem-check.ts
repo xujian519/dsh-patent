@@ -308,9 +308,11 @@ export class ProblemCheckHandler implements StageHandler {
     const texts = collectDiffTexts(state, diffKeys)
     const problem = collectProblem(texts)
     if (problem === undefined) {
+      // 没有技术问题就没有可校验的对象：报告如实写未执行，passed 不能写 true，否则
+      // 创造性流程会把一个阻断级法条的未评估项读成通过。
       return {
-        problem_check_report: '实际解决的技术问题合规检查（A22.3 第二步）：未提取到实际解决的技术问题，无法校验（不阻断）',
-        problem_check_passed: true,
+        problem_check_report: '实际解决的技术问题合规检查（A22.3 第二步）：未提取到实际解决的技术问题，本次未执行（不计为通过）',
+        problem_check_passed: false,
         problem_check_violations: [],
       }
     }

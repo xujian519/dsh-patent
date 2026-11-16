@@ -105,19 +105,19 @@ describe('problem-check atom', () => {
     expect(out.problem_check_report).toContain('[提示]')
   })
 
-  it('未提取到技术问题 → 放行并说明原因', async () => {
+  it('未提取到技术问题 → 记为未执行，不能按通过放行', async () => {
     const out = await handler.execute({
       state: { diff: '区别技术特征为：液冷管路；技术启示：无。' },
     })
-    expect(out.problem_check_passed).toBe(true)
+    expect(out.problem_check_passed).toBe(false)
     expect(out.problem_check_violations).toEqual([])
     expect(out.problem_check_report).toContain('未提取到实际解决的技术问题')
-    expect(out.problem_check_report).toContain('不阻断')
+    expect(out.problem_check_report).toContain('本次未执行')
   })
 
-  it('只有特征、没有 diff 文本 → 仍按缺问题放行', async () => {
+  it('只有特征、没有 diff 文本 → 仍按缺问题记为未执行', async () => {
     const out = await handler.execute({ state: { distinguishing_features: ['液冷管路'] } })
-    expect(out.problem_check_passed).toBe(true)
+    expect(out.problem_check_passed).toBe(false)
     expect(out.problem_check_report).toContain('未提取到实际解决的技术问题')
   })
 

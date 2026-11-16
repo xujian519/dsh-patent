@@ -65,8 +65,10 @@ export type RuleCheckOutput = {
   /** Layered pack summary (scope=pack only). */
   packHeader?: string
   packWarnings?: string[]
-  /** 因未提供 `notice` 而未评估的双输入规则 id。 */
+  /** 因未提供 `notice` 或通知书没有可识别的驳回理由而未评估的双输入规则 id。 */
   dualInputSkipped?: string[]
+  /** 提供了 `notice` 但解析不出驳回理由时的显式诊断；与 `dualInputSkipped` 同时出现。 */
+  dualInputNoticeIssue?: string
   /** 提供了 `notice`，但当前 scope 没有可评估的双输入规则时的显式提示。 */
   noticeIgnored?: string
   /**
@@ -143,7 +145,7 @@ function renderRuleCheck(value: RuleCheckOutput): string {
     : ''
   const evaluated = renderEvaluatedTexts(value.evaluated)
   const skipped = value.dualInputSkipped !== undefined && value.dualInputSkipped.length > 0
-    ? `\n双输入规则未评估（未提供 notice）: ${value.dualInputSkipped.join('、')}`
+    ? `\n双输入规则未评估（${value.dualInputNoticeIssue ?? '未提供 notice'}）: ${value.dualInputSkipped.join('、')}`
     : ''
   const ignored = value.noticeIgnored !== undefined ? `\n提示: ${value.noticeIgnored}` : ''
   const blocked = value.blocked
@@ -262,6 +264,7 @@ export function createRuleCheckTool(deps: RuleCheckDeps = {}): ToolDefinition {
           packHeader: { type: 'string' },
           packWarnings: { type: 'array', items: { type: 'string' } },
           dualInputSkipped: { type: 'array', items: { type: 'string' } },
+          dualInputNoticeIssue: { type: 'string' },
           noticeIgnored: { type: 'string' },
           assetWarnings: { type: 'array', items: { type: 'string' } },
         },
@@ -292,6 +295,7 @@ export function createRuleCheckTool(deps: RuleCheckDeps = {}): ToolDefinition {
       const noticeText = args.notice?.trim() ?? ''
       const dualViolations: RuleViolation[] = []
       let dualInputSkipped: string[] | undefined
+      let dualInputNoticeIssue: string | undefined
       let evaluatedNotice: string | undefined
       const noticeIgnored = noticeText.length > 0 && dualRules.length === 0
         ? `scope '${scope}' 没有可评估的双输入规则，notice 未参与判定`
@@ -302,9 +306,16 @@ export function createRuleCheckTool(deps: RuleCheckDeps = {}): ToolDefinition {
         } else {
           const notice = parseOfficeAction(noticeText)
           evaluatedNotice = noticeText
-          for (const rule of dualRules) {
-            const found = evaluateDualRule(rule, { notice, response: args.text })
-            if (found !== null) dualViolations.push(found)
+          if (notice.rejectionTypes.length === 0) {
+            // 通知书是扫描件、版式异常或只写「详见附件」时解析不到驳回理由。没有对照
+            // 对象就不能把两条规则读成通过，按未评估列出并写明原因。
+            dualInputSkipped = dualRules.map(rule => rule.id)
+            dualInputNoticeIssue = '通知书未识别到驳回理由'
+          } else {
+            for (const rule of dualRules) {
+              const found = evaluateDualRule(rule, { notice, response: args.text })
+              if (found !== null) dualViolations.push(found)
+            }
           }
         }
       }
@@ -331,6 +342,7 @@ export function createRuleCheckTool(deps: RuleCheckDeps = {}): ToolDefinition {
           ...(evaluatedNotice !== undefined ? { notice: evaluatedNotice } : {}),
         }),
         ...(dualInputSkipped !== undefined ? { dualInputSkipped } : {}),
+        ...(dualInputNoticeIssue !== undefined ? { dualInputNoticeIssue } : {}),
         ...(noticeIgnored !== undefined ? { noticeIgnored } : {}),
         ...(assetWarnings.length > 0 ? { assetWarnings } : {}),
         ...(packHeader !== undefined ? { packHeader } : {}),

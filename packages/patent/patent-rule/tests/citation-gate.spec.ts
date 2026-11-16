@@ -12,6 +12,7 @@ import { defineContentToolFixture, executeToolFixture } from '@deepseek-ai/dsh-t
 import {
   blockingCitationDecisions,
   citationGateBlocking,
+  citationGateUnresolved,
   renderCitationGateDenial,
 } from '../src/runtime/citation-gate.ts'
 
@@ -91,6 +92,27 @@ describe('blockingCitationDecisions', () => {
   })
 })
 
+describe('citationGateUnresolved', () => {
+  it('names a declared text argument the tool does not accept, or an empty one', () => {
+    const entries = [{ tool: 'render_patent_document', textArgs: ['draft'] }]
+    expect(citationGateUnresolved(entries, 'other', { draft: '专利法第22条' })).toEqual([])
+    expect(citationGateUnresolved(entries, 'render_patent_document', { draft: '专利法第22条' })).toEqual([])
+    expect(citationGateUnresolved(
+      entries,
+      'render_patent_document',
+      { draft: '专利法第22条' },
+      { properties: { draft: {} } },
+    )).toEqual([])
+    expect(citationGateUnresolved(entries, 'render_patent_document', {})).toEqual(['入参 draft 未提供'])
+    expect(citationGateUnresolved(
+      [{ tool: 'render_patent_document', textArgs: ['draftt'] }],
+      'render_patent_document',
+      { draftt: '专利法第22条' },
+      { draft: {} },
+    )).toEqual(['入参 draftt 不在 render_patent_document 的入参声明里'])
+  })
+})
+
 describe('交付物引用门禁', () => {
   it('放行索引中的现行条文', async () => {
     const result = await call(await mount(), '依照专利法第22条第3款评价创造性。')
@@ -102,6 +124,26 @@ describe('交付物引用门禁', () => {
     expect(result.isError).toBe(true)
     expect(result.error?.message).toContain('交付物引用门禁拒绝')
     expect(result.error?.message).toContain('第99条')
+  })
+
+  it('声明与工具入参不一致时拒绝调用，而不是静默放行', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(PatentRule, {
+      rulesDir: rulesDir(),
+      citationGate: [{ tool: 'render_patent_document', textArgs: ['draftt'] }],
+    })
+    ctx.tools.register(documentTool())
+    const result = await executeToolFixture(ctx, {
+      name: 'render_patent_document',
+      callId: ToolCallId('citation-drift'),
+      arguments: { draft: '依照专利法第22条第3款。' },
+      signal,
+    })
+    expect(result.isError).toBe(true)
+    expect(result.error?.message).toContain('门禁无法执行')
+    expect(result.error?.message).toContain('draftt')
   })
 
   it('未声明门禁时不核验制品文本', async () => {

@@ -91,6 +91,91 @@ function collectText(value: unknown, out: string[]): void {
 }
 
 /**
+ * 读取一个工具声明的入参名集合；工具尚未注册时返回 undefined。
+ *
+ * `ToolDefinition.parameters` 是 `defineTool` 投影出的 JSON Schema（`properties` 下
+ * 是入参名）；兼容尚未投影的原始属性映射，避免部署侧手写定义时误判。
+ */
+export type ToolParametersLookup = (tool: string) => Record<string, unknown> | undefined
+
+/**
+ * 工具入参声明里的参数名。
+ * @param parameters - JSON Schema 或原始属性映射。
+ * @returns 参数名集合。
+ */
+function toolParameterNames(parameters: Record<string, unknown>): Set<string> {
+  const properties = jsonRecord(parameters['properties'])
+  return new Set(Object.keys(properties ?? parameters))
+}
+
+/**
+ * 一条声明里不在目标工具入参 schema 中的名字。
+ * @param tool - 工具名。
+ * @param textArgs - 声明为制品文本的入参名。
+ * @param lookup - 工具入参读取器。
+ * @returns 未知入参名；工具未注册时为空数组（留给运行期核对）。
+ */
+function unknownTextArgs(
+  tool: string,
+  textArgs: readonly string[],
+  lookup: ToolParametersLookup,
+): string[] {
+  const parameters = lookup(tool)
+  if (parameters === undefined) return []
+  const known = toolParameterNames(parameters)
+  return textArgs.filter(name => !known.has(name))
+}
+
+/**
+ * 门禁声明的 `textArgs` 与目标工具入参不一致时的加载期告警。
+ * @param entries - 声明了工具名与制品入参的条目。
+ * @param lookup - 工具入参读取器。
+ * @returns 每条不一致的可读说明；工具未注册时跳过。
+ */
+export function textArgDeclarationIssues(
+  entries: readonly { tool: string; textArgs: readonly string[] }[],
+  lookup: ToolParametersLookup,
+): string[] {
+  const issues: string[] = []
+  for (const entry of entries) {
+    for (const name of unknownTextArgs(entry.tool, entry.textArgs, lookup)) {
+      issues.push(`${entry.tool} 的入参声明里没有 ${name}`)
+    }
+  }
+  return issues
+}
+
+/**
+ * 本次调用无法执行门禁的原因：入参名不在工具声明里，或声明入参没有出现在本次调用中。
+ *
+ * 缺少声明的制品入参不是「没有违规」：声明与工具入参漂移，或调用漏了承载制品的字段时，
+ * 门禁看不到任何制品文本，必须拒绝，不能放行未经判定的制品。
+ * @param tool - 工具名。
+ * @param textArgs - 声明为制品文本的入参名。
+ * @param args - 本次调用入参。
+ * @param parameters - 工具入参声明；调用方能取到时传入。
+ * @returns 无法执行的原因；可执行时为空数组。
+ */
+export function gateTextIssues(
+  tool: string,
+  textArgs: readonly string[],
+  args: unknown,
+  parameters?: Record<string, unknown>,
+): string[] {
+  const issues: string[] = []
+  if (parameters !== undefined) {
+    const known = toolParameterNames(parameters)
+    for (const name of textArgs) {
+      if (!known.has(name)) issues.push(`入参 ${name} 不在 ${tool} 的入参声明里`)
+    }
+  }
+  const record = jsonRecord(args)
+  const missing = textArgs.filter(name => record === null || !(name in record))
+  if (missing.length > 0) issues.push(`入参 ${missing.join('、')} 未提供`)
+  return issues
+}
+
+/**
  * 从工具入参取出制品文本：按声明顺序拼接各入参里的全部字符串。
  * @param args - 工具调用入参（模型侧的 JSON 值——按解析边界做类型收窄）。
  * @param textArgs - 承载制品文本的入参名。
@@ -112,6 +197,7 @@ export function structuralGateText(args: unknown, textArgs: readonly string[]): 
  * 问题收成一次加载失败，交给 plugin 加载期抛出。
  * @param ruleSet - 全量规则集。
  * @param entries - 部署声明的门禁条目。
+ * @param lookup - 工具入参读取器；给出时核对每条 `textArgs` 是否为该工具的入参。
  * @returns 运行计划（已解析条目 + 告警）。
  * @throws StructuralGateConfigError - 有条目声明 `strict` 且无法按其声明生效时；
  * 消息逐条列出全部这样的条目，一次报全而不是只报第一条。
@@ -119,6 +205,7 @@ export function structuralGateText(args: unknown, textArgs: readonly string[]): 
 export function resolveStructuralGate(
   ruleSet: RuleSet,
   entries: readonly StructuralGateEntry[],
+  lookup?: ToolParametersLookup,
 ): StructuralGatePlan {
   const byId = new Map(ruleSet.rules.map(rule => [rule.id, rule]))
   const warnings: string[] = []
@@ -134,6 +221,12 @@ export function resolveStructuralGate(
     if (entry.textArgs.length === 0) {
       report('未声明承载制品文本的 textArgs', '该条不生效')
       continue
+    }
+    if (lookup !== undefined) {
+      // 工具尚未注册时无法核对（加载顺序由部署决定），运行期 gateTextIssues 会补核。
+      for (const name of unknownTextArgs(entry.tool, entry.textArgs, lookup)) {
+        report(`入参 ${name} 不在 ${entry.tool} 的入参声明里`, '运行期会拒绝该工具的调用')
+      }
     }
     const rules: ConstitutionalRule[] = []
     for (const id of entry.ruleIds) {
@@ -185,6 +278,41 @@ export function structuralGateViolations(
     violations.push(...evaluation.violations.filter(violation => violation.action === 'block'))
   }
   return violations
+}
+
+/**
+ * 本次调用无法执行结构门禁的原因（适用条目的制品入参缺失或名字不存在）。
+ * @param plan - 运行计划。
+ * @param tool - 本次调用的工具名。
+ * @param args - 本次调用的入参。
+ * @param parameters - 工具入参声明；调用方能取到时传入。
+ * @returns 去重后的原因；可执行时为空数组。
+ */
+export function structuralGateUnresolved(
+  plan: StructuralGatePlan,
+  tool: string,
+  args: unknown,
+  parameters?: Record<string, unknown>,
+): string[] {
+  const issues: string[] = []
+  for (const { entry } of plan.entries) {
+    if (entry.tool !== tool || !declaredArgsMatch(entry.whenArgs, args)) continue
+    issues.push(...gateTextIssues(tool, entry.textArgs, args, parameters))
+  }
+  return [...new Set(issues)]
+}
+
+/**
+ * 渲染门禁无法执行的拒绝理由：声明与工具入参或本次调用不一致。
+ * @param tool - 被拒绝的工具名。
+ * @param issues - 无法执行的原因。
+ * @returns 模型与部署方可读的拒绝理由。
+ */
+export function renderGateUnavailableDenial(tool: string, issues: readonly string[]): string {
+  return [
+    `门禁无法执行 ${tool}：${issues.join('；')}。`,
+    '门禁声明与工具入参或本次调用不一致，拒绝该次调用，避免制品未经判定就渲染或落盘。',
+  ].join('')
 }
 
 /**

@@ -209,6 +209,17 @@ describe('rule_check', () => {
     expect(text(result)).toContain(`notice ${notice.length} 字 · `)
   })
 
+  it('lists the dual-input rules as unevaluated when the notice has no recognisable ground', async () => {
+    const tool = createRuleCheckTool({ loader: () => dualRules, synonyms: () => new Map() })
+    const ctx = await ctxWith(tool)
+    const notice = '第一次审查意见通知书\n申请人：某某公司\n本申请经初步审查，现进入实质审查程序。'
+    const result = await execute(ctx, 'rule_check', { text: '答复正文。', scope: 'patent-oa-response', notice }, 'r-6b')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    expect(text(result)).toContain('通知书未识别到驳回理由')
+    expect(text(result)).toContain('PR-OA-008、PR-OA-009')
+  })
+
   it('reports a notice that the selected scope cannot evaluate', async () => {
     const ruleSet: RuleSet = { rules: [{ id: 'r1', name: '禁止词', severity: 'critical', action: 'block', check: { type: 'keyword_blocklist', keywords: ['禁止词'] } }] }
     const tool = createRuleCheckTool({ loader: () => ruleSet, synonyms: () => new Map() })

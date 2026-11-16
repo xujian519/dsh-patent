@@ -50,7 +50,14 @@
 - Day 17 已完成：B 维度法律模式与共享机制全域（`legal-evidence`、`legal-knowledge`、`legal-law`、`knowledge-core`、`law-core`），新增 4 条发现并给出净减少量；YAML 资产读取、引用文法与工具注册、SQLite+FTS 索引均判为非重复，`knowledge-core` 的跨域原语有 5–13 个消费者，分叉只在引擎骨架层（数据驱动 vs 抽象模板），因此不合并；4 类兼容层候选（两处空 `override search`、构造归一、`shared/` 再导出文件）逐个判定后全部保留。
 - Day 18 已完成：B 维度视频模式全域（`video-mode`、`video-bundle`、`ui-video-studio`），新增 3 条发现并给出净减少量；`cloud-common`/`minimax-common` 的凭据、错误分类与下载已单源，未收口的是 submit/poll 骨架（ignore 标记掩盖，拷贝已漂移）、`messageOf` 三份与失败助手异序；工具动作分发与 sibling studio 骨架均判为非重复，重复集中在客户端第二份文档文法与 store 的写路径骨架。
 - Day 19 已完成：B 维度横向复核与汇总。D13–D18 的 21 条新发现连同 2 条跨域发现按修法收敛为四簇（固定前导/尾部、schema 双源、同一概念多接受集、共享原语未复用），新增 2 条跨域发现：F-CROSS-001（四域另有 4 份 `messageOf`/`errorText` 与 1 份可并的 `asRecord`，而 `dsh-value` 已有原语）与 F-CROSS-002（`patent-tools` 导入未声明的 `dsh-value`，`verify-package-dependencies` 只校验「声明→使用」方向，运行产物靠打包内联掩盖）；净减少去重后合计 −487~−572 行，按「零架构风险 → 需人工确认 → 需形态决策」切成 4 个批次；四域 63 条零外部提及导出中零死代码（62 条为多余 `export`、1 条为已登记的公开面）；preset 实为 8 个而非 4 个、56 个不同包，四道 preset 门禁已覆盖漂移，H09 判为推翻。
-- 当前进度：A 安全维度（Day 6–12）与 B 维度（Day 13–19）已完成；下一日为 Day 20，C 优化开始（专利域-1：`patent-tools`、`patent-core` 的热点路径）。
+- Day 20 已完成：C 维度专利域-1（`patent-tools`、`patent-core`）。`benchmarks/` 没有专利用例（OBS-008），本地用合成文本测了规则评估、说明书校验、权利要求形式检查、IPC 索引与 `cloneState`。全量 125 条规则对约 4 万字的热调用中位数 10.67ms，默认输出门禁 14 条为 7.15ms；没有新的 C 维度发现。Day 19 关于「四份状态读取器等于四次全量解析」的交接不成立。
+- Day 21 已完成：C 维度专利域-2（`patent-knowledge`、`patent-data`）。查询库是默认目录下的 `knowledge-lite.db`（81551 篇文档、144188 个分块）。FTS 命中中位数 75.15ms；8ms 假加载的缓存命中是 0ms。热路径索引都在，EXPLAIN 走查找。新增 F-PAT-032：判例零命中或凑不满条数的短查询会整表解压 LIKE，实测 4.57 秒与 4.77 秒。
+- Day 22 已完成：C 维度专利域-3（`patent-workflow`、`patent-teams`）。工作流结束时写一次运行结果，1601397 字节的合成结果落盘中位数 11.01ms。团队由事件唤醒，没有轮询循环。一次状态投影的磁盘部分中位数 3.12ms。没有新的 C 维度发现。
+- Day 23 已完成：C 维度文档模式（`office-kit`、`docx-kit`、`doc-template`、`document-deliver`）。约 40 万字的文书渲染单次 22.09ms，80MB 输出读取中位数 8.65ms。取消路径会杀掉本次 helper 并删除临时目录。H03 改为取消与异常路径未发现泄漏。没有新的 C 维度发现。
+- Day 24 已完成：C 维度法律模式与共享机制（`legal-knowledge`、`legal-law`、`legal-evidence`、`law-core`、`knowledge-core`）。本机没有默认查询库。合成 40000 条法规的零命中中位数 8.47ms，20000 条判例 18.73ms。民法典首次解析 63.32ms，同一索引再取 0.02ms。没有新的 C 维度发现。
+- Day 25 已完成：C 维度视频模式（`video-mode`、`ui-video-studio`）。运行时默认 250ms 醒一次，云 provider 的状态间隔是 2 秒或 10 秒；1000ms 窗口里桩状态接口只打了 1 次。8MiB 下载热中位数 0.68ms。睡眠脚本在中止后 217.69ms 退出，进程不在。没有新的 C 维度发现。
+- Day 26 已完成：C 维度横向（子进程、临时文件、监听器、取消与并发）。配合退出的子进程在宽限 5000 下 32.88ms 以 SIGTERM 结束；忽略 SIGTERM 的子进程在宽限 400 下 435.3ms 以 SIGKILL 结束，进程不在。16 个立即退出的脚本 44.41ms。C 维度仅有的新发现仍是 F-PAT-032。
+- 当前进度：A 安全维度（Day 6–12）、B 维度（Day 13–19）与 C 维度（Day 20–26）已完成；下一日为 Day 27，D 测试缺口（专利域-1：`patent-tools`、`patent-core`）。
 - 已确认：45 天周期、包含 `packages/law`、视频按实验特性、在 Node 24 补跑构建与覆盖率基线。
 - 本目录的中文单语文档已加入 `scripts/translation-pairing.manifest.json` 的豁免清单；`verify-translation-pairing` 复跑通过。
 

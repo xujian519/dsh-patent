@@ -73,8 +73,8 @@ export type LegalEvidenceFinding = {
 /**
  * 证据规则（YAML 资产 legal-evidence-rules.yaml 的条目形态）。
  *
- * 规则是声明性元数据：`check` 与 `conditions` 记录判定器执行的检查，
- * 引擎不解释它们；可执行逻辑位于各类型判定器。
+ * `general` 规则由引擎执行：`check` 选择通用判定，`severity` 进入发现。类型专属
+ * 规则的 `check` 与 `conditions` 仍是声明性元数据，可执行逻辑位于各类型判定器。
  */
 export type LegalEvidenceRule = {
   /** 规则 id（如 LEGAL-EVI-001）。 */

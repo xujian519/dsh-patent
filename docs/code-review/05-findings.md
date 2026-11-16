@@ -100,6 +100,9 @@
 | F-DOC-010 | `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断 | DOC | E | Medium | 中 | new |
 | F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | fixed |
 | F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | confirmed |
+
+| F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | confirmed |
+| F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | fixed |
 | F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | confirmed |
 | F-LEG-004 | 两域默认引用策略分叉，缺对照说明与回归护栏 | LEG | E | Low | 中 | confirmed |
 | F-LEG-005 | 专利知识库降级日志写死 `[sati]` 前缀 | LEG | B | Low | 高 | confirmed |
@@ -1667,6 +1670,20 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`baseline.spec.ts` 新增三条用例（同步加载、异步加载、先后读取两个清单），锁定名字替换与「旧名字退化为未识别片段」的失败方向。
 
 验证：`pnpm exec vitest run packages/legal/legal-law/tests` 138 用例通过；`baseline.ts`、`reference.ts` 在聚焦 `--coverage.include` 下均为 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`verify-translation-pairing` 重录后通过。
+
+### 批次 E8：证据通用规则改由 YAML 驱动（2026-11-17）
+
+用户要求继续修复后完成。只改 `legal-evidence` 通用规则的来源，不改三性评分与类型判定器。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-LEG-002 | `checkGeneralFindings` 改为遍历 YAML 的 `general` 条目：`check` 经固定映射（`hasFactToProve`／`collectionLegal`）取判定函数，`ruleId`、`severity` 取自资产；未知 `check` 在加载期记警告且该条不执行。未加载资产时沿用与随包资产一致的两条默认通用规则 | `legal-evidence/src/engine.ts`、`src/types.ts`、`assets/legal-evidence-rules.yaml` |
+
+**行为变化**：部署修改 YAML 里 `LEGAL-EVI-GEN-001`／`GEN-002` 的 `severity` 现在会改变发现与「严重问题」计数；删除条目即不再执行该通用检查。类型专属规则的 `check` 仍是声明性元数据，判定逻辑位于各类型判定器。
+
+**既有测试行为**：`engine.spec.ts` 新增四条用例（YAML 声明驱动 id/severity、资产不声明通用规则时不执行、未知 `check` 记警告、未加载资产时保留两条默认规则）；`rule-table.spec.ts` 的 YAML↔发现对应断言不变。
+
+验证：`pnpm exec vitest run packages/legal/legal-evidence/tests` 173 用例通过；`engine.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`verify-translation-pairing` 重录后通过。
 
 ## 复核记录
 

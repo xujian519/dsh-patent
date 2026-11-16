@@ -135,6 +135,84 @@ rules:
     expect(rules[0]!.id).toBe('TEST-001')
   })
 
+  it('drives general rules from the asset declaration', () => {
+    const yamlText = `
+weights:
+  relevance: 0.35
+  legality: 0.3
+  authenticity: 0.35
+rules:
+  - id: GEN-COLLECT
+    description: 证据收集应合法
+    evidence_type: general
+    check: collectionLegal
+    severity: warning
+`
+    const engine = new LegalEvidenceEngine(yamlText, 'test.yaml')
+    const input: LegalEvidenceInput = {
+      evidenceId: 'gen-collect',
+      evidenceType: 'documentary',
+      factToProve: '合同关系存在',
+      hasOriginal: true,
+      signatureVerified: true,
+      formationTimeClear: true,
+    }
+    const result = engine.assess(input)
+
+    const finding = result.findings.find(f => f.ruleId === 'GEN-COLLECT')
+    expect(finding).toEqual({
+      ruleId: 'GEN-COLLECT',
+      passed: false,
+      reason: '证据收集合法性未确认',
+      severity: 'warning',
+    })
+    // The asset's rule list is the only source: the omitted default rules do not run.
+    expect(result.findings.some(f => f.ruleId === 'LEGAL-EVI-GEN-001')).toBe(false)
+    expect(result.reasoning).not.toContain('严重问题')
+  })
+
+  it('runs no general rule when the asset declares none', () => {
+    const yamlText = `
+weights:
+  relevance: 0.35
+  legality: 0.3
+  authenticity: 0.35
+rules: []
+`
+    const engine = new LegalEvidenceEngine(yamlText, 'test.yaml')
+    const result = engine.assess({ evidenceId: 'no-general', evidenceType: 'documentary' })
+
+    expect(result.findings.some(f => f.ruleId.startsWith('LEGAL-EVI-GEN'))).toBe(false)
+  })
+
+  it('warns when a general rule names a check the engine cannot run', () => {
+    const yamlText = `
+weights:
+  relevance: 0.35
+  legality: 0.3
+  authenticity: 0.35
+rules:
+  - id: GEN-TYPO
+    description: 写错检查名
+    evidence_type: general
+    check: hasFactToProveTypo
+    severity: critical
+`
+    const engine = new LegalEvidenceEngine(yamlText, 'test.yaml')
+
+    expect(engine.getWarnings().join('\n')).toContain('GEN-TYPO')
+    expect(engine.getWarnings().join('\n')).toContain('hasFactToProveTypo')
+    const result = engine.assess({ evidenceId: 'typo', evidenceType: 'documentary' })
+    expect(result.findings.some(f => f.ruleId === 'GEN-TYPO')).toBe(false)
+  })
+
+  it('keeps the two general checks when no asset is loaded', () => {
+    const result = new LegalEvidenceEngine().assess({ evidenceId: 'default', evidenceType: 'documentary' })
+
+    expect(result.findings.filter(f => f.ruleId.startsWith('LEGAL-EVI-GEN')).map(f => [f.ruleId, f.severity]))
+      .toEqual([['LEGAL-EVI-GEN-001', 'critical'], ['LEGAL-EVI-GEN-002', 'critical']])
+  })
+
   it('returns rules by evidence type', () => {
     const yamlText = `
 weights:

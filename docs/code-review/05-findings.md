@@ -562,7 +562,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 维度：D
 - 严重度：Medium
 - 可能性：低
-- 证据：`packages/patent/patent-tools/tests` 下没有 `sha1`。fetch 兜底用例（`patent-pdf-download.spec.ts:130`–`:154`）让 ego 返回 `fallback`，响应体是 `%PDF-1.4 ` 加 600 个 `x`，`Content-Type` 为 `application/pdf`，断言工具文本含「fetch 兜底」。该路径会 `writeFileAtomic`（`:393`）再把 `sha1` 写入 `.MANIFEST.jsonl`。续传用例自己拼接清单，字段只有 `patent`、`status`、`path`、`size`、`ts`（`:157`–`:165`），摘要对错都不影响跳过。
+- 证据：`packages/patent/patent-tools/tests` 下没有 `sha1`。fetch 兜底用例（`patent-pdf-download.spec.ts:130`–`:154`）让 ego 返回 `fallback`，响应体是 `%PDF-1.4 ` 加 600 个 `x`，`Content-Type` 为 `application/pdf`，断言工具文本含「fetch 兜底」。该路径会在 `packages/patent/patent-tools/src/tool/patent-pdf-download.ts:393` 调用 `writeFileAtomic`，再把 `sha1` 写入 `.MANIFEST.jsonl`。续传用例自己拼接清单，字段只有 `patent`、`status`、`path`、`size`、`ts`（`:157`–`:165`），摘要对错都不影响跳过。
 - 影响：把 `sha1` 写成常量、改成路径字符串的摘要，或从清单对象里拿掉该字段，现有「下载完成」文案断言仍然通过。续传今天只比较文件大小，用户当次下载结果不变。清单里的摘要可以和落盘字节分叉，以后按摘要核对时没有回归用例。
 - 最小修复建议：沿用 `:130` 的 fetch 兜底输入。期望 `.MANIFEST.jsonl` 新增一行，`status` 为 `ok`，`size` 等于落盘字节数，`sha1` 等于该文件内容的 sha1。本用例不要求摘要不符时重新下载；那条比较当前只存在于 `fileSizeMatches`。
 - 预估工作量：S
@@ -571,7 +571,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 
 ### F-PAT-035 团队等待结束后不检查 abort 监听是否摘掉
 
-- 位置：`packages/patent/patent-teams/src/team-activity.ts:81`（`addEventListener`）、`:64`（`removeEventListener`）；`packages/patent/patent-teams/src/members.ts:537`（`addEventListener`）、`:542`（`finally` 里的 `removeEventListener`）
+- 位置：`packages/patent/patent-teams/src/team-activity.ts:82`（`addEventListener`）、`:64`（`removeEventListener`）；`packages/patent/patent-teams/src/members.ts:537`（`addEventListener`）、`:542`（`finally` 里的 `removeEventListener`）
 - 维度：D
 - 严重度：Medium
 - 可能性：中

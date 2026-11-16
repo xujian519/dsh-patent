@@ -156,14 +156,10 @@ export {
   type PatentComplianceLoadResult,
 } from './runtime/patent-compliance.ts'
 export {
-  gateTextIssues,
-  renderGateUnavailableDenial,
   renderStructuralGateDenial,
   resolveStructuralGate,
   structuralGateText,
-  structuralGateUnresolved,
   structuralGateViolations,
-  textArgDeclarationIssues,
   StructuralGateConfigError,
   type ResolvedStructuralGateEntry,
   type StructuralGateEntry,

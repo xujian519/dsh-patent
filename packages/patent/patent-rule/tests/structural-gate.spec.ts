@@ -10,6 +10,11 @@ import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as PatentRule from '@deepseek-ai/dsh-patent-rule'
 import type { StructuralGateEntry } from '@deepseek-ai/dsh-patent-rule'
 import { defineContentToolFixture, executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
+import {
+  renderGateUnavailableDenial,
+  structuralGateUnresolved,
+  textArgDeclarationIssues,
+} from '../src/runtime/structural-gate.ts'
 
 const signal = new AbortController().signal
 
@@ -168,7 +173,7 @@ describe('resolveStructuralGate', () => {
   it('批量核对入参名：读 JSON Schema 的 properties，未注册工具跳过', () => {
     const lookup = (tool: string): Record<string, unknown> | undefined =>
       tool === 'render_patent_document' ? { type: 'object', properties: { draft: {} } } : undefined
-    expect(PatentRule.textArgDeclarationIssues([
+    expect(textArgDeclarationIssues([
       { tool: 'render_patent_document', textArgs: ['draft'] },
       { tool: 'render_patent_document', textArgs: ['draftt'] },
       { tool: 'unregistered_tool', textArgs: ['text'] },
@@ -320,9 +325,9 @@ describe('structuralGateUnresolved', () => {
 
   it('取不到声明入参的文本时给出拒绝原因，有文本时为空', () => {
     const plan = planOf(makeRulesFixture(), entries)
-    expect(PatentRule.structuralGateUnresolved(plan, 'render_patent_document', { sections: { claims: '一种装置。' } }))
+    expect(structuralGateUnresolved(plan, 'render_patent_document', { sections: { claims: '一种装置。' } }))
       .toEqual([])
-    expect(PatentRule.structuralGateUnresolved(plan, 'render_patent_document', { draft: '一种装置。' }))
+    expect(structuralGateUnresolved(plan, 'render_patent_document', { draft: '一种装置。' }))
       .toEqual(['入参 sections 未提供'])
   })
 
@@ -330,7 +335,7 @@ describe('structuralGateUnresolved', () => {
     const plan = planOf(makeRulesFixture(), [
       { tool: 'render_patent_document', textArgs: ['draftt'], ruleIds: ['TEST-LAYOUT'] },
     ])
-    expect(PatentRule.structuralGateUnresolved(
+    expect(structuralGateUnresolved(
       plan,
       'render_patent_document',
       { draftt: '一种装置。' },
@@ -347,12 +352,12 @@ describe('structuralGateUnresolved', () => {
         whenArgs: { template: 'claims-spec' },
       },
     ])
-    expect(PatentRule.structuralGateUnresolved(plan, 'other_tool', {})).toEqual([])
-    expect(PatentRule.structuralGateUnresolved(plan, 'render_patent_document', { template: 'oa-response' })).toEqual([])
+    expect(structuralGateUnresolved(plan, 'other_tool', {})).toEqual([])
+    expect(structuralGateUnresolved(plan, 'render_patent_document', { template: 'oa-response' })).toEqual([])
   })
 
   it('拒绝理由说明门禁无法执行及原因', () => {
-    const text = PatentRule.renderGateUnavailableDenial('render_patent_document', ['入参 draft 未提供'])
+    const text = renderGateUnavailableDenial('render_patent_document', ['入参 draft 未提供'])
     expect(text).toContain('门禁无法执行 render_patent_document')
     expect(text).toContain('入参 draft 未提供')
     expect(text).toContain('拒绝该次调用')

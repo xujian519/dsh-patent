@@ -64,6 +64,7 @@
 | F-PAT-029 | `escapeRegExp` 专利域内 4 份命名封装 + 6 处内联，仓内无共享实现 | PAT | B | Low | 高 | new |
 | F-PAT-030 | `patent-kg-adapter` 邻居扩展循环 3 份，两个检索引擎 `backfillContent` 近克隆 | PAT | B | Low | 高 | new |
 | F-PAT-031 | `templateDraft` 的 `openEnd` 是死字段，两处用 `indexOf` 重新定位已命中位置 | PAT | B | Low | 高 | new |
+| F-PAT-032 | 判例零命中检索整表解压 LIKE，约 4.6 秒 | PAT | C | Medium | 中 | new |
 | F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | confirmed |
 | F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | confirmed |
 | F-DOC-003 | OOXML 读取限额两包各写一份字面量 | DOC | B | Low | 高 | fixed |
@@ -518,6 +519,19 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：删除 `openEnd` 字段与其 JSDoc；`:123`、`:168` 改用 `hit.start`/`first.start`。净减少：−3 行，去掉 2 处全串重扫。
 - 预估工作量：S
 - 是否可自动化：是（未读取字段可由类型检查或 lint 发现）
+- 状态：new
+
+### F-PAT-032 判例零命中检索整表解压 LIKE，约 4.6 秒
+
+- 位置：`packages/patent/patent-knowledge/src/case-law/case-law-search.ts:137`–`146`（`stmtSearchLike` 在 WHERE 里对每篇最长 chunk 调用 `sati_uncompress`）、`:352`–`364`（没有 `search_prefix` 时走这条）；`packages/law/knowledge-core/src/fts-search.ts:39`（不足 3 字、无 FTS 或 FTS 已降级时直接 LIKE）、`:53`–`:55`（FTS 空结果再 LIKE）；`packages/patent/patent-knowledge/src/install.ts:175`（`searchPrefix ?? false`）；`packages/patent/patent-knowledge/src/config.ts:31`–`32`（查询库优先 `knowledge-lite.db`）
+- 维度：C
+- 严重度：Medium
+- 可能性：中
+- 证据：Day 21，Node `v24.19.0`，只读打开本机查询库 `~/.dsh/knowledge/knowledge-lite.db`（3543654400 字节）。`documents` 81551 行，`chunks` 144188 行，`docs_fts` 为 trigram contentless、144079 行。查询库和 `~/.sati/knowledge/knowledge.db` 都没有 `search_prefix`。EXPLAIN 为 `SCAN documents`，再用 `idx_chunks_document` 取最长 chunk。`CaseLawSearchEngine.search`：`创造性` 走 FTS，5 条，8 次中位数 75.15ms；`专利`（2 字，标题凑满）0.72ms；`锆钚`（2 字，0 条）4772.49ms；`锆钚钨`（3 字，FTS 未命中后再 LIKE，0 条）4569.07ms。同一词在 `KnowledgeLawSearch` 上 0 条、4.18ms（`law_article` 96 行、`guideline_rule` 112 行）。
+- 影响：对判例库的短查询，或 trigram 没有命中的词，会在返回空结果前扫描全部文档并解压每篇最长分块。标题能很快凑满条数的常见词停留在 1ms 内，FTS 命中停留在 75ms 一带。法规引擎的文档类型范围小，同一条回退是 4ms 级。
+- 最小修复建议：三字及以上的 trigram 未命中，改为只检查 `docs_fts` 没覆盖的那 109 个 chunk，停止对 81551 篇调用 `sati_uncompress`。改动放在判例引擎。共享阶梯同时服务法律域，法律域这次的零命中是 4.18ms，留到 Day 24。不足三字的全文子串仍会扫表；要消掉这 4.8 秒，使用已有的 `--search-prefix`。该开关把召回限制在每篇最长 chunk 的前 512 个码点，`searchPrefix` 保持默认关闭。
+- 预估工作量：S
+- 是否可自动化：是（小型夹具断言三字零命中不再执行 `stmtSearchLike`。本机 4.6 秒的数字不写进单测）
 - 状态：new
 
 ### Day 10 定向结论：法律域与共享层无安全发现
@@ -991,6 +1005,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 | OBS-005 | `docs/code-review/` 中文单语文档会被 `verify-translation-pairing` 判定为缺配对 | 修复前实测 55 个 `.md` 全部报错 | 2026-11-15 已按用户确认在 `scripts/translation-pairing.manifest.json` 加入 `"docs/code-review/"`；复跑退出码 0 | fixed |
 | OBS-006 | Node 24 全量 `test:coverage` 退出码 1：10 个测试文件、13 个用例失败；`ERROR: Coverage` 为 0；未产出覆盖率百分比 | 覆盖率基线暂缺百分比；失败多为环境相关 | 在 CI 覆盖率 lane 或提高测试超时后复跑；单独复核 watch-config 与 plugin-market git 两条 | new |
 | OBS-007 | 四域类型逃逸计数：patent 82 `any` / 159 `as unknown` / 575 非空断言；document 18/11/13；legal 11/0/44；law 0/0/1；video-mode 5/0/0 | `as unknown` 已被 `no-unknown-casts` 基线冻结，数量本身不是回归 | 精简维度只处理能消除的双重断言，不新增基线条目 | new |
+| OBS-008 | `benchmarks/` 的 9 个目录都是会话、折叠、终端与浏览器重连，没有专利域用例 | C 维度不能从现有性能门禁读到冷启动、单次工具或全流程基线；Day 20 改用一次性本地脚本测确定性路径，模型与网络未计入 | 专利域若要进持续门禁，应在 `benchmarks/` 加一条用户路径，审阅脚本不留在仓库里。Day 21 已用一次性脚本测本地缓存和 `knowledge-lite.db`，检索网络与 PDF 仍未计入。Day 22 用一次性脚本测了团队状态文件、邮箱和一次运行结果落盘，模型耗时未计入。Day 23 用一次性脚本测了文书渲染、输出读取和拷贝，LibreOffice 引擎未启动。Day 24 用一次性脚本测了法律域合成库、法条按需加载和证据规则解析，模型与网络未计入。本机默认查询库不存在。Day 25 用一次性脚本测了视频轮询睡眠、桩下载、参考图读入编码、工作室串行 stat、进程内锁，以及用睡眠脚本代替 ffmpeg 的取消，模型与云端网络未计入，真实 ffmpeg 未启动。Day 26 用一次性脚本测了共享子进程的取消宽限、16 路立即退出和 spill 目录，模型与网络未计入；真实 ffmpeg、Chrome、Python、Inkscape 与 LibreOffice 未启动 | new |
 
 ## 记录规则
 

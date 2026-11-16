@@ -270,6 +270,98 @@ it('quote 不在源文（sourcePath 提供）→ 打回重做 → 第二次好�
   }
 })
 
+it('源文可读时计入覆盖的行留空 quote → 打回重做', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cc-src-'))
+  const sourcePath = join(dir, 'd1.txt')
+  writeFileSync(sourcePath, SOURCE_TEXT, 'utf8')
+  try {
+    const prompts: string[] = []
+    let calls = 0
+    const chart = goodChart() as { rows: Array<Record<string, unknown>> }
+    chart.rows[0]!.quote = ''
+    const provider: StageProvider = {
+      callLLM: async (prompt: string) => {
+        calls += 1
+        prompts.push(prompt)
+        return calls === 1 ? JSON.stringify(chart) : JSON.stringify(goodChart())
+      },
+    }
+    const handler = new ClaimChartHandler()
+    const state = await handler.execute({
+      state: {
+        claim: CLAIM,
+        chart_source_roots: [dir],
+        chart_targets: JSON.stringify([{ id: 'D1', kind: 'prior-art', title: '对比文件1', sourcePath }]),
+        chart_mode: 'invalidity',
+      },
+      provider,
+    })
+    expect(calls).toBe(2)
+    expect(prompts[1]!).toMatch(/必须提供非空 quote/)
+    expect(typeof state.claim_chart_doc).toBe('string')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+it('同一要素与目标重复出现 → 打回重做', async () => {
+  const prompts: string[] = []
+  let calls = 0
+  const chart = goodChart() as { rows: Array<Record<string, unknown>> }
+  chart.rows.push({ elementId: '1a', targetId: 'D1', quote: '', pinCite: '', mapping: 'not-found' })
+  const provider: StageProvider = {
+    callLLM: async (prompt: string) => {
+      calls += 1
+      prompts.push(prompt)
+      return calls === 1 ? JSON.stringify(chart) : JSON.stringify(goodChart())
+    },
+  }
+  const handler = new ClaimChartHandler()
+  const state = await handler.execute({
+    state: {
+      claim: CLAIM,
+      chart_targets: JSON.stringify([{ id: 'D1', kind: 'prior-art', title: '对比文件1' }]),
+      chart_mode: 'invalidity',
+    },
+    provider,
+  })
+  expect(calls).toBe(2)
+  expect(prompts[1]!).toMatch(/重复出现/)
+  expect(typeof state.claim_chart_doc).toBe('string')
+})
+
+it('源文可读时 not-found 行留空 pin-cite 不触发格式拒绝', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cc-src-'))
+  const sourcePath = join(dir, 'd1.txt')
+  writeFileSync(sourcePath, SOURCE_TEXT, 'utf8')
+  try {
+    const chart = goodChart() as { rows: Array<Record<string, unknown>> }
+    chart.rows[2]!.pinCite = ''
+    let calls = 0
+    const provider: StageProvider = {
+      callLLM: async () => {
+        calls += 1
+        return JSON.stringify(chart)
+      },
+    }
+    const handler = new ClaimChartHandler()
+    const state = await handler.execute({
+      state: {
+        claim: CLAIM,
+        chart_source_roots: [dir],
+        chart_targets: JSON.stringify([{ id: 'D1', kind: 'prior-art', title: '对比文件1', sourcePath }]),
+        chart_mode: 'invalidity',
+      },
+      provider,
+    })
+    expect(calls).toBe(1)
+    const doc = JSON.parse(state.claim_chart_doc as string) as ClaimChart
+    expect(doc.rows[2]!.pinCite).toBe('')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 it('parseTargets 归一化：source_path（snake_case）target 触发 pin-cite 校验（不静默跳过）', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'cc-src-'))
   const sourcePath = join(dir, 'd1.txt')

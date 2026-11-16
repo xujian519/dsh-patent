@@ -14,6 +14,7 @@ import { assertNever } from '@deepseek-ai/dsh-util-values'
 import type {
   ClaimChart,
   ClaimElement,
+  ClaimNoveltyCoverage,
   ClaimRefIssue,
   DependentClaimPathIssue,
   InvalidityConclusion,
@@ -152,6 +153,16 @@ function distinguishingText(elementIds: readonly string[]): string {
   return elementIds.length === 0 ? '无区别特征（主对比文件已覆盖全部要素）' : elementIds.join('、')
 }
 
+/** 覆盖缺口的展示文本：没有要素的引用权项单独点名，不写成"缺"空列表。 */
+function coverageGapText(claim: Pick<ClaimNoveltyCoverage, 'missing' | 'missingReferredClaims'>): string {
+  const parts: string[] = []
+  if (claim.missing.length > 0) parts.push(`缺 ${claim.missing.join('、')}`)
+  if (claim.missingReferredClaims !== undefined) {
+    parts.push(`所引权利要求 ${claim.missingReferredClaims.join('、')} 没有要素，不能并入`)
+  }
+  return parts.map(part => `，${part}`).join('')
+}
+
 /** 引用关系缺陷的中文说明。 */
 const CLAIM_REF_ISSUE_LABELS: Record<ClaimRefIssue['kind'], string> = {
   'self-reference': '权利要求引用了自身',
@@ -202,18 +213,20 @@ export function renderInvalidityConclusion(conclusion: InvalidityConclusion, cha
     for (const claim of entry.claims) {
       const scope = claim.alternatives !== undefined
         ? '（多项从属，逐替代方案见下）'
-        : claim.includesReferredClaims
-          ? `（已并入所引用权利要求 ${claim.referredClaimNos.join('、')} 的全部要素）`
-          : ''
+        : claim.missingReferredClaims !== undefined
+          ? ''
+          : claim.includesReferredClaims
+            ? `（已并入所引用权利要求 ${claim.referredClaimNos.join('、')} 的全部要素）`
+            : ''
       lines.push(
         claim.covered
           ? `- 权利要求 ${claim.claimNo}: 单篇全覆盖成立${scope}`
-          : `- 权利要求 ${claim.claimNo}: 未全覆盖${scope}，缺 ${claim.missing.join('、')}`,
+          : `- 权利要求 ${claim.claimNo}: 未全覆盖${scope}${coverageGapText(claim)}`,
       )
       for (const alternative of claim.alternatives ?? []) {
         lines.push(
           `  - 替代方案（引用 ${alternative.referredClaimNos.join('、')}）: `
-          + (alternative.covered ? '单篇全覆盖成立' : `未全覆盖，缺 ${alternative.missing.join('、')}`),
+          + (alternative.covered ? '单篇全覆盖成立' : `未全覆盖${coverageGapText(alternative)}`),
         )
       }
     }

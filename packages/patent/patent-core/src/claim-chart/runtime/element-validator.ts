@@ -140,9 +140,13 @@ export function validateElements(elements: ClaimElement[], claimText: string): E
       errors.push(`要素 ${el.id} 文本为空`)
       continue
     }
-    // 子串校验按要素归属的 claim 段落进行（claimNo 无对应段时回退全文，
+    // 子串校验按要素归属的 claim 段落进行（仅在原文无任何行首编号时回退全文，
     // 兼容无编号的单条 claim 输入），防止跨 claim 借用他条文本蒙混过关。
     const segment = segments.get(claimNo)
+    if (segments.size > 0 && segment === undefined) {
+      errors.push(`要素 ${el.id} 的 claimNo(${el.claimNo}) 在权利要求原文中没有对应段落`)
+      continue
+    }
     const scopeText = segment !== undefined ? stripWhitespace(segment) : normalizedClaim
     if (!scopeText.includes(text)) {
       errors.push(`要素 ${el.id} 不是权利要求原文的连续子串（claim ${claimNo} 段内未找到）: "${text.slice(0, 50)}…"`)

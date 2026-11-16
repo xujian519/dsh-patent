@@ -9,6 +9,15 @@ import { referenceAlternatives, referencedClosure } from './claim-refs.ts'
 const PRIOR_ART_ONLY = new Set(['anticipation', 'obviousness-combination'])
 const COVERED_MAPPINGS = new Set(['literal', 'anticipation', 'literal-construction-dependent'])
 
+/**
+ * 该映射是否计入覆盖：计入覆盖的行在源文可读时必须给出逐字引用。
+ * @param mapping - 映射类型。
+ * @returns 是否计入覆盖。
+ */
+export function mappingRequiresQuote(mapping: ChartRow['mapping']): boolean {
+  return COVERED_MAPPINGS.has(mapping)
+}
+
 /** 过滤 targetId + mapping 集合命中的行，返回要素 id 列表。 */
 function mappedElementIds(rows: readonly ChartRow[], targetId: string, mappings: ReadonlySet<string>): string[] {
   return rows.filter(r => r.targetId === targetId && mappings.has(r.mapping)).map(r => r.elementId)
@@ -85,26 +94,38 @@ export function deriveNoveltyCoverageByClaim(
   claims: readonly ClaimRef[] = [],
 ): ClaimNoveltyCoverage[] {
   const coveredIds = new Set(mappedElementIds(rows, targetId, COVERED_MAPPINGS))
-  const claimNos = [...new Set(elements.map(el => el.claimNo))].sort((a, b) => a - b)
+  const claimNosWithElements = new Set(elements.map(el => el.claimNo))
+  const claimNos = [...claimNosWithElements].sort((a, b) => a - b)
   return claimNos.map((claimNo) => {
     const referredClaimNos = referencedClosure(claims, claimNo)
     const paths = referenceAlternatives(claims, claimNo)
     const alternatives = (paths.length === 0 ? [[claimNo]] : paths.map(path => [claimNo, ...path]))
       .map((scope) => {
         const missing = elements.filter(el => scope.includes(el.claimNo) && !coveredIds.has(el.id)).map(el => el.id)
+        // 引用链上的权项没有被拆出任何要素时，该路径无法证明"已并入其全部要素"。
+        const missingReferredClaims = scope
+          .filter(value => value !== claimNo && !claimNosWithElements.has(value))
+          .sort((a, b) => a - b)
         return {
           referredClaimNos: scope.filter(value => value !== claimNo).sort((a, b) => a - b),
-          covered: missing.length === 0,
+          covered: missing.length === 0 && missingReferredClaims.length === 0,
           missing,
+          ...(missingReferredClaims.length > 0 ? { missingReferredClaims } : {}),
         }
       })
-    const best = alternatives.reduce((left, right) => right.missing.length < left.missing.length ? right : left)
+    const best = alternatives.reduce((left, right) => {
+      const leftUnassessed = left.missingReferredClaims?.length ?? 0
+      const rightUnassessed = right.missingReferredClaims?.length ?? 0
+      if (rightUnassessed !== leftUnassessed) return rightUnassessed < leftUnassessed ? right : left
+      return right.missing.length < left.missing.length ? right : left
+    })
     return {
       claimNo,
-      covered: best.missing.length === 0,
+      covered: best.covered,
       missing: best.missing,
       includesReferredClaims: referredClaimNos.length > 0,
       referredClaimNos,
+      ...(best.missingReferredClaims !== undefined ? { missingReferredClaims: best.missingReferredClaims } : {}),
       ...(paths.length > 1 ? { alternatives } : {}),
     }
   })

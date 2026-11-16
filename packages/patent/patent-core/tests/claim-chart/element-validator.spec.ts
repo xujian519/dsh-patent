@@ -71,7 +71,7 @@ it('claim 原文含换行折行时要素仍通过（空白不参与比较）', (
 })
 
 it('多 claim 共存且各自连续时通过，跨 claim 跳号报错', () => {
-  const multi = '1. 一种过滤装置，包括壳体和滤芯。2. 所述滤芯含有活性炭。'
+  const multi = '1. 一种过滤装置，包括壳体和滤芯。\n2. 所述滤芯含有活性炭。'
   const ok = validateElements([el('1a', '包括壳体'), el('1b', '和滤芯'), el('2a', '所述滤芯含有活性炭')], multi)
   expect(ok.ok).toBe(true)
 
@@ -104,6 +104,19 @@ it('空白-only 要素文本报错', () => {
   if (!res.ok) {
     expect(res.errors.some(e => e.includes('文本为空'))).toBeTruthy()
   }
+})
+
+it('要素 claimNo 在原文中没有对应段落时报错（不回退全文）', () => {
+  const res = validateElements([el('5a', '包括壳体')], CLAIM)
+  expect(res.ok).toBe(false)
+  if (!res.ok) {
+    expect(res.errors.some(e => e.includes('没有对应段落'))).toBeTruthy()
+  }
+})
+
+it('无行首编号的单条权利要求仍回退全文校验', () => {
+  const res = validateElements([el('1a', '包括壳体')], '一种装置，包括壳体和滤芯。')
+  expect(res.ok).toBe(true)
 })
 
 // —— R-41 回归：权利要求原文编号结构校验 ——

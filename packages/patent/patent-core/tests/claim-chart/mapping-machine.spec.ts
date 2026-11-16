@@ -204,3 +204,66 @@ it('逐权项覆盖：多项从属权项全部替代方案都有缺口时，摘�
   expect(third?.missing).toEqual(['1b'])
   expect(third?.alternatives?.map(alternative => alternative.missing)).toEqual([['1b'], ['1b', '2b']])
 })
+
+it('逐权项覆盖：所引权项没有要素时不判全覆盖', () => {
+  const elements: ClaimElement[] = [{ id: '2a', claimNo: 2, text: '所述滤芯为折叠式', kind: 'limitation' }]
+  const refs: ClaimRef[] = [
+    { claimNo: 1, claimType: 'independent', refersTo: [] },
+    { claimNo: 2, claimType: 'dependent', refersTo: [1] },
+  ]
+  const [second] = deriveNoveltyCoverageByClaim([row('2a', 'D1', 'literal')], 'D1', elements, refs)
+  expect(second).toMatchObject({
+    claimNo: 2,
+    covered: false,
+    missing: [],
+    includesReferredClaims: true,
+    missingReferredClaims: [1],
+  })
+})
+
+it('逐权项覆盖：引用链上多个权项没有要素时按权项号列出', () => {
+  const elements: ClaimElement[] = [{ id: '4a', claimNo: 4, text: '所述滤芯为圆柱形', kind: 'limitation' }]
+  const refs: ClaimRef[] = [
+    { claimNo: 1, claimType: 'independent', refersTo: [] },
+    { claimNo: 2, claimType: 'dependent', refersTo: [1] },
+    { claimNo: 4, claimType: 'dependent', refersTo: [2] },
+  ]
+  const [fourth] = deriveNoveltyCoverageByClaim([row('4a', 'D1', 'literal')], 'D1', elements, refs)
+  expect(fourth).toMatchObject({ claimNo: 4, covered: false, missingReferredClaims: [1, 2] })
+})
+
+it('逐权项覆盖：先出现的完整替代路径优先保留', () => {
+  const elements: ClaimElement[] = [
+    { id: '2a', claimNo: 2, text: '所述滤芯为折叠式', kind: 'limitation' },
+    { id: '4a', claimNo: 4, text: '所述滤芯为圆柱形', kind: 'limitation' },
+  ]
+  const refs: ClaimRef[] = [
+    { claimNo: 1, claimType: 'independent', refersTo: [] },
+    { claimNo: 2, claimType: 'independent', refersTo: [] },
+    { claimNo: 4, claimType: 'dependent', refersTo: [2, 1] },
+  ]
+  const rows = [row('2a', 'D1', 'literal'), row('4a', 'D1', 'literal')]
+  const fourth = deriveNoveltyCoverageByClaim(rows, 'D1', elements, refs).find(entry => entry.claimNo === 4)
+  expect(fourth?.covered).toBe(true)
+  expect(fourth?.missingReferredClaims).toBeUndefined()
+  expect(fourth?.alternatives?.map(alternative => alternative.missingReferredClaims)).toEqual([undefined, [1]])
+})
+
+it('逐权项覆盖：多项从属优先选择引用权项都有要素的路径', () => {
+  const elements: ClaimElement[] = [
+    { id: '2a', claimNo: 2, text: '所述滤芯为折叠式', kind: 'limitation' },
+    { id: '3a', claimNo: 3, text: '所述壳体为金属', kind: 'limitation' },
+    { id: '4a', claimNo: 4, text: '所述滤芯为圆柱形', kind: 'limitation' },
+  ]
+  const refs: ClaimRef[] = [
+    { claimNo: 1, claimType: 'independent', refersTo: [] },
+    { claimNo: 2, claimType: 'independent', refersTo: [] },
+    { claimNo: 3, claimType: 'independent', refersTo: [] },
+    { claimNo: 4, claimType: 'dependent', refersTo: [1, 2] },
+  ]
+  const rows = [row('2a', 'D1', 'literal'), row('3a', 'D1', 'literal'), row('4a', 'D1', 'literal')]
+  const fourth = deriveNoveltyCoverageByClaim(rows, 'D1', elements, refs).find(entry => entry.claimNo === 4)
+  expect(fourth?.covered).toBe(true)
+  expect(fourth?.missingReferredClaims).toBeUndefined()
+  expect(fourth?.alternatives?.map(alternative => alternative.missingReferredClaims)).toEqual([[1], undefined])
+})

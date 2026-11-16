@@ -22,7 +22,7 @@ import {
 } from '../../../claim-chart/protocol/types.ts'
 import { validateClaimTextStructure, validateElements } from '../../../claim-chart/runtime/element-validator.ts'
 import { deriveClaimRefs } from '../../../claim-chart/runtime/claim-refs.ts'
-import { validateRowMapping } from '../../../claim-chart/runtime/mapping-machine.ts'
+import { mappingRequiresQuote, validateRowMapping } from '../../../claim-chart/runtime/mapping-machine.ts'
 import { deriveInvalidityConclusion } from '../../../claim-chart/runtime/invalidity-conclusion.ts'
 import { detectGaps } from '../../../claim-chart/runtime/gap-detector.ts'
 import {
@@ -277,6 +277,7 @@ function validateChart(
     // （幻影引用）不得进入 chart 与 gap 推导，打回重做（prompt 已要求输出空数组）。
     errors.push('无目标对象（chart_targets 为空）时不得产出映射行，rows 必须为空数组')
   }
+  const seenCells = new Set<string>()
   for (const row of rows) {
     // 引用完整性：LLM 幻觉出的未知 elementId/targetId 不得静默进入渲染与 gap
     // 推导（归入打回重做路径）。
@@ -286,6 +287,12 @@ function validateChart(
     if (targetsProvided && !targetById.has(row.targetId)) {
       errors.push(`行 [${row.elementId}→${row.targetId}] 引用了不存在的目标 ${row.targetId}`)
     }
+    // 同一要素对同一目标只能有一行：两行（如 literal 与 not-found）会让缺口与全覆盖同时成立。
+    const cell = `${row.elementId}→${row.targetId}`
+    if (seenCells.has(cell)) {
+      errors.push(`行 [${cell}] 对同一要素与目标重复出现，请按要素与目标各保留一行`)
+    }
+    seenCells.add(cell)
     // pin-cite 格式校验无条件执行（纯函数，不依赖源文；防幻觉引用最便宜的防线，
     // 多数用户不传 source_path，段号/quote 校验仅在源文可读时追加）。
     // 空 pinCite（trim 后为空）放行：与 quote 空串语义对齐，代表"未提供位置定位"。
@@ -296,10 +303,17 @@ function validateChart(
     errors.push(...validateRowMapping(row, target?.target, mode))
     if (target?.sourceText !== undefined) {
       const sourceText = target.sourceText
-      const pin = validatePinCite(row.pinCite, sourceText)
-      if (!pin.ok) errors.push(`行 [${row.elementId}→${row.targetId}] ${pin.reason}`)
-      const quote = verifyQuoteInSource(row.quote, sourceText)
-      if (!quote.ok) errors.push(`行 [${row.elementId}→${row.targetId}] ${quote.reason}`)
+      if (row.pinCite.trim().length > 0) {
+        const pin = validatePinCite(row.pinCite, sourceText)
+        if (!pin.ok) errors.push(`行 [${row.elementId}→${row.targetId}] ${pin.reason}`)
+      }
+      // 计入覆盖的行必须给出逐字引用；空 quote 的 literal 行不得判覆盖（not-found 仍可留空）。
+      if (mappingRequiresQuote(row.mapping) && row.quote.trim().length === 0) {
+        errors.push(`行 [${row.elementId}→${row.targetId}] 的 mapping "${row.mapping}" 必须提供非空 quote`)
+      } else {
+        const quote = verifyQuoteInSource(row.quote, sourceText)
+        if (!quote.ok) errors.push(`行 [${row.elementId}→${row.targetId}] ${quote.reason}`)
+      }
     }
   }
   return errors

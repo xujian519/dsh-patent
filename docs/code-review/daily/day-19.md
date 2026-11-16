@@ -41,7 +41,7 @@
 | 客户端文档文法（F-VID-008） | Host 侧 `node:fs` 依赖使其不能跨 plane 导入 | 形态未定（见未决 1），本轮不选型 |
 | 检索引擎骨架 | 法律域数据驱动、专利域抽象模板，方向相反 | 明确不做（Day 17 结论），此处记录为「已否决候选」，避免后续重复提议 |
 
-**检查项 ③：preset 的重复包清单（20 分钟）**：H09 的前提与现状已有出入，先纠正事实。`packages/bundle/web-app/presets/` 下有 7 个 patch（`cordis`、`document`、`legal`、`minimal`、`patent`、`ptc`、`standard`），`packages/experimental/video-bundle/presets/` 下有 1 个（`video`），共 **8 个**，不是四个。按 `name: '@deepseek-ai/dsh-*'` 计插件行：
+**检查项 ③：preset 的重复包清单（20 分钟）**：H09 的前提与现状已有出入，先纠正事实。`packages/bundle/web-app/presets/` 下有 7 个 patch（`cordis.patch.yml`、`document.patch.yml`、`legal.patch.yml`、`minimal.patch.yml`、`patent.patch.yml`、`ptc.patch.yml`、`standard.patch.yml`），`packages/experimental/video-bundle/presets/` 下有 1 个（`video`），共 **8 个**，不是四个。按 `name: '@deepseek-ai/dsh-*'` 计插件行：
 
 | preset | 插件行 | 去重 |
 |---|---|---|

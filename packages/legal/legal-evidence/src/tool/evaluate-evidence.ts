@@ -149,6 +149,7 @@ export function createEvaluateLegalEvidenceTool(engine: LegalEvidenceEngine): To
                     passed: { type: 'boolean' },
                     reason: { type: 'string' },
                     severity: { type: 'string', enum: ['critical', 'warning', 'info'] },
+                    notAssessed: { type: 'boolean' },
                   },
                 },
               },
@@ -220,8 +221,9 @@ function runEvaluate(
 /** Build a human-readable summary from the assessment. */
 function buildSummary(assessment: LegalEvidenceAssessment): string {
   const { score, findings } = assessment
-  const criticalFindings = findings.filter(f => !f.passed && f.severity === 'critical')
-  const warningFindings = findings.filter(f => !f.passed && f.severity === 'warning')
+  const criticalFindings = findings.filter(f => !f.passed && f.severity === 'critical' && f.notAssessed !== true)
+  const warningFindings = findings.filter(f => !f.passed && f.severity === 'warning' && f.notAssessed !== true)
+  const unassessedFindings = findings.filter(f => f.notAssessed === true)
 
   const parts: string[] = []
   parts.push(`证据 ${assessment.evidenceId}（${assessment.evidenceType}）三性评估：`)
@@ -233,6 +235,9 @@ function buildSummary(assessment: LegalEvidenceAssessment): string {
   }
   if (warningFindings.length > 0) {
     parts.push(`  警告 ${warningFindings.length} 项：${warningFindings.map(f => f.reason).join('；')}`)
+  }
+  if (unassessedFindings.length > 0) {
+    parts.push(`  未评估 ${unassessedFindings.length} 项：${unassessedFindings.map(f => f.reason).join('；')}`)
   }
 
   if (score.overall < 0.5) {
@@ -257,7 +262,7 @@ function renderToolReport(output: EvaluateLegalEvidenceOutput): string {
   if (assessment.findings.length > 0) {
     lines.push('', '── 规则检查 ──')
     for (const finding of assessment.findings) {
-      const status = finding.passed ? '✓' : '✗'
+      const status = finding.notAssessed === true ? '未' : finding.passed ? '✓' : '✗'
       lines.push(`  ${status} [${finding.severity}] ${finding.ruleId}: ${finding.reason}`)
     }
   }

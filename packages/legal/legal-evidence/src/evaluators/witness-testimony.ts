@@ -27,6 +27,9 @@ export const witnessTestimonyEvaluator: LegalEvidenceEvaluator = createEvaluator
     if (input.formLegal === true) {
       score += 0.2
       reasons.push('证人证言形式合法')
+    } else if (input.formLegal === false) {
+      score -= 0.15
+      reasons.push('证人证言形式合法性存疑')
     }
 
     if (hasText(input.source)) {
@@ -89,14 +92,23 @@ export const witnessTestimonyEvaluator: LegalEvidenceEvaluator = createEvaluator
     const findings: LegalEvidenceFinding[] = []
 
     // LEGAL-EVI-007: 证人应与案件无利害关系或已披露
-    if (input.witnessHasConflict === true && input.conflictDisclosed !== true) {
+    if (input.witnessHasConflict === undefined) {
+      // 利害关系未知不等于已排除：缺输入时单列未评估，不能写成「无利害关系」通过。
+      findings.push({
+        ruleId: 'LEGAL-EVI-007',
+        passed: false,
+        notAssessed: true,
+        reason: '证人利害关系未核实（witnessHasConflict 未填写）',
+        severity: 'critical',
+      })
+    } else if (input.witnessHasConflict && input.conflictDisclosed !== true) {
       findings.push({
         ruleId: 'LEGAL-EVI-007',
         passed: false,
         reason: '证人与案件有利害关系且未披露',
         severity: 'critical',
       })
-    } else if (input.witnessHasConflict === true) {
+    } else if (input.witnessHasConflict) {
       findings.push({
         ruleId: 'LEGAL-EVI-007',
         passed: true,

@@ -198,6 +198,12 @@ describe('electronic evaluator branches', () => {
     expect(result.reasoning).toContain('电子数据收集程序合法性存疑')
   })
 
+  it('penalizes an explicitly illegal form', () => {
+    const result = electronicEvaluator.evaluateLegality(input({ collectionLegal: true, formLegal: false }))
+    expect(result.score).toBeCloseTo(0.6)
+    expect(result.reasoning).toContain('电子数据形式合法性存疑')
+  })
+
   it('leaves legality unscored when nothing is declared', () => {
     expect(electronicEvaluator.evaluateLegality(input()).reasoning).toBe('电子数据合法性评估：基础评分')
   })
@@ -325,6 +331,12 @@ describe('witness-testimony evaluator branches', () => {
     expect(result.score).toBe(0.2)
   })
 
+  it('penalizes an explicitly illegal form', () => {
+    const result = witnessTestimonyEvaluator.evaluateLegality(input({ collectionLegal: true, formLegal: false }))
+    expect(result.score).toBeCloseTo(0.6)
+    expect(result.reasoning).toContain('证人证言形式合法性存疑')
+  })
+
   it('leaves legality unscored when nothing is declared', () => {
     expect(witnessTestimonyEvaluator.evaluateLegality(input()).reasoning).toBe('证人证言合法性评估：基础评分')
   })
@@ -370,6 +382,15 @@ describe('witness-testimony evaluator branches', () => {
 
     const neutral = witnessTestimonyEvaluator.checkFindings(input({ witnessHasConflict: false, corroborated: true }))
     expect(neutral[0]?.reason).toBe('证人与案件无利害关系')
+
+    const unknown = witnessTestimonyEvaluator.checkFindings(input({ corroborated: true }))
+    expect(unknown[0]).toMatchObject({
+      ruleId: 'LEGAL-EVI-007',
+      passed: false,
+      notAssessed: true,
+      severity: 'critical',
+    })
+    expect(unknown[0]?.reason).toContain('未核实')
   })
 })
 

@@ -108,8 +108,8 @@
 | F-LEG-008 | `evaluate_legal_evidence` 输出 schema 把维度判定对象写三份 | LEG | B | Low | 高 | confirmed |
 | F-LEG-009 | `rule-set.ts` 手写 `asRecord` 与同名 `hasText`，未用共享工具 | LEG | B | Low | 中 | confirmed |
 | F-LEG-010 | 未核验与未索引引用的工具结果没有锁住处置 | LEG | D | Medium | 中 | new |
-| F-LEG-011 | 证人利害关系未填写时，关键规则报「证人与案件无利害关系」通过 | LEG | E | High | 中 | new |
-| F-LEG-012 | 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略 | LEG | E | Medium | 中 | new |
+| F-LEG-011 | 证人利害关系未填写时，关键规则报「证人与案件无利害关系」通过 | LEG | E | High | 中 | fixed |
+| F-LEG-012 | 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略 | LEG | E | Medium | 中 | fixed |
 | F-LEG-013 | 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果 | LEG | E | Medium | 中 | new |
 | F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | new |
 | F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | confirmed |
@@ -1190,7 +1190,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把三分支拆开：`witnessHasConflict === false` 才报通过；`=== true && conflictDisclosed === true` 报「已披露」；`=== true` 其余报 critical 失败；`undefined` 报未评估（`passed: false` 或新增 `notAssessed`，摘要单列）。新增四条用例：省略、无冲突、有利害关系已披露、有利害关系未披露。
 - 预估工作量：S
 - 是否可自动化：是（上述四条 findings 断言 + 摘要不计入 severe 的断言）
-- 状态：new
+- 状态：fixed（2026-11-16，批次 E5）
 
 ### F-LEG-012 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略
 
@@ -1203,7 +1203,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：像通用实现一样处理 `=== false`：扣分并写一条「形式合法性存疑」的理由；扣分幅度与类型体例一致（电子数据与证人证言可各用一档）。新增 `true`/`false`/省略三条评分与理由断言。
 - 预估工作量：S
 - 是否可自动化：是（三条评分断言）
-- 状态：new
+- 状态：fixed（2026-11-16，批次 E5）
 
 ### F-LEG-013 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果
 
@@ -1558,6 +1558,20 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`citator.spec.ts`、`branches.spec.ts`、`rule-lock.spec.ts` 中把 staleSection 与 `supersededBy` 断言为 `revised` 的用例改为新口径；新增随包资产断言锁住 3.2.1.1、6.4 与 6 条旧路径的结论一致性。
 
 验证：`pnpm exec vitest run packages/patent/patent-law/tests` 通过（15 文件、328 用例）；`citator.ts` 与 `rule-lock.ts` 在聚焦 `--coverage.include` 下均为 100%；`patent-core` 与 `patent-tools` 全量 3974 用例通过（4 skipped）；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`pnpm run test:snapshot -t patent-` 11 个会话通过；`pnpm run test:docs` 30 passed。
+### 批次 E5：法律证据 fail-closed（2026-11-16）
+
+用户要求按建议顺序全部修复后完成。两条发现都把「缺输入」或「明确否定」读成通过或中性。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-LEG-011 | `LEGAL-EVI-007` 的四条分支拆开：未填写 `witnessHasConflict` 时产出 `passed: false`、`notAssessed: true` 的发现；仅 `false` 报「无利害关系」通过，`true` 且已披露报「已披露」，`true` 未披露报 critical 失败。`LegalEvidenceFinding` 增加可选 `notAssessed`，摘要与综合推理把它单列为「未评估」，不计入严重问题 | `legal-evidence/src/evaluators/witness-testimony.ts`、`legal-evidence/src/types.ts`、`legal-evidence/src/engine.ts`、`legal-evidence/src/tool/evaluate-evidence.ts` |
+| F-LEG-012 | 电子数据与证人证言的合法性判定补上 `formLegal === false` 分支：扣 0.15 并写「形式合法性存疑」，与通用合法性判定的方向一致 | `legal-evidence/src/evaluators/electronic.ts`、`legal-evidence/src/evaluators/witness-testimony.ts` |
+
+**行为变化**：证人利害关系未知时，`evaluate_legal_evidence` 的摘要输出「未评估 1 项」，不再把它当成「无利害关系」通过，也不计入严重问题；工具报告的规则行以「未」标记未评估项。电子数据与证人证言明确填写形式不合法时，同一组已给收集合法与来源的输入里，合法性分数分别由 0.85 降至 0.70、由 0.80 降至 0.65，理由写明形式合法性存疑。
+
+**既有测试行为**：`branches.spec.ts` 的「三种冲突结果」用例补第四条未填写分支；`tool.spec.ts` 新增摘要断言。既有 `witnessHasConflict: false` 的通过断言不变。
+
+验证：`pnpm exec vitest run packages/legal` 通过（23 文件、434 用例）；四个改动源码文件在聚焦 `--coverage.include` 下均为 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`pnpm run test:snapshot -t legal` 通过；`pnpm run test:docs` 30 passed。
 
 ### 批次 A：复用收口（2026-11-15）
 

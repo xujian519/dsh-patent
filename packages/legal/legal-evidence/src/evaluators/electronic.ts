@@ -27,6 +27,9 @@ export const electronicEvaluator: LegalEvidenceEvaluator = createEvaluator({
     if (input.formLegal === true) {
       score += 0.2
       reasons.push('电子数据形式合法')
+    } else if (input.formLegal === false) {
+      score -= 0.15
+      reasons.push('电子数据形式合法性存疑')
     }
 
     if (hasText(input.source)) {

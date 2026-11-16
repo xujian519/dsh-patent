@@ -166,9 +166,13 @@ export class LegalEvidenceEngine implements LegalEvidenceEngineInterface {
     parts.push(`合法性[${legality.level}]: ${legality.reasoning}`)
     parts.push(`真实性[${authenticity.level}]: ${authenticity.reasoning}`)
 
-    const criticalFindings = findings.filter(f => !f.passed && f.severity === 'critical')
+    const criticalFindings = findings.filter(f => !f.passed && f.severity === 'critical' && f.notAssessed !== true)
     if (criticalFindings.length > 0) {
       parts.push(`存在 ${criticalFindings.length} 项严重问题：${criticalFindings.map(f => f.reason).join('；')}`)
+    }
+    const unassessed = findings.filter(f => f.notAssessed === true)
+    if (unassessed.length > 0) {
+      parts.push(`存在 ${unassessed.length} 项未评估：${unassessed.map(f => f.reason).join('；')}`)
     }
 
     return parts.join('; ')

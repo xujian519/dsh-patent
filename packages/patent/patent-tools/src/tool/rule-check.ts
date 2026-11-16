@@ -26,7 +26,7 @@ import {
 import type { RulePackLoadResult } from '@deepseek-ai/dsh-patent-rule'
 import { parseOfficeAction } from '@deepseek-ai/dsh-patent-core'
 import type { RuleAction, RuleSeverity, RuleSet, RuleViolation } from '@deepseek-ai/dsh-patent-core'
-import type { SynonymMap } from '@deepseek-ai/dsh-patent-rule'
+import type { SynonymMap, SynonymsLoadResult } from '@deepseek-ai/dsh-patent-rule'
 import { PatentToolError } from '../error.ts'
 import { requireNonBlankText } from './internal/tool-input.ts'
 import { evaluatedTexts, EVALUATED_TEXT_SCHEMA, renderEvaluatedTexts } from '../internal/evaluated-input.ts'
@@ -69,6 +69,11 @@ export type RuleCheckOutput = {
   dualInputSkipped?: string[]
   /** 提供了 `notice`，但当前 scope 没有可评估的双输入规则时的显式提示。 */
   noticeIgnored?: string
+  /**
+   * 规则资产降级警告（如同义词资产缺失，同义词匹配退化为纯关键词）。非空时模型
+   * 据此判断本次判定强度低于完整资产。
+   */
+  assetWarnings?: string[]
 }
 
 /** Injectables mirroring Sati's RuleCheckDeps (tests override; defaults use the bundled assets). */
@@ -77,6 +82,12 @@ export type RuleCheckDeps = {
   loader?: (scope: string) => RuleSet
   /** Synonym map loader (default: bundled rules/patent/synonyms.yaml). */
   synonyms?: () => SynonymMap
+  /**
+   * Synonym asset loader including its warnings; takes precedence over
+   * {@link synonyms} when both are given. Tests use it to assert the
+   * degradation the tool reports when the asset cannot be loaded.
+   */
+  synonymsAsset?: () => SynonymsLoadResult
   /** Layered rule-pack loader (default: bundled loadRulePack). */
   pack?: () => RulePackLoadResult
 }
@@ -104,6 +115,7 @@ const DESCRIPTION = [
   "a domain scope 'patent-mechanical', 'patent-chemical' or 'patent-software' (the full assets plus that domain's rule pack: argument-completeness rules the general assets do not carry),",
   "or 'pack' (layered rule pack assembled from the project manifest .sati/rules.yaml: base + domains + overrides).",
   'With the office-action notice at hand, a job scope also takes notice=通知书正文: the two dual-input rules (PR-OA-008 驳回理由覆盖 / PR-OA-009 未提条款引用) then run against the response; without notice they are listed as unevaluated.',
+  'A missing or malformed synonym asset degrades synonym-match rules to literal keywords; the result then carries assetWarnings so the check strength is visible.',
   'Every result ends with an 评估输入 line giving the character count and digest of the text this run actually read: keep that line when you transcribe the result, so a later run can show whether it read the same text.',
 ].join(' ')
 
@@ -126,6 +138,9 @@ function orderedViolations(violations: readonly RuleViolationView[]): RuleViolat
 function renderRuleCheck(value: RuleCheckOutput): string {
   const header = value.packHeader !== undefined ? `${value.packHeader}\n` : ''
   const warnings = value.packWarnings !== undefined && value.packWarnings.length > 0 ? `\n加载警告: ${value.packWarnings.join('；')}` : ''
+  const assetWarnings = value.assetWarnings !== undefined && value.assetWarnings.length > 0
+    ? `\n资产警告: ${value.assetWarnings.join('；')}`
+    : ''
   const evaluated = renderEvaluatedTexts(value.evaluated)
   const skipped = value.dualInputSkipped !== undefined && value.dualInputSkipped.length > 0
     ? `\n双输入规则未评估（未提供 notice）: ${value.dualInputSkipped.join('、')}`
@@ -135,7 +150,7 @@ function renderRuleCheck(value: RuleCheckOutput): string {
     ? '\n门禁结论: 存在 block 级违规，这次自检不能作为交付前置证据；修订后重跑。'
     : ''
   // `text` is a required input, so an evaluation always reports at least one identity.
-  const trailer = `${warnings}${skipped}${ignored}${blocked}\n${evaluated}`
+  const trailer = `${warnings}${assetWarnings}${skipped}${ignored}${blocked}\n${evaluated}`
   if (value.violations.length === 0) {
     return `${header}rule_check(${value.scope}): 无违规${trailer}`
   }
@@ -213,7 +228,19 @@ export function createRuleCheckTool(deps: RuleCheckDeps = {}): ToolDefinition {
     return { ruleSet, pack }
   }
 
-  const synonymsCache: SynonymMap = deps.synonyms ? deps.synonyms() : loadSynonymsAsset().synonyms
+  let synonymsCache: SynonymMap
+  let assetWarnings: string[] = []
+  if (deps.synonymsAsset !== undefined) {
+    const asset = deps.synonymsAsset()
+    synonymsCache = asset.synonyms
+    assetWarnings = asset.warnings
+  } else if (deps.synonyms !== undefined) {
+    synonymsCache = deps.synonyms()
+  } else {
+    const asset = loadSynonymsAsset()
+    synonymsCache = asset.synonyms
+    assetWarnings = asset.warnings
+  }
 
   return defineTool({
     name: 'rule_check',
@@ -236,6 +263,7 @@ export function createRuleCheckTool(deps: RuleCheckDeps = {}): ToolDefinition {
           packWarnings: { type: 'array', items: { type: 'string' } },
           dualInputSkipped: { type: 'array', items: { type: 'string' } },
           noticeIgnored: { type: 'string' },
+          assetWarnings: { type: 'array', items: { type: 'string' } },
         },
       },
       render: (_args, value) => [{ type: 'text', text: renderRuleCheck(value) }],
@@ -304,6 +332,7 @@ export function createRuleCheckTool(deps: RuleCheckDeps = {}): ToolDefinition {
         }),
         ...(dualInputSkipped !== undefined ? { dualInputSkipped } : {}),
         ...(noticeIgnored !== undefined ? { noticeIgnored } : {}),
+        ...(assetWarnings.length > 0 ? { assetWarnings } : {}),
         ...(packHeader !== undefined ? { packHeader } : {}),
         ...(pack !== null && pack.warnings.length > 0 ? { packWarnings: pack.warnings } : {}),
       }

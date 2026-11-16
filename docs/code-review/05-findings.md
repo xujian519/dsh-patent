@@ -65,12 +65,19 @@
 | F-PAT-030 | `patent-kg-adapter` 邻居扩展循环 3 份，两个检索引擎 `backfillContent` 近克隆 | PAT | B | Low | 高 | new |
 | F-PAT-031 | `templateDraft` 的 `openEnd` 是死字段，两处用 `indexOf` 重新定位已命中位置 | PAT | B | Low | 高 | new |
 | F-PAT-032 | 判例零命中检索整表解压 LIKE，约 4.6 秒 | PAT | C | Medium | 中 | new |
+| F-PAT-033 | 附图渲染截止期的 `dispose` 没有用例锁住监听清理 | PAT | D | Medium | 中 | new |
+| F-PAT-034 | `patent_pdf_download` 成功落盘后不检查清单里的 sha1 | PAT | D | Medium | 低 | new |
+| F-PAT-035 | 团队等待结束后不检查 abort 监听是否摘掉 | PAT | D | Medium | 中 | new |
+| F-PAT-036 | 未完成依赖的判定没有锁住失败、取消和进行中 | PAT | D | Medium | 中 | new |
+| F-PAT-037 | PDF 渲染的宽限和 abort 监听没有用例 | PAT | D | Medium | 中 | new |
+| F-PAT-038 | nuo 检索 provider 的抛错和超时告警没有用例 | PAT | D | Medium | 中 | new |
 | F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | confirmed |
 | F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | confirmed |
 | F-DOC-003 | OOXML 读取限额两包各写一份字面量 | DOC | B | Low | 高 | fixed |
 | F-DOC-004 | 插件默认值出现两个来源（schema default 与 `??`） | DOC | B | Medium | 中 | fixed（文档域） |
 | F-DOC-005 | `tool-office` 用 9 处 `as` 断言担保跨模块不变量 | DOC | B | Low | 低 | confirmed |
 | F-DOC-006 | 跨模块请求类型按字段重写而非组合（`RenderRequest`、`OfficeImagesRequest`） | DOC | B | Low | 高 | confirmed |
+| F-DOC-007 | Office 转换成功返回后不检查 abort 监听是否摘掉 | DOC | D | Medium | 中 | new |
 | F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | confirmed |
 | F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | confirmed |
 | F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | confirmed |
@@ -80,6 +87,7 @@
 | F-LEG-007 | `getById` 在 `legal` 与 `judicial-interpretation` 逐字相同 | LEG | B | Low | 高 | confirmed |
 | F-LEG-008 | `evaluate_legal_evidence` 输出 schema 把维度判定对象写三份 | LEG | B | Low | 高 | confirmed |
 | F-LEG-009 | `rule-set.ts` 手写 `asRecord` 与同名 `hasText`，未用共享工具 | LEG | B | Low | 中 | confirmed |
+| F-LEG-010 | 未核验与未索引引用的工具结果没有锁住处置 | LEG | D | Medium | 中 | new |
 | F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | confirmed |
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | confirmed |
 | F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | confirmed |
@@ -92,6 +100,7 @@
 | F-VID-010 | store 的「锁 + 读 + 改 + 写」骨架三处各写一遍 | VID | B | Low | 高 | confirmed |
 | F-CROSS-001 | 四域另有 4 份 `messageOf`/`errorText` 与 1 份可并的 `asRecord`，而 `dsh-value` 已有对应原语且 11 个域内包已依赖它 | CROSS | B | Low | 高 | new |
 | F-CROSS-002 | `patent-tools` 导入未声明的 workspace 依赖 `@deepseek-ai/dsh-value`，运行产物靠打包内联掩盖 | CROSS | B/E | Low | 高 | new |
+| F-CROSS-003 | 知识库安装覆盖时先删输出，改名失败没有用例 | CROSS | D | High | 中 | new |
 
 ## 专利域
 
@@ -534,6 +543,84 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 是否可自动化：是（小型夹具断言三字零命中不再执行 `stmtSearchLike`。本机 4.6 秒的数字不写进单测）
 - 状态：new
 
+### F-PAT-033 附图渲染截止期的 `dispose` 没有用例锁住监听清理
+
+- 位置：`packages/patent/patent-tools/src/figure/subprocess-render.ts:210`–`213`（`dispose` 执行 `clearTimeout` 并 `removeEventListener`）；调用点 `graphviz-renderer.ts:252`、`freecad-renderer.ts:300`、`inkscape-renderer.ts:303` 与 `:363`
+- 维度：D
+- 严重度：Medium
+- 可能性：中
+- 证据：三个渲染器的失败分类已有断言。Graphviz 覆盖超时（`figure-graphviz-renderer.spec.ts:351`）、信号终止（`:402`）、调用方取消（`:415`）和非零退出（`:508`）。Inkscape 覆盖非零退出（`figure-inkscape-renderer.spec.ts:407`）、调用方取消（`:426`）和临时目录删除失败仍保留转换结果（`:346`）。FreeCAD 覆盖超时（`figure-freecad-renderer.spec.ts:388`）、信号终止（`:321`）、调用方取消（`:334`），并在成功路径断言 `graceMs` 为 3000（`:256`）。`startRenderDeadline` 只被这三个渲染器调用，测试没有直接导入它。附图测试里没有 `deadline.dispose`、`listenerCount('abort')` 或 `removeEventListener`。
+- 影响：删掉某一处 `finally` 里的 `dispose()` 后，现有超时、取消和非零退出用例仍然通过。调用方信号上的 abort 监听会留到该信号结束；同一信号上反复渲染会叠监听。计时器因 `unref` 不会挡住进程退出，所以成功路径的用例也看不出漏清理。
+- 最小修复建议：为 Graphviz、FreeCAD、Inkscape 各加一条成功退出用例。输入是未取消的调用方 `AbortSignal`，假子进程立即以退出码 0 结束并交出该渲染器会接受的产物。期望是返回成功后，该信号的 abort 监听数与调用前相同；随后再 abort 这个信号，已返回的成功结果保持不变。超时用例在文案含「渲染超时」之外，同样断言监听数回到调用前。删掉对应 `finally` 里的 `dispose()` 时该用例失败。
+- 预估工作量：S
+- 是否可自动化：是（上述三条假子进程用例）
+- 状态：new
+
+### F-PAT-034 `patent_pdf_download` 成功落盘后不检查清单里的 sha1
+
+- 位置：`packages/patent/patent-tools/src/tool/patent-pdf-download.ts:309`–`311`（`sha1OfFile`）、`:604`–`:616`（成功条目写入清单，含 `size` 与 `sha1`）；续传比较在 `:264`–`:269`（只看 `size`）
+- 维度：D
+- 严重度：Medium
+- 可能性：低
+- 证据：`packages/patent/patent-tools/tests` 下没有 `sha1`。fetch 兜底用例（`patent-pdf-download.spec.ts:130`–`:154`）让 ego 返回 `fallback`，响应体是 `%PDF-1.4 ` 加 600 个 `x`，`Content-Type` 为 `application/pdf`，断言工具文本含「fetch 兜底」。该路径会 `writeFileAtomic`（`:393`）再把 `sha1` 写入 `.MANIFEST.jsonl`。续传用例自己拼接清单，字段只有 `patent`、`status`、`path`、`size`、`ts`（`:157`–`:165`），摘要对错都不影响跳过。
+- 影响：把 `sha1` 写成常量、改成路径字符串的摘要，或从清单对象里拿掉该字段，现有「下载完成」文案断言仍然通过。续传今天只比较文件大小，用户当次下载结果不变。清单里的摘要可以和落盘字节分叉，以后按摘要核对时没有回归用例。
+- 最小修复建议：沿用 `:130` 的 fetch 兜底输入。期望 `.MANIFEST.jsonl` 新增一行，`status` 为 `ok`，`size` 等于落盘字节数，`sha1` 等于该文件内容的 sha1。本用例不要求摘要不符时重新下载；那条比较当前只存在于 `fileSizeMatches`。
+- 预估工作量：S
+- 是否可自动化：是（读回清单的单测）
+- 状态：new
+
+### F-PAT-035 团队等待结束后不检查 abort 监听是否摘掉
+
+- 位置：`packages/patent/patent-teams/src/team-activity.ts:81`（`addEventListener`）、`:64`（`removeEventListener`）；`packages/patent/patent-teams/src/members.ts:537`（`addEventListener`）、`:542`（`finally` 里的 `removeEventListener`）
+- 维度：D
+- 严重度：Medium
+- 可能性：中
+- 证据：两处监听都带 `{ once: true }`。`team-activity.spec.ts` 覆盖本队通知（`:9`）、超时（`:16`）和中止（`:40`），`service.spec.ts:1794` 覆盖服务层超时。`service.spec.ts:1378` 在 `waitForMemberIdle` 等待中途中止，断言错误文案含取消原因。`packages/patent/patent-teams/tests` 里没有 `listenerCount`，也没有 `removeEventListener`。
+- 影响：删掉这两处 `removeEventListener` 后，现有超时、通知和中止用例仍然通过。`once: true` 只在 abort 事件发生时摘掉监听。等待因通知、超时或成员变空闲而结束时，监听留在调用方信号上。同一信号上再次等待会叠监听；该信号稍后中止时，已经结束的等待仍会走进 `reject`。
+- 最小修复建议：为 `TeamActivity` 加一条用例。输入是同一个未中止的 `AbortSignal`，`timeoutMs` 为 5，等待期间不调用 `notify`。期望是返回 `{ timedOut: true }` 后，该信号的 abort 监听数与调用前相同；随后中止这个信号，这次已返回的结果保持 `{ timedOut: true }`。再为 `waitForMemberIdle` 加一条用例。输入是 `whenIdle` 立即完成的成员和未中止的调用方信号。期望是等待返回后监听数与调用前相同；随后中止该信号，不再产生未处理的拒绝。删掉对应的 `removeEventListener` 时该用例失败。
+- 预估工作量：S
+- 是否可自动化：是（上述两条假信号用例）
+- 状态：new
+
+### F-PAT-036 未完成依赖的判定没有锁住失败、取消和进行中
+
+- 位置：`packages/patent/patent-teams/src/state.ts:38`–`:40`（`status !== 'completed'`）；调用点 `task-ops.ts:463`–`:465`、`scheduler.ts:144`–`:147`
+- 维度：D
+- 严重度：Medium
+- 可能性：中
+- 证据：`state.spec.ts:125`–`:139` 的夹具只有 `t1` 为 `completed`、`t2` 为 `pending`，并断言缺失 id `ghost` 算未完成。`service.spec.ts:591`–`:594` 与 `:803`–`:806` 挡住的依赖都是刚创建、状态为 `pending` 的任务，错误码是 `DEPENDENCIES_OPEN`。`scheduler.spec.ts:259` 调度的是没有依赖的 `pending` 任务。`:276` 的 `claimed` 是该成员自己丢失回合后仍持有的开放任务，调度会换一次 attempt，不经过依赖判定。
+- 影响：把过滤收成「状态是 `pending`，或任务不存在」后，现有三处用例仍然通过。`failed`、`cancelled`、`claimed`、`in_progress` 的前置任务会被当成已满足。认领会放行下游任务，调度会把下游 `pending` 任务派给空闲成员。
+- 最小修复建议：在 `state.spec.ts` 的 `unsatisfiedDependencies` 夹具里加入四条任务，状态分别为 `failed`、`cancelled`、`claimed`、`in_progress`，再加一条 `completed`。期望返回的 id 是前四条，不含已完成的那条。再在 `service.spec.ts` 把一条已认领任务更新为 `failed`，创建依赖它的新任务并认领。期望错误码为 `DEPENDENCIES_OPEN`，文案点名该失败任务的 id。把 `state.ts:40` 的比较改成只认 `pending` 时这两条失败。
+- 预估工作量：S
+- 是否可自动化：是（纯函数夹具加一条认领用例）
+- 状态：new
+
+### F-PAT-037 PDF 渲染的宽限和 abort 监听没有用例
+
+- 位置：`packages/patent/patent-document/src/document/pdfRenderer.ts:34`（`GRACE_MS` 为 3000）、`:103`（`addEventListener`）、`:114`（传入 `graceMs`）、`:134`（`finally` 里的 `removeEventListener`）
+- 维度：D
+- 严重度：Medium
+- 可能性：中
+- 证据：失败分类已有断言。缺 Chrome 在 `pdf-renderer.spec.ts:96`，非零退出在 `:114`，零退出但没有文件在 `:136`，内部超时在 `:262`（断言内部 signal 已中止），调用方中止在 `:294`，信号名在 `:327`，子进程缝抛错在 `:371` 与 `:392`。成功路径 `:67` 断言 `{ ok: true, path }`、`existsSync` 和 `--headless`。`packages/patent/patent-document/tests` 里没有 `graceMs`、`listenerCount` 或 `removeEventListener`。`patent-data` 的 `subprocess-runner.spec.ts:97` 已锁住该包自己的默认 3000，不在本条。实现在 `pdfRenderer.ts:125` 只检查文件是否存在，本条不要求读回 PDF 魔数。
+- 影响：从 spawn 规格里拿掉 `graceMs`，或删掉 `finally` 里的 `removeEventListener`，现有超时、中止和成功用例仍然通过。假子进程不执行 SIGKILL 升级，宽限字段缺了也看不出来。`once: true` 只在 abort 发生时摘掉监听。成功返回后监听留在调用方信号上，同一信号上反复渲染会叠监听。
+- 最小修复建议：在 `pdf-renderer.spec.ts:67` 的成功 spawn 上断言 `calls[0].graceMs` 为 3000。再加一条成功用例。输入是未中止的调用方 `AbortSignal`，假 Chrome 以退出码 0 结束并写出文件。期望是返回 `{ ok: true, path }` 后，该信号的 abort 监听数与调用前相同；随后中止这个信号，已返回的结果保持成功。删掉 `:114` 的 `graceMs` 或 `:134` 的 `removeEventListener` 时，对应用例失败。
+- 预估工作量：S
+- 是否可自动化：是（假子进程上的两条断言）
+- 状态：new
+
+### F-PAT-038 nuo 检索 provider 的抛错和超时告警没有用例
+
+- 位置：`packages/patent/patent-data/src/search-provider.ts:23`–`:31`（`createNuoSearchProvider` 只映射 `hits`）
+- 维度：D
+- 严重度：Medium
+- 可能性：中
+- 证据：`search-provider.spec.ts` 只有 `:9` 与 `:55` 两条成功用例。空标题回落到专利号，空 `publication_date` 省略，默认 `limit` 为 5。两条传入的 `warnings` 都是空数组。缓存侧 `patent-cache.spec.ts:194` 拒绝把 `检索失败` 与 `检索超时` 写入缓存，`:243` 断言失败结果会再次调用源。那是 `isSearchResultCacheable` 与 `cachedSearchPatents`，不是这个 `StageProvider.search` 的返回值。CNIPR 通道的超时与缺回执在 `cnipr-channel.spec.ts:154` 与 `:165`，不在本条。
+- 影响：在 `:23` 外包一层 `catch` 并返回 `[]` 后，两条成功用例仍然通过。检索抛错今天会传到调用方；接住之后搜索阶段拿到空命中，调用方分不清超时和零结果。`warnings` 今天被丢掉。把告警含 `检索超时` 改成抛错，现有用例也通过，因为它们的 `warnings` 是空数组。
+- 最小修复建议：注入的 `search` 抛出 `Error('检索超时')`。期望 `provider.search` 以同一条消息拒绝。再注入一条结果：`hits` 为空，`warnings` 为 `['检索超时 (30000ms)']`。期望返回 `[]` 且不抛错。前者在新增 `catch` 返回 `[]` 时失败。后者在把超时告警改成抛错时失败。
+- 预估工作量：S
+- 是否可自动化：是（注入 `search` 的两条用例）
+- 状态：new
+
 ### Day 10 定向结论：法律域与共享层无安全发现
 
 - **SQL 全部参数化**：`MATCH ?` 与 `LIKE ?` 绑定，`likePattern` 转义 `%`、`_`、反斜杠并配合 `ESCAPE '\'`；唯一的表名插值取自包内固定数组；安装 API 的源库与输出目录来自 options/CLI，不注册为工具。
@@ -652,6 +739,19 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 预估工作量：S
 - 是否可自动化：部分。默认阈值的 `duplication` 门禁抓不到；可把文档域加入 40/4 的诊断清单，或在 `tests/` 里加一条「工具入参字段是 `RenderRequest` 的超集」的类型级断言（`type Assert<T extends RenderRequest> = T`）。
 - 状态：confirmed
+
+### F-DOC-007 Office 转换成功返回后不检查 abort 监听是否摘掉
+
+- 位置：`packages/document/office-kit/src/queue.ts:184`（`cleanup` 调用 `removeEventListener`）、`:186`（`addEventListener`，`{ once: true }`）、`:303`（成功结束时 `release`，`:214` 调用 `cleanup`）
+- 维度：D
+- 严重度：Medium
+- 可能性：中
+- 证据：取消、超时和失败分类已有断言。`provider.spec.ts:262` 在引擎超时时删掉临时目录并接受下一次转换，`:310` 取消排队中的调用方且不打断另一路转换，`:403` 在分配资源前拒绝已取消的调用。`provider.spec.ts:237` 拒绝缺文件、目录、非 PDF、不完整 PDF 和超限输出。`queue.spec.ts:173` 起覆盖调用方取消，`:569` 把提供者卸载与调用方取消分开。这些用例在中止发生时结束。`packages/document/office-kit/tests` 里没有 `getEventListeners`，也没有 `listenerCount`。成功读取多半不传信号（`queue.spec.ts:20`）。`legal-law` 的 `baseline.spec.ts:499` 与 `:516` 已经在成功等待后断言监听数为 0，不在本条。
+- 影响：删掉 `:184` 的 `removeEventListener` 后，现有取消、超时和成功用例仍然通过。`once: true` 只在 abort 事件发生时摘掉监听。成功返回且调用方没有中止时，监听留在信号上。该信号稍后中止会再次进入 `release`（`queue.ts:205`）。`readers` 计数再次减一，随后按 `maxReaders` 准入时可以多放进一路转换。
+- 最小修复建议：加一条成功用例。输入是未中止的 `AbortSignal`，假转换器立即返回 PDF。期望 `read` 成功返回后，`getEventListeners(signal, 'abort')` 的长度为 0；随后中止这个信号，已返回的结果保持成功。删掉 `:184` 的 `removeEventListener` 时监听数断言失败。
+- 预估工作量：S
+- 是否可自动化：是（假转换器上的一条监听数用例）
+- 状态：new
 
 ## 法律模式
 
@@ -775,6 +875,19 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 预估工作量：S
 - 是否可自动化：是
 - 状态：confirmed（建议并入 Day 19 处理）
+
+### F-LEG-010 未核验与未索引引用的工具结果没有锁住处置
+
+- 位置：`packages/legal/legal-law/src/verify.ts:98`–`:99`（`resolveLegalCitationPolicy` 转给共享函数）；工具投影 `packages/legal/legal-law/src/tool/law-verify.ts:210`
+- 维度：D
+- 严重度：Medium
+- 可能性：中
+- 证据：判定本身已有断言。`verify.spec.ts:73` 对未转录条文返回 `unverified`，`:83` 对不在索引中的法律返回 `not-indexed`，`:78` 对超范围返回 `out-of-range`。`verify.spec.ts:150`–`:152` 只断言默认常量里 `unverified` 与 `notIndexed` 为 `block`，没有把这两条判定送进 `resolveLegalCitationPolicy`。该函数的现有调用只覆盖 `valid`（`:132`）和 `mismatch`（`:147`）。工具夹具把 `unverified` 与 `notIndexed` 设为 `warn`（`tool.spec.ts:15`–`:16`）。`:102`–`:109` 只断言 `decision` 为 `unverified`，不读 `policy`，也不读 `blocked`。`out-of-range`（`:120`）、`unmatched`（`:129`）、`mismatch`（`:138`）和 `valid`（`:114`）会断言 `policy`。共享函数的六态表在 `packages/law/law-core/tests/citation-tool.spec.ts:29`–`:36` 已锁住，不在本条。
+- 影响：把 `verify.ts:99` 改成对 `unverified` 或 `not-indexed` 返回 `allow` 后，上述常量断言、纯函数判定和工具的 `decision` 断言仍然通过。`allow` 与夹具里的 `warn` 都不会把 `blocked` 设为 true，`:102` 看不出来。未核验引用在工具结果里可以被当成放行。
+- 最小修复建议：沿用 `verify.spec.ts:73` 的未转录条文和 `:83` 的未索引法律。期望 `resolveLegalCitationPolicy` 在 `DEFAULT_LEGAL_CITATION_POLICY` 下这两条都返回 `block`。再把 `tool.spec.ts:102` 的期望补成 `{ decision: 'unverified', policy: 'warn' }`，并断言 `blocked` 为 false。对不在夹具索引中的法律同样期望 `{ decision: 'not-indexed', policy: 'warn' }`。把 `verify.ts:99` 对这两个判定改成 `allow` 时，默认策略那两条失败；工具投影改成固定 `allow` 时，`policy: 'warn'` 失败。
+- 预估工作量：S
+- 是否可自动化：是（上述四条期望）
+- 状态：new
 
 ## 视频模式
 
@@ -948,6 +1061,19 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 净减少：0 行代码；收益是依赖声明、catalog 与 SBOM 与产物一致。若采纳反向校验，门禁范围从「104 个包」扩到「104 个包的导入图」。
 - 预估工作量：S
 - 是否可自动化：是（新增反向校验即可在 CI 拦住同类问题）
+- 状态：new
+
+### F-CROSS-003 知识库安装覆盖时先删输出，改名失败没有用例
+
+- 位置：`packages/law/knowledge-core/src/install-fs.ts:59`（`commitTempSibling`）、`:62`（已有输出时 `rmSync`）、`:64`（随后 `renameSync`）。调用点是 `packages/patent/patent-knowledge/src/install.ts:212` 与 `packages/legal/legal-knowledge/src/install.ts:110`
+- 维度：D
+- 严重度：High
+- 可能性：中
+- 证据：`install-fs.spec.ts:70` 把临时文件改到新路径，`:82` 覆盖已有文件并断言新内容与「输出已存在，覆盖」。两条都在 `renameSync` 成功时结束。`install-fs.spec.ts` 里没有 `ENOSPC`、`EACCES` 或让 `renameSync` 抛错的用例。`prepareTempSibling` 会清掉上次留下的临时文件（`install-fs.spec.ts:59`），不读输出文件在改名失败后是否还在。专利安装在 `patent-knowledge/src/install.ts:199`–`:201` 写明，VACUUM 之前直接 `rmSync(output)` 会在失败时丢掉上一份产物，因此先写临时文件；提交仍走 `commitTempSibling`。`packages/law/knowledge-core/README.md` 把这次提交写成原子替换。F-PAT-001 已在其他交付物上收口，不在本条重开。
+- 影响：输出已存在时，`:62` 先删掉上一份库，`:64` 再改名。改名因磁盘满、权限或跨设备失败时，错误抛出，已安装的 `knowledge.db` 或 `legal.db` 已经不在，新库仍留在临时路径。现有成功用例继续通过。
+- 最小修复建议：在 `install-fs.spec.ts:82` 旁加一条。输出文件内容是 `old`，临时文件内容是 `new`，注入的 `renameSync` 抛出 `code` 为 `ENOSPC` 的错误。期望错误原样抛出，输出文件仍是 `old`，临时文件仍在。当前先删后改名会让这条失败。提交应改为先保留旧文件的改名，与 `packages/fs/fs-local/tests/fsio.spec.ts:828` 在替换失败后仍读到 `old` 的断言对齐。
+- 预估工作量：S
+- 是否可自动化：是（一条注入改名失败的用例）
 - 状态：new
 
 ## 修复记录

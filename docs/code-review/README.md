@@ -57,7 +57,14 @@
 - Day 24 已完成：C 维度法律模式与共享机制（`legal-knowledge`、`legal-law`、`legal-evidence`、`law-core`、`knowledge-core`）。本机没有默认查询库。合成 40000 条法规的零命中中位数 8.47ms，20000 条判例 18.73ms。民法典首次解析 63.32ms，同一索引再取 0.02ms。没有新的 C 维度发现。
 - Day 25 已完成：C 维度视频模式（`video-mode`、`ui-video-studio`）。运行时默认 250ms 醒一次，云 provider 的状态间隔是 2 秒或 10 秒；1000ms 窗口里桩状态接口只打了 1 次。8MiB 下载热中位数 0.68ms。睡眠脚本在中止后 217.69ms 退出，进程不在。没有新的 C 维度发现。
 - Day 26 已完成：C 维度横向（子进程、临时文件、监听器、取消与并发）。配合退出的子进程在宽限 5000 下 32.88ms 以 SIGTERM 结束；忽略 SIGTERM 的子进程在宽限 400 下 435.3ms 以 SIGKILL 结束，进程不在。16 个立即退出的脚本 44.41ms。C 维度仅有的新发现仍是 F-PAT-032。
-- 当前进度：A 安全维度（Day 6–12）、B 维度（Day 13–19）与 C 维度（Day 20–26）已完成；下一日为 Day 27，D 测试缺口（专利域-1：`patent-tools`、`patent-core`）。
+- Day 27 已完成：D 维度专利域-1（`patent-tools`、`patent-core`）。两包不在覆盖率豁免内。渲染与立案的失败、取消、超时已有分类断言。新增 F-PAT-033（渲染截止期的监听清理没有用例）和 F-PAT-034（成功下载后不检查清单 sha1）。
+- Day 28 已完成：D 维度专利域-2（`patent-workflow`、`patent-rule`、`patent-teams`）。三包不在覆盖率豁免内。审批拒绝、运行恢复和规则失败路径已有断言。新增 F-PAT-035（团队等待的 abort 监听没有用例）和 F-PAT-036（未完成依赖没有锁住失败、取消和进行中）。
+- Day 29 已完成：D 维度专利域-3（`patent-knowledge`、`patent-data`、`patent-document`、`patent-filing`）。四包不在覆盖率豁免内。空索引、损坏库、CNIPR 与缓存失败、立案内容校验已有断言。新增 F-PAT-037（PDF 渲染的宽限与 abort 监听没有用例）和 F-PAT-038（nuo 检索 provider 的抛错没有用例）。
+- Day 30 已完成：D 维度文档模式、法律模式与共享机制。11 个包不在覆盖率豁免名单里。Office 失败与取消、DOCX 限额、空语料、未核验判定和证据缺字段已有断言。新增 F-DOC-007（Office 转换成功后的 abort 监听没有用例）和 F-LEG-010（未核验引用的处置没有锁住）。
+- Day 31 已完成：D 维度视频模式全域（`video-mode`、`video-bundle`、`ui-video-studio`）。三包不在覆盖率豁免名单里。EDL 失败、provider 失败与超时、预算拒绝、项目锁冲突和界面渲染失败已有断言。没有新的 D 编号。
+- Day 32 已完成：D 维度跨域失败路径（网络、权限、磁盘、部分写入）。超时、取消和权限拒绝已有断言。磁盘满没有单独的 `ENOSPC` 分支。新增 F-CROSS-003（知识库安装覆盖时先删输出，改名失败没有用例）。
+- Day 33 已完成：D 维度覆盖率豁免审计与汇总。重套件豁免、平台排除和 Windows、pwsh 排除都不含四域。639 个四域 `src` 文件里，门禁不量的是 19 个包根 `types.ts` 和 1 个安装 `bin.ts`。没有新的 D 编号。D27–D32 的 9 条新缺口都在已纳入门禁的文件里。H06 改为部分推翻，H08 改为推翻。
+- 当前进度：A 安全维度（Day 6–12）、B 维度（Day 13–19）、C 维度（Day 20–26）、D 测试缺口（Day 27–33）已完成。下一日为 Day 34（E 正确性与边界：专利域-1）。
 - 已确认：45 天周期、包含 `packages/law`、视频按实验特性、在 Node 24 补跑构建与覆盖率基线。
 - 本目录的中文单语文档已加入 `scripts/translation-pairing.manifest.json` 的豁免清单；`verify-translation-pairing` 复跑通过。
 

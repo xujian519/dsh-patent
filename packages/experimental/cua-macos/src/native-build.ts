@@ -95,19 +95,25 @@ export async function buildNativeExecutable(spec: NativeBuildSpec): Promise<stri
  * Prepare source builds on activation; installed packages carry their signed application.
  * A package inside an Electron `app.asar` archive reads its application from the sibling `app.asar.unpacked`
  * directory, which the Desktop installer populates so LaunchServices and process spawning can open the bundle.
+ * An installed package carries either the notarized release application or the development variant that a local
+ * ad-hoc build stages; the release application wins whenever both exist.
  * @param spec - Native preparation inputs for this host.
  * @returns Executable inside a ready application without compiling or re-signing an installed package.
- * @throws When an installed package carries no application receipt, naming the directory that was expected to hold it.
+ * @throws When an installed package carries no usable application, naming the directory that was expected to hold it.
  */
 export async function prepareNativeExecutable(spec: NativeBuildSpec): Promise<string> {
   if (await isSourcePackage(spec.packageRoot)) return buildNativeExecutable(spec)
   const directory = join(spec.packageRoot.replace(/([\\/])app\.asar(?=[\\/])/u, '$1app.asar.unpacked'), 'native', 'bin', `darwin-${spec.architecture}`)
-  let executable: string
-  try { executable = await nativeExecutablePath(directory, 'release') }
-  catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT' || (error as NodeJS.ErrnoException).path !== join(directory, 'current.json')) throw error
-    throw new Error(`Computer use helper application is missing from ${directory}; this installation does not include the signed helper`, { cause: error })
+  let missing: NodeJS.ErrnoException | undefined
+  for (const variant of ['release', 'dev'] as const) {
+    try {
+      const executable = await nativeExecutablePath(directory, variant)
+      spec.signal.throwIfAborted()
+      return executable
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+      missing ??= error as NodeJS.ErrnoException
+    }
   }
-  spec.signal.throwIfAborted()
-  return executable
+  throw new Error(`Computer use helper application is missing from ${directory}; this installation does not include a usable helper application`, { cause: missing })
 }

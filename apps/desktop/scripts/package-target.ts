@@ -482,6 +482,10 @@ export async function packageTarget(
     })
   }
   await execute(invocation.unsigned ? ['run', 'build', '--profile', 'local'] : ['run', 'build:official'], buildEnv, REPOSITORY_ROOT)
+  // The provider decides between the release and development application when it activates, so the helper must be
+  // staged before packing decides which files the published package carries.
+  await execute(['exec', 'tsx', 'apps/desktop/scripts/prepare-cua-helper.ts', '--arch', target.arch,
+    ...(invocation.unsigned ? ['--development'] : [])], targetEnv, REPOSITORY_ROOT)
   let preparationFailure: { error: unknown } | undefined
   const executePreparation = async (args: readonly string[], env: NodeJS.ProcessEnv, cwd?: string): Promise<void> => {
     if (preparationFailure !== undefined) throw preparationFailure.error

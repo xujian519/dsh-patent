@@ -134,3 +134,81 @@ describe('parseMarkdown', () => {
     expect(rowWidths(parseMarkdown('||'))).toEqual([1])
   })
 })
+
+describe('parseMarkdown fenced code', () => {
+  it('keeps headings, tables, and bold markers inside a fence as code text', () => {
+    const blocks = parseMarkdown('```\n# not a heading\n| a | b |\n**not bold**\n```')
+
+    expect(kinds(blocks)).toEqual(['paragraph', 'paragraph', 'paragraph'])
+    expect(blocks.map(paragraphRuns)).toEqual([['pc:# not a heading'], ['pc:| a | b |'], ['pc:**not bold**']])
+  })
+
+  it('drops the info string and resumes block parsing after the closing fence', () => {
+    const blocks = parseMarkdown('```ts\nconst x = 1\n```\n# heading after')
+
+    expect(blocks).toEqual([
+      { kind: 'paragraph', runs: [{ text: 'const x = 1', bold: false, code: true }] },
+      { kind: 'heading', level: 1, text: 'heading after' },
+    ])
+  })
+
+  it('accepts a tilde fence', () => {
+    expect(parseMarkdown('~~~\n# code\n~~~')).toEqual([
+      { kind: 'paragraph', runs: [{ text: '# code', bold: false, code: true }] },
+    ])
+  })
+
+  it('keeps the fence open until a run at least as long as the opening one', () => {
+    const blocks = parseMarkdown('````\n# still code\n```\nalso code\n````')
+
+    expect(blocks.map(paragraphRuns)).toEqual([['pc:# still code'], ['pc:```'], ['pc:also code']])
+  })
+
+  it('keeps indentation and trailing spaces of code lines', () => {
+    const blocks = parseMarkdown('```\n    indented  \n```')
+
+    expect(blocks).toEqual([
+      { kind: 'paragraph', runs: [{ text: '    indented  ', bold: false, code: true }] },
+    ])
+  })
+
+  it('treats an unclosed fence as code to the end of the source', () => {
+    expect(kinds(parseMarkdown('```\na\n# b'))).toEqual(['paragraph', 'paragraph'])
+  })
+
+  it('closes a fence opened with leading indentation', () => {
+    expect(kinds(parseMarkdown('  ```\nx\n  ```\nafter'))).toEqual(['paragraph', 'paragraph'])
+  })
+
+  it('closes the open table before a fence', () => {
+    expect(kinds(parseMarkdown('| a |\n```\nx\n```'))).toEqual(['table', 'paragraph'])
+  })
+
+  it('keeps an empty code line as an empty paragraph', () => {
+    expect(parseMarkdown('```\n\n```')).toEqual([
+      { kind: 'paragraph', runs: [{ text: '', bold: false, code: true }] },
+    ])
+  })
+
+  it('does not open a fence indented past three spaces', () => {
+    expect(kinds(parseMarkdown('    ```\n# heading'))).toEqual(['paragraph', 'heading'])
+  })
+
+  it('does not treat a backtick run whose info carries a backtick as a fence', () => {
+    expect(kinds(parseMarkdown('``` a`b\n# heading'))).toEqual(['paragraph', 'heading'])
+  })
+
+  it('ignores a closing line with trailing text or deeper indentation', () => {
+    const blocks = parseMarkdown('```\n``` still code\n    ```\n```')
+
+    expect(blocks.map(paragraphRuns)).toEqual([['pc:``` still code'], ['pc:    ```']])
+  })
+
+  it('does not open a fence with fewer than three markers', () => {
+    expect(kinds(parseMarkdown('``\n# heading'))).toEqual(['paragraph', 'heading'])
+  })
+
+  it('allows a backtick in a tilde fence info string', () => {
+    expect(kinds(parseMarkdown('~~~ a`b\n# code\n~~~'))).toEqual(['paragraph'])
+  })
+})

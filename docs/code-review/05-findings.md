@@ -88,7 +88,7 @@
 | F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | new |
 | F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | new |
 | F-PAT-055 | 上游 JSON 字符串含 null 元素时 `mapPatentData` 抛 TypeError | PAT | E | Low | 低 | new |
-| F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | confirmed |
+| F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | fixed |
 | F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | confirmed |
 | F-DOC-003 | OOXML 读取限额两包各写一份字面量 | DOC | B | Low | 高 | fixed |
 | F-DOC-004 | 插件默认值出现两个来源（schema default 与 `??`） | DOC | B | Medium | 中 | fixed（文档域） |
@@ -1684,6 +1684,19 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`engine.spec.ts` 新增四条用例（YAML 声明驱动 id/severity、资产不声明通用规则时不执行、未知 `check` 记警告、未加载资产时保留两条默认规则）；`rule-table.spec.ts` 的 YAML↔发现对应断言不变。
 
 验证：`pnpm exec vitest run packages/legal/legal-evidence/tests` 173 用例通过；`engine.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`verify-translation-pairing` 重录后通过。
+### 批次 E10：DOCX 渲染识别围栏代码块（2026-11-17）
+
+用户要求继续修复后完成。只改 `docx-kit` 的 Markdown 块解析，不改 DOCX 写入结构。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-DOC-001 | `parseMarkdown` 增加围栏状态机：`` ` ``／`~` 三连以上开栏（缩进至多 3 格、信息串丢弃），同字符且不短于开栏的闭栏行结束；栏内每行按原样生成等宽段落 run，`#`／`|`／`**` 不再参与标题、表格或行内解析 | `docx-kit/src/markdown.ts` |
+
+**行为变化**：含围栏代码块的模板与渲染源不再被静默改写——栏内 `#` 行不再变成标题、`|` 行不再拼成表格、`**` 不再变成加粗；行内缩进与行尾空格保留。信息串与围栏标记本身不写入 DOCX，文本投影也不还原围栏。
+
+**既有测试行为**：`markdown.spec.ts` 新增 14 条围栏用例（标题/表格/加粗不再生效、信息串、`~` 栏、闭栏长度、缩进与行尾空格、未闭栏、开栏缩进、表格中断、空行、反引号信息串、短于三连）；`docx-render.spec.ts` 新增一条渲染断言（等宽字体、无标题层级、无表格）。非围栏输入的解析结果不变。
+
+验证：`pnpm exec vitest run packages/document/docx-kit/tests` 153 用例通过；`markdown.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`verify-translation-pairing` 重录后通过。
 
 ## 复核记录
 

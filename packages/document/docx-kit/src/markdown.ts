@@ -3,8 +3,8 @@
  * `domains/doctmpl/renderer_docx.go` of the Go project Mady.
  *
  * Accepted syntax: `#`-prefixed headings up to level 6, plain paragraphs,
- * `-` or `*` list items, pipe tables, and inline `**bold**` and `` `code` ``
- * spans. Anything else stays paragraph text instead of failing.
+ * `-` or `*` list items, pipe tables, fenced code blocks, and inline `**bold**`
+ * and `` `code` `` spans. Anything else stays paragraph text instead of failing.
  */
 
 import { HEADING_MARKER, headingLevelOf, type DocxBlock, type DocxInlineRun, type DocxTableRow, type HeadingLevel } from './types.ts'
@@ -112,11 +112,75 @@ function parseTableRow(line: string): DocxTableRow {
   return inner.split('|').map(cell => parseInline(cell.trim()))
 }
 
+/** Fence marker characters; CommonMark accepts both. */
+const FENCE_MARKERS = ['`', '~'] as const
+
+/** A fence marker character. */
+type FenceMarker = (typeof FENCE_MARKERS)[number]
+
+/** Indentation a fence line may carry before its marker. */
+const FENCE_MAX_INDENT = 3
+
+/** Open fenced block: its marker character and the marker run that opened it. */
+type Fence = { readonly marker: FenceMarker; readonly length: number }
+
+/**
+ * Read a line that opens a fenced code block.
+ * An info string follows the opening run; a backtick fence cannot carry a
+ * backtick in that string, because the same characters would close it.
+ * @param line - one source line, without its line ending.
+ * @returns the open fence, or `undefined` when the line opens none.
+ */
+function fenceOpening(line: string): Fence | undefined {
+  const leading = line.length - line.trimStart().length
+  if (leading > FENCE_MAX_INDENT) return undefined
+  const content = line.slice(leading)
+  const marker: string = content.charAt(0)
+  if (marker !== '`' && marker !== '~') return undefined
+  let run = 0
+  while (run < content.length && content.charAt(run) === marker) run += 1
+  if (run < 3) return undefined
+  if (marker === '`' && content.slice(run).includes('`')) return undefined
+  return { marker, length: run }
+}
+
+/**
+ * Whether a line closes the open fenced block.
+ * The closing run uses the same character, is at least as long as the opening
+ * run, and carries nothing but spaces after it.
+ * @param line - one source line, without its line ending.
+ * @param fence - the open fence.
+ * @returns whether the line closes it.
+ */
+function closesFence(line: string, fence: Fence): boolean {
+  const leading = line.length - line.trimStart().length
+  if (leading > FENCE_MAX_INDENT) return false
+  const content = line.trim()
+  let run = 0
+  while (run < content.length && content.charAt(run) === fence.marker) run += 1
+  return run >= fence.length && content.slice(run) === ''
+}
+
+/**
+ * Render one fenced code line as a monospace paragraph run.
+ *
+ * Markers inside a fence are code, so the line is taken verbatim: parsing
+ * inline decoration would turn `**` or a backtick in the sample into formatting
+ * and change the text the reviewer sees.
+ * @param line - the source line, verbatim.
+ * @returns the paragraph block for that line.
+ */
+function codeLineBlock(line: string): DocxBlock {
+  return { kind: 'paragraph', runs: [{ text: line, bold: false, code: true }] }
+}
+
 /**
  * Parse Markdown into the block model the writer renders.
  * A line ending opens a new block only as the upstream renderer did: consecutive
  * plain lines join into one paragraph, a separator row inside a table run is
- * dropped, and an empty table contributes no block.
+ * dropped, and an empty table contributes no block. A fenced code block keeps
+ * every line verbatim as a monospace paragraph, so `#`, `|`, or `**` inside a
+ * sample stay text; its info string is not rendered.
  * @param markdown - the Markdown source.
  * @returns the blocks in source order.
  */
@@ -137,30 +201,49 @@ export function parseMarkdown(markdown: string): readonly DocxBlock[] {
     table = []
   }
 
+  let fence: Fence | undefined
   for (const raw of markdown.split('\n')) {
-    const line = raw.replace(/\r+$/u, '').trim()
-    if (line.startsWith('|')) {
+    const line = raw.replace(/\r+$/u, '')
+    if (fence !== undefined) {
+      if (closesFence(line, fence)) {
+        fence = undefined
+        continue
+      }
       flushParagraph()
-      if (!isTableSeparator(line)) table.push(parseTableRow(line))
+      flushTable()
+      blocks.push(codeLineBlock(line))
+      continue
+    }
+    const opening = fenceOpening(line)
+    if (opening !== undefined) {
+      flushParagraph()
+      flushTable()
+      fence = opening
+      continue
+    }
+    const text = line.trim()
+    if (text.startsWith('|')) {
+      flushParagraph()
+      if (!isTableSeparator(text)) table.push(parseTableRow(text))
       continue
     }
     flushTable()
-    const heading = parseHeading(line)
+    const heading = parseHeading(text)
     if (heading !== undefined) {
       flushParagraph()
       blocks.push({ kind: 'heading', level: heading.level, text: heading.text })
       continue
     }
-    if (isListItem(line)) {
+    if (isListItem(text)) {
       flushParagraph()
-      blocks.push({ kind: 'listItem', runs: parseInline(line.slice(2).trim()) })
+      blocks.push({ kind: 'listItem', runs: parseInline(text.slice(2).trim()) })
       continue
     }
-    if (line === '') {
+    if (text === '') {
       flushParagraph()
       continue
     }
-    paragraph.push(line)
+    paragraph.push(text)
   }
   flushTable()
   flushParagraph()

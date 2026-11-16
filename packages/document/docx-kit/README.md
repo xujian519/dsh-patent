@@ -1,5 +1,5 @@
 ---
-description: "Markdown to DOCX rendering and DOCX to text projection over Node's standard library only: six heading levels, paragraphs, unordered lists, tables, and inline bold and code, with recoverable parse failures returned as structured problems."
+description: "Markdown to DOCX rendering and DOCX to text projection over Node's standard library only: six heading levels, paragraphs, unordered lists, tables, fenced code blocks, and inline bold and code, with recoverable parse failures returned as structured problems."
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`@deepseek-ai/dsh-docx-kit` renders Markdown into a DOCX package and projects a DOCX package back to text. `renderDocx(markdown, options)` accepts six heading levels, plain paragraphs, `- ` and `* ` list items, pipe tables, and inline bold and code spans; `extractDocxText(bytes, limits)` returns the body, header, and footer text with heading levels preserved, reading under the caller's entry-count and uncompressed-byte budgets. Both directions use the ZIP and XML readers of this package over `node:zlib`, and a malformed archive comes back as `problems` rather than an exception. The package registers nothing into a Cordis composition.
+`@deepseek-ai/dsh-docx-kit` renders Markdown into a DOCX package and projects a DOCX package back to text. `renderDocx(markdown, options)` accepts six heading levels, plain paragraphs, `- ` and `* ` list items, pipe tables, fenced code blocks, and inline bold and code spans; `extractDocxText(bytes, limits)` returns the body, header, and footer text with heading levels preserved, reading under the caller's entry-count and uncompressed-byte budgets. Both directions use the ZIP and XML readers of this package over `node:zlib`, and a malformed archive comes back as `problems` rather than an exception. The package registers nothing into a Cordis composition.
 
 ## Table of Contents
 
@@ -100,7 +100,8 @@ None: the package sends nothing to a provider and mutates no request prefix.
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- **The Markdown subset is the upstream subset** — ordered lists, block quotes, thematic breaks, links, images, and fenced code blocks are not recognized: their lines stay paragraph text, so a document using them renders without those structures instead of failing.
+- **The Markdown subset is deliberately narrow** — ordered lists, block quotes, thematic breaks, links, and images are not recognized: their lines stay paragraph text, so a document using them renders without those structures instead of failing.
+- **Fenced code keeps its text, not its fence** — a fenced block's lines are rendered verbatim as monospace paragraphs, so `#`, `|`, and `**` inside a sample stay text; the info string and the fence markers themselves are not rendered, and the text projection does not restore them.
 - **The text projection is not a Markdown round trip** — bold and code are run properties rather than text, so their markers are not restored; a list item projects as its bullet character, and table rows project as separate lines separated by a blank line, which a re-render reads as one single-row table per row.
 - **Heading levels come from two properties** — `w:pStyle` naming `HeadingN` or the localized numeric form, otherwise an inline `w:outlineLvl` counting from zero; a paragraph carrying neither is a body paragraph, and a style that names a level wins over an outline level.
 - **Parts are decoded as UTF-8** — the ZIP name flag is not consulted, so a legacy CP437 entry name decodes lossily and a UTF-16 document part reports `malformed-xml`.

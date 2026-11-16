@@ -1,5 +1,5 @@
 ---
-description: "仅用 Node 标准库完成 Markdown 转 DOCX 与 DOCX 转纯文本：六级标题、段落、无序列表、表格，以及行内加粗与等宽；可恢复的解析失败以结构化问题返回。"
+description: "仅用 Node 标准库完成 Markdown 转 DOCX 与 DOCX 转纯文本：六级标题、段落、无序列表、表格、围栏代码块，以及行内加粗与等宽；可恢复的解析失败以结构化问题返回。"
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`@deepseek-ai/dsh-docx-kit` 把 Markdown 渲染为 DOCX 包，也把 DOCX 包投影回纯文本。`renderDocx(markdown, options)` 接受六级标题、普通段落、`- ` 与 `* ` 列表项、管道表格，以及行内加粗与等宽；`extractDocxText(bytes, limits)` 返回正文、页眉与页脚文本并保留标题层级，读取受调用方给出的条目数与解压字节预算约束。两个方向都只用本包在 `node:zlib` 之上实现的 ZIP 与 XML 读写，畸形的归档以 `problems` 返回而不抛异常。本包不向 Cordis 组合注册任何东西。
+`@deepseek-ai/dsh-docx-kit` 把 Markdown 渲染为 DOCX 包，也把 DOCX 包投影回纯文本。`renderDocx(markdown, options)` 接受六级标题、普通段落、`- ` 与 `* ` 列表项、管道表格、围栏代码块，以及行内加粗与等宽；`extractDocxText(bytes, limits)` 返回正文、页眉与页脚文本并保留标题层级，读取受调用方给出的条目数与解压字节预算约束。两个方向都只用本包在 `node:zlib` 之上实现的 ZIP 与 XML 读写，畸形的归档以 `problems` 返回而不抛异常。本包不向 Cordis 组合注册任何东西。
 
 ## 目录
 
@@ -100,7 +100,8 @@ const { text, problems } = extractDocxText(bytes, { maxArchiveEntries: 10_000, m
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- **Markdown 子集即上游子集** —— 有序列表、引用块、分隔线、链接、图片与围栏代码块都不被识别：这些行会作为普通段落文本，因此使用它们的文档会缺少那些结构而非报错。
+- **Markdown 子集有意保持窄** —— 有序列表、引用块、分隔线、链接与图片都不被识别：这些行会作为普通段落文本，因此使用它们的文档会缺少那些结构而非报错。
+- **围栏代码保留文本、不保留围栏** —— 围栏内的行按原样渲染为等宽段落，样例里的 `#`、`|` 与 `**` 不会变成标题、表格或加粗；信息串与围栏标记本身不渲染，文本投影也不会还原它们。
 - **文本投影不是 Markdown 往返** —— 加粗与等宽是 run 属性而非文本，其标记不会被还原；列表项投影为它自身的项目符号字符，表格行投影为以空行相隔的多行，再渲染时会被读成多个单行表格。
 - **标题层级来自两个属性** —— `w:pStyle` 名为 `HeadingN` 或本地化的数字形式，否则取行内的 `w:outlineLvl`（自 0 起算）；两者皆无的段落即正文段落，且命名了层级的样式优先于大纲级别。
 - **部件按 UTF-8 解码** —— 不查看 ZIP 的名称标志，因而遗留 CP437 条目名会被有损解码，UTF-16 的 document 部件会报 `malformed-xml`。

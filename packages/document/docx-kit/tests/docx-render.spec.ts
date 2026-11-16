@@ -89,6 +89,16 @@ describe('renderDocx', () => {
     expect(bodyXml(renderDocx('正文', { disclaimer: '' }))).not.toContain('⚠️')
   })
 
+  it('renders a fenced sample as monospace text instead of headings or tables', () => {
+    const xml = bodyXml(renderDocx('```\n# not a heading\n| a | b |\n```'))
+
+    expect(xml).toContain('w:ascii="Consolas"')
+    expect(xml).toContain('# not a heading')
+    expect(xml).toContain('| a | b |')
+    expect(xml).not.toContain('<w:outlineLvl')
+    expect(xml).not.toContain('<w:tbl>')
+  })
+
   it('renders an empty document for empty Markdown', () => {
     const xml = bodyXml(renderDocx(''))
     expect(xml).not.toContain('<w:p>')

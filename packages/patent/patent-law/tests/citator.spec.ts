@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decideValidity, queryValidity } from '../src/citator.ts'
+import { loadLawBaselines } from '../src/baseline.ts'
+import { verifyCitation } from '../src/verify.ts'
 import type { LawBaseline, LawLineageSnapshot, LawName } from '../src/types.ts'
 import {
   UNVERIFIED_ARTICLE_5,
@@ -51,14 +53,15 @@ describe('queryValidity — active', () => {
   })
 })
 
-describe('queryValidity — revised', () => {
-  it('returns revised for a section in staleSections', () => {
+describe('queryValidity — stale old paths', () => {
+  it('returns unverified for a section in staleSections and marks the old path', () => {
     const result = queryValidity({ provision: '审查指南第二部分第四章3.2.1.1' }, baselines())
-    expect(result.state).toBe('revised')
-    expect(result.reason).toContain('已被修改')
+    expect(result.state).toBe('unverified')
+    expect(result.stalePath).toBe(true)
+    expect(result.reason).toContain('旧编号')
   })
 
-  it('returns revised when supersededBy is set and no version overrides', () => {
+  it('fails closed when supersededBy has no transcribed changes', () => {
     // Use a section that is not stale and not a parent of any stale section.
     const index = new Map<LawName, LawBaseline>([
       ['专利法', statute()],
@@ -91,9 +94,8 @@ describe('queryValidity — revised', () => {
       }],
     ])
     const result = queryValidity({ provision: '审查指南第一部分第一章4.2' }, index)
-    expect(result.state).toBe('revised')
-    expect(result.reason).toContain('已被')
-    expect(result.reason).toContain('取代')
+    expect(result.state).toBe('unverified')
+    expect(result.reason).toContain('节修订记录')
   })
 })
 
@@ -180,11 +182,12 @@ describe('decideValidity — direct reference API', () => {
     expect(result.state).toBe('active')
   })
 
-  it('returns revised for a stale guideline section reference', () => {
+  it('returns unverified for a stale guideline section reference', () => {
     const ref = { kind: 'guideline-section' as const, law: '专利审查指南' as const, path: '第二部分第四章3.2.1.1', raw: '审查指南第二部分第四章3.2.1.1' }
     const result = decideValidity(ref, baselines())
-    expect(result.state).toBe('revised')
-    expect(result.reason).toContain('已被修改')
+    expect(result.state).toBe('unverified')
+    expect(result.stalePath).toBe(true)
+    expect(result.reason).toContain('旧编号')
   })
 })
 
@@ -274,5 +277,50 @@ describe('decideValidity — lineage narrowing', () => {
     )
     expect(result.state).toBe('active')
     expect(result.reason).toContain('沿革数据确认现行有效')
+  })
+})
+
+describe('2026 年指南修订的效力口径（随包资产）', () => {
+  const index = loadLawBaselines()
+  const section = (path: string) => ({
+    kind: 'guideline-section' as const,
+    law: '专利审查指南' as const,
+    path,
+    raw: `审查指南${path}`,
+  })
+
+  it('未修改的创造性三步法节判现行有效，与引用核验一致', () => {
+    const path = '第二部分第四章3.2.1.1'
+    const validity = queryValidity({ provision: `审查指南${path}` }, index)
+    expect(validity.state).toBe('active')
+    expect(verifyCitation(section(path), index).decision).toBe('valid')
+  })
+
+  it('2026 年修改的节用新文本核验，两边都判有效', () => {
+    const path = '第二部分第四章6.4'
+    const validity = queryValidity({ provision: `审查指南${path}` }, index)
+    expect(validity.state).toBe('active')
+    expect(verifyCitation(section(path), index).decision).toBe('valid')
+  })
+
+  it('改号后的旧路径：编号被新节复用时判新节，未复用时仍为未核验', () => {
+    const baseline = index.get('专利审查指南')
+    const stale = baseline?.staleSections.map(entry => entry.path) ?? []
+    const reused = new Set((baseline?.versions ?? []).flatMap(version =>
+      version.sections.map(section => section.path)))
+    expect(stale).toHaveLength(6)
+    const unresolved = stale.filter(path => !reused.has(path))
+    expect(unresolved.length).toBeGreaterThan(0)
+    for (const path of stale) {
+      const validity = queryValidity({ provision: `审查指南${path}` }, index)
+      if (reused.has(path)) {
+        // 该编号在 2026 年版指向新增或改号后的节，引用按新文本核验。
+        expect(validity.state, path).toBe('active')
+        continue
+      }
+      expect(validity.state, path).toBe('unverified')
+      expect(validity.stalePath, path).toBe(true)
+      expect(verifyCitation(section(path), index).decision, path).toBe('unverified')
+    }
   })
 })

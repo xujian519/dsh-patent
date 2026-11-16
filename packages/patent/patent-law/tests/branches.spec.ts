@@ -182,7 +182,8 @@ describe('citator branches', () => {
       })],
     ])
     const result = queryValidity({ provision: '审查指南第二部分第四章3.2.1.1' }, index)
-    expect(result.state).toBe('revised')
+    expect(result.state).toBe('unverified')
+    expect(result.stalePath).toBe(true)
     expect(result.entry).toBeUndefined()
   })
 
@@ -195,7 +196,8 @@ describe('citator branches', () => {
       })],
     ])
     const result = queryValidity({ provision: '审查指南第一部分第一章4.2' }, index)
-    expect(result.state).toBe('revised')
+    expect(result.state).toBe('unverified')
+    expect(result.reason).toContain('节修订记录')
     expect(result.entry).toBeUndefined()
   })
 
@@ -205,7 +207,7 @@ describe('citator branches', () => {
     expect(result.reason).toContain('正文尚未转录核验')
   })
 
-  it('keeps a superseded section revised when no version covers it', () => {
+  it('keeps an unmodified section active when a version covers other sections', () => {
     const index = new Map<LawName, LawBaseline>([
       ['专利审查指南', guideline({
         staleSections: [],
@@ -224,8 +226,8 @@ describe('citator branches', () => {
       })],
     ])
     const result = queryValidity({ provision: '审查指南第一部分第一章4.2' }, index)
-    expect(result.state).toBe('revised')
-    expect(result.reason).toContain('取代')
+    expect(result.state).toBe('active')
+    expect(result.reason).toContain('现行有效')
   })
 
   it('reports a parsed guideline section that is not indexed', () => {
@@ -364,7 +366,11 @@ describe('rule-lock branches', () => {
       })],
     ])
     const result = lockProvisions(['审查指南第二部分第四章3.2.1.1'], index)
-    expect(result.locked[0]).toMatchObject({ validityStatus: 'revised', effectiveDate: '2026-01-01' })
+    expect(result.locked[0]).toMatchObject({
+      validityStatus: 'unverified',
+      stalePath: true,
+      effectiveDate: '2026-01-01',
+    })
   })
 })
 

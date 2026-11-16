@@ -41,10 +41,12 @@ export type RuleLockEntry = {
   level: RuleLockLevel
   /** 生效日期（YYYY-MM-DD），无法确定时为 null。 */
   effectiveDate: string | null
-  /** 是否已失效（revised 或 repealed 时为 true）。 */
+  /** 是否已失效：废止，或引用的指南旧编号已被现行版本取代。修订本身不算失效。 */
   stale: boolean
   /** 四态有效性判定。 */
   validityStatus: ValidityState
+  /** 引用的指南节是现行版本已改号或删除的旧路径。 */
+  stalePath?: true
 }
 
 /** rule-lock 原子的结构化输出。 */
@@ -120,8 +122,10 @@ function lockOneProvision(
     provision,
     level: inferLevel(result),
     effectiveDate: extractEffectiveDate(result),
-    stale: result.state === 'revised' || result.state === 'repealed',
+    // 已修订是文本变化，条文本身仍现行有效；只有废止与旧编号路径写失效。
+    stale: result.state === 'repealed' || result.stalePath === true,
     validityStatus: result.state,
+    ...(result.stalePath === true ? { stalePath: true } : {}),
   }
 }
 
@@ -171,7 +175,7 @@ export function renderRuleLockReport(output: RuleLockOutput): string {
   ]
 
   for (const entry of locked) {
-    const statusLabel = validityLabel(entry.validityStatus)
+    const statusLabel = entry.stalePath === true ? '旧编号失效' : validityLabel(entry.validityStatus)
     const staleFlag = entry.stale ? '⚠️已失效' : '✓'
     const dateText = entry.effectiveDate !== null ? `（生效：${entry.effectiveDate}）` : ''
     lines.push(`- ${entry.provision}：${statusLabel} ${staleFlag}${dateText}`)

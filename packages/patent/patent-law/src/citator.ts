@@ -64,10 +64,14 @@ export function queryValidity(
  *
  * | State       | Rule |
  * |-------------|------|
- * | `active`    | Entry found, transcribed, not stale, not superseded, and its listed paragraphs contain the cited paragraph. |
- * | `revised`   | Entry found but in `staleSections`, or baseline `supersededBy` covers it, or a later version overrides it. |
+ * | `active`    | Entry found, transcribed, not a stale old path, and its paragraphs contain the cited one. |
+ * | `revised`   | Statute lineage records a revision. |
  * | `repealed`  | Explicit repeal record (reserved; no current data path). |
- * | `unverified`| Entry missing, untranscribed, out of range, law not indexed, unknown revision, or an absent paragraph. |
+ * | `unverified`| Entry missing, untranscribed, out of range, unknown law or revision, or a stale old path. |
+ *
+ * A guideline section outside `versions` and `staleSections` was not modified by the successor
+ * revision and keeps its 2023 text as current. A successor without transcribed change records
+ * cannot tell which sections changed, so every section of that baseline is unverified.
  *
  * @param reference - the parsed law reference.
  * @param baselines - the loaded law index, keyed by law name.
@@ -220,10 +224,13 @@ function paragraphGap(
 /**
  * Decide the validity of a guideline section.
  *
- * A section is `revised` when the baseline's `staleSections` cover it, or when
- * `supersededBy` is set and no transcribed version overrides the staleness. A
- * section is `active` when it is indexed, transcribed, and not stale. The
- * revision history is reported from the baseline's `versions` when any exist.
+ * A section is `active` when it is indexed, transcribed, and not a stale old
+ * path. `staleSections` mark paths the current revision renumbered or deleted:
+ * their 2023 text cannot be cited under the current numbering, so they are
+ * `unverified`. `versions` replace the text of the sections the revision
+ * changed; a section outside both lists was not modified and keeps its 2023
+ * text as current. A baseline that declares `supersededBy` without any version
+ * record cannot tell which sections changed and is reported `unverified`.
  */
 function decideSectionValidity(
   reference: Extract<LawReference, { kind: 'guideline-section' }>,
@@ -231,8 +238,7 @@ function decideSectionValidity(
   query: Pick<ValidityQuery, 'revision'>,
 ): ValidityResult {
   // Resolve the version-aware view once and use it for all subsequent checks,
-  // so the stale-section and supersededBy checks see the same sections the
-  // verifier would see.
+  // so the stale-section check sees the sections the verifier would see.
   const view = resolveGuidelineView(baseline, query.revision)
   if (view === null) {
     return {
@@ -243,26 +249,28 @@ function decideSectionValidity(
   }
   const entry = findSection(view, reference.path)
 
-  // A section covered by staleSections is revised, regardless of whether the
-  // text is transcribed.
+  // A section covered by staleSections is an old path: the current revision
+  // renumbered or deleted it, so its 2023 text cannot be verified against the
+  // current numbering.
   const stale = findStaleCoverage(view, reference.path)
   if (stale !== undefined) {
     return {
       reference,
-      state: 'revised',
-      reason: `《专利审查指南》${reference.path} 已被修改（${stale.reason}）`,
+      state: 'unverified',
+      stalePath: true,
+      reason: `《专利审查指南》${reference.path} 是旧编号（${stale.reason}），不能按现行版本核验`,
       ...(entry !== undefined ? { entry } : {}),
       ...historyRecord(baseline),
     }
   }
 
-  // When supersededBy is set and no version overrides the stale mark, the
-  // section is revised even if the entry itself is transcribed.
-  if (view.supersededBy !== null && !hasVersionOverride(baseline, reference.path)) {
+  // A declared successor without transcribed changes leaves the scope of the
+  // revision unknown; fail closed instead of treating every section as current.
+  if (view.supersededBy !== null && baseline.versions.length === 0) {
     return {
       reference,
-      state: 'revised',
-      reason: `《专利审查指南》${reference.path} 所属版本已被${view.supersededBy}取代`,
+      state: 'unverified',
+      reason: `《专利审查指南》已声明被${view.supersededBy}取代，但索引没有该版本的节修订记录，无法判断哪些节未修改`,
       ...(entry !== undefined ? { entry } : {}),
       ...historyRecord(baseline),
     }
@@ -340,12 +348,6 @@ function resolveGuidelineView(baseline: LawBaseline, revision: string | undefine
 function findStaleCoverage(baseline: LawBaseline, path: string): StaleSection | undefined {
   return baseline.staleSections.find(stale =>
     coversSection(path, stale.path) || coversSection(stale.path, path))
-}
-
-/** Whether a version override touches the path or a parent of it. */
-function hasVersionOverride(baseline: LawBaseline, path: string): boolean {
-  return baseline.versions.some(version =>
-    version.sections.some(s => coversSection(path, s.path) || coversSection(s.path, path)))
 }
 
 /** Build the revision history spread record; empty when no versions exist. */

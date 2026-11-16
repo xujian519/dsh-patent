@@ -522,10 +522,11 @@ it('claim-chart：字段级 malformed 打回重做；多 claimNo 排序', async 
     elements: [{ id: 42, claimNo: 'x', text: 't', kind: null }],
     rows: [{ elementId: 1, targetId: 2, quote: 'q', pinCite: 3, mapping: 4 }],
   }
+  const multiClaimText = '1. 一种过滤装置，包括壳体和滤芯。\n2. 根据权利要求1所述的装置，还包括活性炭。'
   const multiClaim = {
     elements: [
       { id: '1a', claimNo: 1, text: '包括壳体', kind: 'limitation' },
-      { id: '2a', claimNo: 2, text: '和滤芯', kind: 'limitation' },
+      { id: '2a', claimNo: 2, text: '还包括活性炭', kind: 'limitation' },
     ],
     rows: [],
   }
@@ -537,7 +538,7 @@ it('claim-chart：字段级 malformed 打回重做；多 claimNo 排序', async 
     },
   }
   const state = await handler.execute({
-    state: { claim: CLAIM, chart_targets: '[]', chart_mode: 'invalidity' },
+    state: { claim: multiClaimText, chart_targets: '[]', chart_mode: 'invalidity' },
     provider,
   })
   expect(calls).toBe(2)

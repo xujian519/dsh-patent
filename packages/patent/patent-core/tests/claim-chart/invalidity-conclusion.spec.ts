@@ -292,3 +292,19 @@ it('无要素时不产生逐权项判定', () => {
   empty.claimNos = []
   expect(deriveInvalidityConclusion(empty).novelty[0]?.claims).toEqual([])
 })
+
+it('所引权项没有要素时不写已并入全部要素', () => {
+  const partial = chart([row('2a', 'D1', 'literal')])
+  partial.elements = [{ id: '2a', claimNo: 2, text: '所述滤芯为折叠式', kind: 'limitation' }]
+  partial.claimNos = [2]
+  const conclusion = deriveInvalidityConclusion(partial)
+  expect(conclusion.novelty[0]?.claims[0]).toMatchObject({
+    claimNo: 2,
+    covered: false,
+    missing: [],
+    missingReferredClaims: [1],
+  })
+  const text = renderInvalidityConclusion(conclusion, partial)
+  expect(text).toContain('所引权利要求 1 没有要素，不能并入')
+  expect(text).not.toContain('已并入所引用权利要求 1 的全部要素')
+})

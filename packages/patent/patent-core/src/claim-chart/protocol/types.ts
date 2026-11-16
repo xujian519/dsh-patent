@@ -153,6 +153,8 @@ export type ClaimNoveltyCoverage = {
   includesReferredClaims: boolean
   /** 并入的所引用权项号（传递闭包）；独立权项为空数组。 */
   referredClaimNos: number[]
+  /** 引用链中没有任何要素的权项号；存在时 covered 必为 false。 */
+  missingReferredClaims?: number[]
   /** 多项从属权项（引用两项以上）的逐替代方案结果；单一引用或无引用时省略。 */
   alternatives?: ClaimAlternative[]
 }
@@ -165,6 +167,8 @@ export type ClaimAlternative = {
   covered: boolean
   /** 该替代方案未被覆盖的要素 id。 */
   missing: string[]
+  /** 该替代方案引用链中没有任何要素的权项号；存在时 covered 必为 false。 */
+  missingReferredClaims?: number[]
 }
 
 /** 引用关系缺陷。 */

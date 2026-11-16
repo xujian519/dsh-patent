@@ -72,13 +72,13 @@
 | F-PAT-037 | PDF 渲染的宽限和 abort 监听没有用例 | PAT | D | Medium | 中 | new |
 | F-PAT-038 | nuo 检索 provider 的抛错和超时告警没有用例 | PAT | D | Medium | 中 | new |
 | F-PAT-039 | 同一句权利要求在两套解析里独立／从属结论相反 | PAT | E | High | 高 | new |
-| F-PAT-040 | 空 quote 的覆盖类映射仍判单篇全覆盖 | PAT | E | High | 中 | new |
-| F-PAT-041 | 所引权项没有要素时仍报告已并入其全部要素 | PAT | E | High | 中 | new |
+| F-PAT-040 | 空 quote 的覆盖类映射仍判单篇全覆盖 | PAT | E | High | 中 | fixed |
+| F-PAT-041 | 所引权项没有要素时仍报告已并入其全部要素 | PAT | E | High | 中 | fixed |
 | F-PAT-042 | 未提取到技术问题时，阻断级法条缺口记为通过 | PAT | E | High | 中 | new |
-| F-PAT-043 | 源文可读时空 pin-cite 被判格式非法 | PAT | E | Medium | 中 | new |
-| F-PAT-044 | 要素 claimNo 没有对应段落时用全文做子串校验 | PAT | E | Medium | 中 | new |
+| F-PAT-043 | 源文可读时空 pin-cite 被判格式非法 | PAT | E | Medium | 中 | fixed |
+| F-PAT-044 | 要素 claimNo 没有对应段落时用全文做子串校验 | PAT | E | Medium | 中 | fixed |
 | F-PAT-045 | 省略 `parallel_lower_levels` 仍判概括范围通过 | PAT | E | Medium | 高 | new |
-| F-PAT-046 | 同一格同时 `literal` 与 `not-found` 时，缺口与全覆盖同时成立 | PAT | E | Medium | 中 | new |
+| F-PAT-046 | 同一格同时 `literal` 与 `not-found` 时，缺口与全覆盖同时成立 | PAT | E | Medium | 中 | fixed |
 | F-PAT-047 | 审批门中断后的续跑从第一个阶段重跑，内置 manifest 的检索与模型阶段重复执行 | PAT | E | Medium | 中 | deferred |
 | F-PAT-048 | 通知书解析不出驳回理由时，两条双输入规则判为通过且无未评估标记 | PAT | E | Medium | 中 | new |
 | F-PAT-049 | 结构门禁与引用门禁不核对 `textArgs`，声明写错即静默放行 | PAT | E | Medium | 低 | new |
@@ -1550,6 +1550,24 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`index.spec.ts` 的接线用例原本传绝对临时目录，改为传 `.`（解析后即 cwd，`mkdir` 无副作用，且该用例只验证接线）。新增两条用例覆盖收紧后的行为。
 
 未纳入本批：F-PAT-016（ego-browser 继承完整环境，Low），留待批次 B 一并处理子进程环境白名单。
+
+### 批次 E1：对比表覆盖与行校验（2026-11-16）
+
+用户确认按 E 维度顺序开始修复后完成。只改 claim-chart 的校验与结论推导，不新增工具参数。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-040 | 源文可读时，计入覆盖的 `literal`／`anticipation`／`literal-construction-dependent` 必须带非空 `quote`；`not-found` 仍可留空 | `claim-chart/runtime/mapping-machine.ts`、`atoms/handlers/builtin/chart.ts` |
+| F-PAT-041 | 引用链上的权项没有任何要素时，该路径 `covered` 为 false，并新增 `missingReferredClaims`；结论写「所引权利要求 N 没有要素，不能并入」，不再写「已并入…全部要素」 | `claim-chart/runtime/mapping-machine.ts`、`claim-chart/runtime/invalidity-conclusion.ts`、`claim-chart/protocol/types.ts` |
+| F-PAT-043 | 源文可读时空 pin-cite 与格式校验共用同一条件，不再无条件调用 `validatePinCite` | `atoms/handlers/builtin/chart.ts` |
+| F-PAT-044 | `segments.size > 0` 且要素的 claimNo 没有对应段落时报错；只有切分结果为空时才回退全文 | `claim-chart/runtime/element-validator.ts` |
+| F-PAT-046 | 同一要素与同一目标出现多行时打回重做 | `atoms/handlers/builtin/chart.ts` |
+
+**行为变化**：空 quote 的覆盖行、无段落的 claimNo 与重复行现在打回重做；源文可读的空 pin-cite 不再被误拒；引用链缺要素时的结论文本改写。有效图表与既有快照不变。
+
+**既有测试行为**：`element-validator.spec.ts` 的多 claim 用例原本把第二条权项写在同一行，`splitClaimSegments` 只认行首编号，该输入在新规则下会把第二条权项当成无段落；用例改为换行分隔。`atoms-coverage.spec.ts` 的多 claimNo 用例把第二项要素挂在原文没有的第二条权项上，新规则会判为无段落；用例改用两条权项的原文。两处断言的「多 claim 共存」行为不变。
+
+验证：`pnpm exec vitest run` 的 `patent-core` 全量（1761 用例）通过；五个改动文件在聚焦 `--coverage.include` 下均为 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`pnpm run test:snapshot -t patent-claim-chart` 通过。
 
 ## 复核记录
 

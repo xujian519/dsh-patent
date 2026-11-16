@@ -121,12 +121,35 @@ it('reads an application that an Electron archive installation keeps beside app.
   expect(f.spawn).not.toHaveBeenCalled()
 })
 
+it('uses the development variant a local build stages into an installed package', async () => {
+  const f = await fixture()
+  const installed = join(f.root, 'node_modules/@deepseek-ai/dsh-experimental-cua-macos')
+  const path = await publish(join(installed, 'native/bin/darwin-arm64'), f.output, 'dev')
+  expect(await prepareNativeExecutable({ ...f.spec, packageRoot: installed })).toBe(path)
+  expect(f.spawn).not.toHaveBeenCalled()
+})
+
+it('prefers the notarized release application when one receipt selects both variants', async () => {
+  const f = await fixture()
+  const directory = join(f.root, 'node_modules/@deepseek-ai/dsh-experimental-cua-macos/native/bin/darwin-arm64')
+  const bundle = 'a'.repeat(64)
+  const release = join(directory, bundle, 'DSH Computer Use.app', 'Contents/MacOS/dsh-cua-native')
+  const development = join(directory, bundle, 'DSH Computer Use Dev.app', 'Contents/MacOS/dsh-cua-native')
+  for (const path of [release, development]) {
+    await mkdir(dirname(path), { recursive: true })
+    await writeFile(path, f.output, { mode: 0o755 })
+  }
+  await writeFile(join(directory, 'current.json'), JSON.stringify({ bundle }))
+  const installed = join(f.root, 'node_modules/@deepseek-ai/dsh-experimental-cua-macos')
+  expect(await prepareNativeExecutable({ ...f.spec, packageRoot: installed })).toBe(release)
+})
+
 it('names the expected directory when an installed package carries no helper application', async () => {
   const f = await fixture()
   const installed = join(f.root, 'node_modules/@deepseek-ai/dsh-experimental-cua-macos.asar/package')
   const directory = join(installed, 'native/bin/darwin-arm64')
   await expect(prepareNativeExecutable({ ...f.spec, packageRoot: installed })).rejects.toThrow(
-    `Computer use helper application is missing from ${directory}; this installation does not include the signed helper`)
+    `Computer use helper application is missing from ${directory}; this installation does not include a usable helper application`)
   await mkdir(directory, { recursive: true })
   await writeFile(join(directory, 'current.json'), '{')
   await expect(prepareNativeExecutable({ ...f.spec, packageRoot: installed })).rejects.toThrow(SyntaxError)
@@ -150,6 +173,16 @@ it('refuses a release-named application selected by a development receipt', asyn
   const f = await fixture()
   await publish(f.directory, f.output, 'release')
   await expect(nativeExecutablePath(f.directory, 'dev')).rejects.toMatchObject({ code: 'ENOENT' })
+})
+
+it('reports an incomplete generation as a missing application rather than a raw file error', async () => {
+  const f = await fixture()
+  const installed = join(f.root, 'node_modules/@deepseek-ai/dsh-experimental-cua-macos')
+  const directory = join(installed, 'native/bin/darwin-arm64')
+  await mkdir(directory, { recursive: true })
+  await writeFile(join(directory, 'current.json'), JSON.stringify({ bundle: 'a'.repeat(64) }))
+  await expect(prepareNativeExecutable({ ...f.spec, packageRoot: installed })).rejects.toThrow(
+    `Computer use helper application is missing from ${directory}; this installation does not include a usable helper application`)
 })
 
 it('preserves the previous generation when preparation fails and reports diagnostics', async () => {

@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-11-16-installed-cua-helper-variant.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-16-installed-cua-helper-variant.md
+/agent-note-development-cua-helper-in-locally-packaged-desktop-applications:
+  en: 807709c5ebdb0cc0
+  zh: aec6c22871ebda1e
+/agent-note-development-cua-helper-in-locally-packaged-desktop-applications/problem:
+  en: 682513005471fbe2
+  zh: eb3292165c417716
+/agent-note-development-cua-helper-in-locally-packaged-desktop-applications/decision:
+  en: ee5bc5d2eb6be41c
+  zh: a7fabc56a57ae612
+/agent-note-development-cua-helper-in-locally-packaged-desktop-applications/alternatives-considered:
+  en: 0484f66a24fb3e8e
+  zh: 1446de40dedeb1e2
+/agent-note-development-cua-helper-in-locally-packaged-desktop-applications/consequences:
+  en: 4dbafb546a2cca97
+  zh: 6bb88e69802d7b55

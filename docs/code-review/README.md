@@ -64,7 +64,14 @@
 - Day 31 已完成：D 维度视频模式全域（`video-mode`、`video-bundle`、`ui-video-studio`）。三包不在覆盖率豁免名单里。EDL 失败、provider 失败与超时、预算拒绝、项目锁冲突和界面渲染失败已有断言。没有新的 D 编号。
 - Day 32 已完成：D 维度跨域失败路径（网络、权限、磁盘、部分写入）。超时、取消和权限拒绝已有断言。磁盘满没有单独的 `ENOSPC` 分支。新增 F-CROSS-003（知识库安装覆盖时先删输出，改名失败没有用例）。
 - Day 33 已完成：D 维度覆盖率豁免审计与汇总。重套件豁免、平台排除和 Windows、pwsh 排除都不含四域。639 个四域 `src` 文件里，门禁不量的是 19 个包根 `types.ts` 和 1 个安装 `bin.ts`。没有新的 D 编号。D27–D32 的 9 条新缺口都在已纳入门禁的文件里。H06 改为部分推翻，H08 改为推翻。
-- 当前进度：A 安全维度（Day 6–12）、B 维度（Day 13–19）、C 维度（Day 20–26）、D 测试缺口（Day 27–33）已完成。下一日为 Day 34（E 正确性与边界：专利域-1）。
+- Day 34 已完成：E 维度专利域-1（`patent-tools`、`patent-core`）。新增 F-PAT-039 至 F-PAT-046。同一句权利要求在引用解析与 lint 解析里独立／从属结论相反；空 quote、所引权项缺少要素、同一格互相矛盾的映射，都会写出单篇全覆盖。未提取到技术问题时，阻断级法条缺口记为通过。H01–H10 不改。
+- Day 35 已完成：E 维度专利域-2（`patent-workflow`、`patent-rule`、`patent-teams`）。新增 F-PAT-047 至 F-PAT-050。审批门中断后的续跑从第一个阶段重跑（复核旧登记 R-77），8 个内置 manifest 的门都在最后一级，门前 7–26 个阶段连同检索与模型调用会重复执行；通知书解析不出驳回理由时两条双输入规则判为通过；结构门禁与引用门禁不核对 `textArgs`，声明写错即静默放行；重规划把重复步骤全部判为已完成。H01–H10 不改。
+- Day 36 已完成：E 维度专利域-3（`patent-knowledge`、`patent-data`、`patent-law`、`patent-fees`、`patent-deadline`）。新增 F-PAT-051 至 F-PAT-055。沿革快照按条号套到所有法律，实施细则条文取到专利法同号条的生效日与状态；指南 1241 个未修改节在 rule-lock 判已修订／已失效、在 law_verify 判已核验；费用工具把单一 `lateMonths` 套到每个年费年度；`designatedMonths` 可把驳回决定的 3 个月复审期缩成 1 个月；上游 JSON 含 null 元素时 `mapPatentData` 抛错。H01–H10 不改。
+- Day 37 已完成：E 维度专利域-4 与文档模式（`patent-document`、`patent-filing`、document 全域）。新增 F-DOC-008 至 F-DOC-010。同一模板的 Markdown 只出一个标题、HTML 与 DOCX 出两个一级标题；DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃；`document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断。R-87（验收读取 DOCX 无归档预算）仍开放。H01–H10 不改。
+- Day 38 已完成：E 维度法律模式与共享机制（`legal-evidence`、`legal-knowledge`、`legal-law`、`law-core`、`knowledge-core`）。新增 F-LEG-011 至 F-LEG-014。证人利害关系省略时关键规则报「证人与案件无利害关系」通过；电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略；法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果；默认判定日期取 UTC，与中国法域自然日相差 8 小时。F-LEG-001、F-LEG-002、F-LEG-004、F-LEG-010 仍开放。H01–H10 不改。
+- Day 39 已完成：E 维度视频模式全域（`video-mode`、`video-bundle`、`ui-video-studio`）。新增 F-VID-011 至 F-VID-015。同一工程的并发生成会各自通过余额检查再分别结算，账本总额可超过预算；provider 被移除或记录被拒绝后 journal 没有工具侧清理路径；`status` 对 `artifacts: []` 的成功任务照常记账并清 journal；`init` 的绝对路径与其余动作的原始路径让同一工程在 studio 出现两次；EDL 音频区间的反向顺序晚到 ffmpeg 才失败。H04 的 Day 39 验证点完成：重复计费不成立，预算不变量部分成立；其余假设不改。
+- Day 40 已完成：E 维度跨域（错误处理、静默降级、模型可见性与会话日志一致性）。新增 F-CROSS-004：四域中只有视频域的工具错误类接入 `HarnessError`，其余七个带 `code` 的错误类在 `tool/result.error` 与轨迹界面里只剩文案。模型可见面逐项对齐：系统提示、工具 schema、用户/合成上下文、工具调用与结果、专利工具内模型调用都有会话事件；外部 provider 原始响应与视频 journal 不是模型可见面，残留缺口只有 F-PAT-010。H07、H10 改为部分确认；D34–D40 的 E 维度共 29 条新编号，加本条 30 条，已按六个主题汇总并列出 Day 41 的合并候选。
+- 当前进度：A 安全维度（Day 6–12）、B 维度（Day 13–19）、C 维度（Day 20–26）、D 测试缺口（Day 27–33）、E 正确性与边界（Day 34–40）已完成。下一日为 Day 41（收敛：去重与合并）。
 - 已确认：45 天周期、包含 `packages/law`、视频按实验特性、在 Node 24 补跑构建与覆盖率基线。
 - 本目录的中文单语文档已加入 `scripts/translation-pairing.manifest.json` 的豁免清单；`verify-translation-pairing` 复跑通过。
 

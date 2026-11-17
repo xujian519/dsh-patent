@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import {
   deriveClaimRefs,
+  parseClaimDocument,
   parseReferenceNumbers,
   referencedClosure,
   validateClaimRefs,
@@ -40,13 +41,71 @@ it('如/按照 与多值、区间引用都识别', () => {
 it('编号表达式容忍空片段与非数字标记', () => {
   expect(parseReferenceNumbers('或1， 2')).toEqual([1, 2])
   expect(parseReferenceNumbers('1或X')).toEqual([1])
+  expect(parseReferenceNumbers('1或2a')).toEqual([1, 2])
 })
 
-it('区间展开有跨度上限，超限不展开', () => {
+it('区间展开有跨度上限，超限只保留端点', () => {
   expect(parseReferenceNumbers('1-3')).toEqual([1, 2, 3])
-  expect(parseReferenceNumbers('1-200')).toEqual([])
+  expect(parseReferenceNumbers('1-35')).toHaveLength(35)
+  expect(parseReferenceNumbers('1-2000')).toEqual([1, 2000])
   expect(parseReferenceNumbers('1、2 或 4')).toEqual([1, 2, 4])
   expect(parseReferenceNumbers('7')).toEqual([7])
+})
+
+it('倒序与超限区间既展开又记入缺陷，不静默变成独立权项', () => {
+  const text = [
+    '1. 一种装置，其特征在于，包括壳体。',
+    '2. 根据权利要求1-35所述的装置，其特征在于，所述壳体为金属。',
+    '3. 根据权利要求2-1所述的装置，其特征在于，所述壳体可拆。',
+    '4. 根据权利要求1-2000所述的装置，其特征在于，所述壳体为塑料。',
+  ].join('\n')
+  const refs = deriveClaimRefs(text)
+  expect(refs[1]).toEqual({ claimNo: 2, claimType: 'dependent', refersTo: Array.from({ length: 35 }, (_, i) => i + 1) })
+  expect(refs[2]).toEqual({
+    claimNo: 3,
+    claimType: 'dependent',
+    refersTo: [1, 2],
+    referenceDefects: [{ kind: 'descending-range', raw: '2-1' }],
+  })
+  expect(refs[3]).toEqual({
+    claimNo: 4,
+    claimType: 'dependent',
+    refersTo: [1, 2000],
+    referenceDefects: [{ kind: 'oversized-range', raw: '1-2000' }],
+  })
+  expect(validateClaimRefs(refs)).toContainEqual({
+    kind: 'reference-range',
+    claimNo: 3,
+    raw: '2-1',
+    problem: 'descending-range',
+  })
+  expect(validateClaimRefs(refs)).toContainEqual({
+    kind: 'reference-range',
+    claimNo: 4,
+    raw: '1-2000',
+    problem: 'oversized-range',
+  })
+})
+
+it('全角数字与「依」前缀在引用关系推导里同样识别', () => {
+  const text = [
+    '1. 一种装置，其特征在于，包括壳体。',
+    '2. 依权利要求１所述的装置，其特征在于，所述壳体为金属。',
+  ].join('\n')
+  expect(deriveClaimRefs(text)[1]).toEqual({ claimNo: 2, claimType: 'dependent', refersTo: [1] })
+})
+
+it('同一份权利要求书在两套解析里给出相同的独立／从属与引用号', () => {
+  const text = [
+    '1. 一种装置，其特征在于，包括壳体。',
+    '2. 如权利要求１所述的装置，其特征在于，还包括滤芯。',
+    '3. 根据权利要求1-3所述的装置，其特征在于，所述滤芯可拆。',
+    '4. 按照权利要求2至1所述的装置，其特征在于，所述壳体为金属。',
+  ].join('\n')
+  const derived = deriveClaimRefs(text)
+  const parsed = parseClaimDocument(text).claims
+  expect(parsed.map(claim => claim.independent)).toEqual(derived.map(ref => ref.claimType === 'independent'))
+  expect(parsed.map(claim => claim.references)).toEqual(derived.map(ref => ref.refersTo))
 })
 
 it('无前缀引用语只在引言部分生效：正文中途转述不算本权项的引用', () => {

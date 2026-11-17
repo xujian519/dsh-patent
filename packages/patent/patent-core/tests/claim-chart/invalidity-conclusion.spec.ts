@@ -241,6 +241,28 @@ it('渲染四类引用关系缺陷', () => {
   expect(cycleReport).toContain('引用关系成环')
 })
 
+it('渲染引用区间缺陷：倒序与跨度超限分别说明', () => {
+  const ranged = chart([])
+  ranged.claims = [
+    { claimNo: 1, claimType: 'independent', refersTo: [] },
+    {
+      claimNo: 2,
+      claimType: 'dependent',
+      refersTo: [1, 2],
+      referenceDefects: [{ kind: 'descending-range', raw: '2-1' }],
+    },
+    {
+      claimNo: 3,
+      claimType: 'dependent',
+      refersTo: [1, 2000],
+      referenceDefects: [{ kind: 'oversized-range', raw: '1-2000' }],
+    },
+  ]
+  const rendered = renderInvalidityConclusion(deriveInvalidityConclusion(ranged), ranged)
+  expect(rendered).toContain('引用区间「2-1」为倒序写法，已按升序展开')
+  expect(rendered).toContain('引用区间「1-2000」跨度超限，只保留端点')
+})
+
 it('渲染：逐权项结论、区别特征、路径问题与引用关系未知三分支', () => {
   const covered = deriveInvalidityConclusion(chart([
     row('1a', 'D1', 'literal'),

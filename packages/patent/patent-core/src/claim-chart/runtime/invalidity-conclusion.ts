@@ -169,6 +169,7 @@ const CLAIM_REF_ISSUE_LABELS: Record<ClaimRefIssue['kind'], string> = {
   'missing-reference': '所引用的权利要求不存在',
   'later-reference': '所引用的权利要求编号不更小（从属权利要求只能引用在前的权利要求）',
   'reference-cycle': '引用关系成环',
+  'reference-range': '引用区间的写法需要核对',
 }
 
 /** 渲染一条引用关系缺陷。 */
@@ -182,7 +183,11 @@ function claimRefIssueLine(issue: ClaimRefIssue): string {
       return `- 权利要求 ${issue.claimNo}：${CLAIM_REF_ISSUE_LABELS[issue.kind]}（${issue.refersTo.join('、')}）`
     case 'reference-cycle':
       return `- ${CLAIM_REF_ISSUE_LABELS[issue.kind]}：${issue.claimNos.join(' → ')}`
-    /* v8 ignore next -- closed union: all four kinds are handled above. */
+    case 'reference-range':
+      return `- 权利要求 ${issue.claimNo}：引用区间「${issue.raw}」${
+        issue.problem === 'descending-range' ? '为倒序写法，已按升序展开' : '跨度超限，只保留端点'
+      }`
+    /* v8 ignore next -- closed union: all five kinds are handled above. */
     default:
       return assertNever(issue)
   }

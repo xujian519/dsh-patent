@@ -7,6 +7,8 @@
  * 保护范围、新颖性、创造性不在本模块内判定——那些需要对比文件与人工判断。
  */
 
+import type { ClaimReferenceDefect } from './references.ts'
+
 /** 规则标识；稳定值，报告与用例按此断言。 */
 export type ClaimLintRuleId =
   | 'numbering'
@@ -63,6 +65,8 @@ export type ParsedClaim = {
   referenceClause: string | null
   /** 引用部分引用的权项号，升序去重；独立权利要求为空。 */
   references: readonly number[]
+  /** 引用区间写法的缺陷（倒序或跨度超限）；没有缺陷时省略。 */
+  referenceDefects?: readonly ClaimReferenceDefect[]
   /**
    * 正文中引用部分的权项交叉引用（如「所述转子为权利要求 1 所述的转子」）。
    *

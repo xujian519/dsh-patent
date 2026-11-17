@@ -112,6 +112,17 @@ describe('parseClaimDocument', () => {
       '1. 一种装置。\n2. 根据权利要求 1 至 999999999 所述的装置，其特征在于，还包括壳体。',
     )
     expect(document.claims[1]?.references).toEqual([1, 999999999])
+    expect(document.claims[1]?.referenceDefects).toEqual([{ kind: 'oversized-range', raw: '1 至 999999999' }])
+  })
+
+  it('如/按照/依 前缀与全角数字的引用部分与引用关系推导一致', () => {
+    const document = parseClaimDocument([
+      '1. 一种装置。',
+      '2. 如权利要求１所述的装置，其特征在于，还包括滤芯。',
+      '3. 按照权利要求1或2所述的装置，其特征在于，所述滤芯可拆。',
+    ].join('\n'))
+    expect(document.claims.slice(1).map(claim => claim.independent)).toEqual([false, false])
+    expect(document.claims.slice(1).map(claim => claim.references)).toEqual([[1], [1, 2]])
   })
 
   it('识别区间、顿号、全角数字与「或」并列的引用号', () => {
@@ -205,6 +216,20 @@ describe('lintClaimText: 结构性规则', () => {
     const report = lintClaimText('1. 根据权利要求 2 所述的装置，其特征在于，还包括壳体。\n2. 一种装置。')
     expect(findingsOf(report, 'reference-direction').map(entry => entry.message).join())
       .toContain('在后的权利要求 2')
+  })
+
+  it('倒序与超限区间报 reference-direction，且仍按从属权项解析', () => {
+    const report = lintClaimText([
+      '1. 一种装置。',
+      '2. 一种装置。',
+      '3. 根据权利要求 2-1 所述的装置，其特征在于，还包括壳体。',
+      '4. 根据权利要求 1-2000 所述的装置，其特征在于，还包括转轴。',
+    ].join('\n'))
+    expect(report.claims[2]?.independent).toBe(false)
+    expect(report.claims[3]?.independent).toBe(false)
+    const messages = findingsOf(report, 'reference-direction').map(entry => entry.message)
+    expect(messages.some(message => message.includes('「2-1」') && message.includes('倒序'))).toBe(true)
+    expect(messages.some(message => message.includes('「1-2000」') && message.includes('跨度超限'))).toBe(true)
   })
 
   it('多项从属用「和」并列、或引用另一项多项从属时报 multiple-dependent', () => {

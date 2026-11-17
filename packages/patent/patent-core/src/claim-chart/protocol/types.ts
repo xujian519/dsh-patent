@@ -5,6 +5,8 @@
  * mapping 状态机、gap list 第一优先输出、draft notice 免责声明。
  */
 
+import type { ClaimReferenceDefect } from '../../claim-lint/references.ts'
+
 export type ElementKind = 'preamble' | 'transitional' | 'limitation' | 'means-plus-function' | 'markush-member'
 
 /** 单个权利要求要素：从权利要求原文连续子串拆出的最小映射单元。 */
@@ -134,6 +136,8 @@ export interface ClaimRef {
   claimType: ClaimType
   /** 所引用的权利要求序号（升序去重）；独立权利要求为空数组。 */
   refersTo: number[]
+  /** 引用区间写法的缺陷（倒序或跨度超限）；没有缺陷时省略。 */
+  referenceDefects?: ClaimReferenceDefect[]
 }
 
 /**
@@ -177,6 +181,7 @@ export type ClaimRefIssue =
   | { kind: 'missing-reference'; claimNo: number; refersTo: number[] }
   | { kind: 'later-reference'; claimNo: number; refersTo: number[] }
   | { kind: 'reference-cycle'; claimNos: number[] }
+  | { kind: 'reference-range'; claimNo: number; raw: string; problem: ClaimReferenceDefect['kind'] }
 
 /**
  * 从属权利要求的法条路径问题：所引用权项在该篇上未被完整覆盖，而本权项自身的要素已全部

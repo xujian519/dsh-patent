@@ -84,7 +84,19 @@ export function computeFees(table: FeeTable, query: FeeQuery, options: ComputeOp
       continue
     }
     if (item.basis === 'per-annuity-year') {
-      lines.push(...annuityLines(item, query, reduction))
+      const years = annuityYearsOf(query)
+      // Twelve months separate two annual fees, so one delay describes one year.
+      const lateMonths = years.length > 1 ? undefined : query.lateMonths
+      lines.push(...annuityLines(item, years, lateMonths, reduction))
+      if (lateMonths === undefined && (query.lateMonths ?? 0) > 0) {
+        pending.push({
+          id: `${item.id}-late-payment`,
+          name: `${item.name}滞纳金`,
+          requiredInput: 'lateMonths（逐年度）',
+          reason: `一次给出 ${String(years.length)} 个年度时，单一的 lateMonths 无法表达各年度不同的超期月数：`
+            + '请按年度分别调用，每次只给一个 annuityYears 元素与该年度的 lateMonths。',
+        })
+      }
       if (query.annuityYears === undefined || query.annuityYears.length === 0) {
         pending.push({
           id: item.id,
@@ -205,12 +217,28 @@ function pricedLine(
   }
 }
 
-/** Price every requested patent year of an annual-fee item. */
-function annuityLines(item: FeeItem, query: FeeQuery, reduction: ReductionContext | null): ComputedLine[] {
-  const years = [...new Set(query.annuityYears ?? [])].sort((left, right) => left - right)
+/** The requested patent years, deduplicated and ascending. */
+function annuityYearsOf(query: FeeQuery): number[] {
+  return [...new Set(query.annuityYears ?? [])].sort((left, right) => left - right)
+}
+
+/**
+ * Price the requested patent years of an annual-fee item.
+ * @param item - the per-annuity-year item.
+ * @param years - the patent years to price.
+ * @param lateMonths - started months of delay on the year being priced, when the case has one.
+ * @param reduction - the reduction the case qualifies for, when resolved.
+ * @returns one annual-fee line per year, each followed by its surcharge line.
+ */
+function annuityLines(
+  item: FeeItem,
+  years: readonly number[],
+  lateMonths: number | undefined,
+  reduction: ReductionContext | null,
+): ComputedLine[] {
   return years.flatMap(year => [
     annuityLine(item, year, reduction),
-    ...latePaymentLine(item, year, query.lateMonths),
+    ...latePaymentLine(item, year, lateMonths),
   ])
 }
 

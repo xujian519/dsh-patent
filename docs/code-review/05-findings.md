@@ -85,8 +85,8 @@
 | F-PAT-050 | 重规划按哈希保留已完成步骤，重复步骤全部判为已完成 | PAT | E | Medium | 低 | new |
 | F-PAT-051 | 沿革快照按条号跨法套用，实施细则条文取到专利法同号条的生效日与状态 | PAT | E | Medium | 高 | fixed |
 | F-PAT-052 | 指南未修改的节在 rule-lock 判「已修订/已失效」，law_verify 判「已核验」 | PAT | E | High | 高 | fixed |
-| F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | confirmed |
-| F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | confirmed |
+| F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | fixed |
+| F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | fixed |
 | F-PAT-055 | 上游 JSON 字符串含 null 元素时 `mapPatentData` 抛 TypeError | PAT | E | Low | 低 | new |
 | F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | fixed |
 | F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | fixed |
@@ -111,7 +111,7 @@
 | F-LEG-011 | 证人利害关系未填写时，关键规则报「证人与案件无利害关系」通过 | LEG | E | High | 中 | fixed |
 | F-LEG-012 | 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略 | LEG | E | Medium | 中 | fixed |
 | F-LEG-013 | 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果 | LEG | E | Medium | 中 | new |
-| F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | confirmed |
+| F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | fixed |
 | F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | fixed |
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | fixed |
 | F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | fixed |
@@ -847,7 +847,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把超期改成按年度给出（`lateMonthsByYear` 或 `annuity: [{ year, lateMonths }]`），`patent_deadlines` 的 `latePaymentWindow` 已按年度给出窗口；或在 `annuityYears.length > 1` 且 `lateMonths > 0` 时拒绝计算并列为 `pending`，说明需要各年度自己的超期月数。新增用例：`[4, 5]` 加 `lateMonths: 3` 不得同时给出两条 3 个月滞纳金且 `complete: true`。
 - 预估工作量：S
 - 是否可自动化：是（上面的用例）
-- 状态：confirmed（Day 41 静态复核，2026-11-17）
+- 修复：`annuityLines` 只在本次只计一个年度时套用 `lateMonths`。一次给出多个年度且 `lateMonths > 0` 时不再给每个年度记同一条滞纳金：滞纳金列为待补项（`annual-fee-late-payment`，需要 `lateMonths` 逐年度），合计随之扣留，各年度年费行照常计价。工具描述与 README 写明每个超期年度单独调用；`deadline-consistency` 用例改为逐年度调用，两包仍锁住「每个有补缴窗口的年度各有一条滞纳金行」。
+- 状态：fixed（2026-11-18，批次 R-E3）
 
 ### F-PAT-054 `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月
 
@@ -860,7 +861,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：只允许 `designatedMonths` 用于确由通知书指定期间的种类（`office-action-first`、`office-action-subsequent`、`reexamination-notice`、`invalidation-transfer`）；在 `assertQuery` 或 `toNotice` 里拒绝驳回决定、授权通知与进入实质审查阶段通知携带该字段，并在错误消息里写明对应法定期间。
 - 预估工作量：S
 - 是否可自动化：是（上例期望 `invalid_query`；四类指定期间通知仍接受该字段）
-- 状态：confirmed（Day 41 静态复核，2026-11-17）
+- 修复：`statutes-data.ts` 新增 `STATUTORY_NOTICE_PERIODS`，登记进入实质审查阶段通知书（专利法实施细则第57条第1款，3 个月）、驳回决定（专利法第41条第1款，3 个月）与授权通知（专利法实施细则第60条第1款，2 个月）。`assertQuery` 对这三类通知携带 `designatedMonths` 时抛 `DeadlineQueryError`，消息点名上述法条；审查意见、复审通知书与无效宣告转送文件四类仍接受该字段。`designatedMonths` 参数描述写明适用种类，工具入口沿用同一条校验并回 `invalid_query`。
+- 状态：fixed（2026-11-18，批次 R-E3）
 
 ### F-PAT-055 上游 JSON 字符串含 null 元素时 `mapPatentData` 抛 TypeError
 
@@ -1234,7 +1236,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：默认时区改为 `Asia/Shanghai`（或由 `Config` 提供 `timeZone`，与 patent-deadline 同形），并补一条固定在 UTC/中国跨日时刻的用例。显式传入 `asOf` 的路径不变。
 - 预估工作量：S
 - 是否可自动化：是（固定时钟的跨日用例）
-- 状态：confirmed（Day 41 静态复核，2026-11-17）
+- 修复：`todayIsoDate` 改按 `Asia/Shanghai` 用 `Intl.DateTimeFormat` 的 `formatToParts` 取年月日，默认判定日期取中国大陆自然日而不是 UTC 日；显式传入 `asOf` 的路径不变。新增固定时钟用例：`2026-12-21T19:00:00Z` 判为 `2026-12-22`，当日生效的法规判 `in-force`；同一时刻的 UTC 正午两边同为 `2026-12-21`。
+- 状态：fixed（2026-11-18，批次 R-E3）
 
 ## 视频模式
 

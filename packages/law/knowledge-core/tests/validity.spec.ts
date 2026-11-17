@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   isLawVisible,
   resolveAsOf,
@@ -57,5 +57,22 @@ describe('法规时间效力判定', () => {
     expect(resolveAsOf('  2026-01-01  ')).toBe('2026-01-01')
     expect(() => resolveAsOf('2026-02-30')).toThrow(/asOf/)
     expect(() => resolveAsOf('2026/01/01')).toThrow(/asOf/)
+  })
+
+  it('asOf 缺省取中国法域的自然日，不取 UTC 日', () => {
+    vi.useFakeTimers()
+    try {
+      // 19:00 UTC is already the next calendar day in Asia/Shanghai.
+      vi.setSystemTime(new Date('2026-12-21T19:00:00Z'))
+      expect(todayIsoDate()).toBe('2026-12-22')
+      expect(resolveAsOf(undefined)).toBe('2026-12-22')
+      // A statute effective that day is in force, not still pending.
+      expect(resolveLawValidity({ validFrom: '2026-12-22', expired: 0 }, resolveAsOf(undefined))).toBe('in-force')
+      // Midday UTC falls on the same day in both zones.
+      vi.setSystemTime(new Date('2026-12-21T04:00:00Z'))
+      expect(todayIsoDate()).toBe('2026-12-21')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

@@ -42,16 +42,21 @@ describe('the fee index and the deadline set agree on annual fees', () => {
   it('gives every priced year the surcharge window the deadline report carries', () => {
     const withWindows = report.computed.filter(entry => entry.latePaymentWindow !== undefined)
     expect(withWindows.length).toBe(reportedYears(report).length)
-    const priced = computeFees(loadFeeTable(), {
-      patentType: 'invention',
-      triggers: ['annual-fee'],
-      annuityYears: reportedYears(report),
-      lateMonths: 1,
-    }, { policy: DEFAULT_FEE_POLICY })
-    // One annual-fee line and one surcharge line per year, the window coming from the
-    // deadline side and the amount from the fee side.
-    expect(priced.lines).toHaveLength(reportedYears(report).length * 2)
-    expect(priced.lines.filter(line => line.id.endsWith('-late-payment'))).toHaveLength(reportedYears(report).length)
+    // A delay belongs to one year, so each year is priced in its own call: its annual
+    // fee line and its surcharge line, the window coming from the deadline side and the
+    // amount from the fee side.
+    for (const year of reportedYears(report)) {
+      const priced = computeFees(loadFeeTable(), {
+        patentType: 'invention',
+        triggers: ['annual-fee'],
+        annuityYears: [year],
+        lateMonths: 1,
+      }, { policy: DEFAULT_FEE_POLICY })
+      expect(priced.lines.map(line => line.id)).toEqual([
+        `annual-fee-${String(year)}`,
+        `annual-fee-${String(year)}-late-payment`,
+      ])
+    }
   })
 
   it('refuses on both sides when the granted year is unknown', () => {

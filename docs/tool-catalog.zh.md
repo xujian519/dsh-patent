@@ -8709,7 +8709,7 @@ build_patent_filing 把一件 CNIPA 申请文件（说明书摘要、摘要附�
           },
           "designatedMonths": {
             "type": "number",
-            "description": "Months the notice itself designates"
+            "description": "Months the notice itself designates; only for office-action-first, office-action-subsequent, reexamination-notice, and invalidation-transfer"
           },
           "stage": {
             "type": "string",
@@ -8757,7 +8757,7 @@ patent_deadlines 报告一件中国专利案件的法定与指定期限，适用
 - 在 triggers 里列全本案的环节。未点名的环节完全不计价，因此漏掉授权或某个程序环节会被读成"无费用"——这份清单是报告的覆盖范围，不是提示。
 - 金额只来自已转录的数据。每行带 status：verified（金额与其核验日期都已记录）、unverified（金额已记录，核验日期没有）、unrecorded（尚无金额）。随包索引的 19 个费种中 17 个已转录并核验；说明书附加费与延长期限费因分档计价无法落到单一单价而保持 unrecorded，这两行没有数字并会挡住合计。
 - 任一适用行未核验，或任一适用费种仍需 pending 列表中的案件事实时，不给合计，并列出挡住合计的 id。索引未收录的收费阶段会列在 total.uncoveredTriggers 并同样扣留合计。不要自己补一个缺失的金额或未收录的阶段，也不要引用本工具拒绝给出的合计：未转录的金额是未知，不是免费。
-- annuityYears 是要计价的专利年度，来自 patent_deadlines（日期归它）；lateMonths 是已开始的超期月数，同样来自该工具。
+- annuityYears 是要计价的专利年度，来自 patent_deadlines（日期归它）；lateMonths 是已开始的超期月数，同样来自该工具。相邻年费的应缴日相隔 12 个月，一个 lateMonths 只描述一个年度：多个超期年度请分次调用，一次给出多个年度又带 lateMonths 时，本工具把滞纳金列为待补项。
 - 这是基于索引的算术，不是报价：索引含费种的结构与已转录金额，并记录核验日期。给客户开票前请对照公告确认每一项金额。
 
 使用说明：
@@ -8822,7 +8822,7 @@ patent_deadlines 报告一件中国专利案件的法定与指定期限，适用
     },
     "lateMonths": {
       "type": "number",
-      "description": "Started months of delay on the annual fee"
+      "description": "Started months of delay on one annual-fee year; price each delayed year in its own call"
     },
     "reduction": {
       "type": "object",

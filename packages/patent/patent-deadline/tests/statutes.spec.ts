@@ -4,6 +4,7 @@ import {
   describePatentKind,
   evaluateDeadlines,
   type DeadlineQuery,
+  type NoticeKind,
 } from '../src/statutes.ts'
 import { WorkCalendar, loadWorkCalendar } from '../src/work-calendar.ts'
 
@@ -226,6 +227,33 @@ describe('statutory deadline set', () => {
       dueDate: '2026-10-05',
       rolledForward: true,
     })
+  })
+
+  it('rejects a designated period on a notice whose period is statutory', () => {
+    const statutory: ReadonlyArray<[NoticeKind, RegExp]> = [
+      ['rejection-decision', /专利法第41条/],
+      ['grant-notice', /专利法实施细则第60条/],
+      ['substantive-exam-notice', /专利法实施细则第57条/],
+    ]
+    for (const [kind, legalBasis] of statutory) {
+      const query: DeadlineQuery = {
+        ...invention,
+        notices: [{ kind, delivery: { dispatchDate: date('2026-09-01') }, designatedMonths: 1 }],
+      }
+      expect(() => evaluateDeadlines(query, base)).toThrow(DeadlineQueryError)
+      expect(() => evaluateDeadlines(query, base)).toThrow(legalBasis)
+    }
+  })
+
+  it('keeps a designated period on the four notices that carry one', () => {
+    for (const kind of ['office-action-first', 'office-action-subsequent', 'reexamination-notice', 'invalidation-transfer'] as const) {
+      const query: DeadlineQuery = {
+        ...invention,
+        notices: [{ kind, delivery: { dispatchDate: date('2026-09-01') }, designatedMonths: 2 }],
+      }
+      const { computed } = evaluateDeadlines(query, base)
+      expect(computed.some(entry => entry.triggerBasis?.includes('通知书指定期限 2 个月') === true)).toBe(true)
+    }
   })
 
   it('computes one period per recorded notice of a repeatable kind', () => {

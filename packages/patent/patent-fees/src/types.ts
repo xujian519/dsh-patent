@@ -170,7 +170,11 @@ export type FeeQuery = {
   annuityYears?: number[]
   /** Months of extension requested, for the extension fee. */
   extensionMonths?: number
-  /** Started months of delay on an annual fee, for the surcharge. */
+  /**
+   * Started months of delay on an annual fee, for the surcharge. One delay
+   * describes one year: pricing several years takes one call per year, because
+   * their due dates are twelve months apart.
+   */
   lateMonths?: number
   /** The reduction the case qualifies for, when there is one. */
   reduction?: ReductionRequest

@@ -80,6 +80,18 @@ export type NoticePeriodSpec = {
 }
 
 /**
+ * Notice kinds whose period the law fixes, with the fixed period named for the
+ * rejection message. A notice of these kinds cannot designate its own length:
+ * the notice only starts the period, and letting it set one would replace a
+ * statutory period with the value the caller typed.
+ */
+export const STATUTORY_NOTICE_PERIODS: ReadonlyMap<NoticeKind, string> = new Map([
+  ['substantive-exam-notice', '主动修改的 3 个月（专利法实施细则第57条第1款）'],
+  ['rejection-decision', '请求复审的 3 个月（专利法第41条第1款）'],
+  ['grant-notice', '办理登记手续的 2 个月（专利法实施细则第60条）'],
+])
+
+/**
  * The periods that start at a notice's delivery, each beside its article and
  * the kind that starts it. Nothing else starts them, so a case that has not
  * recorded the notice reports a pending entry naming it.

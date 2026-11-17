@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-rc.3/patent-deadline-designated-months/guide.md
+/:
+  en: d819f44d9eb4e93a
+  zh: 19e6dcd432e1f1f7
+/designatedmonths-is-rejected-on-statutory-notice-periods:
+  en: d5bc08d93dcaf34c
+  zh: 7cf3118603084edd
+/designatedmonths-is-rejected-on-statutory-notice-periods/change:
+  en: 9c42535972d700db
+  zh: abd917b22c768dd1
+/designatedmonths-is-rejected-on-statutory-notice-periods/migration:
+  en: 27ed53e382678234
+  zh: 5e851d554a02f449

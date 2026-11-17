@@ -265,6 +265,31 @@ describe('patent_fees tool', () => {
     expect(text).toContain('**合计（全部已核验）**：990.00 CNY')
   })
 
+  it('withholds the surcharge when one delay is asked for several years', async () => {
+    const annual = tableOf('annual-fee', '年费', 'annual-fee', {
+      basis: 'per-annuity-year',
+      latePayment: {
+        monthlyPercent: 5,
+        maxMonths: 6,
+        legalBasis: '专利法实施细则第115条',
+        sourceDoc: null,
+        effectiveFrom: null,
+        verifiedOn: '2026-01-01',
+      },
+    })
+    const result = await execute(await host(annual), {
+      patentType: 'invention',
+      triggers: ['annual-fee'],
+      annuityYears: [4, 5],
+      lateMonths: 2,
+    })
+    const text = rendered(result)
+    expect(text).toContain('| 年费（第 4 年度） |')
+    expect(text).toContain('| 年费（第 5 年度） |')
+    expect(text).not.toContain('| 年费滞纳金（第')
+    expect(text).toContain('年费滞纳金（annual-fee-late-payment）：需要 lateMonths（逐年度）')
+  })
+
   it('prices an extension and a reduction whose ratio is transcribed', async () => {
     const extension = tableOf('extension-fee', '延长期限请求费', 'extension', { basis: 'per-month', amount: '200' })
     const extended = await execute(await host(extension), {

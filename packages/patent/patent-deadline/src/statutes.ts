@@ -24,6 +24,7 @@ import { buildDeadlineItems, termYearCap, type DeadlineItem } from './deadline-e
 import {
   MAX_TERM_COMPENSATION_YEARS,
   REPEATABLE_NOTICE_KINDS,
+  STATUTORY_NOTICE_PERIODS,
 } from './statutes-data.ts'
 import {
   DeadlineQueryError,
@@ -98,6 +99,14 @@ function assertQuery(query: DeadlineQuery): void {
     )
   }
   for (const notice of query.notices ?? []) {
+    const statutory = notice.designatedMonths === undefined
+      ? undefined
+      : STATUTORY_NOTICE_PERIODS.get(notice.kind)
+    if (statutory !== undefined) {
+      throw new DeadlineQueryError(
+        `${notice.kind}.designatedMonths 不能使用：该期间由法律固定为${statutory}，不随通知书指定而变；请删除该字段。`,
+      )
+    }
     if (notice.stage === undefined) continue
     if (notice.kind !== 'office-action-first') {
       throw new DeadlineQueryError(

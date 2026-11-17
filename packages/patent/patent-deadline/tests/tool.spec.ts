@@ -201,6 +201,18 @@ describe('patent_deadlines tool', () => {
     expect(JSON.stringify(result.content)).toContain('designatedMonths')
   })
 
+  it('rejects a designated period on a notice whose period is statutory', async () => {
+    const ctx = await host()
+    const result = await execute(ctx, {
+      patentType: 'invention',
+      filingDate: '2024-01-10',
+      claimsPriority: false,
+      notices: [{ kind: 'rejection-decision', dispatchDate: '2026-01-05', designatedMonths: 1 }],
+    })
+    expect(result.isError).toBe(true)
+    expect(JSON.stringify(result.content)).toContain('专利法第41条')
+  })
+
   it('rejects marketing approval for a utility model as a contradiction', async () => {
     const ctx = await host()
     const result = await execute(ctx, {

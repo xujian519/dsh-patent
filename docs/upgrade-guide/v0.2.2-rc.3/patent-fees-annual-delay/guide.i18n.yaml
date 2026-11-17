@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-rc.3/patent-fees-annual-delay/guide.md
+/:
+  en: a9ed940239bb5a71
+  zh: 7bd522bc2cdbed5b
+/one-annual-fee-delay-per-patent-fees-call:
+  en: 2bd52c3e1dda6bdb
+  zh: cd34a2776b46f14f
+/one-annual-fee-delay-per-patent-fees-call/change:
+  en: f315abeac0d7f93e
+  zh: c44cbeb1136a05e6
+/one-annual-fee-delay-per-patent-fees-call/migration:
+  en: 70d24df231283e4f
+  zh: 8a836b205753b159

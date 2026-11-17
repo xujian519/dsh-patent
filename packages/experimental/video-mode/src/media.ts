@@ -10,6 +10,8 @@
  * @module @deepseek-ai/dsh-video-mode/media
  */
 
+import { homedir } from 'node:os'
+import { isAbsolute, join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
@@ -295,6 +297,12 @@ export interface MediaRuntimeConfig {
   readonly subtitleFont?: string
   /** Single-generation cost above which the media tool requires explicit confirmation, in CNY. */
   readonly approvalThresholdCny?: number
+  /**
+   * Absolute directory for the host budget ledger.
+   * Omitted or blank uses `~/.dsh/video-mode/ledgers`.
+   * A directory inside the session workspace is rejected when a charge is read or written.
+   */
+  readonly ledgerDir?: string
   /** Local ComfyUI backend; omitted leaves it unregistered. */
   readonly comfyui?: ComfyUiConfig
   /** MiniMax cloud video backend; omitted leaves it unregistered. */
@@ -318,6 +326,8 @@ export interface ResolvedMediaConfig {
   readonly syntheticLatencyMs: number
   readonly subtitleFont: string
   readonly approvalThresholdCny: number
+  /** Absolute host directory that holds one ledger file per project. */
+  readonly ledgerDir: string
   /** Resolved ComfyUI backend; present only when the config enables it. */
   readonly comfyui?: ComfyUiSettings
   /** Resolved MiniMax backend; present only when the config enables it. */
@@ -326,6 +336,20 @@ export interface ResolvedMediaConfig {
   readonly minimaxSpeech?: MiniMaxSpeechSettings
   /** Resolved SiliconFlow backend; present only when the config enables it. */
   readonly siliconflow?: SiliconFlowSettings
+}
+
+/**
+ * Resolve the host ledger directory.
+ * A blank value selects the per-user directory outside a normal project workspace.
+ * @param configured - Config value; the schema supplies an empty string by default.
+ * @returns the absolute directory.
+ * @throws When the configured value is not absolute.
+ */
+function resolveLedgerDir(configured: string): string {
+  const value = configured.trim()
+  if (value.length === 0) return join(homedir(), '.dsh', 'video-mode', 'ledgers')
+  if (!isAbsolute(value)) throw new Error('video mode: ledgerDir must be an absolute path')
+  return value
 }
 
 /**
@@ -342,7 +366,10 @@ export function resolveMediaConfig(config: MediaRuntimeConfig = {}): ResolvedMed
   // Keep the backend sections separate: the resolved shape exposes them only when
   // enabled, while the schema materializes a disabled section with its defaults.
   const { comfyui, minimax, siliconflow, ...scalars } = Config(config)
-  const resolved = scalars as ResolvedMediaConfig
+  const resolved = {
+    ...scalars,
+    ledgerDir: resolveLedgerDir(scalars.ledgerDir),
+  } as ResolvedMediaConfig
   // The schema's minimum comparison lets NaN through; a NaN threshold would make
   // every cost comparison false and silently disable the confirmation gate.
   if (!Number.isFinite(resolved.approvalThresholdCny)) {
@@ -558,8 +585,11 @@ function speechEmotionOf(value: string | undefined): MiniMaxSpeechEmotion | unde
   return emotion as MiniMaxSpeechEmotion
 }
 
-/** Schemastery face for the Loader row. */
-export const Config: z<MediaRuntimeConfig> = z.object({
+/**
+ * Schemastery face for the Loader row.
+ * The output type marks `ledgerDir` as present because the schema default supplies it.
+ */
+export const Config: z<MediaRuntimeConfig, MediaRuntimeConfig & { readonly ledgerDir: string }> = z.object({
   fakeProvider: z.boolean().default(true),
   imageModel: z.string().default(SYNTHETIC_IMAGE_MODEL),
   videoModel: z.string().default(SYNTHETIC_VIDEO_MODEL),
@@ -573,6 +603,7 @@ export const Config: z<MediaRuntimeConfig> = z.object({
   syntheticLatencyMs: z.natural().default(0),
   subtitleFont: z.string().default(''),
   approvalThresholdCny: z.number().min(0).default(10),
+  ledgerDir: z.string().default(''),
   comfyui: z.object({
     enabled: z.boolean().default(false),
     baseUrl: z.string().default(COMFYUI_DEFAULTS.baseUrl),

@@ -7,7 +7,7 @@
 import { execFileSync } from 'node:child_process'
 import { chmod, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, isAbsolute, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
@@ -66,7 +66,14 @@ async function boot(config: MediaRuntimeConfig = {}): Promise<Context> {
   await created.plugin(SessionProjectionRegistry).await()
   await created.plugin(WorkingDirectory, { defaultDirectory: root }).await()
   await created.plugin(NativeToolExecutor).await()
-  await created.plugin(VideoMode, { fakeProvider: true, waitMs: 50, pollMs: 1, approvalThresholdCny: 0.01, ...config }).await()
+  await created.plugin(VideoMode, {
+    fakeProvider: true,
+    waitMs: 50,
+    pollMs: 1,
+    approvalThresholdCny: 0.01,
+    ...config,
+    ledgerDir: join(root, '.host-ledgers'),
+  }).await()
   ctx = created
   return created
 }
@@ -795,7 +802,7 @@ describe('durable tasks and the budget ledger', () => {
     expect(String(settled.message)).toContain('Wrote')
     expect((await stat(join(root, 'out/clip.mp4'))).size).toBe(MP4.length)
     expect(await readTaskRecords(second, projectPath, root)).toEqual([])
-    const charges = await readLedger(second, projectPath, root)
+    const charges = await readLedger(second, projectPath, join(root, '.host-ledgers'), root)
     expect(charges).toHaveLength(1)
     expect(charges[0]).toMatchObject({
       taskId: 'durable-video-1', kind: 'video', model: 'durable/video', costCny: 7,
@@ -803,7 +810,7 @@ describe('durable tasks and the budget ledger', () => {
     expect(charges[0]?.at).toMatch(/^\d{4}-\d{2}-\d{2}T/)
 
     valueOf(await call(second, 'media', { action: 'status', task_id: 'durable-video-1', project_path: projectPath }))
-    expect(await readLedger(second, projectPath, root)).toHaveLength(1)
+    expect(await readLedger(second, projectPath, join(root, '.host-ledgers'), root)).toHaveLength(1)
     await second.fiber.dispose()
   })
 
@@ -826,7 +833,7 @@ describe('durable tasks and the budget ledger', () => {
       action: 'generate', kind: 'video', prompt: 'x', model: 'priced/video', output_path: 'out/a.mp4',
       project_path: projectPath, confirm_cost: true,
     }))
-    expect(await readLedger(created, projectPath, root)).toHaveLength(1)
+    expect(await readLedger(created, projectPath, join(root, '.host-ledgers'), root)).toHaveLength(1)
 
     price = 300
     const error = errorOf(await call(created, 'media', {
@@ -834,7 +841,38 @@ describe('durable tasks and the budget ledger', () => {
       project_path: projectPath, confirm_cost: true,
     }))
     expect(error).toContain('exceeds the 2.00 CNY remaining')
-    expect(await readLedger(created, projectPath, root)).toHaveLength(1)
+    expect(await readLedger(created, projectPath, join(root, '.host-ledgers'), root)).toHaveLength(1)
+  })
+
+  it('keeps the budget gate after budget.json is cleared', async () => {
+    const created = await boot({ approvalThresholdCny: 100 })
+    let price = 200
+    created.media.register(providerOf({
+      id: 'tamper',
+      models: [{ id: 'tamper/video', kind: 'video', provider: 'tamper' }],
+      estimate: () => ({ confidence: 'exact', cost: { amountMinor: price, currency: 'CNY' } }),
+      submit: async request => ({
+        id: `tamper-${price}`, provider: 'tamper', model: request.model ?? '', kind: request.kind,
+        status: 'succeeded', artifacts: [{ id: 'clip', kind: 'video', mediaType: 'video/mp4', bytes: MP4 }],
+      }),
+    }))
+    const project = valueOf(await call(created, 'video_project', { action: 'init', title: 'Tamper', budget_cny: 3 }))
+    const projectPath = project.path as string
+    valueOf(await call(created, 'media', {
+      action: 'generate', kind: 'video', prompt: 'x', model: 'tamper/video', output_path: 'out/a.mp4',
+      project_path: projectPath, confirm_cost: true,
+    }))
+    const projectFile = isAbsolute(projectPath) ? projectPath : join(root, projectPath)
+    await writeFile(
+      join(dirname(projectFile), 'budget.json'),
+      `${JSON.stringify({ schemaVersion: 1, entries: [] })}\n`,
+    )
+    price = 200
+    expect(errorOf(await call(created, 'media', {
+      action: 'generate', kind: 'video', prompt: 'x', model: 'tamper/video', output_path: 'out/b.mp4',
+      project_path: projectPath, confirm_cost: true,
+    }))).toContain('exceeds the 1.00 CNY remaining')
+    expect(await readLedger(created, projectPath, join(root, '.host-ledgers'), root)).toHaveLength(1)
   })
 
   it('lets two generations compare the same ledger and then blocks the next one', async () => {
@@ -868,11 +906,11 @@ describe('durable tasks and the budget ledger', () => {
     const [first, second] = await concurrent
     expect(first.isError).toBe(false)
     expect(second.isError).toBe(false)
-    const charges = await readLedger(created, projectPath, root)
+    const charges = await readLedger(created, projectPath, join(root, '.host-ledgers'), root)
     expect(charges).toHaveLength(2)
     expect(ledgerCost(charges)).toBe(4)
     expect(errorOf(await generate('c'))).toContain('remaining in the project budget')
-    expect(await readLedger(created, projectPath, root)).toHaveLength(2)
+    expect(await readLedger(created, projectPath, join(root, '.host-ledgers'), root)).toHaveLength(2)
   })
 
   it('journals only pending tasks and clears a record on failure or cancel', async () => {
@@ -1032,6 +1070,6 @@ describe('durable tasks and the budget ledger', () => {
       action: 'generate', kind: 'video', prompt: 'x', model: 'usd/video', output_path: 'out/u.mp4',
       project_path: projectPath, confirm_cost: true,
     }))
-    expect(await readLedger(created, projectPath, root)).toEqual([])
+    expect(await readLedger(created, projectPath, join(root, '.host-ledgers'), root)).toEqual([])
   })
 })

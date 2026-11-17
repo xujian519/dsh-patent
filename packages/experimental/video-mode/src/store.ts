@@ -1,19 +1,20 @@
 /**
- * Durable stores that sit beside the project document: the in-flight task
- * journal that lets a restarted runtime resume provider work, and the budget
- * ledger the media tool appends every settled charge to. Both are validated
- * at read time because they cross the filesystem boundary.
+ * Durable stores for one production: the in-flight task journal beside the
+ * project document, and the budget ledger outside the session workspace.
+ * Both are validated at read time because they cross the filesystem boundary.
  * @module @deepseek-ai/dsh-video-mode/store
  */
 
-import { dirname, join } from 'node:path'
+import { createHash } from 'node:crypto'
+import { mkdir, realpath } from 'node:fs/promises'
+import { dirname, isAbsolute, join } from 'node:path'
 import { z } from 'zod'
 import type { Context } from '@deepseek-ai/cordis'
 import { FsError, type FsTarget, type FsVersion } from '@deepseek-ai/dsh-fs'
 import { withKeyLock } from './lock.ts'
+import { lockToInterface } from './schema-lock.ts'
 import {
   MediaFailure,
-  type MediaKind,
   type MediaLedgerEntry,
   type MediaRequest,
   type MediaTaskRecord,
@@ -23,8 +24,27 @@ import {
 /** Journal file name inside a production directory. */
 export const TASK_JOURNAL_FILE = 'tasks.json'
 
-/** Budget ledger file name inside a production directory. */
+/**
+ * Legacy budget file name beside a production directory.
+ * The host ledger does not live here. When the host file is absent, this
+ * file is imported once and then ignored.
+ */
 export const BUDGET_LEDGER_FILE = 'budget.json'
+
+/** Diagnostic name for the host ledger document. */
+const HOST_LEDGER_FILE = 'budget-ledger.json'
+
+/**
+ * Write policy that confines one ledger publication to the host directory.
+ * The session workspace policy is not used: that policy is what the model
+ * file tools already have.
+ */
+interface LedgerWritePolicy {
+  /** Confining mode. The host directory is the only workspace root. */
+  readonly mode: 'workspace-write'
+  /** Physical host ledger directory. */
+  readonly workspaceRoot: string
+}
 
 /** Store format version written by this package. */
 export const STORE_SCHEMA_VERSION = 1 as const
@@ -34,14 +54,15 @@ const STORE_WRITE_ATTEMPTS = 3
 
 const kindSchema = z.enum(['image', 'video', 'speech'])
 
-const requestSchema = z.object({
+/** Persisted request. Parsed fields match {@link MediaTaskRequest}. */
+const requestSchema = lockToInterface<MediaTaskRequest>()(z.object({
   kind: kindSchema,
   model: z.string().min(1),
   prompt: z.string().min(1),
   durationSec: z.number().positive().optional(),
   aspectRatio: z.string().min(1).optional(),
   resolution: z.string().min(1).optional(),
-}).strict()
+}).strict())
 
 const pendingTaskSchema = z.object({
   id: z.string().min(1),
@@ -241,22 +262,36 @@ export async function findTaskRecord(
 }
 
 /**
- * Read the budget ledger for one production. A missing file is an empty ledger.
+ * Read the budget ledger for one production.
+ *
+ * The host file is authoritative. A missing host file with a valid legacy
+ * `budget.json` is copied once; later edits to that legacy file are ignored.
+ * A missing host file and a missing legacy file are an empty ledger.
  * @param ctx - context providing `ctx.fs`.
  * @param projectPath - project file path.
+ * @param ledgerDir - absolute host directory outside the session workspace.
  * @param cwd - Session working directory for relative resolution.
  * @param signal - caller cancellation.
  * @returns every settled charge.
- * @throws {@link MediaFailure} `MEDIA_STORE_INVALID` when the file is unreadable or malformed.
+ * @throws {@link MediaFailure} `MEDIA_STORE_INVALID` when a ledger file is
+ *   unreadable or malformed, or when `ledgerDir` is not outside the workspace.
  */
 export async function readLedger(
   ctx: Context,
   projectPath: string,
+  ledgerDir: string,
   cwd: string,
   signal?: AbortSignal,
 ): Promise<readonly MediaLedgerEntry[]> {
-  const ledger = await readSnapshot(ctx, projectPath, BUDGET_LEDGER_FILE, ledgerSchema, cwd, signal)
-  return ledger?.document.entries ?? []
+  const located = await locateLedger(ctx, projectPath, ledgerDir, cwd)
+  return withKeyLock(located.lockKey, () => publishWithRetry('budget ledger', async () => {
+    const host = await readSnapshotAt(ctx, located.filePath, ledgerSchema, HOST_LEDGER_FILE, cwd, signal)
+    if (host !== undefined) return host.document.entries
+    const legacy = await readSnapshot(ctx, projectPath, BUDGET_LEDGER_FILE, ledgerSchema, cwd, signal)
+    if (legacy === undefined) return []
+    await writeStoreDocument(ctx, located.filePath, legacy.document, undefined, cwd, signal, located.policy)
+    return legacy.document.entries
+  }))
 }
 
 /**
@@ -265,30 +300,117 @@ export async function readLedger(
  * @param ctx - context providing `ctx.fs`.
  * @param projectPath - project file path.
  * @param entry - settled charge.
+ * @param ledgerDir - absolute host directory outside the session workspace.
  * @param cwd - Session working directory for relative resolution.
  * @param signal - caller cancellation.
  * @returns whether the entry was added.
+ * @throws {@link MediaFailure} `MEDIA_STORE_INVALID` when the entry or an
+ *   existing ledger file is invalid, or when `ledgerDir` is not outside the workspace.
  */
 export async function appendLedgerEntry(
   ctx: Context,
   projectPath: string,
   entry: MediaLedgerEntry,
+  ledgerDir: string,
   cwd: string,
   signal?: AbortSignal,
 ): Promise<boolean> {
-  const path = storePathOf(projectPath, BUDGET_LEDGER_FILE)
-  return withKeyLock(`ledger:${path}`, () => publishWithRetry('budget ledger', async () => {
-    const snapshot = await readSnapshot(ctx, projectPath, BUDGET_LEDGER_FILE, ledgerSchema, cwd, signal)
-    const entries = snapshot?.document.entries ?? []
+  const located = await locateLedger(ctx, projectPath, ledgerDir, cwd)
+  return withKeyLock(located.lockKey, () => publishWithRetry('budget ledger', async () => {
+    const host = await readSnapshotAt(ctx, located.filePath, ledgerSchema, HOST_LEDGER_FILE, cwd, signal)
+    const legacy = host === undefined
+      ? await readSnapshot(ctx, projectPath, BUDGET_LEDGER_FILE, ledgerSchema, cwd, signal)
+      : undefined
+    const entries = host?.document.entries ?? legacy?.document.entries ?? []
     if (entries.some(existing => existing.taskId === entry.taskId)) return false
     const parsed = ledgerSchema.safeParse({ schemaVersion: STORE_SCHEMA_VERSION, entries: [...entries, entry] })
     if (!parsed.success) {
       throw new MediaFailure(`invalid budget ledger entry: ${issuesOf(parsed.error)}`, 'MEDIA_STORE_INVALID')
     }
-    await writeStoreDocument(ctx, path, parsed.data, snapshot?.version, cwd, signal)
+    await writeStoreDocument(ctx, located.filePath, parsed.data, host?.version, cwd, signal, located.policy)
     return true
   }))
 }
+
+/** One host ledger file and the write policy that can publish it. */
+interface LocatedLedger {
+  /** Lock key shared by readers and appenders of this project. */
+  readonly lockKey: string
+  /** Absolute host ledger file. */
+  readonly filePath: string
+  /** Policy whose writable root is the host directory. */
+  readonly policy: LedgerWritePolicy
+}
+
+/**
+ * Resolve the host ledger file for one project.
+ *
+ * The directory is created before the policy is built: a sandbox fence
+ * cannot recognize a writable root that does not exist yet. The file name
+ * is a digest of the resolved project path, so a rewritten `budget.json`
+ * stays a different file.
+ * @param ctx - context providing `ctx.fs`.
+ * @param projectPath - project file path.
+ * @param ledgerDir - absolute host directory.
+ * @param cwd - Session working directory for relative resolution.
+ * @returns the file, lock key, and write policy.
+ * @throws {@link MediaFailure} `MEDIA_STORE_INVALID` when the directory is
+ *   not absolute or lies inside the session workspace.
+ */
+async function locateLedger(
+  ctx: Context,
+  projectPath: string,
+  ledgerDir: string,
+  cwd: string,
+): Promise<LocatedLedger> {
+  if (!isAbsolute(ledgerDir)) {
+    throw new MediaFailure('video ledgerDir must be an absolute path', 'MEDIA_STORE_INVALID')
+  }
+  await mkdir(ledgerDir, { recursive: true })
+  const directory = await realpath(ledgerDir)
+  const workspace = deploymentWorkspaceRoot(ctx)
+  if (workspace !== undefined) {
+    const parent = await ctx.fs.resolve(workspace)
+    const child = await ctx.fs.resolve(directory)
+    if (ctx.fs.contains(parent, child)) {
+      throw new MediaFailure(
+        `video ledgerDir is inside the session workspace (${workspace}); configure an absolute ledgerDir outside it`,
+        'MEDIA_STORE_INVALID',
+      )
+    }
+  }
+  const project = await ctx.fs.resolve(projectPath, { cwd })
+  const digest = createHash('sha256').update(ctx.fs.processPath(project)).digest('hex')
+  return {
+    lockKey: `ledger:${directory}:${digest}`,
+    filePath: join(directory, `${digest}.json`),
+    policy: { mode: 'workspace-write', workspaceRoot: directory },
+  }
+}
+
+/* jscpd:ignore-start -- patent-tools keeps its own copy: that one throws
+   PatentToolError, and sandbox-policy is not a shared project reference. */
+/**
+ * Absolute workspace root published by the deployment on `ctx.sandboxPolicy`.
+ * @param ctx - caller context.
+ * @returns the absolute root, or `undefined` when the service did not publish one.
+ * @throws {@link MediaFailure} `MEDIA_STORE_INVALID` when the published root is not absolute.
+ */
+function deploymentWorkspaceRoot(ctx: Context): string | undefined {
+  // sandbox-policy is outside this package's project references, so the key stays a string.
+  const key: string = 'sandboxPolicy'
+  const policy = ctx.get(key) as { readonly workspaceRoot?: string } | undefined
+  const root = policy?.workspaceRoot
+  if (typeof root !== 'string' || root === '') return undefined
+  if (!isAbsolute(root)) {
+    throw new MediaFailure(
+      'sandboxPolicy.workspaceRoot must be an absolute path',
+      'MEDIA_STORE_INVALID',
+    )
+  }
+  return root
+}
+/* jscpd:ignore-end */
 
 /**
  * Sum the ledger charges in CNY, working in fen so repeated additions cannot
@@ -307,47 +429,26 @@ export function ledgerCost(entries: readonly MediaLedgerEntry[]): number {
  * @param model - model id that served it.
  * @returns the fields a provider needs to resume.
  */
-export function taskRequestOf(request: {
-  readonly kind: MediaKind
-  readonly prompt: string
-  readonly durationSec?: number
-  readonly aspectRatio?: string
-  readonly resolution?: string
-}, model: string): MediaTaskRequest {
+export function taskRequestOf(
+  request: Omit<MediaTaskRequest, 'model'>,
+  model: string,
+): MediaTaskRequest {
   return requestFields({ kind: request.kind, model, prompt: request.prompt }, request)
 }
 
-
-/** Request fields with strict optionals, accepted by both request vocabularies. */
-interface StrictRequest {
-  /** Requested capability. */
-  readonly kind: MediaKind
-  /** Model id that served the request. */
-  readonly model: string
-  /** Positive prompt of the original request. */
-  readonly prompt: string
-  /** Requested duration. */
-  readonly durationSec?: number
-  /** Requested aspect ratio. */
-  readonly aspectRatio?: string
-  /** Requested resolution label. */
-  readonly resolution?: string
-}
-
 /**
- * Build the request fields, omitting what the caller left unset.
+ * Build the shared request fields, omitting optionals the caller left unset.
+ *
+ * Callers declare {@link MediaTaskRequest} or {@link MediaRequest}. The value
+ * leaves unset optionals absent, which both of those types accept.
  * @param base - identity and prompt every request carries.
  * @param source - optional generation fields.
- * @returns the strict request subset.
+ * @returns the request fields.
  */
 function requestFields(
-  base: { readonly kind: MediaKind; readonly model: string; readonly prompt: string },
-  source: {
-    readonly durationSec?: number | undefined
-    readonly aspectRatio?: string | undefined
-    readonly resolution?: string | undefined
-  },
-): StrictRequest {
+  base: Pick<MediaTaskRequest, 'kind' | 'model' | 'prompt'>,
+  source: Pick<MediaTaskRequest, 'durationSec' | 'aspectRatio' | 'resolution'>,
+) {
   return {
     ...base,
     ...source.durationSec === undefined ? {} : { durationSec: source.durationSec },
@@ -421,7 +522,28 @@ async function readSnapshot<T>(
   cwd: string,
   signal?: AbortSignal,
 ): Promise<StoreSnapshot<T> | undefined> {
-  const target = await ctx.fs.resolve(storePathOf(projectPath, file), { cwd })
+  return readSnapshotAt(ctx, storePathOf(projectPath, file), schema, file, cwd, signal)
+}
+
+/**
+ * Read and validate one store document at an already resolved path.
+ * @param ctx - context providing `ctx.fs`.
+ * @param path - store path, absolute for the host ledger.
+ * @param schema - document schema.
+ * @param file - file name used in diagnostics.
+ * @param cwd - Session working directory for relative resolution.
+ * @param signal - caller cancellation.
+ * @returns the snapshot, or undefined when the file is absent.
+ */
+async function readSnapshotAt<T>(
+  ctx: Context,
+  path: string,
+  schema: z.ZodType<T>,
+  file: string,
+  cwd: string,
+  signal?: AbortSignal,
+): Promise<StoreSnapshot<T> | undefined> {
+  const target = await ctx.fs.resolve(path, { cwd })
   const info = await ctx.fs.stat(target, signal)
   if (info === undefined) return undefined
   let text: string
@@ -456,6 +578,7 @@ export function requestOfTask(request: MediaTaskRequest): MediaRequest {
  * @param version - the read the write replaces, or undefined to create.
  * @param cwd - Session working directory for relative resolution.
  * @param signal - caller cancellation.
+ * @param sandboxPolicy - write fence for a host ledger; omitted for a file in the session workspace.
  * @returns the resolved target.
  */
 async function writeStoreDocument(
@@ -465,12 +588,13 @@ async function writeStoreDocument(
   version: FsVersion | undefined,
   cwd: string,
   signal?: AbortSignal,
+  sandboxPolicy?: LedgerWritePolicy,
 ): Promise<FsTarget> {
   const target = await ctx.fs.resolve(path, { cwd })
   const expected = version === undefined
     ? { kind: 'createIfAbsent' as const }
     : { kind: 'replaceIfVersion' as const, version }
-  await ctx.fs.writeText(target, `${JSON.stringify(document, null, 2)}\n`, expected, signal)
+  await ctx.fs.writeText(target, `${JSON.stringify(document, null, 2)}\n`, expected, signal, sandboxPolicy)
   return target
 }
 

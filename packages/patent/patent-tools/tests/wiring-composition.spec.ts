@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
@@ -19,6 +19,8 @@ import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { PatentKnowledge } from '@deepseek-ai/dsh-patent-knowledge'
 import { DEFAULT_WORKFLOW_LLM_STAGE_BUDGET, DEFAULT_WORKFLOW_STAGE_BUDGET } from '../src/config.ts'
 import type { Config } from '../src/config.ts'
+import { chemistryIndexStore, DEFAULT_CHEMISTRY_INDEX_RELATIVE_PATH } from '../src/chemistry/index-store.ts'
+import { figureIndexStore, DEFAULT_FIGURE_INDEX_RELATIVE_PATH } from '../src/figure/index-store.ts'
 import { registerPatentTools } from '../src/wiring.ts'
 import type { PatentWorkflowRunDeps } from '../src/tool/patent-workflow-run.ts'
 // Type-only: makes ctx.provide('approval', …) resolve.
@@ -26,6 +28,8 @@ import type {} from '@deepseek-ai/dsh-user-approval'
 import { normalizeFigureAnalysis } from '../src/tool/analyze-patent-figure.ts'
 import type { GeneratePatentFigureDeps } from '../src/tool/figure-input.ts'
 import type { GenerateStructureFigureDeps } from '../src/tool/generate-structure-figure.ts'
+import type { ChemistryIndexEntry } from '../src/chemistry/index-store.ts'
+import type { RecognizeChemicalStructureDeps } from '../src/tool/recognize-chemical-structure.ts'
 import type { LawSearchDeps } from '../src/tool/law-search.ts'
 import type { PatentLegalStatusDeps } from '../src/tool/patent-legal-status.ts'
 import type { PatentMetadataDeps } from '../src/tool/patent-metadata.ts'
@@ -46,6 +50,8 @@ const mock = vi.hoisted(() => ({
   figures: [] as GeneratePatentFigureDeps[],
   structures: [] as GenerateStructureFigureDeps[],
   workflowRun: [] as PatentWorkflowRunDeps[],
+  noteDirs: [] as string[],
+  chemistry: [] as RecognizeChemicalStructureDeps[],
 }))
 
 vi.mock('../src/tool/patent-search.ts', async (importOriginal) => {
@@ -114,6 +120,28 @@ vi.mock('../src/tool/generate-structure-figure.ts', async (importOriginal) => {
   }
 })
 
+vi.mock('../src/tool/recognize-chemical-structure.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/tool/recognize-chemical-structure.ts')>()
+  return {
+    ...actual,
+    createRecognizeChemicalStructureTool: (deps: RecognizeChemicalStructureDeps = {}) => {
+      mock.chemistry.push(deps)
+      return actual.createRecognizeChemicalStructureTool(deps)
+    },
+  }
+})
+
+vi.mock('../src/tool/knowledge-note-file-writer.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/tool/knowledge-note-file-writer.ts')>()
+  return {
+    ...actual,
+    createNoteFileWriter: (noteDir: string) => {
+      mock.noteDirs.push(noteDir)
+      return actual.createNoteFileWriter(noteDir)
+    },
+  }
+})
+
 vi.mock('../src/tool/patent-workflow-run.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../src/tool/patent-workflow-run.ts')>()
   return {
@@ -176,6 +204,8 @@ afterEach(async () => {
   delete process.env.DSH_INKSCAPE
   delete process.env.DSH_FREECAD_CMD
   delete process.env.DSH_GRAPHVIZ_DOT
+  mock.noteDirs.length = 0
+  mock.chemistry.length = 0
   vi.restoreAllMocks()
 })
 
@@ -205,11 +235,22 @@ function createKgDb(dir: string): void {
 /** 直达 registerPatentTools 的安装：绕过 schema 默认值，覆盖「Config 缺省」分支。 */
 async function mount(
   config: Config,
-  options: { subprocess?: boolean; knowledge?: boolean; webServerPort?: number; patentData?: boolean } = {},
+  options: {
+    subprocess?: boolean
+    knowledge?: boolean
+    webServerPort?: number
+    patentData?: boolean
+    /** `false` leaves the workspace service unpublished. */
+    workspaceRoot?: string | false
+  } = {},
 ): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
+  if (options.workspaceRoot !== false) {
+    const key: string = 'sandboxPolicy'
+    ctx.provide(key, { workspaceRoot: options.workspaceRoot ?? workspace() })
+  }
   if (options.subprocess === true) new FakeSubprocess(ctx)
   if (options.knowledge === true) {
     const dir = join(workspace(), 'knowledge')
@@ -509,5 +550,94 @@ describe('registerPatentTools 知识服务接线', () => {
       expect(error).toBeInstanceOf(Error)
     }
     await ctx.fiber.dispose()
+  })
+})
+
+describe('输出路径锚定部署工作区根', () => {
+  it('缺省路径落在工作区根下，不跟随进程目录', async () => {
+    const root = workspace()
+    const elsewhere = mkdtempSync(join(tmpdir(), 'dsh-wiring-cwd-'))
+    const previous = process.cwd()
+    try {
+      process.chdir(elsewhere)
+      await mount({}, { workspaceRoot: root })
+    } finally {
+      process.chdir(previous)
+      rmSync(elsewhere, { recursive: true, force: true })
+    }
+
+    expect(mock.figures.at(-1)?.outputDir).toBe(resolve(root, 'patent/figures'))
+    expect(mock.structures.at(-1)?.outputDir).toBe(resolve(root, 'patent/figures'))
+    expect(mock.noteDirs.at(-1)).toBe(resolve(root, '99-知识库'))
+    expect(mock.figures.at(-1)?.outputDir?.startsWith(elsewhere)).toBe(false)
+
+    const figureUpsert = vi.spyOn(figureIndexStore, 'upsert').mockResolvedValue(undefined)
+    const figureLoad = vi.spyOn(figureIndexStore, 'load').mockResolvedValue({ entries: [] })
+    const chemistryUpsert = vi.spyOn(chemistryIndexStore, 'upsert').mockResolvedValue(undefined)
+    const figure = mock.figures.at(-1)
+    await figure?.upsertIndex?.(indexEntry(join(root, 'fig.png')))
+    await figure?.loadIndex?.()
+    const chemistryEntry: ChemistryIndexEntry = {
+      sourceKey: 'text:x',
+      analyzedAt: new Date(0).toISOString(),
+      analysis: {
+        kind: 'formula',
+        chosenIndex: 0,
+        candidates: [],
+        names: [],
+        warnings: [],
+        confidence: 0,
+        needHumanReview: true,
+        usable: false,
+        modelUsed: 'test',
+      },
+    }
+    await mock.chemistry.at(-1)?.upsertIndex?.(chemistryEntry)
+    expect(figureUpsert).toHaveBeenCalledWith(resolve(root, DEFAULT_FIGURE_INDEX_RELATIVE_PATH), expect.anything())
+    expect(figureLoad).toHaveBeenCalledWith(resolve(root, DEFAULT_FIGURE_INDEX_RELATIVE_PATH))
+    expect(chemistryUpsert).toHaveBeenCalledWith(
+      resolve(root, DEFAULT_CHEMISTRY_INDEX_RELATIVE_PATH),
+      expect.objectContaining({ sourceKey: 'text:x' }),
+    )
+  })
+
+  it('相对配置路径也相对于工作区根', async () => {
+    const root = workspace()
+    await mount({
+      noteDir: 'notes',
+      figureOutputDir: 'out',
+      figureIndexFile: 'figures.json',
+      chemistryIndexFile: 'chem.json',
+    }, { workspaceRoot: root })
+    expect(mock.noteDirs.at(-1)).toBe(resolve(root, 'notes'))
+    expect(mock.figures.at(-1)?.outputDir).toBe(resolve(root, 'out'))
+  })
+
+  it('四个路径都是绝对路径时不读取工作区服务', async () => {
+    const root = workspace()
+    await mount({
+      noteDir: join(root, 'notes'),
+      figureOutputDir: join(root, 'figures'),
+      figureIndexFile: join(root, 'figures-index.json'),
+      chemistryIndexFile: join(root, 'chemistry-index.json'),
+    }, { workspaceRoot: false })
+    expect(mock.noteDirs.at(-1)).toBe(join(root, 'notes'))
+    expect(mock.figures.at(-1)?.outputDir).toBe(join(root, 'figures'))
+  })
+
+  it('没有工作区根且路径缺省时加载失败', async () => {
+    await expect(mount({}, { workspaceRoot: false })).rejects.toThrow(/不会写入进程目录/)
+  })
+
+  it('工作区根为空串时与缺席相同', async () => {
+    await expect(mount({}, { workspaceRoot: '' })).rejects.toThrow(/不会写入进程目录/)
+  })
+
+  it('工作区根不是绝对路径时加载失败', async () => {
+    await expect(mount({}, { workspaceRoot: 'relative-root' })).rejects.toThrow(/必须是绝对路径/)
+  })
+
+  it('相对路径在没有工作区根时加载失败', async () => {
+    await expect(mount({ figureIndexFile: 'figures.json' }, { workspaceRoot: false })).rejects.toThrow(/figureIndexFile/)
   })
 })

@@ -42,7 +42,7 @@
 | F-PAT-007 | `atomicWriteJson` 从 `patent-data` 历史导出面导入 | PAT | B | Low | 高 | fixed |
 | F-PAT-008 | TRIZ 资产裸 `JSON.parse as T`，失败无包内错误类型 | PAT | B | Low | 低 | confirmed |
 | F-PAT-009 | `registerPatentTools` 单函数 312 行 | PAT | B | Medium | 高 | confirmed |
-| F-PAT-010 | `patent/model-call` 在流异常时不落会话事件 | PAT | E | Medium | 中 | confirmed |
+| F-PAT-010 | `patent/model-call` 在流异常时不落会话事件 | PAT | E | Medium | 中 | fixed |
 | F-PAT-011 | `pending`/`rounds` 为进程内状态且未声明单进程语义 | PAT | E | Medium | 中 | confirmed |
 | F-PAT-012 | 51 处 `as unknown as` 与两个零引用导出类型 | PAT | B | Low | 高 | confirmed |
 | F-PAT-013 | `patent-core` 导出面过宽，大量内部符号对外 | PAT | B | Low | 高 | confirmed |
@@ -263,7 +263,7 @@
 - 最小修复建议：把 append 移入 `finally`，事件增加 `truncated: true` 标记异常终止。
 - 预估工作量：S
 - 是否可自动化：是（注入中途抛错的流，断言事件仍存在且标 truncated）
-- 状态：confirmed
+- 状态：fixed（`finally` 仍追加事件。流抛错或消费方提前停止时带 `truncated: true`，已产出的文本留在 `output`。完整流不带该字段。回放把截断记录当作抛错，不把它当成正常结束）
 
 ### F-PAT-011 `pending`/`rounds` 为进程内状态且未声明单进程语义
 

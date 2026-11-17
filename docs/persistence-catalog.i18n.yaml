@@ -9,8 +9,8 @@
   en: 1387c4505dde2faf
   zh: 48570fa1c13d6910
 /session-persistence-event-catalog/persistence-type-fingerprints:
-  en: 9bbc1844892b3f99
-  zh: 2b8466e029f308eb
+  en: 9ff1017bde54a8c9
+  zh: b863463f82b6fe4d
 /session-persistence-event-catalog/event-envelope:
   en: 8a7711a67568f71a
   zh: ce618e609f86f1ce
@@ -1476,20 +1476,20 @@
   en: 5ce873ea9f5a2c67
   zh: 48ca6a7fcac53304
 /session-persistence-event-catalog/resolved-persistence-types/patentevidenceledgerevent:
-  en: 342e95633afe2342
-  zh: 2a3e400e67162f9d
+  en: e16c9b16ccb7d329
+  zh: 1d5d7c7776ec36c6
 /session-persistence-event-catalog/resolved-persistence-types/patentlegalgapsevent:
-  en: 49186f0181f86353
-  zh: c5fc51dcbdcfe7ef
+  en: 1fca5ded5679bf48
+  zh: f5a6b2cae4b27d01
 /session-persistence-event-catalog/resolved-persistence-types/patentmodelcallevent:
-  en: 81f00d3b32c75196
-  zh: 060c0ecd453d3a05
+  en: d32c202b04c5cb5d
+  zh: 2c75621b0332db3d
 /session-persistence-event-catalog/resolved-persistence-types/patentmodelusage:
   en: d10296b1bcd5503e
   zh: c6332d8a8efd209f
 /session-persistence-event-catalog/resolved-persistence-types/patentplantaskevent:
-  en: aa75bb3062ef5229
-  zh: 6a66292cf10185b5
+  en: 26f2bc49b5514333
+  zh: bf2eae84aaf290bb
 /session-persistence-event-catalog/resolved-persistence-types/patentteamsmemberaddeddata:
   en: 5bbb219dddce7887
   zh: 3c5dc898ba29b9ec
@@ -1521,8 +1521,8 @@
   en: fe5554cd7cdc3a51
   zh: afa201f6ddb3f90c
 /session-persistence-event-catalog/resolved-persistence-types/patentworkflowrunevent:
-  en: 84ed6d0fb8e6071d
-  zh: 7c23af44ea485ccd
+  en: cb6bd1cd7edebc85
+  zh: 5021fc6b665a50ae
 /session-persistence-event-catalog/resolved-persistence-types/plantask:
   en: 1cd7d6b1c8894c47
   zh: 060cea33a0aca9d6
@@ -2598,11 +2598,11 @@
   en: f6fc8f2886aff576
   zh: c36bae385be3e99d
 /session-persistence-event-catalog/resolved-persistence-types/type-patent-legal-gaps:
-  en: 71fa55e648546d0f
-  zh: 911f157008bd4e36
+  en: a59740595059df31
+  zh: 194caf17818de70e
 /session-persistence-event-catalog/resolved-persistence-types/type-patent-model-call:
-  en: d0c97997c44704e6
-  zh: 5810195a7d563db8
+  en: 71c25a65bc8e531d
+  zh: f0a9311d9e5b2de9
 /session-persistence-event-catalog/resolved-persistence-types/type-patent-plantask:
   en: 6b707f481dbf80b4
   zh: c4c4435b83ec2109

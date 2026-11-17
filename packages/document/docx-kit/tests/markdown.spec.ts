@@ -66,6 +66,14 @@ function rowWidths(blocks: readonly DocxBlock[]): number[] | undefined {
   return block?.kind === 'table' ? block.rows.map(row => row.length) : undefined
 }
 
+/** Cell texts of the first table in `blocks`. */
+function tableCells(blocks: readonly DocxBlock[]): string[][] | undefined {
+  const block = blocks.find(item => item.kind === 'table')
+  return block?.kind === 'table'
+    ? block.rows.map(row => row.map(cell => cell.map(run => run.text).join('')))
+    : undefined
+}
+
 describe('parseInline', () => {
   it.each(INLINE_CASES)('reads %s', (_name, text, expected) => {
     expect(markup(parseInline(text))).toEqual(expected)
@@ -118,8 +126,32 @@ describe('parseMarkdown', () => {
     }])
   })
 
-  it('contributes no block for a table that holds only separators', () => {
-    expect(parseMarkdown('| --- |\n| --- |')).toEqual([])
+  it('keeps a dash line that is the header and drops only the following separator', () => {
+    expect(tableCells(parseMarkdown('| --- |\n| --- |'))).toEqual([['---']])
+  })
+
+  it('keeps an escaped pipe and a dash row that follows the separator', () => {
+    expect(tableCells(parseMarkdown('| 特征 | 说明 |\n| --- | --- |\n| A\\|B | 含有竖线 |\n| - | - |\n| C | 末行 |\n'))).toEqual([
+      ['特征', '说明'],
+      ['A|B', '含有竖线'],
+      ['-', '-'],
+      ['C', '末行'],
+    ])
+  })
+
+  it('keeps a dash line that opens a later table', () => {
+    const blocks = parseMarkdown('| a |\n| --- |\n\n| --- |')
+    expect(kinds(blocks)).toEqual(['table', 'table'])
+    expect(tableCells(blocks.slice(0, 1))).toEqual([['a']])
+    expect(tableCells(blocks.slice(1))).toEqual([['---']])
+  })
+
+  it('reads a row that does not close with a pipe', () => {
+    expect(tableCells(parseMarkdown('| a | b'))).toEqual([['a', 'b']])
+  })
+
+  it('reads a lone pipe as one empty cell', () => {
+    expect(rowWidths(parseMarkdown('|'))).toEqual([1])
   })
 
   it('closes a table when a plain line follows it', () => {

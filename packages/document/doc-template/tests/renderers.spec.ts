@@ -117,6 +117,72 @@ describe('DOCX renderer', () => {
   })
 })
 
+/** Level-1 headings of one rendered document, in document order. */
+function level1Headings(format: 'markdown' | 'html' | 'docx', rendered: string | Uint8Array): string[] {
+  if (format === 'markdown') {
+    return String(rendered).split('\n').filter(line => line.startsWith('# ')).map(line => line.slice(2))
+  }
+  if (format === 'html') {
+    return [...String(rendered).matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gu)].map(match => match[1] ?? '')
+  }
+  return extractDocxText(rendered as Uint8Array, LIMITS).sections
+    .filter(section => section.headingLevel === 1)
+    .map(section => section.text.replace(/^# /u, ''))
+}
+
+/** Rows of the first HTML table. */
+function htmlTable(document: string): string[][] {
+  const table = document.match(/<table[\s\S]*?<\/table>/u)?.[0] ?? ''
+  return [...table.matchAll(/<tr[\s\S]*?<\/tr>/gu)].map((row) => {
+    return [...row[0].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gu)].map(cell => cell[1] ?? '')
+  })
+}
+
+/** Rows of the first projected DOCX table. Cells join with ` | `. */
+function docxTable(bytes: Uint8Array): string[][] {
+  return extractDocxText(bytes, LIMITS).sections
+    .filter(section => section.text.startsWith('| '))
+    .map(section => section.text.slice(2, -2).split(' | '))
+}
+
+describe('one level-1 heading across formats', () => {
+  const registry = createRendererRegistry()
+  const formats = ['markdown', 'html', 'docx'] as const
+
+  it('keeps the body heading when a disclaimer and a different metadata title are set', () => {
+    const body = '# 正文标题\n\n段落'
+    const meta = { language: 'zh-CN', title: '元数据标题', style: PATENT_STYLE }
+    for (const format of formats) {
+      expect(level1Headings(format, registry.render(format, body, meta))).toEqual(['正文标题'])
+    }
+    const html = String(registry.render('html', body, meta))
+    expect(html).toContain('<title>元数据标题</title>')
+    expect(html.match(/<h1/gu)).toHaveLength(1)
+  })
+
+  it('adds the metadata title when the body does not open with a level-1 heading', () => {
+    const meta = { language: 'zh-CN', title: '元数据标题' }
+    for (const format of formats) {
+      expect(level1Headings(format, registry.render(format, '段落', meta))).toEqual(['元数据标题'])
+    }
+  })
+
+  it('renders one table grid for an escaped pipe and a later dash row', () => {
+    const body = '| 特征 | 说明 |\n| --- | --- |\n| A\\|B | 含有竖线 |\n| - | - |\n| C | 末行 |\n'
+    const meta = { language: 'zh-CN' }
+    const expected = [
+      ['特征', '说明'],
+      ['A|B', '含有竖线'],
+      ['-', '-'],
+      ['C', '末行'],
+    ]
+    const html = String(registry.render('html', body, meta))
+    const docx = registry.render('docx', body, meta) as Uint8Array
+    expect(htmlTable(html)).toEqual(expected)
+    expect(docxTable(docx)).toEqual(expected)
+  })
+})
+
 describe('RendererRegistry', () => {
   it('registers, replaces, and looks up renderers by format', () => {
     const registry = new RendererRegistry()

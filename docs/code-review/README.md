@@ -72,7 +72,7 @@
 - Day 39 已完成：E 维度视频模式全域（`video-mode`、`video-bundle`、`ui-video-studio`）。新增 F-VID-011 至 F-VID-015。同一工程的并发生成会各自通过余额检查再分别结算，账本总额可超过预算；provider 被移除或记录被拒绝后 journal 没有工具侧清理路径；`status` 对 `artifacts: []` 的成功任务照常记账并清 journal；`init` 的绝对路径与其余动作的原始路径让同一工程在 studio 出现两次；EDL 音频区间的反向顺序晚到 ffmpeg 才失败。H04 的 Day 39 验证点完成：重复计费不成立，预算不变量部分成立；其余假设不改。
 - Day 40 已完成：E 维度跨域（错误处理、静默降级、模型可见性与会话日志一致性）。新增 F-CROSS-004：四域中只有视频域的工具错误类接入 `HarnessError`，其余七个带 `code` 的错误类在 `tool/result.error` 与轨迹界面里只剩文案。模型可见面逐项对齐：系统提示、工具 schema、用户/合成上下文、工具调用与结果、专利工具内模型调用都有会话事件；外部 provider 原始响应与视频 journal 不是模型可见面，残留缺口只有 F-PAT-010。H07、H10 改为部分确认；D34–D40 的 E 维度共 29 条新编号，加本条 30 条，已按六个主题汇总并列出当时的合并候选。
 - Day 41–42 已完成（缩短收敛，2026-11-17，对照 Merge PR #886）：不重测已修条目。Day 40 的六个合并组里，对比表、门禁缺输入与法律证据未知值三组已落地，沿革组只剩 F-PAT-051。下一轮要改代码的 E 项改为 confirmed。F-PAT-002、F-LEG-001、F-DOC-001 的总表对齐为 fixed。剩余队列在 [06-priority.md](06-priority.md)。D43–D45 未做。
-- 当前进度：A 至 E（Day 6–40）与缩短收敛（Day 41–42）已完成。下一次按剩余队列修 R-E1（F-DOC-008、F-DOC-009）。
+- 当前进度：A 至 E（Day 6–40）与缩短收敛（Day 41–42）已完成。R-E1（F-DOC-008、F-DOC-009）已修。下一次按剩余队列修 R-E2（F-VID-011、F-VID-012、F-VID-013）。
 - 已确认：45 天周期、包含 `packages/law`、视频按实验特性、在 Node 24 补跑构建与覆盖率基线。
 - 本目录的中文单语文档已加入 `scripts/translation-pairing.manifest.json` 的豁免清单；`verify-translation-pairing` 复跑通过。
 

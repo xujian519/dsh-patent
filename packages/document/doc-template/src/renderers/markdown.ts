@@ -27,6 +27,17 @@ export function applyDisclaimer(style: RenderStyle | undefined, markdown: string
 }
 
 /**
+ * Whether the resolved body opens with its own level-1 heading.
+ * HTML and DOCX use the same check, so `meta.title` does not add a second
+ * heading. The body is read before a disclaimer is prefixed.
+ * @param markdown - the resolved body, before any disclaimer.
+ * @returns whether `markdown` starts with `# `.
+ */
+export function bodyOpensWithLevel1Heading(markdown: string): boolean {
+  return markdown.startsWith('# ')
+}
+
+/**
  * Render a resolved body as Markdown. A title is added only when the body does
  * not open with its own level-1 heading, as upstream.
  * @param markdown - the resolved body.
@@ -35,7 +46,7 @@ export function applyDisclaimer(style: RenderStyle | undefined, markdown: string
  */
 function renderMarkdown(markdown: string, meta: RenderMeta): string {
   const body = applyDisclaimer(meta.style, markdown)
-  if (meta.title === undefined || meta.title === '' || markdown.startsWith('# ')) return body
+  if (meta.title === undefined || meta.title === '' || bodyOpensWithLevel1Heading(markdown)) return body
   return `# ${meta.title}\n\n${body}`
 }
 

@@ -15,7 +15,7 @@
 import { Marked } from 'marked'
 import type { Tokens } from 'marked'
 import type { Renderer, RenderMeta, RenderStyle } from '../types.ts'
-import { applyDisclaimer } from './markdown.ts'
+import { applyDisclaimer, bodyOpensWithLevel1Heading } from './markdown.ts'
 
 /** Schemes a rendered link or image may use. A relative URL has no scheme. */
 const DELIVERABLE_SCHEME = /^(?:https?|mailto):/iu
@@ -164,6 +164,8 @@ function selectStyleBlock(style: RenderStyle | undefined): string {
 
 /**
  * Render a resolved body as a standalone HTML5 document.
+ * A metadata title becomes an `h1` only when the body does not already open
+ * with one. The `<title>` element still carries the metadata title.
  * @param markdown - the resolved body.
  * @param meta - rendering metadata; the language becomes the `lang` attribute.
  * @returns the HTML document, newline-terminated.
@@ -181,7 +183,7 @@ function renderHtml(markdown: string, meta: RenderMeta): string {
   if (title !== '') head.push(`<title>${escapeHtmlText(title)}</title>`)
   if (author !== '') head.push(`<meta name="author" content="${escapeHtmlText(author)}">`)
   head.push(selectStyleBlock(meta.style), '</head>', '<body>')
-  if (title !== '') head.push(`<h1>${escapeHtmlText(title)}</h1>`)
+  if (title !== '' && !bodyOpensWithLevel1Heading(markdown)) head.push(`<h1>${escapeHtmlText(title)}</h1>`)
   head.push(body, '</body>', '</html>')
   return `${head.join('\n')}\n`
 }

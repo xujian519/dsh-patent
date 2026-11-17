@@ -358,7 +358,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- tech-debt-counters:start -->
 | 计数 | 值 |
 | --- | --- |
-| `structure.long-functions` | 190 |
+| `structure.long-functions` | 191 |
 | `structure.large-files` | 96 |
 | `structure.patent-large-files` | 10 |
 | `lint.v8-ignore` | 1337 |

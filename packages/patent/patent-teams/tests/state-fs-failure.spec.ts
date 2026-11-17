@@ -9,6 +9,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { appendMailbox, createMessage } from '../src/mailbox.ts'
 import { archiveTeamDir, createTeamDir, writeTeam } from '../src/state.ts'
+import { renameWithRetry } from '../src/team-lock.ts'
 import type { TeamState } from '../src/types.ts'
 
 vi.mock('node:fs/promises', async (importOriginal) => {
@@ -96,5 +97,17 @@ describe('fs failure injection', () => {
     await archiveTeamDir(root, 'alpha')
     const archived = JSON.parse(await readFile(join(root, 'archive', 'alpha', 'team.json'), 'utf8')) as { id: string }
     expect(archived.id).toBe('alpha')
+  })
+
+  it('treats a thrown non-Error rename failure as non-retryable', async () => {
+    renameMock.mockRejectedValueOnce('rename-boom')
+    await expect(renameWithRetry('from', 'to')).rejects.toBe('rename-boom')
+    expect(renameMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('treats an absent rename error code as non-retryable', async () => {
+    renameMock.mockRejectedValueOnce(Object.assign(new Error('no code'), { code: undefined }))
+    await expect(renameWithRetry('from', 'to')).rejects.toThrow('no code')
+    expect(renameMock).toHaveBeenCalledTimes(1)
   })
 })

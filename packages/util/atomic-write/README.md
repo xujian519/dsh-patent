@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Use `dsh-atomic-write` to replace a file without exposing partial content or following a symlinked temporary path. Its writer lock serializes read-modify-write cycles across processes so concurrent writers cannot overwrite one another with stale state. Each replacement uses caller-selected permission bits on a fresh inode, which safely narrows an existing file's permissions. This zero-dependency library accepts strings and binary byte arrays; it does not provide a `cordis.yml` plugin or crash durability because it does not call `fsync`.
+Use `dsh-atomic-write` to replace a file without exposing partial content or following a symlinked temporary path. Its writer lock serializes read-modify-write cycles across processes so concurrent writers cannot overwrite one another with stale state. Each replacement uses caller-selected permission bits on a fresh inode, which safely narrows an existing file's permissions. This zero-dependency library accepts strings and binary byte arrays; it fsyncs the complete temp file before the rename and flushes the parent directory after it on a best-effort basis. It does not provide a `cordis.yml` plugin.
 
 ## Table of Contents
 
@@ -37,6 +37,8 @@ await writeFileAtomic('/home/u/.dsh/cordis.patch.yml', text, { mode: 0o600 })
 ```
 
 Parent directories are created as needed, and readers observe either the old or the new complete content. On Windows, transient replacement interference reported as `EACCES`, `EBUSY`, or `EPERM` is retried for a bounded interval; any remaining failure removes the temporary file and leaves the target untouched.
+
+Pass `createParentDirectories: false` when the parent must already exist, so a mistyped path fails instead of creating a tree. Pass `directWriteFallback: true` only for state files where keeping progress matters more than an atomic swap: when the rename still fails, the writer writes the same complete content directly to the target and fsyncs it, and reports both failures as an `AggregateError` if that also fails. The fallback is not atomic; a reader can observe a partial file.
 
 ### Coordinating writers
 
@@ -88,6 +90,7 @@ The package is built on one separation: the atomic commit owns the swap, and the
 
 - **Fresh inode, caller-stated mode** — the temp carries `mode` through the rename, so narrowing a wider-permission file has no chmod race. `mode` is required so the permission decision stays visible at every call site.
 - **Readers never contend** — the rename commit is atomic, so a reader needs no lock.
+- **The direct-write fallback trades atomicity for progress** — only callers that opt in reach it, and only after the complete temp file exists. Writing the target in place lets a reader observe partial content and a crash mid-write lose the previous version, so it belongs to state files whose progress matters more than that window.
 - **A contender deletes only an exited holder's lock** — age cannot distinguish a crashed owner from a paused live writer, but a missing process can.
 
 </details>

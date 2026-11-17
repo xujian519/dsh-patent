@@ -1,6 +1,6 @@
 // Pure team-state logic and durable state helpers (fs-backed). Every test gets
-// its own temporary state root; real fs primitives are used except for
-// replaceFileAtomicOrDirect, whose primitives are injected.
+// its own temporary state root; real fs primitives are used, and the atomic
+// writer is covered by the shared package's own suite.
 
 import { chmod, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -36,7 +36,6 @@ import {
   writeTeam,
 } from '../src/state.ts'
 import {
-  replaceFileAtomicOrDirect,
   sanitizeKey,
   stateRootOf,
   teamLockKey,
@@ -770,113 +769,6 @@ describe('mailbox persistence', () => {
     const mailbox = await readMailbox(root, 'alpha', CAPTAIN_KEY, (line, error) => malformed.push([line, error]))
     expect(mailbox.map(m => m.id)).toEqual(['m1'])
     expect(String(malformed[0]![1])).toContain('invalid message shape')
-  })
-})
-
-describe('replaceFileAtomicOrDirect', () => {
-  function primitives(overrides: Partial<{
-    rename: (from: string, to: string) => Promise<void>
-    writeFile: (file: string, content: string) => Promise<void>
-    remove: (file: string) => Promise<void>
-  }> = {}) {
-    return {
-      rename: vi.fn(async () => {}),
-      writeFile: vi.fn(async () => {}),
-      remove: vi.fn(async () => {}),
-      ...overrides,
-    }
-  }
-
-  it('prefers the atomic rename and never touches the fallback', async () => {
-    const p = primitives()
-    await replaceFileAtomicOrDirect('tmp', 'file', 'content', p)
-    expect(p.rename).toHaveBeenCalledWith('tmp', 'file')
-    expect(p.writeFile).not.toHaveBeenCalled()
-    expect(p.remove).not.toHaveBeenCalled()
-  })
-
-  it('retries transient rename errors before succeeding', async () => {
-    let attempts = 0
-    const p = primitives({
-      rename: vi.fn(async () => {
-        attempts += 1
-        if (attempts < 3) throw Object.assign(new Error('lock'), { code: 'EPERM' })
-      }),
-    })
-    await replaceFileAtomicOrDirect('tmp', 'file', 'content', p, { retries: 3, retryDelayMs: 0 })
-    expect(attempts).toBe(3)
-    expect(p.writeFile).not.toHaveBeenCalled()
-  })
-
-  it('falls back to a direct write after retries are exhausted and cleans the temp file', async () => {
-    const p = primitives({
-      rename: vi.fn(async () => { throw Object.assign(new Error('lock'), { code: 'EPERM' }) }),
-    })
-    await replaceFileAtomicOrDirect('tmp', 'file', 'content', p, { retries: 2, retryDelayMs: 0 })
-    expect(p.writeFile).toHaveBeenCalledWith('file', 'content')
-    expect(p.remove).toHaveBeenCalledWith('tmp')
-  })
-
-  it('falls back immediately for a non-retryable rename error', async () => {
-    const p = primitives({
-      rename: vi.fn(async () => { throw Object.assign(new Error('gone'), { code: 'ENOENT' }) }),
-    })
-    await replaceFileAtomicOrDirect('tmp', 'file', 'content', p)
-    expect(p.writeFile).toHaveBeenCalledWith('file', 'content')
-    expect(p.remove).toHaveBeenCalledWith('tmp')
-  })
-
-  it('uses zero-retry options verbatim', async () => {
-    const p = primitives({
-      rename: vi.fn(async () => { throw Object.assign(new Error('lock'), { code: 'EBUSY' }) }),
-    })
-    await replaceFileAtomicOrDirect('tmp', 'file', 'content', p, { retries: 0 })
-    expect(p.rename).toHaveBeenCalledTimes(1)
-    expect(p.writeFile).toHaveBeenCalledTimes(1)
-  })
-
-  it('throws an AggregateError when both the rename and the direct write fail', async () => {
-    const renameError = Object.assign(new Error('rename failed'), { code: 'EPERM' })
-    const writeError = new Error('write failed')
-    const p = primitives({
-      rename: vi.fn(async () => { throw renameError }),
-      writeFile: vi.fn(async () => { throw writeError }),
-    })
-    await expect(replaceFileAtomicOrDirect('tmp', 'file', 'content', p, { retries: 1, retryDelayMs: 0 }))
-      .rejects.toThrow(AggregateError)
-    await expect(replaceFileAtomicOrDirect('tmp', 'file', 'content', p, { retries: 1, retryDelayMs: 0 }))
-      .rejects.toThrow(/failed to replace "file" atomically .* or by direct write/)
-    expect(p.remove).toHaveBeenCalledWith('tmp')
-  })
-
-  it('serializes non-Error failures into the AggregateError message', async () => {
-    const p = primitives({
-      rename: vi.fn(async () => { throw 'rename-boom' }),
-      writeFile: vi.fn(async () => { throw 'write-boom' }),
-    })
-    await expect(replaceFileAtomicOrDirect('tmp', 'file', 'content', p, { retries: 0 }))
-      .rejects.toThrow(AggregateError)
-    await expect(replaceFileAtomicOrDirect('tmp', 'file', 'content', p, { retries: 0 }))
-      .rejects.toThrow(/failed to replace "file" atomically \("rename-boom"\) or by direct write \("write-boom"\)/)
-  })
-
-  it('treats a code-less error as non-retryable and falls back', async () => {
-    const p = primitives({
-      rename: vi.fn(async () => { throw Object.assign(new Error('codeless'), { code: null }) }),
-    })
-    await expect(replaceFileAtomicOrDirect('tmp', 'file', 'content', p, { retries: 2, retryDelayMs: 0 }))
-      .resolves.toBeUndefined()
-    expect(p.writeFile).toHaveBeenCalledWith('file', 'content')
-  })
-
-  it('swallows a temp-file removal failure before reporting the fallback outcome', async () => {
-    const p = primitives({
-      rename: vi.fn(async () => { throw Object.assign(new Error('lock'), { code: 'EACCES' }) }),
-      remove: vi.fn(async () => { throw new Error('remove failed') }),
-    })
-    await expect(replaceFileAtomicOrDirect('tmp', 'file', 'content', p, { retries: 0 }))
-      .resolves.toBeUndefined()
-    expect(p.writeFile).toHaveBeenCalledWith('file', 'content')
   })
 })
 

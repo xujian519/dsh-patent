@@ -8,9 +8,10 @@
  * @module dsh-patent-teams/team-lock
  */
 
-import { createHash, randomUUID } from 'node:crypto'
-import { rename, rm, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { rename } from 'node:fs/promises'
 import { join } from 'node:path'
+import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 
 /** In-process mutation queues (promise chains), keyed by mutation scope. */
 const queues = new Map<string, Promise<unknown>>()
@@ -140,98 +141,22 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-/** Filesystem primitives used by {@link replaceFileAtomicOrDirect}; injectable for tests. */
-interface AtomicReplacePrimitives {
-  rename: (from: string, to: string) => Promise<void>
-  writeFile: (file: string, content: string) => Promise<void>
-  remove: (file: string) => Promise<void>
-}
-
-/** Tuning knobs for {@link replaceFileAtomicOrDirect} (defaults match production). */
-interface AtomicReplaceOptions {
-  /** Rename attempts before the direct-write fallback (default 3). */
-  retries?: number
-  /** Delay between rename attempts in ms (default 50). */
-  retryDelayMs?: number
-}
-
 /**
- * Replace `file` with `content`, preferring an atomic same-directory rename of
- * an already-written temp file.
+ * Atomically replace one UTF-8 state file through the shared writer.
  *
- * On Windows, `rename(tmp, file)` over an existing target throws EPERM while
- * any other process keeps the target open without FILE_SHARE_DELETE (editors,
- * indexers, antivirus scans, preview panes). By that point the payload has
- * already been fully written to the temp file, so a direct overwrite of the
- * target is a content-equivalent degraded path: retry the rename a few times
- * (transient locks clear quickly), then write the target in place. Every path
- * removes the temp file; when both the atomic rename and the direct write
- * fail, the combined error surfaces as an {@link AggregateError}.
- *
- * @param temporary - the temp file holding the fully-written payload.
- * @param file - the target file to replace.
- * @param content - the content to write when falling back to a direct write.
- * @param primitives - the fs primitives (rename/write/remove) to use.
- * @param options - optional retry tuning; defaults match production.
- * @returns nothing once the file has been replaced by one of the two paths.
- */
-export async function replaceFileAtomicOrDirect(
-  temporary: string,
-  file: string,
-  content: string,
-  primitives: AtomicReplacePrimitives,
-  options: AtomicReplaceOptions = {},
-): Promise<void> {
-  const retries = options.retries ?? ATOMIC_RENAME_RETRIES
-  const retryDelayMs = options.retryDelayMs ?? ATOMIC_RENAME_RETRY_DELAY_MS
-  for (let attempt = 0; ; attempt += 1) {
-    try {
-      await primitives.rename(temporary, file)
-      return
-    } catch (error: unknown) {
-      if (isRetryableRenameError(error) && attempt < retries) {
-        await sleep(retryDelayMs)
-        continue
-      }
-      let fallbackError: unknown
-      try {
-        await primitives.writeFile(file, content)
-      } catch (writeError: unknown) {
-        fallbackError = writeError
-      }
-      await primitives.remove(temporary).catch(() => undefined)
-      if (fallbackError !== undefined) {
-        const renameText = error instanceof Error ? error.message : JSON.stringify(error)
-        const writeText = fallbackError instanceof Error ? fallbackError.message : JSON.stringify(fallbackError)
-        throw new AggregateError(
-          [error, fallbackError],
-          `failed to replace "${file}" atomically (${renameText}) or by direct write (${writeText})`,
-        )
-      }
-      return
-    }
-  }
-}
-
-/**
- * Atomically replace one UTF-8 state file from a same-directory temp file,
- * degrading to a direct overwrite when the atomic rename cannot proceed
- * (see {@link replaceFileAtomicOrDirect} for the Windows EPERM rationale).
+ * The parent directory must already exist: the state layer creates the team
+ * tree first, and requiring it keeps a mistyped path from creating a second
+ * tree. The Windows direct-write fallback stays enabled for the reason the
+ * shared option documents — a target briefly held open by an editor or indexer
+ * would otherwise stall every team mutation.
  * @param file - the target file to replace.
  * @param content - the full replacement content.
  */
 export async function atomicWriteText(file: string, content: string): Promise<void> {
-  const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`
-  try {
-    await writeFile(temporary, content, { encoding: 'utf8', flag: 'wx' })
-  } catch (error: unknown) {
-    await rm(temporary, { force: true }).catch(() => undefined)
-    throw error
-  }
-  await replaceFileAtomicOrDirect(temporary, file, content, {
-    rename: (from, to) => rename(from, to),
-    writeFile: (target, payload) => writeFile(target, payload, 'utf8'),
-    remove: path => rm(path, { force: true }),
+  await writeFileAtomic(file, content, {
+    mode: 0o644,
+    createParentDirectories: false,
+    directWriteFallback: true,
   })
 }
 

@@ -60,6 +60,23 @@ export interface WriteFileAtomicOptions {
    * default — pass `0o700` when the tree holds user-private data.
    */
   dirMode?: number
+  /**
+   * Whether to create missing parent directories (default `true`). A caller
+   * whose state directory is set up separately passes `false`, so a mistyped
+   * path fails instead of silently creating a tree beside the intended one.
+   */
+  createParentDirectories?: boolean
+  /**
+   * Degrade to a direct overwrite when the atomic rename ultimately fails.
+   *
+   * Windows rejects a rename over a target another process holds open without
+   * `FILE_SHARE_DELETE` (`EPERM`), while opening the target for writing can
+   * still succeed. The fallback is neither atomic nor crash-durable in the same
+   * way: readers can observe a partial file, so restrict it to state files whose
+   * progress matters more than that window. Only a temp file that was fully
+   * written and fsynced may take this path; a failed temp write never does.
+   */
+  directWriteFallback?: boolean
 }
 
 /**
@@ -73,31 +90,55 @@ export interface WriteFileAtomicOptions {
  * one filesystem. Windows replacement retries transient `EACCES`, `EBUSY`,
  * and `EPERM` failures for a bounded interval while the complete temp file
  * remains the rename source. On any remaining failure the temp file is
- * removed and the failure rethrown. Crash durability: the temp file is
+ * removed and the failure rethrown, unless {@link WriteFileAtomicOptions.directWriteFallback}
+ * asks for the degraded direct overwrite. Crash durability: the temp file is
  * fsynced before the rename and the parent directory entry after it, so a
  * crash leaves either the old content or the new complete content; the
  * directory flush is best-effort (Windows cannot open a directory handle)
  * and never fails the write.
  * @param filename - final path receiving the content.
  * @param content - complete next file content.
- * @param options - permission bits for the replacement inode.
+ * @param options - permission bits, parent-directory policy, and failure policy.
  */
 export async function writeFileAtomic(filename: string, content: string | Uint8Array, options: WriteFileAtomicOptions): Promise<void> {
-  await mkdir(dirname(filename), {
-    recursive: true,
-    ...options.dirMode === undefined ? {} : { mode: options.dirMode },
-  })
+  if (options.createParentDirectories !== false) {
+    await mkdir(dirname(filename), {
+      recursive: true,
+      ...options.dirMode === undefined ? {} : { mode: options.dirMode },
+    })
+  }
   const temp = `${filename}.${randomBytes(6).toString('hex')}.tmp`
+  let tempReady = false
   try {
     await writeFile(temp, content, { mode: options.mode, flag: 'wx' })
     await syncFileDurably(temp)
+    tempReady = true
     await renameAtomicTemp(temp, filename)
     await syncDirectoryDurably(dirname(filename))
   } catch (error) {
+    let wroteDirectly = false
+    let fallbackError: unknown
+    if (tempReady && options.directWriteFallback === true) {
+      try {
+        await writeFile(filename, content)
+        await syncFileDurably(filename)
+        await syncDirectoryDurably(dirname(filename))
+        wroteDirectly = true
+      } catch (writeError) {
+        fallbackError = writeError
+      }
+    }
     await rm(temp, { force: true }).catch((cleanupError: unknown) => {
       // The write failure is the reported one; a failed temp cleanup must not replace it.
       void cleanupError
     })
+    if (wroteDirectly) return
+    if (fallbackError !== undefined) {
+      throw new AggregateError(
+        [error, fallbackError],
+        `failed to replace "${filename}" atomically or by direct write`,
+      )
+    }
     throw error
   }
 }

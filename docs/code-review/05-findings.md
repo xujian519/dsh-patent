@@ -34,8 +34,8 @@
 | ID | 标题 | 域 | 维度 | 严重度 | 可能性 | 状态 |
 |---|---|---|---|---|---|---|
 | F-PAT-001 | 交付物原子写在 POSIX 上先删后改名 | PAT | E | High | 中 | fixed |
-| F-PAT-002 | `rule_check` 丢弃同义词资产警告，合规检查静默降级 | PAT | B | High | 中 | fixed |
-| F-PAT-003 | 原子写四份手写实现，未复用仓库共享 `atomic-write` 包 | PAT | A/B | High | 高 | fixed（3/4） |
+| F-PAT-002 | `rule_check` 丢弃同义词资产警告，合规检查静默降级 | PAT | B | High | 中 | confirmed |
+| F-PAT-003 | 原子写四份手写实现，未复用仓库共享 `atomic-write` 包 | PAT | A/B | High | 高 | fixed |
 | F-PAT-004 | 品牌配置损坏时静默回退默认品牌 | PAT | B | Medium | 中 | confirmed |
 | F-PAT-005 | 四个输出路径默认锚定 `process.cwd()` | PAT | E | Medium | 中 | confirmed |
 | F-PAT-006 | `adversary-review` 以关键词启发式输出"置信度 87.5%" | PAT | B | High | 高 | fixed |
@@ -1734,6 +1734,19 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`adversary-review.spec.ts` 的摘要断言改为「关键词覆盖率」与确定性限定，并断言不再出现「整体置信度」；原子输出 schema 增加 `adversary_review_deterministic`。`patent-oa-chain` 录制会话刷新一行输出文本，其余片段不变。
 
 验证：`pnpm exec vitest run packages/patent/patent-core/tests/adversary-review.spec.ts packages/patent/patent-core/tests/adversary-branches.spec.ts` 61 用例通过；`review.ts`、`adversary-review.ts` 聚焦覆盖率 100%；`pnpm run test:snapshot -t patent-oa-chain` 通过。
+### 批次 E14：`patent-teams` 复用共享原子写（2026-11-17）
+
+用户要求继续修复后完成。补齐批次 A 留下的 F-PAT-003 第 4/4 处。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-003（4/4） | `patent-teams` 删除本地 `replaceFileAtomicOrDirect` 与临时文件写入，`atomicWriteText` 改为委托 `@deepseek-ai/dsh-atomic-write` 的 `writeFileAtomic`；共享写入器新增 `createParentDirectories`（默认创建，teams 关闭以保留「团队目录须先存在」）与 `directWriteFallback`（显式退化，保留 Windows 目标被占用时的直接写回） | `patent-teams/src/team-lock.ts`、`atomic-write/src/index.ts`、两包 `package.json`/`tsconfig.json` |
+
+**行为变化**：团队状态写入获得共享实现的能力：`wx` 独占临时文件、文件 fsync、父目录 fsync、Windows 瞬态 rename 重试（指数退避至 8 次）。直接写回仍是显式退化路径，仅在临时文件完整落盘后启用；两个失败以 `AggregateError` 报出。`createParentDirectories: false` 保留原先「团队目录不存在即失败」的语义，避免路径写错时静默建树。POSIX 上不再重试 `EEXIST`/`ENOTEMPTY`（rename 覆盖文件的瞬时占用只在 Windows 场景成立）。
+
+**既有测试行为**：`state.spec.ts` 删除本地 `replaceFileAtomicOrDirect` 的 9 条注入用例（能力已移到共享包），`state-fs-failure.spec.ts` 补两条 `renameWithRetry` 非 Error/无 code 的判定用例；共享包新增 3 条用例覆盖拒绝建父目录、直接写回成功、直接写回也失败。`state-fs-failure.spec.ts` 原有的临时文件清理吞错用例继续通过，因为共享写入器保留同样的清理失败处理。
+
+验证：`pnpm exec vitest run packages/util/atomic-write/tests packages/patent/patent-teams/tests` 112 用例通过；`atomic-write/src/index.ts`、`team-lock.ts` 聚焦覆盖率 100%；README 中英文同步并重录配对。
 
 ## 复核记录
 

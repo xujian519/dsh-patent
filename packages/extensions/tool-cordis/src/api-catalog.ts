@@ -2782,13 +2782,13 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'approve(caseId: string): PlantaskRunResult',
-        description: 'Decision entry: approve a pending plantask (resume to executing). Single-session single-case semantics: one pending plantask per caseId; concurrent runs of the same caseId are rejected by runPlantask.',
+        description: 'Decision entry: approve a pending plantask (resume to executing). Single-session single-case semantics: one pending plantask per caseId; concurrent runs of the same caseId are rejected by runPlantask. The parked plan lives in this service instance, so a restart loses it and this call then reports the ordinary "no pending plantask" failure.',
         parameters: [{ name: 'caseId', description: 'the case keying the parked plantask.' }],
         returns: 'the final plantask state, tasks, and approval outcome.',
       },
       {
         signature: 'reject(caseId: string, feedback?: string): PlantaskRunResult',
-        description: 'Decision entry: reject a pending plantask and roll back to replanning.',
+        description: 'Decision entry: reject a pending plantask and roll back to replanning. Like approve, the parked plan is process-local: a restart loses it and this call reports "no pending plantask".',
         parameters: [{ name: 'caseId', description: 'the case keying the parked plantask.' }, { name: 'feedback', description: 'optional rejection feedback driving the replanning transition.' }],
         returns: 'the final plantask state, tasks, and approval outcome.',
       },

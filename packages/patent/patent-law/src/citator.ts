@@ -37,7 +37,7 @@ import type {
  * text is not a recognised citation form, which is reported as unverified.
  * @param query - the provision text and optional temporal/revision narrowing.
  * @param baselines - the loaded law index, keyed by law name.
- * @param lineage - optional lineage snapshot whose article status overrides the baseline.
+ * @param lineage - optional lineage snapshot whose article status overrides the baseline for the statute it records.
  * @returns the validity result.
  */
 export function queryValidity(
@@ -76,7 +76,7 @@ export function queryValidity(
  * @param reference - the parsed law reference.
  * @param baselines - the loaded law index, keyed by law name.
  * @param query - optional temporal/revision narrowing.
- * @param lineage - optional lineage snapshot for statute article status override.
+ * @param lineage - optional lineage snapshot for statute article status override; it applies only when `lineage.law` is the referenced law.
  * @returns the validity result.
  */
 export function decideValidity(
@@ -107,8 +107,8 @@ export function decideValidity(
  * article ceiling. The `revised` and `repealed` states do not currently arise
  * for statutes because the index does not carry repeal records for them; when
  * such records are added (M5-T1), this function will map them.
- * When a lineage snapshot is provided, the article's status is overridden from
- * the lineage record and the revision history is reported.
+ * When a lineage snapshot of this statute is provided, the article's status is
+ * overridden from the lineage record and the revision history is reported.
  */
 function decideArticleValidity(
   reference: Extract<LawReference, { kind: 'law-article' }>,
@@ -139,10 +139,13 @@ function decideArticleValidity(
       reason: `《${baseline.law}》第 ${reference.article} 条不在索引中`,
     }
   }
-  // When lineage data is provided, check it before the transcription gate so
-  // that a lineage record can override the unverified state from missing
-  // transcription (e.g. a repealed article that was never transcribed).
-  if (lineage !== undefined) {
+  // A snapshot answers only for the statute it was recorded from: article
+  // numbers repeat across laws, so another law's snapshot would lend this
+  // article that statute's effective dates and status.
+  // Checked before the transcription gate so that a lineage record can override
+  // the unverified state from missing transcription (e.g. a repealed article
+  // that was never transcribed).
+  if (lineage !== undefined && lineage.law === reference.law) {
     const articleLineage = queryArticleLineage(lineage, reference.article)
     if (articleLineage !== null) {
       const revisionHistory = articleLineage.revisionHistory.map(r => ({

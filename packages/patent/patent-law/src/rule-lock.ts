@@ -33,14 +33,23 @@ import type { LawBaseline, LawLineageSnapshot, LawName, ValidityResult, Validity
 /** 法条粒度级别。 */
 export type RuleLockLevel = 'article' | 'section' | 'clause'
 
+/** 锁定结果中 `effectiveDate` 的来源。 */
+export type EffectiveDateSource =
+  /** 沿革记录中最近一次修订的生效日。 */
+  | 'lineage'
+  /** 索引条目的转录核验日（`verifiedOn`），不是法律生效日。 */
+  | 'transcription'
+
 /** 单条法条的锁定结果。 */
 export type RuleLockEntry = {
   /** 法条引用原文。 */
   provision: string
   /** 粒度级别：条（article）、款（section）、项（clause）。 */
   level: RuleLockLevel
-  /** 生效日期（YYYY-MM-DD），无法确定时为 null。 */
+  /** 生效日期（YYYY-MM-DD）；取转录核验日时见 `effectiveDateSource`，无法确定时为 null。 */
   effectiveDate: string | null
+  /** `effectiveDate` 的来源；没有日期时不出现。 */
+  effectiveDateSource?: EffectiveDateSource
   /** 是否已失效：废止，或引用的指南旧编号已被现行版本取代。修订本身不算失效。 */
   stale: boolean
   /** 四态有效性判定。 */
@@ -85,21 +94,23 @@ function inferLevel(result: ValidityResult): RuleLockLevel {
 }
 
 /**
- * 从 ValidityResult 提取生效日期。
+ * 从 ValidityResult 提取日期及其来源。
  *
  * 有沿革记录时取最近一次修订的生效日期——这是条文本身的生效时间；
- * 否则回退到索引条目的 `verifiedOn`（转录核验日期，不是法律生效日期）；
- * 均不可用时返回 null。
+ * 否则回退到索引条目的 `verifiedOn`（转录核验日期，不是法律生效日期），
+ * 由 `effectiveDateSource` 标明，报告据此换用另一种写法。
  * @param result - citator 返回的有效性结果。
- * @returns 生效日期字符串或 null。
+ * @returns 日期与来源，均不可用时返回 undefined。
  */
-function extractEffectiveDate(result: ValidityResult): string | null {
+function effectiveDateOf(result: ValidityResult): { date: string; source: EffectiveDateSource } | undefined {
   if (result.revisionHistory !== undefined && result.revisionHistory.length > 0) {
     const last = result.revisionHistory[result.revisionHistory.length - 1] as { effectiveDate: string }
-    return last.effectiveDate
+    return { date: last.effectiveDate, source: 'lineage' }
   }
-  if (result.entry !== undefined && result.entry.verifiedOn !== null) return result.entry.verifiedOn
-  return null
+  if (result.entry !== undefined && result.entry.verifiedOn !== null) {
+    return { date: result.entry.verifiedOn, source: 'transcription' }
+  }
+  return undefined
 }
 
 /**
@@ -118,10 +129,12 @@ function lockOneProvision(
 ): RuleLockEntry {
   const query = asOf !== undefined ? { provision, asOf } : { provision }
   const result = queryValidity(query, baselines, lineage)
+  const date = effectiveDateOf(result)
   return {
     provision,
     level: inferLevel(result),
-    effectiveDate: extractEffectiveDate(result),
+    effectiveDate: date?.date ?? null,
+    ...(date === undefined ? {} : { effectiveDateSource: date.source }),
     // 已修订是文本变化，条文本身仍现行有效；只有废止与旧编号路径写失效。
     stale: result.state === 'repealed' || result.stalePath === true,
     validityStatus: result.state,
@@ -177,7 +190,11 @@ export function renderRuleLockReport(output: RuleLockOutput): string {
   for (const entry of locked) {
     const statusLabel = entry.stalePath === true ? '旧编号失效' : validityLabel(entry.validityStatus)
     const staleFlag = entry.stale ? '⚠️已失效' : '✓'
-    const dateText = entry.effectiveDate !== null ? `（生效：${entry.effectiveDate}）` : ''
+    const dateText = entry.effectiveDate === null
+      ? ''
+      : entry.effectiveDateSource === 'transcription'
+        ? `（转录核验：${entry.effectiveDate}）`
+        : `（生效：${entry.effectiveDate}）`
     lines.push(`- ${entry.provision}：${statusLabel} ${staleFlag}${dateText}`)
   }
 

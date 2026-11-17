@@ -51,7 +51,7 @@ law_verify 读取一段文本中的法条引用（或直接传入的引用），
 
 `assets/law/` 每部文书一个文件（`cn-patent-law.yaml`、`cn-implementing-regulations.yaml`、`cn-examination-guidelines.yaml`）。每个条目记录条号或节路径、用于核对命题的主题词，以及转录来源：`text`、`sourceDoc`、`verifiedOn`。条数上限自带 `maxVerifiedOn`，因为一个没人核验过的上限不得产出「超出有效范围」的判定。
 
-`assets/lineage/cn-patent-law-lineage.yaml` 记录《专利法》的五个修订版本（1984 年原始文本至 2020 年第四次修正），以及每条已索引法条的修订历史与当前状态。插件加载索引时一并读入该快照并交给 `rule-lock`，法条有效性与生效日期以沿革记录为准；快照未覆盖的法条回退到索引判定。沿革快照按修法事件手工维护，不按日历：新增 `revisions` 条目、更新受修订影响的每条法条、提升 `lineageVersion`，并重录来源与核验日期。文件缺失或格式错误会使插件加载失败，加载器测试钉住其结构。不排期持续抓取管道——专利法以年为单位修订，定时抓取只会增加监控、版本与复核成本，不会提高准确性；刷新由立法修订触发。
+`assets/lineage/cn-patent-law-lineage.yaml` 记录《专利法》的五个修订版本（1984 年原始文本至 2020 年第四次修正），以及每条已索引法条的修订历史与当前状态。插件加载索引时一并读入该快照并交给 `rule-lock`，快照覆盖的《专利法》条文以沿革记录判定有效性与生效日期；快照未覆盖的条文，以及别部法律的每一条，都回退到索引判定。沿革快照按修法事件手工维护，不按日历：新增 `revisions` 条目、更新受修订影响的每条法条、提升 `lineageVersion`，并重录来源与核验日期。文件缺失或格式错误会使插件加载失败，加载器测试钉住其结构。不排期持续抓取管道——专利法以年为单位修订，定时抓取只会增加监控、版本与复核成本，不会提高准确性；刷新由立法修订触发。
 
 两部法律（法规）与指南节均已转录：每个条目带着它所索引条文或节正文的文本、该文本抄录的文书与版本、以及抄录日期。指南引用按所引节及其子节判定；只有其下已索引的各节都没有正文的条目才报「未核验」。后续修订版修改的指南节记在 `versions` 中，作为基础 `sections` 的覆盖；核验未指定 `revision` 时使用最新覆盖。
 
@@ -83,9 +83,9 @@ law_verify 读取一段文本中的法条引用（或直接传入的引用），
 - `parseCnNumber(text)` / `formatCnNumber(value)` —— 中文数字与阿拉伯数字互换（`一百一十二` ↔ `112`）。解析器接受 `〇` 与 `千`；畸形数字返回 null，而不是读成另一个数。
 - `loadLawBaselines(dir?)` / `parseLawBaseline(source, origin)` / `findArticle` / `findSection` —— 索引加载与校验，缺失即 fail-loud。
 - `verifyCitation(reference, baselines, options)` / `verifyCitations(text, baselines, options)` —— 判定。
-- `queryValidity(query, baselines, lineage?)` / `decideValidity(reference, baselines, query, lineage?)` —— 四态有效性判定；给出沿革记录时以其为准，覆盖索引按转录状态得出的结论。
+- `queryValidity(query, baselines, lineage?)` / `decideValidity(reference, baselines, query, lineage?)` —— 四态有效性判定；沿革快照登记的是被引用的那部法律时，以沿革记录为准，覆盖索引按转录状态得出的结论。条号跨法重复，因此别部法律的快照被忽略，不会把同号条文的日期与状态借过来。
 - `loadLawLineageFile(path)` / `parseLawLineage(source, origin)` / `queryArticleLineage` / `queryArticleAtDate` / `queryDiffBetween` / `queryStatusSnapshot` —— 随包沿革快照及其时点查询。
-- `ruleLockAtom` / `RuleLockHandler` / `lockProvisions` —— `rule-lock` 规则锁定门。接入沿革数据后，`effectiveDate` 取最近一次修订的生效日期；未接入时回退到条目的 `verifiedOn` 转录日期。`stale` 只标记已废止的条文，或现行版本已不再使用该编号的指南旧路径；已修订的法条与索引已带 2026 文本的指南节保持 `stale: false`。
+- `ruleLockAtom` / `RuleLockHandler` / `lockProvisions` —— `rule-lock` 规则锁定门。接入沿革数据后，`effectiveDate` 取最近一次修订的生效日期，`effectiveDateSource` 为 `lineage`；未接入时回退到条目的 `verifiedOn` 转录日期，来源标为 `transcription`，报告相应写成「转录核验」而不是「生效」。`stale` 只标记已废止的条文，或现行版本已不再使用该编号的指南旧路径；已修订的法条与索引已带 2026 文本的指南节保持 `stale: false`。
 - `createOverlapIndex(entries)` / `textOverlap(index, proposition, text)` / `topicOverlap(topics, proposition)` / `PROPOSITION_SUPPORT_DEFAULT` —— 命题比对的两路信号。
 - `resolveCitationPolicy(finding, policies)` / `renderCitationFindings` / `renderCitationRows` —— 处置与渲染。
 

@@ -83,7 +83,7 @@
 | F-PAT-048 | 通知书解析不出驳回理由时，两条双输入规则判为通过且无未评估标记 | PAT | E | Medium | 中 | fixed |
 | F-PAT-049 | 结构门禁与引用门禁不核对 `textArgs`，声明写错即静默放行 | PAT | E | Medium | 低 | fixed |
 | F-PAT-050 | 重规划按哈希保留已完成步骤，重复步骤全部判为已完成 | PAT | E | Medium | 低 | new |
-| F-PAT-051 | 沿革快照按条号跨法套用，实施细则条文取到专利法同号条的生效日与状态 | PAT | E | Medium | 高 | confirmed |
+| F-PAT-051 | 沿革快照按条号跨法套用，实施细则条文取到专利法同号条的生效日与状态 | PAT | E | Medium | 高 | fixed |
 | F-PAT-052 | 指南未修改的节在 rule-lock 判「已修订/已失效」，law_verify 判「已核验」 | PAT | E | High | 高 | fixed |
 | F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | confirmed |
 | F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | confirmed |
@@ -820,7 +820,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：`queryValidity`／`decideValidity` 只在 `lineage.law === reference.law` 时使用沿革快照；`queryArticleLineage` 增加法律名参数或改由 `Map<LawName, snapshot>` 索引。回落到 `verifiedOn` 时，`renderRuleLockReport` 不要把该日期渲染成「生效」，改写「条文转录核验日」或省略。新增用例：随包专利法沿革下，实施细则第 5 条不得取专利法第 5 条的生效日与修订史。
 - 预估工作量：S
 - 是否可自动化：是（上面这条断言）
-- 状态：confirmed（Day 41 静态复核，2026-11-17）
+- 修复：`decideArticleValidity` 只在 `lineage.law === reference.law` 时读取沿革记录，别部法律的快照按未覆盖处理，回落到索引判定。`RuleLockEntry` 新增可选字段 `effectiveDateSource`（`lineage`／`transcription`）：回落取 `verifiedOn` 时标记为转录核验日，`renderRuleLockReport` 相应渲染「转录核验」而不是「生效」。随包资产下 `专利法实施细则第5条` 的生效日期由 `2021-06-01` 改为其自身的转录核验日 `2026-09-26`，`专利法第22条` 仍取 `2021-06-01`。
+- 状态：fixed（2026-11-18，批次 R-E4）
 
 ### F-PAT-052 指南未修改的节在 rule-lock 判「已修订/已失效」，law_verify 判「已核验」
 

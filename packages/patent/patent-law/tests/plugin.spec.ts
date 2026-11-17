@@ -99,6 +99,7 @@ describe('@deepseek-ai/dsh-patent-law plugin surface', () => {
         provision: '专利法第22条',
         level: 'article',
         effectiveDate: '2021-06-01',
+        effectiveDateSource: 'lineage',
         stale: false,
         validityStatus: 'active',
       },

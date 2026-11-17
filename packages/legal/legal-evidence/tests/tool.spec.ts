@@ -85,6 +85,25 @@ describe('evaluate_legal_evidence tool', () => {
     expect(output.assessment.findings.some(f => f.ruleId === 'LEGAL-EVI-007' && f.passed)).toBe(true)
   })
 
+  it('reports an unknown witness conflict as unassessed rather than a critical problem', async () => {
+    const ctx = await host()
+    const output = await run(ctx, {
+      evidenceId: 'witness-unknown',
+      evidenceType: 'witness_testimony',
+      source: '证人王某',
+      factToProve: '合同签订时间',
+      collectionLegal: true,
+      corroborated: true,
+    })
+
+    expect(output.assessment.findings.find(f => f.ruleId === 'LEGAL-EVI-007')).toMatchObject({
+      passed: false,
+      notAssessed: true,
+    })
+    expect(output.summary).toContain('未评估 1 项')
+    expect(output.summary).not.toContain('严重问题')
+  })
+
   it('assesses expert opinion with qualification check', async () => {
     const ctx = await host()
     const output = await run(ctx, {

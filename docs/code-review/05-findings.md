@@ -49,8 +49,8 @@
 | F-PAT-014 | `patent_pdf_download` 的输出目录不受部署文件策略约束 | PAT | A | High | 中 | fixed |
 | F-PAT-015 | PDF 兜底下载的临时文件路径可预测且不独占创建 | PAT | A/B | Medium | 中 | fixed |
 | F-PAT-016 | ego-browser 子进程继承完整 `process.env` | PAT | A | Low | 中 | confirmed |
-| F-PAT-017 | 交付前引用门禁只覆盖 `render_patent_document`，立案构建不经引用核验 | PAT | A/E | High | 低 | confirmed |
-| F-PAT-018 | 后台运行接受模型自报的 `approveStageIds`，HITL 审批可绕过 | PAT | A | High | 中 | confirmed |
+| F-PAT-017 | 交付前引用门禁只覆盖 `render_patent_document`，立案构建不经引用核验 | PAT | A/E | High | 低 | fixed |
+| F-PAT-018 | 后台运行接受模型自报的 `approveStageIds`，HITL 审批可绕过 | PAT | A | High | 中 | fixed |
 | F-PAT-019 | 同一管线状态的文本读取有 4 份实现，键列表解析已漂移 | PAT | B | Low | 高 | new |
 | F-PAT-020 | 权项号派生两包各一份，无编号时的缺省语义相反 | PAT | B | Low | 中 | new |
 | F-PAT-021 | `workflow/types.ts` 两处 JSDoc 指向不存在的 `./workflow-store.js` | PAT | B | Low | 高 | new |
@@ -108,8 +108,8 @@
 | F-LEG-008 | `evaluate_legal_evidence` 输出 schema 把维度判定对象写三份 | LEG | B | Low | 高 | confirmed |
 | F-LEG-009 | `rule-set.ts` 手写 `asRecord` 与同名 `hasText`，未用共享工具 | LEG | B | Low | 中 | confirmed |
 | F-LEG-010 | 未核验与未索引引用的工具结果没有锁住处置 | LEG | D | Medium | 中 | new |
-| F-LEG-011 | 证人利害关系未填写时，关键规则报「证人与案件无利害关系」通过 | LEG | E | High | 中 | new |
-| F-LEG-012 | 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略 | LEG | E | Medium | 中 | new |
+| F-LEG-011 | 证人利害关系未填写时，关键规则报「证人与案件无利害关系」通过 | LEG | E | High | 中 | fixed |
+| F-LEG-012 | 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略 | LEG | E | Medium | 中 | fixed |
 | F-LEG-013 | 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果 | LEG | E | Medium | 中 | new |
 | F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | new |
 | F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | confirmed |
@@ -355,7 +355,7 @@
 - 最小修复建议：在 preset 的 `citationGate` 增加 `tool: build_patent_filing`、`textArgs: [draft]`；`structuralGateText` 的 `collectText` 已能递归草案对象，不需要改代码。
 - 预估工作量：S
 - 是否可自动化：是（preset 断言 + 一条含伪造引用的构建用例）
-- 状态：confirmed
+- 状态：fixed（2026-11-16，批次 E6）
 
 ### F-PAT-018 后台运行接受模型自报的 `approveStageIds`，HITL 审批可绕过
 
@@ -368,7 +368,7 @@
 - 最小修复建议：后台运行同样拒绝 `approveStageIds`——到达审批门即暂停并让调用方在前台续跑；若必须支持后台续跑，把模型自报的列表换成由审批服务在回合内签发的一次性凭据，模型只转交不生成。
 - 预估工作量：M
 - 是否可自动化：是（后台 + approveStageIds 的用例应被拒绝；现有用例断言了相反行为，需要同步改）
-- 状态：confirmed
+- 状态：fixed（2026-11-16，批次 E6）
 
 ### F-PAT-019 同一管线状态的文本读取有 4 份实现，键列表解析已漂移
 
@@ -898,7 +898,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - **表名与列名插值**：`pragma_table_info('${table}')` 的 `table` 注释明确「仅包内字面量」，调用点也确实只有字面量；`ALTER TABLE ... ADD COLUMN` 的列名与类型来自包内常量数组；`VACUUM INTO '${path}'` 经 `sqlQuote` 转义单引号。
 - **资产路径**：`rulesDir`、`baselineDir`、费用表目录都只来自部署 `Config`；这四个包的模型可见工具没有任何路径参数，输入无法影响资产位置。
 - **费用失败方向**：`patent-fees` 的 `failOnUnverified` 默认 `true`，未核验时不给合计。
-- **渲染路径的引用门禁是 fail-closed**：`citation-gate.ts:37` 的 `BLOCKING` 含 `not-indexed`、`unverified`、`out-of-range`、`mismatch`，比 `law_verify` 工具的默认策略更严——工具负责让模型看见缺口，门禁负责不让它落盘。缺口只在立案构建路径（F-PAT-017）。
+- **渲染路径的引用门禁是 fail-closed**：`citation-gate.ts:37` 的 `BLOCKING` 含 `not-indexed`、`unverified`、`out-of-range`、`mismatch`，比 `law_verify` 工具的默认策略更严——工具负责让模型看见缺口，门禁负责不让它落盘。`build_patent_filing` 已并入同一门禁（F-PAT-017，批次 E6）。
 
 ### Day 6 定向结论：已处理的外部输入
 
@@ -1190,7 +1190,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把三分支拆开：`witnessHasConflict === false` 才报通过；`=== true && conflictDisclosed === true` 报「已披露」；`=== true` 其余报 critical 失败；`undefined` 报未评估（`passed: false` 或新增 `notAssessed`，摘要单列）。新增四条用例：省略、无冲突、有利害关系已披露、有利害关系未披露。
 - 预估工作量：S
 - 是否可自动化：是（上述四条 findings 断言 + 摘要不计入 severe 的断言）
-- 状态：new
+- 状态：fixed（2026-11-16，批次 E5）
 
 ### F-LEG-012 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略
 
@@ -1203,7 +1203,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：像通用实现一样处理 `=== false`：扣分并写一条「形式合法性存疑」的理由；扣分幅度与类型体例一致（电子数据与证人证言可各用一档）。新增 `true`/`false`/省略三条评分与理由断言。
 - 预估工作量：S
 - 是否可自动化：是（三条评分断言）
-- 状态：new
+- 状态：fixed（2026-11-16，批次 E5）
 
 ### F-LEG-013 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果
 
@@ -1558,6 +1558,34 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`citator.spec.ts`、`branches.spec.ts`、`rule-lock.spec.ts` 中把 staleSection 与 `supersededBy` 断言为 `revised` 的用例改为新口径；新增随包资产断言锁住 3.2.1.1、6.4 与 6 条旧路径的结论一致性。
 
 验证：`pnpm exec vitest run packages/patent/patent-law/tests` 通过（15 文件、328 用例）；`citator.ts` 与 `rule-lock.ts` 在聚焦 `--coverage.include` 下均为 100%；`patent-core` 与 `patent-tools` 全量 3974 用例通过（4 skipped）；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`pnpm run test:snapshot -t patent-` 11 个会话通过；`pnpm run test:docs` 30 passed。
+### 批次 E5：法律证据 fail-closed（2026-11-16）
+
+用户要求按建议顺序全部修复后完成。两条发现都把「缺输入」或「明确否定」读成通过或中性。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-LEG-011 | `LEGAL-EVI-007` 的四条分支拆开：未填写 `witnessHasConflict` 时产出 `passed: false`、`notAssessed: true` 的发现；仅 `false` 报「无利害关系」通过，`true` 且已披露报「已披露」，`true` 未披露报 critical 失败。`LegalEvidenceFinding` 增加可选 `notAssessed`，摘要与综合推理把它单列为「未评估」，不计入严重问题 | `legal-evidence/src/evaluators/witness-testimony.ts`、`legal-evidence/src/types.ts`、`legal-evidence/src/engine.ts`、`legal-evidence/src/tool/evaluate-evidence.ts` |
+| F-LEG-012 | 电子数据与证人证言的合法性判定补上 `formLegal === false` 分支：扣 0.15 并写「形式合法性存疑」，与通用合法性判定的方向一致 | `legal-evidence/src/evaluators/electronic.ts`、`legal-evidence/src/evaluators/witness-testimony.ts` |
+
+**行为变化**：证人利害关系未知时，`evaluate_legal_evidence` 的摘要输出「未评估 1 项」，不再把它当成「无利害关系」通过，也不计入严重问题；工具报告的规则行以「未」标记未评估项。电子数据与证人证言明确填写形式不合法时，同一组已给收集合法与来源的输入里，合法性分数分别由 0.85 降至 0.70、由 0.80 降至 0.65，理由写明形式合法性存疑。
+
+**既有测试行为**：`branches.spec.ts` 的「三种冲突结果」用例补第四条未填写分支；`tool.spec.ts` 新增摘要断言。既有 `witnessHasConflict: false` 的通过断言不变。
+
+验证：`pnpm exec vitest run packages/legal` 通过（23 文件、434 用例）；四个改动源码文件在聚焦 `--coverage.include` 下均为 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`pnpm run test:snapshot -t legal` 通过；`pnpm run test:docs` 30 passed。
+### 批次 E6：交付门禁与后台审批（2026-11-16）
+
+用户要求按建议顺序全部修复后完成。两条都在交付路径上：一条让立案构建绕过了引用核验，一条让后台运行绕过了人工审批。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-017 | preset 的 `citationGate` 增加 `build_patent_filing` / `textArgs: ['draft']`，与渲染路径共用同一份引用判定；`structuralGateText` 已递归读取草案对象里的字符串 | `bundle/web-app/presets/patent.patch.yml`、`bundle/web-app/tests/patent-preset.spec.ts`、`patent-rule/tests/citation-gate.spec.ts` |
+| F-PAT-018 | `approveStageGates: true` 时，`approveStageIds` 在任何运行方式下都被拒绝，后台运行不再回到「暂停后自报续跑」；后台运行在审批门暂停，需在前台重跑让审批服务取用户决策 | `patent-tools/src/tool/patent-workflow-run.ts`、`patent-tools/src/config.ts`、`patent-tools/tests/patent-workflow-run.spec.ts`、`patent-tools/README.md`／`.zh.md`、`bundle/web-app/presets/patent.patch.yml`、`docs/upgrade-guide/v0.2.2-rc.3/patent-workflow-background-approval/` |
+
+**行为变化**：`build_patent_filing` 的草案出现索引拒绝的引用时，调用在落盘前被拒绝，不再只依赖一次会话内的 `law_verify`。开启审批门的部署里，后台运行带非空 `approveStageIds` 会收到 `invalid_tool_input`；需要审批的后台工作流改在前台重跑。`approveStageGates` 关闭的部署保持原契约。该收紧已写入升级指南。
+
+**既有测试行为**：`patent-workflow-run.spec.ts` 原有一条「审批服务缺失时接受 approveStageIds」用例，断言的正是可被后台绕过的旧行为；现改为拒绝，并新增后台运行同一输入被拒绝的用例。`approveStageGates` 关闭时的放行用例保留。
+
+验证：`pnpm exec vitest run packages/patent/patent-tools/tests packages/bundle/web-app/tests` 通过（127 文件、2359 用例，4 skipped）；`patent-workflow-run.ts` 在聚焦 `--coverage.include` 下为 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`pnpm run test:snapshot -t patent-` 11 个会话通过；`pnpm run verify-cordis-config` 366 个配置通过；`pnpm run verify-upgrade-guides` 通过。
 
 ### 批次 A：复用收口（2026-11-15）
 

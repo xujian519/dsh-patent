@@ -307,18 +307,37 @@ describe('patent_workflow_run', () => {
     expect(value.interruptNote).not.toContain('未放行')
   })
 
-  it('accepts approveStageIds when the approval service is absent', async () => {
+  it('refuses approveStageIds when the approval service is absent', async () => {
     const tool = createPatentWorkflowRunTool({
       model: fakeModel(),
       search: fakeSearch,
       approveStageGates: true,
       approval: () => undefined,
     })
-    const value = (await tool.execute(
+    await expect(tool.execute(
       { manifestId: 'patent_disclosure_v1', input: 'technical disclosure', approveStageIds: ['review_gate'] },
       toolExec(true),
-    )) as PatentWorkflowRunOutput
-    expect(value.interruptNote).toBeUndefined()
+    )).rejects.toThrow('approveStageIds 不再作为放行依据')
+  })
+
+  it('refuses approveStageIds on a background run while gates ask the user', async () => {
+    const { jobs } = fakeJobRegistry()
+    const tool = createPatentWorkflowRunTool({
+      model: fakeModel(),
+      search: fakeSearch,
+      jobs: () => jobs,
+      approveStageGates: true,
+      approval: () => ({ policyOf: () => 'ask', request: async () => 'allowed-once' }),
+    })
+    await expect(tool.execute(
+      {
+        manifestId: 'patent_disclosure_v1',
+        input: 'technical disclosure',
+        run_in_background: true,
+        approveStageIds: ['review_gate'],
+      },
+      toolExec(true),
+    )).rejects.toThrow('approveStageIds 不再作为放行依据')
   })
 
   it('refuses approveStageIds while gates run live', async () => {

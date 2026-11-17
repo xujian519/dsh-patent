@@ -63,6 +63,11 @@ export type LegalEvidenceFinding = {
   reason: string
   /** 严重程度。 */
   severity: 'critical' | 'warning' | 'info'
+  /**
+   * 规则因缺少输入而未能判定（如证人利害关系未填写）；为 true 时 `passed` 必为 false，
+   * 摘要单列未评估，不按「严重问题」计数。
+   */
+  notAssessed?: true
 }
 
 /**

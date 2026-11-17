@@ -94,6 +94,12 @@ interface StructuralGateDeclaration {
   strict?: boolean
 }
 
+/** One `citationGate` entry as the `patent` preset declares it. */
+interface CitationGateDeclaration {
+  tool?: string
+  textArgs?: string[]
+}
+
 /** The persona text a row declares, or `''` when the row carries none. */
 function personaPrefix(row: PresetRow | undefined): string {
   const config = row?.config
@@ -457,6 +463,19 @@ describe('patent preset composition', () => {
     for (const ruleId of artifact?.ruleIds ?? []) {
       expect(shipped.get(ruleId), `structuralGate.${ruleId} 未随规则资产以 block 级发布`).toBe('block')
     }
+  })
+
+  it('arms the citation gate on both delivery tools', async () => {
+    // `build_patent_filing` writes the CNIPA submission itself. The delivery gate
+    // only proves one `law_verify` ran; the citation gate re-reads the draft, so
+    // both delivery tools must declare the same artifact argument.
+    const rows = await patentRows()
+    const row = rows.find(entry => entry.id === 'patent-rule')
+    const gate = (row?.config as { citationGate?: CitationGateDeclaration[] } | undefined)?.citationGate
+    expect(gate).toEqual([
+      { tool: 'render_patent_document', textArgs: ['draft'] },
+      { tool: 'build_patent_filing', textArgs: ['draft'] },
+    ])
   })
 
   it('states the team-channel discipline from the mounting rows, not an unrecorded test', async () => {

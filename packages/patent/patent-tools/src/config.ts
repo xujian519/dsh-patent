@@ -112,6 +112,7 @@ export interface Config {
    * 在 manifest 审批门处询问本部署的 approval 服务；默认 false 保持「暂停后由
    * approveStageIds 续跑」的契约。开启后，前台运行在门前取一次用户决策，放行即
    * 继续，拒绝/取消/无应答则带原因暂停；后台运行仍暂停（审批服务只回答开着的回合）。
+   * 开启时任何运行方式都拒绝 `approveStageIds`，后台运行不能靠自报列表绕过审批门。
    */
   approveStageGates?: boolean
   /** 个人工作台 API 基址覆盖；缺省在 web 组合内自动取本进程 webServer 端口。 */

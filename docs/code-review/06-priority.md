@@ -131,20 +131,20 @@
 
 ## 剩余队列（Day 41–42，2026-11-17）
 
-对照 `origin/master` `d138898f90`。已在主干修完的条目不重测，也不进入下一批。当前修复顺序以本节为准。
+对照主干 Merge PR #886。已在主干修完的条目不重测，也不进入下一批。当前修复顺序以本节为准。
 
 ### 已有补丁，本轮不变基
 
-| PR | 发现 | 头 | 处置 |
-|---|---|---|---|
-| [#887](https://github.com/xujian519/dsh-patent/pull/887) | F-PAT-016 | `ed9465b7af` | MERGEABLE。coverage 仍失败。本轮不修、不合 |
-| [#881](https://github.com/xujian519/dsh-patent/pull/881) | F-VID-002 | `1451c05a69` | CONFLICTING。并入 R-E2 时再变基 |
-| [#873](https://github.com/xujian519/dsh-patent/pull/873) | F-VID-005 | `fd53b2b500` | CONFLICTING。排在 R-E1 至 R-E5 与 R-D1 之后 |
-| [#874](https://github.com/xujian519/dsh-patent/pull/874) | F-PAT-011 | `8ab19194f2` | CONFLICTING。排在结论批次之后 |
-| [#875](https://github.com/xujian519/dsh-patent/pull/875) | F-PAT-009 | `bfd87cd93c` | CONFLICTING。排在结论批次之后 |
-| [#876](https://github.com/xujian519/dsh-patent/pull/876) | F-PAT-012 | `7fa9bcdd7b` | CONFLICTING。排在结论批次之后 |
-| [#877](https://github.com/xujian519/dsh-patent/pull/877) | F-PAT-013 | `528886698b` | CONFLICTING。排在结论批次之后 |
-| [#884](https://github.com/xujian519/dsh-patent/pull/884) | F-LEG-005 | `b38fa92c2e` | CONFLICTING。排在结论批次之后 |
+| PR | 发现 | 处置 |
+|---|---|---|
+| [#887](https://github.com/xujian519/dsh-patent/pull/887) | F-PAT-016 | MERGEABLE。coverage 仍失败。本轮不修、不合 |
+| [#881](https://github.com/xujian519/dsh-patent/pull/881) | F-VID-002 | CONFLICTING。并入 R-E2 时再变基 |
+| [#873](https://github.com/xujian519/dsh-patent/pull/873) | F-VID-005 | CONFLICTING。排在 R-E1 至 R-E5 与 R-D1 之后 |
+| [#874](https://github.com/xujian519/dsh-patent/pull/874) | F-PAT-011 | CONFLICTING。排在结论批次之后 |
+| [#875](https://github.com/xujian519/dsh-patent/pull/875) | F-PAT-009 | CONFLICTING。排在结论批次之后 |
+| [#876](https://github.com/xujian519/dsh-patent/pull/876) | F-PAT-012 | CONFLICTING。排在结论批次之后 |
+| [#877](https://github.com/xujian519/dsh-patent/pull/877) | F-PAT-013 | CONFLICTING。排在结论批次之后 |
+| [#884](https://github.com/xujian519/dsh-patent/pull/884) | F-LEG-005 | CONFLICTING。排在结论批次之后 |
 
 ### 下一批修复
 

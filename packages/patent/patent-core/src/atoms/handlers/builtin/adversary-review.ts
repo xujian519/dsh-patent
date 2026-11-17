@@ -44,7 +44,7 @@ function isCitationRelevancy(value: unknown): value is CitationRelevancy {
 /** adversary-review 原子声明。 */
 export const adversaryReviewAtom: Atom = {
   name: 'adversary-review',
-  description: '换位重跑：从对立审查员视角评估最终意见陈述书',
+  description: '换位重跑：以确定性关键词启发式评估最终意见陈述书（非实体论证评估）',
   category: 'gate',
   usesModel: false,
   logInputScope: true,
@@ -59,6 +59,7 @@ export const adversaryReviewAtom: Atom = {
     'adversary_review_report',
     'adversary_review_disputes',
     'adversary_review_confidence',
+    'adversary_review_deterministic',
     'adversary_review_full_report',
     'adversary_review_passed',
   ],
@@ -184,6 +185,7 @@ export class AdversaryReviewHandler implements StageHandler {
       adversary_review_report: report.summary,
       adversary_review_disputes: report.disputes,
       adversary_review_confidence: report.overallConfidence,
+      adversary_review_deterministic: report.deterministic,
       // 完整报告（供后续阶段使用）
       adversary_review_full_report: report,
       // 仅「严重不足」（遗漏驳回理由）翻失败；弱证据以 warn 级在 legal-gaps 可见。

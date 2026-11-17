@@ -9,7 +9,7 @@ English | [中文](guide.zh.md)
 
 ## Change
 
-The journal (`tasks.json`), the budget ledger (`budget.json`), and the project document (`project.json`) are now written with the freshness token the writer read. A concurrent writer makes the guarded write fail instead of overwriting the newer file: the mutation re-reads, merges its change, and retries up to three times. A write that keeps losing fails with the new `MEDIA_STORE_CONFLICT` code; project documents keep reporting `MEDIA_PROJECT_CONFLICT`.
+The journal (`tasks.json`), the budget ledger, and the project document (`project.json`) are now written with the freshness token the writer read. A concurrent writer makes the guarded write fail instead of overwriting the newer file: the mutation re-reads, merges its change, and retries up to three times. A write that keeps losing fails with the new `MEDIA_STORE_CONFLICT` code; project documents keep reporting `MEDIA_PROJECT_CONFLICT`.
 
 Project initialization creates with `createIfAbsent`: initializing an id whose document already exists now fails with `FS_NOT_OBSERVED` instead of replacing it.
 

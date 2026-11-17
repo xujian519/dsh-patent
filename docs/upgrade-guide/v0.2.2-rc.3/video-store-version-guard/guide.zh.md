@@ -9,7 +9,7 @@ description: "视频模式的 journal、账本与项目写入改为按读取到�
 
 ## 变更
 
-任务日志（`tasks.json`）、预算账本（`budget.json`）与项目文档（`project.json`）现在带着写入方读取到的版本令牌发布。并发写入会让守卫写入失败，而不是覆盖较新的文件：修改方重新读取、合并本次改动并最多重试三次。持续失败的写入以新增的 `MEDIA_STORE_CONFLICT` 报告；项目文档仍报 `MEDIA_PROJECT_CONFLICT`。
+任务日志（`tasks.json`）、预算账本与项目文档（`project.json`）现在带着写入方读取到的版本令牌发布。并发写入会让守卫写入失败，而不是覆盖较新的文件：修改方重新读取、合并本次改动并最多重试三次。持续失败的写入以新增的 `MEDIA_STORE_CONFLICT` 报告；项目文档仍报 `MEDIA_PROJECT_CONFLICT`。
 
 项目初始化改为守卫创建（`createIfAbsent`）：对已存在文档的 id 再初始化现在以 `FS_NOT_OBSERVED` 失败，而不是覆盖原文档。
 

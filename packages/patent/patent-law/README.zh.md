@@ -44,7 +44,7 @@ law_verify 读取一段文本中的法条引用（或直接传入的引用），
 
 指南按节路径索引，而一节包含它的子节，所以判定按整节进行：命题由所引节的子节承载时引用成立，理由里点出承载它的子节名；反过来，所引节下面的子节不会成为「命题的另一个归宿」而被判不符。只登记到部分或章一级的条目没有自己的正文，其判定完全由该部分/章下面各节作出——引用一章等于引用它下面全部节，逐字引用其中任一节都会通过；该章下面没有任何已转录的节时仍报「未核验」。
 
-五种处置各对应一个 Config 字段（`onMismatch`、`onUnmatched`、`onOutOfRange`、`onNotIndexed`、`onUnverified`），取值 `block`、`warn`、`allow`。随包默认对「与命题相矛盾」和「已核验上限之外的条号」拦截，对索引缺口与「没有任何条目能判定」的命题只告警——这样部分转录的索引仍可用，而每一处缺口都可见。
+五种处置各对应一个 Config 字段（`onMismatch`、`onUnmatched`、`onOutOfRange`、`onNotIndexed`、`onUnverified`），取值 `block`、`warn`、`allow`。随包默认对「与命题相矛盾」和「已核验上限之外的条号」拦截，对索引缺口与「没有任何条目能判定」的命题只告警——这样部分转录的索引仍可用，而每一处缺口都可见。legal-law 的默认对 `not-indexed` 与 `unverified` 拦截，本包对这两类告警。两套默认记在 law-core 的 `CONFORMANCE_POLICIES`。
 
 <a id="law-index-assets"></a>
 ## 法条索引资产

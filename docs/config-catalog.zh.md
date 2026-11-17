@@ -3486,7 +3486,7 @@ export interface Config {
   model?: string
   /** Dedicated figure/image model route whose input modalities gate analyze_patent_figure. */
   imageModel?: ImageModelConfig
-  /** 知识笔记落盘目录（相对或绝对路径）；默认 <cwd>/99-知识库。 */
+  /** 知识笔记落盘目录。绝对路径原样使用；相对路径以及缺省的 `99-知识库` 相对于 `sandboxPolicy.workspaceRoot`。没有工作区根时插件加载失败。 */
   noteDir?: string
   /** Max output tokens for the LLM-consuming tools. */
   maxTokens?: number
@@ -3510,9 +3510,9 @@ export interface Config {
    * `DEFAULT_WORKFLOW_LLM_STAGE_BUDGET`.
    */
   workflowLlmStageBudget?: number
-  /** 附图索引文件路径（相对或绝对路径）；默认 <cwd>/.sati/figures-index.json。 */
+  /** 附图索引文件。绝对路径原样使用；相对路径以及缺省的 `.sati/figures-index.json` 相对于 `sandboxPolicy.workspaceRoot`。没有工作区根时插件加载失败。 */
   figureIndexFile?: string
-  /** 化学结构索引文件路径（相对或绝对路径）；默认 <cwd>/.sati/chemistry-index.json。 */
+  /** 化学结构索引文件。绝对路径原样使用；相对路径以及缺省的 `.sati/chemistry-index.json` 相对于 `sandboxPolicy.workspaceRoot`。没有工作区根时插件加载失败。 */
   chemistryIndexFile?: string
   /** Graphviz dot 可执行路径覆盖；默认自动探测（候选路径 + PATH）。 */
   graphvizExecutable?: string
@@ -3530,7 +3530,7 @@ export interface Config {
   figureDpi?: number
   /** 附图页边距（厘米，四边同值）；与 figurePageSize 同给时收缩绘图区 size。 */
   figureMargin?: number
-  /** 附图输出目录（相对或绝对路径）；默认 <cwd>/patent/figures/。 */
+  /** 附图输出目录。绝对路径原样使用；相对路径以及缺省的 `patent/figures` 相对于 `sandboxPolicy.workspaceRoot`。没有工作区根时插件加载失败。 */
   figureOutputDir?: string
   /** 附图导出时把图面文字转成轮廓路径；默认 false。开启后 SVG 不再依赖阅读器字体（需要 Inkscape，两个附图生成工具、仅 SVG 生效）。 */
   figureTextToPath?: boolean
@@ -6079,7 +6079,7 @@ export type ApprovalPolicy = 'ask' | 'never'
 
 ## `@deepseek-ai/dsh-video-mode`
 
-- `source`: [`packages/experimental/video-mode/src/media.ts:271`](../packages/experimental/video-mode/src/media.ts)
+- `source`: [`packages/experimental/video-mode/src/media.ts:273`](../packages/experimental/video-mode/src/media.ts)
 
 ```ts config-catalog
 /** Deployment configuration of the media runtime and the video tools. */
@@ -6110,6 +6110,12 @@ export interface MediaRuntimeConfig {
   readonly subtitleFont?: string
   /** Single-generation cost above which the media tool requires explicit confirmation, in CNY. */
   readonly approvalThresholdCny?: number
+  /**
+   * Absolute directory for the host budget ledger.
+   * Omitted or blank uses `~/.dsh/video-mode/ledgers`.
+   * A directory inside the session workspace is rejected when a charge is read or written.
+   */
+  readonly ledgerDir?: string
   /** Local ComfyUI backend; omitted leaves it unregistered. */
   readonly comfyui?: ComfyUiConfig
   /** MiniMax cloud video backend; omitted leaves it unregistered. */

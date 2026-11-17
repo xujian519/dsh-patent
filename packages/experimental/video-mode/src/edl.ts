@@ -9,6 +9,7 @@
 
 import { z } from 'zod'
 import type { Context } from '@deepseek-ai/cordis'
+import type { FsTarget } from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-subprocess'
 import { lockToInterface } from './schema-lock.ts'
 import { MediaFailure, type Edl } from './types.ts'
@@ -294,6 +295,8 @@ export function buildFfmpegArgs(edl: Edl, options: Pick<AssembleOptions, 'subtit
     '-b:a', '192k',
     '-ar', '48000',
     '-movflags', '+faststart',
+    // The partial filename has no container extension, so name the muxer.
+    '-f', 'mp4',
     edl.output,
   )
   return args
@@ -433,8 +436,19 @@ async function resolveEdlPaths(ctx: Context, edl: Edl, cwd: string): Promise<Edl
 }
 
 /**
- * Assemble one EDL into the declared output file. Every input and the output
- * resolve through `ctx.fs` before ffmpeg runs.
+ * Remove a render partial when it is still present.
+ * @param ctx - context providing `ctx.fs`.
+ * @param partial - resolved `<output>.partial` target.
+ * @param signal - caller cancellation.
+ */
+async function discardPartial(ctx: Context, partial: FsTarget, signal: AbortSignal): Promise<void> {
+  if (await ctx.fs.stat(partial, signal) === undefined) return
+  await ctx.fs.deleteFile(partial, undefined, signal)
+}
+
+/**
+ * Assemble one EDL into the declared output file. ffmpeg writes a sibling
+ * partial; `ctx.fs` publishes that file only after ffprobe succeeds.
  * @param ctx - context providing `ctx.subprocess` and `ctx.fs`.
  * @param value - untrusted EDL.
  * @param options - runtime options.
@@ -444,27 +458,44 @@ async function resolveEdlPaths(ctx: Context, edl: Edl, cwd: string): Promise<Edl
 export async function assemble(ctx: Context, value: unknown, options: AssembleOptions): Promise<AssemblyResult> {
   const edl = validateEdl(value)
   const resolved = await resolveEdlPaths(ctx, edl, options.cwd)
-  const args = buildFfmpegArgs(resolved, options)
-  // ffmpeg creates the file but not its parent directories. Publish an empty
-  // placeholder through the filesystem seam first, so the write stays under the
-  // same policy and sandbox as every other artifact and the directory exists.
-  const target = await ctx.fs.resolve(edl.output, { cwd: options.cwd })
-  if (await ctx.fs.stat(target, options.signal) === undefined) {
-    await ctx.fs.writeBytes(target, new Uint8Array(0), undefined, options.signal)
+  const partialPath = `${edl.output}.partial`
+  const partial = await ctx.fs.resolve(partialPath, { cwd: options.cwd })
+  // ffmpeg creates the file but not its parent directories. An empty partial
+  // publishes the directory under the same policy without touching the output.
+  if (await ctx.fs.stat(partial, options.signal) === undefined) {
+    await ctx.fs.writeBytes(partial, new Uint8Array(0), undefined, options.signal)
   }
-  const result = await runProcess(ctx, options.ffmpegPath, args, options.cwd, options.signal, 'MEDIA_FFMPEG_MISSING')
+  const args = buildFfmpegArgs({ ...resolved, output: ctx.fs.processPath(partial) }, options)
+  let result: ProcessResult
+  try {
+    result = await runProcess(ctx, options.ffmpegPath, args, options.cwd, options.signal, 'MEDIA_FFMPEG_MISSING')
+  } catch (error) {
+    await discardPartial(ctx, partial, options.signal)
+    throw error
+  }
   if (result.exitCode !== 0) {
+    await discardPartial(ctx, partial, options.signal)
     const diagnostics = result.stderr.trim().split('\n').slice(-12).join('\n')
     throw new MediaFailure(`ffmpeg failed for ${edl.output}: ${diagnostics || `exit ${String(result.exitCode)}`}`, 'MEDIA_ASSEMBLY_FAILED')
   }
-  const info = await ctx.fs.stat(target, options.signal)
+  const info = await ctx.fs.stat(partial, options.signal)
   if (info === undefined || info.type !== 'file') {
     throw new MediaFailure(`ffmpeg reported success but ${edl.output} is absent`, 'MEDIA_ASSEMBLY_FAILED')
   }
-  const probe = await probeMedia(ctx, edl.output, options)
+  let probe: Awaited<ReturnType<typeof probeMedia>>
+  try {
+    probe = await probeMedia(ctx, partialPath, options)
+  } catch (error) {
+    await discardPartial(ctx, partial, options.signal)
+    throw error
+  }
+  const bytes = await ctx.fs.readBytes(partial, options.signal, info.size ?? 0)
+  const target = await ctx.fs.resolve(edl.output, { cwd: options.cwd })
+  await ctx.fs.writeBytes(target, bytes, undefined, options.signal)
+  await discardPartial(ctx, partial, options.signal)
   return {
     output: edl.output,
-    bytes: info.size ?? 0,
+    bytes: bytes.byteLength,
     probe,
     command: [options.ffmpegPath, ...args],
   }

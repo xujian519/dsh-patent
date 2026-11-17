@@ -71,6 +71,7 @@ async function writeArtifacts(
  * @param ctx - tool context.
  * @param projectPath - project file path, when the call named one.
  * @param task - settled task.
+ * @param ledgerDir - absolute host ledger directory.
  * @param cwd - Session working directory.
  * @param signal - caller cancellation.
  */
@@ -78,6 +79,7 @@ async function settleTask(
   ctx: Context,
   projectPath: string | undefined,
   task: MediaTask,
+  ledgerDir: string,
   cwd: string,
   signal: AbortSignal,
 ): Promise<void> {
@@ -89,7 +91,7 @@ async function settleTask(
       model: task.model,
       costCny: task.cost.amountMinor / 100,
       at: new Date().toISOString(),
-    }, cwd, signal)
+    }, ledgerDir, cwd, signal)
   }
   // Keep the record when the charge failed, so a retry can settle again.
   await forgetTask(ctx, projectPath, task.id, cwd, signal)
@@ -381,7 +383,7 @@ export function createMediaTool(ctx: Context, media: MediaRuntime): ToolDefiniti
             }
           if (args.project_path !== undefined) {
             const project = await readProject(ctx, args.project_path, cwd, exec.signal)
-            const ledger = await readLedger(ctx, args.project_path, cwd, exec.signal)
+            const ledger = await readLedger(ctx, args.project_path, media.settings.ledgerDir, cwd, exec.signal)
             const spent = Math.max(projectCost(project), ledgerCost(ledger))
             const remaining = project.budgetCny - spent
             const estimate = media.estimate(framed)
@@ -444,7 +446,7 @@ export function createMediaTool(ctx: Context, media: MediaRuntime): ToolDefiniti
           if (written.artifacts.length === 0) {
             throw new MediaFailure(`media task ${task.id} succeeded without artifacts`, 'MEDIA_ARTIFACT_INVALID')
           }
-          await settleTask(ctx, args.project_path, task, cwd, exec.signal)
+          await settleTask(ctx, args.project_path, task, media.settings.ledgerDir, cwd, exec.signal)
           return {
             action: 'generate',
             message: `Generated ${task.kind} with ${task.provider}/${task.model}. Wrote ${written.artifacts.map(entry => entry.path).join(', ')}.`
@@ -474,7 +476,7 @@ export function createMediaTool(ctx: Context, media: MediaRuntime): ToolDefiniti
               ? await writeArtifacts(ctx, task.artifacts, outputPath, cwd, media.settings.maxArtifactBytes, exec.signal)
               : { artifacts: [], captions: [] }
           if (task.status === 'succeeded' && task.artifacts !== undefined && outputPath !== undefined) {
-            await settleTask(ctx, args.project_path, task, cwd, exec.signal)
+            await settleTask(ctx, args.project_path, task, media.settings.ledgerDir, cwd, exec.signal)
           }
           if (task.status === 'failed' || task.status === 'cancelled') {
             if (args.project_path !== undefined) await forgetTask(ctx, args.project_path, task.id, cwd, exec.signal)

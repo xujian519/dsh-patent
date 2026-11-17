@@ -376,7 +376,7 @@ describe('CaseLawSearchEngine edge paths', () => {
     })
     expect(engine.ftsAvailable).toBe(false)
     expect(warns).toHaveLength(1)
-    expect(warns[0]).toMatch(/FTS5 不可用，已降级 LIKE/)
+    expect(warns[0]).toMatch(/^\[patent-knowledge\] case-law FTS5 不可用，已降级 LIKE:/)
     expect(stats.snapshot().caseLawFtsDegraded).toBe(true)
     const hits = engine.search('认为')
     expect(hits.some(h => h.documentId === 'd1')).toBe(true)

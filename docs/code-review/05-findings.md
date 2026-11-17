@@ -102,7 +102,7 @@
 | F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | fixed |
 | F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | fixed |
 | F-LEG-004 | 两域默认引用策略分叉，缺对照说明与回归护栏 | LEG | E | Low | 中 | confirmed |
-| F-LEG-005 | 专利知识库降级日志写死 `[sati]` 前缀 | LEG | B | Low | 高 | confirmed |
+| F-LEG-005 | 专利知识库降级日志写死 `[sati]` 前缀 | LEG | B | Low | 高 | fixed |
 | F-LEG-006 | 三性判定器把「打分 + 结论对象」手写 13 份，布尔三元打分块 18 处 | LEG | B | Low | 高 | confirmed |
 | F-LEG-007 | `getById` 在 `legal` 与 `judicial-interpretation` 逐字相同 | LEG | B | Low | 高 | confirmed |
 | F-LEG-008 | `evaluate_legal_evidence` 输出 schema 把维度判定对象写三份 | LEG | B | Low | 高 | confirmed |
@@ -1109,7 +1109,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：改为包名前缀（`[patent-knowledge]`）。
 - 预估工作量：S
 - 是否可自动化：是
-- 状态：confirmed
+- 修复：降级日志前缀改为 `[patent-knowledge]`。判例引擎写 `case-law`，法规引擎写 `法规`。
+- 状态：fixed
 
 ### F-LEG-006 三性判定器把「打分 + 结论对象」手写 13 份，布尔三元打分块 18 处
 

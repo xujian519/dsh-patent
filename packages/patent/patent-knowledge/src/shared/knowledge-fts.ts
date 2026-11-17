@@ -54,10 +54,10 @@ export abstract class KnowledgeFtsSearchBase<TOptions, THit> {
   /** 降级状态的引擎打点（case-law / 法规 各自的 stats 方法）。 */
   protected abstract markFtsDegraded(): void
 
-  /** FTS5 粘性降级打点（构造期 prepare 捕获与查询期异常共用）。 */
+  /** FTS5 粘性降级打点（构造期 prepare 捕获与查询期异常共用）。前缀为 `[patent-knowledge]`。 */
   protected degradeFts(reason: string): void {
     this.ftsDegraded = true
-    this.logger?.warn(`[sati] ${this.degradeLabel} FTS5 不可用，已降级 LIKE: ${reason}`)
+    this.logger?.warn(`[patent-knowledge] ${this.degradeLabel} FTS5 不可用，已降级 LIKE: ${reason}`)
     this.markFtsDegraded()
   }
 

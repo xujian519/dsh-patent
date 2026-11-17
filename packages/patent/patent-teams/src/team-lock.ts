@@ -16,6 +16,20 @@ import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 /** In-process mutation queues (promise chains), keyed by mutation scope. */
 const queues = new Map<string, Promise<unknown>>()
 
+/** Operations that have entered a scope and not yet left, including waiters. */
+const entrants = new Map<string, number>()
+
+/**
+ * Adjust the entered-operation count for one scope.
+ * @param key - the mutation scope.
+ * @param delta - 1 when an operation enters, -1 when it leaves.
+ */
+function bumpEntrants(key: string, delta: number): void {
+  const next = (entrants.get(key) ?? 0) + delta
+  if (next <= 0) entrants.delete(key)
+  else entrants.set(key, next)
+}
+
 /**
  * Serialize one asynchronous operation against a key across the whole process.
  *
@@ -32,13 +46,25 @@ export async function serialize<T>(key: string, fn: () => Promise<T>): Promise<T
   const gate = new Promise<void>((resolve) => { release = resolve })
   const tail = previous.then(() => gate)
   queues.set(key, tail)
-  await previous
+  bumpEntrants(key, 1)
   try {
+    await previous
     return await fn()
   } finally {
     release()
+    bumpEntrants(key, -1)
     if (queues.get(key) === tail) queues.delete(key)
   }
+}
+
+/**
+ * How many operations have entered this scope and not yet left.
+ * A value above 1 means a later caller is waiting on the current holder.
+ * @param key - the mutation scope.
+ * @returns the number of entered operations.
+ */
+export function teamLockEntrants(key: string): number {
+  return entrants.get(key) ?? 0
 }
 
 /**

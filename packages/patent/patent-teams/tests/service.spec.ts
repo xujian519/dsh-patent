@@ -1488,16 +1488,20 @@ describe('authorization and edge branches', () => {
     const captain = fakeAgent('captain-1', h.workspace)
     await createTeam(h, captain)
     await addMember(h, captain, 'alice')
-    const { teamLockKey, withTeamLock } = await import('../src/team-lock.ts')
+    const { teamLockEntrants, teamLockKey, withTeamLock } = await import('../src/team-lock.ts')
     const stateRoot = join(h.workspace, h.stateDir)
-    const { promise, resolve } = Promise.withResolvers<undefined>()
-    const holder = withTeamLock(teamLockKey(stateRoot, 'alpha'), async () => {
-      await promise
+    const key = teamLockKey(stateRoot, 'alpha')
+    expect(teamLockEntrants(key)).toBe(0)
+    const holder = withTeamLock(key, async () => {
+      const deadline = Date.now() + 5_000
+      while (teamLockEntrants(key) < 2) {
+        if (Date.now() > deadline) throw new Error('claim did not reach the team lock')
+        await new Promise((resolve) => { setImmediate(resolve) })
+      }
       await rm(join(stateRoot, 'alpha'), { recursive: true, force: true })
     })
     const claiming = h.ctx.patentTeams.claimTask(fakeAgent('captain-1', h.workspace), { task_id: 't1' })
       .catch((error: unknown) => error)
-    resolve(undefined)
     await holder
     const result = await claiming
     expect(String(result)).toContain('team "alpha" is no longer active')

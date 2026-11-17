@@ -113,7 +113,7 @@
 | F-LEG-013 | 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果 | LEG | E | Medium | 中 | new |
 | F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | new |
 | F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | fixed |
-| F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | confirmed |
+| F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | fixed |
 | F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | fixed |
 | F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | confirmed |
 | F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | confirmed |
@@ -1258,7 +1258,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：终态清理与结算只依赖 `project_path`，与产物路径解耦；写产物单独判 `outputPath`。
 - 预估工作量：S
 - 是否可自动化：是
-- 状态：confirmed
+- 修复：`media status` 在任务成功且至少有一个产物时结算（人民币记账并删除 journal），不再要求 `output_path`。写文件仍只在本次参数或恢复记录给出路径时发生。同一运行里 `refresh` 命中内存任务、调用方未再传 `output_path` 时，journal 会被清掉，费用会计入账本。空产物数组仍只在给出路径时结算。
+- 状态：fixed
 
 ### F-VID-003 zod schema 与手写类型双份维护，靠 `as` 抹平
 

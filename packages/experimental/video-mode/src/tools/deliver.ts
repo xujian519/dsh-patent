@@ -103,7 +103,7 @@ export function createDeliverTool(ctx: Context, media: MediaRuntime): ToolDefini
       if (planned > project.targetSeconds * 1.25) {
         findings.push({ check: 'duration_plan', level: 'warn', detail: `shots total ${planned.toFixed(1)}s against a ${project.targetSeconds}s target` })
       }
-      const ledger = await readLedger(ctx, args.project_path, cwd, exec.signal)
+      const ledger = await readLedger(ctx, args.project_path, media.settings.ledgerDir, cwd, exec.signal)
       const cost = Math.max(projectCost(project), ledgerCost(ledger))
       if (cost > project.budgetCny) {
         findings.push({ check: 'budget', level: 'block', detail: `reported cost ${cost.toFixed(2)} CNY exceeds the ${project.budgetCny.toFixed(2)} CNY budget` })

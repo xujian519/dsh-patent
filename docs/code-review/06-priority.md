@@ -50,7 +50,7 @@
 | F-PAT-009 | Medium | 高 | 可延后 | 6 | P1 |
 | F-PAT-010 | Medium | 中 | 本周期 | 8 | P1（已修） |
 | F-PAT-011 | Medium | 中 | 本周期 | 8 | P1 |
-| F-PAT-005 | Medium | 中 | 本周期 | 8 | P1 |
+| F-PAT-005 | Medium | 中 | 本周期 | 8 | P1（已修） |
 | F-DOC-002 | Medium | 中 | 本周期 | 8 | P1 |
 | F-DOC-004 | Medium | 中 | 本周期 | 8 | P1 |
 | F-LEG-003 | Medium | 中 | 本周期 | 8 | P1 |
@@ -76,7 +76,7 @@
 | F-PAT-015 | Medium | 中 | 本周期 | 8 | P1（已修） |
 | F-PAT-017 | High | 低 | 本周期 | 6 | P1 |
 | F-PAT-016 | Low | 中 | 可延后 | 2 | P3 |
-| F-VID-007 | Medium | 中 | 本周期 | 8 | P1 |
+| F-VID-007 | Medium | 中 | 本周期 | 8 | P1（已修） |
 
 ## 根因分组
 

@@ -20,6 +20,8 @@ describe('patent-tools atom effects', () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
+    const key: string = 'sandboxPolicy'
+    ctx.provide(key, { workspaceRoot: process.cwd() })
     const fiber = await ctx.plugin(tool, {})
     try {
       for (const name of PACKAGE_ATOMS) {

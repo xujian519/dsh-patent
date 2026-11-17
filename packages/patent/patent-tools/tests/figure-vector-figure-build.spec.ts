@@ -131,6 +131,19 @@ describe('buildVectorFigure 剖视图', () => {
     expect(build.warnings.join('')).not.toContain('未指定剖面线')
   })
 
+  it('标号省略引线起点时只画文字，不画引线', () => {
+    const sections = { parts: [{ outline: SQUARE, hatch: 'none' as const }] }
+    const withLeader = buildVectorFigure('cross_section', {
+      sections: { ...sections, labels: [{ text: '1', at: [5, 5], from: [0, 0] }] },
+    })
+    const withoutLeader = buildVectorFigure('cross_section', {
+      sections: { ...sections, labels: [{ text: '1', at: [5, 5] }] },
+    })
+    expect(withoutLeader.spec.labels).toContain('1')
+    expect(withoutLeader.spec.body).not.toBe(withLeader.spec.body)
+    expect(withoutLeader.spec.body).not.toContain('<line')
+  })
+
   it('defaultFontMm 作为 label_font_size_mm 的缺省', () => {
     const build = buildVectorFigure('cross_section', {
       sections: { parts: [{ outline: SQUARE, hatch: 'none' }] },

@@ -407,6 +407,8 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
 - **2026-11-17 E3 门禁缺输入 fail-closed**:`rule-check.ts` 的 `createRuleCheckTool` 新增通知书未识别到驳回理由的 `dualInputSkipped` 处理后超过 150 行,`structure.long-functions` 由 190 升至 **191**;其余计数不变。
+||||||| parent of 068a731a67 (docs(tech-debt): F-PAT-009 拆分使 long-functions 回落 190)
+- **2026-11-17 F-PAT-009 工具注册拆分**:`wiring.ts` 的 `registerPatentTools` 按四组拆为分组注册函数后回落到 150 行以下,`structure.long-functions` 由 191 降至 **190**;其余计数不变。
 - **2026-11-16 E6 交付门禁与后台审批**:`patent-workflow-run.ts` 由 1028 升至 **1032** 行并同步重定接受上限;新增的是 `approveStageGates` 开启时对任何运行方式拒绝 `approveStageIds` 的守卫、后台暂停说明与配置/工具描述文字,未产生新的 >150 行函数;其余计数不变。
 - **2026-11-15 原子写收口**:`persist-utils.ts` 的 `atomicWriteJson` 改为委托 `@deepseek-ai/dsh-atomic-write`,删掉自研实现里的两行 `v8 ignore`(关闭句柄与清理临时文件的 best-effort 分支),`lint.v8-ignore` 由 1339 降至 **1337**。其余计数不变。
 - **2026-11-15 33 条替代索引**:`manifests.ts` 由 953 升至 **960** 行并同步重定接受上限，新增的是披露链 `slop_clean` 使用的 `EMBODIMENT_FEATURE_BLOCK_CHAR_BUDGET`（1500，尚未按交底语料定标）及其说明，阶段描述仍各占一行；`lint.v8-ignore` 由 1332 升至 **1339**。新增 7 条都在 `amendment-reserve.ts`：同行与单行标签正则只捕获三种固定标签、正文捕获组总在、`matchAll` 命中项总有下标、实施例标题捕获组必有数字、`locateQuote` 在 `matched` 时带回原文区间。这些分支由正则与定位结果的不变量排除，其余扫描、缺口与索引分支由用例覆盖。`structure.long-functions`、`structure.large-files` 与 `structure.patent-large-files` 不变。

@@ -388,6 +388,8 @@ async function locateLedger(
   }
 }
 
+/* jscpd:ignore-start -- patent-tools keeps its own copy: that one throws
+   PatentToolError, and sandbox-policy is not a shared project reference. */
 /**
  * Absolute workspace root published by the deployment on `ctx.sandboxPolicy`.
  * @param ctx - caller context.
@@ -408,6 +410,7 @@ function deploymentWorkspaceRoot(ctx: Context): string | undefined {
   }
   return root
 }
+/* jscpd:ignore-end */
 
 /**
  * Sum the ledger charges in CNY, working in fen so repeated additions cannot

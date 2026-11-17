@@ -1038,6 +1038,7 @@ flowchart TD
   pkg_workspace_changes --> pkg_tools
   pkg_macos_tools --> pkg_tools
   pkg_macos_tools --> pkg_user_approval
+  pkg_doc_template --> pkg_error
   pkg_doc_template --> pkg_fs
   pkg_doc_template --> pkg_tools
   pkg_document_deliver --> pkg_fs
@@ -1138,8 +1139,11 @@ flowchart TD
   pkg_tool_jobs --> pkg_output_retention
   pkg_tool_jobs --> pkg_system_prompt
   pkg_tool_jobs --> pkg_tools
+  pkg_legal_evidence --> pkg_error
   pkg_legal_evidence --> pkg_tools
+  pkg_legal_knowledge --> pkg_error
   pkg_legal_knowledge --> pkg_tools
+  pkg_legal_law --> pkg_error
   pkg_legal_law --> pkg_tools
   pkg_tool_lsp --> pkg_llm
   pkg_tool_lsp --> pkg_lsp
@@ -1168,6 +1172,7 @@ flowchart TD
   pkg_patent_rule --> pkg_patent_core
   pkg_patent_rule --> pkg_tools
   pkg_patent_rule --> pkg_user_approval
+  pkg_tool_literature --> pkg_error
   pkg_tool_literature --> pkg_tools
   pkg_writing_patterns --> pkg_system_prompt
   pkg_writing_patterns --> pkg_tools
@@ -1316,6 +1321,7 @@ flowchart TD
   pkg_mcp_client --> pkg_timeout
   pkg_mcp_client --> pkg_tools
   pkg_patent_tools --> pkg_attachment
+  pkg_patent_tools --> pkg_error
   pkg_patent_tools --> pkg_jobs
   pkg_patent_tools --> pkg_llm
   pkg_patent_tools --> pkg_patent_core
@@ -1592,12 +1598,14 @@ flowchart TD
   pkg_session_reference --> pkg_typert_protocol
   pkg_tool_office --> pkg_agent
   pkg_tool_office --> pkg_attachment
+  pkg_tool_office --> pkg_error
   pkg_tool_office --> pkg_fs
   pkg_tool_office --> pkg_llm
   pkg_tool_office --> pkg_office_kit
   pkg_tool_office --> pkg_skill
   pkg_tool_office --> pkg_subagent
   pkg_tool_office --> pkg_tools
+  pkg_tool_office --> pkg_typert_protocol
   pkg_tool_office --> pkg_working_directory
   pkg_experimental_client_ui_forge --> pkg_experimental_forge
   pkg_experimental_client_ui_forge --> pkg_experimental_worktree
@@ -2059,7 +2067,7 @@ flowchart TD
 | [`tool-present`](../packages/deliverables/tool-present) | `deliverables` | [`agent`](../packages/core/agent), [`fs`](../packages/fs/fs), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`tools`](../packages/core/tools), [`working-directory`](../packages/session/working-directory) |
 | [`workspace-changes`](../packages/deliverables/workspace-changes) | `deliverables` | [`agent`](../packages/core/agent), [`fs`](../packages/fs/fs), [`session`](../packages/core/session), [`subprocess`](../packages/subprocess/subprocess), [`tools`](../packages/core/tools) |
 | [`macos-tools`](../packages/desktop/macos-tools) | `desktop` | [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval) |
-| [`doc-template`](../packages/document/doc-template) | `document` | [`fs`](../packages/fs/fs), [`tools`](../packages/core/tools) |
+| [`doc-template`](../packages/document/doc-template) | `document` | [`error`](../packages/util/error), [`fs`](../packages/fs/fs), [`tools`](../packages/core/tools) |
 | [`document-deliver`](../packages/document/document-deliver) | `document` | [`fs`](../packages/fs/fs), [`tools`](../packages/core/tools) |
 | [`action-cards`](../packages/experimental/action-cards) | `experimental` | [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`tools`](../packages/core/tools), [`typert-protocol`](../packages/typert/protocol) |
 | [`creation-recommendations`](../packages/experimental/creation-recommendations) | `experimental` | [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`skill`](../packages/skill/skill), [`tools`](../packages/core/tools) |
@@ -2081,9 +2089,9 @@ flowchart TD
 | [`tool-call-timeout-policy`](../packages/guard/timeout-policy) | `guard` | [`llm`](../packages/llm/llm), [`timeout`](../packages/util/timeout), [`tools`](../packages/core/tools) |
 | [`tool-ask-user`](../packages/interaction/tool-ask-user) | `interaction` | [`agent`](../packages/core/agent), [`tools`](../packages/core/tools), [`user-questions`](../packages/interaction/user-questions) |
 | [`tool-jobs`](../packages/jobs/tool-jobs) | `jobs` | [`agent`](../packages/core/agent), [`jobs`](../packages/jobs/jobs), [`llm`](../packages/llm/llm), [`output-retention`](../packages/util/output-retention), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
-| [`legal-evidence`](../packages/legal/legal-evidence) | `legal` | [`tools`](../packages/core/tools) |
-| [`legal-knowledge`](../packages/legal/legal-knowledge) | `legal` | [`tools`](../packages/core/tools) |
-| [`legal-law`](../packages/legal/legal-law) | `legal` | [`tools`](../packages/core/tools) |
+| [`legal-evidence`](../packages/legal/legal-evidence) | `legal` | [`error`](../packages/util/error), [`tools`](../packages/core/tools) |
+| [`legal-knowledge`](../packages/legal/legal-knowledge) | `legal` | [`error`](../packages/util/error), [`tools`](../packages/core/tools) |
+| [`legal-law`](../packages/legal/legal-law) | `legal` | [`error`](../packages/util/error), [`tools`](../packages/core/tools) |
 | [`tool-lsp`](../packages/lsp/tool-lsp) | `lsp` | [`llm`](../packages/llm/llm), [`lsp`](../packages/lsp/lsp), [`system-prompt`](../packages/core/system-prompt), [`timeout`](../packages/util/timeout), [`tools`](../packages/core/tools), [`working-directory`](../packages/session/working-directory) |
 | [`mcp-resources`](../packages/mcp/mcp-resources) | `mcp` | [`llm`](../packages/llm/llm), [`scope`](../packages/core/scope), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
 | [`methodology`](../packages/patent/methodology) | `patent` | [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
@@ -2093,7 +2101,7 @@ flowchart TD
 | [`patent-filing`](../packages/patent/patent-filing) | `patent` | [`home-paths`](../packages/util/home-paths), [`patent-core`](../packages/patent/patent-core), [`subprocess`](../packages/subprocess/subprocess), [`tools`](../packages/core/tools), [`util-values`](../packages/util/values) |
 | [`patent-law`](../packages/patent/patent-law) | `patent` | [`tools`](../packages/core/tools) |
 | [`patent-rule`](../packages/patent/patent-rule) | `patent` | [`llm`](../packages/llm/llm), [`patent-core`](../packages/patent/patent-core), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval) |
-| [`tool-literature`](../packages/patent/tool-literature) | `patent` | [`tools`](../packages/core/tools) |
+| [`tool-literature`](../packages/patent/tool-literature) | `patent` | [`error`](../packages/util/error), [`tools`](../packages/core/tools) |
 | [`writing-patterns`](../packages/patent/writing-patterns) | `patent` | [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
 | [`agent-preset-registry`](../packages/preset/agent-preset-registry) | `preset` | [`agent`](../packages/core/agent), [`scope`](../packages/core/scope), [`session`](../packages/core/session), [`session-projection`](../packages/session/session-projection), [`settings`](../packages/settings/settings), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools), [`typert-protocol`](../packages/typert/protocol) |
 | [`tool-self-evolve`](../packages/self-evolve/tool-self-evolve) | `self-evolve` | [`agent`](../packages/core/agent), [`llm`](../packages/llm/llm), [`self-evolve`](../packages/self-evolve/self-evolve), [`session`](../packages/core/session), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
@@ -2120,7 +2128,7 @@ flowchart TD
 | [`tool-cordis`](../packages/extensions/tool-cordis) | `extensions` | [`agent`](../packages/core/agent), [`app-boot`](../packages/boot/app-boot), [`cordis-host-runner`](../packages/extensions/cordis-host-runner), [`tools`](../packages/core/tools) |
 | [`host-plugin-inventory`](../packages/host/plugin-inventory) | `host` | [`agent-preset-registry`](../packages/preset/agent-preset-registry), [`brand`](../packages/util/brand), [`typert-protocol`](../packages/typert/protocol) |
 | [`mcp-client`](../packages/mcp/mcp-client) | `mcp` | [`attachment`](../packages/attachment/attachment), [`credentials`](../packages/credentials/credentials), [`llm`](../packages/llm/llm), [`mcp-resources`](../packages/mcp/mcp-resources), [`scope`](../packages/core/scope), [`subprocess`](../packages/subprocess/subprocess), [`system-prompt`](../packages/core/system-prompt), [`timeout`](../packages/util/timeout), [`tools`](../packages/core/tools) |
-| [`patent-tools`](../packages/patent/patent-tools) | `patent` | [`attachment`](../packages/attachment/attachment), [`jobs`](../packages/jobs/jobs), [`llm`](../packages/llm/llm), [`patent-core`](../packages/patent/patent-core), [`patent-data`](../packages/patent/patent-data), [`patent-deadline`](../packages/patent/patent-deadline), [`patent-document`](../packages/patent/patent-document), [`patent-knowledge`](../packages/patent/patent-knowledge), [`patent-rule`](../packages/patent/patent-rule), [`patent-workflow`](../packages/patent/patent-workflow), [`subprocess`](../packages/subprocess/subprocess), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval) |
+| [`patent-tools`](../packages/patent/patent-tools) | `patent` | [`attachment`](../packages/attachment/attachment), [`error`](../packages/util/error), [`jobs`](../packages/jobs/jobs), [`llm`](../packages/llm/llm), [`patent-core`](../packages/patent/patent-core), [`patent-data`](../packages/patent/patent-data), [`patent-deadline`](../packages/patent/patent-deadline), [`patent-document`](../packages/patent/patent-document), [`patent-knowledge`](../packages/patent/patent-knowledge), [`patent-rule`](../packages/patent/patent-rule), [`patent-workflow`](../packages/patent/patent-workflow), [`subprocess`](../packages/subprocess/subprocess), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval) |
 | [`agent-preset`](../packages/preset/agent-preset) | `preset` | [`agent-preset-registry`](../packages/preset/agent-preset-registry) |
 | [`session-telemetry-otel`](../packages/session/session-telemetry-otel) | `session` | [`anonymous-user-id`](../packages/identity/anonymous-user-id), [`command-feedback`](../packages/feedback/command-feedback), [`llm`](../packages/llm/llm), [`message-feedback`](../packages/feedback/message-feedback), [`otel`](../packages/telemetry/otel), [`session`](../packages/core/session), [`session-telemetry`](../packages/session/session-telemetry) |
 | [`tool-bash`](../packages/shell/tool-bash) | `shell` | [`agent`](../packages/core/agent), [`jobs`](../packages/jobs/jobs), [`llm`](../packages/llm/llm), [`sandbox`](../packages/sandbox/sandbox), [`sandbox-policy`](../packages/sandbox/sandbox-policy), [`shell`](../packages/shell/shell), [`shell-env`](../packages/shell/shell-env), [`subprocess`](../packages/subprocess/subprocess), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval), [`working-directory`](../packages/session/working-directory) |
@@ -2155,7 +2163,7 @@ flowchart TD
 | [`headless`](../packages/bundle/headless) | `bundle` | [`agent`](../packages/core/agent), [`agent-default-model`](../packages/core/agent-default-model), [`fs`](../packages/fs/fs), [`llm`](../packages/llm/llm), [`permission-presets`](../packages/interaction/permission-presets), [`sandbox-policy`](../packages/sandbox/sandbox-policy), [`session`](../packages/core/session), [`session-query`](../packages/session-query/session-query), [`subagent`](../packages/subagent/subagent), [`user-approval`](../packages/interaction/user-approval) |
 | [`compaction-basic`](../packages/compaction/compaction-basic) | `compaction` | [`agent`](../packages/core/agent), [`commands`](../packages/interaction/commands), [`compaction`](../packages/compaction/compaction), [`compaction-tool-result-pruner`](../packages/compaction/compaction-tool-result-pruner), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`token-meter`](../packages/llm/token-meter) |
 | [`session-reference`](../packages/context/session-reference) | `context` | [`agent`](../packages/core/agent), [`compaction`](../packages/compaction/compaction), [`llm`](../packages/llm/llm), [`output-retention`](../packages/util/output-retention), [`session`](../packages/core/session), [`session-projection`](../packages/session/session-projection), [`session-projection-cache`](../packages/session/session-projection-cache), [`session-query`](../packages/session-query/session-query), [`session-title`](../packages/session/session-title), [`spill`](../packages/spill/spill), [`subagent`](../packages/subagent/subagent), [`system-prompt`](../packages/core/system-prompt), [`typert-protocol`](../packages/typert/protocol) |
-| [`tool-office`](../packages/document/tool-office) | `document` | [`agent`](../packages/core/agent), [`attachment`](../packages/attachment/attachment), [`fs`](../packages/fs/fs), [`llm`](../packages/llm/llm), [`office-kit`](../packages/document/office-kit), [`skill`](../packages/skill/skill), [`subagent`](../packages/subagent/subagent), [`tools`](../packages/core/tools), [`working-directory`](../packages/session/working-directory) |
+| [`tool-office`](../packages/document/tool-office) | `document` | [`agent`](../packages/core/agent), [`attachment`](../packages/attachment/attachment), [`error`](../packages/util/error), [`fs`](../packages/fs/fs), [`llm`](../packages/llm/llm), [`office-kit`](../packages/document/office-kit), [`skill`](../packages/skill/skill), [`subagent`](../packages/subagent/subagent), [`tools`](../packages/core/tools), [`typert-protocol`](../packages/typert/protocol), [`working-directory`](../packages/session/working-directory) |
 | [`experimental-client-ui-forge`](../packages/experimental/client-ui-forge) | `experimental` | [`experimental-forge`](../packages/experimental/forge), [`experimental-worktree`](../packages/experimental/worktree), [`fs`](../packages/fs/fs), [`session`](../packages/core/session), [`timeout`](../packages/util/timeout) |
 | [`experimental-subagent-oar`](../packages/experimental/subagent-oar) | `experimental` | [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`subagent`](../packages/subagent/subagent), [`subprocess`](../packages/subprocess/subprocess) |
 | [`experimental-tool-subagent-oar`](../packages/experimental/tool-subagent-oar) | `experimental` | [`subagent`](../packages/subagent/subagent), [`tools`](../packages/core/tools) |

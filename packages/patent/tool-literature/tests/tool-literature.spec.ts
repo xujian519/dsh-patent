@@ -154,6 +154,7 @@ describe('paper_search over an injected-fetchImpl registry', () => {
       const result = await execute(ctx, 'paper_search', { db: 'stub', query }, `blank-${JSON.stringify(query)}`)
       expect(result.isError).toBe(true)
       expect(text(result)).toContain('query must be non-empty')
+      expect(result.error?.info).toMatchObject({ name: 'LiteratureToolError', code: 'invalid_tool_input' })
     }
     expect(calls).toBe(0)
   })

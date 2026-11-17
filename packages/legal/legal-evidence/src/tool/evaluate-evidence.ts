@@ -5,21 +5,24 @@
  * @module @deepseek-ai/dsh-legal-evidence/tool/evaluate-evidence
  */
 
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { LegalEvidenceEngine } from '../engine.ts'
 import type { LegalEvidenceAssessment, LegalEvidenceInput, LegalEvidenceType } from '../types.ts'
 import { LEGAL_EVIDENCE_TYPES } from '../types.ts'
 
-/** Thrown when the tool input cannot be processed. */
-export class EvaluateLegalEvidenceToolError extends Error {
-  /** 稳定的错误码。 */
-  readonly code: string
-
+/**
+ * Thrown when the tool input cannot be processed.
+ * Extends {@link HarnessError} so the code reaches `tool/result`.
+ */
+export class EvaluateLegalEvidenceToolError extends HarnessError {
+  /**
+   * @param code - 稳定的错误码。
+   * @param message - 模型可见的失败说明。
+   */
   constructor(code: string, message: string) {
-    super(message)
-    this.name = 'EvaluateLegalEvidenceToolError'
-    this.code = code
+    super(message, code)
   }
 }
 

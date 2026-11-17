@@ -9,6 +9,8 @@
  * @module @deepseek-ai/dsh-doc-template/types
  */
 
+import { HarnessError } from '@deepseek-ai/dsh-error'
+
 /**
  * The variable constraints of one template's body, as the template seam exposes
  * them. `vars.ts` implements this surface as a class; the interface lives here so
@@ -238,18 +240,19 @@ export function assertNever(value: never): never {
   throw new Error(`unreachable variant: ${JSON.stringify(value)}`)
 }
 
-/** Thrown when a template, variable set, style, or format cannot be satisfied. */
-export class DocTemplateError extends Error {
+/**
+ * Thrown when a template, variable set, style, or format cannot be satisfied.
+ * Extends {@link HarnessError} so the failure kind reaches `tool/result`.
+ */
+export class DocTemplateError extends HarnessError {
   /** Stable failure kind, for callers that branch on it. */
-  readonly code: TemplateErrorCode
+  declare readonly code: TemplateErrorCode
 
   /**
    * @param code - stable failure kind.
    * @param message - what could not be satisfied.
    */
   constructor(code: TemplateErrorCode, message: string) {
-    super(message)
-    this.name = 'DocTemplateError'
-    this.code = code
+    super(message, code)
   }
 }

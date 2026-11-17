@@ -427,6 +427,7 @@ describe('render_doc_template tool', () => {
     const result = await execute(ctx, 'render_doc_template', { template: 'search-report', variables: {} })
     expect(result.isError).toBe(true)
     expect(textOf(result)).toContain('缺少必填变量：firm_name')
+    expect(result.error?.info).toMatchObject({ name: 'DocTemplateError', code: 'variable-missing' })
   })
 
   it('fails the call when a variable value is not a string', async () => {

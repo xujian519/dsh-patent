@@ -130,7 +130,7 @@
 | F-CROSS-001 | 四域另有 4 份 `messageOf`/`errorText` 与 1 份可并的 `asRecord`，而 `dsh-value` 已有对应原语且 11 个域内包已依赖它 | CROSS | B | Low | 高 | new |
 | F-CROSS-002 | `patent-tools` 导入未声明的 workspace 依赖 `@deepseek-ai/dsh-value`，运行产物靠打包内联掩盖 | CROSS | B/E | Low | 高 | new |
 | F-CROSS-003 | 知识库安装覆盖时先删输出，改名失败没有用例 | CROSS | D | High | 中 | fixed |
-| F-CROSS-004 | 专利、文档、法律三域的工具错误类没有接入 `HarnessError`，失败码在 `tool/result` 与会话界面丢失 | CROSS | E | Low | 高 | confirmed |
+| F-CROSS-004 | 专利、文档、法律三域的工具错误类没有接入 `HarnessError`，失败码在 `tool/result` 与会话界面丢失 | CROSS | E | Low | 高 | fixed |
 
 ## 专利域
 
@@ -1510,7 +1510,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：让上述工具错误类继承 `@deepseek-ai/dsh-llm` 的 `HarnessError`（`patent-tools`、`tool-literature`、`doc-template`、`video-mode` 已声明该依赖；`doc-style`、`office-kit` 可保留纯库错误，在 `doc-template`、`tool-office` 的工具边界转成 `HarnessError`）。`tool-office` 的 `officeFailure` 保留 `OfficeKitError` 的 `code`，`RemoteError` 在工具边界转成 `HarnessError`。每个域补一条用例：注册一个抛该域错误的工具，断言 `result.error.info` 的 `name`/`code`。若要防回归，可在 `tools/result` 测试里断言「域内工具失败必有 `info.code`」，并把「带 `code` 的 Error 子类必须继承 `HarnessError`」加进静态门禁。
 - 预估工作量：M
 - 是否可自动化：是（每个域一条工具失败用例；静态门禁可扫 `class .*Error extends Error` 且带 `readonly code` 的声明）
-- 状态：confirmed（Day 41 静态复核，2026-11-17）
+- 修复：`PatentToolError`、`LiteratureToolError`、`DocTemplateError`、`LegalLawVerifyToolError`、`EvaluateLegalEvidenceToolError`、`LegalKnowledgeSearchToolError` 改为继承 `@deepseek-ai/dsh-error` 的 `HarnessError`，构造签名与 `name` 不变，窄的 `code` 联合用 `declare readonly code` 保留。`tool-office` 的 `officeFailure` 用 `HarnessError` 保留 `OfficeKitError` 的 `code`，并把 `remoteErrorOf` 认出的 `RemoteError` 在工具边界同样转成 `HarnessError`。`DocumentStyleError` 与 `OfficeKitError` 仍是纯库错误：前者只在资产加载与解析时抛出，不经工具边界。七个包各补一条断言 `result.error.info` 的用例。
+- 状态：fixed（2026-11-18，批次 R-E5）
 
 ## E 维度汇总（Day 40）
 

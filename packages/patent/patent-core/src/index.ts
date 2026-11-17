@@ -186,6 +186,11 @@ export type {
   ChartMode,
   ChartTarget,
   ClaimChart,
+  // patent-tools invalidity JSON readback consumes these protocol types.
+  ClaimAlternative,
+  ClaimNoveltyCoverage,
+  ClaimRefIssue,
+  DependentClaimPathIssue,
 } from './claim-chart/index.ts'
 export {
   deriveClaimRefs,

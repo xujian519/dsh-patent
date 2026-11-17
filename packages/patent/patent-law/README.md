@@ -44,7 +44,7 @@ A proposition is matched by two signals, both lexical. The entry's topic keyword
 
 The guideline is indexed by section path, and a section contains its subsections, so a citation is decided against the whole section: a proposition a subsection carries supports the citation, and the reason names that subsection; conversely a subsection of the cited section is never reported as the proposition's competing home. An entry that names only a part or a chapter has no text of its own and is decided entirely by the sections under it — citing a chapter is citing all of its sections, so a verbatim quotation of any one of them passes; when no section under it is transcribed, the citation still reports `未核验`.
 
-The five policies are per-decision Config fields (`onMismatch`, `onUnmatched`, `onOutOfRange`, `onNotIndexed`, `onUnverified`), each `block`, `warn`, or `allow`. The shipped default blocks a contradiction or a verified out-of-range number, and warns on a gap in the index and on a proposition nothing decides, so a partially transcribed index stays usable while every gap stays visible.
+The five policies are per-decision Config fields (`onMismatch`, `onUnmatched`, `onOutOfRange`, `onNotIndexed`, `onUnverified`), each `block`, `warn`, or `allow`. The shipped default blocks a contradiction or a verified out-of-range number, and warns on a gap in the index and on a proposition nothing decides, so a partially transcribed index stays usable while every gap stays visible. The legal-law default blocks `not-indexed` and `unverified`, and this package warns on those two. The law-core fixture `CONFORMANCE_POLICIES` records both defaults.
 
 <a id="law-index-assets"></a>
 ## Law index assets

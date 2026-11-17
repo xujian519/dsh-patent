@@ -34,7 +34,7 @@
 | ID | 标题 | 域 | 维度 | 严重度 | 可能性 | 状态 |
 |---|---|---|---|---|---|---|
 | F-PAT-001 | 交付物原子写在 POSIX 上先删后改名 | PAT | E | High | 中 | fixed |
-| F-PAT-002 | `rule_check` 丢弃同义词资产警告，合规检查静默降级 | PAT | B | High | 中 | confirmed |
+| F-PAT-002 | `rule_check` 丢弃同义词资产警告，合规检查静默降级 | PAT | B | High | 中 | fixed |
 | F-PAT-003 | 原子写四份手写实现，未复用仓库共享 `atomic-write` 包 | PAT | A/B | High | 高 | fixed |
 | F-PAT-004 | 品牌配置损坏时静默回退默认品牌 | PAT | B | Medium | 中 | fixed |
 | F-PAT-005 | 四个输出路径默认锚定 `process.cwd()` | PAT | E | Medium | 中 | fixed |
@@ -83,22 +83,22 @@
 | F-PAT-048 | 通知书解析不出驳回理由时，两条双输入规则判为通过且无未评估标记 | PAT | E | Medium | 中 | fixed |
 | F-PAT-049 | 结构门禁与引用门禁不核对 `textArgs`，声明写错即静默放行 | PAT | E | Medium | 低 | fixed |
 | F-PAT-050 | 重规划按哈希保留已完成步骤，重复步骤全部判为已完成 | PAT | E | Medium | 低 | new |
-| F-PAT-051 | 沿革快照按条号跨法套用，实施细则条文取到专利法同号条的生效日与状态 | PAT | E | Medium | 高 | new |
+| F-PAT-051 | 沿革快照按条号跨法套用，实施细则条文取到专利法同号条的生效日与状态 | PAT | E | Medium | 高 | confirmed |
 | F-PAT-052 | 指南未修改的节在 rule-lock 判「已修订/已失效」，law_verify 判「已核验」 | PAT | E | High | 高 | fixed |
-| F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | new |
-| F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | new |
+| F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | confirmed |
+| F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | confirmed |
 | F-PAT-055 | 上游 JSON 字符串含 null 元素时 `mapPatentData` 抛 TypeError | PAT | E | Low | 低 | new |
-| F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | confirmed |
+| F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | fixed |
 | F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | fixed |
 | F-DOC-003 | OOXML 读取限额两包各写一份字面量 | DOC | B | Low | 高 | fixed |
 | F-DOC-004 | 插件默认值出现两个来源（schema default 与 `??`） | DOC | B | Medium | 中 | fixed（文档域） |
 | F-DOC-005 | `tool-office` 用 9 处 `as` 断言担保跨模块不变量 | DOC | B | Low | 低 | confirmed |
 | F-DOC-006 | 跨模块请求类型按字段重写而非组合（`RenderRequest`、`OfficeImagesRequest`） | DOC | B | Low | 高 | confirmed |
 | F-DOC-007 | Office 转换成功返回后不检查 abort 监听是否摘掉 | DOC | D | Medium | 中 | new |
-| F-DOC-008 | 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题 | DOC | E | Medium | 高 | new |
-| F-DOC-009 | DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃 | DOC | E | Medium | 中 | new |
+| F-DOC-008 | 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题 | DOC | E | Medium | 高 | confirmed |
+| F-DOC-009 | DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃 | DOC | E | Medium | 中 | confirmed |
 | F-DOC-010 | `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断 | DOC | E | Medium | 中 | new |
-| F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | confirmed |
+| F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | fixed |
 | F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | fixed |
 | F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | fixed |
 | F-LEG-004 | 两域默认引用策略分叉，缺对照说明与回归护栏 | LEG | E | Low | 中 | fixed |
@@ -111,7 +111,7 @@
 | F-LEG-011 | 证人利害关系未填写时，关键规则报「证人与案件无利害关系」通过 | LEG | E | High | 中 | fixed |
 | F-LEG-012 | 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略 | LEG | E | Medium | 中 | fixed |
 | F-LEG-013 | 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果 | LEG | E | Medium | 中 | new |
-| F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | new |
+| F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | confirmed |
 | F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | fixed |
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | confirmed |
 | F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | fixed |
@@ -122,15 +122,15 @@
 | F-VID-008 | `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份 | VID | B | Medium | 高 | confirmed |
 | F-VID-009 | 云 provider 的 submit/poll 与图片编码骨架各写一遍，拷贝已漂移 | VID | B | Low | 高 | confirmed |
 | F-VID-010 | store 的「锁 + 读 + 改 + 写」骨架三处各写一遍 | VID | B | Low | 高 | confirmed |
-| F-VID-011 | 预算检查是 check-then-act，同一工程的并发生成可以超额 | VID | E | Medium | 中 | new |
-| F-VID-012 | 失效的 journal 记录没有工具侧清理路径 | VID | E | Medium | 中 | new |
-| F-VID-013 | `status` 对 `artifacts: []` 的成功任务照常结算并清 journal | VID | E | Low | 中 | new |
+| F-VID-011 | 预算检查是 check-then-act，同一工程的并发生成可以超额 | VID | E | Medium | 中 | confirmed |
+| F-VID-012 | 失效的 journal 记录没有工具侧清理路径 | VID | E | Medium | 中 | confirmed |
+| F-VID-013 | `status` 对 `artifacts: []` 的成功任务照常结算并清 journal | VID | E | Low | 中 | confirmed |
 | F-VID-014 | 项目身份取工具结果里的原始路径，绝对与相对写法会让同一工程出现两次 | VID | E | Low | 高 | new |
 | F-VID-015 | EDL 音频片段的 `inSec`/`outSec` 不校验顺序，校验晚到 ffmpeg | VID | E | Low | 中 | new |
 | F-CROSS-001 | 四域另有 4 份 `messageOf`/`errorText` 与 1 份可并的 `asRecord`，而 `dsh-value` 已有对应原语且 11 个域内包已依赖它 | CROSS | B | Low | 高 | new |
 | F-CROSS-002 | `patent-tools` 导入未声明的 workspace 依赖 `@deepseek-ai/dsh-value`，运行产物靠打包内联掩盖 | CROSS | B/E | Low | 高 | new |
 | F-CROSS-003 | 知识库安装覆盖时先删输出，改名失败没有用例 | CROSS | D | High | 中 | fixed |
-| F-CROSS-004 | 专利、文档、法律三域的工具错误类没有接入 `HarnessError`，失败码在 `tool/result` 与会话界面丢失 | CROSS | E | Low | 高 | new |
+| F-CROSS-004 | 专利、文档、法律三域的工具错误类没有接入 `HarnessError`，失败码在 `tool/result` 与会话界面丢失 | CROSS | E | Low | 高 | confirmed |
 
 ## 专利域
 
@@ -158,7 +158,7 @@
 - 最小修复建议：把 `warnings` 并入工具结果（新增 `assetWarnings` 字段或复用 `packWarnings`），并在描述里说明降级语义。
 - 预估工作量：S
 - 是否可自动化：是（缺资产用例断言结果含警告）
-- 状态：confirmed
+- 状态：fixed（2026-11-17，批次 E9）
 
 ### F-PAT-003 原子写四份手写实现，未复用仓库共享 `atomic-write` 包
 
@@ -810,7 +810,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 
 ### F-PAT-051 沿革快照按条号跨法套用，实施细则条文取到专利法同号条的生效日与状态
 
-- 位置：`packages/patent/patent-law/src/citator.ts:95`、`:136`–`:159`；`packages/patent/patent-law/src/lineage.ts:87`–`:91`；加载点 `packages/patent/patent-law/src/index.ts:201`；快照声明 `packages/patent/patent-law/assets/lineage/cn-patent-law-lineage.yaml:12`
+- 位置：`packages/patent/patent-law/src/citator.ts:113`、`:146`；`packages/patent/patent-law/src/lineage.ts:87`–`:91`；加载点 `packages/patent/patent-law/src/index.ts:200`；快照声明 `packages/patent/patent-law/assets/lineage/cn-patent-law-lineage.yaml:12`
 - 维度：E
 - 严重度：Medium
 - 可能性：高
@@ -819,7 +819,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：`queryValidity`／`decideValidity` 只在 `lineage.law === reference.law` 时使用沿革快照；`queryArticleLineage` 增加法律名参数或改由 `Map<LawName, snapshot>` 索引。回落到 `verifiedOn` 时，`renderRuleLockReport` 不要把该日期渲染成「生效」，改写「条文转录核验日」或省略。新增用例：随包专利法沿革下，实施细则第 5 条不得取专利法第 5 条的生效日与修订史。
 - 预估工作量：S
 - 是否可自动化：是（上面这条断言）
-- 状态：new
+- 状态：confirmed（Day 41 静态复核，2026-11-17）
 
 ### F-PAT-052 指南未修改的节在 rule-lock 判「已修订/已失效」，law_verify 判「已核验」
 
@@ -845,7 +845,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把超期改成按年度给出（`lateMonthsByYear` 或 `annuity: [{ year, lateMonths }]`），`patent_deadlines` 的 `latePaymentWindow` 已按年度给出窗口；或在 `annuityYears.length > 1` 且 `lateMonths > 0` 时拒绝计算并列为 `pending`，说明需要各年度自己的超期月数。新增用例：`[4, 5]` 加 `lateMonths: 3` 不得同时给出两条 3 个月滞纳金且 `complete: true`。
 - 预估工作量：S
 - 是否可自动化：是（上面的用例）
-- 状态：new
+- 状态：confirmed（Day 41 静态复核，2026-11-17）
 
 ### F-PAT-054 `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月
 
@@ -858,7 +858,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：只允许 `designatedMonths` 用于确由通知书指定期间的种类（`office-action-first`、`office-action-subsequent`、`reexamination-notice`、`invalidation-transfer`）；在 `assertQuery` 或 `toNotice` 里拒绝驳回决定、授权通知与进入实质审查阶段通知携带该字段，并在错误消息里写明对应法定期间。
 - 预估工作量：S
 - 是否可自动化：是（上例期望 `invalid_query`；四类指定期间通知仍接受该字段）
-- 状态：new
+- 状态：confirmed（Day 41 静态复核，2026-11-17）
 
 ### F-PAT-055 上游 JSON 字符串含 null 元素时 `mapPatentData` 抛 TypeError
 
@@ -924,7 +924,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：加入围栏状态机（进入/退出 ` ``` `/`~~~`），围栏内一律按代码段落处理；或复用 `checks.ts` 的结构扫描器保持两侧一致。
 - 预估工作量：M
 - 是否可自动化：是（补 fence 用例）
-- 状态：confirmed
+- 状态：fixed（2026-11-17，批次 E10）
 
 ### F-DOC-002 `document_deliver` 把取消与编程错误都报为"不可读"
 
@@ -1016,11 +1016,11 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把 Markdown 的守卫应用到 HTML 与 DOCX（正文以一级标题开头时不注入 `meta.title`），或删掉模板正文的一级标题并统一用 `meta.title`。新增跨格式用例：同一模板分别渲染 Markdown、HTML、DOCX，断言各成品恰有一个一级标题且文字一致。
 - 预估工作量：S
 - 是否可自动化：是（三格式标题数量的用例）
-- 状态：new
+- 状态：confirmed（Day 41 静态复核，2026-11-17）
 
 ### F-DOC-009 DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃
 
-- 位置：`packages/document/docx-kit/src/markdown.ts:99`–`:113`（`isTableSeparator`、`parseTableRow`）、`:142`–`:147`（表格行收集）；`packages/document/docx-kit/src/ooxml.ts:132`–`:140`（按最宽行补空单元格）、`:145`–`:155`（表格组装）
+- 位置：`packages/document/docx-kit/src/markdown.ts:100`–`:112`（`isTableSeparator`、`parseTableRow`）、`:142`–`:147`（表格行收集）；`packages/document/docx-kit/src/ooxml.ts:132`–`:140`（按最宽行补空单元格）、`:145`–`:155`（表格组装）
 - 维度：E
 - 严重度：Medium
 - 可能性：中
@@ -1029,7 +1029,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：按未转义的 `|` 切分单元格（`\|` 还原为字面竖线），只把表头之后紧邻的那一行分隔行当分隔符，之后的全破折号行按数据保留。补这两条解析用例与一条 HTML/DOCX 表格同形的跨格式用例。
 - 预估工作量：S
 - 是否可自动化：是（上面的表格输入）
-- 状态：new
+- 状态：confirmed（Day 41 静态复核，2026-11-17）
 
 ### F-DOC-010 `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断
 
@@ -1057,7 +1057,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把名字表收进 `createLegalLawIndex` 实例；或提供 `resetLegalLawIndex()` 并在每次 `load*` 前清空。
 - 预估工作量：M
 - 是否可自动化：是（两次不同目录加载的用例）
-- 状态：confirmed
+- 状态：fixed（2026-11-17，批次 E7）
 
 ### F-LEG-002 `legal-evidence` 的 YAML 通用规则不参与判定
 
@@ -1231,7 +1231,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：默认时区改为 `Asia/Shanghai`（或由 `Config` 提供 `timeZone`，与 patent-deadline 同形），并补一条固定在 UTC/中国跨日时刻的用例。显式传入 `asOf` 的路径不变。
 - 预估工作量：S
 - 是否可自动化：是（固定时钟的跨日用例）
-- 状态：new
+- 状态：confirmed（Day 41 静态复核，2026-11-17）
 
 ## 视频模式
 
@@ -1374,7 +1374,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 
 ### F-VID-011 预算检查是 check-then-act，同一工程的并发生成可以超额
 
-- 位置：`packages/experimental/video-mode/src/tools/media.ts:382`–`:409`（读账本、比较、放行）、`:410`–`:427`（提交后才写 journal 与账本）；`packages/experimental/video-mode/src/tools/deliver.ts:106`–`:110`（交付时再判一次）；`packages/experimental/video-mode/src/store.ts:233`–`:251`（账本按 `taskId` 去重后整份重写）
+- 位置：`packages/experimental/video-mode/src/tools/media.ts:386`–`:410`（读账本、比较、放行，提交在检查之后）、`:449`（成功后 `settleTask`）；`packages/experimental/video-mode/src/tools/deliver.ts:106`–`:110`（交付时再判一次）；`packages/experimental/video-mode/src/store.ts:310`–`:325`（账本在锁内按 `taskId` 去重后整份重写）
 - 维度：E
 - 严重度：Medium
 - 可能性：中
@@ -1383,11 +1383,11 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：在账本 `withKeyLock` 内完成「读余额—写入按预留 id 记账的 pending 条目（金额取估计值）」，然后提交；结算时把预留替换为实际 `taskId` 条目，失败时删除预留。若不想引入预留，则在工程级锁里串行化「检查—提交—结算」，并让 `deliver` 与 `generate` 共用同一判定。只把 `remaining` 再读一次不够——两个读者仍会同时通过。
 - 预估工作量：M
 - 是否可自动化：是（把现有并发用例的期望改为「第二次拒绝」或「总账 ≤ 预算」，并加一条两个 `MediaRuntime`/store 实例共享同一目录的用例）
-- 状态：new
+- 状态：confirmed（Day 41 静态复核，2026-11-17）
 
 ### F-VID-012 失效的 journal 记录没有工具侧清理路径
 
-- 位置：`packages/experimental/video-mode/src/tools/media.ts:460`–`:470`（`status` 先 `resume` 再 `refresh`）、`:488`–`:497`（`cancel` 先 `media.cancel` 再 `forgetTask`）；`packages/experimental/video-mode/src/media.ts:859`–`:877`（`resume` 在 provider 未注册、没有 `resume`、拒绝记录时抛错）、`:940`–`:947`（`cancel` 以 `status(taskId)` 开头）
+- 位置：`packages/experimental/video-mode/src/tools/media.ts:467`（`status` 只接住 `MEDIA_TASK_NOT_FOUND`）、`:493`（`cancel` 在 `media.cancel` 成功后才 `forgetTask`）；`packages/experimental/video-mode/src/media.ts:889`（未注册 provider 抛 `MEDIA_PROVIDER_UNAVAILABLE`）
 - 维度：E
 - 严重度：Medium
 - 可能性：中
@@ -1396,11 +1396,11 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：`status` 捕获 `resume` 的不可恢复错误（`MEDIA_PROVIDER_UNAVAILABLE`、没有 `resume` 的 `MEDIA_TASK_NOT_FOUND`、`MEDIA_STORE_INVALID`），把记录标成 failed 并清掉，同时在结果里说明被丢弃的记录；或给 `cancel` 增加「运行时无此任务时仅清 journal」的回退，并提供显式的清理动作。自动丢弃时要保留一条可审计的摘要，避免把「provider 暂时未挂载」当成永久失败静默删除。
 - 预估工作量：S
 - 是否可自动化：是（复用 ghost 记录用例，断言工具调用后 `readTaskRecords` 为空；再加一条 cancel 清 ghost 记录的用例）
-- 状态：new
+- 状态：confirmed（Day 41 静态复核，2026-11-17）
 
 ### F-VID-013 `status` 对 `artifacts: []` 的成功任务照常结算并清 journal
 
-- 位置：`packages/experimental/video-mode/src/tools/media.ts:471`–`:478`；对照 `:441`–`:446`
+- 位置：`packages/experimental/video-mode/src/tools/media.ts:475`–`:479`；对照 `:446`–`:447`
 - 维度：E
 - 严重度：Low
 - 可能性：中
@@ -1409,7 +1409,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把终态处理抽成「写产物 → 断言至少一个 → 结算 → 清 journal」，`generate` 与 `status` 共用；`artifacts === undefined || length === 0` 时保留 journal 并抛 `MEDIA_ARTIFACT_INVALID`。结算与清理不再以 `outputPath` 为前置（同时收口 F-VID-002）。
 - 预估工作量：S
 - 是否可自动化：是（用现有 `providerOf` 桩返回 `succeeded, artifacts: []`，断言工具报错、journal 仍在、账本为空）
-- 状态：new
+- 状态：confirmed（Day 41 静态复核，2026-11-17）
 
 ### F-VID-014 项目身份取工具结果里的原始路径，绝对与相对写法会让同一工程出现两次
 
@@ -1500,7 +1500,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：让上述工具错误类继承 `@deepseek-ai/dsh-llm` 的 `HarnessError`（`patent-tools`、`tool-literature`、`doc-template`、`video-mode` 已声明该依赖；`doc-style`、`office-kit` 可保留纯库错误，在 `doc-template`、`tool-office` 的工具边界转成 `HarnessError`）。`tool-office` 的 `officeFailure` 保留 `OfficeKitError` 的 `code`，`RemoteError` 在工具边界转成 `HarnessError`。每个域补一条用例：注册一个抛该域错误的工具，断言 `result.error.info` 的 `name`/`code`。若要防回归，可在 `tools/result` 测试里断言「域内工具失败必有 `info.code`」，并把「带 `code` 的 Error 子类必须继承 `HarnessError`」加进静态门禁。
 - 预估工作量：M
 - 是否可自动化：是（每个域一条工具失败用例；静态门禁可扫 `class .*Error extends Error` 且带 `readonly code` 的声明）
-- 状态：new
+- 状态：confirmed（Day 41 静态复核，2026-11-17）
 
 ## E 维度汇总（Day 40）
 
@@ -1517,7 +1517,7 @@ D34–D40 新增 E 维度编号 29 条，今日追加 F-CROSS-004 一条，共 3
 
 同一发现可能跨两个主题（如 F-DOC-009），表中的行数不等于编号数。
 
-Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-PAT-042/048/049（门禁缺输入）、F-PAT-051/052（沿革与指南修订口径）、F-DOC-008/009（渲染器分叉）、F-VID-011/012/013（终态结算）、F-LEG-011/012（未知值与布尔默认）。F-PAT-039/043/044/045、F-VID-014/015、F-CROSS-004 暂不并入其他条目。
+Day 40 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-PAT-042/048/049（门禁缺输入）、F-PAT-051/052（沿革与指南修订口径）、F-DOC-008/009（渲染器分叉）、F-VID-011/012/013（终态结算）、F-LEG-011/012（未知值与布尔默认）。F-PAT-039/043/044/045、F-VID-014/015、F-CROSS-004 暂不并入其他条目。Day 41（2026-11-17）对照 `d138898f90` 后，该名单不再作为修复顺序：前三组与 F-PAT-052 已在主干修完，F-PAT-051 仍成立。当前顺序见 [06-priority.md](06-priority.md) 的「剩余队列（Day 41–42）」。
 
 ## 修复记录
 

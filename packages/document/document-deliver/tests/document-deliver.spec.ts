@@ -14,6 +14,7 @@ import { renderDocx } from '@deepseek-ai/dsh-docx-kit'
 import type { ZipReadLimits } from '@deepseek-ai/dsh-docx-kit'
 import { writeZip } from '@deepseek-ai/dsh-docx-kit/src/zip.ts'
 import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
+import { FsError } from '@deepseek-ai/dsh-fs'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
@@ -290,6 +291,28 @@ describe('document_deliver tool', () => {
       { files: [{ path: 'a.html', format: 'html' }], gate: { p0: ['x'] } },
       { signal: aborted.signal } as unknown as ToolRunContext,
     )).rejects.toThrow(/aborted/)
+  })
+
+  it('reports a cancelled check as cancellation instead of an unreadable file', async () => {
+    const ctx = await mounted()
+    temp = await mkdtemp(join(tmpdir(), 'dsh-deliver-'))
+    const present = join(temp, 'a.html')
+    await writeFile(present, '<h1>x</h1>')
+    const controller = new AbortController()
+    const original = ctx.fs.readBytes.bind(ctx.fs)
+    ctx.fs.readBytes = async () => {
+      controller.abort()
+      throw new FsError('cancelled while reading', 'FS_ABORTED')
+    }
+    try {
+      const tool = createDocumentDeliverTool(ctx, deps())
+      await expect(tool.execute(
+        { files: [{ path: present, format: 'html' }], gate: { p0: ['x'] } },
+        { signal: controller.signal } as unknown as ToolRunContext,
+      )).rejects.toThrow(/abort/i)
+    } finally {
+      ctx.fs.readBytes = original
+    }
   })
 
   it('presents the pending call as a generic card with the file locations', () => {

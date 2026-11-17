@@ -3,7 +3,6 @@
  * @module @deepseek-ai/dsh-patent-document/document/renderPatentDocument
  */
 
-import { existsSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
@@ -237,9 +236,6 @@ export async function renderPatentDocument(
   const pdfPath = join(outputDir, `${name}.pdf`)
 
   const brandPath = resolveBrandPath(input, cwd)
-  if (brandPath !== undefined && !existsSync(brandPath)) {
-    warnings.push(`品牌配置文件不存在，已回退默认: ${brandPath}`)
-  }
   const fromConfig = loadBrandFromPath(brandPath)
   const brand = mergeBrand(input.brand, fromConfig)
 

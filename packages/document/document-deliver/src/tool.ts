@@ -368,6 +368,10 @@ async function checkDeliverable(
       findings: checkDocumentText(text, options),
     }
   } catch (error) {
+    // Cancellation is not an unreadable file: the caller stopped the work, and
+    // reporting a content problem would make the model try to repair a file it
+    // never read.
+    exec.signal.throwIfAborted()
     // A file the checker cannot read is reported with its reason, never skipped silently.
     // The read cap is named with this tool's own marker, so the registration can
     // tell a deployment budget apart from a defect without reading a backend's
@@ -400,6 +404,7 @@ export async function checkDeliverables(
 ): Promise<DeliverableCheckReport[]> {
   const reports: DeliverableCheckReport[] = []
   for (const file of spec.files) {
+    exec.signal.throwIfAborted()
     reports.push(await checkDeliverable(ctx, exec, file, style, spec.charBudget, limits))
   }
   return reports

@@ -98,6 +98,7 @@ Schemastery 配置，所有字段均可选。
 - **PDF 需要可探测的 Chrome** — headless PDF 打印经 ctx.subprocess 派生 Chrome（取代 Sati 的 execFile）；当探测不到 Chrome（或未设置 chromePath/DSH_CHROME_PATH）时，渲染降级为仅 HTML，结果携带 pdfError。
 - **默认输出目录为 .dsh/documents** — 相对进程工作目录（取代 Sati 的 .sati/documents）；给定 caseId 时仍采用 data/cases/<caseId>/outputs 约定。
 - **brandPath 读取 Sati 形态的 theme.json** — 加载器读取该文件的 documents.patent 命名空间；不支持其他主题 schema。
+- **配置了 brandPath 就必须可用** — 文件不存在、JSON 损坏、`documents.patent` 不是对象，或其中某个值不是字符串，都会以 `DocumentRenderError` 让调用失败；不传 `brandPath` 时仍使用模板默认值。静默回退只保留给「未配置」，否则路径写错会把默认事务所与免责声明带进交付件。
 - **草案硬切换已完成** — 全部 13 个模板都要求 `draft`，旧 `sections` innerHTML 参数已删除，传它的调用会被参数校验拒绝。10 个文档模板走 id 键控草案：fields 填叶级文本槽（meta、footer 等），sections 传 blocks（paragraph/list/table 块，表题自动连续编号）或 rows（等宽字符串数组，按各表占位行克隆）。表单模板的页脚页码（逐页不同）、评价报告专用章与诉讼文书签名槽刻意不由草案驱动或非必填，定稿时人工处理。
 - **无附图页与图片嵌入** — 模板只承载附图说明文字段，渲染出的文档不含附图图像，附图因此以调用方自行命名并随渲染文件一同交付的独立附件到达客户。
 - **段落编号是可选体例且依赖渲染器** — `data-paragraph-numbering` 是声明而非标记，只有 render_patent_document 会解释它。《专利法》《专利法实施细则》与《专利审查指南》均未要求段落编号，因此 claims-spec 模板默认不声明；声明了编号的模板依赖渲染路径，且撰写方不得手写编号。

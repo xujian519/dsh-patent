@@ -67,6 +67,7 @@ Prefix-stable while the registered tool set and the description are unchanged.
 - **The size cap skips, it does not truncate** — a deliverable larger than `maxCheckBytes` (shipped default 4 MiB) is read no further and reported `unreadable` with its reason; the checks run over nothing rather than over a head that would pass.
 - **The DOCX read budget is a deployment budget** — a package that declares more entries than `maxArchiveEntries` or expands past `maxUncompressedBytes` is reported `unreadable` with `too-large`; a deployment that delivers very large repetitive documents raises the cap in `cordis.yml` rather than getting a partial check.
 - **An unreadable file has to be explained** — a file the checker cannot read fails the registration unless the call supplies its `unreadable_ack` reason, so "not checked" can never read as "checked"; the read-cap case (`too-large`) is exempt because that cap is the deployment's own budget rather than a defect in the document.
+- **Cancellation is not an unreadable file** — when the caller's signal aborts during a check, the call rejects with the cancellation instead of reporting `unreadable`, and the per-file loop stops before reading the next file. A cancelled run therefore cannot send the model to repair a document it never read.
 
 ### Dev Note
 

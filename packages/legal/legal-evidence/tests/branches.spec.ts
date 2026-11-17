@@ -511,6 +511,7 @@ describe('rule-set parser branches', () => {
     const parsed = parseLegalRuleSet('weights:\n  relevance: high\n', 'weights.yaml')
     expect(parsed.ruleSet?.weights).toEqual({ relevance: 0.35, legality: 0.3, authenticity: 0.35 })
     expect(parsed.warnings.some(warning => warning.includes('缺少 rules 数组'))).toBe(true)
+    expect(parsed.warnings.some(warning => warning.includes('权重 relevance 必须为数值'))).toBe(true)
   })
 
   it('accepts numeric weights and camel-case evidence types', () => {
@@ -565,7 +566,8 @@ describe('rule-set parser branches', () => {
     ].join('\n'), 'skips.yaml')
     expect(parsed.ruleSet?.rules.map(rule => rule.id)).toEqual(['BAD-SEVERITY'])
     expect(parsed.ruleSet?.rules[0]?.severity).toBe('warning')
-    expect(parsed.warnings).toHaveLength(5)
+    expect(parsed.warnings).toHaveLength(6)
+    expect(parsed.warnings.some(warning => warning.includes('severity "fatal" 非法'))).toBe(true)
   })
 
   it('treats a non-array conditions field as absent', () => {

@@ -20,7 +20,7 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { recordFlag, recordString, recordText } from './internal/json-read.ts'
+import { recordText } from './internal/json-read.ts'
 import { toJsonArray, toJsonValue } from './internal/json-value.ts'
 import {
   StageHandlerRegistry,
@@ -33,7 +33,7 @@ import { JsonFileWorkflowRunStore, builtinPatentManifests, runWorkflow } from '@
 import {
   renderWorkflowResultText,
   resolveRunPersistTarget,
-  stageFlagAndPreview,
+  workflowStageFlagLines,
   writeRunArtifacts,
 } from './internal/workflow-helpers.ts'
 
@@ -101,18 +101,8 @@ const DESCRIPTION = [
  * @returns one line per stage.
  */
 function recapStageLines(stages: readonly unknown[]): string[] {
-  return stages.map((stage) => {
-    const atom = recordString(stage, 'atom')
-    const { flag, preview } = stageFlagAndPreview({
-      stageId: recordText(stage, 'stageId'),
-      strategy: 'chain',
-      output: recordText(stage, 'output'),
-      degraded: recordFlag(stage, 'degraded'),
-      retries: 0,
-      ...(atom !== undefined ? { atom } : {}),
-    })
-    return `- ${flag} ${recordText(stage, 'stageId')} (${recordText(stage, 'strategy')}): ${preview}`
-  })
+  return workflowStageFlagLines(stages, (stage, flag, preview) =>
+    `- ${flag} ${recordText(stage, 'stageId')} (${recordText(stage, 'strategy')}): ${preview}`)
 }
 
 /**

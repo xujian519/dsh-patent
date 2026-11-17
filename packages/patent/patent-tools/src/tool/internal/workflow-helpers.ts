@@ -534,14 +534,18 @@ export function stageFlagAndPreview(stage: WorkflowStageResult): { flag: string;
 }
 
 /**
- * Format a run's stage results into the shared per-stage lines (flag + stage id
- * + atom note + output preview). Shared by patent_workflow_run and
- * flexible_plan(run).
- * @param result - the run result.
+ * Map raw stage records to per-stage flag/preview lines. The flag/preview pair
+ * comes from `stageFlagAndPreview`; the caller formats each line so recap and
+ * run modes can differ without duplicating the flag computation.
+ * @param stages - raw stage records.
+ * @param formatLine - renders one line from the stage record, flag, preview and atom note.
  * @returns one line per executed stage.
  */
-export function renderWorkflowStageLines(result: { stages: readonly unknown[] }): string[] {
-  return result.stages.map((stage) => {
+export function workflowStageFlagLines(
+  stages: readonly unknown[],
+  formatLine: (stage: unknown, flag: string, preview: string, atom: string | undefined) => string,
+): string[] {
+  return stages.map((stage) => {
     const atom = recordString(stage, 'atom')
     const { flag, preview } = stageFlagAndPreview({
       stageId: recordText(stage, 'stageId'),
@@ -551,6 +555,18 @@ export function renderWorkflowStageLines(result: { stages: readonly unknown[] })
       retries: 0,
       ...(atom !== undefined ? { atom } : {}),
     })
-    return `- ${flag} ${recordText(stage, 'stageId')}${atom !== undefined ? ` [atom:${atom}]` : ''}: ${preview}`
+    return formatLine(stage, flag, preview, atom)
   })
+}
+
+/**
+ * Format a run's stage results into the shared per-stage lines (flag + stage id
+ * + atom note + output preview). Shared by patent_workflow_run and
+ * flexible_plan(run).
+ * @param result - the run result.
+ * @returns one line per executed stage.
+ */
+export function renderWorkflowStageLines(result: { stages: readonly unknown[] }): string[] {
+  return workflowStageFlagLines(result.stages, (stage, flag, preview, atom) =>
+    `- ${flag} ${recordText(stage, 'stageId')}${atom !== undefined ? ` [atom:${atom}]` : ''}: ${preview}`)
 }

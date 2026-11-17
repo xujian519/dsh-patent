@@ -814,6 +814,44 @@ describe('durable tasks and the budget ledger', () => {
     await second.fiber.dispose()
   })
 
+  it('settles an in-memory success when status omits output_path', async () => {
+    const created = await boot({ approvalThresholdCny: 100 })
+    created.media.register(providerOf({
+      id: 'memory',
+      models: [{ id: 'memory/video', kind: 'video', provider: 'memory' }],
+      estimate: () => ({ confidence: 'exact', cost: { amountMinor: 500, currency: 'CNY' } }),
+      submit: async request => ({
+        id: 'memory-video-1', provider: 'memory', model: request.model ?? '', kind: request.kind, status: 'submitted',
+      }),
+      poll: async task => ({
+        ...task,
+        status: 'succeeded',
+        artifacts: [{ id: 'clip', kind: 'video', mediaType: 'video/mp4', bytes: MP4 }],
+      }),
+    }))
+    const project = valueOf(await call(created, 'video_project', { action: 'init', title: 'Memory', budget_cny: 10 }))
+    const projectPath = project.path as string
+
+    valueOf(await call(created, 'media', {
+      action: 'generate', kind: 'video', prompt: 'x', model: 'memory/video', output_path: 'out/memory.mp4',
+      wait: false, project_path: projectPath,
+    }))
+    expect(await readTaskRecords(created, projectPath, root)).toHaveLength(1)
+
+    const settled = valueOf(await call(created, 'media', {
+      action: 'status', task_id: 'memory-video-1', project_path: projectPath,
+    }))
+    expect(String(settled.message)).not.toContain('Wrote')
+    await expect(stat(join(root, 'out/memory.mp4'))).rejects.toThrow()
+    expect(await readTaskRecords(created, projectPath, root)).toEqual([])
+    expect(await readLedger(created, projectPath, join(root, '.host-ledgers'), root)).toMatchObject([
+      { taskId: 'memory-video-1', kind: 'video', model: 'memory/video', costCny: 5 },
+    ])
+
+    valueOf(await call(created, 'media', { action: 'status', task_id: 'memory-video-1', project_path: projectPath }))
+    expect(await readLedger(created, projectPath, join(root, '.host-ledgers'), root)).toHaveLength(1)
+  })
+
   it('counts the ledger against the budget when a shot records no cost', async () => {
     const created = await boot()
     let price = 100

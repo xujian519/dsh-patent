@@ -471,11 +471,12 @@ export function createMediaTool(ctx: Context, media: MediaRuntime): ToolDefiniti
             task = await media.refresh(args.task_id, exec.signal)
           }
           const outputPath = args.output_path ?? recovered?.outputPath
+          const artifacts = task.status === 'succeeded' ? task.artifacts : undefined
           const written: { artifacts: WrittenArtifact[]; captions: string[] } =
-            task.status === 'succeeded' && task.artifacts !== undefined && outputPath !== undefined
-              ? await writeArtifacts(ctx, task.artifacts, outputPath, cwd, media.settings.maxArtifactBytes, exec.signal)
+            artifacts !== undefined && outputPath !== undefined
+              ? await writeArtifacts(ctx, artifacts, outputPath, cwd, media.settings.maxArtifactBytes, exec.signal)
               : { artifacts: [], captions: [] }
-          if (task.status === 'succeeded' && task.artifacts !== undefined && outputPath !== undefined) {
+          if (artifacts !== undefined && (outputPath !== undefined || artifacts.length > 0)) {
             await settleTask(ctx, args.project_path, task, media.settings.ledgerDir, cwd, exec.signal)
           }
           if (task.status === 'failed' || task.status === 'cancelled') {

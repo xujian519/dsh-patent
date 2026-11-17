@@ -10,6 +10,11 @@ import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as PatentRule from '@deepseek-ai/dsh-patent-rule'
 import type { StructuralGateEntry } from '@deepseek-ai/dsh-patent-rule'
 import { defineContentToolFixture, executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
+import {
+  renderGateUnavailableDenial,
+  structuralGateUnresolved,
+  textArgDeclarationIssues,
+} from '../src/runtime/structural-gate.ts'
 
 const signal = new AbortController().signal
 
@@ -136,6 +141,43 @@ describe('resolveStructuralGate', () => {
     const plan = planOf(makeRulesFixture(), [])
     expect(plan.entries).toEqual([])
     expect(plan.warnings).toEqual([])
+  })
+
+  it('按工具入参声明核对 textArgs：未知入参告警，工具未注册时留给运行期', () => {
+    const lookup = (tool: string): Record<string, unknown> | undefined =>
+      tool === 'render_patent_document' ? { template: {}, sections: {} } : undefined
+    const plan = PatentRule.resolveStructuralGate(
+      PatentRule.loadPatentFullRuleSet(makeRulesFixture()).ruleSet,
+      [
+        { tool: 'render_patent_document', textArgs: ['sections'], ruleIds: ['TEST-LAYOUT'] },
+        { tool: 'render_patent_document', textArgs: ['draftt'], ruleIds: ['TEST-LAYOUT'] },
+        { tool: 'unregistered_tool', textArgs: ['draft'], ruleIds: ['TEST-LAYOUT'] },
+      ],
+      lookup,
+    )
+    expect(plan.entries).toHaveLength(3)
+    expect(plan.warnings).toEqual([
+      '制品结构门禁 render_patent_document: 入参 draftt 不在 render_patent_document 的入参声明里，运行期会拒绝该工具的调用',
+    ])
+  })
+
+  it('strict 声明遇到未知 textArgs 时在加载期失败', () => {
+    const lookup = (): Record<string, unknown> => ({ draft: {} })
+    expect(() => PatentRule.resolveStructuralGate(
+      PatentRule.loadPatentFullRuleSet(makeRulesFixture()).ruleSet,
+      [{ tool: 'render_patent_document', textArgs: ['draftt'], ruleIds: ['TEST-LAYOUT'], strict: true }],
+      lookup,
+    )).toThrow(/draftt/)
+  })
+
+  it('批量核对入参名：读 JSON Schema 的 properties，未注册工具跳过', () => {
+    const lookup = (tool: string): Record<string, unknown> | undefined =>
+      tool === 'render_patent_document' ? { type: 'object', properties: { draft: {} } } : undefined
+    expect(textArgDeclarationIssues([
+      { tool: 'render_patent_document', textArgs: ['draft'] },
+      { tool: 'render_patent_document', textArgs: ['draftt'] },
+      { tool: 'unregistered_tool', textArgs: ['text'] },
+    ], lookup)).toEqual(['render_patent_document 的入参声明里没有 draftt'])
   })
 })
 
@@ -276,6 +318,52 @@ describe('structuralGateViolations', () => {
   })
 })
 
+describe('structuralGateUnresolved', () => {
+  const entries: StructuralGateEntry[] = [
+    { tool: 'render_patent_document', textArgs: ['sections'], ruleIds: ['TEST-LAYOUT'] },
+  ]
+
+  it('取不到声明入参的文本时给出拒绝原因，有文本时为空', () => {
+    const plan = planOf(makeRulesFixture(), entries)
+    expect(structuralGateUnresolved(plan, 'render_patent_document', { sections: { claims: '一种装置。' } }))
+      .toEqual([])
+    expect(structuralGateUnresolved(plan, 'render_patent_document', { draft: '一种装置。' }))
+      .toEqual(['入参 sections 未提供'])
+  })
+
+  it('入参名不在工具声明里时给出拒绝原因', () => {
+    const plan = planOf(makeRulesFixture(), [
+      { tool: 'render_patent_document', textArgs: ['draftt'], ruleIds: ['TEST-LAYOUT'] },
+    ])
+    expect(structuralGateUnresolved(
+      plan,
+      'render_patent_document',
+      { draftt: '一种装置。' },
+      { draft: {} },
+    )).toEqual(['入参 draftt 不在 render_patent_document 的入参声明里'])
+  })
+
+  it('工具或 whenArgs 不匹配时不参与', () => {
+    const plan = planOf(makeRulesFixture(), [
+      {
+        tool: 'render_patent_document',
+        textArgs: ['sections'],
+        ruleIds: ['TEST-LAYOUT'],
+        whenArgs: { template: 'claims-spec' },
+      },
+    ])
+    expect(structuralGateUnresolved(plan, 'other_tool', {})).toEqual([])
+    expect(structuralGateUnresolved(plan, 'render_patent_document', { template: 'oa-response' })).toEqual([])
+  })
+
+  it('拒绝理由说明门禁无法执行及原因', () => {
+    const text = renderGateUnavailableDenial('render_patent_document', ['入参 draft 未提供'])
+    expect(text).toContain('门禁无法执行 render_patent_document')
+    expect(text).toContain('入参 draft 未提供')
+    expect(text).toContain('拒绝该次调用')
+  })
+})
+
 describe('renderStructuralGateDenial', () => {
   it('给出规则编号、名称、说明与依据', () => {
     const plan = planOf(makeRulesFixture(), [{ tool: 'render_patent_document', textArgs: ['sections'], ruleIds: ['TEST-LAYOUT'] }])
@@ -292,6 +380,53 @@ describe('renderStructuralGateDenial', () => {
     const violations = PatentRule.structuralGateViolations(plan, 'render_patent_document', { sections: { claims: '一种装置。' } })
     const text = PatentRule.renderStructuralGateDenial('render_patent_document', violations)
     expect(text).not.toContain('依据')
+  })
+})
+
+describe('structural gate apply', () => {
+  function documentTool() {
+    return defineContentToolFixture({
+      name: 'render_patent_document',
+      description: 'render',
+      parameters: { draft: { type: 'string' } },
+      async execute(): Promise<ContentBlock[]> { return [{ type: 'text', text: 'ok' }] },
+    })
+  }
+
+  async function mounted(textArgs: string[], strict: boolean): Promise<Context> {
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    ctx.tools.register(documentTool())
+    await ctx.plugin(PatentRule, {
+      rulesDir: makeRulesFixture(),
+      structuralGate: [{ tool: 'render_patent_document', textArgs, ruleIds: ['TEST-LAYOUT'], strict }],
+    })
+    return ctx
+  }
+
+  it('strict textArgs 与已注册工具的入参不一致时加载失败', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    ctx.tools.register(documentTool())
+    await expect(ctx.plugin(PatentRule, {
+      rulesDir: makeRulesFixture(),
+      structuralGate: [{ tool: 'render_patent_document', textArgs: ['draftt'], ruleIds: ['TEST-LAYOUT'], strict: true }],
+    })).rejects.toThrow(/draftt/)
+  })
+
+  it('运行期取不到声明入参的文本时拒绝调用', async () => {
+    const ctx = await mounted(['draftt'], false)
+    const result = await executeToolFixture(ctx, {
+      name: 'render_patent_document',
+      callId: ToolCallId('structural-drift'),
+      arguments: { draft: '一种装置，其特征在于：A。' },
+      signal,
+    })
+    expect(result.isError).toBe(true)
+    expect(result.error?.message).toContain('门禁无法执行')
+    expect(result.error?.message).toContain('draftt')
   })
 })
 

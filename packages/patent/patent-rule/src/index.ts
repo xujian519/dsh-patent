@@ -54,6 +54,7 @@ import type {
 import { patentAssetDir } from './asset-location.ts'
 import {
   citationGateBlocking,
+  citationGateUnresolved,
   renderCitationGateDenial,
   type CitationGateEntry,
 } from './runtime/citation-gate.ts'
@@ -82,9 +83,12 @@ import {
   type DeliveryGatePlan,
 } from './runtime/delivery-gate.ts'
 import {
+  renderGateUnavailableDenial,
   renderStructuralGateDenial,
   resolveStructuralGate,
+  structuralGateUnresolved,
   structuralGateViolations,
+  textArgDeclarationIssues,
   type StructuralGateEntry,
   type StructuralGatePlan,
 } from './runtime/structural-gate.ts'
@@ -160,6 +164,7 @@ export {
   type ResolvedStructuralGateEntry,
   type StructuralGateEntry,
   type StructuralGatePlan,
+  type ToolParametersLookup,
 } from './runtime/structural-gate.ts'
 export {
   declaredArgsMatch,
@@ -471,8 +476,16 @@ export function apply(ctx: Context, config: Config): void {
     }
   }
   const gateCheckTypes = resolveGateCheckTypes(config.gateCheckTypes ?? DEFAULT_GATE_CHECK_TYPES, warnings)
-  const structuralGate: StructuralGatePlan = resolveStructuralGate(ruleSet, config.structuralGate ?? [])
+  // 门禁声明与工具入参的核对在加载期完成；工具尚未注册时留给运行期（调用前必有一份
+  // 已注册的定义），避免插件加载顺序决定 strict 是否误报。
+  const toolParameters = (tool: string): Record<string, unknown> | undefined =>
+    ctx.tools.get(tool)?.parameters
+  const structuralGate: StructuralGatePlan = resolveStructuralGate(ruleSet, config.structuralGate ?? [], toolParameters)
   warnings.push(...structuralGate.warnings)
+  const citationGate = config.citationGate ?? []
+  for (const issue of textArgDeclarationIssues(citationGate, toolParameters)) {
+    warnings.push(`交付物引用门禁: ${issue}`)
+  }
   const deliveryGate: DeliveryGatePlan = resolveDeliveryGate(config.deliveryGate ?? [])
   warnings.push(...deliveryGate.warnings)
   const synonyms = loadSynonymsAsset(config.rulesDir)
@@ -494,15 +507,22 @@ export function apply(ctx: Context, config: Config): void {
   // 结果全文，只能在制品进入渲染/落盘之前拦下——这是它们唯一的硬执行点。
   if (structuralGate.entries.length > 0) {
     ctx.on('tools/pre-execute', async (exec, next) => {
+      const unresolved = structuralGateUnresolved(structuralGate, exec.name, exec.arguments)
+      if (unresolved.length > 0) {
+        return { kind: 'deny', reason: renderGateUnavailableDenial(exec.name, unresolved) }
+      }
       const violations = structuralGateViolations(structuralGate, exec.name, exec.arguments, synonyms.synonyms)
       if (violations.length === 0) return next()
       return { kind: 'deny', reason: renderStructuralGateDenial(exec.name, violations) }
     })
   }
 
-  const citationGate = config.citationGate ?? []
   if (citationGate.length > 0) {
     ctx.on('tools/pre-execute', async (exec, next) => {
+      const unresolved = citationGateUnresolved(citationGate, exec.name, exec.arguments)
+      if (unresolved.length > 0) {
+        return { kind: 'deny', reason: renderGateUnavailableDenial(exec.name, unresolved) }
+      }
       const blocking = citationGateBlocking(citationGate, exec.name, exec.arguments)
       if (blocking.length === 0) return next()
       return { kind: 'deny', reason: renderCitationGateDenial(exec.name, blocking) }

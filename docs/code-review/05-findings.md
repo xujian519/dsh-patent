@@ -74,14 +74,14 @@
 | F-PAT-039 | 同一句权利要求在两套解析里独立／从属结论相反 | PAT | E | High | 高 | fixed |
 | F-PAT-040 | 空 quote 的覆盖类映射仍判单篇全覆盖 | PAT | E | High | 中 | fixed |
 | F-PAT-041 | 所引权项没有要素时仍报告已并入其全部要素 | PAT | E | High | 中 | fixed |
-| F-PAT-042 | 未提取到技术问题时，阻断级法条缺口记为通过 | PAT | E | High | 中 | new |
+| F-PAT-042 | 未提取到技术问题时，阻断级法条缺口记为通过 | PAT | E | High | 中 | fixed |
 | F-PAT-043 | 源文可读时空 pin-cite 被判格式非法 | PAT | E | Medium | 中 | fixed |
 | F-PAT-044 | 要素 claimNo 没有对应段落时用全文做子串校验 | PAT | E | Medium | 中 | fixed |
 | F-PAT-045 | 省略 `parallel_lower_levels` 仍判概括范围通过 | PAT | E | Medium | 高 | new |
 | F-PAT-046 | 同一格同时 `literal` 与 `not-found` 时，缺口与全覆盖同时成立 | PAT | E | Medium | 中 | fixed |
 | F-PAT-047 | 审批门中断后的续跑从第一个阶段重跑，内置 manifest 的检索与模型阶段重复执行 | PAT | E | Medium | 中 | deferred |
-| F-PAT-048 | 通知书解析不出驳回理由时，两条双输入规则判为通过且无未评估标记 | PAT | E | Medium | 中 | new |
-| F-PAT-049 | 结构门禁与引用门禁不核对 `textArgs`，声明写错即静默放行 | PAT | E | Medium | 低 | new |
+| F-PAT-048 | 通知书解析不出驳回理由时，两条双输入规则判为通过且无未评估标记 | PAT | E | Medium | 中 | fixed |
+| F-PAT-049 | 结构门禁与引用门禁不核对 `textArgs`，声明写错即静默放行 | PAT | E | Medium | 低 | fixed |
 | F-PAT-050 | 重规划按哈希保留已完成步骤，重复步骤全部判为已完成 | PAT | E | Medium | 低 | new |
 | F-PAT-051 | 沿革快照按条号跨法套用，实施细则条文取到专利法同号条的生效日与状态 | PAT | E | Medium | 高 | new |
 | F-PAT-052 | 指南未修改的节在 rule-lock 判「已修订/已失效」，law_verify 判「已核验」 | PAT | E | High | 高 | new |
@@ -701,7 +701,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：报告含「无法校验」或「未提取到」时，`problem` 检查走 `notAssessed`，`problem_check_passed` 不要写成 `true`。缺问题文本与检出违规分开。
 - 预估工作量：S
 - 是否可自动化：是（上面这条 `diff` 输入断言 `legal_gaps` 的 `problem` 项为 `not-assessed`，且 `legal_gaps_passed` 不因该项变成通过）
-- 状态：new
+- 状态：fixed（2026-11-16，批次 E3）
 
 ### F-PAT-043 源文可读时空 pin-cite 被判格式非法
 
@@ -779,7 +779,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：`noticeText` 非空而 `parseOfficeAction` 的 `rejectionTypes` 为空时，把两条规则写入 `dualInputSkipped`（或新增通知书解析诊断字段），结果显式写「通知书未识别到驳回理由，双输入规则未评估」。
 - 预估工作量：S
 - 是否可自动化：是（固定 notice 文本断言 `dualInputSkipped` 含 `PR-OA-008`、`PR-OA-009`）
-- 状态：new
+- 状态：fixed（2026-11-16，批次 E3）
 
 ### F-PAT-049 结构门禁与引用门禁不核对 `textArgs`，声明写错即静默放行
 
@@ -792,7 +792,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：加载期要求 `textArgs` 每项在目标工具的入参 schema 中存在（`apply()` 期间可读工具注册表），`strict` 条目据此报错；运行期 `structuralGateText` 为空且声明了 `textArgs` 时按「门禁无法执行」拒绝，而不是放行。
 - 预估工作量：M
 - 是否可自动化：是（加载期断言未知入参名；运行期断言空文本触发拒绝）
-- 状态：new
+- 状态：fixed（2026-11-16，批次 E3）
 
 ### F-PAT-050 重规划按哈希保留已完成步骤，重复步骤全部判为已完成
 
@@ -1528,6 +1528,22 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`claim-refs.spec.ts` 的区间上限用例改为锁定新语义（`1-35` 展开、`1-2000` 只留端点）；`claim-lint.spec.ts` 的 `1 至 999999999` 用例补上 `referenceDefects` 断言。新增两套解析对同一文本的一致性断言、前缀与全角数字用例、lint 的倒序／超限发现用例，以及结论渲染两种区间缺陷的用例。
 
 验证：`pnpm exec vitest run packages/patent/patent-core/tests packages/patent/patent-tools/tests` 通过（203 文件、3977 用例，4 skipped）；五个改动源码文件在聚焦 `--coverage.include` 下均为 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`pnpm run test:snapshot -t patent-invalidation-chain` 通过；`verify-persistence-changes` 无变化。
+
+### 批次 E3：门禁缺输入 fail-closed（2026-11-16）
+
+用户要求按建议顺序全部修复后完成。三条发现都属「输入缺失被读成通过或未评估」，改动只影响缺输入与声明漂移的路径。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-042 | `problem-check` 未提取到技术问题时写 `problem_check_passed: false`，报告改为「本次未执行（不计为通过）」；`legal-gaps` 的 `problem` 检查新增 `notAssessed`。`evaluateCheckpoint` 把「报告写明未执行」放在失败判定之前：没有判定对象的检查记 `not-assessed`，不再记 `failed` 或 `passed` | `patent-core/src/atoms/handlers/builtin/problem-check.ts`、`patent-tools/src/atoms/legal-gaps.ts` |
+| F-PAT-048 | `notice` 非空但 `parseOfficeAction` 识别不到驳回理由时，两条双输入规则写入 `dualInputSkipped`，新增 `dualInputNoticeIssue` 写明原因；工具结果显式写「通知书未识别到驳回理由」 | `patent-tools/src/tool/rule-check.ts` |
+| F-PAT-049 | `resolveStructuralGate` 增加可选的工具入参读取器，工具已注册时核对每个 `textArgs` 是否为该工具入参，`strict` 条目升级为加载失败；运行期两个门禁在适用条目的制品入参缺失时按「门禁无法执行」拒绝调用 | `patent-rule/src/runtime/structural-gate.ts`、`patent-rule/src/runtime/citation-gate.ts`、`patent-rule/src/index.ts` |
+
+**行为变化**：创造性流程里缺技术问题不再让 A22.3 阻断项显示通过，汇总头把它计入未评估。`rule_check` 收到解析不出驳回理由的通知书时不再输出「无违规」，而是列出 PR-OA-008/009 未评估及原因。结构门禁与引用门禁在 `textArgs` 写错时不判定任何制品：工具已注册时加载期即报告（`strict` 失败），工具尚未注册时（内置 preset 的 `patent-document` 晚于 `patent-rule`）由运行期「声明的入参未提供」拒绝兜底。
+
+**既有测试行为**：`problem-check-atom.spec.ts` 两条「放行并说明原因」用例改为 `problem_check_passed: false` 且报告含「本次未执行」，原断言锁住的正是本条缺陷。`legal-gaps` 的判定顺序调整只影响「报告写明未执行且失败键为 false」的输入，既有证据与受理用例未改写。
+
+验证：`pnpm exec vitest run packages/patent/patent-core/tests packages/patent/patent-tools/tests packages/patent/patent-rule/tests` 通过（230 文件、4510 用例，4 skipped）；五个改动源码文件在聚焦 `--coverage.include` 下均为 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`pnpm run test:snapshot -t patent-` 11 个专利会话全部通过；`pnpm run test:docs` 30 passed。
 
 ### 批次 A：复用收口（2026-11-15）
 

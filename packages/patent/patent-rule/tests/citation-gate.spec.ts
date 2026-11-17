@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
@@ -12,6 +12,7 @@ import { defineContentToolFixture, executeToolFixture } from '@deepseek-ai/dsh-t
 import {
   blockingCitationDecisions,
   citationGateBlocking,
+  citationGateUnresolved,
   renderCitationGateDenial,
 } from '../src/runtime/citation-gate.ts'
 
@@ -91,6 +92,27 @@ describe('blockingCitationDecisions', () => {
   })
 })
 
+describe('citationGateUnresolved', () => {
+  it('names a declared text argument the tool does not accept, or an empty one', () => {
+    const entries = [{ tool: 'render_patent_document', textArgs: ['draft'] }]
+    expect(citationGateUnresolved(entries, 'other', { draft: '专利法第22条' })).toEqual([])
+    expect(citationGateUnresolved(entries, 'render_patent_document', { draft: '专利法第22条' })).toEqual([])
+    expect(citationGateUnresolved(
+      entries,
+      'render_patent_document',
+      { draft: '专利法第22条' },
+      { properties: { draft: {} } },
+    )).toEqual([])
+    expect(citationGateUnresolved(entries, 'render_patent_document', {})).toEqual(['入参 draft 未提供'])
+    expect(citationGateUnresolved(
+      [{ tool: 'render_patent_document', textArgs: ['draftt'] }],
+      'render_patent_document',
+      { draftt: '专利法第22条' },
+      { draft: {} },
+    )).toEqual(['入参 draftt 不在 render_patent_document 的入参声明里'])
+  })
+})
+
 describe('交付物引用门禁', () => {
   it('放行索引中的现行条文', async () => {
     const result = await call(await mount(), '依照专利法第22条第3款评价创造性。')
@@ -104,6 +126,26 @@ describe('交付物引用门禁', () => {
     expect(result.error?.message).toContain('第99条')
   })
 
+  it('声明与工具入参不一致时拒绝调用，而不是静默放行', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(PatentRule, {
+      rulesDir: rulesDir(),
+      citationGate: [{ tool: 'render_patent_document', textArgs: ['draftt'] }],
+    })
+    ctx.tools.register(documentTool())
+    const result = await executeToolFixture(ctx, {
+      name: 'render_patent_document',
+      callId: ToolCallId('citation-drift'),
+      arguments: { draft: '依照专利法第22条第3款。' },
+      signal,
+    })
+    expect(result.isError).toBe(true)
+    expect(result.error?.message).toContain('门禁无法执行')
+    expect(result.error?.message).toContain('draftt')
+  })
+
   it('未声明门禁时不核验制品文本', async () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
@@ -112,5 +154,19 @@ describe('交付物引用门禁', () => {
     ctx.tools.register(documentTool())
     const result = await call(ctx, '依照专利法第99条。')
     expect(result.isError).toBe(false)
+  })
+
+  it('加载期把与工具入参不一致的声明记成告警', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    ctx.tools.register(documentTool())
+    const warnSpy = vi.spyOn(ctx.logger, 'warn')
+    await ctx.plugin(PatentRule, {
+      rulesDir: rulesDir(),
+      citationGate: [{ tool: 'render_patent_document', textArgs: ['draftt'] }],
+    })
+    expect(warnSpy.mock.calls.flat().join('\n')).toContain('交付物引用门禁')
+    expect(warnSpy.mock.calls.flat().join('\n')).toContain('draftt')
   })
 })

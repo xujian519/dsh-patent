@@ -563,6 +563,25 @@ describe('legal-gaps 原子', () => {
     expect(out['legal_gaps_unassessed']).toEqual(['time-baseline', 'grace-period'])
   })
 
+  it('创造性清单：未提取到技术问题时记为未评估，不按阻断通过计入', async () => {
+    const out = await new LegalGapsHandler().execute({
+      state: {
+        profile: 'inventiveness',
+        problem_check_report: '实际解决的技术问题合规检查（A22.3 第二步）：未提取到实际解决的技术问题，本次未执行（不计为通过）',
+        problem_check_passed: false,
+        conclude: '创造性结论：具备创造性',
+      },
+    })
+    const items = out['legal_gaps_items'] as LegalGapItem[]
+    expect(items.find(item => item.id === 'problem')).toMatchObject({
+      status: 'not-assessed',
+      severity: 'block',
+      provision: '专利法第22条第3款',
+    })
+    expect(out['legal_gaps_unassessed']).toContain('problem')
+    expect(out['legal_gaps_report']).toContain('[未评估] 专利法第22条第3款 — 三步法技术问题的确定')
+  })
+
   it('可专利性清单：客体、权项支持与充分公开通过，缺时间基准与宽限期产出时记未评估', async () => {
     const out = await new LegalGapsHandler().execute({
       state: {

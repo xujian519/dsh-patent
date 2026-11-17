@@ -11,7 +11,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { LocalFileSystem } from '@deepseek-ai/dsh-fs-local'
-import { FsError } from '@deepseek-ai/dsh-fs'
+import { FsError, FsVersion } from '@deepseek-ai/dsh-fs'
 import {
   missingShotClips,
   mutateProjectFile,
@@ -75,17 +75,45 @@ describe('project store', () => {
     expect(read).toEqual(project)
   })
 
+  it('refuses to initialize over an existing project document', async () => {
+    const project = newProject({ title: 'Once' })
+    const path = projectPathFor(root, project.id)
+    await writeProject(ctx, path, project, root)
+    await expect(writeProject(ctx, path, project, root)).rejects.toMatchObject({ code: 'FS_NOT_OBSERVED' })
+  })
+
   it('reports a missing project with the init remedy', async () => {
     await expect(readProject(ctx, 'video/missing/project.json', root)).rejects.toThrow(/run video_project init first/)
   })
 
   it('propagates a read failure that is not a missing file', async () => {
+    await writeFile(join(root, 'project.json'), serializeProject(newProject({ title: 'Read failure' })))
     const original = ctx.fs.readText.bind(ctx.fs)
     ctx.fs.readText = async () => { throw new FsError('permission denied', 'FS_IO_ERROR') }
-    await expect(readProject(ctx, 'video/x/project.json', root)).rejects.toThrow(/permission denied/)
+    await expect(readProject(ctx, 'project.json', root)).rejects.toThrow(/permission denied/)
     ctx.fs.readText = async () => { throw new Error('transport down') }
-    await expect(readProject(ctx, 'video/x/project.json', root)).rejects.toThrow(/transport down/)
+    await expect(readProject(ctx, 'project.json', root)).rejects.toThrow(/transport down/)
     ctx.fs.readText = original
+  })
+
+  it('reports a project deleted between the stat and the read', async () => {
+    await writeFile(join(root, 'project.json'), serializeProject(newProject({ title: 'Gone' })))
+    const original = ctx.fs.readText.bind(ctx.fs)
+    ctx.fs.readText = async () => { throw new FsError('gone', 'FS_NOT_FOUND') }
+    try {
+      await expect(readProject(ctx, 'project.json', root)).rejects.toThrow(/run video_project init first/)
+    } finally {
+      ctx.fs.readText = original
+    }
+  })
+
+  it('propagates a write failure that is not a version conflict', async () => {
+    const io = {
+      path: 'project.json',
+      read: async () => ({ text: serializeProject(newProject({ title: 'Disk' })), version: FsVersion('v1') }),
+      write: async () => { throw new Error('disk full') },
+    }
+    await expect(mutateProjectFile(io, project => project)).rejects.toThrow('disk full')
   })
 
   it('reports malformed JSON and a document that fails schema validation', async () => {
@@ -135,7 +163,7 @@ describe('project concurrency', () => {
     expect(() => parseProject('{', 'broken.json')).toThrow(/not valid JSON/)
   })
 
-  it('retries a mutation when another writer changes the document', async () => {
+  it('republishes against the newer document when the guarded write loses the race', async () => {
     const base = newProject({ title: 'Retry' })
     const concurrent = serializeProject(recordRender(base, {
       id: 'r1', path: 'out/other.mp4', createdAt: '2026-01-01T00:00:00.000Z',
@@ -146,11 +174,17 @@ describe('project concurrency', () => {
       path: 'project.json',
       read: async () => {
         reads += 1
-        return reads === 1 ? serializeProject(base) : concurrent
+        return reads === 1
+          ? { text: serializeProject(base), version: FsVersion('v1') }
+          : { text: concurrent, version: FsVersion('v2') }
       },
-      write: async (text) => { written = text },
+      write: async (text, version) => {
+        if (version === FsVersion('v1')) throw new FsError('stale', 'FS_STALE_VERSION')
+        written = text
+      },
     }, project => upsertShot(project, { id: 's01', index: 1, prompt: 'one', durationSec: 1, status: 'draft' }))
 
+    expect(reads).toBe(2)
     expect(result.shots).toHaveLength(1)
     expect(result.renders).toHaveLength(1)
     const saved = parseProject(written, 'project.json')
@@ -164,14 +198,17 @@ describe('project concurrency', () => {
       path: 'project.json',
       read: async () => {
         reads += 1
-        return serializeProject(recordRender(newProject({ title: 'Moving' }), {
-          id: `r${reads}`, path: `out/${reads}.mp4`, createdAt: '2026-01-01T00:00:00.000Z',
-        }))
+        return {
+          text: serializeProject(recordRender(newProject({ title: 'Moving' }), {
+            id: `r${reads}`, path: `out/${reads}.mp4`, createdAt: '2026-01-01T00:00:00.000Z',
+          })),
+          version: FsVersion(`v${reads}`),
+        }
       },
-      write: async () => {},
+      write: async () => { throw new FsError('stale', 'FS_STALE_VERSION') },
     }
     await expect(mutateProjectFile(io, project => project, 3)).rejects.toMatchObject({ code: 'MEDIA_PROJECT_CONFLICT' })
-    expect(reads).toBe(6)
+    expect(reads).toBe(3)
   })
 
   it('serializes writers per project and releases the lock after a failure', async () => {

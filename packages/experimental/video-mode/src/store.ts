@@ -9,7 +9,7 @@
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
 import type { Context } from '@deepseek-ai/cordis'
-import { FsError, type FsTarget } from '@deepseek-ai/dsh-fs'
+import { FsError, type FsTarget, type FsVersion } from '@deepseek-ai/dsh-fs'
 import { withKeyLock } from './lock.ts'
 import {
   MediaFailure,
@@ -28,6 +28,9 @@ export const BUDGET_LEDGER_FILE = 'budget.json'
 
 /** Store format version written by this package. */
 export const STORE_SCHEMA_VERSION = 1 as const
+
+/** Publication attempts before a concurrent writer is reported as a store conflict. */
+const STORE_WRITE_ATTEMPTS = 3
 
 const kindSchema = z.enum(['image', 'video', 'speech'])
 
@@ -106,18 +109,25 @@ export async function readTaskRecords(
   cwd: string,
   signal?: AbortSignal,
 ): Promise<readonly MediaTaskRecord[]> {
-  const journal = await readDocument(ctx, projectPath, TASK_JOURNAL_FILE, journalSchema, cwd, signal)
-  return journal?.tasks ?? []
+  const journal = await readSnapshot(ctx, projectPath, TASK_JOURNAL_FILE, journalSchema, cwd, signal)
+  return journal?.document.tasks ?? []
 }
 
 /**
  * Replace the task journal for one production.
+ *
+ * Replacement is the caller's intent: the given list wins over what is stored.
+ * The write still carries the version it was based on, so a concurrent writer
+ * between the snapshot and the publication forces a retry instead of a
+ * half-written journal; callers that mean to add or remove one record use
+ * {@link recordTask} / {@link forgetTask}, which merge with the stored list.
  * @param ctx - context providing `ctx.fs`.
  * @param projectPath - project file path.
  * @param records - complete record list to store.
  * @param cwd - Session working directory for relative resolution.
  * @param signal - caller cancellation.
  * @throws {@link MediaFailure} `MEDIA_STORE_INVALID` for a record the schema rejects.
+ * @throws {@link MediaFailure} `MEDIA_STORE_CONFLICT` when the journal keeps changing.
  */
 export async function writeTaskRecords(
   ctx: Context,
@@ -130,7 +140,12 @@ export async function writeTaskRecords(
   if (!parsed.success) {
     throw new MediaFailure(`invalid task journal record: ${issuesOf(parsed.error)}`, 'MEDIA_STORE_INVALID')
   }
-  await writeStoreText(ctx, storePathOf(projectPath, TASK_JOURNAL_FILE), parsed.data, cwd, signal)
+  const path = storePathOf(projectPath, TASK_JOURNAL_FILE)
+  await withKeyLock(`store:${path}`, () => publishWithRetry('task journal', async () => {
+    // Replacement does not need the stored records, only the version it replaces.
+    const version = await storeVersion(ctx, path, cwd, signal)
+    await writeStoreDocument(ctx, path, parsed.data, version, cwd, signal)
+  }))
 }
 
 /**
@@ -149,12 +164,16 @@ export async function recordTask(
   signal?: AbortSignal,
 ): Promise<void> {
   const path = storePathOf(projectPath, TASK_JOURNAL_FILE)
-  await withKeyLock(`store:${path}`, async () => {
-    const records = await readTaskRecords(ctx, projectPath, cwd, signal)
-    const next = [...records.filter(entry => entry.task.id !== record.task.id), record]
+  await withKeyLock(`store:${path}`, () => publishWithRetry('task journal', async () => {
+    const snapshot = await readSnapshot(ctx, projectPath, TASK_JOURNAL_FILE, journalSchema, cwd, signal)
+    const next = [...(snapshot?.document.tasks ?? []).filter(entry => entry.task.id !== record.task.id), record]
     next.sort((left, right) => left.submittedAt - right.submittedAt)
-    await writeTaskRecords(ctx, projectPath, next, cwd, signal)
-  })
+    const parsed = journalSchema.safeParse({ schemaVersion: STORE_SCHEMA_VERSION, tasks: next })
+    if (!parsed.success) {
+      throw new MediaFailure(`invalid task journal record: ${issuesOf(parsed.error)}`, 'MEDIA_STORE_INVALID')
+    }
+    await writeStoreDocument(ctx, path, parsed.data, snapshot?.version, cwd, signal)
+  }))
 }
 
 /**
@@ -173,12 +192,13 @@ export async function forgetTask(
   signal?: AbortSignal,
 ): Promise<void> {
   const path = storePathOf(projectPath, TASK_JOURNAL_FILE)
-  await withKeyLock(`store:${path}`, async () => {
-    const records = await readTaskRecords(ctx, projectPath, cwd, signal)
+  await withKeyLock(`store:${path}`, () => publishWithRetry('task journal', async () => {
+    const snapshot = await readSnapshot(ctx, projectPath, TASK_JOURNAL_FILE, journalSchema, cwd, signal)
+    const records = snapshot?.document.tasks ?? []
     const next = records.filter(entry => entry.task.id !== taskId)
     if (next.length === records.length) return
-    await writeTaskRecords(ctx, projectPath, next, cwd, signal)
-  })
+    await writeStoreDocument(ctx, path, { schemaVersion: STORE_SCHEMA_VERSION, tasks: next }, snapshot?.version, cwd, signal)
+  }))
 }
 
 /**
@@ -216,8 +236,8 @@ export async function readLedger(
   cwd: string,
   signal?: AbortSignal,
 ): Promise<readonly MediaLedgerEntry[]> {
-  const ledger = await readDocument(ctx, projectPath, BUDGET_LEDGER_FILE, ledgerSchema, cwd, signal)
-  return ledger?.entries ?? []
+  const ledger = await readSnapshot(ctx, projectPath, BUDGET_LEDGER_FILE, ledgerSchema, cwd, signal)
+  return ledger?.document.entries ?? []
 }
 
 /**
@@ -238,17 +258,17 @@ export async function appendLedgerEntry(
   signal?: AbortSignal,
 ): Promise<boolean> {
   const path = storePathOf(projectPath, BUDGET_LEDGER_FILE)
-  return withKeyLock(`ledger:${path}`, async () => {
-    const entries = await readLedger(ctx, projectPath, cwd, signal)
+  return withKeyLock(`ledger:${path}`, () => publishWithRetry('budget ledger', async () => {
+    const snapshot = await readSnapshot(ctx, projectPath, BUDGET_LEDGER_FILE, ledgerSchema, cwd, signal)
+    const entries = snapshot?.document.entries ?? []
     if (entries.some(existing => existing.taskId === entry.taskId)) return false
-    const next = [...entries, entry]
-    const parsed = ledgerSchema.safeParse({ schemaVersion: STORE_SCHEMA_VERSION, entries: next })
+    const parsed = ledgerSchema.safeParse({ schemaVersion: STORE_SCHEMA_VERSION, entries: [...entries, entry] })
     if (!parsed.success) {
       throw new MediaFailure(`invalid budget ledger entry: ${issuesOf(parsed.error)}`, 'MEDIA_STORE_INVALID')
     }
-    await writeStoreText(ctx, path, parsed.data, cwd, signal)
+    await writeStoreDocument(ctx, path, parsed.data, snapshot?.version, cwd, signal)
     return true
-  })
+  }))
 }
 
 /**
@@ -317,26 +337,82 @@ function requestFields(
   }
 }
 
+/** A parsed store document together with the version it was read at. */
+type StoreSnapshot<T> = {
+  /** Freshness token the guarded write carries. */
+  readonly version: FsVersion
+  /** Validated document. */
+  readonly document: T
+}
+
 /**
- * Read and validate one store document.
+ * Whether a guarded write lost the race to another writer.
+ * @param error - the write failure.
+ * @returns whether the caller should re-read and retry.
+ */
+function isWriteConflict(error: unknown): boolean {
+  return error instanceof FsError
+    && (error.code === 'FS_STALE_VERSION' || error.code === 'FS_NOT_OBSERVED')
+}
+
+/**
+ * Run one read-modify-publish attempt until it publishes or the attempt budget
+ * runs out.
+ *
+ * Protocol constants fix the budget: a store that keeps changing under a
+ * writer is a real conflict the caller must see, not something to spin on.
+ * @param action - store name used in the failure message.
+ * @param attempt - one guarded attempt; a stale publication throws.
+ * @returns the attempt's value.
+ * @throws {@link MediaFailure} `MEDIA_STORE_CONFLICT` when every attempt lost the race.
+ */
+async function publishWithRetry<T>(action: string, attempt: () => Promise<T>): Promise<T> {
+  for (let index = 0; index < STORE_WRITE_ATTEMPTS; index += 1) {
+    try {
+      return await attempt()
+    } catch (error) {
+      if (!isWriteConflict(error)) throw error
+    }
+  }
+  throw new MediaFailure(
+    `the video ${action} changed while it was being updated; retry the call`,
+    'MEDIA_STORE_CONFLICT',
+  )
+}
+
+/**
+ * Read and validate one store document with the version it was read at.
+ *
+ * The version is observed before the text: a writer that replaces the file
+ * between the two makes the guarded publication fail, which is the safe
+ * direction — the caller re-reads instead of overwriting the newer text.
  * @param ctx - context providing `ctx.fs`.
  * @param projectPath - project file path.
  * @param file - store file name.
  * @param schema - document schema.
  * @param cwd - Session working directory for relative resolution.
  * @param signal - caller cancellation.
- * @returns the validated document, or undefined when the file is absent.
+ * @returns the snapshot, or undefined when the file is absent.
  */
-async function readDocument<T>(
+async function readSnapshot<T>(
   ctx: Context,
   projectPath: string,
   file: string,
   schema: z.ZodType<T>,
   cwd: string,
   signal?: AbortSignal,
-): Promise<T | undefined> {
-  const text = await readStoreText(ctx, storePathOf(projectPath, file), cwd, signal)
-  return text === undefined ? undefined : parseStore(text, schema, file)
+): Promise<StoreSnapshot<T> | undefined> {
+  const target = await ctx.fs.resolve(storePathOf(projectPath, file), { cwd })
+  const info = await ctx.fs.stat(target, signal)
+  if (info === undefined) return undefined
+  let text: string
+  try {
+    text = await ctx.fs.readText(target, signal)
+  } catch (error) {
+    if (error instanceof FsError && error.code === 'FS_NOT_FOUND') return undefined
+    throw error
+  }
+  return { version: info.version, document: parseStore(text, schema, file) }
 }
 
 /**
@@ -349,47 +425,52 @@ export function requestOfTask(request: MediaTaskRequest): MediaRequest {
 }
 
 /**
- * Read one store file.
- * @param ctx - context providing `ctx.fs`.
- * @param path - store path.
- * @param cwd - Session working directory for relative resolution.
- * @param signal - caller cancellation.
- * @returns the text, or undefined when the file is absent.
- */
-async function readStoreText(
-  ctx: Context,
-  path: string,
-  cwd: string,
-  signal?: AbortSignal,
-): Promise<string | undefined> {
-  const target = await ctx.fs.resolve(path, { cwd })
-  try {
-    return await ctx.fs.readText(target, signal)
-  } catch (error) {
-    if (error instanceof FsError && error.code === 'FS_NOT_FOUND') return undefined
-    throw error
-  }
-}
-
-/**
  * Write one store document as pretty JSON with a trailing newline.
+ *
+ * A snapshot guards replacement: the write fails with `FS_STALE_VERSION` unless
+ * the file is still the one that was read. A missing version means the file was
+ * absent, so the write is a guarded create and fails with `FS_NOT_OBSERVED` if
+ * another writer created it first.
  * @param ctx - context providing `ctx.fs`.
  * @param path - store path.
  * @param document - validated document.
+ * @param version - the read the write replaces, or undefined to create.
  * @param cwd - Session working directory for relative resolution.
  * @param signal - caller cancellation.
  * @returns the resolved target.
  */
-async function writeStoreText(
+async function writeStoreDocument(
   ctx: Context,
   path: string,
   document: unknown,
+  version: FsVersion | undefined,
   cwd: string,
   signal?: AbortSignal,
 ): Promise<FsTarget> {
   const target = await ctx.fs.resolve(path, { cwd })
-  await ctx.fs.writeText(target, `${JSON.stringify(document, null, 2)}\n`, undefined, signal)
+  const expected = version === undefined
+    ? { kind: 'createIfAbsent' as const }
+    : { kind: 'replaceIfVersion' as const, version }
+  await ctx.fs.writeText(target, `${JSON.stringify(document, null, 2)}\n`, expected, signal)
   return target
+}
+
+/**
+ * Observe the freshness token of a store file without parsing it.
+ * @param ctx - context providing `ctx.fs`.
+ * @param path - store path.
+ * @param cwd - Session working directory for relative resolution.
+ * @param signal - caller cancellation.
+ * @returns the version, or undefined when the file is absent.
+ */
+async function storeVersion(
+  ctx: Context,
+  path: string,
+  cwd: string,
+  signal?: AbortSignal,
+): Promise<FsVersion | undefined> {
+  const target = await ctx.fs.resolve(path, { cwd })
+  return (await ctx.fs.stat(target, signal))?.version
 }
 
 /**

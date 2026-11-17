@@ -115,7 +115,7 @@
 | F-LEG-012 | 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略 | LEG | E | Medium | 中 | fixed |
 | F-LEG-013 | 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果 | LEG | E | Medium | 中 | new |
 | F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | new |
-| F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | confirmed |
+| F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | fixed |
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | confirmed |
 | F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | confirmed |
 | F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | confirmed |
@@ -1697,6 +1697,20 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`markdown.spec.ts` 新增 14 条围栏用例（标题/表格/加粗不再生效、信息串、`~` 栏、闭栏长度、缩进与行尾空格、未闭栏、开栏缩进、表格中断、空行、反引号信息串、短于三连）；`docx-render.spec.ts` 新增一条渲染断言（等宽字体、无标题层级、无表格）。非围栏输入的解析结果不变。
 
 验证：`pnpm exec vitest run packages/document/docx-kit/tests` 153 用例通过；`markdown.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`verify-translation-pairing` 重录后通过。
+
+### 批次 E11：视频 journal 与账本改用版本守卫写入（2026-11-17）
+
+用户要求继续修复后完成。只改 `video-mode` 的持久写入与冲突报告，不改工具参数与媒体执行路径。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-VID-001 | 读取时先 `stat` 取版本再读文本，写入改用 `replaceIfVersion`（文件不存在时 `createIfAbsent`）；`FS_STALE_VERSION`／`FS_NOT_OBSERVED` 触发重新读取并合并，连续三次失败以新码 `MEDIA_STORE_CONFLICT` 报告。项目文档的 `mutateProjectFile` 按 `ProjectFileIo` 返回的版本守卫发布；`writeProject` 初始化改为守卫创建。`withKeyLock` 保留为进程内优化 | `video-mode/src/store.ts`、`src/project.ts`、`src/tools/project.ts`、`src/types.ts` |
+
+**行为变化**：两个进程并发追加 journal／账本时，输掉竞争的一方重新读取并合并，不再静默覆盖；持续冲突报 `MEDIA_STORE_CONFLICT`。项目初始化不再覆盖已有项目文件（`FS_NOT_OBSERVED`）。`ProjectFileIo.read` 改为返回 `{ text, version }`、`write` 接收版本，仓库内消费者已同步更新。
+
+**既有测试行为**：`project.spec.ts` 原先靠「读两次比对」模拟并发，现改为假 IO 在守卫写入时抛 `FS_STALE_VERSION`，并新增非冲突写入透传、初始化拒绝覆盖、stat 与读取之间被删除三类用例；`store.spec.ts` 新增 journal／账本竞争合并、守卫创建竞争、持续冲突与删除即缺席用例。测试用 `ctx.fs.writeText` 注入竞争写者，不改产品代码。
+
+验证：`pnpm exec vitest run packages/experimental/video-mode/tests` 276 用例通过；`store.ts`、`project.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`verify-translation-pairing` 重录后通过。
 
 ## 复核记录
 

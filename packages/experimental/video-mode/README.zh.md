@@ -184,9 +184,9 @@ MiniMax 语音 provider 以 `stream: false` 提交 `text`，并在同一次调�
 
 带 `subtitles: true` 的语音请求会以 `subtitle_type: word` 打开 `subtitle_enable`，下载签名后的 `data.subtitle_file`，并把逐字时间戳分组为字幕行：句末标点结束一行，逗号在整行达到 12 个字符后结束一行，整行达到 13 个字符时在当前词处分行。`media` 工具把这些行格式化为 SubRip，写在音频旁边，因此 `voice/s01-01.mp3` 会得到 `voice/s01-01.srt`。时间戳文件缺失、不可读、超大或格式错误时，任务以 `MEDIA_ARTIFACT_INVALID` 失败，不会在不带字幕的情况下结算音频。
 
-项目文档使用严格 schema（`schemaVersion: 1`），包含标题、画幅、目标时长、预算、镜头与成片。`video_project` 读取文档、应用一次修改、校验完整结果，再通过 `ctx.fs.writeText` 原子写入。修改按项目路径取进程内锁，并且只在文件仍与读取时的文本一致时发布；其他进程的并发改写最多重试三次，随后以 `MEDIA_PROJECT_CONFLICT` 失败。
+项目文档使用严格 schema（`schemaVersion: 1`），包含标题、画幅、目标时长、预算、镜头与成片。`video_project` 读取文档、应用一次修改、校验完整结果，再通过 `ctx.fs.writeText` 以读取到的版本守卫发布（`replaceIfVersion`）。修改按项目路径取进程内锁；其他进程的并发改写会让守卫写入失败，修改随即重新读取并最多重试三次，随后以 `MEDIA_PROJECT_CONFLICT` 失败。初始化使用守卫创建，不会覆盖已有项目。
 
-`media` 工具把每个未终结的生成任务记入 `video/<id>/tasks.json`：任务 id、provider、模型、提交时间、恢复所需的请求字段，以及声明的输出路径。带 `project_path` 的 `media status` 在运行时不再持有该任务时找到记录，让 provider 通过 `resume` 重建待轮询状态并继续轮询；任务结算后删除记录。每次以人民币计价的结算都按任务 id 追加一条到 `video/<id>/budget.json`，因此重复调用 status 不会重复计费。预算门与 `video_deliver` 取已记录镜头成本与账本总额中的较大者。
+`media` 工具把每个未终结的生成任务记入 `video/<id>/tasks.json`：任务 id、provider、模型、提交时间、恢复所需的请求字段，以及声明的输出路径。带 `project_path` 的 `media status` 在运行时不再持有该任务时找到记录，让 provider 通过 `resume` 重建待轮询状态并继续轮询；任务结算后删除记录。每次以人民币计价的结算都按任务 id 追加一条到 `video/<id>/budget.json`，因此重复调用 status 不会重复计费。日志与账本的写入携带读取到的版本：追加竞争失败时重新读取并合并，而不是覆盖另一个写入者；持续失败以 `MEDIA_STORE_CONFLICT` 报告。预算门与 `video_deliver` 取已记录镜头成本与账本总额中的较大者。
 
 EDL 是可复现的渲染契约。`buildFfmpegArgs` 生成一张滤镜图：每个视觉片段裁切、等比补边到画布、重采样到画布帧率并拼接；可选音频片段裁切、增益并混音；字幕按安全区样式烧录；输出 H.264/AAC 并带 `+faststart`。字幕路径会按滤镜图和 subtitles 滤镜各转义一次，撇号留在文件名里，输出垫仍是垫。该路径或配置的字体名含控制字符时会被拒绝。汇编器先通过 `ctx.fs` 发布空输出占位文件，让父目录在同一写入策略下存在。
 
@@ -222,7 +222,7 @@ EDL 是可复现的渲染契约。`buildFfmpegArgs` 生成一张滤镜图：每�
 - **本地 Wan 片段只作草稿** —— 通过 `first_frame_path` 的首帧片段能避开 CFG>1 的颜色失真，但实测在 Apple MPS 上 480p 片段数秒内仍会出现拖影与漂移，CFG 5 则直接破坏颜色。生产片段用 MiniMax-H3，本地 Wan 用于草稿和链路验证。视频模式 persona 与 `video-generate` 技能仍要求先出关键帧。
 - **本地生成时间随分辨率与时长增长** —— Apple 芯片笔记本 480p 每条片段需数分钟，720p 更久；`comfyui.timeoutMs` 限制等待，`comfyui.video.resolution` 用于在质量与周转间取舍。
 - **每种能力一个工作流** —— `comfyui.video.workflowPath` 整体替换随包图；两个视频后端需要在不同 id 下挂两行 provider。
-- **任务日志依赖 `project_path`** —— 只有调用里带项目路径时，`media generate` 与 `media status` 才会写日志并恢复。不带路径的生成只留在内存；合成 provider 在提交时即结算，无需日志。日志与账本是项目旁的 JSON 文件，不是 storage 服务；第二个 Host 写入同一项目时不协调。
+- **任务日志依赖 `project_path`** —— 只有调用里带项目路径时，`media generate` 与 `media status` 才会写日志并恢复。不带路径的生成只留在内存；合成 provider 在提交时即结算，无需日志。日志与账本是项目旁的 JSON 文件，不是 storage 服务；带版本守卫的写入能发现并发写入者并重试合并，持续失败的写入以 `MEDIA_STORE_CONFLICT` 报告，而不是静默丢弃对方条目。
 - **没有转写、MV 与切片流水线** —— 第一切片覆盖生成式图像/视频/语音与 ffmpeg 合成。词级转写、节拍网格、源视频导入与 9:16 重构已规划。
 - **Web 工作台只读** —— `视频` 标签（`dsh-client-ui-video-studio`）从落定的 `video_project` 结果发现项目，展示分镜、成片、进行中任务与账本，并通过 `/api/file` 的 Range 响应预览关键帧、片段与成片。编辑仍由工具完成；在工具之外修改的项目需要点击标签内的刷新；结果元数据出现之前记录的会话不显示项目。
 - **Provider 必须先下载 URL 再结算** —— 产物写入路径只接受字节。MiniMax、SiliconFlow 与 ComfyUI 会自行下载签名输出 URL；新增 provider 必须遵循同一约定。

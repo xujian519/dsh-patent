@@ -10,6 +10,7 @@ import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { LocalFileSystem } from '@deepseek-ai/dsh-fs-local'
+import { FsError } from '@deepseek-ai/dsh-fs'
 import {
   BUDGET_LEDGER_FILE,
   TASK_JOURNAL_FILE,
@@ -123,10 +124,90 @@ describe('task journal', () => {
   })
 
   it('propagates a transport failure that is not a missing file', async () => {
+    await recordTask(ctx, projectPath, record(), root)
     const original = ctx.fs.readText.bind(ctx.fs)
     ctx.fs.readText = async () => { throw new Error('transport down') }
     await expect(readTaskRecords(ctx, projectPath, root)).rejects.toThrow('transport down')
     ctx.fs.readText = original
+  })
+
+  it('keeps a record another writer added while the journal write raced', async () => {
+    await recordTask(ctx, projectPath, record({ task: { ...record().task, id: 'first' }, submittedAt: 1_000 }), root)
+    const original = ctx.fs.writeText.bind(ctx.fs)
+    let raced = false
+    ctx.fs.writeText = async (target, content, expected, signal, policy) => {
+      if (!raced && expected?.kind === 'replaceIfVersion') {
+        raced = true
+        const current = JSON.parse(await ctx.fs.readText(target)) as { tasks: MediaTaskRecord[] }
+        const other = record({ task: { ...record().task, id: 'other' }, submittedAt: 500 })
+        await original(target, `${JSON.stringify({ schemaVersion: 1, tasks: [...current.tasks, other] }, null, 2)}\n`)
+        throw new FsError('stale', 'FS_STALE_VERSION')
+      }
+      return original(target, content, expected, signal, policy)
+    }
+    try {
+      await recordTask(ctx, projectPath, record({ task: { ...record().task, id: 'mine' }, submittedAt: 2_000 }), root)
+    } finally {
+      ctx.fs.writeText = original
+    }
+
+    expect((await readTaskRecords(ctx, projectPath, root)).map(item => item.task.id))
+      .toEqual(['other', 'first', 'mine'])
+  })
+
+  it('fails loud when the journal keeps changing under the write', async () => {
+    const original = ctx.fs.writeText.bind(ctx.fs)
+    ctx.fs.writeText = async () => { throw new FsError('stale', 'FS_STALE_VERSION') }
+    try {
+      await expect(recordTask(ctx, projectPath, record(), root))
+        .rejects.toMatchObject({ code: 'MEDIA_STORE_CONFLICT' })
+    } finally {
+      ctx.fs.writeText = original
+    }
+  })
+
+  it('replaces the journal with the given records', async () => {
+    await recordTask(ctx, projectPath, record({ task: { ...record().task, id: 'old' } }), root)
+    await writeTaskRecords(ctx, projectPath, [record({ task: { ...record().task, id: 'only' } })], root)
+
+    expect((await readTaskRecords(ctx, projectPath, root)).map(item => item.task.id)).toEqual(['only'])
+  })
+
+  it('creates the journal when replacing an absent one', async () => {
+    await writeTaskRecords(ctx, projectPath, [record()], root)
+
+    expect((await readTaskRecords(ctx, projectPath, root)).map(item => item.task.id)).toEqual(['minimax-video-1'])
+  })
+
+  it('treats a journal deleted between the stat and the read as absent', async () => {
+    await recordTask(ctx, projectPath, record(), root)
+    const original = ctx.fs.readText.bind(ctx.fs)
+    ctx.fs.readText = async () => { throw new FsError('gone', 'FS_NOT_FOUND') }
+    try {
+      expect(await readTaskRecords(ctx, projectPath, root)).toEqual([])
+    } finally {
+      ctx.fs.readText = original
+    }
+  })
+
+  it('retries a guarded create that loses to a concurrent creator', async () => {
+    const original = ctx.fs.writeText.bind(ctx.fs)
+    let raced = false
+    ctx.fs.writeText = async (target, content, expected, signal, policy) => {
+      if (!raced && expected?.kind === 'createIfAbsent') {
+        raced = true
+        await original(target, `${JSON.stringify({ schemaVersion: 1, tasks: [] }, null, 2)}\n`)
+        throw new FsError('exists', 'FS_NOT_OBSERVED')
+      }
+      return original(target, content, expected, signal, policy)
+    }
+    try {
+      await writeTaskRecords(ctx, projectPath, [record()], root)
+    } finally {
+      ctx.fs.writeText = original
+    }
+
+    expect((await readTaskRecords(ctx, projectPath, root)).map(item => item.task.id)).toEqual(['minimax-video-1'])
   })
 
   it('rejects malformed JSON, a wrong version, and mismatched task fields', async () => {
@@ -172,6 +253,31 @@ describe('budget ledger', () => {
     await appendLedgerEntry(ctx, projectPath, entry(), root)
     expect(await appendLedgerEntry(ctx, projectPath, entry({ costCny: 9 }), root)).toBe(false)
     expect(ledgerCost(await readLedger(ctx, projectPath, root))).toBe(2)
+  })
+
+  it('keeps a charge another writer appended while the ledger write raced', async () => {
+    await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'a' }), root)
+    const original = ctx.fs.writeText.bind(ctx.fs)
+    let raced = false
+    ctx.fs.writeText = async (target, content, expected, signal, policy) => {
+      if (!raced && expected?.kind === 'replaceIfVersion') {
+        raced = true
+        const current = JSON.parse(await ctx.fs.readText(target)) as { entries: MediaLedgerEntry[] }
+        await original(target, `${JSON.stringify({
+          schemaVersion: 1,
+          entries: [...current.entries, entry({ taskId: 'b' })],
+        }, null, 2)}\n`)
+        throw new FsError('stale', 'FS_STALE_VERSION')
+      }
+      return original(target, content, expected, signal, policy)
+    }
+    try {
+      expect(await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'c' }), root)).toBe(true)
+    } finally {
+      ctx.fs.writeText = original
+    }
+
+    expect((await readLedger(ctx, projectPath, root)).map(item => item.taskId)).toEqual(['a', 'b', 'c'])
   })
 
   it('rejects malformed files and invalid new charges', async () => {

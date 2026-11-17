@@ -25,6 +25,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type { JobOutcome, JobRegistry, JobSpec } from '@deepseek-ai/dsh-jobs'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { toJsonArray, toJsonValue } from './internal/json-value.ts'
 import {
   DOMAIN_GRAPHS,
   InMemoryCheckpointStore,
@@ -630,7 +631,7 @@ async function runManifest(
     manifestId: manifest.id,
     completed: result.completed,
     summary: result.summary,
-    stages: result.stages as unknown as JsonValue[],
+    stages: toJsonArray(result.stages),
     degradedSteps: result.degradedSteps,
     persistNote,
     /* v8 ignore next -- the run always records its non-empty input as a MATERIAL receipt */
@@ -1023,7 +1024,7 @@ async function executeGraphRun(
     degradedSteps: [],
     persistNote,
     ...(interruptNote !== undefined ? { interruptNote } : {}),
-    graphState: result.state as unknown as JsonValue,
+    graphState: toJsonValue(result.state),
     graphDegraded,
     /* v8 ignore next -- every graph run starts at least one superstep, so a checkpoint id is always produced. */
     ...(checkpointId !== undefined ? { checkpointId } : {}),

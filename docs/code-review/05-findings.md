@@ -289,7 +289,7 @@
 - 最小修复建议：提供 `toJsonValue()` 序列化器或让结果类型实现可序列化接口，机械替换后收紧基线；删除两个零引用导出。
 - 预估工作量：M
 - 是否可自动化：是（基线门禁已在）
-- 状态：confirmed
+- 状态：confirmed（写出侧 28 处 `as unknown as JsonValue` 已改为 `toJsonValue`／`toJsonArray`；读回领域类型的 23 处仍在。`WorkerOutputValidation` 是已导出函数的返回类型，`WorkerExecutionRecord` 是公开遥测类型，两者保留导出）
 
 ### F-PAT-013 `patent-core` 导出面过宽，大量内部符号对外
 
@@ -1802,6 +1802,19 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`wiring-composition.spec.ts` 与 `loader-composition.spec.ts` 不改断言。
 
 验证：`pnpm exec vitest related packages/patent/patent-tools/src/wiring.ts --run --coverage --coverage.include=packages/patent/patent-tools/src/wiring.ts` 19 个文件、316 用例通过，`wiring.ts` 覆盖率 100%。
+### 批次 E：工具结果 JSON 写出（2026-11-17）
+
+F-PAT-012 的写出侧。读回领域类型的 23 处双断言不在本批。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-012（写出侧） | 新增 `toJsonValue`／`toJsonArray`：先去掉值为 `undefined` 的对象字段，再做无损 JSON 快照；不能保留的值抛 `tool_execution_failed` | `patent-tools/src/tool/internal/json-value.ts` 与各工具的结果组装 |
+
+**行为变化**：工具成功结果里显式写成 `undefined` 的对象字段不再出现在返回值里（读缺失字段仍得 `undefined`）。含 `NaN`、函数或循环引用的结果改为抛「不能无损写入 JSON」，不再靠断言放行。
+
+**既有测试行为**：灵活计划等用例仍比较计划字段；缺省字段被省略后，读取结果与原先的 `undefined` 一致。
+
+验证：相关工具用例通过；`json-value.ts` 聚焦覆盖率 100%。
 
 ## 复核记录
 

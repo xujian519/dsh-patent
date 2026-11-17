@@ -12,7 +12,7 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { toJsonArray, toJsonValue } from './internal/json-value.ts'
 import {
   createSpan,
   loadEvidenceRulesEngine,
@@ -214,7 +214,7 @@ export function createEvaluateEvidenceTool(deps: EvaluateEvidenceDeps = {}): Too
       const burden = args.caseType !== undefined ? engine.assessBurdenOfProof(args.caseType) : undefined
 
       return {
-        judgment: {
+        judgment: toJsonValue({
           spanId: judgment.spanId,
           overallScore: Number(judgment.overallScore.toFixed(3)),
           confidence: judgment.confidence,
@@ -226,14 +226,14 @@ export function createEvaluateEvidenceTool(deps: EvaluateEvidenceDeps = {}): Too
             : {}),
           flaggedIssues: judgment.flaggedIssues,
           reasoning: judgment.reasoning,
-        } as unknown as JsonValue,
-        ...(burden !== undefined ? { burden: burden as unknown as JsonValue } : {}),
-        rulesMatched: judgment.rulesApplied
+        }),
+        ...(burden !== undefined ? { burden: toJsonValue(burden) } : {}),
+        rulesMatched: toJsonArray(judgment.rulesApplied
           .filter(r => r.satisfied)
-          .map(r => ({ ruleId: r.ruleId, name: r.name, action: r.action, severity: r.severity })) as unknown as JsonValue[],
-        rulesPending: judgment.rulesApplied
+          .map(r => ({ ruleId: r.ruleId, name: r.name, action: r.action, severity: r.severity }))),
+        rulesPending: toJsonArray(judgment.rulesApplied
           .filter(r => r.pendingInputs.length > 0)
-          .map(r => ({ ruleId: r.ruleId, name: r.name, pendingInputs: r.pendingInputs })) as unknown as JsonValue[],
+          .map(r => ({ ruleId: r.ruleId, name: r.name, pendingInputs: r.pendingInputs }))),
       }
     },
   })

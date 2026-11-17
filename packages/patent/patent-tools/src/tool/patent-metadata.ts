@@ -7,6 +7,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { toJsonValue } from './internal/json-value.ts'
 import { scrapePatent as scrapePatentImpl, validatePatentNumber } from '@deepseek-ai/nuo-patent'
 import type { ScrapeResult } from '@deepseek-ai/nuo-patent'
 import { CNIPR_SEARCH_PAGE_SIZE, cachedScrapePatent, mapPatentData } from '@deepseek-ai/dsh-patent-data'
@@ -206,7 +207,7 @@ function mapScrapeResult(result: ScrapeResult, attempts: number, warnings: reado
       patent: result.patent,
       channel: GOOGLE_PATENTS_CHANNEL,
       url: result.url,
-      data: mapPatentData(result.data, result.patent, result.url) as unknown as JsonValue,
+      data: toJsonValue(mapPatentData(result.data, result.patent, result.url)),
       errorCode: '',
       errorMessage: '',
       warnings: [...warnings],

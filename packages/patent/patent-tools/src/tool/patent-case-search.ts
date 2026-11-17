@@ -9,7 +9,7 @@
 import { existsSync } from 'node:fs'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { toJsonValue } from './internal/json-value.ts'
 import type { CaseLawDocType, CaseLawHit, CaseLawSearchOptions } from '@deepseek-ai/dsh-patent-knowledge'
 import type { SearchStrategy } from '@deepseek-ai/dsh-patent-core'
 import { PatentToolError } from '../error.ts'
@@ -184,7 +184,7 @@ export function createPatentCaseSearchTool(deps: PatentCaseSearchDeps): ToolDefi
         total: hits.length,
         results: hits.map(hit => toResult(hit, includeContent)),
         ...(deps.dbPath !== undefined ? { dbPath: deps.dbPath } : {}),
-        searchStrategy: searchStrategy as unknown as JsonValue,
+        searchStrategy: toJsonValue(searchStrategy),
       }
     },
   })

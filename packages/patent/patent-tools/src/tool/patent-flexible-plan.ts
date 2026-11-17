@@ -10,7 +10,7 @@
 import { join } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { toJsonValue } from './internal/json-value.ts'
 import {
   globalAtomRegistry,
   globalStageHandlerRegistry,
@@ -405,7 +405,7 @@ export function createFlexiblePlanTool(deps: FlexiblePlanToolDeps = {}): ToolDef
           const plan = await loadPlan(store, input.caseId)
           const updated = mutation.apply(plan, input)
           await store.savePlan(updated)
-          return { action: input.action, caseId: input.caseId, plan: updated as unknown as JsonValue }
+          return { action: input.action, caseId: input.caseId, plan: toJsonValue(updated) }
         }
 
         switch (input.action) {
@@ -420,11 +420,11 @@ export function createFlexiblePlanTool(deps: FlexiblePlanToolDeps = {}): ToolDef
               ...(deps.now !== undefined ? { now: deps.now } : {}),
             })
             await store.savePlan(plan)
-            return { action: 'create' as const, caseId: input.caseId, plan: plan as unknown as JsonValue }
+            return { action: 'create' as const, caseId: input.caseId, plan: toJsonValue(plan) }
           }
           case 'get': {
             const plan = await loadPlan(store, input.caseId)
-            return { action: 'get' as const, caseId: input.caseId, plan: plan as unknown as JsonValue }
+            return { action: 'get' as const, caseId: input.caseId, plan: toJsonValue(plan) }
           }
           case 'run': {
             const plan = await loadPlan(store, input.caseId)
@@ -470,8 +470,8 @@ export function createFlexiblePlanTool(deps: FlexiblePlanToolDeps = {}): ToolDef
             return {
               action: 'run' as const,
               caseId: input.caseId,
-              plan: updated as unknown as JsonValue,
-              run: result as unknown as JsonValue,
+              plan: toJsonValue(updated),
+              run: toJsonValue(result),
               persistNote,
             }
           }

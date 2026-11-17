@@ -9,7 +9,8 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { assertNever, type JsonValue } from '@deepseek-ai/dsh-util-values'
+import { assertNever } from '@deepseek-ai/dsh-util-values'
+import { toJsonArray } from './internal/json-value.ts'
 import {
   ISSUE_BLOCKING_GRADES,
   ISSUE_DISPOSITIONS,
@@ -277,13 +278,13 @@ export function createPatentPlanTaskTool(): ToolDefinition {
           const steps = input.planSteps ?? []
           if (steps.length === 0) throw new PatentToolError('invalid_tool_input', 'sync 需要 planSteps 非空')
           const result = syncPlanToTasks(steps)
-          return { ok: true, action: 'sync' as const, tasks: result.tasks as unknown as JsonValue[], preserved: [], toRun: result.toRun }
+          return { ok: true, action: 'sync' as const, tasks: toJsonArray(result.tasks), preserved: [], toRun: result.toRun }
         }
         case 'replan': {
           const steps = input.planSteps ?? []
           if (steps.length === 0) throw new PatentToolError('invalid_tool_input', 'replan 需要 planSteps 非空')
           const result = replanTasks(input.previousTasks ?? [], steps)
-          return { ok: true, action: 'replan' as const, tasks: result.tasks as unknown as JsonValue[], preserved: result.preserved, toRun: result.toRun }
+          return { ok: true, action: 'replan' as const, tasks: toJsonArray(result.tasks), preserved: result.preserved, toRun: result.toRun }
         }
         /* v8 ignore next 5 -- the action schema enum already rejects unknown actions. */
         default:

@@ -20,7 +20,7 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { toJsonArray, toJsonValue } from './internal/json-value.ts'
 import {
   StageHandlerRegistry,
   validateWorkflowManifest,
@@ -243,12 +243,12 @@ export function createPatentWorkflowTool(deps: PatentWorkflowToolDeps = {}): Too
         valid: true,
         completed: result.completed,
         caseType: result.caseType,
-        stages: result.stages as unknown as JsonValue[],
+        stages: toJsonArray(result.stages),
         degradedSteps: result.degradedSteps,
         summary: result.summary,
         persistNote,
         /* v8 ignore next -- the recap path has no approval-gate handler, so runs never interrupt. */
-        ...(result.interrupted !== undefined ? { interrupted: result.interrupted as unknown as JsonValue } : {}),
+        ...(result.interrupted !== undefined ? { interrupted: toJsonValue(result.interrupted) } : {}),
         /* v8 ignore next -- the built-in run stores surface no persist warning in this build. */
         ...(result.persistWarning !== undefined ? { persistWarning: result.persistWarning } : {}),
       }

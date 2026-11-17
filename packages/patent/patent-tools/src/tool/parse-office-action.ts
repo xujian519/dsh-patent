@@ -16,6 +16,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { toJsonValue } from './internal/json-value.ts'
 import {
   formatOfficeActionSummary,
   parseOfficeAction,
@@ -97,7 +98,7 @@ export function createParseOfficeActionTool(): ToolDefinition {
     async execute(args) {
       requireNonBlankText(args.text, 'parse_office_action', 'text 为空（须为审查意见通知书正文）')
       const parsed = parseOfficeAction(args.text)
-      return { parsed: parsed as unknown as JsonValue, summary: formatOfficeActionSummary(parsed) }
+      return { parsed: toJsonValue(parsed), summary: formatOfficeActionSummary(parsed) }
     },
   })
 }

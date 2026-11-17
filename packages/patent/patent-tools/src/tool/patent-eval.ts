@@ -8,7 +8,7 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { toJsonValue } from './internal/json-value.ts'
 import type { SearchStrategy } from '@deepseek-ai/dsh-patent-core'
 import { analyzeSlop } from '../internal/slop-engine.ts'
 
@@ -342,7 +342,7 @@ export function createPatentEvalTool(): ToolDefinition {
         passed: out.passed,
         details: out.details,
         summary: out.summary,
-        ...(out.searchStrategy !== undefined ? { searchStrategy: out.searchStrategy as unknown as JsonValue } : {}),
+        ...(out.searchStrategy !== undefined ? { searchStrategy: toJsonValue(out.searchStrategy) } : {}),
       }
     },
   })

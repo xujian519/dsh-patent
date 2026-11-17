@@ -12,7 +12,7 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { toJsonValue } from './internal/json-value.ts'
 import { loggedToolModel } from './internal/model-call-log.ts'
 import {
   buildAnalysisReport,
@@ -210,17 +210,17 @@ export function createPatentAnalysisReportTool(deps: PatentAnalysisReportDeps = 
         ...(strategy !== undefined ? { searchStrategy: strategy } : {}),
       })
       return {
-        ipc: report.ipc as unknown as JsonValue,
-        technicalFeatures: report.technicalFeatures as unknown as JsonValue,
-        featureStatistics: report.featureStatistics as unknown as JsonValue,
-        scores: report.scores as unknown as JsonValue,
-        innovationInsights: report.innovationInsights as unknown as JsonValue,
-        expertConsiderations: report.expertConsiderations as unknown as JsonValue,
+        ipc: toJsonValue(report.ipc),
+        technicalFeatures: toJsonValue(report.technicalFeatures),
+        featureStatistics: toJsonValue(report.featureStatistics),
+        scores: toJsonValue(report.scores),
+        innovationInsights: toJsonValue(report.innovationInsights),
+        expertConsiderations: toJsonValue(report.expertConsiderations),
         ...(report.patentId !== undefined ? { patentId: report.patentId } : {}),
         ...(report.title !== undefined ? { title: report.title } : {}),
         /* v8 ignore next -- this tool never supplies checker failures, so the report has no verdict */
         ...(report.checkerVerdict !== undefined ? { checkerVerdict: report.checkerVerdict } : {}),
-        ...(report.searchStrategy !== undefined ? { searchStrategy: report.searchStrategy as unknown as JsonValue } : {}),
+        ...(report.searchStrategy !== undefined ? { searchStrategy: toJsonValue(report.searchStrategy) } : {}),
       }
     },
   })

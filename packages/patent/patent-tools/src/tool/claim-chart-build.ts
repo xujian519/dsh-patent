@@ -17,6 +17,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { toJsonValue } from './internal/json-value.ts'
 import {
   ClaimChartHandler,
   DEGRADED_CODE_KEY,
@@ -371,11 +372,11 @@ export function createClaimChartBuildTool(deps: ClaimChartBuildDeps = {}): ToolD
         : undefined
       const invalidity = chart.invalidityConclusion
       return {
-        chart: chart as unknown as JsonValue,
+        chart: toJsonValue(chart),
         ...(paths !== undefined ? { json_path: paths.jsonPath, md_path: paths.mdPath } : {}),
         gap_count: chart.gaps.length,
-        ...(conclusion !== undefined ? { infringement_conclusion: conclusion as unknown as JsonValue } : {}),
-        ...(invalidity !== undefined ? { invalidity_conclusion: invalidity as JsonValue } : {}),
+        ...(conclusion !== undefined ? { infringement_conclusion: toJsonValue(conclusion) } : {}),
+        ...(invalidity !== undefined ? { invalidity_conclusion: toJsonValue(invalidity) } : {}),
       }
     },
   })

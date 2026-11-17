@@ -116,7 +116,7 @@
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | confirmed |
 | F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | fixed |
 | F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | fixed |
-| F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | confirmed |
+| F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | fixed |
 | F-VID-006 | `StrictRequest` 与 `MediaTaskRequest` 字段完全重复 | VID | B | Low | 高 | fixed |
 | F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | fixed |
 | F-VID-008 | `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份 | VID | B | Medium | 高 | confirmed |
@@ -1768,6 +1768,19 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`brand-injector.spec.ts` 把「缺失/损坏返回空品牌」改为四类失败断言；`render-patent-document.spec.ts` 的缺失品牌用例改为期望 `DocumentRenderError`；`branches.spec.ts` 的警告条数从 5 改为 6 并断言新文案。新增取消用例覆盖 `document_deliver` 中途中止。
 
 验证：三个包的测试共 153 用例通过；`rule-set.ts`、`brandInjector.ts`、`renderPatentDocument.ts`、`document-deliver/src/tool.ts` 在聚焦覆盖率下均为 100%；升级指南 `brand-path-must-be-usable` 已创建并重录配对。
+### 批次 C：媒体配置单一默认源（2026-11-17）
+
+用户要求继续修复后完成。批次 C 的通用规则 YAML 驱动一项已由 E8 处理，本批收口 `resolveMediaConfig` 的默认值重复。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-VID-005 | `resolveMediaConfig` 改为调用 `Config(config)` 取全部标量默认值，删除 13 个 `??` 字面量；后端段在 spread 前剥离，仅启用时以解析后的 settings 出现；保留 `approvalThresholdCny` 的 finite 校验（schema 的 `min` 让 `NaN` 通过，会让确认门失效） | `video-mode/src/media.ts` |
+
+**行为变化**：Loader 展示的默认值与运行时值来自同一 schema；非法数值的报错改为 schema 的字段化消息（`$.waitMs expected number >= 1 but got -1`）。`approvalThresholdCny: NaN` 仍以明确错误拒绝。
+
+**既有测试行为**：`media-runtime.spec.ts` 的非法边界用例改为匹配字段名；新增一条「13 个标量默认值等于 `Config({})`」的护栏用例；`siliconflow.spec.ts` 补一条省略 `apiKey`/`pollMs` 时的默认值用例。
+
+验证：`pnpm exec vitest run packages/experimental/video-mode/tests` 268 用例通过；`media.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0。
 
 ## 复核记录
 

@@ -141,6 +141,13 @@ describe('expandSectionSource 输入校验', () => {
       'invalid_input',
       '缺少 anchor',
     )
+    await expectFailure(sourceSections({ parts: [{ anchor: [1] }] }), ports, 'invalid_input', '缺少 anchor')
+    await expectFailure(
+      sourceSections({ parts: [{ anchor: [Number.NaN, 0] }] }),
+      ports,
+      'invalid_input',
+      '缺少 anchor',
+    )
     await expectFailure(
       sourceSections({ parts: [{ anchor: [0, 0], outline: [[0, 0], [1, 0], [1, 1]] }] }),
       ports,

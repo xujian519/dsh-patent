@@ -199,10 +199,13 @@ function claimRefIssueLine(issue: ClaimRefIssue): string {
  * 由原子阶段（作为下游收口阶段的提示词输入）与 `claim_chart_build` 工具（模型直接读）
  * 共用一处，避免两处各写一份措辞。
  * @param conclusion - 由图表算出的结论。
- * @param chart - 图表（取权项号用于表头）。
+ * @param chart - 权项号与引用关系条数（表头用；完整图表也满足）。
  * @returns 多行报告文本。
  */
-export function renderInvalidityConclusion(conclusion: InvalidityConclusion, chart: ClaimChart): string {
+export function renderInvalidityConclusion(
+  conclusion: InvalidityConclusion,
+  chart: { claimNos: readonly number[]; claims: readonly unknown[] },
+): string {
   const lines = ['## 单篇全覆盖与区别特征（程序按行级映射判定，未经模型判断）', '']
   lines.push(
     `主对比文件: ${conclusion.primaryTargetId ?? '（无对比文件目标）'}；参与判定的对比文件 ${conclusion.novelty.length} 篇；权利要求 ${chart.claimNos.join('、') || '（无）'}。`,

@@ -25,6 +25,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type { JobOutcome, JobRegistry, JobSpec } from '@deepseek-ai/dsh-jobs'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { dataList, isDataRecord, jsonPreview, listOrEmpty, recordText, textOrEmpty } from './internal/json-read.ts'
 import { toJsonArray, toJsonValue } from './internal/json-value.ts'
 import {
   DOMAIN_GRAPHS,
@@ -38,7 +39,6 @@ import {
   runGraphWithCheckpoints,
   validateWorkflowManifest,
   type CheckpointStore,
-  type DegradationMark,
   type DomainGraphName,
   type GraphCheckpoint,
   type GraphState,
@@ -46,7 +46,6 @@ import {
   type StageProvider,
   type WorkflowContext,
   type WorkflowManifest,
-  type WorkflowRunResult,
 } from '@deepseek-ai/dsh-patent-core'
 import {
   appendWorkflowRunEvents,
@@ -265,24 +264,27 @@ function ruleGateStatus(graphState: GraphState | undefined): string {
 }
 
 /** Render the graph-mode result into model-facing prose. */
+function degradationLine(mark: unknown): string {
+  return `- ${recordText(mark, 'severity')} [${recordText(mark, 'reason')}] ${recordText(mark, 'message')}`
+}
+
 function renderGraphRun(value: PatentWorkflowRunOutput): string {
-  const graphState = value.graphState as unknown as GraphState | undefined
-  const degradedMarks = (value.graphDegraded ?? []) as unknown as DegradationMark[]
+  const graphState = isDataRecord(value.graphState) ? value.graphState : undefined
+  const degradedMarks = dataList(value.graphDegraded).map(degradationLine)
   const completion = value.completed ? 'completed' : 'incomplete'
   const keyLines = Object.entries(graphState ?? {})
     // The structured rule-gate result has its own dedicated line.
     .filter(([key]) => !key.startsWith('_') && !key.endsWith('__degradation') && key !== 'rule_gate')
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, v]) => {
-      const text = typeof v === 'string' ? v : v === undefined ? '' : JSON.stringify(v)
+      const text = jsonPreview(v)
       const preview = text.length > 0 ? `${text.slice(0, 80)}${text.length > 80 ? '…' : ''}` : '(空)'
       return `- ${key}: ${preview}`
     })
-  const degraded = degradedMarks.map(d => `- ${d.severity} [${d.reason}] ${d.message}`)
   return [
     `patent_workflow_run(graph=${value.graph}): 图引擎执行 ${value.steps ?? 0} 超步，完成状态: ${completion}`,
     ...keyLines,
-    ...(degradedMarks.length > 0 ? ['', '⚠️ 降级标记:', ...degraded] : ['', '✅ 无降级']),
+    ...(degradedMarks.length > 0 ? ['', '⚠️ 降级标记:', ...degradedMarks] : ['', '✅ 无降级']),
     `规则门 status: ${ruleGateStatus(graphState)}`,
     value.checkpointNote ?? '检查点: 无',
     value.persistNote ?? '',
@@ -303,8 +305,12 @@ export function renderWorkflowRun(value: PatentWorkflowRunOutput): string {
   if (value.mode === 'graph') return renderGraphRun(value)
   return renderWorkflowResultText({
     toolName: 'patent_workflow_run',
-    result: value as unknown as WorkflowRunResult,
-    stageLines: renderWorkflowStageLines(value as unknown as WorkflowRunResult),
+    result: {
+      manifestId: value.manifestId,
+      summary: textOrEmpty(value.summary),
+      completed: value.completed,
+    },
+    stageLines: renderWorkflowStageLines({ stages: listOrEmpty(value.stages) }),
     persistNote: value.persistNote ?? '',
     checkSection: '',
     ...(value.interruptNote !== undefined ? { interruptNote: value.interruptNote } : {}),

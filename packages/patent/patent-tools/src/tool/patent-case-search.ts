@@ -9,6 +9,7 @@
 import { existsSync } from 'node:fs'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { recordText, recordValue, textList } from './internal/json-read.ts'
 import { toJsonValue } from './internal/json-value.ts'
 import type { CaseLawDocType, CaseLawHit, CaseLawSearchOptions } from '@deepseek-ai/dsh-patent-knowledge'
 import type { SearchStrategy } from '@deepseek-ai/dsh-patent-core'
@@ -79,12 +80,25 @@ function toResult(hit: CaseLawHit, includeContent: boolean): PatentCaseSearchOut
 const DESCRIPTION = '检索本地专利判例全文（无效复审决定/专利判决，knowledge.db，FTS5 BM25 优先）。用于无效宣告分析、OA 答复时检索相似在先决定的理由论证与证据认定。支持 doc_type（case=无效决定/judgment=判决）与 court（法院）过滤。默认排除 wiki 审查标准卡片（审查标准请用 patent_wiki_search）。'
 
 /** Render the canonical case-search value into model-facing prose. */
-function renderCaseSearch(value: PatentCaseSearchOutput): string {
+function renderCaseSearch(value: {
+  results: readonly {
+    title: string
+    documentId: string
+    docType: string
+    via: string
+    decisionNumber?: string
+    caseNumber?: string
+    court?: string
+    source?: string
+    snippet?: string
+  }[]
+  searchStrategy: unknown
+}): string {
   const header = [`**patent_case_search** — ${value.results.length} result(s):`]
-  const s = value.searchStrategy
-  let line = `检索式：${s.query}`
+  let line = `检索式：${recordText(value.searchStrategy, 'query')}`
+  const ipc = textList(recordValue(value.searchStrategy, 'ipc'))
   /* v8 ignore next -- this tool never writes an IPC field into its search strategy */
-  if (s.ipc !== undefined && s.ipc.length > 0) line += `（IPC ${s.ipc.join('、')}）`
+  if (ipc.length > 0) line += `（IPC ${ipc.join('、')}）`
   header.push(line)
   if (value.results.length === 0) {
     return [...header, '', '0 条判例命中。'].join('\n')
@@ -147,7 +161,7 @@ export function createPatentCaseSearchTool(deps: PatentCaseSearchDeps): ToolDefi
           searchStrategy: { type: 'json', required: true },
         },
       },
-      render: (_args, value) => [{ type: 'text', text: renderCaseSearch(value as unknown as PatentCaseSearchOutput) }],
+      render: (_args, value) => [{ type: 'text', text: renderCaseSearch(value) }],
     },
     // oxlint-disable-next-line typescript/require-await -- tool contract requires async execute
     async execute(args) {

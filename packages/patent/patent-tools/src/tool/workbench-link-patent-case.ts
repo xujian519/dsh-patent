@@ -14,6 +14,7 @@ import { basename, isAbsolute, join, relative } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { PatentToolError } from '../error.ts'
+import { listOrEmpty, namedLabel, recordFlag, recordString, recordText, textOrEmpty } from './internal/json-read.ts'
 
 /** 工作台 API 是同机 loopback 服务；单次请求的固定上限（协议预算，不随部署变化）。 */
 const WORKBENCH_REQUEST_TIMEOUT_MS = 15_000
@@ -465,7 +466,7 @@ export function createWorkbenchLinkPatentCaseTool(deps: WorkbenchLinkPatentCaseD
           error: { type: 'string' },
         },
       },
-      render: (_args, value) => [{ type: 'text', text: renderLinkResult(value as unknown as WorkbenchLinkPatentCaseOutput) }],
+      render: (_args, value) => [{ type: 'text', text: renderLinkResult(value) }],
     },
     execute: (args, exec) => linkPatentCase(args, exec, {
       ...(deps.baseUrl === undefined ? {} : { baseUrl: deps.baseUrl }),
@@ -481,12 +482,27 @@ export function createWorkbenchLinkPatentCaseTool(deps: WorkbenchLinkPatentCaseD
  * @param value - the link result.
  * @returns the multi-line summary.
  */
-export function renderLinkResult(value: WorkbenchLinkPatentCaseOutput): string {
+export function renderLinkResult(value: {
+  ok: boolean
+  error?: string
+  caseNumber: string
+  rootTaskId?: string
+  matterLogFound: boolean
+  dictionariesEnsured?: readonly string[]
+  stages?: readonly unknown[]
+  dryRun?: boolean
+}): string {
   if (!value.ok) return `workbench_link_patent_case: ${value.error ?? '失败'}`
-  const lines = value.stages.map(s => `- ${s.stage} ${STAGE_NAME[s.stage]}: ${s.statusCode ?? '（无状态）'}${s.created ? '（新建）' : ''}${s.changed ? '（已同步）' : ''}`)
-  const ensured = value.dictionariesEnsured.length > 0 ? `新增字典: ${value.dictionariesEnsured.join(', ')}\n` : ''
+  const lines = listOrEmpty(value.stages).map((stage) => {
+    const stageId = recordText(stage, 'stage')
+    const status = recordString(stage, 'statusCode')
+    return `- ${stageId} ${namedLabel(STAGE_NAME, stageId)}: ${status ?? '（无状态）'}${recordFlag(stage, 'created') ? '（新建）' : ''}${recordFlag(stage, 'changed') ? '（已同步）' : ''}`
+  })
+  const ensuredList = listOrEmpty(value.dictionariesEnsured)
+  const ensured = ensuredList.length > 0 ? `新增字典: ${ensuredList.join(', ')}\n` : ''
+  const rootTaskId = textOrEmpty(value.rootTaskId)
   return [
-    `workbench_link_patent_case: 案件 ${value.caseNumber} → 根任务 ${value.rootTaskId === '' ? '（dryRun 未创建）' : value.rootTaskId}${value.dryRun === true ? ' [dryRun]' : ''}`,
+    `workbench_link_patent_case: 案件 ${value.caseNumber} → 根任务 ${rootTaskId === '' ? '（dryRun 未创建）' : rootTaskId}${value.dryRun === true ? ' [dryRun]' : ''}`,
     `${ensured}matter-log: ${value.matterLogFound ? '已解析' : '未找到'}`,
     ...lines,
   ].join('\n')

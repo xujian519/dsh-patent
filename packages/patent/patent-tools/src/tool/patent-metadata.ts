@@ -7,6 +7,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { isDataRecord, recordList, recordText, recordValue, textList } from './internal/json-read.ts'
 import { toJsonValue } from './internal/json-value.ts'
 import { scrapePatent as scrapePatentImpl, validatePatentNumber } from '@deepseek-ai/nuo-patent'
 import type { ScrapeResult } from '@deepseek-ai/nuo-patent'
@@ -263,9 +264,19 @@ const DESCRIPTION = [
  * the scrape collected before it gave up, and the description promises the model
  * sees them.
  */
-function renderMetadata(value: PatentMetadataOutput): string {
-  const lines = value.success && value.data !== null
-    ? metadataBodyLines(value.data as unknown as StructuredPatentData, value.channel)
+function renderMetadata(value: {
+  success: boolean
+  patent: string
+  channel: string
+  url: string
+  data?: unknown
+  errorCode: string
+  errorMessage: string
+  warnings: readonly string[]
+  parseWarnings: readonly { field: string; message: string }[]
+}): string {
+  const lines = value.success && isDataRecord(value.data)
+    ? metadataBodyLines(value.data, value.channel)
     : [`patent_metadata(${value.patent}) · channel: ${value.channel}: ${value.errorMessage}`]
   lines.push(...warningSection(value.warnings, '通道告警'))
   if (value.parseWarnings.length > 0) {
@@ -280,20 +291,24 @@ function renderMetadata(value: PatentMetadataOutput): string {
  * @param channel - the channel the lookup read from.
  * @returns the field lines, before the warning sections are appended.
  */
-function metadataBodyLines(d: StructuredPatentData, channel: string): string[] {
-  const url = d.url === '' ? '' : ` · **url**: ${d.url}`
+function metadataBodyLines(data: unknown, channel: string): string[] {
+  const urlText = recordText(data, 'url')
+  const url = urlText === '' ? '' : ` · **url**: ${urlText}`
+  const expiration = recordText(data, 'estimatedExpiration')
   const lines = [
-    `## ${d.title}`,
-    `**patent**: ${d.patent}${url} · **channel**: ${channel}`,
-    `**inventors**: ${d.inventors.join(', ') || 'N/A'}`,
-    `**assignees**: ${d.assigneesCurrent.join(', ') || 'N/A'}`,
-    `**dates**: filing ${d.filingDate || 'N/A'} · grant ${d.grantDate || 'N/A'} · pub ${d.pubDate || 'N/A'}`,
-    `**legal status**: ${d.legalStatus || 'N/A'}${d.estimatedExpiration ? ` · est. expiration ${d.estimatedExpiration}` : ''}`,
-    `**classifications**: ${d.classifications.join(', ') || 'N/A'}`,
-    `**citations**: ${d.backwardCites.length} backward · ${d.forwardCites.length} forward`,
+    `## ${recordText(data, 'title')}`,
+    `**patent**: ${recordText(data, 'patent')}${url} · **channel**: ${channel}`,
+    `**inventors**: ${textList(recordValue(data, 'inventors')).join(', ') || 'N/A'}`,
+    `**assignees**: ${textList(recordValue(data, 'assigneesCurrent')).join(', ') || 'N/A'}`,
+    `**dates**: filing ${recordText(data, 'filingDate') || 'N/A'} · grant ${recordText(data, 'grantDate') || 'N/A'} · pub ${recordText(data, 'pubDate') || 'N/A'}`,
+    `**legal status**: ${recordText(data, 'legalStatus') || 'N/A'}${expiration ? ` · est. expiration ${expiration}` : ''}`,
+    `**classifications**: ${textList(recordValue(data, 'classifications')).join(', ') || 'N/A'}`,
+    `**citations**: ${recordList(data, 'backwardCites').length} backward · ${recordList(data, 'forwardCites').length} forward`,
   ]
-  if (d.pdfUrl) lines.push(`**pdf**: ${d.pdfUrl}`)
-  if (d.abstractText) lines.push('', d.abstractText)
+  const pdfUrl = recordText(data, 'pdfUrl')
+  if (pdfUrl) lines.push(`**pdf**: ${pdfUrl}`)
+  const abstractText = recordText(data, 'abstractText')
+  if (abstractText) lines.push('', abstractText)
   return lines
 }
 
@@ -339,7 +354,7 @@ export function createPatentMetadataTool(deps: PatentMetadataDeps = {}): ToolDef
           parseWarnings: { type: 'array', required: true, items: WARNING_SCHEMA },
         },
       },
-      render: (_args, value) => [{ type: 'text', text: renderMetadata(value as unknown as PatentMetadataOutput) }],
+      render: (_args, value) => [{ type: 'text', text: renderMetadata(value) }],
     },
     async execute(args, exec) {
       const compacted = compactPatentNumber(args.patent)

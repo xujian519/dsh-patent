@@ -45,6 +45,9 @@
 | F-PAT-010 | `patent/model-call` 在流异常时不落会话事件 | PAT | E | Medium | 中 | fixed |
 | F-PAT-011 | `pending`/`rounds` 为进程内状态且未声明单进程语义 | PAT | E | Medium | 中 | fixed |
 | F-PAT-012 | 51 处 `as unknown as` 与两个零引用导出类型 | PAT | B | Low | 高 | confirmed |
+
+| F-PAT-011 | `pending`/`rounds` 为进程内状态且未声明单进程语义 | PAT | E | Medium | 中 | confirmed |
+| F-PAT-012 | 51 处 `as unknown as` 与两个零引用导出类型 | PAT | B | Low | 高 | fixed |
 | F-PAT-013 | `patent-core` 导出面过宽，大量内部符号对外 | PAT | B | Low | 高 | confirmed |
 | F-PAT-014 | `patent_pdf_download` 的输出目录不受部署文件策略约束 | PAT | A | High | 中 | fixed |
 | F-PAT-015 | PDF 兜底下载的临时文件路径可预测且不独占创建 | PAT | A/B | Medium | 中 | fixed |
@@ -289,7 +292,7 @@
 - 最小修复建议：提供 `toJsonValue()` 序列化器或让结果类型实现可序列化接口，机械替换后收紧基线；删除两个零引用导出。
 - 预估工作量：M
 - 是否可自动化：是（基线门禁已在）
-- 状态：confirmed（写出侧 28 处 `as unknown as JsonValue` 已改为 `toJsonValue`／`toJsonArray`；读回领域类型的 23 处仍在。`WorkerOutputValidation` 是已导出函数的返回类型，`WorkerExecutionRecord` 是公开遥测类型，两者保留导出）
+- 状态：fixed（写出侧改为 `toJsonValue`／`toJsonArray`；读回侧按字段收窄，`patent-tools/src` 不再出现 `as unknown as`。`WorkerOutputValidation` 是已导出函数的返回类型，`WorkerExecutionRecord` 是公开遥测类型，两者保留导出）
 
 ### F-PAT-013 `patent-core` 导出面过宽，大量内部符号对外
 
@@ -1804,17 +1807,20 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 验证：`pnpm exec vitest related packages/patent/patent-tools/src/wiring.ts --run --coverage --coverage.include=packages/patent/patent-tools/src/wiring.ts` 19 个文件、316 用例通过，`wiring.ts` 覆盖率 100%。
 ### 批次 E：工具结果 JSON 写出（2026-11-17）
 
-F-PAT-012 的写出侧。读回领域类型的 23 处双断言不在本批。
+### 批次 E：工具结果 JSON 写出与读回（2026-11-17）
+
+F-PAT-012。`patent-tools/src` 不再用 `as unknown as` 穿过工具 JSON。
 
 | 发现 | 处理 | 文件 |
 |---|---|---|
 | F-PAT-012（写出侧） | 新增 `toJsonValue`／`toJsonArray`：先去掉值为 `undefined` 的对象字段，再做无损 JSON 快照；不能保留的值抛 `tool_execution_failed` | `patent-tools/src/tool/internal/json-value.ts` 与各工具的结果组装 |
+| F-PAT-012（读回侧） | 渲染与入参按字段做 `typeof`／`Array.isArray` 收窄；曲线点与剖视图坐标在构建前收成两点；层级节点逐项读出 | `patent-tools/src/tool/internal/json-read.ts`、`invalidity-json.ts` 与各工具渲染 |
 
-**行为变化**：工具成功结果里显式写成 `undefined` 的对象字段不再出现在返回值里（读缺失字段仍得 `undefined`）。含 `NaN`、函数或循环引用的结果改为抛「不能无损写入 JSON」，不再靠断言放行。
+**行为变化**：工具成功结果里显式写成 `undefined` 的对象字段不再出现在返回值里（读缺失字段仍得 `undefined`）。含 `NaN`、函数或循环引用的结果改为抛「不能无损写入 JSON」，不再靠断言放行。曲线点或剖切坐标不是两个有限数时，构建阶段报「必须是两个有限数」。
 
-**既有测试行为**：灵活计划等用例仍比较计划字段；缺省字段被省略后，读取结果与原先的 `undefined` 一致。
+**既有测试行为**：灵活计划等用例仍比较计划字段；缺省字段被省略后，读取结果与原先的 `undefined` 一致。逐权项结论仍打印映射码（`literal`／`not-covered`），整体结论仍打印中文标签。
 
-验证：相关工具用例通过；`json-value.ts` 聚焦覆盖率 100%。
+验证：相关工具用例通过；`json-value.ts`、`json-read.ts`、`patent-plan-task.ts`、`patent-flexible-plan.ts` 聚焦覆盖率 100%。
 
 ## 复核记录
 

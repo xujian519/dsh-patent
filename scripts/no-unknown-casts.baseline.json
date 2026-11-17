@@ -1559,60 +1559,6 @@
     "2ed6179a261a6cd1d9e84d8e8c5858eef36330853f2af62ea4222e00a9e578a3": 1,
     "d022f3c83ccd16c130388e4cfb5b50bddd40f3ebfe42ee6371a8a21c4cbaad8d": 1
   },
-  "packages/patent/patent-tools/src/tool/claim-chart-build.ts": {
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 1,
-    "7fa5bf2f25c773cd6bda56fee021a221e2c2980e21ad6c7b6c4937ef78c52dc4": 1
-  },
-  "packages/patent/patent-tools/src/tool/evaluate-evidence.ts": {
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 1
-  },
-  "packages/patent/patent-tools/src/tool/generate-patent-figure.ts": {
-    "5caa67998f2ce5307c656888310019f46c6daef0a9cd29aca11c531f6eec8bc2": 1
-  },
-  "packages/patent/patent-tools/src/tool/generate-structure-figure.ts": {
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 1
-  },
-  "packages/patent/patent-tools/src/tool/parse-office-action.ts": {
-    "4bf10f0733100cec09a9a4a7303a4f1f3a4d7e22797cf1144ce61bb7d5974c86": 1
-  },
-  "packages/patent/patent-tools/src/tool/patent-analysis-report.ts": {
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 1
-  },
-  "packages/patent/patent-tools/src/tool/patent-case-search.ts": {
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 1
-  },
-  "packages/patent/patent-tools/src/tool/patent-eval.ts": {
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 1
-  },
-  "packages/patent/patent-tools/src/tool/patent-flexible-plan.ts": {
-    "5caa67998f2ce5307c656888310019f46c6daef0a9cd29aca11c531f6eec8bc2": 2,
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 1
-  },
-  "packages/patent/patent-tools/src/tool/patent-metadata.ts": {
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 1,
-    "cbed4135b61bce4dbb3c563d17ae3e5901d2220fbea16ac6418400d1dbd6e254": 1
-  },
-  "packages/patent/patent-tools/src/tool/patent-plan-task.ts": {
-    "5caa67998f2ce5307c656888310019f46c6daef0a9cd29aca11c531f6eec8bc2": 1,
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 1
-  },
-  "packages/patent/patent-tools/src/tool/patent-workflow-run.ts": {
-    "2d843164e0184ca3b65b74b8b774900553bd39e8a073cd26ffd4c4c195759edb": 1,
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 2,
-    "b35e57f6615d026870e536c28c6da6bda2693afd8f2a9c53e198f2a7eee9a243": 1
-  },
-  "packages/patent/patent-tools/src/tool/patent-workflow.ts": {
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 1
-  },
-  "packages/patent/patent-tools/src/tool/search-patent-figure.ts": {
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 1
-  },
-  "packages/patent/patent-tools/src/tool/validate-specification.ts": {
-    "5caa67998f2ce5307c656888310019f46c6daef0a9cd29aca11c531f6eec8bc2": 1
-  },
-  "packages/patent/patent-tools/src/tool/workbench-link-patent-case.ts": {
-    "6fe9024d30e0d4757a348b83d246925b3f5aeaf2e79a0eff4bf12f3c9fb5826b": 1
-  },
   "packages/patent/patent-tools/tests/analyze-patent-figure.spec.ts": {
     "b599acf6d78395fa3cfa6a6b38e78e5c669109aa04ab3f0ba4e483a6483bf0fb": 1
   },

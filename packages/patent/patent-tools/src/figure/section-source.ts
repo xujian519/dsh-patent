@@ -203,14 +203,16 @@ function readAnchors(sections: SectionFigureJson): (readonly [number, number])[]
       )
     }
     const anchor = part.anchor
-    if (anchor === undefined || !Number.isFinite(anchor[0]) || !Number.isFinite(anchor[1])) {
+    const x = anchor?.[0]
+    const y = anchor?.[1]
+    if (x === undefined || y === undefined || !Number.isFinite(x) || !Number.isFinite(y)) {
       throw new SectionSourceError(
         'invalid_input',
         `${subject}缺少 anchor：sections.source 模式下每个零件要给一个落在它所属材料区域内的图面坐标点`
         + '（[x, y] 两个有限数，已含 scale），用它把标号与剖面线参数挂到正确的区域上',
       )
     }
-    return anchor
+    return [x, y]
   })
 }
 

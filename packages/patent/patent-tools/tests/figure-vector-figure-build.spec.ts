@@ -83,6 +83,16 @@ describe('buildVectorFigure 曲线图', () => {
     expect(build.spec.widthMm).toBe(100)
     expect(build.spec.heightMm).toBe(60)
   })
+
+  it('rejects a point that is not two finite numbers', () => {
+    const plot = { x_label: '温度', y_label: '时间' }
+    for (const points of [[[]], [[1]], [[Number.NaN, 1]], [[1, Number.POSITIVE_INFINITY]]] as const) {
+      expect(() => buildVectorFigure('plot', { plot: { ...plot, series: [{ points }] } })).toThrow(/数据点必须是两个有限数/)
+    }
+    expect(() => buildVectorFigure('plot', {
+      plot: { ...plot, series: [{ points: [[0, 1]] }], x_range: [Number.NaN] },
+    })).toThrow(/x_range必须是两个有限数/)
+  })
 })
 
 describe('buildVectorFigure 剖视图', () => {

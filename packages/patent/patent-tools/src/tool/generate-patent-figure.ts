@@ -26,7 +26,8 @@ import { defineTool, validateArgs } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { PatentToolError } from '../error.ts'
 import { DIAGRAM_TEMPLATE_NAMES, DOT_ENGINES, DOT_FORMATS, DotBuildError, resolvePageBundle } from '../figure/dot-builder.ts'
-import type { DotFormat } from '../figure/dot-builder.ts'
+import type { DotFormat, HierarchyNode } from '../figure/dot-builder.ts'
+import { recordList, recordString } from './internal/json-read.ts'
 import { sanitizeDotFilename } from '../figure/graphviz-renderer.ts'
 import { TARGET_OFFICES } from '../figure/office-profile.ts'
 import { buildVectorFigure, isVectorFigureType } from '../figure/vector-figure-build.ts'
@@ -123,6 +124,17 @@ function assertSectionsValue(value: unknown, source: string): asserts value is S
  * @returns 输入本身，或 `sections` 已换成文件内容的那份输入。
  * @throws PatentToolError 文件缺失（file_not_found）、非 JSON 或不符合剖视图输入时。
  */
+function readHierarchy(value: unknown): HierarchyNode {
+  const id = recordString(value, 'id')
+  const label = recordString(value, 'label')
+  /* v8 ignore next -- the parameter schema requires id and label on every node before execute. */
+  if (id === undefined || label === undefined) {
+    throw new PatentToolError('invalid_tool_input', '层级节点必须包含 id 和 label', { tool: 'generate_patent_figure' })
+  }
+  const children = recordList(value, 'children')
+  return { id, label, ...(children.length > 0 ? { children: children.map(readHierarchy) } : {}) }
+}
+
 async function resolveSectionsFile(
   input: GeneratePatentFigureInput,
   cwd: string,
@@ -594,9 +606,18 @@ export function createGeneratePatentFigureTool(deps: GeneratePatentFigureDeps): 
     },
     async execute(args, exec) {
       // schema 校验后的模型 JSON 边界；深层结构（层次树递归）由 build 函数校验。
-      const rawInput = args as unknown as GeneratePatentFigureInput
+      const { tree, panels, ...figureArgs } = args
       const cwd = deps.cwd ?? process.cwd()
-      const input = await resolveSectionsFile(rawInput, cwd)
+      const input = await resolveSectionsFile({
+        ...figureArgs,
+        ...(tree === undefined ? {} : { tree: tree.map(readHierarchy) }),
+        ...(panels === undefined ? {} : {
+          panels: panels.map((panel) => {
+            const { tree: panelTree, ...rest } = panel
+            return { ...rest, ...(panelTree === undefined ? {} : { tree: panelTree.map(readHierarchy) }) }
+          }),
+        }),
+      }, cwd)
       const format = input.format ?? 'svg'
       const engine = input.engine ?? 'dot'
       const style = input.style === 'semantic' ? 'semantic' : 'grayscale'

@@ -20,6 +20,7 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { recordFlag, recordString, recordText } from './internal/json-read.ts'
 import { toJsonArray, toJsonValue } from './internal/json-value.ts'
 import {
   StageHandlerRegistry,
@@ -99,10 +100,18 @@ const DESCRIPTION = [
  * @param value - the assembled output.
  * @returns one line per stage.
  */
-function recapStageLines(value: PatentWorkflowOutput): string[] {
-  return value.stages.map((s) => {
-    const { flag, preview } = stageFlagAndPreview(s)
-    return `- ${flag} ${s.stageId} (${s.strategy}): ${preview}`
+function recapStageLines(stages: readonly unknown[]): string[] {
+  return stages.map((stage) => {
+    const atom = recordString(stage, 'atom')
+    const { flag, preview } = stageFlagAndPreview({
+      stageId: recordText(stage, 'stageId'),
+      strategy: 'chain',
+      output: recordText(stage, 'output'),
+      degraded: recordFlag(stage, 'degraded'),
+      retries: 0,
+      ...(atom !== undefined ? { atom } : {}),
+    })
+    return `- ${flag} ${recordText(stage, 'stageId')} (${recordText(stage, 'strategy')}): ${preview}`
   })
 }
 
@@ -111,7 +120,17 @@ function recapStageLines(value: PatentWorkflowOutput): string[] {
  * @param value - the assembled run record.
  * @returns the multi-line result, or the unknown/validation message.
  */
-export function renderPatentWorkflow(value: PatentWorkflowOutput): string {
+export function renderPatentWorkflow(value: {
+  manifestId: string
+  found: boolean
+  valid: boolean
+  error?: string
+  available?: readonly string[]
+  completed: boolean
+  summary: string
+  persistNote: string
+  stages: readonly unknown[]
+}): string {
   if (!value.found) {
     return `patent_workflow: 未知 manifest "${value.manifestId}"（可用: ${(value.available ?? []).join(', ')}）`
   }
@@ -121,8 +140,8 @@ export function renderPatentWorkflow(value: PatentWorkflowOutput): string {
   }
   return renderWorkflowResultText({
     toolName: 'patent_workflow',
-    result: value,
-    stageLines: recapStageLines(value),
+    result: { manifestId: value.manifestId, summary: value.summary, completed: value.completed },
+    stageLines: recapStageLines(value.stages),
     persistNote: value.persistNote,
     checkSection: '',
   })
@@ -179,7 +198,7 @@ export function createPatentWorkflowTool(deps: PatentWorkflowToolDeps = {}): Too
           error: { type: 'string' },
         },
       },
-      render: (_args, value) => [{ type: 'text', text: renderPatentWorkflow(value as unknown as PatentWorkflowOutput) }],
+      render: (_args, value) => [{ type: 'text', text: renderPatentWorkflow(value) }],
     },
     async execute(args) {
       /* v8 ignore next -- the built-in manifest catalog is never empty, so the final fallback never fires. */

@@ -140,7 +140,7 @@ describe('patent_plan_task', () => {
       signal,
       callId: ToolCallId('pt-1'),
       name: 'patent_plan_task',
-      arguments: { action: 'transition', currentState: 'awaiting_approval', to: 'executing', tasks: [{ id: 'task-1' }] },
+      arguments: { action: 'transition', currentState: 'awaiting_approval', to: 'executing', tasks: [{ blockedBy: ['task-0'] }] },
     })
     expect(executing.isError).toBe(false)
     if (executing.isError) throw new Error('expected success')

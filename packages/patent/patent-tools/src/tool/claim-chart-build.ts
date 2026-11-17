@@ -17,6 +17,8 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { readInvalidityConclusion } from './internal/invalidity-json.ts'
+import { dataList, namedLabel, numberList, recordChild, recordList, recordNumberOr, recordText, recordValue, textList } from './internal/json-read.ts'
 import { toJsonValue } from './internal/json-value.ts'
 import {
   ClaimChartHandler,
@@ -31,9 +33,7 @@ import {
   type DefenseViability,
   type EquivalenceTriplet,
   type EquivalenceContradictionKind,
-  type InfringementConclusion,
   type InfringementConclusionInput,
-  type InvalidityConclusion,
   type PatentModelPort,
   type StageProvider,
 } from '@deepseek-ai/dsh-patent-core'
@@ -124,58 +124,70 @@ const CONTRADICTION_LABELS: Record<EquivalenceContradictionKind, string> = {
  * @param conclusion - the derived conclusion.
  * @returns the section lines.
  */
-function renderConclusion(conclusion: InfringementConclusion): string[] {
+function scoreLine(score: unknown): string {
+  const thresholds = recordChild(score, 'thresholds')
+  return `  - 风险等级: ${recordText(score, 'riskLevel')}（加权 ${recordNumberOr(score, 'composite', 0).toFixed(3)}／量程 ${recordNumberOr(score, 'weightSum', 0)}，高 ≥ ${recordNumberOr(thresholds, 'high', 0).toFixed(3)}，中 ≥ ${recordNumberOr(thresholds, 'medium', 0).toFixed(3)}）`
+}
+
+function renderConclusion(conclusion: unknown): string[] {
   const lines = ['', '## 确定性结论（程序按行级映射判定，未经模型判断）']
-  for (const [index, entry] of conclusion.coverage.entries()) {
-    const parts = [
-      `字面 ${entry.literalElements.length}`,
-      `待解释 ${entry.constructionDependentElements.length}`,
-      `需等同 ${entry.equivalenceCandidates.length}`,
-      `缺项 ${entry.missingElements.length}`,
-    ]
-    lines.push(`- 被控产品 ${entry.targetId}: ${OUTCOME_LABELS[entry.outcome]}（要素 ${entry.elementCount} 个，${parts.join('，')}）`)
-    if (entry.claims.length > 1) {
-      const perClaim = entry.claims.map(claim => `权利要求 ${claim.claimNo} ${claim.outcome}`).join('；')
+  const coverage = recordList(conclusion, 'coverage')
+  const scores = recordValue(conclusion, 'scores')
+  const scoreList = dataList(scores)
+  for (const [index, entry] of coverage.entries()) {
+    const literal = textList(recordValue(entry, 'literalElements'))
+    const construction = textList(recordValue(entry, 'constructionDependentElements'))
+    const equivalents = textList(recordValue(entry, 'equivalenceCandidates'))
+    const missing = textList(recordValue(entry, 'missingElements'))
+    const parts = [`字面 ${literal.length}`, `待解释 ${construction.length}`, `需等同 ${equivalents.length}`, `缺项 ${missing.length}`]
+    lines.push(`- 被控产品 ${recordText(entry, 'targetId')}: ${namedLabel(OUTCOME_LABELS, recordValue(entry, 'outcome'))}（要素 ${recordNumberOr(entry, 'elementCount', 0)} 个，${parts.join('，')}）`)
+    const claims = recordList(entry, 'claims')
+    if (claims.length > 1) {
+      const perClaim = claims.map(claim => `权利要求 ${recordNumberOr(claim, 'claimNo', 0)} ${recordText(claim, 'outcome')}`).join('；')
       lines.push(`  - 逐权项结论: ${perClaim}（整体取覆盖最佳权项）`)
     }
-    if (entry.missingElements.length > 0) lines.push(`  - 缺项要素: ${entry.missingElements.join(', ')}`)
-    if (entry.equivalenceCandidates.length > 0) {
-      lines.push(`  - 需等同认定的要素: ${entry.equivalenceCandidates.join(', ')}`)
-    }
-    const score = conclusion.scores?.[index]
-    if (score !== undefined) {
-      lines.push(
-        `  - 风险等级: ${score.riskLevel}（加权 ${score.composite.toFixed(3)}／量程 ${score.weightSum}，高 ≥ ${score.thresholds.high.toFixed(3)}，中 ≥ ${score.thresholds.medium.toFixed(3)}）`,
-      )
-    }
+    if (missing.length > 0) lines.push(`  - 缺项要素: ${missing.join(', ')}`)
+    if (equivalents.length > 0) lines.push(`  - 需等同认定的要素: ${equivalents.join(', ')}`)
+    const score = scoreList[index]
+    if (score !== undefined) lines.push(scoreLine(score))
   }
-  if (conclusion.scores === undefined) {
+  if (scores === undefined) {
     lines.push('- 风险等级: 未计算（评分只用可复核的结构化事实；提供 risk.defenses 与 risk.remedyExposureRatio 后计算）')
   }
-  lines.push(`- 等同认定矛盾: ${conclusion.contradictions.length} 条`)
-  for (const item of conclusion.contradictions) {
-    lines.push(`  - ${item.elementId}→${item.targetId} [${item.kind}] ${CONTRADICTION_LABELS[item.kind]}: ${item.detail}`)
+  const contradictions = recordList(conclusion, 'contradictions')
+  lines.push(`- 等同认定矛盾: ${contradictions.length} 条`)
+  for (const item of contradictions) {
+    lines.push(`  - ${recordText(item, 'elementId')}→${recordText(item, 'targetId')} [${recordText(item, 'kind')}] ${namedLabel(CONTRADICTION_LABELS, recordValue(item, 'kind'))}: ${recordText(item, 'detail')}`)
   }
   return lines
 }
 
 /** Render the canonical claim-chart value into model-facing prose. */
-function renderClaimChart(value: ClaimChartOutput): string {
-  const c = value.chart
+function renderClaimChart(value: {
+  chart: unknown
+  json_path?: string
+  md_path?: string
+  infringement_conclusion?: unknown
+  invalidity_conclusion?: unknown
+}): string {
+  const chart = value.chart
+  const claimNos = numberList(recordValue(chart, 'claimNos'))
+  const gaps = recordList(chart, 'gaps')
   const lines = [
-    `claim_chart_build: 模式 ${c.mode}，权利要求 ${c.claimNos.join(', ')}，要素 ${c.elements.length} 个，映射行 ${c.rows.length} 行，gap ${c.gaps.length} 个。`,
+    `claim_chart_build: 模式 ${recordText(chart, 'mode')}，权利要求 ${claimNos.join(', ')}，要素 ${recordList(chart, 'elements').length} 个，映射行 ${recordList(chart, 'rows').length} 行，gap ${gaps.length} 个。`,
     '',
   ]
-  if (c.gaps.length > 0) {
-    lines.push('## Gap list', ...c.gaps.map(g => `- ${g.elementId}→${g.targetId}（${g.kind}）: ${g.reason} → ${g.suggestion}`))
+  if (gaps.length > 0) {
+    lines.push('## Gap list', ...gaps.map(gap => `- ${recordText(gap, 'elementId')}→${recordText(gap, 'targetId')}（${recordText(gap, 'kind')}）: ${recordText(gap, 'reason')} → ${recordText(gap, 'suggestion')}`))
   } else {
     lines.push('## Gap list', '无 gap（全部要素已映射）。')
   }
-  if (value.infringement_conclusion !== undefined) {
-    lines.push(...renderConclusion(value.infringement_conclusion as unknown as InfringementConclusion))
-  }
+  if (value.infringement_conclusion !== undefined) lines.push(...renderConclusion(value.infringement_conclusion))
   if (value.invalidity_conclusion !== undefined) {
-    lines.push('', ...renderInvalidityConclusion(value.invalidity_conclusion as InvalidityConclusion, c).split('\n'))
+    lines.push('', ...renderInvalidityConclusion(readInvalidityConclusion(value.invalidity_conclusion), {
+      claimNos,
+      claims: recordList(chart, 'claims'),
+    }).split('\n'))
   }
   if (value.json_path !== undefined && value.md_path !== undefined) {
     lines.push('', `落盘: ${value.json_path} + ${value.md_path}`)
@@ -310,7 +322,7 @@ export function createClaimChartBuildTool(deps: ClaimChartBuildDeps = {}): ToolD
           invalidity_conclusion: { type: 'json' },
         },
       },
-      render: (_args, value) => [{ type: 'text', text: renderClaimChart(value as unknown as ClaimChartOutput) }],
+      render: (_args, value) => [{ type: 'text', text: renderClaimChart(value) }],
     },
     async execute(args, exec) {
       if (args.claim_text.trim().length === 0) {

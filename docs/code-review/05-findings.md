@@ -115,7 +115,7 @@
 | F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | fixed |
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | confirmed |
 | F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | fixed |
-| F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | confirmed |
+| F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | fixed |
 | F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | confirmed |
 | F-VID-006 | `StrictRequest` 与 `MediaTaskRequest` 字段完全重复 | VID | B | Low | 高 | confirmed |
 | F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | fixed |
@@ -1285,7 +1285,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：渲染到 `<output>.partial`，成功且探测通过后经 `ctx.fs` 发布为正式路径。
 - 预估工作量：M
 - 是否可自动化：是（模拟 ffmpeg 失败断言旧文件仍在）
-- 状态：confirmed
+- 修复：ffmpeg 只写 `<output>.partial`，参数在输出路径前写明 `-f mp4`。退出码为 0 且 ffprobe 成功后，才用 `ctx.fs` 把字节发布到声明路径并删掉 partial。ffmpeg 缺失、非零退出或探测失败都会丢掉 partial，已有成片保持不变。
+- 状态：fixed
 
 ### F-VID-005 `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复
 

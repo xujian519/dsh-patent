@@ -71,7 +71,7 @@
 | F-PAT-036 | 未完成依赖的判定没有锁住失败、取消和进行中 | PAT | D | Medium | 中 | new |
 | F-PAT-037 | PDF 渲染的宽限和 abort 监听没有用例 | PAT | D | Medium | 中 | new |
 | F-PAT-038 | nuo 检索 provider 的抛错和超时告警没有用例 | PAT | D | Medium | 中 | new |
-| F-PAT-039 | 同一句权利要求在两套解析里独立／从属结论相反 | PAT | E | High | 高 | new |
+| F-PAT-039 | 同一句权利要求在两套解析里独立／从属结论相反 | PAT | E | High | 高 | fixed |
 | F-PAT-040 | 空 quote 的覆盖类映射仍判单篇全覆盖 | PAT | E | High | 中 | fixed |
 | F-PAT-041 | 所引权项没有要素时仍报告已并入其全部要素 | PAT | E | High | 中 | fixed |
 | F-PAT-042 | 未提取到技术问题时，阻断级法条缺口记为通过 | PAT | E | High | 中 | new |
@@ -662,7 +662,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：权项引用只留一份解析。超限或倒序区间记入 `validateClaimRefs` 的缺陷，不要把 `refersTo` 收成空数组再标成 `independent`。句式同时接受「根据／如／按照／依」和全角数字。`claim-lint` 改为调用这份结果。
 - 预估工作量：M
 - 是否可自动化：是（上面三句各一条断言，锁住 `independent` 与 `references`）
-- 状态：new
+- 状态：fixed（2026-11-16，批次 E2）
 
 ### F-PAT-040 空 quote 的覆盖类映射仍判单篇全覆盖
 
@@ -1514,6 +1514,20 @@ D34–D40 新增 E 维度编号 29 条，今日追加 F-CROSS-004 一条，共 3
 Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-PAT-042/048/049（门禁缺输入）、F-PAT-051/052（沿革与指南修订口径）、F-DOC-008/009（渲染器分叉）、F-VID-011/012/013（终态结算）、F-LEG-011/012（未知值与布尔默认）。F-PAT-039/043/044/045、F-VID-014/015、F-CROSS-004 暂不并入其他条目。
 
 ## 修复记录
+
+### 批次 E2：权项引用单一解析（2026-11-16）
+
+用户要求按建议顺序全部修复后完成。`claim-chart` 的引用关系推导与 `claim-lint` 的形式自检改为共用 `claim-lint/references.ts` 的一份解析，删除两套句式、全角数字与区间规则。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-039 | 引用语识别、编号表达式与区间展开收口到 `references.ts`；两处调用方只选择搜索窗口（`claim-lint` 要求引用语位于权项正文开头，`claim-chart` 允许带前缀的引用语落在特征部分、无前缀的引用语限于引言）。句式同时接受 `根据`／`如`／`按照`／`依` 与全角数字。倒序或跨度超过 1000 的区间按可行范围展开，并记入 `ClaimRef.referenceDefects`；`validateClaimRefs` 新增 `reference-range`，`claim_lint` 以 `reference-direction` 报出，不再把这类引用语收成空数组并标为独立权利要求 | `claim-lint/references.ts`（新增）、`claim-lint/parse.ts`、`claim-lint/checks.ts`、`claim-lint/types.ts`、`claim-chart/runtime/claim-refs.ts`、`claim-chart/protocol/types.ts`、`claim-chart/runtime/invalidity-conclusion.ts` |
+
+**行为变化**：`如权利要求 1 所述`、`按照权利要求 1 所述`、`依权利要求 1 所述` 与全角数字引用现在在 `claim_lint`、`domain_check`、`claim-breadth`、`amendment-reserve` 里都判为从属权利要求；`1-35` 正常展开为 1 至 35。倒序或超限区间（如 `3-1`、`1-2000`）仍按端点或升序展开，同时在结论与 lint 报告里留下缺陷；对比表 JSON 的 `claims` 可能新增 `referenceDefects`，旧图表缺少该字段时行为不变。
+
+**既有测试行为**：`claim-refs.spec.ts` 的区间上限用例改为锁定新语义（`1-35` 展开、`1-2000` 只留端点）；`claim-lint.spec.ts` 的 `1 至 999999999` 用例补上 `referenceDefects` 断言。新增两套解析对同一文本的一致性断言、前缀与全角数字用例、lint 的倒序／超限发现用例，以及结论渲染两种区间缺陷的用例。
+
+验证：`pnpm exec vitest run packages/patent/patent-core/tests packages/patent/patent-tools/tests` 通过（203 文件、3977 用例，4 skipped）；五个改动源码文件在聚焦 `--coverage.include` 下均为 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`pnpm run test:snapshot -t patent-invalidation-chain` 通过；`verify-persistence-changes` 无变化。
 
 ### 批次 A：复用收口（2026-11-15）
 

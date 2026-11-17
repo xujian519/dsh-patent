@@ -9,6 +9,7 @@
 export { findAntecedentGaps, referencedTerms, type AntecedentGap, type ReferencedTerm } from './antecedent.ts'
 export { lintClaimText } from './checks.ts'
 export { parseClaimDocument, type ParsedClaimDocument } from './parse.ts'
+export type { ClaimReferenceDefect } from './references.ts'
 export type {
   ClaimLintFinding,
   ClaimLintOptions,

@@ -193,6 +193,18 @@ function lintClaim(
     }
   }
 
+  for (const defect of claim.referenceDefects ?? []) {
+    findings.push(finding(
+      'reference-direction',
+      number,
+      'error',
+      defect.kind === 'descending-range'
+        ? `引用区间「${defect.raw}」的编号为倒序；从属权利要求只能引用在前的权利要求，请按升序改写。`
+        : `引用区间「${defect.raw}」的跨度超限，已只保留端点；请核对引用号。`,
+      clause,
+    ))
+  }
+
   if (claim.references.length > 1 && /[和及]/.test(clause)) {
     findings.push(finding(
       'multiple-dependent',

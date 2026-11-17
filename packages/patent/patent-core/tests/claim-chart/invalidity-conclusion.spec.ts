@@ -1,10 +1,18 @@
 import { expect, it } from 'vitest'
-import {
-  DRAFT_NOTICE,
-  deriveInvalidityConclusion,
-  renderInvalidityConclusion,
+import { renderInvalidityConclusion } from '@deepseek-ai/dsh-patent-core'
+import { DRAFT_NOTICE } from '../../src/claim-chart/protocol/types.ts'
+import { deriveInvalidityConclusion } from '../../src/claim-chart/runtime/invalidity-conclusion.ts'
+import type {
+  ChartMode,
+  ChartTarget,
+  ClaimChart,
 } from '@deepseek-ai/dsh-patent-core'
-import type { ChartMode, ChartRow, ChartTarget, ClaimChart, ClaimElement, ClaimRef, Mapping } from '@deepseek-ai/dsh-patent-core'
+import type {
+  ChartRow,
+  ClaimElement,
+  ClaimRef,
+  Mapping,
+} from '../../src/claim-chart/protocol/types.ts'
 
 const ELEMENTS: ClaimElement[] = [
   { id: '1a', claimNo: 1, text: '包括壳体', kind: 'limitation' },

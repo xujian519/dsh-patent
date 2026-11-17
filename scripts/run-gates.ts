@@ -431,6 +431,7 @@ function sharedHygieneGates(): Gate[] {
     pnpmScript('no-unknown-casts', 'verify-no-unknown-casts', { label: 'no new unknown casts' }),
     pnpmScript('no-top-level-await', 'verify-no-top-level-await', { label: 'no module-scope await' }),
     pnpmScript('plugin-entry-exports', 'verify-plugin-entry-exports', { label: 'plugin entry exports' }),
+    pnpmScript('patent-core-exports', 'verify-patent-core-exports', { label: 'patent-core exports' }),
   ]
 }
 

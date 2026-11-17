@@ -1,4 +1,4 @@
-import type { NoticeRejectionType } from '@deepseek-ai/dsh-patent-core'
+import type { NoticeRejectionType } from '../../../src/notice/office-action.ts'
 
 /** 金标语料：审查意见通知书的确定性解析。 */
 export type OfficeActionCase = {

@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { inspectPdfBody, isHtmlContentType } from '@deepseek-ai/dsh-patent-core'
 import {
   datedOutputDir,
-  inspectPdfBody,
-  isHtmlContentType,
   MIN_PDF_BYTES,
   PDF_MAGIC,
-} from '@deepseek-ai/dsh-patent-core'
+} from '../src/pdf-download.ts'
 
 describe('isHtmlContentType', () => {
   it('matches HTML regardless of case and ignores other types', () => {

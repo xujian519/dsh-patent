@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
-import { buildTrizAnalysis, type TrizExtractionInput } from '@deepseek-ai/dsh-patent-core'
+import { buildTrizAnalysis } from '@deepseek-ai/dsh-patent-core'
+import type { TrizExtractionInput } from '../../src/triz/types.ts'
 import { loadMatrix } from '@deepseek-ai/dsh-methodology'
 
 const SOURCE = '本方案增大预紧力以提升结构稳定性，但预紧力增大后装配耗时明显增加，产线节拍下降。'

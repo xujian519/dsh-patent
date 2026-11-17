@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
   AtomRegistry,
-  compareAtom,
   countWorkflowLlmStages,
-  searchAtom,
-  timeBaselineAtom,
   validateWorkflowBudget,
   type WorkflowManifest,
   type WorkflowStage,
-  type WorkflowStageBudget,
 } from '@deepseek-ai/dsh-patent-core'
+import { compareAtom } from '../src/atoms/handlers/builtin/compare.ts'
+import { searchAtom } from '../src/atoms/handlers/builtin/search.ts'
+import { timeBaselineAtom } from '../src/atoms/handlers/builtin/time-baseline.ts'
+import type { WorkflowStageBudget } from '../src/workflow/budget.ts'
 
 function stage(id: string, atom?: string): WorkflowStage {
   return { id, strategy: 'chain', description: id, ...(atom !== undefined ? { atom } : {}) }

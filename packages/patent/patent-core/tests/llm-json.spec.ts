@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
-  parseJsonRecordArray,
-  parseJsonStringArray,
-  parseOptionalJsonStringArray,
   readJsonNumber,
   readNonEmptyString,
   readOptionalNonEmptyString,
-  stripCodeFence,
   tryParseJson,
 } from '@deepseek-ai/dsh-patent-core'
+import {
+  parseJsonRecordArray,
+  parseJsonStringArray,
+  parseOptionalJsonStringArray,
+  stripCodeFence,
+} from '../src/llm-json.ts'
 
 describe('stripCodeFence', () => {
   it('strips a ```json fence', () => {

@@ -24,7 +24,6 @@ describe('@deepseek-ai/dsh-patent-core surface', () => {
   it('exports the controlled draft model + validators', () => {
     expect(typeof Pkg.validateSpecDraft).toBe('function')
     expect(typeof Pkg.validateTemplateDraft).toBe('function')
-    expect(typeof Pkg.DraftValidationError).toBe('function')
     expect(typeof Pkg.numberedFigureDescriptions).toBe('function')
     expect(Pkg.SPEC_PART_HEADINGS.embodiment).toBe('具体实施方式')
     expect(Pkg.SPEC_PART_ORDER).toEqual(['technicalField', 'background', 'summary', 'drawingDescriptions', 'embodiment'])
@@ -40,8 +39,8 @@ describe('@deepseek-ai/dsh-patent-core surface', () => {
   })
 
   it('exports the claim-chart + persistence helpers', () => {
-    expect(typeof Pkg.validateElements).toBe('function')
-    expect(typeof Pkg.detectGaps).toBe('function')
+    expect(typeof Pkg.deriveClaimRefs).toBe('function')
+    expect(typeof Pkg.renderInvalidityConclusion).toBe('function')
     expect(typeof Pkg.JsonFileStore).toBe('function')
     expect(typeof Pkg.atomicWriteJson).toBe('function')
     expect(typeof Pkg.caseOutputsDir).toBe('function')

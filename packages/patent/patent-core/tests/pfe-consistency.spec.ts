@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   LookupStageHandler,
-  PFE_CONSISTENCY_VIOLATION_IDS,
-  checkPfeConsistency,
   compileSignal,
   registerBuiltinAtoms,
   signalMatches,
-  type PFETriple,
-  type PfeConsistencyViolationId,
 } from '@deepseek-ai/dsh-patent-core'
+import { PFE_CONSISTENCY_VIOLATION_IDS, checkPfeConsistency } from '../src/atoms/handlers/builtin/pfe.ts'
+import type { PFETriple } from '../src/atoms/handlers/builtin/extract.ts'
+import type { PfeConsistencyViolationId } from '../src/atoms/handlers/builtin/pfe.ts'
 
 registerBuiltinAtoms()
 

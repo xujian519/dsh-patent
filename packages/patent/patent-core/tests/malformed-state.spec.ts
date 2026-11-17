@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   ClaimChartHandler,
   LookupStageHandler,
-  deriveOfficeActionTargets,
   registerBuiltinAtoms,
   type StageProvider,
 } from '@deepseek-ai/dsh-patent-core'
+import { deriveOfficeActionTargets } from '../src/atoms/handlers/builtin/chart.ts'
 
 registerBuiltinAtoms()
 

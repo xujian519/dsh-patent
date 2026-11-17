@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { KeywordsHandler, SearchHandler, type StageProvider } from '@deepseek-ai/dsh-patent-core'
+import type { StageProvider } from '@deepseek-ai/dsh-patent-core'
+import { KeywordsHandler, SearchHandler } from '../src/atoms/handlers/builtin/search.ts'
 
 /** 捕获提示词并按关键词 JSON 应答。 */
 function captureProvider(prompts: string[]): StageProvider {

@@ -2,23 +2,24 @@
 import { describe, expect, it } from 'vitest'
 import {
   AdversaryModelHandler,
-  assessEvidenceIndependent,
-  buildAdversaryPrompt,
-  buildAdversaryReport,
+  type AdversaryDispute,
+  type StageProvider,
+} from '@deepseek-ai/dsh-patent-core'
+import { assessEvidenceIndependent } from '../src/adversary/assessment.ts'
+import { buildAdversaryPrompt } from '../src/adversary/prompt.ts'
+import { buildAdversaryReport, renderAdversaryReport } from '../src/adversary/report.ts'
+import {
   buildReviewSummary,
   computeReviewConfidence,
   detectClaimsCoverage,
   detectEvidenceGaps,
   detectMissedRejections,
   identifyReviewDisputes,
-  locateDisputesIndependent,
-  parseAdversaryOutput,
-  renderAdversaryReport,
   reviewFinalDraft,
-  type AdversaryDispute,
-  type AdversaryOfficeAction,
-  type StageProvider,
-} from '@deepseek-ai/dsh-patent-core'
+} from '../src/adversary/review.ts'
+import { locateDisputesIndependent } from '../src/adversary/dispute.ts'
+import { parseAdversaryOutput } from '../src/adversary/parse.ts'
+import type { AdversaryOfficeAction } from '../src/adversary/types.ts'
 
 const officeAction = (value: unknown): AdversaryOfficeAction => value as AdversaryOfficeAction
 

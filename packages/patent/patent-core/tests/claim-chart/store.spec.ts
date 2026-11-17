@@ -7,8 +7,8 @@ import {
   loadClaimChart,
   renderChartMarkdown,
   saveClaimChart,
-} from '@deepseek-ai/dsh-patent-core'
-import { DRAFT_NOTICE } from '@deepseek-ai/dsh-patent-core'
+} from '../../src/claim-chart/runtime/store.ts'
+import { DRAFT_NOTICE } from '../../src/claim-chart/protocol/types.ts'
 import type { ClaimChart } from '@deepseek-ai/dsh-patent-core'
 
 function makeChart(): ClaimChart {

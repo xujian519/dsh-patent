@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  CitationCheckHandler,
-  buildWorkflowEvidenceLedger,
-  citationCheckAtom,
-} from '@deepseek-ai/dsh-patent-core'
+import { buildWorkflowEvidenceLedger } from '@deepseek-ai/dsh-patent-core'
+import { CitationCheckHandler, citationCheckAtom } from '../src/atoms/handlers/builtin/citation.ts'
 
 const handler = new CitationCheckHandler()
 

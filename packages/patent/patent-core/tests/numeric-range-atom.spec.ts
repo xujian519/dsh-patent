@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NumericRangeHandler, numericRangeAtom } from '@deepseek-ai/dsh-patent-core'
+import { NumericRangeHandler, numericRangeAtom } from '../src/atoms/handlers/builtin/numeric-range.ts'
 
 const handler = new NumericRangeHandler()
 

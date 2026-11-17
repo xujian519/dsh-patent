@@ -1,23 +1,21 @@
 import { expect, it } from 'vitest'
 import {
   AtomRegistry,
-  AtomRegistryError,
   ClaimChartHandler,
-  CompareHandler,
-  DraftClaimsHandler,
   ExtractHandler,
   InterruptStageError,
-  KeywordsHandler,
   LookupStageHandler,
-  NoveltyHandler,
-  SearchHandler,
   StageCancelledError,
   StageHandlerRegistry,
-  collectStateText,
   registerBuiltinAtoms,
   type ClaimChart,
   type StageProvider,
 } from '@deepseek-ai/dsh-patent-core'
+import { AtomRegistryError } from '../src/atoms/atom.ts'
+import { CompareHandler, NoveltyHandler } from '../src/atoms/handlers/builtin/compare.ts'
+import { DraftClaimsHandler } from '../src/atoms/handlers/builtin/draft.ts'
+import { KeywordsHandler, SearchHandler } from '../src/atoms/handlers/builtin/search.ts'
+import { collectStateText } from '../src/atoms/handler.ts'
 
 registerBuiltinAtoms()
 

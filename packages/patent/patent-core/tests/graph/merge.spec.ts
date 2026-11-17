@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
-import { GraphMergeError, mergeWithSchema, type GraphState } from '@deepseek-ai/dsh-patent-core'
+import type { GraphState } from '@deepseek-ai/dsh-patent-core'
+import { GraphMergeError, mergeWithSchema } from '../../src/graph/merge.ts'
 
 const results = (entries: Array<[string, GraphState]>): Array<{ node: string; delta: GraphState }> =>
   entries.map(([node, delta]) => ({ node, delta }))

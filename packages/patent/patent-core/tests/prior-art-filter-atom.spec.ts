@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { priorArtFilterAtom, PriorArtFilterHandler } from '@deepseek-ai/dsh-patent-core'
+import { priorArtFilterAtom, PriorArtFilterHandler } from '../src/atoms/handlers/builtin/prior-art-filter.ts'
 
 const handler = new PriorArtFilterHandler()
 

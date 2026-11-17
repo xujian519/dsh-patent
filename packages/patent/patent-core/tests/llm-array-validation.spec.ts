@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import {
-  CompareHandler,
-  ExtractHandler,
-  KeywordsHandler,
-  NoveltyHandler,
-  type StageHandler,
-} from '@deepseek-ai/dsh-patent-core'
+import { ExtractHandler, type StageHandler } from '@deepseek-ai/dsh-patent-core'
+import { CompareHandler, NoveltyHandler } from '../src/atoms/handlers/builtin/compare.ts'
+import { KeywordsHandler } from '../src/atoms/handlers/builtin/search.ts'
 
 const run = async (
   handler: StageHandler,

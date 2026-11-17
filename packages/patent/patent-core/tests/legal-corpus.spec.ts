@@ -1,15 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import {
-  AmendmentBasisHandler,
-  PriorArtFilterHandler,
-  analyzeNumericRanges,
-  deriveAllElementsCoverage,
-  deriveClaimRefs,
-  identifyInvalidationGrounds,
-  parseOfficeAction,
-  validateClaimRefs,
-  type AmendmentBasisViolation,
-} from '@deepseek-ai/dsh-patent-core'
+import { deriveClaimRefs, parseOfficeAction } from '@deepseek-ai/dsh-patent-core'
+import { AmendmentBasisHandler } from '../src/atoms/handlers/builtin/amendment-basis.ts'
+import { PriorArtFilterHandler } from '../src/atoms/handlers/builtin/prior-art-filter.ts'
+import { analyzeNumericRanges } from '../src/novelty/numeric-range.ts'
+import { deriveAllElementsCoverage } from '../src/infringement/all-elements.ts'
+import { identifyInvalidationGrounds } from '../src/notice/grounds.ts'
+import { validateClaimRefs } from '../src/claim-chart/runtime/claim-refs.ts'
+import type { AmendmentBasisViolation } from '../src/atoms/handlers/builtin/amendment-basis.ts'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 import { LEGAL_CORPUS, type LegalCorpusCase } from './fixtures/legal-corpus/index.ts'
 

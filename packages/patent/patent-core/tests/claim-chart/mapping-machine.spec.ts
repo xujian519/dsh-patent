@@ -4,8 +4,13 @@ import {
   deriveNoveltyCoverage,
   deriveNoveltyCoverageByClaim,
   validateRowMapping,
-} from '@deepseek-ai/dsh-patent-core'
-import type { ChartRow, ChartTarget, ClaimElement, ClaimRef } from '@deepseek-ai/dsh-patent-core'
+} from '../../src/claim-chart/runtime/mapping-machine.ts'
+import type { ChartTarget } from '@deepseek-ai/dsh-patent-core'
+import type {
+  ChartRow,
+  ClaimElement,
+  ClaimRef,
+} from '../../src/claim-chart/protocol/types.ts'
 
 const ELEMENTS: ClaimElement[] = [
   { id: '1a', claimNo: 1, text: '包括壳体', kind: 'limitation' },

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { isBeforeReferenceDate, timeBaselineAtom, TimeBaselineHandler } from '@deepseek-ai/dsh-patent-core'
+import { isBeforeReferenceDate } from '../src/evidence/date.ts'
+import { timeBaselineAtom, TimeBaselineHandler } from '../src/atoms/handlers/builtin/time-baseline.ts'
 
 const handler = new TimeBaselineHandler()
 

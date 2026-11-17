@@ -14,7 +14,7 @@ kind: "package-reference"
 <a id="package-surface"></a>
 ## 包入口与导出
 
-本包只导出根入口 `@deepseek-ai/dsh-patent-core`，解析到 `lib/index.js`，声明文件为 `lib/types/index.d.ts`；`./src/*` 深层导入不再导出，会以 `ERR_PACKAGE_PATH_NOT_EXPORTED` 失败。根 barrel 再导出各模块声明的全部类型，以及按消费方使用筛选后的运行时值：下文记述的引擎、注册表、图构造函数、解析器、校验器与存储。仅供内建 atom 使用的运行时助手保留在包内，相关行为经由 `registerBuiltinAtoms()`、图构造函数或对应模块的聚合引擎获得。`tests/package-surface.spec.ts` 校验每个导出目标都包含在 `files` 中。
+本包只导出根入口 `@deepseek-ai/dsh-patent-core`，解析到 `lib/index.js`，声明文件为 `lib/types/index.d.ts`；`./src/*` 深层导入不再导出，会以 `ERR_PACKAGE_PATH_NOT_EXPORTED` 失败。根 barrel 只再导出另一个包有导入的名字，或标了 `@public` 的说明符。`verify-patent-core-exports` 拒绝其余根 barrel 名字。下文记述各模块的行为，包括留在包内的助手；内建 atom 的行为经由 `registerBuiltinAtoms()`、图构造函数或对应模块的聚合引擎获得。`tests/package-surface.spec.ts` 校验每个导出目标都包含在 `files` 中。
 
 ## 目录
 
@@ -140,7 +140,7 @@ Stage params 可调整这些 handler。缺省键保留各原子默认值；畸�
 <a id="rule-protocol--ipc"></a>
 ## 规则协议 + IPC
 
-宪法规则引擎协议类型（`RuleSeverity`/`RuleAction`/`RuleCheck`/`ConstitutionalRule`/...）与 `hasNegationContext` 文本工具在此落地，供 P3.1/P4.1 规则门禁使用。法条引用机制（`parseCnNumber`、引用抽取、命题重合度、逐条引用判定与 citation-verify 工具脚手架）收拢在 `@deepseek-ai/dsh-law-core`，使法律域无需依赖本包即可复用；本包转导出该面，专利域消费方保持单一导入面。IPC 分类器（`classifyIpc`/`classifyIpcTop`）与 `ipc-standards.yaml` 审查标准加载器以纯查表形式随包分发。
+宪法规则引擎协议类型（`RuleSeverity`/`RuleAction`/`RuleCheck`/`ConstitutionalRule`/...）与 `hasNegationContext` 文本工具在此落地，供 P3.1/P4.1 规则门禁使用。法条引用机制（`parseCnNumber`、引用抽取、命题重合度、逐条引用判定与 citation-verify 工具脚手架）收拢在 `@deepseek-ai/dsh-law-core`，使法律域无需依赖本包即可复用。本包只转导出专利包有导入的名字。IPC 分类器（`classifyIpc`/`classifyIpcTop`）与 `ipc-standards.yaml` 审查标准加载器以纯查表形式随包分发。
 
 <a id="draft-model-controlled-drafts"></a>
 ## 受控草案模型

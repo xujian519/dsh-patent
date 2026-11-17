@@ -1,10 +1,7 @@
 import { expect, it } from 'vitest'
-import {
-  StageCancelledError,
-  runNodeWithPolicy,
-  type GraphNode,
-  type StateDelta,
-} from '@deepseek-ai/dsh-patent-core'
+import { StageCancelledError } from '@deepseek-ai/dsh-patent-core'
+import { runNodeWithPolicy } from '../../src/graph/node-policy.ts'
+import type { GraphNode, StateDelta } from '../../src/graph/types.ts'
 
 const okNode =
   (value: unknown): GraphNode =>

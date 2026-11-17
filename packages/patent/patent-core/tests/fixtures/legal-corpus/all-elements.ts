@@ -1,9 +1,9 @@
+import type { AllElementsOutcome } from '@deepseek-ai/dsh-patent-core'
 import type {
-  AllElementsOutcome,
   ChartRow,
   ClaimElement,
   Mapping,
-} from '@deepseek-ai/dsh-patent-core'
+} from '../../../src/claim-chart/protocol/types.ts'
 
 /** 金标语料：全面覆盖原则。 */
 export type AllElementsCase = {

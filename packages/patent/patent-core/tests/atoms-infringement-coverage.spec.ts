@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
-  DRAFT_NOTICE,
   LookupStageHandler,
   registerBuiltinAtoms,
-  type AllElementsCoverage,
   type ChartMode,
-  type ChartRow,
   type ChartTarget,
-  type ClaimElement,
-  type EquivalenceContradiction,
-  type Mapping,
 } from '@deepseek-ai/dsh-patent-core'
+import { DRAFT_NOTICE } from '../src/claim-chart/protocol/types.ts'
+import type { AllElementsCoverage } from '../src/infringement/all-elements.ts'
+import type {
+  ChartRow,
+  ClaimElement,
+  Mapping,
+} from '../src/claim-chart/protocol/types.ts'
+import type { EquivalenceContradiction } from '../src/infringement/equivalence.ts'
 
 registerBuiltinAtoms()
 

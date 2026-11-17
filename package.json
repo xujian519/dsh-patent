@@ -159,6 +159,7 @@
     "verify-no-top-level-await": "tsx scripts/verify-no-top-level-await.ts",
     "verify-plugin-record-callers": "tsx scripts/verify-plugin-record-callers.ts",
     "verify-plugin-entry-exports": "tsx scripts/verify-plugin-entry-exports.ts",
+    "verify-patent-core-exports": "tsx scripts/verify-patent-core-exports.ts",
     "verify-cordis-config": "tsx scripts/verify-cordis-config.ts",
     "rescope-vendor": "tsx scripts/rescope-vendor.ts",
     "rescope-vendor:check": "tsx scripts/rescope-vendor.ts --check",

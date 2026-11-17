@@ -1,4 +1,4 @@
-import type { NumericRangeVerdict } from '@deepseek-ai/dsh-patent-core'
+import type { NumericRangeVerdict } from '../../../src/novelty/numeric-range.ts'
 
 /** 金标语料：数值范围确定性判定的一则法律情形。 */
 export type NumericRangeCase = {

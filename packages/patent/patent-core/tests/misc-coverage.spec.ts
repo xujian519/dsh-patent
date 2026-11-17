@@ -3,29 +3,26 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  ConfirmedRuleSet,
   FactBlackboard,
   JsonFileStore,
   RuleEngine,
-  SyllogismBuilder,
-  assertChain,
   atomicWriteJson,
   caseWorkflowRunsDir,
-  checkAtomic,
   classifyIpc,
   compileSignal,
   createLlmModelPort,
-  extractTechnicalProblem,
-  loadClaimChart,
-  renderChartMarkdown,
   runeSlice,
   signalMatches,
   validateWorkflowManifest,
   type ClaimChart,
-  type ReasoningChain,
-  type Syllogism,
   type WorkflowManifest,
 } from '@deepseek-ai/dsh-patent-core'
+import { ConfirmedRuleSet } from '../src/reasoning/fact-blackboard.ts'
+import { SyllogismBuilder, assertChain } from '../src/reasoning/syllogism.ts'
+import { checkAtomic, extractTechnicalProblem } from '../src/problem/atomicChecker.ts'
+import { loadClaimChart, renderChartMarkdown } from '../src/claim-chart/runtime/store.ts'
+import type { ReasoningChain } from '../src/reasoning/fact-blackboard.ts'
+import type { Syllogism } from '../src/reasoning/syllogism.ts'
 import type { GenerateOptions, LlmFailure, StreamChunk, TokenUsage } from '@deepseek-ai/dsh-llm'
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
-import { detectGaps } from '@deepseek-ai/dsh-patent-core'
-import type { ChartRow, ChartTarget, ClaimElement } from '@deepseek-ai/dsh-patent-core'
+import { detectGaps } from '../../src/claim-chart/runtime/gap-detector.ts'
+import type { ChartTarget } from '@deepseek-ai/dsh-patent-core'
+import type { ChartRow, ClaimElement } from '../../src/claim-chart/protocol/types.ts'
 
 function row(elementId: string, targetId: string, mapping: ChartRow['mapping']): ChartRow {
   return { elementId, targetId, quote: '', pinCite: '', mapping, state: mapping, verified: false }

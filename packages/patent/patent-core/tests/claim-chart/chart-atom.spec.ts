@@ -2,10 +2,11 @@ import { expect, it, vi } from 'vitest'
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { claimChartAtom, ClaimChartHandler, DEGRADED_CODE_KEY } from '@deepseek-ai/dsh-patent-core'
+import { ClaimChartHandler, DEGRADED_CODE_KEY } from '@deepseek-ai/dsh-patent-core'
+import { claimChartAtom } from '../../src/atoms/handlers/builtin/chart.ts'
 import type { StageProvider } from '@deepseek-ai/dsh-patent-core'
 import type { ClaimChart } from '@deepseek-ai/dsh-patent-core'
-import { loadClaimChart } from '@deepseek-ai/dsh-patent-core'
+import { loadClaimChart } from '../../src/claim-chart/runtime/store.ts'
 
 const CLAIM = '1. 一种过滤装置，包括壳体和滤芯，所述滤芯含有活性炭。'
 
@@ -789,7 +790,7 @@ it('caseId 提供时落盘 json，verified 行在重跑时保留', async () => {
     const saved = loadClaimChart(caseId, chartId)
     expect(saved).toBeTruthy()
     saved!.rows[0]!.verified = true
-    const { saveClaimChart } = await import('@deepseek-ai/dsh-patent-core')
+    const { saveClaimChart } = await import('../../src/claim-chart/runtime/store.ts')
     await saveClaimChart(saved!, caseId)
     const again = loadClaimChart(caseId, chartId)
     expect(again?.rows[0]?.verified).toBe(true) // verified 行可持久化往返
@@ -831,7 +832,7 @@ it('重跑产出内容变化的行，verified 不迁移（M1 内容指纹）', a
     })
     const saved = loadClaimChart(caseId, chartId)!
     saved.rows[0]!.verified = true
-    const { saveClaimChart } = await import('@deepseek-ai/dsh-patent-core')
+    const { saveClaimChart } = await import('../../src/claim-chart/runtime/store.ts')
     await saveClaimChart(saved, caseId)
     // 重跑：1a 行 mapping 从 literal 变为 not-found（内容变化，人工核验应作废）
     const changed = goodChart() as { rows: Array<Record<string, unknown>> }

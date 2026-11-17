@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  EVIDENCE_SNIPPET_LIMIT,
-  buildWorkflowEvidenceLedger,
-  contentHash,
-} from '@deepseek-ai/dsh-patent-core'
+import { buildWorkflowEvidenceLedger, contentHash } from '@deepseek-ai/dsh-patent-core'
+import { EVIDENCE_SNIPPET_LIMIT } from '../src/evidence/ledger.ts'
 
 const OPTIONS = { manifestId: 'patent_novelty_v1', runId: 'run-1' }
 

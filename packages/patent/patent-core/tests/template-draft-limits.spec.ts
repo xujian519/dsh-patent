@@ -6,11 +6,8 @@
  * 违规文案必须同时给出槽位、实测值、上限与需删减量，否则模型只能靠猜。
  */
 import { describe, expect, it } from 'vitest'
-import {
-  DraftValidationError,
-  validateTemplateDraft,
-  type TemplateDraftSchema,
-} from '@deepseek-ai/dsh-patent-core'
+import { validateTemplateDraft, type TemplateDraftSchema } from '@deepseek-ai/dsh-patent-core'
+import { DraftValidationError } from '../src/draft/validate.ts'
 
 /** 单槽位 schema：正文槽，字符与条目双限。 */
 const BLOCKS_SCHEMA: TemplateDraftSchema = {

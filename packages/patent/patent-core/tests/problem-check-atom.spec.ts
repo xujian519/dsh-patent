@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ProblemCheckHandler, problemCheckAtom } from '@deepseek-ai/dsh-patent-core'
+import { ProblemCheckHandler, problemCheckAtom } from '../src/atoms/handlers/builtin/problem-check.ts'
 
 const handler = new ProblemCheckHandler()
 

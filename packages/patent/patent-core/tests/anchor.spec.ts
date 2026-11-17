@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { locateQuote, type AnchorResult } from '@deepseek-ai/dsh-patent-core'
+import { locateQuote } from '@deepseek-ai/dsh-patent-core'
+import type { AnchorResult } from '../src/anchor/index.ts'
 
 /** 取回命中区间对应的原文片段；同时证明 matched 结果确实带 range。 */
 function rangeSlice(source: string, result: AnchorResult): string {

@@ -1,15 +1,12 @@
 import { expect, it } from 'vitest'
-import {
-  ClaimBinding,
-  ConflictDetector,
-  EvidenceExtension,
-  Ledger,
-  contentHash,
-  createSpan,
-  isLocatable,
-  receiptFromToolExecution,
-  type EvidenceSpan,
-} from '@deepseek-ai/dsh-patent-core'
+import { contentHash, createSpan } from '@deepseek-ai/dsh-patent-core'
+import { ClaimBinding } from '../src/evidence/claimBinding.ts'
+import { ConflictDetector } from '../src/evidence/conflict.ts'
+import { EvidenceExtension } from '../src/evidence/index.ts'
+import { Ledger } from '../src/evidence/receipt.ts'
+import { isLocatable } from '../src/evidence/span.ts'
+import { receiptFromToolExecution } from '../src/evidence/protocol.ts'
+import type { EvidenceSpan } from '../src/evidence/span.ts'
 
 // ---------------------------------------------------------------------------
 // EvidenceSpan 工厂与可定位性

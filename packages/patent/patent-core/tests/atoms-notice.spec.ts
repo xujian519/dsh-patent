@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  GROUND_PROGRAMS,
   LookupStageHandler,
   registerBuiltinAtoms,
-  type GroundFinding,
   type ParsedOfficeAction,
 } from '@deepseek-ai/dsh-patent-core'
+import { GROUND_PROGRAMS } from '../src/atoms/handlers/builtin/notice.ts'
+import type { GroundFinding } from '../src/notice/grounds.ts'
 
 registerBuiltinAtoms()
 

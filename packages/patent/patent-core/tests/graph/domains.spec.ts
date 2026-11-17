@@ -1,34 +1,35 @@
 import { expect, it } from 'vitest'
 import {
-  DEGRADATION_SUFFIX,
   DEGRADED_ERROR_KEY,
   DEGRADED_RETRYABLE_KEY,
   DOMAIN_GRAPHS,
-  GRAPH_END,
-  GraphBuilder,
   StageHandlerRegistry,
-  buildCitationCheckGraph,
-  buildEnablementGraph,
-  buildInventivenessGraph,
-  buildNoveltyGraph,
-  checkCitations,
-  detectTechnicalDomain,
-  extractCitationCheckResult,
-  extractCitationIds,
-  extractDocIds,
-  extractEnablementResult,
-  extractInventivenessResult,
-  extractNumericRanges,
   globalStageHandlerRegistry,
-  handlerNode,
-  isDegraded,
   registerBuiltinAtoms,
   type RuleEvaluator,
-  type RuleGateRequest,
   type RuleGateState,
   type StageHandler,
   type StageProvider,
 } from '@deepseek-ai/dsh-patent-core'
+import { DEGRADATION_SUFFIX, isDegraded } from '../../src/graph/degradation.ts'
+import { GRAPH_END } from '../../src/graph/types.ts'
+import { GraphBuilder } from '../../src/graph/engine.ts'
+import {
+  buildCitationCheckGraph,
+  checkCitations,
+  extractCitationCheckResult,
+} from '../../src/graph/domains/citation-check.ts'
+import {
+  buildEnablementGraph,
+  detectTechnicalDomain,
+  extractEnablementResult,
+} from '../../src/graph/domains/enablement.ts'
+import { buildInventivenessGraph, extractInventivenessResult } from '../../src/graph/domains/inventiveness.ts'
+import { buildNoveltyGraph } from '../../src/graph/domains/novelty.ts'
+import { extractCitationIds, extractDocIds } from '../../src/citation-ids.ts'
+import { extractNumericRanges } from '../../src/novelty/numeric-range.ts'
+import { handlerNode } from '../../src/graph/domains/shared.ts'
+import type { RuleGateRequest } from '../../src/checker/evaluator.ts'
 
 registerBuiltinAtoms()
 

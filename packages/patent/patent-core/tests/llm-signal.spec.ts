@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  KeywordsHandler,
   StageCancelledError,
   type PatentModelPort,
   type StageProvider,
 } from '@deepseek-ai/dsh-patent-core'
+import { KeywordsHandler } from '../src/atoms/handlers/builtin/search.ts'
 
 const STATE = { input: '一种过滤装置，包括壳体和滤芯。' }
 

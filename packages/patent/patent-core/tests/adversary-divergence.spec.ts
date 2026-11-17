@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import {
-  computeOverallConfidence,
-  detectDivergence,
-} from '@deepseek-ai/dsh-patent-core'
-import type { AdversaryDispute, AdversaryPlanEntry } from '@deepseek-ai/dsh-patent-core'
+import { computeOverallConfidence, detectDivergence } from '../src/adversary/divergence.ts'
+import type { AdversaryDispute } from '@deepseek-ai/dsh-patent-core'
+import type { AdversaryPlanEntry } from '../src/adversary/types.ts'
 
 describe('分歧检测', () => {
   const makeDispute = (statute: string, relation: AdversaryDispute['relation']): AdversaryDispute => ({

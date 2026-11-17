@@ -278,6 +278,36 @@ describe('沿革快照接入', () => {
     })
   })
 
+  it('沿革快照只作用于它登记的那部法律', () => {
+    const result = lockProvisions(
+      ['专利法实施细则第5条'],
+      loadLawBaselines(),
+      undefined,
+      loadLawLineageFile(lawLineageFile()),
+    )
+    // 快照记的是《专利法》第 5 条，答不了实施细则的同号条文。
+    expect(result.locked[0]).toMatchObject({
+      validityStatus: 'active',
+      stale: false,
+      effectiveDate: '2026-09-26',
+      effectiveDateSource: 'transcription',
+    })
+    const report = renderRuleLockReport(result)
+    expect(report).toContain('（转录核验：2026-09-26）')
+    expect(report).not.toContain('生效：2021-06-01')
+  })
+
+  it('沿革快照覆盖的条文仍取修订生效日', () => {
+    const result = lockProvisions(
+      ['专利法第22条'],
+      loadLawBaselines(),
+      undefined,
+      loadLawLineageFile(lawLineageFile()),
+    )
+    expect(result.locked[0]).toMatchObject({ effectiveDate: '2021-06-01', effectiveDateSource: 'lineage' })
+    expect(renderRuleLockReport(result)).toContain('（生效：2021-06-01）')
+  })
+
   it('沿革记录为 repealed 时锁定结果标记 stale', () => {
     const lineage: LawLineageSnapshot = {
       law: '专利法',

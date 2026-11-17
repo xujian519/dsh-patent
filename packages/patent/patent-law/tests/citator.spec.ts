@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { decideValidity, queryValidity } from '../src/citator.ts'
+import { lawLineageFile } from '../src/asset-location.ts'
 import { loadLawBaselines } from '../src/baseline.ts'
+import { loadLawLineageFile } from '../src/lineage.ts'
 import { verifyCitation } from '../src/verify.ts'
 import type { LawBaseline, LawLineageSnapshot, LawName } from '../src/types.ts'
 import {
@@ -277,6 +279,39 @@ describe('decideValidity — lineage narrowing', () => {
     )
     expect(result.state).toBe('active')
     expect(result.reason).toContain('沿革数据确认现行有效')
+  })
+})
+
+describe('沿革快照只作用于同一部法律（随包资产）', () => {
+  const index = loadLawBaselines()
+  const lineage = loadLawLineageFile(lawLineageFile())
+
+  it('实施细则同号条文不取专利法的生效日与修订史', () => {
+    const result = queryValidity({ provision: '专利法实施细则第5条' }, index, lineage)
+    expect(result.state).toBe('active')
+    expect(result.reason).not.toContain('沿革')
+    expect(result.revisionHistory).toBeUndefined()
+    expect(result.entry?.verifiedOn).toBe('2026-09-26')
+  })
+
+  it('专利法条文仍按沿革判定', () => {
+    const result = queryValidity({ provision: '专利法第22条第3款' }, index, lineage)
+    expect(result.state).toBe('active')
+    expect(result.reason).toContain('沿革数据确认')
+    expect(result.revisionHistory?.at(-1)?.effectiveDate).toBe('2021-06-01')
+  })
+
+  it('登记实施细则的沿革快照按沿革判定实施细则条文', () => {
+    const snapshot: LawLineageSnapshot = {
+      law: '专利法实施细则',
+      document: '中华人民共和国专利法实施细则',
+      lineageVersion: '1.0.0',
+      revisions: [],
+      articles: [{ articleId: 5, title: null, currentStatus: 'revised', revisionHistory: [] }],
+    }
+    const result = queryValidity({ provision: '专利法实施细则第5条' }, index, snapshot)
+    expect(result.state).toBe('revised')
+    expect(result.reason).toContain('《专利法实施细则》第 5 条')
   })
 })
 

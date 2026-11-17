@@ -44,7 +44,7 @@
 | F-LEG-002 | High | 高 | 本周期 | 18 | P0 |
 | F-VID-001 | High | 中 | 立即 | 18 | P0 |
 | F-LEG-001 | High | 中 | 本周期 | 12 | P0 |
-| F-VID-003 | Medium | 高 | 本周期 | 12 | P0 |
+| F-VID-003 | Medium | 高 | 本周期 | 12 | P0（已修） |
 | F-PAT-004 | High | 中 | 本周期 | 12 | P0 |
 | F-PAT-002 | High | 低 | 本周期 | 6 | P1 |
 | F-PAT-009 | Medium | 高 | 可延后 | 6 | P1 |

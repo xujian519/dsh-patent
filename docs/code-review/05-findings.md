@@ -114,7 +114,7 @@
 | F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | new |
 | F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | fixed |
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | confirmed |
-| F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | confirmed |
+| F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | fixed |
 | F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | confirmed |
 | F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | confirmed |
 | F-VID-006 | `StrictRequest` 与 `MediaTaskRequest` 字段完全重复 | VID | B | Low | 高 | confirmed |
@@ -1270,7 +1270,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：`schema: z.ZodType<VideoProject>` 显式标注，或由 schema `infer` 导出类型。
 - 预估工作量：S
 - 是否可自动化：是
-- 状态：confirmed
+- 修复：`projectSchema` 与 `edlSchema` 经 `lockToInterface` 要求解析字段与 `VideoProject`／`Edl` 一致，校验函数直接返回解析值。可选字段写成 `T | undefined`，与 schema 在 `exactOptionalPropertyTypes` 下的输出一致。只改一边的字段时类型检查失败。`max(3600)` 这类数值界限仍只写在 schema 上。
+- 状态：fixed
 
 ### F-VID-004 ffmpeg 直接覆写目标，失败会毁掉上一版成片
 

@@ -10,6 +10,7 @@
 import { z } from 'zod'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-subprocess'
+import { lockToInterface } from './schema-lock.ts'
 import { MediaFailure, type Edl } from './types.ts'
 
 /** Default output canvas for vertical short video. */
@@ -43,8 +44,8 @@ const audioClipSchema = z.object({
   gainDb: z.number().min(-60).max(24).optional(),
 }).strict()
 
-/** The complete EDL schema. */
-const edlSchema = z.object({
+/** The complete EDL schema. Parsed fields match {@link Edl}. */
+const edlSchema = lockToInterface<Edl>()(z.object({
   version: z.literal(1),
   canvas: z.object({
     width: z.number().int().min(64).max(7680),
@@ -55,7 +56,7 @@ const edlSchema = z.object({
   audio: z.array(audioClipSchema).max(32).optional(),
   subtitles: z.string().min(1).optional(),
   output: z.string().min(1),
-}).strict()
+}).strict())
 
 /** Measured facts about one media file. */
 export interface MediaProbe {
@@ -120,7 +121,7 @@ export function validateEdl(value: unknown): Edl {
       throw new MediaFailure(`EDL clip ${index}: outSec must be greater than inSec`, 'MEDIA_EDL_INVALID')
     }
   }
-  return parsed.data as Edl
+  return parsed.data
 }
 
 /**

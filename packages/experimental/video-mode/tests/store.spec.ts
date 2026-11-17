@@ -4,11 +4,11 @@
  * malformed files.
  */
 
-import { mkdir, mkdtemp, realpath, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
+import { Context, Service } from '@deepseek-ai/cordis'
 import { LocalFileSystem } from '@deepseek-ai/dsh-fs-local'
 import { FsError } from '@deepseek-ai/dsh-fs'
 import {
@@ -32,12 +32,28 @@ import {
 let root: string
 let ctx: Context
 let projectPath: string
+let ledgerDir: string
+
+/** Deployment workspace root the ledger must stay outside. */
+class SandboxPolicyStub extends Service {
+  readonly workspaceRoot: string
+
+  /**
+   * @param ctx - owning context.
+   * @param config - published workspace root.
+   */
+  constructor(ctx: Context, config: { workspaceRoot: string }) {
+    super(ctx, 'sandboxPolicy')
+    this.workspaceRoot = config.workspaceRoot
+  }
+}
 
 beforeEach(async () => {
   root = await realpath(await mkdtemp(join(tmpdir(), 'dsh-video-store-')))
   ctx = new Context()
   await ctx.plugin(LocalFileSystem, { cwd: root }).await()
   projectPath = join(root, 'video', 'one', 'project.json')
+  ledgerDir = join(root, '.host-ledgers')
   await mkdir(dirname(projectPath), { recursive: true })
 })
 
@@ -235,11 +251,11 @@ describe('task journal', () => {
 
 describe('budget ledger', () => {
   it('treats a missing ledger as empty and sums charges', async () => {
-    expect(await readLedger(ctx, projectPath, root)).toEqual([])
+    expect(await readLedger(ctx, projectPath, ledgerDir, root)).toEqual([])
     expect(ledgerCost([])).toBe(0)
-    expect(await appendLedgerEntry(ctx, projectPath, entry(), root)).toBe(true)
-    expect(await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'other', costCny: 0.5 }), root)).toBe(true)
-    expect(ledgerCost(await readLedger(ctx, projectPath, root))).toBe(2.5)
+    expect(await appendLedgerEntry(ctx, projectPath, entry(), ledgerDir, root)).toBe(true)
+    expect(await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'other', costCny: 0.5 }), ledgerDir, root)).toBe(true)
+    expect(ledgerCost(await readLedger(ctx, projectPath, ledgerDir, root))).toBe(2.5)
   })
 
   it('sums repeated charges in fen without float drift', () => {
@@ -250,13 +266,13 @@ describe('budget ledger', () => {
   })
 
   it('ignores a repeated charge for the same task', async () => {
-    await appendLedgerEntry(ctx, projectPath, entry(), root)
-    expect(await appendLedgerEntry(ctx, projectPath, entry({ costCny: 9 }), root)).toBe(false)
-    expect(ledgerCost(await readLedger(ctx, projectPath, root))).toBe(2)
+    await appendLedgerEntry(ctx, projectPath, entry(), ledgerDir, root)
+    expect(await appendLedgerEntry(ctx, projectPath, entry({ costCny: 9 }), ledgerDir, root)).toBe(false)
+    expect(ledgerCost(await readLedger(ctx, projectPath, ledgerDir, root))).toBe(2)
   })
 
   it('keeps a charge another writer appended while the ledger write raced', async () => {
-    await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'a' }), root)
+    await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'a' }), ledgerDir, root)
     const original = ctx.fs.writeText.bind(ctx.fs)
     let raced = false
     ctx.fs.writeText = async (target, content, expected, signal, policy) => {
@@ -272,24 +288,91 @@ describe('budget ledger', () => {
       return original(target, content, expected, signal, policy)
     }
     try {
-      expect(await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'c' }), root)).toBe(true)
+      expect(await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'c' }), ledgerDir, root)).toBe(true)
     } finally {
       ctx.fs.writeText = original
     }
 
-    expect((await readLedger(ctx, projectPath, root)).map(item => item.taskId)).toEqual(['a', 'b', 'c'])
+    expect((await readLedger(ctx, projectPath, ledgerDir, root)).map(item => item.taskId)).toEqual(['a', 'b', 'c'])
   })
 
   it('rejects malformed files and invalid new charges', async () => {
     const path = storePathOf(projectPath, BUDGET_LEDGER_FILE)
     await writeFile(path, '[]', 'utf8')
-    await expect(readLedger(ctx, projectPath, root)).rejects.toMatchObject({ code: 'MEDIA_STORE_INVALID' })
+    await expect(readLedger(ctx, projectPath, ledgerDir, root)).rejects.toMatchObject({ code: 'MEDIA_STORE_INVALID' })
 
     await writeFile(path, JSON.stringify({ schemaVersion: 1, entries: [entry({ costCny: -1 })] }), 'utf8')
-    await expect(readLedger(ctx, projectPath, root)).rejects.toMatchObject({ code: 'MEDIA_STORE_INVALID' })
+    await expect(readLedger(ctx, projectPath, ledgerDir, root)).rejects.toMatchObject({ code: 'MEDIA_STORE_INVALID' })
 
     await rm(path)
-    await expect(appendLedgerEntry(ctx, projectPath, entry({ costCny: Number.NaN }), root))
+    await expect(appendLedgerEntry(ctx, projectPath, entry({ costCny: Number.NaN }), ledgerDir, root))
       .rejects.toMatchObject({ code: 'MEDIA_STORE_INVALID' })
+  })
+
+  it('imports budget.json once and ignores a later rewrite', async () => {
+    const path = storePathOf(projectPath, BUDGET_LEDGER_FILE)
+    await writeFile(path, JSON.stringify({ schemaVersion: 1, entries: [entry()] }), 'utf8')
+    expect(ledgerCost(await readLedger(ctx, projectPath, ledgerDir, root))).toBe(2)
+
+    await writeFile(path, JSON.stringify({ schemaVersion: 1, entries: [] }), 'utf8')
+    expect(ledgerCost(await readLedger(ctx, projectPath, ledgerDir, root))).toBe(2)
+    expect(await readdir(ledgerDir)).toHaveLength(1)
+  })
+
+  it('rejects a rewritten host ledger', async () => {
+    await appendLedgerEntry(ctx, projectPath, entry(), ledgerDir, root)
+    const [file] = await readdir(ledgerDir)
+    await writeFile(join(ledgerDir, file ?? ''), '[]', 'utf8')
+    await expect(readLedger(ctx, projectPath, ledgerDir, root)).rejects.toMatchObject({ code: 'MEDIA_STORE_INVALID' })
+  })
+
+  it('rejects a relative ledger directory', async () => {
+    await expect(readLedger(ctx, projectPath, 'ledgers', root)).rejects.toMatchObject({ code: 'MEDIA_STORE_INVALID' })
+  })
+
+  it('rejects a ledger directory inside the session workspace', async () => {
+    await ctx.plugin(SandboxPolicyStub, { workspaceRoot: root }).await()
+    await expect(appendLedgerEntry(ctx, projectPath, entry(), ledgerDir, root))
+      .rejects.toMatchObject({ code: 'MEDIA_STORE_INVALID' })
+    await expect(appendLedgerEntry(ctx, projectPath, entry(), root, root))
+      .rejects.toMatchObject({ code: 'MEDIA_STORE_INVALID' })
+  })
+
+  it('rejects a workspace root that is not absolute', async () => {
+    await ctx.plugin(SandboxPolicyStub, { workspaceRoot: 'relative' }).await()
+    await expect(readLedger(ctx, projectPath, ledgerDir, root)).rejects.toMatchObject({ code: 'MEDIA_STORE_INVALID' })
+  })
+
+  it('treats a blank workspace root as unpublished and writes outside it', async () => {
+    await ctx.plugin(SandboxPolicyStub, { workspaceRoot: '' }).await()
+    const outside = await realpath(await mkdtemp(join(tmpdir(), 'dsh-video-ledger-')))
+    try {
+      const policies: unknown[] = []
+      const original = ctx.fs.writeText.bind(ctx.fs)
+      ctx.fs.writeText = async (target, content, expected, signal, policy) => {
+        policies.push(policy)
+        return original(target, content, expected, signal, policy)
+      }
+      expect(await appendLedgerEntry(ctx, projectPath, entry(), outside, root)).toBe(true)
+      expect(policies).toEqual([{ mode: 'workspace-write', workspaceRoot: outside }])
+      await expect(stat(storePathOf(projectPath, BUDGET_LEDGER_FILE))).rejects.toThrow()
+      expect(ledgerCost(await readLedger(ctx, projectPath, outside, root))).toBe(2)
+    } finally {
+      await rm(outside, { recursive: true, force: true })
+    }
+  })
+
+  it('writes the host ledger outside the session workspace', async () => {
+    await ctx.plugin(SandboxPolicyStub, { workspaceRoot: root }).await()
+    const outside = await realpath(await mkdtemp(join(tmpdir(), 'dsh-video-ledger-')))
+    try {
+      expect(await appendLedgerEntry(ctx, projectPath, entry(), outside, root)).toBe(true)
+      await writeFile(storePathOf(projectPath, BUDGET_LEDGER_FILE), JSON.stringify({
+        schemaVersion: 1, entries: [],
+      }), 'utf8')
+      expect(ledgerCost(await readLedger(ctx, projectPath, outside, root))).toBe(2)
+    } finally {
+      await rm(outside, { recursive: true, force: true })
+    }
   })
 })

@@ -4,6 +4,8 @@
  * lives in the MiniMax and ComfyUI specs.
  */
 
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
@@ -94,6 +96,11 @@ describe('configuration guards', () => {
     expect(() => resolveMediaConfig({ waitMs: -1 })).toThrow(/waitMs/)
     expect(() => resolveMediaConfig({ waitMs: 0 })).toThrow(/waitMs/)
     expect(() => resolveMediaConfig({ approvalThresholdCny: Number.NaN })).toThrow(/approvalThresholdCny/)
+    const hostLedger = join(homedir(), '.dsh', 'video-mode', 'ledgers')
+    expect(resolveMediaConfig().ledgerDir).toBe(hostLedger)
+    expect(resolveMediaConfig({ ledgerDir: '  ' }).ledgerDir).toBe(hostLedger)
+    expect(resolveMediaConfig({ ledgerDir: '/var/ledgers' }).ledgerDir).toBe('/var/ledgers')
+    expect(() => resolveMediaConfig({ ledgerDir: 'relative' })).toThrow(/ledgerDir must be an absolute path/)
   })
 
   it('rejects invalid ComfyUI bounds', () => {

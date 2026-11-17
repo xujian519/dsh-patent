@@ -6,7 +6,7 @@
  */
 
 import { existsSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { isAbsolute, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 // Declaration merge only: makes ctx.get('approval') resolve to the approval service.
 import type {} from '@deepseek-ai/dsh-user-approval'
@@ -193,28 +193,62 @@ export function buildImageGateResolver(
   return (provider, model) => resolveImageInputModalities(resolveModelInfo.bind(llm), provider, model)
 }
 
-/** Resolve the knowledge-note directory: Config.noteDir (absolute or relative to cwd), else <cwd>/99-知识库. */
-function resolveNoteDir(config: Config): string {
-  return config.noteDir !== undefined ? resolve(config.noteDir) : join(process.cwd(), '99-知识库')
+/**
+ * Absolute workspace root published by the deployment on `ctx.sandboxPolicy`.
+ * The service's own cwd fallback is a deployment choice (`workspaceRoot` in
+ * cordis.yml). This package does not read `process.cwd()` when that value is absent.
+ * @param ctx - registrant context.
+ * @returns the absolute root, or `undefined` when the service did not publish one.
+ * @throws PatentToolError `setup_required` when the published root is not absolute.
+ */
+function deploymentWorkspaceRoot(ctx: Context): string | undefined {
+  // sandbox-policy is outside this package's project references, so the key stays a string.
+  const key: string = 'sandboxPolicy'
+  const policy = ctx.get(key) as { readonly workspaceRoot?: string } | undefined
+  const root = policy?.workspaceRoot
+  if (typeof root !== 'string' || root === '') return undefined
+  if (!isAbsolute(root)) {
+    throw new PatentToolError(
+      'setup_required',
+      '工作区根必须是绝对路径（sandboxPolicy.workspaceRoot）。不会改用进程目录。',
+      { workspaceRoot: root },
+    )
+  }
+  return root
 }
 
-/** Resolve the figure-index file: Config.figureIndexFile (absolute or relative to cwd), else <cwd>/.sati/figures-index.json. */
-function resolveFigureIndexFile(config: Config): string {
-  return config.figureIndexFile !== undefined
-    ? resolve(config.figureIndexFile)
-    : resolve(process.cwd(), DEFAULT_FIGURE_INDEX_RELATIVE_PATH)
+/**
+ * Resolve one patent output path.
+ * An absolute Config value is used as given. A relative value, and the default
+ * when Config omits the field, join the deployment workspace root.
+ * @param configured - Config value, when the deployment set one.
+ * @param relative - path used when Config omits the field.
+ * @param root - absolute workspace root, when the deployment published one.
+ * @param label - Config field name named in the load error.
+ * @returns the absolute output path.
+ * @throws PatentToolError `setup_required` when the path is not absolute and no workspace root is published.
+ */
+function resolveOutputPath(
+  configured: string | undefined,
+  relative: string,
+  root: string | undefined,
+  label: string,
+): string {
+  if (configured !== undefined && isAbsolute(configured)) return configured
+  if (root === undefined) {
+    throw new PatentToolError(
+      'setup_required',
+      `未配置 ${label} 的绝对路径，且部署没有工作区根（sandboxPolicy.workspaceRoot）。不会写入进程目录。`,
+      { path: label },
+    )
+  }
+  return resolve(root, configured ?? relative)
 }
 
-/** Resolve the chemistry-index file: Config.chemistryIndexFile (absolute or relative to cwd), else <cwd>/.sati/chemistry-index.json. */
-function resolveChemistryIndexFile(config: Config): string {
-  return config.chemistryIndexFile !== undefined
-    ? resolve(config.chemistryIndexFile)
-    : resolve(process.cwd(), DEFAULT_CHEMISTRY_INDEX_RELATIVE_PATH)
-}
-
-/** Resolve the figure output directory: Config.figureOutputDir (absolute or relative to cwd), else <cwd>/patent/figures. */
-function resolveFigureOutputDir(config: Config): string {
-  return config.figureOutputDir !== undefined ? resolve(config.figureOutputDir) : resolve(process.cwd(), 'patent/figures')
+/** True when any of the four output paths still needs the deployment workspace root. */
+function outputPathsNeedWorkspace(config: Config): boolean {
+  return [config.noteDir, config.figureIndexFile, config.chemistryIndexFile, config.figureOutputDir]
+    .some(value => value === undefined || !isAbsolute(value))
 }
 
 /** CJK 文本检测（决定平台字体）。 */
@@ -306,6 +340,8 @@ interface PatentToolWiring {
   resolveImageInputModalitiesFor: ReturnType<typeof buildImageGateResolver>
   figureIndexFile: string
   chemistryIndexFile: string
+  figureOutputDir: string
+  noteDir: string
   knowledge: PatentKnowledge | undefined
 }
 
@@ -526,7 +562,7 @@ function registerFigureTools(wiring: PatentToolWiring): void {
     ...(outlineText === undefined ? {} : { outlineText }),
     ...(exportFigure === undefined ? {} : { exportFigure }),
     ...(sectionSource === undefined ? {} : { sectionSource }),
-    outputDir: resolveFigureOutputDir(wiring.config),
+    outputDir: wiring.figureOutputDir,
     upsertIndex: entry => figureIndexStore.upsert(wiring.figureIndexFile, entry),
     loadIndex: async () => (await figureIndexStore.load(wiring.figureIndexFile)).entries,
     resolveFont: labels => resolveDotFont(wiring.config, labels),
@@ -570,7 +606,7 @@ function registerFigureTools(wiring: PatentToolWiring): void {
     render: structureRender,
     ...(outlineText === undefined ? {} : { outlineText }),
     ...(wiring.config.structureFigureEnabled === undefined ? {} : { enabled: wiring.config.structureFigureEnabled }),
-    outputDir: resolveFigureOutputDir(wiring.config),
+    outputDir: wiring.figureOutputDir,
     upsertIndex: entry => figureIndexStore.upsert(wiring.figureIndexFile, entry),
     ...(wiring.config.structureFigureScale === undefined ? {} : { defaultScale: wiring.config.structureFigureScale }),
     ...(wiring.config.figureFailOnRenderFindings === undefined ? {} : { failOnRenderFindings: wiring.config.figureFailOnRenderFindings }),
@@ -601,7 +637,7 @@ function registerFilingTools(wiring: PatentToolWiring): void {
   // Notes land as files under the configured noteDir (default <cwd>/99-知识库):
   // no storage service dependency, works in headless and web compositions.
   wiring.ctx.tools.register(createKnowledgeNoteSaveTool({
-    writeNote: createNoteFileWriter(resolveNoteDir(wiring.config)),
+    writeNote: createNoteFileWriter(wiring.noteDir),
   }))
 
   // 案卷留档的唯一写入口：交付前置门禁要求它先成功，交付件才允许落盘。
@@ -647,6 +683,7 @@ export function registerPatentTools(ctx: Context, config: Config): void {
   for (const manifest of builtinPatentManifests) {
     validateWorkflowBudget(manifest, budget, globalAtomRegistry)
   }
+  const workspaceRoot = outputPathsNeedWorkspace(config) ? deploymentWorkspaceRoot(ctx) : undefined
   const wiring: PatentToolWiring = {
     ctx,
     config,
@@ -655,8 +692,10 @@ export function registerPatentTools(ctx: Context, config: Config): void {
     imageModel: buildFigureModelPort(ctx, config),
     attachments: resolveAttachments(ctx),
     resolveImageInputModalitiesFor: buildImageGateResolver(ctx),
-    figureIndexFile: resolveFigureIndexFile(config),
-    chemistryIndexFile: resolveChemistryIndexFile(config),
+    figureIndexFile: resolveOutputPath(config.figureIndexFile, DEFAULT_FIGURE_INDEX_RELATIVE_PATH, workspaceRoot, 'figureIndexFile'),
+    chemistryIndexFile: resolveOutputPath(config.chemistryIndexFile, DEFAULT_CHEMISTRY_INDEX_RELATIVE_PATH, workspaceRoot, 'chemistryIndexFile'),
+    figureOutputDir: resolveOutputPath(config.figureOutputDir, 'patent/figures', workspaceRoot, 'figureOutputDir'),
+    noteDir: resolveOutputPath(config.noteDir, '99-知识库', workspaceRoot, 'noteDir'),
     knowledge: ctx.get('patentKnowledge'),
   }
   registerKnowledgeTools(wiring)

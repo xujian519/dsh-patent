@@ -252,6 +252,35 @@ describe('probe and assembly failures', () => {
       .rejects.toThrow(/ffmpeg failed for out\/render.mp4: exit 1/)
     await expect(assemble(ctx, colorEdl(), optionsOf({ ffmpegPath: 'dsh-no-such-ffmpeg' })))
       .rejects.toMatchObject({ code: 'MEDIA_FFMPEG_MISSING' })
+    await expect(stat(join(root, 'out', 'render.mp4'))).rejects.toThrow()
+    await expect(stat(join(root, 'out', 'render.mp4.partial'))).rejects.toThrow()
+  })
+
+  it('leaves the declared output in place when ffmpeg or the probe fails', async () => {
+    await mkdir(join(root, 'out'), { recursive: true })
+    const output = join(root, 'out', 'render.mp4')
+    await writeFile(output, 'previous-cut')
+    await writeFile(join(root, 'out', 'render.mp4.partial'), 'stale-partial')
+
+    await expect(assemble(ctx, colorEdl(), optionsOf({ ffmpegPath: 'false' })))
+      .rejects.toThrow(/ffmpeg failed for out\/render.mp4: exit 1/)
+    expect(await readFile(output, 'utf8')).toBe('previous-cut')
+    await expect(stat(join(root, 'out', 'render.mp4.partial'))).rejects.toThrow()
+
+    const ffmpeg = join(root, 'write-partial.sh')
+    await writeFile(ffmpeg, '#!/bin/sh\nfor last; do :; done\necho rendered > "$last"\nexit 0\n')
+    await chmod(ffmpeg, 0o755)
+    await expect(assemble(ctx, colorEdl(), optionsOf({ ffmpegPath: ffmpeg, ffprobePath: 'false' })))
+      .rejects.toMatchObject({ code: 'MEDIA_ASSEMBLY_FAILED' })
+    expect(await readFile(output, 'utf8')).toBe('previous-cut')
+    await expect(stat(join(root, 'out', 'render.mp4.partial'))).rejects.toThrow()
+
+    const removePartial = join(root, 'remove-partial.sh')
+    await writeFile(removePartial, '#!/bin/sh\nfor last; do :; done\nrm -f "$last"\nexit 1\n')
+    await chmod(removePartial, 0o755)
+    await expect(assemble(ctx, colorEdl(), optionsOf({ ffmpegPath: removePartial })))
+      .rejects.toThrow(/ffmpeg failed for out\/render.mp4: exit 1/)
+    expect(await readFile(output, 'utf8')).toBe('previous-cut')
   })
 
   it('reports success without an output file', async () => {
@@ -275,8 +304,9 @@ describe.runIf(FFMPEG)('assembly with real ffmpeg', () => {
     }, optionsOf())
     expect(result.output).toBe('out/image.mp4')
     expect(result.command).toContain(join(root, 'assets', 'still.png'))
-    expect(result.command).toContain(join(root, 'out', 'image.mp4'))
+    expect(result.command).toContain(join(root, 'out', 'image.mp4.partial'))
     expect((await stat(join(root, 'out', 'image.mp4'))).size).toBeGreaterThan(0)
+    await expect(stat(join(root, 'out', 'image.mp4.partial'))).rejects.toThrow()
   })
 
   it('burns a subtitle whose name contains an apostrophe and writes moov before mdat', async () => {
@@ -320,6 +350,9 @@ describe('path resolution without real media tools', () => {
     }, optionsOf({ ffmpegPath: ffmpeg, ffprobePath: probe }))
 
     expect(result.command).toContain(join(root, 'assets', 'still.png'))
+    expect(result.command.at(-1)).toBe(join(root, 'out', 'image.mp4.partial'))
+    expect(await readFile(join(root, 'out', 'image.mp4'), 'utf8')).toBe('rendered\n')
+    await expect(stat(join(root, 'out', 'image.mp4.partial'))).rejects.toThrow()
     expect(result.probe).toEqual({ durationSec: 1, width: 64, height: 96, hasAudio: true, format: undefined })
   })
 })

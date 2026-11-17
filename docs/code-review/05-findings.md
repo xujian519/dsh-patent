@@ -37,7 +37,7 @@
 | F-PAT-002 | `rule_check` 丢弃同义词资产警告，合规检查静默降级 | PAT | B | High | 中 | confirmed |
 | F-PAT-003 | 原子写四份手写实现，未复用仓库共享 `atomic-write` 包 | PAT | A/B | High | 高 | fixed |
 | F-PAT-004 | 品牌配置损坏时静默回退默认品牌 | PAT | B | Medium | 中 | fixed |
-| F-PAT-005 | 四个输出路径默认锚定 `process.cwd()` | PAT | E | Medium | 中 | confirmed |
+| F-PAT-005 | 四个输出路径默认锚定 `process.cwd()` | PAT | E | Medium | 中 | fixed |
 | F-PAT-006 | `adversary-review` 以关键词启发式输出"置信度 87.5%" | PAT | B | High | 高 | fixed |
 | F-PAT-007 | `atomicWriteJson` 从 `patent-data` 历史导出面导入 | PAT | B | Low | 高 | fixed |
 | F-PAT-008 | TRIZ 资产裸 `JSON.parse as T`，失败无包内错误类型 | PAT | B | Low | 低 | confirmed |
@@ -101,7 +101,7 @@
 | F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | confirmed |
 | F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | fixed |
 | F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | fixed |
-| F-LEG-004 | 两域默认引用策略分叉，缺对照说明与回归护栏 | LEG | E | Low | 中 | confirmed |
+| F-LEG-004 | 两域默认引用策略分叉，缺对照说明与回归护栏 | LEG | E | Low | 中 | fixed |
 | F-LEG-005 | 专利知识库降级日志写死 `[sati]` 前缀 | LEG | B | Low | 高 | confirmed |
 | F-LEG-006 | 三性判定器把「打分 + 结论对象」手写 13 份，布尔三元打分块 18 处 | LEG | B | Low | 高 | confirmed |
 | F-LEG-007 | `getById` 在 `legal` 与 `judicial-interpretation` 逐字相同 | LEG | B | Low | 高 | confirmed |
@@ -115,10 +115,10 @@
 | F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | fixed |
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | confirmed |
 | F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | fixed |
-| F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | confirmed |
+| F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | fixed |
 | F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | fixed |
-| F-VID-006 | `StrictRequest` 与 `MediaTaskRequest` 字段完全重复 | VID | B | Low | 高 | confirmed |
-| F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | confirmed |
+| F-VID-006 | `StrictRequest` 与 `MediaTaskRequest` 字段完全重复 | VID | B | Low | 高 | fixed |
+| F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | fixed |
 | F-VID-008 | `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份 | VID | B | Medium | 高 | confirmed |
 | F-VID-009 | 云 provider 的 submit/poll 与图片编码骨架各写一遍，拷贝已漂移 | VID | B | Low | 高 | confirmed |
 | F-VID-010 | store 的「锁 + 读 + 改 + 写」骨架三处各写一遍 | VID | B | Low | 高 | confirmed |
@@ -197,7 +197,8 @@
 - 最小修复建议：默认根改为部署显式传入的工作区根（`ctx` 上的 workspace 服务）；确实没有时 fail loud 而不是猜 cwd。
 - 预估工作量：M
 - 是否可自动化：是（测试以不同 cwd 启动断言路径来源）
-- 状态：confirmed
+- 修复：未给出绝对路径时，以 `ctx.sandboxPolicy.workspaceRoot` 为根。该值为空或服务缺席时插件加载抛 `setup_required`，不再读取 `process.cwd()`。绝对路径配置保持原样。
+- 状态：fixed
 
 ### F-PAT-006 `adversary-review` 以关键词启发式输出"置信度 87.5%"
 
@@ -1095,7 +1096,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：两包 README 各加一行默认策略对照，并补一条跨域用例锁定"有意分叉"。
 - 预估工作量：S
 - 是否可自动化：是
-- 状态：confirmed
+- 修复：patent-law 与 legal-law 的 README 写明：`not-indexed` 与 `unverified` 上，专利域告警、法律域拦截，其余三项两域相同。法律域用例把随包默认锁到 `CONFORMANCE_POLICIES`，并锁住这处分叉。
+- 状态：fixed
 
 ### F-LEG-005 专利知识库降级日志写死 `[sati]` 前缀
 
@@ -1284,7 +1286,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：渲染到 `<output>.partial`，成功且探测通过后经 `ctx.fs` 发布为正式路径。
 - 预估工作量：M
 - 是否可自动化：是（模拟 ffmpeg 失败断言旧文件仍在）
-- 状态：confirmed
+- 修复：ffmpeg 只写 `<output>.partial`，参数在输出路径前写明 `-f mp4`。退出码为 0 且 ffprobe 成功后，才用 `ctx.fs` 把字节发布到声明路径并删掉 partial。ffmpeg 缺失、非零退出或探测失败都会丢掉 partial，已有成片保持不变。
+- 状态：fixed
 
 ### F-VID-005 `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复
 
@@ -1310,7 +1313,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：删 `StrictRequest`，`requestFields` 直接返回 `MediaTaskRequest`。
 - 预估工作量：S
 - 是否可自动化：是
-- 状态：confirmed
+- 修复：删除 `StrictRequest`。`taskRequestOf` 的入参取自 `MediaTaskRequest`，未设置的可选字段仍不写入结果。journal 的 `requestSchema` 用 `lockToInterface` 对准 `MediaTaskRequest`。
+- 状态：fixed
 
 ### F-VID-007 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算
 
@@ -1323,7 +1327,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：账本移出模型可写目录（按工程 id 存在应用数据目录），或由宿主持有密钥对条目签名并在读取时校验；更彻底的做法是与 provider 的用量对账，而不是只信本地文件。
 - 预估工作量：M
 - 是否可自动化：是（改写 `budget.json` 后断言预算仍被拒）
-- 状态：confirmed
+- 修复：宿主账本写在 `ledgerDir`（默认 `~/.dsh/video-mode/ledgers`），文件名是项目路径的摘要。写入使用只覆盖该目录的 `workspace-write` 策略。目录落在会话工作区内则拒绝。工程旁的 `budget.json` 只在宿主文件不存在时导入一次，之后改写它不影响预算门。
+- 状态：fixed
 
 ### F-VID-008 `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份
 

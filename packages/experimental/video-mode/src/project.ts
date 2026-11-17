@@ -374,6 +374,18 @@ export function projectCost(project: VideoProject): number {
 }
 
 /**
+ * Budget one project has already committed. The two records cover different
+ * mistakes: a forgotten write-back cannot under-count the shots, and a lowered
+ * shot cost cannot lower the figure below what media work already reserved.
+ * @param project - current project.
+ * @param committedMediaCny - media charges and in-flight estimates in CNY.
+ * @returns the larger of the shot costs and the media spend.
+ */
+export function committedBudgetCny(project: VideoProject, committedMediaCny: number): number {
+  return Math.max(projectCost(project), committedMediaCny)
+}
+
+/**
  * Report the shots that cannot appear in a render.
  * @param project - current project.
  * @returns shot ids with no selected clip.

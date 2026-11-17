@@ -3055,7 +3055,7 @@ document_deliver 把交付文件（path + format）、P0/P1 质量门状态与 b
 
 ### `media`
 
-通过已配置的媒体 provider 生成或查看图像、视频片段与语音。 Actions: `models` lists available models and prices; `estimate` previews cost and duration without generating; `generate` submits one generation and writes the artifact to `output_path`; `status` polls one task once and writes a settled artifact when `output_path` is given; `cancel` stops one. 带 `project_path` 的 `status` 可恢复运行时重启前的任务。 Prefer `estimate` before a paid generation. 语音请求传 `subtitles` 时会在音频旁写出 `.srt` 字幕文件。 The synthetic provider is for demos and tests; configure the local ComfyUI provider or a real provider for production. Generated files land under the Session workspace; keep each shot in its own directory.
+通过已配置的媒体 provider 生成或查看图像、视频片段与语音。 Actions: `models` lists available models and prices; `estimate` previews cost and duration without generating; `generate` submits one generation and writes the artifact to `output_path`; with `project_path` it holds the remaining budget, and a task left in the journal keeps its estimate reserved until it settles; `status` polls one task once and writes a settled artifact when `output_path` is given; `cancel` stops one, and with `project_path` drops the journal record of a task this host cannot resume. 带 `project_path` 的 `status` 可恢复运行时重启前的任务。 Prefer `estimate` before a paid generation. 语音请求传 `subtitles` 时会在音频旁写出 `.srt` 字幕文件。 The synthetic provider is for demos and tests; configure the local ComfyUI provider or a real provider for production. Generated files land under the Session workspace; keep each shot in its own directory.
 
 ```json
 {
@@ -3135,7 +3135,7 @@ document_deliver 把交付文件（path + format）、P0/P1 质量门状态与 b
     },
     "project_path": {
       "type": "string",
-      "description": "Project file used to enforce the remaining budget and to journal in-flight tasks. Pass it on generate and status so a restart can resume the task."
+      "description": "Project file used to enforce the remaining budget and to journal in-flight tasks. Pass it on generate, status, and cancel so a restart can resume or drop the task."
     },
     "confirm_cost": {
       "type": "boolean",

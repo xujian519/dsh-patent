@@ -122,9 +122,9 @@
 | F-VID-008 | `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份 | VID | B | Medium | 高 | confirmed |
 | F-VID-009 | 云 provider 的 submit/poll 与图片编码骨架各写一遍，拷贝已漂移 | VID | B | Low | 高 | confirmed |
 | F-VID-010 | store 的「锁 + 读 + 改 + 写」骨架三处各写一遍 | VID | B | Low | 高 | confirmed |
-| F-VID-011 | 预算检查是 check-then-act，同一工程的并发生成可以超额 | VID | E | Medium | 中 | confirmed |
-| F-VID-012 | 失效的 journal 记录没有工具侧清理路径 | VID | E | Medium | 中 | confirmed |
-| F-VID-013 | `status` 对 `artifacts: []` 的成功任务照常结算并清 journal | VID | E | Low | 中 | confirmed |
+| F-VID-011 | 预算检查是 check-then-act，同一工程的并发生成可以超额 | VID | E | Medium | 中 | fixed |
+| F-VID-012 | 失效的 journal 记录没有工具侧清理路径 | VID | E | Medium | 中 | fixed |
+| F-VID-013 | `status` 对 `artifacts: []` 的成功任务照常结算并清 journal | VID | E | Low | 中 | fixed |
 | F-VID-014 | 项目身份取工具结果里的原始路径，绝对与相对写法会让同一工程出现两次 | VID | E | Low | 高 | new |
 | F-VID-015 | EDL 音频片段的 `inSec`/`outSec` 不校验顺序，校验晚到 ffmpeg | VID | E | Low | 中 | new |
 | F-CROSS-001 | 四域另有 4 份 `messageOf`/`errorText` 与 1 份可并的 `asRecord`，而 `dsh-value` 已有对应原语且 11 个域内包已依赖它 | CROSS | B | Low | 高 | new |
@@ -1390,7 +1390,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：在账本 `withKeyLock` 内完成「读余额—写入按预留 id 记账的 pending 条目（金额取估计值）」，然后提交；结算时把预留替换为实际 `taskId` 条目，失败时删除预留。若不想引入预留，则在工程级锁里串行化「检查—提交—结算」，并让 `deliver` 与 `generate` 共用同一判定。只把 `remaining` 再读一次不够——两个读者仍会同时通过。
 - 预估工作量：M
 - 是否可自动化：是（把现有并发用例的期望改为「第二次拒绝」或「总账 ≤ 预算」，并加一条两个 `MediaRuntime`/store 实例共享同一目录的用例）
-- 状态：confirmed（Day 41 静态复核，2026-11-17）
+- 修复：`generate` 带 `project_path` 时从预算检查到提交持有按项目划分的进程内门（`budget:<解析后的项目文件路径>`），第二次生成读到前一次已写入的账本条目或日志预留。预留取自日志：`committedCostCny` 把账本总额与 `tasks.json` 中每条未终结记录的估算相加，非人民币、无价格或 provider 已消失的记录计 0。`video_deliver` 与 `generate` 共用 `committedBudgetCny`，交付按同一口径阻断。跨进程的同步 provider 仍可能同时通过。
+- 状态：fixed（2026-11-18）
 
 ### F-VID-012 失效的 journal 记录没有工具侧清理路径
 
@@ -1403,7 +1404,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：`status` 捕获 `resume` 的不可恢复错误（`MEDIA_PROVIDER_UNAVAILABLE`、没有 `resume` 的 `MEDIA_TASK_NOT_FOUND`、`MEDIA_STORE_INVALID`），把记录标成 failed 并清掉，同时在结果里说明被丢弃的记录；或给 `cancel` 增加「运行时无此任务时仅清 journal」的回退，并提供显式的清理动作。自动丢弃时要保留一条可审计的摘要，避免把「provider 暂时未挂载」当成永久失败静默删除。
 - 预估工作量：S
 - 是否可自动化：是（复用 ghost 记录用例，断言工具调用后 `readTaskRecords` 为空；再加一条 cancel 清 ghost 记录的用例）
-- 状态：confirmed（Day 41 静态复核，2026-11-17）
+- 修复：`media cancel` 在 `MEDIA_TASK_NOT_FOUND` 且调用带 `project_path` 时查日志记录；找到就 `forgetTask`，并返回 `dropped its journal record`，附 provider、kind 与最后状态，声明没有联系 provider。`status` 的恢复失败仍抛原错误，末尾追加 `drop the record with media cancel and project_path` 指明清理路径。未做自动丢弃，避免把暂时未挂载的 provider 当成永久失败。
+- 状态：fixed（2026-11-18）
 
 ### F-VID-013 `status` 对 `artifacts: []` 的成功任务照常结算并清 journal
 
@@ -1416,7 +1418,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把终态处理抽成「写产物 → 断言至少一个 → 结算 → 清 journal」，`generate` 与 `status` 共用；`artifacts === undefined || length === 0` 时保留 journal 并抛 `MEDIA_ARTIFACT_INVALID`。结算与清理不再以 `outputPath` 为前置（同时收口 F-VID-002）。
 - 预估工作量：S
 - 是否可自动化：是（用现有 `providerOf` 桩返回 `succeeded, artifacts: []`，断言工具报错、journal 仍在、账本为空）
-- 状态：confirmed（Day 41 静态复核，2026-11-17）
+- 修复：终态处理抽成 `settleSucceeded`，`generate` 与 `status` 共用：先要求 `task.artifacts` 至少一个，否则抛 `MEDIA_ARTIFACT_INVALID` 并保留日志；再按可用路径写产物、结算、清日志。结算与清理不再以 `outputPath` 为前置，F-VID-002 的口径保持不变。
+- 状态：fixed（2026-11-18）
 
 ### F-VID-014 项目身份取工具结果里的原始路径，绝对与相对写法会让同一工程出现两次
 

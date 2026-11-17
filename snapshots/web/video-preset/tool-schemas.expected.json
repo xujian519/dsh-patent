@@ -317,7 +317,7 @@
     },
     {
       "name": "media",
-      "description": "Generate or inspect images, video clips, and speech through the configured media providers. Actions: `models` lists available models and prices; `estimate` previews cost and duration without generating; `generate` submits one generation and writes the artifact to `output_path`; `status` polls one task once and writes a settled artifact when `output_path` is given; `cancel` stops one. `status` with `project_path` recovers a task journaled before a runtime restart. Prefer `estimate` before a paid generation. Speech accepts `subtitles` and then writes an `.srt` sidecar beside the audio. The synthetic provider is for demos and tests; configure a real provider for production. Generated files land under the Session workspace; keep each shot in its own directory.",
+      "description": "Generate or inspect images, video clips, and speech through the configured media providers. Actions: `models` lists available models and prices; `estimate` previews cost and duration without generating; `generate` submits one generation and writes the artifact to `output_path`; with `project_path` it holds the remaining budget, and a task left in the journal keeps its estimate reserved until it settles; `status` polls one task once and writes a settled artifact when `output_path` is given; `cancel` stops one, and with `project_path` drops the journal record of a task this host cannot resume. `status` with `project_path` recovers a task journaled before a runtime restart. Prefer `estimate` before a paid generation. Speech accepts `subtitles` and then writes an `.srt` sidecar beside the audio. The synthetic provider is for demos and tests; configure a real provider for production. Generated files land under the Session workspace; keep each shot in its own directory.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -395,7 +395,7 @@
           },
           "project_path": {
             "type": "string",
-            "description": "Project file used to enforce the remaining budget and to journal in-flight tasks. Pass it on generate and status so a restart can resume the task."
+            "description": "Project file used to enforce the remaining budget and to journal in-flight tasks. Pass it on generate, status, and cancel so a restart can resume or drop the task."
           },
           "confirm_cost": {
             "type": "boolean",

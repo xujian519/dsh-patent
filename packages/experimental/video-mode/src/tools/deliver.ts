@@ -9,11 +9,11 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { probeMedia, type MediaProbe } from '../edl.ts'
-import { missingShotClips, projectCost, readProject } from '../project.ts'
-import { ledgerCost, readLedger } from '../store.ts'
+import { committedBudgetCny, missingShotClips, readProject } from '../project.ts'
+import { readLedger, readTaskRecords } from '../store.ts'
 import type MediaRuntime from '../media.ts'
 import { MediaFailure } from '../types.ts'
-import { workingDirectoryOf } from './shared.ts'
+import { committedCostCny, workingDirectoryOf } from './shared.ts'
 
 /** One finding produced by a delivery check. */
 interface DeliveryFinding {
@@ -104,7 +104,8 @@ export function createDeliverTool(ctx: Context, media: MediaRuntime): ToolDefini
         findings.push({ check: 'duration_plan', level: 'warn', detail: `shots total ${planned.toFixed(1)}s against a ${project.targetSeconds}s target` })
       }
       const ledger = await readLedger(ctx, args.project_path, media.settings.ledgerDir, cwd, exec.signal)
-      const cost = Math.max(projectCost(project), ledgerCost(ledger))
+      const records = await readTaskRecords(ctx, args.project_path, cwd, exec.signal)
+      const cost = committedBudgetCny(project, committedCostCny(media, ledger, records))
       if (cost > project.budgetCny) {
         findings.push({ check: 'budget', level: 'block', detail: `reported cost ${cost.toFixed(2)} CNY exceeds the ${project.budgetCny.toFixed(2)} CNY budget` })
       }

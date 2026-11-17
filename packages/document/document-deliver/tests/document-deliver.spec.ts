@@ -32,6 +32,11 @@ import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 const signal = new AbortController().signal
 const exec = { signal } as unknown as ToolRunContext
+
+/** Reuse the baselined run context and replace only the caller signal. */
+function withSignal(callerSignal: AbortSignal): ToolRunContext {
+  return { ...exec, signal: callerSignal }
+}
 /** Every P0 id the shipped checklist declares: the declaration of a call that has nothing to report. */
 const P0_IDS = P0_CHECKLIST.map(entry => entry.id)
 
@@ -308,7 +313,7 @@ describe('document_deliver tool', () => {
       const tool = createDocumentDeliverTool(ctx, deps())
       await expect(tool.execute(
         { files: [{ path: present, format: 'html' }], gate: { p0: ['x'] } },
-        { signal: controller.signal } as unknown as ToolRunContext,
+        withSignal(controller.signal),
       )).rejects.toThrow(/abort/i)
     } finally {
       ctx.fs.readBytes = original

@@ -23,7 +23,6 @@ import { unsupportedInbox, unsupportedModel } from '@deepseek-ai/dsh-agent-loop-
 import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import VideoMode, {
-  forgetTask,
   ledgerCost,
   readLedger,
   readTaskRecords,
@@ -36,7 +35,7 @@ import VideoMode, {
   type MediaReference,
   type MediaRuntimeConfig,
 } from '../src/index.ts'
-import { derivedPath, subtitlePathOf, writeArtifact } from '../src/tools/shared.ts'
+import { committedCostCny, derivedPath, subtitlePathOf, writeArtifact } from '../src/tools/shared.ts'
 
 const FFMPEG = (() => {
   try {
@@ -852,6 +851,31 @@ describe('durable tasks and the budget ledger', () => {
     expect(await readLedger(created, projectPath, join(root, '.host-ledgers'), root)).toHaveLength(1)
   })
 
+  it('keeps a journal record whose success carries no artifacts', async () => {
+    const created = await boot({ approvalThresholdCny: 100 })
+    created.media.register(providerOf({
+      id: 'hollow',
+      models: [{ id: 'hollow/video', kind: 'video', provider: 'hollow' }],
+      estimate: () => ({ confidence: 'exact', cost: { amountMinor: 200, currency: 'CNY' } }),
+      submit: async request => ({
+        id: 'hollow-1', provider: 'hollow', model: request.model ?? '', kind: request.kind, status: 'submitted',
+      }),
+      poll: async task => ({ ...task, status: 'succeeded', artifacts: [] }),
+    }))
+    const project = valueOf(await call(created, 'video_project', { action: 'init', title: 'Hollow', budget_cny: 10 }))
+    const projectPath = project.path as string
+    valueOf(await call(created, 'media', {
+      action: 'generate', kind: 'video', prompt: 'x', model: 'hollow/video', output_path: 'out/hollow.mp4',
+      wait: false, project_path: projectPath,
+    }))
+
+    expect(errorOf(await call(created, 'media', {
+      action: 'status', task_id: 'hollow-1', project_path: projectPath,
+    }))).toContain('succeeded without artifacts')
+    expect(await readTaskRecords(created, projectPath, root)).toHaveLength(1)
+    expect(await readLedger(created, projectPath, join(root, '.host-ledgers'), root)).toEqual([])
+  })
+
   it('counts the ledger against the budget when a shot records no cost', async () => {
     const created = await boot()
     let price = 100
@@ -913,11 +937,13 @@ describe('durable tasks and the budget ledger', () => {
     expect(await readLedger(created, projectPath, join(root, '.host-ledgers'), root)).toHaveLength(1)
   })
 
-  it('lets two generations compare the same ledger and then blocks the next one', async () => {
+  it('blocks a generation that starts while another holds the budget', async () => {
     const created = await boot({ approvalThresholdCny: 100 })
     let started = 0
-    let releaseBoth: () => void = () => {}
-    const bothStarted = new Promise<void>((resolve) => { releaseBoth = resolve })
+    let release: () => void = () => {}
+    const submitted = new Promise<void>((resolve) => { release = resolve })
+    let entered: () => void = () => {}
+    const enteredFirst = new Promise<void>((resolve) => { entered = resolve })
     created.media.register(providerOf({
       id: 'race',
       models: [{ id: 'race/video', kind: 'video', provider: 'race' }],
@@ -925,8 +951,8 @@ describe('durable tasks and the budget ledger', () => {
       submit: async (request) => {
         started += 1
         const id = `race-${started}`
-        if (started === 2) releaseBoth()
-        await bothStarted
+        if (started === 1) entered()
+        await submitted
         return {
           id, provider: 'race', model: request.model ?? '', kind: request.kind, status: 'succeeded',
           artifacts: [{ id: 'clip', kind: 'video', mediaType: 'video/mp4', bytes: MP4 }],
@@ -939,16 +965,82 @@ describe('durable tasks and the budget ledger', () => {
       action: 'generate', kind: 'video', prompt: 'x', model: 'race/video', output_path: `out/${name}.mp4`,
       project_path: projectPath, confirm_cost: true,
     })
-    const concurrent = Promise.all([generate('a'), generate('b')])
-    await bothStarted
-    const [first, second] = await concurrent
-    expect(first.isError).toBe(false)
-    expect(second.isError).toBe(false)
+    const first = generate('a')
+    await enteredFirst
+    const second = generate('b')
+    release()
+    const [firstResult, secondResult] = await Promise.all([first, second])
+    expect(firstResult.isError).toBe(false)
+    expect(errorOf(secondResult)).toContain('exceeds the 1.00 CNY remaining')
+    expect(started).toBe(1)
     const charges = await readLedger(created, projectPath, join(root, '.host-ledgers'), root)
-    expect(charges).toHaveLength(2)
-    expect(ledgerCost(charges)).toBe(4)
-    expect(errorOf(await generate('c'))).toContain('remaining in the project budget')
-    expect(await readLedger(created, projectPath, join(root, '.host-ledgers'), root)).toHaveLength(2)
+    expect(charges).toHaveLength(1)
+    expect(ledgerCost(charges)).toBe(2)
+  })
+
+  it('reserves the estimate of a pending generation until it is cancelled', async () => {
+    const created = await boot({ approvalThresholdCny: 100 })
+    let started = 0
+    created.media.register(providerOf({
+      id: 'pending',
+      models: [{ id: 'pending/video', kind: 'video', provider: 'pending' }],
+      estimate: () => ({ confidence: 'exact', cost: { amountMinor: 200, currency: 'CNY' } }),
+      submit: async (request) => {
+        started += 1
+        return {
+          id: `pending-${started}`, provider: 'pending', model: request.model ?? '', kind: request.kind, status: 'submitted',
+        }
+      },
+      poll: async task => ({ ...task, status: 'running' }),
+    }))
+    const project = valueOf(await call(created, 'video_project', { action: 'init', title: 'Pending', budget_cny: 3 }))
+    const projectPath = project.path as string
+    const generate = (name: string): ReturnType<typeof call> => call(created, 'media', {
+      action: 'generate', kind: 'video', prompt: 'x', model: 'pending/video', output_path: `out/${name}.mp4`,
+      project_path: projectPath, wait: false, confirm_cost: true,
+    })
+    valueOf(await generate('a'))
+    expect(await readTaskRecords(created, projectPath, root)).toHaveLength(1)
+
+    expect(errorOf(await generate('b'))).toContain('exceeds the 1.00 CNY remaining')
+    expect(started).toBe(1)
+    expect(await readTaskRecords(created, projectPath, root)).toHaveLength(1)
+
+    valueOf(await call(created, 'media', { action: 'cancel', task_id: 'pending-1', project_path: projectPath }))
+    valueOf(await generate('c'))
+    expect(started).toBe(2)
+    expect(await readTaskRecords(created, projectPath, root)).toHaveLength(1)
+    expect(await readLedger(created, projectPath, join(root, '.host-ledgers'), root)).toEqual([])
+  })
+
+  it('blocks delivery when a journaled estimate already exceeds the budget', async () => {
+    const probe = join(root, 'pending-ffprobe.sh')
+    await writeFile(probe, '#!/bin/sh\necho \'{"format":{"duration":"1"},"streams":[{"codec_type":"video","width":64,"height":96},{"codec_type":"audio"}]}\'\nexit 0\n')
+    await chmod(probe, 0o755)
+    const created = await boot({ ffprobePath: probe })
+    created.media.register(providerOf({
+      id: 'pending',
+      models: [{ id: 'pending/video', kind: 'video', provider: 'pending' }],
+      estimate: () => ({ confidence: 'exact', cost: { amountMinor: 200, currency: 'CNY' } }),
+    }))
+    const project = valueOf(await call(created, 'video_project', { action: 'init', title: 'Reserved', target_seconds: 1, budget_cny: 1 }))
+    const projectPath = project.path as string
+    valueOf(await call(created, 'video_project', {
+      action: 'upsert_shot', project_path: projectPath,
+      shot: { id: 's1', index: 1, prompt: 'x', duration_sec: 1, status: 'ready', clip_path: 'out/s1.mp4' },
+    }))
+    await mkdir(join(root, 'out'), { recursive: true })
+    await writeFile(join(root, 'out/s1.mp4'), 'video bytes')
+    await recordTask(created, projectPath, {
+      task: { id: 'pending-1', provider: 'pending', model: 'pending/video', kind: 'video', status: 'running' },
+      submittedAt: Date.now(),
+      request: { kind: 'video', model: 'pending/video', prompt: 'x', durationSec: 1 },
+      outputPath: 'out/pending.mp4',
+    }, root)
+
+    expect(errorOf(await call(created, 'video_deliver', {
+      project_path: projectPath, files: [{ path: 'out/s1.mp4', format: 'video' }],
+    }))).toContain('reported cost 2.00 CNY exceeds the 1.00 CNY budget')
   })
 
   it('journals only pending tasks and clears a record on failure or cancel', async () => {
@@ -1066,7 +1158,81 @@ describe('durable tasks and the budget ledger', () => {
     }, root)
     expect(errorOf(await call(created, 'media', { action: 'status', task_id: 'ghost-video-1', project_path: projectPath })))
       .toContain('provider "ghost" is not registered')
-    await forgetTask(created, projectPath, 'ghost-video-1', root)
+    expect(await readTaskRecords(created, projectPath, root)).toHaveLength(1)
+
+    const dropped = valueOf(await call(created, 'media', {
+      action: 'cancel', task_id: 'ghost-video-1', project_path: projectPath,
+    }))
+    expect(String(dropped.message)).toContain('dropped its journal record')
+    expect(String(dropped.message)).toContain('provider ghost')
+    expect(dropped.task).toMatchObject({ id: 'ghost-video-1', status: 'running' })
+    expect(await readTaskRecords(created, projectPath, root)).toEqual([])
+    expect(errorOf(await call(created, 'media', { action: 'cancel', task_id: 'ghost-video-1', project_path: projectPath })))
+      .toContain('unknown media task')
+    expect(errorOf(await call(created, 'media', { action: 'cancel', task_id: 'ghost-video-1' })))
+      .toContain('unknown media task')
+  })
+
+  it('rethrows a provider resume failure it cannot classify', async () => {
+    const created = await boot()
+    const project = valueOf(await call(created, 'video_project', { action: 'init', title: 'Boom' }))
+    const projectPath = project.path as string
+    created.media.register(providerOf({
+      id: 'boom',
+      models: [{ id: 'boom/video', kind: 'video', provider: 'boom' }],
+      resume: () => { throw new Error('provider exploded') },
+    }))
+    await recordTask(created, projectPath, {
+      task: { id: 'boom-video-1', provider: 'boom', model: 'boom/video', kind: 'video', status: 'running' },
+      submittedAt: Date.now(),
+      request: { kind: 'video', model: 'boom/video', prompt: 'x', durationSec: 4 },
+      outputPath: 'out/boom.mp4',
+    }, root)
+
+    expect(errorOf(await call(created, 'media', {
+      action: 'status', task_id: 'boom-video-1', project_path: projectPath,
+    }))).toContain('provider exploded')
+    expect(await readTaskRecords(created, projectPath, root)).toHaveLength(1)
+  })
+
+  it('counts only priced CNY estimates of journaled tasks as committed spend', async () => {
+    const created = await boot()
+    created.media.register({
+      id: 'mixed',
+      capabilities: ['video'],
+      models: () => [
+        { id: 'mixed/cny', kind: 'video', provider: 'mixed' },
+        { id: 'mixed/usd', kind: 'video', provider: 'mixed' },
+        { id: 'mixed/free', kind: 'video', provider: 'mixed' },
+        { id: 'mixed/broken', kind: 'video', provider: 'mixed' },
+      ],
+      available: () => true,
+      estimate: (request) => {
+        if (request.model === 'mixed/usd') return { confidence: 'exact', cost: { amountMinor: 100, currency: 'USD' } }
+        if (request.model === 'mixed/free') return { confidence: 'unknown' }
+        if (request.model === 'mixed/broken') throw new Error('broken price')
+        return { confidence: 'exact', cost: { amountMinor: 150, currency: 'CNY' } }
+      },
+      submit: async request => ({
+        id: 'mixed-1', provider: 'mixed', model: request.model ?? '', kind: request.kind, status: 'submitted',
+      }),
+      poll: async task => task,
+      cancel: async () => {},
+    })
+    const records = ['mixed/cny', 'mixed/usd', 'mixed/free', 'mixed/nope'].map(model => ({
+      task: { id: `mixed-${model}`, provider: 'mixed', model, kind: 'video' as const, status: 'running' as const },
+      submittedAt: 0,
+      request: { kind: 'video' as const, model, prompt: 'x' },
+      outputPath: `out/${model}.mp4`,
+    }))
+
+    expect(committedCostCny(created.media, [], records)).toBe(1.5)
+    expect(() => committedCostCny(created.media, [], [{
+      task: { id: 'mixed-broken', provider: 'mixed', model: 'mixed/broken', kind: 'video' as const, status: 'running' as const },
+      submittedAt: 0,
+      request: { kind: 'video' as const, model: 'mixed/broken', prompt: 'x' },
+      outputPath: 'out/mixed-broken.mp4',
+    }])).toThrow('broken price')
   })
 
   it('keeps a recovered task journaled while it is still running', async () => {

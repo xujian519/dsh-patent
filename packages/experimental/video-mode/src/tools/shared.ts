@@ -1,7 +1,8 @@
 /**
  * Shared helpers for the video mode tools: resolve the Session working
- * directory, write one artifact through `ctx.fs`, and reject bytes whose
- * declared media type the signature contradicts.
+ * directory, write one artifact through `ctx.fs`, reject bytes whose declared
+ * media type the signature contradicts, and sum the spend one project has
+ * committed against its budget.
  * @module @deepseek-ai/dsh-video-mode/tools/shared
  */
 
@@ -10,7 +11,14 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-working-directory'
 import { signatureOf } from '../fixture-bytes.ts'
-import { MediaFailure, type MediaArtifact } from '../types.ts'
+import type MediaRuntime from '../media.ts'
+import { ledgerCost, requestOfTask } from '../store.ts'
+import {
+  MediaFailure,
+  type MediaArtifact,
+  type MediaLedgerEntry,
+  type MediaTaskRecord,
+} from '../types.ts'
 
 /**
  * Resolve the directory relative tool paths use. A model call belongs to an
@@ -110,4 +118,43 @@ export async function writeArtifact(
   const target = await ctx.fs.resolve(path, { cwd })
   await ctx.fs.writeBytes(target, bytes, undefined, signal)
   return { path: ctx.fs.processPath(target), bytes: bytes.length }
+}
+
+/**
+ * Media spend one project has committed: settled ledger charges plus the
+ * estimates of tasks still in the journal. A pending estimate is the
+ * reservation that keeps the next generation from passing the same check.
+ * @param media - media runtime that prices the journaled requests.
+ * @param entries - settled charges.
+ * @param records - in-flight journal records.
+ * @returns the committed amount in CNY, summed in fen.
+ */
+export function committedCostCny(
+  media: MediaRuntime,
+  entries: readonly MediaLedgerEntry[],
+  records: readonly MediaTaskRecord[],
+): number {
+  let fen = Math.round(ledgerCost(entries) * 100)
+  for (const record of records) {
+    const cost = pendingFen(media, record)
+    if (cost !== undefined) fen += cost
+  }
+  return fen / 100
+}
+
+/**
+ * Price one journaled task in fen.
+ * @param media - media runtime that prices the request.
+ * @param record - in-flight journal record.
+ * @returns the estimate in fen, or undefined when the provider cannot price it in CNY.
+ */
+function pendingFen(media: MediaRuntime, record: MediaTaskRecord): number | undefined {
+  try {
+    const estimate = media.estimate(requestOfTask(record.request))
+    return estimate.cost?.currency === 'CNY' ? estimate.cost.amountMinor : undefined
+  } catch (error) {
+    if (!(error instanceof MediaFailure)) throw error
+    // A provider or model removed while the task was pending leaves its charge unknown.
+    return undefined
+  }
 }

@@ -26,7 +26,7 @@ kind: "package-reference"
 ## 挂载内容
 
 - **`ctx.media`** —— 能力缝的 provider 注册表与统一执行路径。它按配置的默认模型或显式 `model` 选择 provider，在执行时解析模型，用稳定的 `MediaFailure` 码拒绝不可用与歧义选择，保留有界数量的任务记录，把进行中任务记入项目旁的日志以便重启后恢复，并最多等待 `waitMs` 让任务结算。
-- **`media` 工具** —— 一个按 action 分派的工具（`models`、`estimate`、`generate`、`status`、`cancel`）：列出模型与价格、预估成本、提交生成、通过 `ctx.fs` 写入产物、读取或取消任务，并在带 `project_path` 时于重启后恢复日志中的任务。
+- **`media` 工具** —— 一个按 action 分派的工具（`models`、`estimate`、`generate`、`status`、`cancel`）：列出模型与价格、预估成本、在项目预算内提交生成、通过 `ctx.fs` 写入产物、读取或取消任务，并在带 `project_path` 时于重启后恢复日志中的任务，或清掉任何 provider 都无法重建的记录。
 - **`video_project` 工具** —— 创建、读取与修改项目文档。每次修改先校验完整文档再写入；项目文件是镜头、选中片段、成片与预算的唯一事实源。同一 Host 内按项目串行化修改，若文件在读取后被改动则重试。
 - **`video_assemble` 工具** —— 校验 EDL，经 ffmpeg 以归一化滤镜图渲染（画布、帧率、等比补边、拼接、混音、烧字幕、faststart），返回实测时长、分辨率与是否有音轨。
 - **`video_deliver` 工具** —— 登记最终文件并返回机器检查。缺视频、镜头不完整、视频无可读流、上报成本超预算会拒绝登记；时长偏差与缺音轨只告警。
@@ -186,7 +186,7 @@ MiniMax 语音 provider 以 `stream: false` 提交 `text`，并在同一次调�
 
 项目文档使用严格 schema（`schemaVersion: 1`），包含标题、画幅、目标时长、预算、镜头与成片。`video_project` 读取文档、应用一次修改、校验完整结果，再通过 `ctx.fs.writeText` 以读取到的版本守卫发布（`replaceIfVersion`）。修改按项目路径取进程内锁；其他进程的并发改写会让守卫写入失败，修改随即重新读取并最多重试三次，随后以 `MEDIA_PROJECT_CONFLICT` 失败。初始化使用守卫创建，不会覆盖已有项目。
 
-`media` 工具把每个未终结的生成任务记入 `video/<id>/tasks.json`：任务 id、provider、模型、提交时间、恢复所需的请求字段，以及声明的输出路径。带 `project_path` 的 `media status` 在运行时不再持有该任务时找到记录，让 provider 通过 `resume` 重建待轮询状态并继续轮询；任务结算后删除记录。每次以人民币计价的结算都按任务 id 与解析后的项目路径追加一条到宿主账本（`ledgerDir`，默认 `~/.dsh/video-mode/ledgers`），因此重复调用 status 不会重复计费。工程旁的 `budget.json` 只在宿主文件不存在时被复制进该账本；之后再改它，预算门不变。日志与账本的写入携带读取到的版本：追加竞争失败时重新读取并合并，而不是覆盖另一个写入者；持续失败以 `MEDIA_STORE_CONFLICT` 报告。预算门与 `video_deliver` 取已记录镜头成本与账本总额中的较大者。
+`media` 工具把每个未终结的生成任务记入 `video/<id>/tasks.json`：任务 id、provider、模型、提交时间、恢复所需的请求字段，以及声明的输出路径。带 `project_path` 的 `media status` 在运行时不再持有该任务时找到记录，让 provider 通过 `resume` 重建待轮询状态并继续轮询；任务结算后删除记录。每次以人民币计价的结算都按任务 id 与解析后的项目路径追加一条到宿主账本（`ledgerDir`，默认 `~/.dsh/video-mode/ledgers`），因此重复调用 status 不会重复计费。工程旁的 `budget.json` 只在宿主文件不存在时被复制进该账本；之后再改它，预算门不变。日志与账本的写入携带读取到的版本：追加竞争失败时重新读取并合并，而不是覆盖另一个写入者；持续失败以 `MEDIA_STORE_CONFLICT` 报告。预算门与 `video_deliver` 取“已记录镜头成本”与“媒体已承诺支出”（账本总额加上仍在日志中的任务估算）中的较大者。带预算的生成从预算检查到提交都持有按项目划分的门，因此同一 Host 内的第二次生成会读到前一次刚写入的计费或预留。
 
 EDL 是可复现的渲染契约。`buildFfmpegArgs` 生成一张滤镜图：每个视觉片段裁切、等比补边到画布、重采样到画布帧率并拼接；可选音频片段裁切、增益并混音；字幕按安全区样式烧录；输出 H.264/AAC 并带 `+faststart`。字幕路径会按滤镜图和 subtitles 滤镜各转义一次，撇号留在文件名里，输出垫仍是垫。该路径或配置的字体名含控制字符时会被拒绝。汇编器把 ffmpeg 的输出写到旁边的 `<output>.partial`，ffprobe 成功后才经 `ctx.fs` 把这些字节发布到声明的输出。ffmpeg 或探测失败时，已有成片保持不变。
 
@@ -222,14 +222,14 @@ EDL 是可复现的渲染契约。`buildFfmpegArgs` 生成一张滤镜图：每�
 - **本地 Wan 片段只作草稿** —— 通过 `first_frame_path` 的首帧片段能避开 CFG>1 的颜色失真，但实测在 Apple MPS 上 480p 片段数秒内仍会出现拖影与漂移，CFG 5 则直接破坏颜色。生产片段用 MiniMax-H3，本地 Wan 用于草稿和链路验证。视频模式 persona 与 `video-generate` 技能仍要求先出关键帧。
 - **本地生成时间随分辨率与时长增长** —— Apple 芯片笔记本 480p 每条片段需数分钟，720p 更久；`comfyui.timeoutMs` 限制等待，`comfyui.video.resolution` 用于在质量与周转间取舍。
 - **每种能力一个工作流** —— `comfyui.video.workflowPath` 整体替换随包图；两个视频后端需要在不同 id 下挂两行 provider。
-- **任务日志依赖 `project_path`** —— 只有调用里带项目路径时，`media generate` 与 `media status` 才会写日志并恢复。不带路径的生成只留在内存；合成 provider 在提交时即结算，无需日志。日志与账本是项目旁的 JSON 文件，不是 storage 服务；带版本守卫的写入能发现并发写入者并重试合并，持续失败的写入以 `MEDIA_STORE_CONFLICT` 报告，而不是静默丢弃对方条目。
+- **任务日志依赖 `project_path`** —— 只有调用里带项目路径时，`media generate` 与 `media status` 才会写日志并恢复。不带路径的生成只留在内存；合成 provider 在提交时即结算，无需日志。日志与账本是项目旁的 JSON 文件，不是 storage 服务；带版本守卫的写入能发现并发写入者并重试合并，持续失败的写入以 `MEDIA_STORE_CONFLICT` 报告，而不是静默丢弃对方条目。任何 provider 都无法重建的记录会一直保留，直到 `media cancel` 同时给出任务与项目：cancel 会删掉它，并说明无法接触的 provider。结算成功但没有产物的任务会保留记录，并以 `MEDIA_ARTIFACT_INVALID` 失败，而不是为不存在的文件记账。
 - **没有转写、MV 与切片流水线** —— 第一切片覆盖生成式图像/视频/语音与 ffmpeg 合成。词级转写、节拍网格、源视频导入与 9:16 重构已规划。
 - **Web 工作台只读** —— `视频` 标签（`dsh-client-ui-video-studio`）从落定的 `video_project` 结果发现项目，展示分镜、成片、进行中任务与账本，并通过 `/api/file` 的 Range 响应预览关键帧、片段与成片。编辑仍由工具完成；在工具之外修改的项目需要点击标签内的刷新；结果元数据出现之前记录的会话不显示项目。
 - **Provider 必须先下载 URL 再结算** —— 产物写入路径只接受字节。MiniMax、SiliconFlow 与 ComfyUI 会自行下载签名输出 URL；新增 provider 必须遵循同一约定。
 - **合成 MP4 只有一秒** —— 使用它的更长 EDL 会停最后一帧或提前结束；合成 provider 用于打通链路，不用于时长测试。
 - **ffmpeg 是 Host 前置条件** —— 可执行文件无法解析时，汇编器以 `MEDIA_FFMPEG_MISSING` 失败。烧录中文字幕需要 libass 与 CJK 字体。
-- **预算门取两份记录中的较大者** —— `media generate` 用估算值与 `project.budgetCny` 减去“`video_project` 记录的镜头成本”与“媒体账本”中的较大者比较。忘记回写不会少算，手工调低镜头成本也不能把门限降到账本已计费额度以下。
-- **预算门不是预留额度** —— 两个生成在任一结算前同时启动时，会读到同一份账本，因此并发提交可能超支；预算紧张时逐个执行。
+- **预算门取两份记录中的较大者** —— `media generate` 用估算值与 `project.budgetCny` 减去“`video_project` 记录的镜头成本”与“媒体已承诺支出”中的较大者比较。忘记回写不会少算，手工调低镜头成本也不能把门限降到账本已计费额度以下。
+- **预算门会为进行中的工作预留额度** —— 带预算的生成从预算检查到提交都持有按项目划分的门，日志中的任务在结算、失败或取消前一直按估算计入，因此同一 Host 内的两次生成不会同时通过同一项检查。共享同一工作区的另一个进程仍可能在第一次提交在途时通过。
 - **取消之后保持取消** —— `cancel` 之后才结束的轮询不会替换已取消的任务。
 - **单次轮询受 `waitMs` 限制** —— 轮询未在剩余等待时间内结束时，`generate` 返回运行中的任务。之后的 `status` 会再次轮询。
 - **跨进程项目写入仍可能竞争** —— 修改在同一 Host 内串行化，并且只在文件仍与读取时的文本一致时发布；但其他进程的写入若恰好落在此检查与写入之间，仍可能丢失。三次失败后报告 `MEDIA_PROJECT_CONFLICT`。

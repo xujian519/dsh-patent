@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  DEFAULT_NEGATION_WINDOW,
-  DEFAULT_NEGATION_WORDS,
   hasNegationContext,
   locateMatch,
   locationAt,
 } from '@deepseek-ai/dsh-patent-core'
+import { DEFAULT_NEGATION_WINDOW, DEFAULT_NEGATION_WORDS } from '../src/rule/text-utils.ts'
 
 describe('hasNegationContext', () => {
   it('否定词命中（默认窗口与词表）', () => {

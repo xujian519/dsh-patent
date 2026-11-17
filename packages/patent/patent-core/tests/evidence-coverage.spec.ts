@@ -3,28 +3,32 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  ClaimBinding,
-  ConflictDetector,
   EvidenceEngine,
-  EvidenceExtension,
-  STANDARD_CLEAR_CONVINCING,
   createSpan,
-  credibilityToScore,
-  determinePublicationDate,
-  evaluatePublicIntent,
-  extractDateFromText,
-  extractWaybackMachineDate,
-  inferEvidenceType,
-  inferredMonthEnd,
-  isBeforeReferenceDate,
   loadEvidenceRulesEngine,
   parseDateFlexible,
+} from '@deepseek-ai/dsh-patent-core'
+import { ClaimBinding } from '../src/evidence/claimBinding.ts'
+import { ConflictDetector } from '../src/evidence/conflict.ts'
+import { EvidenceExtension } from '../src/evidence/index.ts'
+import { STANDARD_CLEAR_CONVINCING } from '../src/evidence/proof-standard.ts'
+import {
+  credibilityToScore,
+  evaluatePublicIntent,
   platformCategory,
   platformCredibility,
+} from '../src/evidence/credibility.ts'
+import {
+  determinePublicationDate,
+  extractDateFromText,
+  extractWaybackMachineDate,
+  inferredMonthEnd,
+  isBeforeReferenceDate,
   priorArtReference,
-  receiptFromToolExecution,
-  type EvidenceSpan,
-} from '@deepseek-ai/dsh-patent-core'
+} from '../src/evidence/date.ts'
+import { inferEvidenceType } from '../src/evidence/judgment.ts'
+import { receiptFromToolExecution } from '../src/evidence/protocol.ts'
+import type { EvidenceSpan } from '../src/evidence/span.ts'
 
 function span(overrides: Partial<EvidenceSpan> & { snippet?: string }): EvidenceSpan {
   return createSpan({ snippet: '', direction: 'neutral', ...overrides })

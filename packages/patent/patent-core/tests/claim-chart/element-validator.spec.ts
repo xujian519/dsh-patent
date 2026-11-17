@@ -1,6 +1,11 @@
 import { expect, it } from 'vitest'
-import { normalizeWhitespace, splitClaimSegments, validateClaimTextStructure, validateElements } from '@deepseek-ai/dsh-patent-core'
-import type { ClaimElement } from '@deepseek-ai/dsh-patent-core'
+import { splitClaimSegments } from '@deepseek-ai/dsh-patent-core'
+import {
+  normalizeWhitespace,
+  validateClaimTextStructure,
+  validateElements,
+} from '../../src/claim-chart/runtime/element-validator.ts'
+import type { ClaimElement } from '../../src/claim-chart/protocol/types.ts'
 
 const CLAIM = '1. 一种过滤装置，包括壳体和滤芯，所述滤芯含有活性炭。'
 

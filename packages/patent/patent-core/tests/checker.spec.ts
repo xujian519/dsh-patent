@@ -3,12 +3,12 @@ import {
   LevelMust,
   RuleEngine,
   aggregate,
-  formatRuleResults,
   matchKeyword,
   type CheckRule,
   type RuleCheckResult,
-  type Verdict,
 } from '@deepseek-ai/dsh-patent-core'
+import { formatRuleResults } from '../src/checker/engine.ts'
+import type { Verdict } from '../src/checker/types.ts'
 
 // =============================================================================
 // 判级模型（Aggregate）

@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  ClaimStrategyHandler,
-  type PipelineState,
-  type StageProvider,
-} from '@deepseek-ai/dsh-patent-core'
+import type { PipelineState, StageProvider } from '@deepseek-ai/dsh-patent-core'
+import { ClaimStrategyHandler } from '../src/atoms/handlers/builtin/claim-strategy.ts'
 
 const SOURCE = '一种灌溉装置，包括控制模块、图像采集模块和无线通信模块。'
 const NOVELTY = 'D1 公开了一种灌溉装置，区别特征为图像采集模块。'

@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  AdversaryReviewHandler,
-  adversaryReviewAtom,
+  globalAtomRegistry,
+  globalStageHandlerRegistry,
+  registerBuiltinAtoms,
+} from '@deepseek-ai/dsh-patent-core'
+import { AdversaryReviewHandler, adversaryReviewAtom } from '../src/atoms/handlers/builtin/adversary-review.ts'
+import {
   reviewFinalDraft,
   detectMissedRejections,
   detectEvidenceGaps,
@@ -14,15 +18,12 @@ import {
   CITATION_GAP_HEURISTIC_CONFIDENCE,
   INVENTIVENESS_GAP_HEURISTIC_CONFIDENCE,
   CLAIMS_COVERAGE_GAP_HEURISTIC_CONFIDENCE,
-  globalAtomRegistry,
-  globalStageHandlerRegistry,
-  registerBuiltinAtoms,
-} from '@deepseek-ai/dsh-patent-core'
+} from '../src/adversary/review.ts'
 import type {
   AdversaryReviewReport,
   AdversaryReviewInput,
   AdversaryReviewOfficeAction,
-} from '@deepseek-ai/dsh-patent-core'
+} from '../src/adversary/review.ts'
 
 // 注册内置原子（幂等操作）
 registerBuiltinAtoms()

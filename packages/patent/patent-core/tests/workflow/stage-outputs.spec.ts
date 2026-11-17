@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
-  approvalGateAtom,
   AtomRegistry,
-  claimChartAtom,
   clearStageOutputs,
   extractAtom,
-  groundsAtom,
   type WorkflowStage,
 } from '@deepseek-ai/dsh-patent-core'
+import { approvalGateAtom } from '../../src/atoms/handlers/builtin/gate.ts'
+import { claimChartAtom } from '../../src/atoms/handlers/builtin/chart.ts'
+import { groundsAtom } from '../../src/atoms/handlers/builtin/notice.ts'
 
 /**
  * 回退清理原语的直接单测。

@@ -1,14 +1,12 @@
 import { expect, it } from 'vitest'
 import {
-  evaluateRuleGate,
-  requireRuleEvaluator,
   ruleGateNode,
   type RuleCheckResult,
   type RuleEvaluator,
-  type RuleGateAssessment,
-  type RuleGateRequest,
   type RuleGateState,
 } from '@deepseek-ai/dsh-patent-core'
+import { evaluateRuleGate, requireRuleEvaluator } from '../src/graph/domains/shared.ts'
+import type { RuleGateAssessment, RuleGateRequest } from '../src/checker/evaluator.ts'
 
 // ---------------------------------------------------------------------------
 // 规则门 fail-closed 语义

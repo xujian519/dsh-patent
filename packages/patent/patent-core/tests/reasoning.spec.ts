@@ -1,13 +1,13 @@
 import { expect, it } from 'vitest'
+import { FactBlackboard } from '@deepseek-ai/dsh-patent-core'
+import { ConfirmedRuleSet } from '../src/reasoning/fact-blackboard.ts'
 import {
-  ConfirmedRuleSet,
-  FactBlackboard,
   SyllogismBuilder,
   assertChain,
   ruleAssertion,
-  type RuleConstraint,
-  type Syllogism,
-} from '@deepseek-ai/dsh-patent-core'
+} from '../src/reasoning/syllogism.ts'
+import type { RuleConstraint } from '../src/reasoning/fact-blackboard.ts'
+import type { Syllogism } from '../src/reasoning/syllogism.ts'
 
 let clock = 0
 const now = () => `2026-01-01T00:00:${String(clock++).padStart(2, '0')}Z`

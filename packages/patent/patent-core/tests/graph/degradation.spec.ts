@@ -1,16 +1,18 @@
 import { expect, it } from 'vitest'
 import {
-  DEGRADATION_SUFFIX,
   DEGRADED_ERROR_KEY,
   DEGRADED_RETRYABLE_KEY,
+  type GraphState,
+} from '@deepseek-ai/dsh-patent-core'
+import {
+  DEGRADATION_SUFFIX,
   absorbHandlerDegradation,
   degradationSummary,
   getDegradationMark,
   isDegraded,
   markDegraded,
-  type GraphState,
-  type StateDelta,
-} from '@deepseek-ai/dsh-patent-core'
+} from '../../src/graph/degradation.ts'
+import type { StateDelta } from '../../src/graph/types.ts'
 
 it('markDegraded: 写 fallback 值与并列降级标记', () => {
   const delta: StateDelta = {}

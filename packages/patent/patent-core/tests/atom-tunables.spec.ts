@@ -1,16 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   ClaimChartHandler,
-  ClaimStrategyHandler,
-  CompareHandler,
   ExtractHandler,
-  GroundednessHandler,
-  KeywordsHandler,
-  NoveltyHandler,
-  ReasoningHandler,
   type StageHandler,
   type StageProvider,
 } from '@deepseek-ai/dsh-patent-core'
+import { ClaimStrategyHandler } from '../src/atoms/handlers/builtin/claim-strategy.ts'
+import { CompareHandler, NoveltyHandler } from '../src/atoms/handlers/builtin/compare.ts'
+import { GroundednessHandler, ReasoningHandler } from '../src/atoms/handlers/builtin/reason.ts'
+import { KeywordsHandler } from '../src/atoms/handlers/builtin/search.ts'
 import {
   DEFAULT_CHART_SOURCE_MAX_BYTES,
   MAX_CHART_SOURCE_MAX_BYTES,

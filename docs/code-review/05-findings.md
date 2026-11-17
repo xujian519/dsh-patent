@@ -43,9 +43,9 @@
 | F-PAT-008 | TRIZ 资产裸 `JSON.parse as T`，失败无包内错误类型 | PAT | B | Low | 低 | confirmed |
 | F-PAT-009 | `registerPatentTools` 单函数 312 行 | PAT | B | Medium | 高 | fixed |
 | F-PAT-010 | `patent/model-call` 在流异常时不落会话事件 | PAT | E | Medium | 中 | fixed |
-| F-PAT-011 | `pending`/`rounds` 为进程内状态且未声明单进程语义 | PAT | E | Medium | 中 | confirmed |
+| F-PAT-011 | `pending`/`rounds` 为进程内状态且未声明单进程语义 | PAT | E | Medium | 中 | fixed |
 | F-PAT-012 | 51 处 `as unknown as` 与两个零引用导出类型 | PAT | B | Low | 高 | fixed |
-| F-PAT-013 | `patent-core` 导出面过宽，大量内部符号对外 | PAT | B | Low | 高 | confirmed |
+| F-PAT-013 | `patent-core` 导出面过宽，大量内部符号对外 | PAT | B | Low | 高 | fixed |
 | F-PAT-014 | `patent_pdf_download` 的输出目录不受部署文件策略约束 | PAT | A | High | 中 | fixed |
 | F-PAT-015 | PDF 兜底下载的临时文件路径可预测且不独占创建 | PAT | A/B | Medium | 中 | fixed |
 | F-PAT-016 | ego-browser 子进程继承完整 `process.env` | PAT | A | Low | 中 | fixed |
@@ -303,7 +303,7 @@
 - 最小修复建议：把 atom/handler 常量与内部 helper 收回各自 barrel（`atoms/index.ts` 已全局注册的可不对外导出），逐个确认后再收窄；给门禁加一条"导出必须有包外消费者或显式 `@public` 标注"。
 - 预估工作量：M
 - 是否可自动化：是
-- 状态：confirmed
+- 状态：fixed（根 barrel 只保留包外有导入的名字；`verify-patent-core-exports` 拒绝新增的无包外导入且未标 `@public` 的具名导出，并禁止 `export *`。符号仍留在定义模块。`WorkerExecutionRecord` 不在本包，未改）
 - Day 19 横向复核（扩范围，不改判定）：本条不限于 `patent-core`。对四域七包 `src/` 的 639 个 `export` 声明做全仓文本索引比对，除声明文件外零提及的有 63 条，逐条判定后**没有一条是死代码**：62 条在声明文件内仍被使用（`export` 多余或仅为经 barrel 进入公开面），1 条 `WorkerExecutionRecord` 全仓零使用但已被 `.agents/audits/2026-11-01-export-surface-cleanup-plan.md` 的 EXP-03 登记为 PUBLIC-API。因此可收窄的是「导出关键字」而非「符号」，计数口径与 #651 一致，本条的证据从 `patent-core` 扩到该七包。
 
 ### F-PAT-014 `patent_pdf_download` 的输出目录不受部署文件策略约束

@@ -1,4 +1,4 @@
-import type { GroundFinding, InvalidationGround } from '@deepseek-ai/dsh-patent-core'
+import type { GroundFinding, InvalidationGround } from '../../../src/notice/grounds.ts'
 
 /** 金标语料：无效请求书中理由的否定判定。 */
 export type GroundsCase = {

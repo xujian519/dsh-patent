@@ -4,16 +4,20 @@ import {
   LevelQuality,
   buildAnalysisReport,
   classifyIpc,
+  type RuleCheckResult,
+} from '@deepseek-ai/dsh-patent-core'
+import {
   computeClarityScore,
   computeCompletenessScore,
+  mergeScores,
+  toIpcSummary,
+} from '../src/analysis-report/build.ts'
+import {
   computeFeatureStatistics,
   determineFeatureType,
   determineImportance,
   extractTechnicalFeatures,
-  mergeScores,
-  toIpcSummary,
-  type RuleCheckResult,
-} from '@deepseek-ai/dsh-patent-core'
+} from '../src/analysis-report/feature-extract.ts'
 
 const ABSTRACT = '本发明公开一种智能机器人控制方法及系统，基于多传感器数据生成控制指令。'
 

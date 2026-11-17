@@ -4,18 +4,17 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   APPROVAL_GRANTED_KEY,
-  APPROVAL_GRANTED_NODES_KEY,
-  GraphBuilder,
-  GraphInterruptError,
   InMemoryCheckpointStore,
   JsonFileCheckpointStore,
   StoredRecordError,
   grantApproval,
-  isGateApproved,
   runGraphWithCheckpoints,
   type GraphCheckpoint,
   type GraphState,
 } from '@deepseek-ai/dsh-patent-core'
+import { APPROVAL_GRANTED_NODES_KEY, isGateApproved } from '../../src/atoms/handlers/builtin/gate.ts'
+import { GraphBuilder } from '../../src/graph/engine.ts'
+import { GraphInterruptError } from '../../src/graph/types.ts'
 
 const node = (key: string, value: unknown) => async (): Promise<GraphState> => ({ [key]: value })
 

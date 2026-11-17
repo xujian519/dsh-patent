@@ -3,25 +3,12 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  GraphBuilder,
-  GraphEngineError,
   InMemoryCheckpointStore,
   JsonFileCheckpointStore,
-  KeywordsHandler,
   StageHandlerRegistry,
-  buildEnablementGraph,
-  buildInventivenessGraph,
-  buildNoveltyGraph,
-  cloneState,
-  extractEnablementResult,
-  extractInventivenessResult,
-  extractNumericRanges,
   manifestToGraph,
-  mergeWithSchema,
   registerBuiltinAtoms,
   runGraphWithCheckpoints,
-  runNodeWithPolicy,
-  runStageHandler,
   type GraphCheckpoint,
   type GraphState,
   type RuleEvaluator,
@@ -29,6 +16,17 @@ import {
   type StageProvider,
   type WorkflowManifest,
 } from '@deepseek-ai/dsh-patent-core'
+import { GraphBuilder } from '../../src/graph/engine.ts'
+import { GraphEngineError } from '../../src/graph/types.ts'
+import { KeywordsHandler } from '../../src/atoms/handlers/builtin/search.ts'
+import { buildEnablementGraph, extractEnablementResult } from '../../src/graph/domains/enablement.ts'
+import { buildInventivenessGraph, extractInventivenessResult } from '../../src/graph/domains/inventiveness.ts'
+import { buildNoveltyGraph } from '../../src/graph/domains/novelty.ts'
+import { cloneState } from '../../src/graph/state.ts'
+import { extractNumericRanges } from '../../src/novelty/numeric-range.ts'
+import { mergeWithSchema } from '../../src/graph/merge.ts'
+import { runNodeWithPolicy } from '../../src/graph/node-policy.ts'
+import { runStageHandler } from '../../src/graph/adapter.ts'
 
 registerBuiltinAtoms()
 

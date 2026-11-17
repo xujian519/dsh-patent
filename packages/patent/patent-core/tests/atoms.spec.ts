@@ -1,24 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import {
   APPROVAL_GRANTED_KEY,
-  APPROVAL_GRANTED_NODES_KEY,
   AtomRegistry,
-  AtomRegistryError,
   InterruptStageError,
-  ListAtoms,
   LookupStageHandler,
-  RegisterAtom,
   StageHandlerRegistry,
-  evidenceCoverage,
   globalAtomRegistry,
   isApprovalGateHandler,
-  isGateApproved,
   isInterruptStageError,
   registerBuiltinAtoms,
-  searchAtom,
   type StageHandler,
   type StageProvider,
 } from '@deepseek-ai/dsh-patent-core'
+import { APPROVAL_GRANTED_NODES_KEY, isGateApproved } from '../src/atoms/handlers/builtin/gate.ts'
+import {
+  AtomRegistryError,
+  ListAtoms,
+  RegisterAtom,
+} from '../src/atoms/atom.ts'
+import { evidenceCoverage } from '../src/atoms/handlers/builtin/compare.ts'
+import { searchAtom } from '../src/atoms/handlers/builtin/search.ts'
 
 // ---------------------------------------------------------------------------
 // 注册表

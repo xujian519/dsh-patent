@@ -1,11 +1,6 @@
 import { expect, it } from 'vitest'
-import {
-  deriveClaimRefs,
-  parseClaimDocument,
-  parseReferenceNumbers,
-  referencedClosure,
-  validateClaimRefs,
-} from '@deepseek-ai/dsh-patent-core'
+import { deriveClaimRefs, parseClaimDocument } from '@deepseek-ai/dsh-patent-core'
+import { parseReferenceNumbers, referencedClosure, validateClaimRefs } from '../../src/claim-chart/runtime/claim-refs.ts'
 
 it('单引用的从属权项识别为 dependent 并给出所引权项', () => {
   const text = [

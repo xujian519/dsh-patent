@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  conflictingApplicationAtom,
-  ConflictingApplicationHandler,
-} from '@deepseek-ai/dsh-patent-core'
+import { conflictingApplicationAtom, ConflictingApplicationHandler } from '../src/atoms/handlers/builtin/conflicting-application.ts'
 
 const handler = new ConflictingApplicationHandler()
 

@@ -1,22 +1,24 @@
 import { describe, expect, it } from 'vitest'
+import { AdversaryModelHandler } from '@deepseek-ai/dsh-patent-core'
+import { adversaryModelAtom } from '../src/atoms/handlers/builtin/adversary-model.ts'
+import { assessEvidenceIndependent } from '../src/adversary/assessment.ts'
+import { buildAdversaryPrompt } from '../src/adversary/prompt.ts'
 import {
-  AdversaryModelHandler,
-  adversaryModelAtom,
-  assessEvidenceIndependent,
-  buildAdversaryPrompt,
   buildAdversaryReport,
-  checkInputIsolation,
-  computeOverallConfidence,
   degradedSummary,
-  detectDivergence,
+  renderAdversaryReport,
+} from '../src/adversary/report.ts'
+import {
+  checkInputIsolation,
   FORBIDDEN_KEYS,
   FORBIDDEN_OUTPUT_TERMS,
-  locateDisputesIndependent,
-  parseAdversaryOutput,
-  renderAdversaryReport,
   scanOutputForLeaks,
-} from '@deepseek-ai/dsh-patent-core'
-import type { AdversaryDispute, AdversaryOfficeAction, AdversaryPlanEntry, StageProvider } from '@deepseek-ai/dsh-patent-core'
+} from '../src/adversary/isolation-check.ts'
+import { computeOverallConfidence, detectDivergence } from '../src/adversary/divergence.ts'
+import { locateDisputesIndependent } from '../src/adversary/dispute.ts'
+import { parseAdversaryOutput } from '../src/adversary/parse.ts'
+import type { AdversaryDispute, StageProvider } from '@deepseek-ai/dsh-patent-core'
+import type { AdversaryOfficeAction, AdversaryPlanEntry } from '../src/adversary/types.ts'
 
 describe('adversary-model atom', () => {
   it('atom 声明正确', () => {

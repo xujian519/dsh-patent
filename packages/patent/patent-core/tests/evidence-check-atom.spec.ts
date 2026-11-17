@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import {
-  contentHash,
-  EvidenceCheckHandler,
-  evidenceCheckAtom,
-  type EvidenceCheckPending,
-  type EvidenceCheckViolation,
-} from '@deepseek-ai/dsh-patent-core'
+import { contentHash } from '@deepseek-ai/dsh-patent-core'
+import { EvidenceCheckHandler, evidenceCheckAtom } from '../src/atoms/handlers/builtin/evidence-check.ts'
+import type { EvidenceCheckPending, EvidenceCheckViolation } from '../src/atoms/handlers/builtin/evidence-check.ts'
 
 const handler = new EvidenceCheckHandler()
 

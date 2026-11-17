@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  AmendmentBasisHandler,
-  amendmentBasisAtom,
-  type AmendmentBasisViolation,
-} from '@deepseek-ai/dsh-patent-core'
+import { AmendmentBasisHandler, amendmentBasisAtom } from '../src/atoms/handlers/builtin/amendment-basis.ts'
+import type { AmendmentBasisViolation } from '../src/atoms/handlers/builtin/amendment-basis.ts'
 
 const handler = new AmendmentBasisHandler()
 

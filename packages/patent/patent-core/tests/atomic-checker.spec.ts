@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { checkAtomic } from '@deepseek-ai/dsh-patent-core'
+import { checkAtomic } from '../src/problem/atomicChecker.ts'
 
 // =============================================================================
 // 不绑方案（noSolutionBinding）—— 8 陷阱中最高频（问题含方案，审查指南 3.2.1.1）

@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
-  DRAFT_REVIEW_ALLOWED_KEYS,
-  DRAFT_REVIEW_FORBIDDEN_KEYS,
-  DraftReviewHandler,
   REVISION_SIGNALS_KEY,
-  checkDraftReviewInput,
-  draftReviewAtom,
   type PipelineState,
   type StageProvider,
 } from '../src/index.ts'
+import {
+  DRAFT_REVIEW_ALLOWED_KEYS,
+  DRAFT_REVIEW_FORBIDDEN_KEYS,
+  checkDraftReviewInput,
+} from '../src/draft-review/isolation.ts'
+import { DraftReviewHandler, draftReviewAtom } from '../src/atoms/handlers/builtin/draft-review.ts'
 
 /** 说明书夹具：缺实施例的特征用于种植 26.3 缺陷。 */
 const SPECIFICATION = [

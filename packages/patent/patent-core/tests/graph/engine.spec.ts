@@ -1,12 +1,12 @@
 import { expect, it } from 'vitest'
 import {
   GRAPH_END,
-  GraphBuilder,
   GraphEngineError,
   GraphInterruptError,
-  isDegraded,
-  type GraphNode,
-} from '@deepseek-ai/dsh-patent-core'
+} from '../../src/graph/types.ts'
+import { GraphBuilder } from '../../src/graph/engine.ts'
+import { isDegraded } from '../../src/graph/degradation.ts'
+import type { GraphNode } from '../../src/graph/types.ts'
 
 const node =
   (key: string, value: unknown): GraphNode =>

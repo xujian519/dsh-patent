@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  DraftValidationError,
   SPEC_DRAFT_SCHEMA,
   SPEC_PART_HEADINGS,
   SPEC_PART_ORDER,
@@ -10,6 +9,7 @@ import {
   type SpecDraft,
   type TemplateDraftSchema,
 } from '@deepseek-ai/dsh-patent-core'
+import { DraftValidationError } from '../src/draft/validate.ts'
 
 /**
  * 一个可通过校验的最小 claims-spec 草案；用例用结构化克隆后局部覆写来制造违规。

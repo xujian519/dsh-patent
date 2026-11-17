@@ -4,19 +4,20 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   EvidenceEngine,
-  STANDARD_CLEAR_CONVINCING,
-  STANDARD_PREPONDERANCE,
   createSpan,
-  extractWaybackMachineDate,
-  inferEvidenceType,
-  isBeforeReferenceDate,
   isMonthOnlyDate,
-  isPreciseDate,
   loadEvidenceRulesEngine,
   parseDateFlexible,
-  platformCredibility,
-  type EvidenceSpan,
 } from '@deepseek-ai/dsh-patent-core'
+import { STANDARD_CLEAR_CONVINCING, STANDARD_PREPONDERANCE } from '../src/evidence/proof-standard.ts'
+import {
+  extractWaybackMachineDate,
+  isBeforeReferenceDate,
+  isPreciseDate,
+} from '../src/evidence/date.ts'
+import { inferEvidenceType } from '../src/evidence/judgment.ts'
+import { platformCredibility } from '../src/evidence/credibility.ts'
+import type { EvidenceSpan } from '../src/evidence/span.ts'
 
 function span(overrides: Partial<EvidenceSpan> & { snippet?: string }): EvidenceSpan {
   return createSpan({ snippet: '', direction: 'neutral', ...overrides })

@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  findAntecedentGaps,
   lintClaimText,
   lintClaimText as lintFromPackageRoot,
   parseClaimDocument,
-  referencedTerms,
   type ClaimLintReport,
 } from '@deepseek-ai/dsh-patent-core'
+import { findAntecedentGaps, referencedTerms } from '../src/claim-lint/antecedent.ts'
 
 /** 按权项号与规则排序的摘要，规避同一项内规则执行顺序对断言的影响。 */
 function summary(report: ClaimLintReport): Array<[string, number | null, string]> {

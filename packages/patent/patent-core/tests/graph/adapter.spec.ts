@@ -1,19 +1,16 @@
 import { expect, it } from 'vitest'
 import {
   APPROVAL_GRANTED_KEY,
-  APPROVAL_GRANTED_NODES_KEY,
   ApprovalGateHandler,
   AtomRegistry,
   DEGRADED_ERROR_KEY,
   DEGRADED_RETRYABLE_KEY,
-  GraphBuilder,
   InMemoryCheckpointStore,
   InterruptStageError,
   StageHandlerRegistry,
   globalAtomRegistry,
   globalStageHandlerRegistry,
   grantApproval,
-  handlerNode,
   manifestToGraph,
   registerBuiltinAtoms,
   runGraphWithCheckpoints,
@@ -23,6 +20,9 @@ import {
   type WorkflowManifest,
   type WorkflowStage,
 } from '@deepseek-ai/dsh-patent-core'
+import { APPROVAL_GRANTED_NODES_KEY } from '../../src/atoms/handlers/builtin/gate.ts'
+import { GraphBuilder } from '../../src/graph/engine.ts'
+import { handlerNode } from '../../src/graph/domains/shared.ts'
 
 registerBuiltinAtoms()
 

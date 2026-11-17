@@ -13,7 +13,7 @@ Pure TypeScript library (no `ctx` dependency) holding the patent-domain engines 
 
 ## Package surface
 
-The package exports one entry point, `@deepseek-ai/dsh-patent-core`, resolving to `lib/index.js` with declarations in `lib/types/index.d.ts`; `./src/*` deep imports are not exported and fail with `ERR_PACKAGE_PATH_NOT_EXPORTED`. The root barrel re-exports every declared type and a curated runtime set: the engines, registries, graph builders, parsers, validators, and stores documented below. Runtime helpers that only builtin atoms use stay internal; reach that behavior through `registerBuiltinAtoms()`, the graph builders, or the aggregate engine for the module. `tests/package-surface.spec.ts` checks that every export target ships in `files`.
+The package exports one entry point, `@deepseek-ai/dsh-patent-core`, resolving to `lib/index.js` with declarations in `lib/types/index.d.ts`; `./src/*` deep imports are not exported and fail with `ERR_PACKAGE_PATH_NOT_EXPORTED`. The root barrel re-exports a name only when another package imports it, or the specifier is marked `@public`. `verify-patent-core-exports` rejects any other root-barrel name. The sections below describe each module's behavior, including helpers that stay inside this package; reach builtin-atom behavior through `registerBuiltinAtoms()`, the graph builders, or the aggregate engine for the module. `tests/package-surface.spec.ts` checks that every export target ships in `files`.
 
 ## Table of Contents
 
@@ -122,7 +122,7 @@ The evidence layer records tool receipts (`Ledger`/`receiptFromToolExecution`), 
 
 ## Rule protocol + IPC
 
-The constitutional rule engine protocol types (`RuleSeverity`/`RuleAction`/`RuleCheck`/`ConstitutionalRule`/...) and the `hasNegationContext` text utility ship here for the P3.1/P4.1 rule gates. The statute-citation machinery (`parseCnNumber`, reference extraction, proposition-overlap scoring, the per-article citation decision, and the citation-verify tool scaffolding) lives in `@deepseek-ai/dsh-law-core` so the legal domain consumes it without depending on this package, and is re-exported here so patent-domain consumers keep one import surface. The IPC classifier (`classifyIpc`/`classifyIpcTop`) and the `ipc-standards.yaml` examination-standard loader ship as pure lookups.
+The constitutional rule engine protocol types (`RuleSeverity`/`RuleAction`/`RuleCheck`/`ConstitutionalRule`/...) and the `hasNegationContext` text utility ship here for the P3.1/P4.1 rule gates. The statute-citation machinery (`parseCnNumber`, reference extraction, proposition-overlap scoring, the per-article citation decision, and the citation-verify tool scaffolding) lives in `@deepseek-ai/dsh-law-core` so the legal domain consumes it without depending on this package. This package re-exports only the names a patent package imports. The IPC classifier (`classifyIpc`/`classifyIpcTop`) and the `ipc-standards.yaml` examination-standard loader ship as pure lookups.
 
 ## Draft model (controlled drafts)
 

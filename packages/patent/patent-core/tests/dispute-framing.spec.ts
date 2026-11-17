@@ -6,7 +6,7 @@ import {
   refineDispute,
   scanClaimNumbers,
   scanDisputeText,
-} from '@deepseek-ai/dsh-patent-core'
+} from '../src/atoms/handlers/builtin/dispute-framing.ts'
 
 describe('争议粗定位', () => {
   it('从正文识别法条与权项区间', () => {

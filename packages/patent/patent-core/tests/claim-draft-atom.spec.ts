@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  DraftClaimsHandler,
-  type PipelineState,
-  type StageProvider,
-} from '@deepseek-ai/dsh-patent-core'
+import type { PipelineState, StageProvider } from '@deepseek-ai/dsh-patent-core'
+import { DraftClaimsHandler } from '../src/atoms/handlers/builtin/draft.ts'
 
 /** 一份可渲染的策略表 JSON。 */
 function strategy(overrides: Record<string, unknown> = {}): string {

@@ -1,4 +1,4 @@
-import type { ClaimRef, ClaimRefIssue } from '@deepseek-ai/dsh-patent-core'
+import type { ClaimRef, ClaimRefIssue } from '../../../src/claim-chart/protocol/types.ts'
 
 /** 金标语料：权利要求书原文推出的独立／从属关系与引用缺陷。 */
 export type ClaimRefsCase = {

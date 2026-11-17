@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { validatePinCite, verifyQuoteInSource } from '@deepseek-ai/dsh-patent-core'
+import { validatePinCite, verifyQuoteInSource } from '../../src/claim-chart/runtime/pin-cite-validator.ts'
 
 const SOURCE = [
   '说明书',

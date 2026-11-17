@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  EnablementReportHandler,
-  enablementReportAtom,
-  type StageProvider,
-} from '@deepseek-ai/dsh-patent-core'
+import { EnablementReportHandler, type StageProvider } from '@deepseek-ai/dsh-patent-core'
+import { enablementReportAtom } from '../src/atoms/handlers/builtin/enablement-report.ts'
 
 /** 构造只返回指定 JSON 的 provider，并捕获提示词与 schema。 */
 function providerFor(raw: string, captured: { prompt?: string; schema?: unknown } = {}): StageProvider {

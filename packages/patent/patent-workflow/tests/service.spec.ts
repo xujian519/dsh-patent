@@ -161,6 +161,26 @@ describe('PatentWorkflow service', () => {
     }
   })
 
+  it('does not restore a parked plantask after a service restart', async () => {
+    const first = new Context()
+    await first.plugin(PatentWorkflow)
+    const agent = makeAgent('plantask-restart')
+    await first.patentWorkflow.runPlantask(agent, 'case-restart', ['步骤A'], { autoApprove: false })
+    await first.fiber.dispose()
+
+    const second = new Context()
+    await second.plugin(PatentWorkflow)
+    try {
+      // The pending map is process-local by design; the session events are not
+      // replayed into a new service, so the decision reports the same failure as
+      // an unknown case.
+      expect(() => second.patentWorkflow.approve('case-restart')).toThrow(/no pending plantask/)
+      expect(() => second.patentWorkflow.reject('case-restart')).toThrow(/no pending plantask/)
+    } finally {
+      await second.fiber.dispose()
+    }
+  })
+
   it('consumes a pending plantask decision once; repeated approve/reject throw', async () => {
     const ctx = new Context()
     await ctx.plugin(PatentWorkflow)

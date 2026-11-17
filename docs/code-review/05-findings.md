@@ -43,7 +43,7 @@
 | F-PAT-008 | TRIZ 资产裸 `JSON.parse as T`，失败无包内错误类型 | PAT | B | Low | 低 | confirmed |
 | F-PAT-009 | `registerPatentTools` 单函数 312 行 | PAT | B | Medium | 高 | confirmed |
 | F-PAT-010 | `patent/model-call` 在流异常时不落会话事件 | PAT | E | Medium | 中 | fixed |
-| F-PAT-011 | `pending`/`rounds` 为进程内状态且未声明单进程语义 | PAT | E | Medium | 中 | confirmed |
+| F-PAT-011 | `pending`/`rounds` 为进程内状态且未声明单进程语义 | PAT | E | Medium | 中 | fixed |
 | F-PAT-012 | 51 处 `as unknown as` 与两个零引用导出类型 | PAT | B | Low | 高 | confirmed |
 | F-PAT-013 | `patent-core` 导出面过宽，大量内部符号对外 | PAT | B | Low | 高 | confirmed |
 | F-PAT-014 | `patent_pdf_download` 的输出目录不受部署文件策略约束 | PAT | A | High | 中 | fixed |
@@ -277,7 +277,7 @@
 - 最小修复建议：README 显式声明单进程契约（含重启行为），或从会话事件重建 pending 与轮次。
 - 预估工作量：M
 - 是否可自动化：是（重启用例断言状态可恢复或明确报错）
-- 状态：confirmed
+- 状态：fixed（README 已声明单进程契约；`approve`／`reject` 的 JSDoc 写明重启后报 no pending plantask；重启用例锁定）
 
 ### F-PAT-012 51 处 `as unknown as` 与两个零引用导出类型
 
@@ -1781,6 +1781,19 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`media-runtime.spec.ts` 的非法边界用例改为匹配字段名；新增一条「13 个标量默认值等于 `Config({})`」的护栏用例；`siliconflow.spec.ts` 补一条省略 `apiKey`/`pollMs` 时的默认值用例。
 
 验证：`pnpm exec vitest run packages/experimental/video-mode/tests` 268 用例通过；`media.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0。
+### 批次 D：plantask 单进程契约显式化（2026-11-17）
+
+用户要求继续修复后完成。批次 D 的 legal-law 名字表复位与视频持久写入已分别由 E7、E11 处理，本批收口 plantask 的进程内状态语义。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-011 | README 已声明「挂起计划与轮次计数器只在服务实例内、重启丢失、会话事件不回读」，本批在 `approve`／`reject` 的 JSDoc 写明重启后的失败方式，并新增「重启后服务不恢复挂起计划」用例锁定该契约 | `patent-workflow/src/index.ts`、`tests/service.spec.ts` |
+
+**行为变化**：无运行时行为变化；契约由文档与用例明确。重启后的 `approve`／`reject` 继续报「no pending plantask」，与原实现一致。
+
+**既有测试行为**：`service.spec.ts` 新增一条重启模拟用例（旧 service 停等后销毁，新 service 上决策失败）；既有「重复决策」用例不变。
+
+验证：`pnpm exec vitest run packages/patent/patent-workflow/tests/service.spec.ts --coverage --coverage.include=packages/patent/patent-workflow/src/index.ts` 22 用例通过，`index.ts` 覆盖率 100%。
 
 ## 复核记录
 

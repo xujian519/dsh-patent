@@ -12,9 +12,9 @@ import { z } from 'zod'
 import type { Context } from '@deepseek-ai/cordis'
 import { FsError, type FsTarget, type FsVersion } from '@deepseek-ai/dsh-fs'
 import { withKeyLock } from './lock.ts'
+import { lockToInterface } from './schema-lock.ts'
 import {
   MediaFailure,
-  type MediaKind,
   type MediaLedgerEntry,
   type MediaRequest,
   type MediaTaskRecord,
@@ -54,14 +54,15 @@ const STORE_WRITE_ATTEMPTS = 3
 
 const kindSchema = z.enum(['image', 'video', 'speech'])
 
-const requestSchema = z.object({
+/** Persisted request. Parsed fields match {@link MediaTaskRequest}. */
+const requestSchema = lockToInterface<MediaTaskRequest>()(z.object({
   kind: kindSchema,
   model: z.string().min(1),
   prompt: z.string().min(1),
   durationSec: z.number().positive().optional(),
   aspectRatio: z.string().min(1).optional(),
   resolution: z.string().min(1).optional(),
-}).strict()
+}).strict())
 
 const pendingTaskSchema = z.object({
   id: z.string().min(1),
@@ -428,47 +429,26 @@ export function ledgerCost(entries: readonly MediaLedgerEntry[]): number {
  * @param model - model id that served it.
  * @returns the fields a provider needs to resume.
  */
-export function taskRequestOf(request: {
-  readonly kind: MediaKind
-  readonly prompt: string
-  readonly durationSec?: number
-  readonly aspectRatio?: string
-  readonly resolution?: string
-}, model: string): MediaTaskRequest {
+export function taskRequestOf(
+  request: Omit<MediaTaskRequest, 'model'>,
+  model: string,
+): MediaTaskRequest {
   return requestFields({ kind: request.kind, model, prompt: request.prompt }, request)
 }
 
-
-/** Request fields with strict optionals, accepted by both request vocabularies. */
-interface StrictRequest {
-  /** Requested capability. */
-  readonly kind: MediaKind
-  /** Model id that served the request. */
-  readonly model: string
-  /** Positive prompt of the original request. */
-  readonly prompt: string
-  /** Requested duration. */
-  readonly durationSec?: number
-  /** Requested aspect ratio. */
-  readonly aspectRatio?: string
-  /** Requested resolution label. */
-  readonly resolution?: string
-}
-
 /**
- * Build the request fields, omitting what the caller left unset.
+ * Build the shared request fields, omitting optionals the caller left unset.
+ *
+ * Callers declare {@link MediaTaskRequest} or {@link MediaRequest}. The value
+ * leaves unset optionals absent, which both of those types accept.
  * @param base - identity and prompt every request carries.
  * @param source - optional generation fields.
- * @returns the strict request subset.
+ * @returns the request fields.
  */
 function requestFields(
-  base: { readonly kind: MediaKind; readonly model: string; readonly prompt: string },
-  source: {
-    readonly durationSec?: number | undefined
-    readonly aspectRatio?: string | undefined
-    readonly resolution?: string | undefined
-  },
-): StrictRequest {
+  base: Pick<MediaTaskRequest, 'kind' | 'model' | 'prompt'>,
+  source: Pick<MediaTaskRequest, 'durationSec' | 'aspectRatio' | 'resolution'>,
+) {
   return {
     ...base,
     ...source.durationSec === undefined ? {} : { durationSec: source.durationSec },

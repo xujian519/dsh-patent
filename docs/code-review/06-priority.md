@@ -55,14 +55,14 @@
 | F-DOC-004 | Medium | 中 | 本周期 | 8 | P1 |
 | F-LEG-003 | Medium | 中 | 本周期 | 8 | P1 |
 | F-VID-002 | Medium | 中 | 本周期 | 8 | P1 |
-| F-VID-004 | Medium | 中 | 本周期 | 8 | P1 |
+| F-VID-004 | Medium | 中 | 本周期 | 8 | P1（已修） |
 | F-PAT-007 | Low | 高 | 可延后 | 3 | P2 |
 | F-PAT-012 | Low | 高 | 可延后 | 3 | P2 |
 | F-DOC-003 | Low | 高 | 可延后 | 3 | P2 |
 | F-LEG-005 | Low | 高 | 可延后 | 3 | P2（已修） |
-| F-VID-006 | Low | 高 | 可延后 | 3 | P2 |
+| F-VID-006 | Low | 高 | 可延后 | 3 | P2（已修） |
 | F-PAT-013 | Low | 高 | 可延后 | 3 | P2 |
-| F-LEG-004 | Low | 中 | 可延后 | 2 | P3 |
+| F-LEG-004 | Low | 中 | 可延后 | 2 | P3（已修） |
 | F-VID-005 | Low | 中 | 可延后 | 2 | P3 |
 | F-PAT-008 | Low | 低 | 可延后 | 1 | P3 |
 | F-DOC-005 | Low | 低 | 可延后 | 1 | P3 |

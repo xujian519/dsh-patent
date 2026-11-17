@@ -53,7 +53,13 @@ beforeEach(async () => {
   await ctx.plugin(LocalFileSystem, { cwd: root }).await()
   await ctx.plugin(LocalSubprocessRuntime).await()
   await ctx.plugin(NativeToolExecutor).await()
-  await ctx.plugin(VideoMode, { fakeProvider: true, waitMs: 5000, pollMs: 10, approvalThresholdCny: 0.1 }).await()
+  await ctx.plugin(VideoMode, {
+    fakeProvider: true,
+    waitMs: 5000,
+    pollMs: 10,
+    approvalThresholdCny: 0.1,
+    ledgerDir: join(root, '.host-ledgers'),
+  }).await()
   media = ctx.media
 })
 

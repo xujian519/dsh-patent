@@ -118,7 +118,7 @@
 | F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | confirmed |
 | F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | confirmed |
 | F-VID-006 | `StrictRequest` 与 `MediaTaskRequest` 字段完全重复 | VID | B | Low | 高 | confirmed |
-| F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | confirmed |
+| F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | fixed |
 | F-VID-008 | `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份 | VID | B | Medium | 高 | confirmed |
 | F-VID-009 | 云 provider 的 submit/poll 与图片编码骨架各写一遍，拷贝已漂移 | VID | B | Low | 高 | confirmed |
 | F-VID-010 | store 的「锁 + 读 + 改 + 写」骨架三处各写一遍 | VID | B | Low | 高 | confirmed |
@@ -1322,7 +1322,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：账本移出模型可写目录（按工程 id 存在应用数据目录），或由宿主持有密钥对条目签名并在读取时校验；更彻底的做法是与 provider 的用量对账，而不是只信本地文件。
 - 预估工作量：M
 - 是否可自动化：是（改写 `budget.json` 后断言预算仍被拒）
-- 状态：confirmed
+- 修复：宿主账本写在 `ledgerDir`（默认 `~/.dsh/video-mode/ledgers`），文件名是项目路径的摘要。写入使用只覆盖该目录的 `workspace-write` 策略。目录落在会话工作区内则拒绝。工程旁的 `budget.json` 只在宿主文件不存在时导入一次，之后改写它不影响预算门。
+- 状态：fixed
 
 ### F-VID-008 `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份
 

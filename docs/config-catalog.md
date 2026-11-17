@@ -6077,7 +6077,7 @@ export type ApprovalPolicy = 'ask' | 'never'
 
 ## `@deepseek-ai/dsh-video-mode`
 
-- `source`: [`packages/experimental/video-mode/src/media.ts:271`](../packages/experimental/video-mode/src/media.ts)
+- `source`: [`packages/experimental/video-mode/src/media.ts:273`](../packages/experimental/video-mode/src/media.ts)
 
 ```ts config-catalog
 /** Deployment configuration of the media runtime and the video tools. */
@@ -6108,6 +6108,12 @@ export interface MediaRuntimeConfig {
   readonly subtitleFont?: string
   /** Single-generation cost above which the media tool requires explicit confirmation, in CNY. */
   readonly approvalThresholdCny?: number
+  /**
+   * Absolute directory for the host budget ledger.
+   * Omitted or blank uses `~/.dsh/video-mode/ledgers`.
+   * A directory inside the session workspace is rejected when a charge is read or written.
+   */
+  readonly ledgerDir?: string
   /** Local ComfyUI backend; omitted leaves it unregistered. */
   readonly comfyui?: ComfyUiConfig
   /** MiniMax cloud video backend; omitted leaves it unregistered. */

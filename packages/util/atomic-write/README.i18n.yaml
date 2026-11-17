@@ -9,8 +9,8 @@
   en: ed491d62812ad8cc
   zh: 653e184dd035ec71
 /deepseek-ai-dsh-atomic-write/summary:
-  en: d2d40e759179f047
-  zh: c53f56de74b26e5a
+  en: 25694726b303a49a
+  zh: e2c6bc6019e91126
 /deepseek-ai-dsh-atomic-write/table-of-contents:
   en: d152484eb41ac6b4
   zh: 09388d293f9be9cb
@@ -18,8 +18,8 @@
   en: 30fbc2c61904195d
   zh: 09c2ac3f44aa3f08
 /deepseek-ai-dsh-atomic-write/use-this-package/writing-a-file-atomically:
-  en: 7b757dc3c3b27335
-  zh: a097d90a2561475d
+  en: 16327cb19c22610f
+  zh: 0ba7c88af4aa9f3a
 /deepseek-ai-dsh-atomic-write/use-this-package/coordinating-writers:
   en: 77c865c1f78d2a0c
   zh: 5a91874c352c6f18
@@ -36,8 +36,8 @@
   en: 9b84481fd4a97a49
   zh: 09e25c77eb5e53fb
 /deepseek-ai-dsh-atomic-write/understand-the-implementation/why-the-swap-stays-safe:
-  en: 784e985c1fb3a25e
-  zh: 4afda1b9bf5f29cc
+  en: 5f7607096b3930b8
+  zh: debe4f2b9b2bcfef
 /deepseek-ai-dsh-atomic-write/further-exploration:
   en: 16ece9b754f7fff6
   zh: 2456fe14cc5a658b

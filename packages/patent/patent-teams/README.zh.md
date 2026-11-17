@@ -62,7 +62,7 @@ kind: "package-reference"
 
 工作区级的 `<workspace>/<stateDir>/retired-members.json` 记录退休成员会话 id；挂载时安装的守卫据此从代理列表中过滤，并拒绝恢复这些成员。
 
-团队记录的变更在进程内按团队锁内执行并以原子方式持久化（同目录临时文件 + rename，Windows `EPERM` 时退化为直接写回）；信箱追加为单行 `O_APPEND` 写入，`add_member` 在锁外解析成员路由并启动子代理（状态准入与持久化仍在锁内复验），单次 spawn 不会阻塞团队的其他工具。一次实时投递认领在 `mailboxDeliveryLeaseMs`（默认 60 秒）内保持独占，之后才允许其他投递重试。`patent_teams_status` 把租约中的消息与当前可投递的消息分开计数（队长收件箱 `captain_inbox_leased`，成员收件箱 `leased`；`count` 只含当前可投递的未读），队长据此区分“没有来信”与“实时投递尚未释放的积压”。`patent_teams_add_member` 会拒绝 `role-contracts.ts` 未注册的 role id，角色名写错不会再创建一个没有契约的成员。任务状态转换由 `TASK_TRANSITIONS` 校验，被拒绝的转换会点名允许的下一状态，因此跳步的调用方（典型是 `claimed → completed`）能得知应先进入哪个中间状态，而不是盲目重试；每次认领携带 `attempt_id` 能力，重试/转派后即失效，迟到的成员更新会被拒绝。`patent_teams_delete` 将团队目录归档到 `archive/` 而非删除，保留任务与邮箱供后续复查；`patent_teams_archive` 只读地读回归档（工作区级列表 + 单团队详情）。已归档的团队名保持占用：用同名再建团队会被拒绝并返回 `TEAM_NAME_ARCHIVED`，因此后续删除不会覆盖上一代归档。
+团队记录的变更在进程内按团队锁内执行，并通过共享的 `dsh-atomic-write` 写入器持久化（同目录 `wx` 临时文件、fsync、rename，Windows 目标被占用时启用显式的直接写入退化）。父团队目录必须已存在，路径写错会失败而不是另建一棵目录树；信箱追加为单行 `O_APPEND` 写入，`add_member` 在锁外解析成员路由并启动子代理（状态准入与持久化仍在锁内复验），单次 spawn 不会阻塞团队的其他工具。一次实时投递认领在 `mailboxDeliveryLeaseMs`（默认 60 秒）内保持独占，之后才允许其他投递重试。`patent_teams_status` 把租约中的消息与当前可投递的消息分开计数（队长收件箱 `captain_inbox_leased`，成员收件箱 `leased`；`count` 只含当前可投递的未读），队长据此区分“没有来信”与“实时投递尚未释放的积压”。`patent_teams_add_member` 会拒绝 `role-contracts.ts` 未注册的 role id，角色名写错不会再创建一个没有契约的成员。任务状态转换由 `TASK_TRANSITIONS` 校验，被拒绝的转换会点名允许的下一状态，因此跳步的调用方（典型是 `claimed → completed`）能得知应先进入哪个中间状态，而不是盲目重试；每次认领携带 `attempt_id` 能力，重试/转派后即失效，迟到的成员更新会被拒绝。`patent_teams_delete` 将团队目录归档到 `archive/` 而非删除，保留任务与邮箱供后续复查；`patent_teams_archive` 只读地读回归档（工作区级列表 + 单团队详情）。已归档的团队名保持占用：用同名再建团队会被拒绝并返回 `TEAM_NAME_ARCHIVED`，因此后续删除不会覆盖上一代归档。
 
 <a id="session-events"></a>
 ## 会话事件

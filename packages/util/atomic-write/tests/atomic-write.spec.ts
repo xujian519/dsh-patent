@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
   releaseLockBeforeProbe: false,
   renameAttempts: 0,
   renameFailures: [] as string[],
+  writeFailurePath: undefined as string | undefined,
 }))
 
 vi.mock('node:fs/promises', async (importOriginal) => {
@@ -42,6 +43,9 @@ vi.mock('node:fs/promises', async (importOriginal) => {
       return actual.rm(...args)
     }),
     writeFile: (async (path: unknown, ...rest: never[]) => {
+      if (state.writeFailurePath !== undefined && String(path) === state.writeFailurePath) {
+        throw Object.assign(new Error('EPERM: injected target write failure'), { code: 'EPERM' })
+      }
       if (String(path).includes('.lock.takeover-')) {
         if (state.claimFailure !== undefined) {
           throw Object.assign(new Error(`${state.claimFailure}: injected claim failure`), { code: state.claimFailure })
@@ -73,6 +77,7 @@ afterEach(async () => {
   state.releaseLockBeforeProbe = false
   state.renameAttempts = 0
   state.renameFailures.length = 0
+  state.writeFailurePath = undefined
   await Promise.all(scratchDirs.splice(0).map(dir => rm(dir, {
     force: true,
     maxRetries: 10,
@@ -160,6 +165,43 @@ describe('writeFileAtomic', () => {
     expect((await lstat(target)).isSymbolicLink()).toBe(false)
     expect(await readFile(target, 'utf8')).toBe('replaced')
     expect(await readFile(victim, 'utf8')).toBe('victim-content')
+  })
+
+  it('requires an existing parent directory when parent creation is declined', async () => {
+    const dir = await scratch()
+    const target = join(dir, 'missing', 'doc.yaml')
+    await expect(writeFileAtomic(target, 'x', {
+      mode: 0o600,
+      createParentDirectories: false,
+      directWriteFallback: true,
+    })).rejects.toMatchObject({ code: 'ENOENT' })
+    expect(await readdir(dir)).toEqual([])
+  })
+
+  it('falls back to a direct write when the rename keeps failing', async () => {
+    const dir = await scratch()
+    const target = join(dir, 'document')
+    await writeFile(target, 'old')
+    state.renameFailures.push('EPERM')
+
+    await writeFileAtomic(target, 'new', { mode: 0o600, directWriteFallback: true })
+
+    expect(await readFile(target, 'utf8')).toBe('new')
+    expect((await readdir(dir)).filter(entry => entry.includes('.tmp'))).toEqual([])
+  })
+
+  it('reports both failures when the fallback direct write also fails', async () => {
+    const dir = await scratch()
+    const target = join(dir, 'document')
+    await writeFile(target, 'old')
+    state.renameFailures.push('EPERM')
+    state.writeFailurePath = target
+
+    await expect(writeFileAtomic(target, 'new', { mode: 0o600, directWriteFallback: true }))
+      .rejects.toThrow(AggregateError)
+
+    expect(await readFile(target, 'utf8')).toBe('old')
+    expect((await readdir(dir)).filter(entry => entry.includes('.tmp'))).toEqual([])
   })
 
   it('retries transient Windows rename interference and commits the replacement', async () => {

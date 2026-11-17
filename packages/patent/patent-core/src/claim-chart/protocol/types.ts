@@ -7,6 +7,7 @@
 
 import type { ClaimReferenceDefect } from '../../claim-lint/references.ts'
 
+/** 权利要求要素在图表中的角色：前序、过渡、限定、手段加功能或马库什成员。 */
 export type ElementKind = 'preamble' | 'transitional' | 'limitation' | 'means-plus-function' | 'markush-member'
 
 /** 单个权利要求要素：从权利要求原文连续子串拆出的最小映射单元。 */

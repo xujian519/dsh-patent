@@ -95,8 +95,8 @@
 | F-DOC-005 | `tool-office` 用 9 处 `as` 断言担保跨模块不变量 | DOC | B | Low | 低 | confirmed |
 | F-DOC-006 | 跨模块请求类型按字段重写而非组合（`RenderRequest`、`OfficeImagesRequest`） | DOC | B | Low | 高 | confirmed |
 | F-DOC-007 | Office 转换成功返回后不检查 abort 监听是否摘掉 | DOC | D | Medium | 中 | new |
-| F-DOC-008 | 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题 | DOC | E | Medium | 高 | confirmed |
-| F-DOC-009 | DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃 | DOC | E | Medium | 中 | confirmed |
+| F-DOC-008 | 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题 | DOC | E | Medium | 高 | fixed |
+| F-DOC-009 | DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃 | DOC | E | Medium | 中 | fixed |
 | F-DOC-010 | `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断 | DOC | E | Medium | 中 | new |
 | F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | fixed |
 | F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | fixed |
@@ -1017,7 +1017,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把 Markdown 的守卫应用到 HTML 与 DOCX（正文以一级标题开头时不注入 `meta.title`），或删掉模板正文的一级标题并统一用 `meta.title`。新增跨格式用例：同一模板分别渲染 Markdown、HTML、DOCX，断言各成品恰有一个一级标题且文字一致。
 - 预估工作量：S
 - 是否可自动化：是（三格式标题数量的用例）
-- 状态：confirmed（Day 41 静态复核，2026-11-17）
+- 状态：fixed（正文以 `# ` 开头时三种格式都不注入一级标题；HTML 的 `<title>` 仍写元数据标题）
 
 ### F-DOC-009 DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃
 
@@ -1030,7 +1030,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：按未转义的 `|` 切分单元格（`\|` 还原为字面竖线），只把表头之后紧邻的那一行分隔行当分隔符，之后的全破折号行按数据保留。补这两条解析用例与一条 HTML/DOCX 表格同形的跨格式用例。
 - 预估工作量：S
 - 是否可自动化：是（上面的表格输入）
-- 状态：confirmed（Day 41 静态复核，2026-11-17）
+- 状态：fixed（按未转义的 `|` 切分，`\|` 还原为字面竖线；只丢掉表头下一行分隔行，其后的破折号行保留）
 
 ### F-DOC-010 `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断
 

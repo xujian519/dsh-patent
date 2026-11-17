@@ -104,12 +104,31 @@ function isTableSeparator(line: string): boolean {
 
 /**
  * Split one table line into its cells.
- * @param line - trimmed table line.
- * @returns the trimmed cell texts between the outer pipes.
+ * A `\|` is a literal pipe inside a cell. Any other backslash stays as written.
+ * The line starts with `|`. A trailing unescaped pipe closes the row and is not a cell.
+ * @param line - trimmed table line starting with `|`.
+ * @returns the cells in order, each already split into inline runs.
  */
 function parseTableRow(line: string): DocxTableRow {
-  const inner = line.replace(/^\|/u, '').replace(/\|$/u, '')
-  return inner.split('|').map(cell => parseInline(cell.trim()))
+  const cells: string[] = []
+  let current = ''
+  for (let index = 1; index < line.length; index += 1) {
+    if (line.startsWith('\\|', index)) {
+      current += '|'
+      index += 1
+      continue
+    }
+    const char = line.charAt(index)
+    if (char === '|') {
+      cells.push(current.trim())
+      current = ''
+      continue
+    }
+    current += char
+  }
+  if (current.trim() !== '') cells.push(current.trim())
+  if (cells.length === 0) cells.push('')
+  return cells.map(cell => parseInline(cell))
 }
 
 /** Fence marker characters; CommonMark accepts both. */
@@ -177,8 +196,9 @@ function codeLineBlock(line: string): DocxBlock {
 /**
  * Parse Markdown into the block model the writer renders.
  * A line ending opens a new block only as the upstream renderer did: consecutive
- * plain lines join into one paragraph, a separator row inside a table run is
- * dropped, and an empty table contributes no block. A fenced code block keeps
+ * plain lines join into one paragraph, and an empty table contributes no block.
+ * Only the delimiter row immediately after a header is dropped; a later row of
+ * hyphens stays data. A fenced code block keeps
  * every line verbatim as a monospace paragraph, so `#`, `|`, or `**` inside a
  * sample stay text; its info string is not rendered.
  * @param markdown - the Markdown source.
@@ -188,6 +208,7 @@ export function parseMarkdown(markdown: string): readonly DocxBlock[] {
   const blocks: DocxBlock[] = []
   let paragraph: string[] = []
   let table: DocxTableRow[] = []
+  let acceptSeparator = false
 
   const flushParagraph = (): void => {
     if (paragraph.length === 0) return
@@ -196,6 +217,7 @@ export function parseMarkdown(markdown: string): readonly DocxBlock[] {
   }
 
   const flushTable = (): void => {
+    acceptSeparator = false
     if (table.length === 0) return
     blocks.push({ kind: 'table', rows: table })
     table = []
@@ -224,7 +246,12 @@ export function parseMarkdown(markdown: string): readonly DocxBlock[] {
     const text = line.trim()
     if (text.startsWith('|')) {
       flushParagraph()
-      if (!isTableSeparator(text)) table.push(parseTableRow(text))
+      if (acceptSeparator && isTableSeparator(text)) {
+        acceptSeparator = false
+        continue
+      }
+      table.push(parseTableRow(text))
+      acceptSeparator = table.length === 1
       continue
     }
     flushTable()

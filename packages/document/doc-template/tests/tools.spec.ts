@@ -263,7 +263,9 @@ describe('renderDocTemplate', () => {
       filename: 'out',
     })
     expect(value.fileName).toBe('out.html')
-    expect(value.content).toContain('<h1>自定义</h1>')
+    expect(value.content).toContain('<title>自定义</title>')
+    expect(value.content).toContain('<h1>技术交底书（简化版）</h1>')
+    expect(value.content).not.toContain('<h1>自定义</h1>')
     expect(value.content).toContain('content="甲"')
     expect(value.markdown).toContain('图像处理')
   })
@@ -411,7 +413,9 @@ describe('render_doc_template tool', () => {
     if (result.isError) throw new Error('expected success')
     const value = result.value as unknown as RenderDocTemplateOutput
     expect(value.fileName).toBe('delivery.html')
-    expect(value.content).toContain('<h1>交付件</h1>')
+    expect(value.content).toContain('<title>交付件</title>')
+    expect(value.content).toContain('<h1>专利检索报告</h1>')
+    expect(value.content).not.toContain('<h1>交付件</h1>')
     expect(value.content).toContain('content="代理人甲"')
     expect(value.markdown).toContain('**机构：** 某所')
     expect(textOf(result)).toContain('Residual placeholders (2): doc_no, case_no')

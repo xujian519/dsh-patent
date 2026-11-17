@@ -101,6 +101,7 @@ None: the package sends nothing to a provider and mutates no request prefix.
 <a id="known-limitations-and-deferred-work"></a>
 
 - **The Markdown subset is deliberately narrow** — ordered lists, block quotes, thematic breaks, links, and images are not recognized: their lines stay paragraph text, so a document using them renders without those structures instead of failing.
+- **A pipe table splits on unescaped pipes** — `\|` is a literal pipe inside a cell. Only the delimiter row immediately after the header is dropped; a later row of hyphens stays data.
 - **Fenced code keeps its text, not its fence** — a fenced block's lines are rendered verbatim as monospace paragraphs, so `#`, `|`, and `**` inside a sample stay text; the info string and the fence markers themselves are not rendered, and the text projection does not restore them.
 - **The text projection is not a Markdown round trip** — bold and code are run properties rather than text, so their markers are not restored; a list item projects as its bullet character, and table rows project as separate lines separated by a blank line, which a re-render reads as one single-row table per row.
 - **Heading levels come from two properties** — `w:pStyle` naming `HeadingN` or the localized numeric form, otherwise an inline `w:outlineLvl` counting from zero; a paragraph carrying neither is a body paragraph, and a style that names a level wins over an outline level.

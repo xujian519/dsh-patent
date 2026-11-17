@@ -74,9 +74,9 @@ Upstream returned both lists to the caller and stopped there. This package keeps
 <a id="renderers"></a>
 ## Renderers
 
-Three renderers ship, registered by format.
+Three renderers ship, registered by format. The document title becomes one level-1 heading only when the resolved body does not already open with `# `. Markdown, HTML, and DOCX share that check. HTML still writes the title into `<title>` when one is set.
 
-- `markdown` passes the resolved body through, prefixed with the style disclaimer and, when the body has no level-1 heading of its own, the document title.
+- `markdown` passes the resolved body through, prefixed with the style disclaimer.
 - `html` converts the body with `marked` (GFM, hard line breaks) into a standalone document, with the patent A4 stylesheet for a patent style name and a screen stylesheet otherwise. Variable values are HTML-escaped before substitution in this format only, because the converter passes the templates' own raw HTML through. A Markdown link or image is written as an element only when its URL is http, https, mailto, or relative; `javascript:`, `data:`, `vbscript:`, and protocol-relative URLs become text. A placeholder introduced by a value is not expanded.
 - `docx` delegates to `@deepseek-ai/dsh-docx-kit`, which writes the same OOXML package the upstream renderer wrote.
 

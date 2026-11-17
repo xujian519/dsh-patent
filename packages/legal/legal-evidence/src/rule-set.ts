@@ -35,6 +35,53 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 /**
+ * 读取一个三维权重。
+ *
+ * 未声明该字段时静默使用默认值（资产只改了部分权重是合法配置）；声明了但不是
+ * 数值时告警后回退——引号写成的 `"0.35"` 会让门槛悄悄变化，不能无痕。
+ * @param raw - 资产的 weights 记录，缺省为 null。
+ * @param field - 权重字段。
+ * @param warnings - 累积警告。
+ * @param source - 资产路径，仅用于警告文本。
+ * @returns 该字段的生效权重。
+ */
+function readWeight(
+  raw: Record<string, unknown> | null,
+  field: keyof typeof DEFAULT_LEGAL_WEIGHTS,
+  warnings: string[],
+  source: string,
+): number {
+  const value = raw?.[field]
+  if (value === undefined) return DEFAULT_LEGAL_WEIGHTS[field]
+  if (typeof value === 'number') return value
+  warnings.push(
+    `法律证据权重 ${field} 必须为数值，收到 ${JSON.stringify(value)}，使用默认值 ${String(DEFAULT_LEGAL_WEIGHTS[field])}（${source}）`,
+  )
+  return DEFAULT_LEGAL_WEIGHTS[field]
+}
+
+/**
+ * 读取一条规则的 severity；缺省为 warning，声明了非法值时告警后按 warning 处理。
+ * @param record - 规则条目。
+ * @param warnings - 累积警告。
+ * @param source - 资产路径，仅用于警告文本。
+ * @returns 生效严重度。
+ */
+function readSeverity(
+  record: Record<string, unknown>,
+  warnings: string[],
+  source: string,
+): 'critical' | 'warning' | 'info' {
+  const value = record.severity
+  if (value === undefined) return 'warning'
+  if (value === 'critical' || value === 'warning' || value === 'info') return value
+  warnings.push(
+    `法律证据规则 ${String(record.id)} 的 severity ${JSON.stringify(value)} 非法，按 warning 处理（${source}）`,
+  )
+  return 'warning'
+}
+
+/**
  * 解析法律域证据规则集。
  * @param yamlText - `legal-evidence-rules.yaml` 的全文。
  * @param source - 资产路径，仅用于警告文本。
@@ -54,9 +101,9 @@ export function parseLegalRuleSet(yamlText: string, source: string): { ruleSet: 
   }
   const weightsRaw = asRecord(root.weights)
   const weights = {
-    relevance: typeof weightsRaw?.relevance === 'number' ? weightsRaw.relevance : DEFAULT_LEGAL_WEIGHTS.relevance,
-    legality: typeof weightsRaw?.legality === 'number' ? weightsRaw.legality : DEFAULT_LEGAL_WEIGHTS.legality,
-    authenticity: typeof weightsRaw?.authenticity === 'number' ? weightsRaw.authenticity : DEFAULT_LEGAL_WEIGHTS.authenticity,
+    relevance: readWeight(weightsRaw, 'relevance', warnings, source),
+    legality: readWeight(weightsRaw, 'legality', warnings, source),
+    authenticity: readWeight(weightsRaw, 'authenticity', warnings, source),
   }
   const rules: LegalEvidenceRule[] = []
   const rawRules = root.rules
@@ -77,10 +124,7 @@ export function parseLegalRuleSet(yamlText: string, source: string): { ruleSet: 
         warnings.push(`法律证据规则 ${record.id} 未知证据类型 "${evidenceTypeRaw}"，跳过`)
         continue
       }
-      const severityRaw = asString(record.severity) ?? 'warning'
-      const severity = (severityRaw === 'critical' || severityRaw === 'warning' || severityRaw === 'info')
-        ? severityRaw
-        : 'warning'
+      const severity = readSeverity(record, warnings, source)
       const check = asString(record.check)
       if (check === undefined) {
         warnings.push(`法律证据规则 ${record.id} 缺少 check，跳过`)

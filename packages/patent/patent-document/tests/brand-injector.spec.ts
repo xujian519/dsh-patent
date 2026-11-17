@@ -57,17 +57,30 @@ describe('brandInjector', () => {
     }
   })
 
-  it('returns an empty brand for a missing path', () => {
-    expect(loadBrandFromPath('/no/such/theme.json')).toEqual({})
+  it('returns an empty brand only when no path is configured', () => {
     expect(loadBrandFromPath(undefined)).toEqual({})
   })
 
-  it('falls back to an empty brand for a corrupt theme.json or a missing documents.patent namespace', () => {
+  it('fails loud for a missing file, corrupt JSON, and a malformed namespace', () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-brand-'))
     try {
+      expect(() => loadBrandFromPath(join(dir, 'missing.json'))).toThrow(/品牌配置不可读/)
+
       const corrupt = join(dir, 'corrupt.json')
       writeFileSync(corrupt, '{not json')
-      expect(loadBrandFromPath(corrupt)).toEqual({})
+      expect(() => loadBrandFromPath(corrupt)).toThrow(/品牌配置不是合法 JSON/)
+
+      const list = join(dir, 'list.json')
+      writeFileSync(list, JSON.stringify([]))
+      expect(() => loadBrandFromPath(list)).toThrow(/品牌配置顶层必须是对象/)
+
+      const notObject = join(dir, 'not-object.json')
+      writeFileSync(notObject, JSON.stringify({ documents: { patent: ['x'] } }))
+      expect(() => loadBrandFromPath(notObject)).toThrow(/documents.patent 必须是对象/)
+
+      const notString = join(dir, 'not-string.json')
+      writeFileSync(notString, JSON.stringify({ documents: { patent: { firm: 1 } } }))
+      expect(() => loadBrandFromPath(notString)).toThrow(/documents.patent.firm 必须是字符串/)
 
       const noPatent = join(dir, 'no-patent.json')
       writeFileSync(noPatent, JSON.stringify({ documents: { other: { firm: 'x' } } }))

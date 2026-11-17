@@ -36,7 +36,7 @@
 | F-PAT-001 | 交付物原子写在 POSIX 上先删后改名 | PAT | E | High | 中 | fixed |
 | F-PAT-002 | `rule_check` 丢弃同义词资产警告，合规检查静默降级 | PAT | B | High | 中 | confirmed |
 | F-PAT-003 | 原子写四份手写实现，未复用仓库共享 `atomic-write` 包 | PAT | A/B | High | 高 | fixed |
-| F-PAT-004 | 品牌配置损坏时静默回退默认品牌 | PAT | B | Medium | 中 | confirmed |
+| F-PAT-004 | 品牌配置损坏时静默回退默认品牌 | PAT | B | Medium | 中 | fixed |
 | F-PAT-005 | 四个输出路径默认锚定 `process.cwd()` | PAT | E | Medium | 中 | confirmed |
 | F-PAT-006 | `adversary-review` 以关键词启发式输出"置信度 87.5%" | PAT | B | High | 高 | fixed |
 | F-PAT-007 | `atomicWriteJson` 从 `patent-data` 历史导出面导入 | PAT | B | Low | 高 | fixed |
@@ -88,8 +88,8 @@
 | F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | new |
 | F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | new |
 | F-PAT-055 | 上游 JSON 字符串含 null 元素时 `mapPatentData` 抛 TypeError | PAT | E | Low | 低 | new |
-| F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | fixed |
-| F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | confirmed |
+| F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | confirmed |
+| F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | fixed |
 | F-DOC-003 | OOXML 读取限额两包各写一份字面量 | DOC | B | Low | 高 | fixed |
 | F-DOC-004 | 插件默认值出现两个来源（schema default 与 `??`） | DOC | B | Medium | 中 | fixed（文档域） |
 | F-DOC-005 | `tool-office` 用 9 处 `as` 断言担保跨模块不变量 | DOC | B | Low | 低 | confirmed |
@@ -100,7 +100,7 @@
 | F-DOC-010 | `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断 | DOC | E | Medium | 中 | new |
 | F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | confirmed |
 | F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | fixed |
-| F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | confirmed |
+| F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | fixed |
 | F-LEG-004 | 两域默认引用策略分叉，缺对照说明与回归护栏 | LEG | E | Low | 中 | confirmed |
 | F-LEG-005 | 专利知识库降级日志写死 `[sati]` 前缀 | LEG | B | Low | 高 | confirmed |
 | F-LEG-006 | 三性判定器把「打分 + 结论对象」手写 13 份，布尔三元打分块 18 处 | LEG | B | Low | 高 | confirmed |
@@ -1747,6 +1747,21 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`state.spec.ts` 删除本地 `replaceFileAtomicOrDirect` 的 9 条注入用例（能力已移到共享包），`state-fs-failure.spec.ts` 补两条 `renameWithRetry` 非 Error/无 code 的判定用例；共享包新增 3 条用例覆盖拒绝建父目录、直接写回成功、直接写回也失败。`state-fs-failure.spec.ts` 原有的临时文件清理吞错用例继续通过，因为共享写入器保留同样的清理失败处理。
 
 验证：`pnpm exec vitest run packages/util/atomic-write/tests packages/patent/patent-teams/tests` 112 用例通过；`atomic-write/src/index.ts`、`team-lock.ts` 聚焦覆盖率 100%；README 中英文同步并重录配对。
+### 批次 B：失败方向统一（2026-11-17）
+
+用户要求继续修复后完成。批次 B 的同义词警告一项已由 E9 处理，本批收口其余三处：配置不可用不再静默回退，取消不再报成内容问题。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-004 | `loadBrandFromPath` 只在未配置时返回空品牌；配置了但文件缺失/不可读、JSON 非法、顶层或 `documents.patent` 不是对象、值不是字符串时抛 `DocumentRenderError`；`renderPatentDocument` 删除「文件不存在则警告并回退」分支 | `patent-document/src/document/brandInjector.ts`、`renderPatentDocument.ts` |
+| F-LEG-003 | 权重声明为非数值、`severity` 声明为非法值时追加加载警告并点明回退值；字段缺省仍静默使用默认值 | `legal-evidence/src/rule-set.ts` |
+| F-DOC-002 | 读取失败分支先 `exec.signal.throwIfAborted()`，逐文件循环每轮检查中止；取消以取消错误拒绝，不产出 `unreadable` 报告 | `document-deliver/src/tool.ts` |
+
+**行为变化**：`brandPath` 写错或主题文件损坏会让渲染失败（`invalid_tool_input`），不再静默使用默认品牌；`document_deliver` 在取消后停止读取后续文件并以取消错误返回；证据规则资产的非法 `severity`／权重会出现在 `getWarnings()` 中。
+
+**既有测试行为**：`brand-injector.spec.ts` 把「缺失/损坏返回空品牌」改为四类失败断言；`render-patent-document.spec.ts` 的缺失品牌用例改为期望 `DocumentRenderError`；`branches.spec.ts` 的警告条数从 5 改为 6 并断言新文案。新增取消用例覆盖 `document_deliver` 中途中止。
+
+验证：三个包的测试共 153 用例通过；`rule-set.ts`、`brandInjector.ts`、`renderPatentDocument.ts`、`document-deliver/src/tool.ts` 在聚焦覆盖率下均为 100%；升级指南 `brand-path-must-be-usable` 已创建并重录配对。
 
 ## 复核记录
 

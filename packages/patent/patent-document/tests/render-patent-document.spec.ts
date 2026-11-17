@@ -507,10 +507,10 @@ describe('renderPatentDocument', () => {
     }
   })
 
-  it('warns when an explicit brandPath is missing', async () => {
+  it('fails when an explicit brandPath is missing', async () => {
     const dir = makeTempDir()
     try {
-      const result = await renderPatentDocument(
+      await expect(renderPatentDocument(
         {
           template: 'patentability-opinion',
           outputName: 'missing-brand',
@@ -521,8 +521,7 @@ describe('renderPatentDocument', () => {
         },
         dir,
         { subprocess: unusedSubprocess() },
-      )
-      expect(result.warnings?.join(' ')).toContain('品牌配置文件不存在')
+      )).rejects.toThrow(/品牌配置不可读/)
     } finally {
       cleanup(dir)
     }

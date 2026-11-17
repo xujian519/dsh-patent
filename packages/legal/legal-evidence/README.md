@@ -62,6 +62,7 @@ Append-only; newly visible result prose follows the reusable request prefix and 
 - **The score is a rule-driven heuristic, not a legal judgment.** It measures whether the record carries the fields the rules ask for; it does not decide admissibility, weight, or whether the evidence proves the fact. A high score on a record with false fields is still a false record.
 - **Missing answers default conservatively.** An absent boolean about originals, signatures, or verification reads as unanswered and lowers the dimension score; the engine does not infer a fact the caller did not state.
 - **The weights and the general rules are deployment-tunable; the type-specific rules are not.** `DEFAULT_LEGAL_WEIGHTS` and the shipped YAML agree, and the engine applies the YAML's `general` entries (presence, `check`, and severity) to every evidence type. Type-specific checks stay in the evaluators; the YAML documents them.
+- **An invalid declaration is reported** — a `severity` outside `critical | warning | info`, and a weight declared as anything other than a number, produce a load warning naming the value and the fallback. Omitting a field still uses its default silently, because a partial weight block is a supported configuration.
 - **Type coverage is the eight statutory types only.** A record that names another evidence form has no type-specific evaluator and is judged by the generic dimensions.
 - **No model call.** The tool never asks a model to score; a caller that needs a narrative explanation must produce it from the returned judgments.
 

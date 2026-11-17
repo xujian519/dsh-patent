@@ -6,8 +6,9 @@
  * @module @deepseek-ai/dsh-patent-document/document/brandInjector
  */
 
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { DocumentRenderError } from './errors.ts'
 import type { DocumentBrand } from './types.ts'
 
 /** theme.json -> documents.patent 的已知键到 CSS 变量名的映射。 */
@@ -40,21 +41,45 @@ const QUOTED_VARS = new Set(['--sati-doc-firm', '--sati-doc-confidential', '--sa
 
 /**
  * 从任意路径读取 theme.json 并提取 documents.patent 品牌覆盖。
- * @param path - theme.json 路径；缺省或缺失时返回空覆盖。
- * @returns documents.patent 命名空间下的品牌键值。
+ *
+ * 未配置路径是合法默认，返回空覆盖；配置了却读不到、不是合法 JSON，或
+ * documents.patent 不是「字符串值对象」时失败关闭——静默使用默认品牌会让
+ * 事务所署名与免责声明在交付件里错成默认值，且没有任何提示。
+ * @param path - theme.json 路径；缺省时返回空覆盖。
+ * @returns documents.patent 命名空间下的品牌键值；没有该命名空间时为空对象。
+ * @throws DocumentRenderError when the configured file is absent, unreadable, malformed, or not a string map.
  */
 export function loadBrandFromPath(path?: string): DocumentBrand {
   if (path === undefined) return {}
   const abs = resolve(path)
-  if (!existsSync(abs)) return {}
+  let raw: string
   try {
-    const raw = readFileSync(abs, 'utf8')
-    const parsed = JSON.parse(raw) as { documents?: { patent?: DocumentBrand } }
-    return parsed.documents?.patent ?? {}
-  } catch {
-    // 吞掉品牌文件的读取或 JSON 解析错误：损坏或不可读时回退到默认品牌。
-    return {}
+    raw = readFileSync(abs, 'utf8')
+  } catch (error) {
+    throw new DocumentRenderError(`品牌配置不可读：${abs}（${(error as Error).message}）`)
   }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch (error) {
+    throw new DocumentRenderError(`品牌配置不是合法 JSON：${abs}（${(error as Error).message}）`)
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new DocumentRenderError(`品牌配置顶层必须是对象：${abs}`)
+  }
+  const patent = (parsed as { documents?: { patent?: unknown } }).documents?.patent
+  if (patent === undefined) return {}
+  if (typeof patent !== 'object' || patent === null || Array.isArray(patent)) {
+    throw new DocumentRenderError(`品牌配置 documents.patent 必须是对象：${abs}`)
+  }
+  const brand: DocumentBrand = {}
+  for (const [key, value] of Object.entries(patent)) {
+    if (typeof value !== 'string') {
+      throw new DocumentRenderError(`品牌配置 documents.patent.${key} 必须是字符串：${abs}`)
+    }
+    brand[key] = value
+  }
+  return brand
 }
 
 /**

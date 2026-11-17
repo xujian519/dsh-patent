@@ -149,6 +149,35 @@ export async function writeTaskRecords(
 }
 
 /**
+ * Apply one change to the task journal under the in-process lock, publishing it
+ * against the version the change was computed from.
+ * @param ctx - context providing `ctx.fs`.
+ * @param projectPath - project file path.
+ * @param cwd - Session working directory for relative resolution.
+ * @param signal - caller cancellation.
+ * @param apply - next record list, or undefined to leave the journal unchanged.
+ */
+async function mutateJournal(
+  ctx: Context,
+  projectPath: string,
+  cwd: string,
+  signal: AbortSignal | undefined,
+  apply: (records: readonly MediaTaskRecord[]) => readonly MediaTaskRecord[] | undefined,
+): Promise<void> {
+  const path = storePathOf(projectPath, TASK_JOURNAL_FILE)
+  await withKeyLock(`store:${path}`, () => publishWithRetry('task journal', async () => {
+    const snapshot = await readSnapshot(ctx, projectPath, TASK_JOURNAL_FILE, journalSchema, cwd, signal)
+    const next = apply(snapshot?.document.tasks ?? [])
+    if (next === undefined) return
+    const parsed = journalSchema.safeParse({ schemaVersion: STORE_SCHEMA_VERSION, tasks: next })
+    if (!parsed.success) {
+      throw new MediaFailure(`invalid task journal record: ${issuesOf(parsed.error)}`, 'MEDIA_STORE_INVALID')
+    }
+    await writeStoreDocument(ctx, path, parsed.data, snapshot?.version, cwd, signal)
+  }))
+}
+
+/**
  * Insert or replace one in-flight record, keeping submission order.
  * @param ctx - context providing `ctx.fs`.
  * @param projectPath - project file path.
@@ -163,17 +192,11 @@ export async function recordTask(
   cwd: string,
   signal?: AbortSignal,
 ): Promise<void> {
-  const path = storePathOf(projectPath, TASK_JOURNAL_FILE)
-  await withKeyLock(`store:${path}`, () => publishWithRetry('task journal', async () => {
-    const snapshot = await readSnapshot(ctx, projectPath, TASK_JOURNAL_FILE, journalSchema, cwd, signal)
-    const next = [...(snapshot?.document.tasks ?? []).filter(entry => entry.task.id !== record.task.id), record]
+  await mutateJournal(ctx, projectPath, cwd, signal, (records) => {
+    const next = [...records.filter(entry => entry.task.id !== record.task.id), record]
     next.sort((left, right) => left.submittedAt - right.submittedAt)
-    const parsed = journalSchema.safeParse({ schemaVersion: STORE_SCHEMA_VERSION, tasks: next })
-    if (!parsed.success) {
-      throw new MediaFailure(`invalid task journal record: ${issuesOf(parsed.error)}`, 'MEDIA_STORE_INVALID')
-    }
-    await writeStoreDocument(ctx, path, parsed.data, snapshot?.version, cwd, signal)
-  }))
+    return next
+  })
 }
 
 /**
@@ -191,14 +214,10 @@ export async function forgetTask(
   cwd: string,
   signal?: AbortSignal,
 ): Promise<void> {
-  const path = storePathOf(projectPath, TASK_JOURNAL_FILE)
-  await withKeyLock(`store:${path}`, () => publishWithRetry('task journal', async () => {
-    const snapshot = await readSnapshot(ctx, projectPath, TASK_JOURNAL_FILE, journalSchema, cwd, signal)
-    const records = snapshot?.document.tasks ?? []
+  await mutateJournal(ctx, projectPath, cwd, signal, (records) => {
     const next = records.filter(entry => entry.task.id !== taskId)
-    if (next.length === records.length) return
-    await writeStoreDocument(ctx, path, { schemaVersion: STORE_SCHEMA_VERSION, tasks: next }, snapshot?.version, cwd, signal)
-  }))
+    return next.length === records.length ? undefined : next
+  })
 }
 
 /**

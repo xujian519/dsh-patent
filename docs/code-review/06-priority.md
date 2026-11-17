@@ -55,7 +55,7 @@
 | F-DOC-004 | Medium | 中 | 本周期 | 8 | P1 |
 | F-LEG-003 | Medium | 中 | 本周期 | 8 | P1 |
 | F-VID-002 | Medium | 中 | 本周期 | 8 | P1 |
-| F-VID-004 | Medium | 中 | 本周期 | 8 | P1 |
+| F-VID-004 | Medium | 中 | 本周期 | 8 | P1（已修） |
 | F-PAT-007 | Low | 高 | 可延后 | 3 | P2 |
 | F-PAT-012 | Low | 高 | 可延后 | 3 | P2 |
 | F-DOC-003 | Low | 高 | 可延后 | 3 | P2 |

@@ -894,19 +894,25 @@ describe('prepareSessionSnapshotFixtureForComparison', () => {
 })
 
 describe('deriveReplayScript', () => {
-  /** One `patent/model-call` record without its usage, at `seq`, optionally carrying its start ordinal. */
-  const marked = (output: string, callSequence?: number, seq = 1, truncated = false) => ({
-    type: 'patent/model-call',
-    seq: SessionSeq(seq),
-    time: 0,
-    data: {
-      callSite: 'patent_workflow_run',
-      output,
-      ...(callSequence === undefined ? {} : { callSequence }),
-      ...(truncated ? { truncated: true } : {}),
-      llmStreamCall: true,
-    },
-  }) as unknown as SessionEvent
+  /**
+   * One `patent/model-call` record without its usage, at `seq`.
+   * `callSequence` is the start ordinal. `truncated` marks an incomplete call.
+   */
+  const marked = (output: string, callSequence?: number, seq = 1, truncated = false): SessionEvent => {
+    const event = ({
+      type: 'patent/model-call',
+      seq: SessionSeq(seq),
+      time: 0,
+      data: {
+        callSite: 'patent_workflow_run',
+        output,
+        ...(callSequence === undefined ? {} : { callSequence }),
+        llmStreamCall: true,
+      },
+    }) as unknown as SessionEvent
+    if (truncated) Object.assign(event.data, { truncated: true })
+    return event
+  }
 
   /** The chunks one recorded output replays as. */
   const text = (output: string): StreamChunk[] => [

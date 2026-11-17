@@ -41,7 +41,7 @@
 | F-PAT-006 | `adversary-review` 以关键词启发式输出"置信度 87.5%" | PAT | B | High | 高 | fixed |
 | F-PAT-007 | `atomicWriteJson` 从 `patent-data` 历史导出面导入 | PAT | B | Low | 高 | fixed |
 | F-PAT-008 | TRIZ 资产裸 `JSON.parse as T`，失败无包内错误类型 | PAT | B | Low | 低 | confirmed |
-| F-PAT-009 | `registerPatentTools` 单函数 312 行 | PAT | B | Medium | 高 | confirmed |
+| F-PAT-009 | `registerPatentTools` 单函数 312 行 | PAT | B | Medium | 高 | fixed |
 | F-PAT-010 | `patent/model-call` 在流异常时不落会话事件 | PAT | E | Medium | 中 | fixed |
 | F-PAT-011 | `pending`/`rounds` 为进程内状态且未声明单进程语义 | PAT | E | Medium | 中 | fixed |
 | F-PAT-012 | 51 处 `as unknown as` 与两个零引用导出类型 | PAT | B | Low | 高 | confirmed |
@@ -251,7 +251,7 @@
 - 最小修复建议：按 figures / workflow / knowledge / filing 拆成四个 `register*Group`，主函数只保留编排与依赖解析。
 - 预估工作量：M
 - 是否可自动化：否（结构重构，靠测试护栏）
-- 状态：confirmed
+- 状态：fixed（拆成知识、工作流、附图、立案四组函数；主函数保留清单校验与依赖解析；注册顺序不变）
 
 ### F-PAT-010 `patent/model-call` 在流异常时不落会话事件
 
@@ -1794,6 +1794,19 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`service.spec.ts` 新增一条重启模拟用例（旧 service 停等后销毁，新 service 上决策失败）；既有「重复决策」用例不变。
 
 验证：`pnpm exec vitest run packages/patent/patent-workflow/tests/service.spec.ts --coverage --coverage.include=packages/patent/patent-workflow/src/index.ts` 22 用例通过，`index.ts` 覆盖率 100%。
+### 批次 E：registerPatentTools 拆分（2026-11-17）
+
+用户要求继续修复后完成。`adversary-review` 的伪置信度由另一批处理；51 处双断言不在本批。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-009 | `registerPatentTools` 改为编排：校验内置 manifest 与预算，解析模型、附图与知识依赖，再按模型可见顺序调用四个分组函数 | `patent-tools/src/wiring.ts` |
+
+**行为变化**：无。工具注册顺序、effect 名称与各工具入参与拆分前一致。
+
+**既有测试行为**：`wiring-composition.spec.ts` 与 `loader-composition.spec.ts` 不改断言。
+
+验证：`pnpm exec vitest related packages/patent/patent-tools/src/wiring.ts --run --coverage --coverage.include=packages/patent/patent-tools/src/wiring.ts` 19 个文件、316 用例通过，`wiring.ts` 覆盖率 100%。
 
 ## 复核记录
 

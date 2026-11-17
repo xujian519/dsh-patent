@@ -38,7 +38,7 @@
 | F-PAT-003 | 原子写四份手写实现，未复用仓库共享 `atomic-write` 包 | PAT | A/B | High | 高 | fixed（3/4） |
 | F-PAT-004 | 品牌配置损坏时静默回退默认品牌 | PAT | B | Medium | 中 | confirmed |
 | F-PAT-005 | 四个输出路径默认锚定 `process.cwd()` | PAT | E | Medium | 中 | confirmed |
-| F-PAT-006 | `adversary-review` 以关键词启发式输出"置信度 87.5%" | PAT | B | High | 高 | confirmed |
+| F-PAT-006 | `adversary-review` 以关键词启发式输出"置信度 87.5%" | PAT | B | High | 高 | fixed |
 | F-PAT-007 | `atomicWriteJson` 从 `patent-data` 历史导出面导入 | PAT | B | Low | 高 | fixed |
 | F-PAT-008 | TRIZ 资产裸 `JSON.parse as T`，失败无包内错误类型 | PAT | B | Low | 低 | confirmed |
 | F-PAT-009 | `registerPatentTools` 单函数 312 行 | PAT | B | Medium | 高 | confirmed |
@@ -129,7 +129,7 @@
 | F-VID-015 | EDL 音频片段的 `inSec`/`outSec` 不校验顺序，校验晚到 ffmpeg | VID | E | Low | 中 | new |
 | F-CROSS-001 | 四域另有 4 份 `messageOf`/`errorText` 与 1 份可并的 `asRecord`，而 `dsh-value` 已有对应原语且 11 个域内包已依赖它 | CROSS | B | Low | 高 | new |
 | F-CROSS-002 | `patent-tools` 导入未声明的 workspace 依赖 `@deepseek-ai/dsh-value`，运行产物靠打包内联掩盖 | CROSS | B/E | Low | 高 | new |
-| F-CROSS-003 | 知识库安装覆盖时先删输出，改名失败没有用例 | CROSS | D | High | 中 | new |
+| F-CROSS-003 | 知识库安装覆盖时先删输出，改名失败没有用例 | CROSS | D | High | 中 | fixed |
 | F-CROSS-004 | 专利、文档、法律三域的工具错误类没有接入 `HarnessError`，失败码在 `tool/result` 与会话界面丢失 | CROSS | E | Low | 高 | new |
 
 ## 专利域
@@ -1708,6 +1708,32 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`project.spec.ts` 原先靠「读两次比对」模拟并发，现改为假 IO 在守卫写入时抛 `FS_STALE_VERSION`，并新增非冲突写入透传、初始化拒绝覆盖、stat 与读取之间被删除三类用例；`store.spec.ts` 新增 journal／账本竞争合并、守卫创建竞争、持续冲突与删除即缺席用例。测试用 `ctx.fs.writeText` 注入竞争写者，不改产品代码。
 
 验证：`pnpm exec vitest run packages/experimental/video-mode/tests` 276 用例通过；`store.ts`、`project.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`verify-translation-pairing` 重录后通过。
+### 批次 E12：知识库安装改为直接改名提交（2026-11-17）
+
+用户要求继续修复后完成。只改 `knowledge-core` 的提交助手与测试。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-CROSS-003 | `commitTempSibling` 删除 `rmSync(output)`，直接把临时文件 rename 到输出；覆盖日志移到 rename 成功之后，失败时既不丢旧库也不留假日志 | `knowledge-core/src/install-fs.ts` |
+
+**行为变化**：输出已存在时，rename 失败（`ENOSPC`、`EACCES`、跨设备）现在保留上一份 `knowledge.db`／`legal.db` 与临时文件，并把错误原样抛给安装命令；成功路径的覆盖日志文案不变。
+
+**既有测试行为**：`install-fs.spec.ts` 新增一条注入 `renameSync` 抛 `ENOSPC` 的用例，断言旧输出仍为 `old`、临时文件仍在、日志为空。既有成功用例断言不变。
+
+验证：`pnpm exec vitest run packages/law/knowledge-core/tests` 通过；`install-fs.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`verify-translation-pairing` 重录后通过。
+### 批次 E13：换位审查摘要改称关键词覆盖率（2026-11-17）
+
+用户要求继续修复后完成。只改 `adversary-review` 的摘要与结果标记，不改关键词判定。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-006 | 摘要把启发式数值写成「关键词覆盖率：X%（确定性启发式，非实体论证评估）」；`AdversaryReviewReport` 增加固定 `deterministic: true`；原子输出增加 `adversary_review_deterministic` 并在描述中标明确定性；`computeReviewConfidence` 的 JSDoc 说明该值不是实体论证置信度 | `patent-core/src/adversary/review.ts`、`src/atoms/handlers/builtin/adversary-review.ts` |
+
+**行为变化**：模型与用户不再看到「整体置信度：87.5%」这种伪置信度；摘要明确写出来源与局限，原子结果带 `deterministic: true`。`overallConfidence` 字段保留数值（内部与既有消费者使用），语义改为关键词覆盖率并在类型注释中写明。
+
+**既有测试行为**：`adversary-review.spec.ts` 的摘要断言改为「关键词覆盖率」与确定性限定，并断言不再出现「整体置信度」；原子输出 schema 增加 `adversary_review_deterministic`。`patent-oa-chain` 录制会话刷新一行输出文本，其余片段不变。
+
+验证：`pnpm exec vitest run packages/patent/patent-core/tests/adversary-review.spec.ts packages/patent/patent-core/tests/adversary-branches.spec.ts` 61 用例通过；`review.ts`、`adversary-review.ts` 聚焦覆盖率 100%；`pnpm run test:snapshot -t patent-oa-chain` 通过。
 
 ## 复核记录
 

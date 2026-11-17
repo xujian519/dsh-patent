@@ -29,8 +29,15 @@ export type AdversaryReviewReport = {
   missedRejections: string[]
   /** 证据缺口（论证缺少支撑证据）。 */
   evidenceGaps: string[]
-  /** 整体置信度 [0,1]。 */
+  /**
+   * 关键词启发式的覆盖率 [0,1]：争议点置信度加权后按论证强度折算。
+   *
+   * 它衡量的是关键词命中与证据缺口检查，不是对实体论证的语义评估；摘要与原子
+   * 输出同时给出 `deterministic: true`，避免把该数值当成模型级置信度。
+   */
   overallConfidence: number
+  /** 本报告由确定性启发式产生，未调用模型；字段固定为 true。 */
+  deterministic: true
   /** 可读摘要（中文）。 */
   summary: string
 }
@@ -92,7 +99,7 @@ export function reviewFinalDraft(input: AdversaryReviewInput): AdversaryReviewRe
   // 步骤 4：评估论证强度
   const argumentStrength = assessArgumentStrength(missedRejections, evidenceGaps, disputes)
 
-  // 步骤 5：计算整体置信度
+  // 步骤 5：计算关键词覆盖率（确定性启发式，不是实体论证置信度）
   const overallConfidence = computeReviewConfidence(disputes, argumentStrength)
 
   // 步骤 6：生成摘要
@@ -104,6 +111,7 @@ export function reviewFinalDraft(input: AdversaryReviewInput): AdversaryReviewRe
     missedRejections,
     evidenceGaps,
     overallConfidence,
+    deterministic: true,
     summary,
   }
 }
@@ -333,10 +341,13 @@ export function assessArgumentStrength(
 }
 
 /**
- * 计算换位审查的整体置信度。
+ * 计算换位审查的关键词覆盖率（确定性启发式）。
+ *
+ * 该数值只反映关键词命中与争议点权重，**不是**对实体论证的置信度；摘要把它
+ * 写成「关键词覆盖率」，报告同时带 `deterministic: true`。
  *
  * 公式：
- *   1. 无争议点时：strong → 0.8，否则 → 0.5（基线置信）。
+ *   1. 无争议点时：strong → 0.8，否则 → 0.5（基线覆盖率）。
  *   2. 有争议点时：按置信度加权平均（权重 = 各争议点自身置信度），
  *      即 weightedAvg = Σ(confidence²) / Σ(confidence)，
  *      高置信度争议点对结果影响更大。
@@ -345,7 +356,7 @@ export function assessArgumentStrength(
  *
  * @param disputes - 争议点列表。
  * @param argumentStrength - 论证强度。
- * @returns 整体置信度 [0,1]。
+ * @returns 关键词覆盖率 [0,1]。
  */
 export function computeReviewConfidence(
   disputes: AdversaryDispute[],
@@ -370,10 +381,12 @@ export function computeReviewConfidence(
 /**
  * 生成换位审查摘要。
  *
+ * 摘要必须把确定性来源写出来：`overallConfidence` 是关键词覆盖率，不是模型级
+ * 置信度；省略这层限定会让读者把启发式命中率当成实体论证评估。
  * @param missedRejections - 遗漏的驳回理由。
  * @param evidenceGaps - 证据缺口。
  * @param argumentStrength - 论证强度。
- * @param overallConfidence - 整体置信度。
+ * @param overallConfidence - 关键词覆盖率。
  * @returns 可读摘要（中文）。
  */
 export function buildReviewSummary(
@@ -394,7 +407,7 @@ export function buildReviewSummary(
     parts.push(`存在 ${evidenceGaps.length} 处证据缺口`)
   }
 
-  parts.push(`整体置信度：${(overallConfidence * 100).toFixed(1)}%`)
+  parts.push(`关键词覆盖率：${(overallConfidence * 100).toFixed(1)}%（确定性启发式，非实体论证评估）`)
 
   return parts.join('；')
 }

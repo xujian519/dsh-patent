@@ -52,14 +52,16 @@ export function prepareTempSibling(output: string): string {
 
 /**
  * 用临时文件原子替换输出。
+ *
+ * 直接 rename 覆盖，绝不先删输出：rename 失败（磁盘满、权限、跨设备）时上一份
+ * 已安装的库仍在原处，临时文件也保留供排查。覆盖成功后才记账，避免失败时留下
+ * 「已覆盖」的假日志。
  * @param temp - 已写好的临时文件。
  * @param output - 输出文件路径。
  * @param log - 日志出口；覆盖已有输出时记录一行。
  */
 export function commitTempSibling(temp: string, output: string, log: (line: string) => void): void {
-  if (existsSync(output)) {
-    log(`输出已存在，覆盖: ${output}`)
-    rmSync(output)
-  }
+  const replaced = existsSync(output)
   renameSync(temp, output)
+  if (replaced) log(`输出已存在，覆盖: ${output}`)
 }

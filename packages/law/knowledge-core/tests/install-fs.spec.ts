@@ -1,14 +1,19 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   commitTempSibling,
   countTableRows,
   formatGigabytes,
   prepareTempSibling,
 } from '@deepseek-ai/dsh-knowledge-core'
+
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>()
+  return { ...actual, renameSync: vi.fn(actual.renameSync) }
+})
 
 const created: string[] = []
 
@@ -88,7 +93,25 @@ describe('commitTempSibling', () => {
     const log: string[] = []
     commitTempSibling(temp, output, line => log.push(line))
     expect(readFileSync(output, 'utf8')).toBe('new')
+    expect(existsSync(temp)).toBe(false)
     expect(log).toHaveLength(1)
     expect(log[0]).toContain('输出已存在，覆盖')
+  })
+
+  it('keeps the installed output and the temp file when the rename fails', () => {
+    const root = tempDir('dsh-install-fs-')
+    const output = join(root, 'knowledge.db')
+    writeFileSync(output, 'old')
+    const temp = prepareTempSibling(output)
+    writeFileSync(temp, 'new')
+    vi.mocked(renameSync).mockImplementationOnce(() => {
+      throw Object.assign(new Error('no space left on device'), { code: 'ENOSPC' })
+    })
+    const log: string[] = []
+
+    expect(() => { commitTempSibling(temp, output, line => log.push(line)) }).toThrow(/no space/)
+    expect(readFileSync(output, 'utf8')).toBe('old')
+    expect(readFileSync(temp, 'utf8')).toBe('new')
+    expect(log).toEqual([])
   })
 })

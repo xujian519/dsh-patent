@@ -51,7 +51,7 @@ kind: "package-reference"
 <a id="install-file-operations"></a>
 ## 安装文件操作
 
-两个知识库安装命令都要把源库复制进运行时目录，因此共用文件机制：`prepareTempSibling` 建好输出目录并返回同目录的临时文件路径，让随后的 rename 不跨文件系统，同时清掉上次中断留下的同名临时文件；`commitTempSibling` 原子替换输出并记录覆盖；`countTableRows` 统计表行数，表缺失时为 -1；`formatGigabytes` 渲染源库体积。
+两个知识库安装命令都要把源库复制进运行时目录，因此共用文件机制：`prepareTempSibling` 建好输出目录并返回同目录的临时文件路径，让随后的 rename 不跨文件系统，同时清掉上次中断留下的同名临时文件；`commitTempSibling` 直接把临时文件 rename 覆盖输出，不先删除已安装的库，且只在 rename 成功后记录覆盖，因此 rename 失败时上一份库与临时文件都还在；`countTableRows` 统计表行数，表缺失时为 -1；`formatGigabytes` 渲染源库体积。
 
 <a id="real-paths"></a>
 ## 真实路径

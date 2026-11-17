@@ -44,6 +44,7 @@ describe('adversary-review atom', () => {
       'adversary_review_report',
       'adversary_review_disputes',
       'adversary_review_confidence',
+      'adversary_review_deterministic',
       'adversary_review_full_report',
       'adversary_review_passed',
     ])
@@ -250,13 +251,15 @@ describe('buildReviewSummary', () => {
     expect(summary).toContain('部分不足')
     expect(summary).toContain('遗漏')
     expect(summary).toContain('证据缺口')
-    expect(summary).toContain('60.0%')
+    expect(summary).toContain('关键词覆盖率：60.0%')
+    expect(summary).toContain('确定性启发式，非实体论证评估')
+    expect(summary).not.toContain('整体置信度')
   })
 
   it('无问题时摘要显示充分', () => {
     const summary = buildReviewSummary([], [], 'strong', 0.8)
     expect(summary).toContain('充分')
-    expect(summary).toContain('80.0%')
+    expect(summary).toContain('关键词覆盖率：80.0%')
   })
 })
 
@@ -306,6 +309,9 @@ describe('handler execute', () => {
     expect(typeof result.adversary_review_report).toBe('string')
     expect(result.adversary_review_disputes).toBeDefined()
     expect(typeof result.adversary_review_confidence).toBe('number')
+    expect(result.adversary_review_deterministic).toBe(true)
+    expect(result.adversary_review_report).toContain('关键词覆盖率')
+    expect(result.adversary_review_report).not.toContain('整体置信度')
   })
 
   it('兼容旧 final_draft 键', async () => {
@@ -442,6 +448,7 @@ describe('AdversaryReviewReport 类型', () => {
       missedRejections: [],
       evidenceGaps: [],
       overallConfidence: 0.8,
+      deterministic: true,
       summary: '测试摘要',
     }
     expect(report.argumentStrength).toBe('strong')
@@ -449,6 +456,7 @@ describe('AdversaryReviewReport 类型', () => {
     expect(Array.isArray(report.missedRejections)).toBe(true)
     expect(Array.isArray(report.evidenceGaps)).toBe(true)
     expect(typeof report.overallConfidence).toBe('number')
+    expect(report.deterministic).toBe(true)
     expect(typeof report.summary).toBe('string')
   })
 })

@@ -132,7 +132,7 @@
 | F-VID-015 | EDL 音频片段的 `inSec`/`outSec` 不校验顺序，校验晚到 ffmpeg | VID | E | Low | 中 | new |
 | F-CROSS-001 | 四域另有 4 份 `messageOf`/`errorText` 与 1 份可并的 `asRecord`，而 `dsh-value` 已有对应原语且 11 个域内包已依赖它 | CROSS | B | Low | 高 | new |
 | F-CROSS-002 | `patent-tools` 导入未声明的 workspace 依赖 `@deepseek-ai/dsh-value`，运行产物靠打包内联掩盖 | CROSS | B/E | Low | 高 | new |
-| F-CROSS-003 | 知识库安装覆盖时先删输出，改名失败没有用例 | CROSS | D | High | 中 | new |
+| F-CROSS-003 | 知识库安装覆盖时先删输出，改名失败没有用例 | CROSS | D | High | 中 | fixed |
 | F-CROSS-004 | 专利、文档、法律三域的工具错误类没有接入 `HarnessError`，失败码在 `tool/result` 与会话界面丢失 | CROSS | E | Low | 高 | new |
 
 ## 专利域
@@ -1711,6 +1711,19 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`project.spec.ts` 原先靠「读两次比对」模拟并发，现改为假 IO 在守卫写入时抛 `FS_STALE_VERSION`，并新增非冲突写入透传、初始化拒绝覆盖、stat 与读取之间被删除三类用例；`store.spec.ts` 新增 journal／账本竞争合并、守卫创建竞争、持续冲突与删除即缺席用例。测试用 `ctx.fs.writeText` 注入竞争写者，不改产品代码。
 
 验证：`pnpm exec vitest run packages/experimental/video-mode/tests` 276 用例通过；`store.ts`、`project.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`verify-translation-pairing` 重录后通过。
+### 批次 E12：知识库安装改为直接改名提交（2026-11-17）
+
+用户要求继续修复后完成。只改 `knowledge-core` 的提交助手与测试。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-CROSS-003 | `commitTempSibling` 删除 `rmSync(output)`，直接把临时文件 rename 到输出；覆盖日志移到 rename 成功之后，失败时既不丢旧库也不留假日志 | `knowledge-core/src/install-fs.ts` |
+
+**行为变化**：输出已存在时，rename 失败（`ENOSPC`、`EACCES`、跨设备）现在保留上一份 `knowledge.db`／`legal.db` 与临时文件，并把错误原样抛给安装命令；成功路径的覆盖日志文案不变。
+
+**既有测试行为**：`install-fs.spec.ts` 新增一条注入 `renameSync` 抛 `ENOSPC` 的用例，断言旧输出仍为 `old`、临时文件仍在、日志为空。既有成功用例断言不变。
+
+验证：`pnpm exec vitest run packages/law/knowledge-core/tests` 通过；`install-fs.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`verify-translation-pairing` 重录后通过。
 
 ## 复核记录
 

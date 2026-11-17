@@ -136,6 +136,8 @@
 
 | E11 视频持久写入版本守卫 | 已实施（2026-11-17） | F-VID-001：journal／账本／项目改 `replaceIfVersion`，冲突重试后报 `MEDIA_STORE_CONFLICT` |
 
+| E12 知识库安装直接改名 | 已实施（2026-11-17） | F-CROSS-003：不再先删输出，改名失败保留旧库与临时文件 |
+
 ## 与发现清单的关系
 
 - [05-findings.md](05-findings.md) 记录事实与证据。

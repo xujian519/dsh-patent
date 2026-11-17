@@ -51,7 +51,7 @@ A legal-domain case-law query and a patent-domain prior-art query run through th
 <a id="install-file-operations"></a>
 ## Install file operations
 
-Both knowledge-database install commands copy a source database into the runtime directory, so they share the file mechanics: `prepareTempSibling` creates the output directory and returns a sibling temp path inside it, which keeps the following rename on one filesystem and clears a temp file an interrupted run left behind; `commitTempSibling` replaces the output atomically and records the overwrite; `countTableRows` counts a table and reports -1 when the table is missing; `formatGigabytes` renders the size of the source database.
+Both knowledge-database install commands copy a source database into the runtime directory, so they share the file mechanics: `prepareTempSibling` creates the output directory and returns a sibling temp path inside it, which keeps the following rename on one filesystem and clears a temp file an interrupted run left behind; `commitTempSibling` renames the temp file over the output without deleting the installed database first, and records the overwrite only after the rename succeeds, so a failed rename leaves the previous database and the temp file in place; `countTableRows` counts a table and reports -1 when the table is missing; `formatGigabytes` renders the size of the source database.
 
 <a id="real-paths"></a>
 ## Real paths

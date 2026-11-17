@@ -5183,30 +5183,51 @@ describe('PythonPtcRuntime — hostile peer', () => {
     // `sendReply` checks `settled`, but only after the resolution has been walked
     // and copied by `snapshotJsonValue`. Binding resolution carries no seam-level
     // byte cap, so a binding that resolves a wide value AFTER the run already
-    // settled (here on `maxWallMs`) spent host heap building a frame that is then
-    // discarded. The check now runs before the snapshot.
+    // settled spent host heap building a frame that is then discarded. The check
+    // runs before the snapshot. Abort, the wall clock, and dispose all set that
+    // same flag.
     //
-    // The binding resolves well after the 1s wall clock with a 2M-element array;
-    // the run must still report `timeout`, and the late value must not appear.
+    // The wall timer is armed at spawn, so a 1s ceiling can fire before the
+    // child reaches the binding and the late path never runs. Wait until the
+    // binding has been entered, abort, and only then let it resolve a
+    // 2M-element array. The result stays an abort with no value. The binding's
+    // own completion is what shows the late path ran.
+    const entered = Promise.withResolvers<undefined>()
+    const release = Promise.withResolvers<undefined>()
+    const finished = Promise.withResolvers<undefined>()
     let resolvedLate = false
-    const { runtime } = await setup({ maxWallMs: 1_000 })
-    const result = await runtime.run(runtime.resolve({
+    const controller = new AbortController()
+    const { runtime } = await setup({ maxWallMs: 60_000 })
+    const pending = runtime.run(runtime.resolve({
       program: 'return await tools.slow({})',
       bindings: [{
         global: 'tools',
         functions: {
           slow: async () => {
-            await new Promise(resolve => setTimeout(resolve, 2_500))
+            entered.resolve(undefined)
+            await release.promise
             resolvedLate = true
-            return Array.from({ length: 2_000_000 }, () => 0)
+            const value = Array.from({ length: 2_000_000 }, () => 0)
+            finished.resolve(undefined)
+            return value
           },
         },
       }],
+      signal: controller.signal,
     }))
-    expect(result.error?.kind).toBe('timeout')
+    await Promise.race([
+      entered.promise,
+      pending.then((outcome) => {
+        throw new Error(`run settled before the binding was entered (${outcome.error?.kind ?? 'value'})`)
+      }),
+    ])
+    controller.abort('late-binding')
+    const result = await pending
+    expect(result.error?.kind).toBe('abort')
+    expect(result.error?.message).toContain('late-binding')
     expect(result.value).toBeUndefined()
-    // Pin that the late path actually ran, so the assertion above is not vacuous.
-    await new Promise(resolve => setTimeout(resolve, 2_000))
+    release.resolve(undefined)
+    await finished.promise
     expect(resolvedLate).toBe(true)
   }, 90_000)
 

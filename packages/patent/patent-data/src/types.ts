@@ -249,6 +249,10 @@ export interface EgoRunOptions {
   cwd: string
   /** Whole-run timeout; defaults to the session's defaultTimeoutMs. */
   timeoutMs?: number
+  /**
+   * Source environment for this run. Replaces the session environment.
+   * The spawn keeps only the child allowlist (PATH, HOME, locale, and display variables).
+   */
   env?: NodeJS.ProcessEnv
   signal?: AbortSignal
 }
@@ -271,7 +275,12 @@ export interface EgoSessionOptions {
   maxOutputBytes?: number
   /** Platform override (default process.platform). */
   platform?: NodeJS.Platform
-  /** Environment override for the probe, availability check, and script runs (default process.env). */
+  /**
+   * Source environment for the probe, the availability PATH lookup, and script runs
+   * (default process.env). Spawns copy PATH, HOME, LANG, LANGUAGE, `LC_*`, and the
+   * display variables DISPLAY, WAYLAND_DISPLAY, XAUTHORITY, XDG_RUNTIME_DIR, and
+   * DBUS_SESSION_BUS_ADDRESS. Other names are omitted.
+   */
   env?: NodeJS.ProcessEnv
   /** Spawn runner seam (defaults to the subprocess-backed runner). */
   runner?: EgoSpawnRunner

@@ -26,6 +26,15 @@ export const DEFAULT_EGO_PROBE_TIMEOUT_MS = 8_000
 /** The ego-browser script delimiter name shared with the future ego_browser tool's input validation. */
 export const EGO_HEREDOC_MARKER = 'EGO_SCRIPT_EOF'
 
+/** Display variables an ego-browser child may receive. */
+const EGO_DISPLAY_ENV_NAMES = new Set([
+  'DISPLAY',
+  'WAYLAND_DISPLAY',
+  'XAUTHORITY',
+  'XDG_RUNTIME_DIR',
+  'DBUS_SESSION_BUS_ADDRESS',
+])
+
 /** Unified ego-browser execution session. Stateless; availability is checked per call. */
 export class EgoBrowserSession {
   private readonly commandName: string
@@ -87,7 +96,7 @@ export class EgoBrowserSession {
       const result = await this.requireRunner().spawn({
         argv: [this.commandName, 'nodejs', '-e', "cliLog('EGO_DOCTOR_OK')"],
         cwd: process.cwd(),
-        env: this.env,
+        env: this.buildEnv(this.env),
         timeoutMs: probeTimeout,
       })
       if (result.timedOut || result.exitCode !== 0) return false
@@ -183,14 +192,27 @@ export class EgoBrowserSession {
     return this.runner
   }
 
+  /**
+   * Environment passed to one ego-browser spawn.
+   * Copies HOME, LANG, LANGUAGE, every `LC_*` name, and the display names
+   * from `base`, then sets PATH to `base.PATH` plus this session's path entries.
+   * Every other name is omitted.
+   * @param base - session or per-run environment to copy from.
+   * @returns the spawn environment.
+   */
   private buildEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+    const env: NodeJS.ProcessEnv = {}
+    for (const [name, value] of Object.entries(base)) {
+      if (value !== undefined && isEgoChildEnvName(name)) env[name] = value
+    }
     const delimiter = pathDelimiter(this.platform)
     const existingPath = base.PATH ?? ''
     const segments = existingPath.length > 0 ? existingPath.split(delimiter) : []
     for (const entry of this.pathEntries) {
       if (!segments.includes(entry)) segments.push(entry)
     }
-    return { ...base, PATH: segments.join(delimiter) }
+    env.PATH = segments.join(delimiter)
+    return env
   }
 
   private isCommandExecutable(env: NodeJS.ProcessEnv): boolean {
@@ -216,6 +238,15 @@ export class EgoBrowserSession {
     while (end > 0 && (buffer.readUInt8(end) & 0xc0) === 0x80) end -= 1
     return `${buffer.subarray(0, end).toString('utf8')}…\n[output truncated]`
   }
+}
+
+/** Whether `name` may be copied into an ego-browser child. PATH is applied by the caller. */
+function isEgoChildEnvName(name: string): boolean {
+  return name === 'HOME'
+    || name === 'LANG'
+    || name === 'LANGUAGE'
+    || name.startsWith('LC_')
+    || EGO_DISPLAY_ENV_NAMES.has(name)
 }
 
 /** PATH delimiter per platform (Windows ';', elsewhere ':'). */

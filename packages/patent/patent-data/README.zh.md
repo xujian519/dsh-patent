@@ -66,7 +66,7 @@ cordis.yml 的 `Config` 声明随部署变化的 ego-browser 取值与 CNIPR 页
 | `createEgoSession` | `homeDir` | `os.homedir()` | 定位 `~/.local/bin` 的主目录。 |
 | `createEgoSession` | `pathEntries` | `[<home>/.local/bin]` | 注入 spawn 环境的额外 PATH 目录，可用性检查同样使用。 |
 | `createEgoSession` | `platform` | `process.platform` | 平台覆盖。 |
-| `createEgoSession` | `env` | `process.env` | 环境变量覆盖。 |
+| `createEgoSession` | `env` | `process.env` | 子进程环境白名单的来源：`PATH`（另含 `pathEntries`）、`HOME`、`LANG`、`LANGUAGE`、`LC_*`、`DISPLAY`、`WAYLAND_DISPLAY`、`XAUTHORITY`、`XDG_RUNTIME_DIR`、`DBUS_SESSION_BUS_ADDRESS`。其余名称不传入。 |
 | `createEgoSession` | `runner` | subprocess 后端 runner | 测试用 spawn runner 注入。 |
 | `createCniprChannel` | `timeoutMs` | 会话 `defaultTimeoutMs` | 单次 CNIPR 脚本运行的期限。 |
 | `createCniprChannel` | `pageBudgets` | `Config` 解析出的取值 | 单个通道的逐项等待覆盖；给出一个字段只换那一项。 |

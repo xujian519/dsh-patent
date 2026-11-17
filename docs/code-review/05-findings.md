@@ -48,7 +48,7 @@
 | F-PAT-013 | `patent-core` 导出面过宽，大量内部符号对外 | PAT | B | Low | 高 | confirmed |
 | F-PAT-014 | `patent_pdf_download` 的输出目录不受部署文件策略约束 | PAT | A | High | 中 | fixed |
 | F-PAT-015 | PDF 兜底下载的临时文件路径可预测且不独占创建 | PAT | A/B | Medium | 中 | fixed |
-| F-PAT-016 | ego-browser 子进程继承完整 `process.env` | PAT | A | Low | 中 | confirmed |
+| F-PAT-016 | ego-browser 子进程继承完整 `process.env` | PAT | A | Low | 中 | fixed |
 | F-PAT-017 | 交付前引用门禁只覆盖 `render_patent_document`，立案构建不经引用核验 | PAT | A/E | High | 低 | fixed |
 | F-PAT-018 | 后台运行接受模型自报的 `approveStageIds`，HITL 审批可绕过 | PAT | A | High | 中 | fixed |
 | F-PAT-019 | 同一管线状态的文本读取有 4 份实现，键列表解析已漂移 | PAT | B | Low | 高 | new |
@@ -343,7 +343,8 @@
 - 最小修复建议：ego-browser 只传白名单（`PATH`、`HOME`、语言与显示相关变量），需要登录态时由 ego 自己的配置承担。
 - 预估工作量：S
 - 是否可自动化：是（断言子进程环境不含未列入白名单的变量）
-- 状态：confirmed
+- 修复：探测和脚本运行传给子进程的显式环境只保留 `PATH`（附带 `pathEntries`）、`HOME`、`LANG`、`LANGUAGE`、`LC_*`，以及 `DISPLAY`、`WAYLAND_DISPLAY`、`XAUTHORITY`、`XDG_RUNTIME_DIR`、`DBUS_SESSION_BUS_ADDRESS`。其余名称不再从传入环境复制，`DEEPSEEK_API_KEY` 不会被写回。可用性检查仍只在本进程里查找可执行文件。
+- 状态：fixed
 
 ### F-PAT-017 交付前引用门禁只覆盖 `render_patent_document`，立案构建不经引用核验
 

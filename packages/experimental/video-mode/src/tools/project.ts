@@ -13,7 +13,7 @@ import {
   projectCost,
   projectPathFor,
   readProject,
-  readProjectText,
+  readProjectSnapshot,
   recordRender,
   removeShot,
   upsertShot,
@@ -68,8 +68,10 @@ async function mutateProject(
   const target = await ctx.fs.resolve(path, { cwd })
   return withProjectLock(ctx.fs.processPath(target), () => mutateProjectFile({
     path,
-    read: () => readProjectText(ctx, path, cwd, signal),
-    write: async (text) => { await ctx.fs.writeText(target, text, undefined, signal) },
+    read: () => readProjectSnapshot(ctx, path, cwd, signal),
+    write: async (text, version) => {
+      await ctx.fs.writeText(target, text, { kind: 'replaceIfVersion', version }, signal)
+    },
   }, apply))
 }
 

@@ -3,14 +3,14 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/document/docx-kit/README.md
 /:
-  en: 9fdc7f4f7d806d9d
-  zh: f5156257e49d24db
+  en: c3686c333e599c51
+  zh: 780ae6986280f8fd
 /deepseek-ai-dsh-docx-kit:
   en: 93029fb1f3e09c48
   zh: b884cec5b8db0dd7
 /deepseek-ai-dsh-docx-kit/summary:
-  en: 46bd82630acbfe5a
-  zh: 61b4be0e41a530e2
+  en: bb4575c0fea2bd93
+  zh: c68af51aea81f8cf
 /deepseek-ai-dsh-docx-kit/table-of-contents:
   en: d152484eb41ac6b4
   zh: 5103e1812d95589b
@@ -45,8 +45,8 @@
   en: d32bdbeeae685063
   zh: fa2a24c632221cec
 /deepseek-ai-dsh-docx-kit/known-limitations-and-deferred-work:
-  en: 7dacf0ae4ebfc282
-  zh: 02741cf9aa01538f
+  en: d50117810bfe437c
+  zh: e6faa7e91dadbdcd
 /deepseek-ai-dsh-docx-kit/known-limitations-and-deferred-work/dev-note:
   en: 2bb8f1573cecc65f
   zh: 29dcfe6a9ea12262

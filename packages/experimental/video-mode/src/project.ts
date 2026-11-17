@@ -11,7 +11,7 @@ import { join } from 'node:path'
 import { z } from 'zod'
 import type { Context } from '@deepseek-ai/cordis'
 import { FsError } from '@deepseek-ai/dsh-fs'
-import type { FsTarget } from '@deepseek-ai/dsh-fs'
+import type { FsTarget, FsVersion } from '@deepseek-ai/dsh-fs'
 import { withKeyLock } from './lock.ts'
 import { MediaFailure, type VideoProject, type VideoRender, type VideoShot } from './types.ts'
 
@@ -158,6 +158,40 @@ export async function readProject(ctx: Context, path: string, cwd: string, signa
 }
 
 /**
+ * Read one project file with the freshness token that guards its next replacement.
+ *
+ * The token is observed before the text: a writer that replaces the file
+ * between the two makes the guarded publication fail with `FS_STALE_VERSION`,
+ * which is the safe direction — the caller re-reads instead of overwriting.
+ * @param ctx - context providing `ctx.fs`.
+ * @param path - absolute or working-directory-relative project path.
+ * @param cwd - Session working directory for relative resolution.
+ * @param signal - caller cancellation.
+ * @returns the file text and the version it was read at.
+ * @throws {@link MediaFailure} `MEDIA_PROJECT_INVALID` when the file is absent.
+ */
+export async function readProjectSnapshot(
+  ctx: Context,
+  path: string,
+  cwd: string,
+  signal?: AbortSignal,
+): Promise<{ readonly text: string; readonly version: FsVersion }> {
+  const target = await ctx.fs.resolve(path, { cwd })
+  const info = await ctx.fs.stat(target, signal)
+  if (info === undefined) {
+    throw new MediaFailure(`video project not found at ${path}; run video_project init first`, 'MEDIA_PROJECT_INVALID')
+  }
+  try {
+    return { text: await ctx.fs.readText(target, signal), version: info.version }
+  } catch (error) {
+    if (error instanceof FsError && error.code === 'FS_NOT_FOUND') {
+      throw new MediaFailure(`video project not found at ${path}; run video_project init first`, 'MEDIA_PROJECT_INVALID', { cause: error })
+    }
+    throw error
+  }
+}
+
+/**
  * Read one project file as text.
  * @param ctx - context providing `ctx.fs`.
  * @param path - absolute or working-directory-relative project path.
@@ -172,15 +206,7 @@ export async function readProjectText(
   cwd: string,
   signal?: AbortSignal,
 ): Promise<string> {
-  const target = await ctx.fs.resolve(path, { cwd })
-  try {
-    return await ctx.fs.readText(target, signal)
-  } catch (error) {
-    if (error instanceof FsError && error.code === 'FS_NOT_FOUND') {
-      throw new MediaFailure(`video project not found at ${path}; run video_project init first`, 'MEDIA_PROJECT_INVALID', { cause: error })
-    }
-    throw error
-  }
+  return (await readProjectSnapshot(ctx, path, cwd, signal)).text
 }
 
 /**
@@ -226,16 +252,16 @@ export function withProjectLock<T>(key: string, task: () => Promise<T>): Promise
 export interface ProjectFileIo {
   /** Project path used in diagnostics. */
   readonly path: string
-  /** Read the current document text. */
-  read(): Promise<string>
-  /** Publish one serialized document. */
-  write(text: string): Promise<void>
+  /** Read the current document text together with the version it was read at. */
+  read(): Promise<{ readonly text: string; readonly version: FsVersion }>
+  /** Publish one serialized document, guarded by the version the read was based on. */
+  write(text: string, version: FsVersion): Promise<void>
 }
 
 /**
- * Apply one mutation and publish it only when the document still matches the
- * text that was mutated. A mismatch retries against the newer document and
- * fails loud after the attempt budget.
+ * Apply one mutation and publish it only while the document is still the version
+ * that was mutated. A stale publication re-reads and retries against the newer
+ * document, and fails loud after the attempt budget.
  * @param io - read/write access to the project file.
  * @param apply - pure mutation applied to the current document.
  * @param attempts - publication attempts before a conflict failure.
@@ -248,11 +274,14 @@ export async function mutateProjectFile(
   attempts = PROJECT_WRITE_ATTEMPTS,
 ): Promise<VideoProject> {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const text = await io.read()
-    const updated = apply(parseProject(text, io.path))
-    if (await io.read() !== text) continue
-    await io.write(serializeProject(updated))
-    return updated
+    const snapshot = await io.read()
+    const updated = apply(parseProject(snapshot.text, io.path))
+    try {
+      await io.write(serializeProject(updated), snapshot.version)
+      return updated
+    } catch (error) {
+      if (!(error instanceof FsError) || error.code !== 'FS_STALE_VERSION') throw error
+    }
   }
   throw new MediaFailure(
     'the video project changed while it was being updated; retry the call',
@@ -261,7 +290,12 @@ export async function mutateProjectFile(
 }
 
 /**
- * Write one project document atomically through the Session filesystem.
+ * Create one project document through the Session filesystem.
+ *
+ * Init creates: the guarded write refuses an existing file with
+ * `FS_NOT_OBSERVED`, so two sessions cannot silently replace each other's
+ * project by initializing the same id. Later changes go through
+ * {@link mutateProjectFile}.
  * @param ctx - context providing `ctx.fs`.
  * @param path - target path.
  * @param project - validated project.
@@ -278,7 +312,12 @@ export async function writeProject(
 ): Promise<FsTarget> {
   const target = await ctx.fs.resolve(path, { cwd })
   const validated = validateProject(project)
-  await ctx.fs.writeText(target, `${JSON.stringify(validated, null, 2)}\n`, undefined, signal)
+  await ctx.fs.writeText(
+    target,
+    `${JSON.stringify(validated, null, 2)}\n`,
+    { kind: 'createIfAbsent' },
+    signal,
+  )
   return target
 }
 

@@ -28,7 +28,7 @@ import {
   type AssetFail,
 } from '@deepseek-ai/dsh-patent-index-asset'
 import { LEGAL_LAW_MANIFEST_FILE, legalLawBaselineDir, listLegalLawFiles } from './asset-location.ts'
-import { rebuildStatutePattern } from './reference.ts'
+import { rebuildStatutePattern, INITIAL_LAW_NAMES } from './reference.ts'
 import type {
   LegalArticleEntry,
   LegalLawBaseline,
@@ -52,10 +52,10 @@ export class LegalLawBaselineError extends IndexAssetError {
 
 /**
  * Law names the reference parser currently recognizes. The initial four are
- * hand-indexed; {@link loadLegalLawBaselines} adds every name a loaded asset
- * declares, so the set grows with the shipped index.
+ * hand-indexed; {@link loadLegalLawBaselines} replaces the names a previous load
+ * added with the ones the loaded index declares.
  */
-const _knownNames = new Set<LegalLawName>(['民法典', '民事诉讼法', '劳动合同法', '公司法'])
+const _knownNames = new Set<LegalLawName>(INITIAL_LAW_NAMES)
 
 /** Document titles → short law names, so a formal title resolves without a dedicated map entry. */
 const _knownAliases = new Map<string, LegalLawName>()
@@ -65,7 +65,7 @@ const _knownAliases = new Map<string, LegalLawName>()
  *
  * A snapshot keeps callers from mutating the parser's name set through the
  * returned array; call it again after loading another index to see the names
- * that load added.
+ * that index declares.
  * @returns the current names, frozen in insertion order.
  */
 export function legalLawNames(): readonly LegalLawName[] {
@@ -178,6 +178,7 @@ export function createLegalLawIndex(baselineDir?: string): LegalLawIndex {
   const manifestOf = (): Promise<LegalLawManifest> => {
     manifest ??= readLegalLawManifest(dir).then(
       (loaded) => {
+        resetLegalLawIndex()
         registerManifestNames(loaded)
         return loaded
       },
@@ -301,15 +302,30 @@ async function readLegalLawManifest(dir: string): Promise<LegalLawManifest> {
 }
 
 /**
+ * Start one whole-corpus load: list the index files and reset the parser's
+ * name tables, so names from a previously loaded directory cannot leak in.
+ * @param baselineDir - directory override; defaults to the packaged assets.
+ * @returns the files to parse and the empty baseline map to fill.
+ * @throws LegalLawBaselineError when the directory is unreadable or empty.
+ */
+function beginLoad(baselineDir?: string): {
+  files: string[]
+  baselines: Map<LegalLawName, LegalLawBaseline>
+} {
+  const files = legalLawIndexFiles(baselineDir)
+  resetLegalLawIndex()
+  return { files, baselines: new Map() }
+}
+
+/**
  * Load every legal-law index file in a directory, keyed by law name.
  * @param baselineDir - directory override; defaults to the packaged assets.
  * @returns the baselines by law name.
  * @throws LegalLawBaselineError when the directory is unreadable, empty, or holds a malformed file.
  */
 export function loadLegalLawBaselines(baselineDir?: string): Map<LegalLawName, LegalLawBaseline> {
-  const files = legalLawIndexFiles(baselineDir)
+  const { files, baselines } = beginLoad(baselineDir)
 
-  const baselines = new Map<LegalLawName, LegalLawBaseline>()
   for (const file of files) {
     registerBaseline(baselines, parseLegalLawBaseline(readFileSync(file, 'utf8'), file), file)
   }
@@ -334,9 +350,7 @@ export async function loadLegalLawBaselinesAsync(
   baselineDir?: string,
   signal?: AbortSignal,
 ): Promise<Map<LegalLawName, LegalLawBaseline>> {
-  const files = legalLawIndexFiles(baselineDir)
-
-  const baselines = new Map<LegalLawName, LegalLawBaseline>()
+  const { files, baselines } = beginLoad(baselineDir)
   for (const file of files) {
     signal?.throwIfAborted()
     const baseline = parseLegalLawBaseline(await readFile(file, { encoding: 'utf8', signal }), file)
@@ -346,6 +360,22 @@ export async function loadLegalLawBaselinesAsync(
   }
   finalizeStatutePattern()
   return baselines
+}
+
+/**
+ * Drop the names and aliases a previous load registered, restoring the
+ * hand-indexed set before another index directory is read.
+ *
+ * The reference pattern is process-wide, so names left over from a previously
+ * loaded directory would still be recognized against an index that does not
+ * carry them, and their citations would be reported `not-indexed` — a block
+ * that depends on load history rather than on the current index.
+ */
+function resetLegalLawIndex(): void {
+  _knownNames.clear()
+  for (const name of INITIAL_LAW_NAMES) _knownNames.add(name)
+  _knownAliases.clear()
+  finalizeStatutePattern()
 }
 
 /** Register every law a manifest declares, so the parser recognizes it before any file is parsed. */

@@ -2,9 +2,11 @@
 # 依据《民事诉讼法》第 66 条八类法定证据
 # 消费方：src/engine.ts（LegalEvidenceEngine.loadRules）
 #
-# 声明性元数据：weights 由引擎读取并参与评分；rules 记录检查项、严重程度
-# 与法律依据，可执行判定位于 src/evaluators/*。修改 check 名称只改变本文件
-# 的记录，不改变判定逻辑。
+# weights 由引擎读取并参与评分。evidence_type: general 的条目由引擎执行：
+# check 选择判定函数（hasFactToProve／collectionLegal），severity 进入发现；
+# check 写错会由引擎在加载期记警告，该条不产生发现。
+# 其余条目记录类型判定器执行的检查项、严重程度与法律依据，可执行判定位于
+# src/evaluators/*；修改它们的 check 名称只改变本文件的记录。
 
 weights:
   relevance: 0.35

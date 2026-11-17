@@ -88,7 +88,7 @@
 | F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | new |
 | F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | new |
 | F-PAT-055 | 上游 JSON 字符串含 null 元素时 `mapPatentData` 抛 TypeError | PAT | E | Low | 低 | new |
-| F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | confirmed |
+| F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | fixed |
 | F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | confirmed |
 | F-DOC-003 | OOXML 读取限额两包各写一份字面量 | DOC | B | Low | 高 | fixed |
 | F-DOC-004 | 插件默认值出现两个来源（schema default 与 `??`） | DOC | B | Medium | 中 | fixed（文档域） |
@@ -99,7 +99,7 @@
 | F-DOC-009 | DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃 | DOC | E | Medium | 中 | new |
 | F-DOC-010 | `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断 | DOC | E | Medium | 中 | new |
 | F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | confirmed |
-| F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | confirmed |
+| F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | fixed |
 | F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | confirmed |
 | F-LEG-004 | 两域默认引用策略分叉，缺对照说明与回归护栏 | LEG | E | Low | 中 | confirmed |
 | F-LEG-005 | 专利知识库降级日志写死 `[sati]` 前缀 | LEG | B | Low | 高 | confirmed |
@@ -112,7 +112,7 @@
 | F-LEG-012 | 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略 | LEG | E | Medium | 中 | fixed |
 | F-LEG-013 | 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果 | LEG | E | Medium | 中 | new |
 | F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | new |
-| F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | confirmed |
+| F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | fixed |
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | confirmed |
 | F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | confirmed |
 | F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | confirmed |
@@ -1654,6 +1654,60 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`engine-tools.spec.ts` 新增一条用例注入带警告的资产结果，断言 `assetWarnings` 与渲染文本；`patent-oa-response` 的固定工具 schema 只更新了 `rule_check` 描述一行，其余快照不变。
 
 验证：`pnpm exec vitest run packages/patent/patent-tools/tests/engine-tools.spec.ts packages/patent/patent-tools/tests/drafting-engine.spec.ts` 通过；`rule-check.ts` 聚焦覆盖率 100%；`pnpm run test:snapshot -t patent-` 11 passed；`pnpm run typecheck` 5/5；`pnpm run lint` 0。
+### 批次 E7：法条索引名字表复位（2026-11-17）
+
+用户要求继续修复后完成。只改 `legal-law` 名字表的生命周期，不改索引格式与引用判定策略。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-LEG-001 | 每次加载索引前（同步加载、异步加载、`createLegalLawIndex` 首次读清单）把名字表复位为手工索引的四部法，再注册本次索引声明的法律名与标题别名；上一次目录的名字与别名不再残留 | `legal-law/src/baseline.ts`、`legal-law/src/reference.ts` |
+
+**行为变化**：同进程先加载 A 目录、再加载 B 目录时，解析器只识别 B 声明的法律名。A 独有的法律名不再被识别成法条引用，其「第 N 条」片段改由 `unrecognized` 报告，不再因 `not-indexed` 命中默认 `block`；`legalLawNames()` 返回最近一次加载的集合。
+
+**既有测试行为**：`baseline.spec.ts` 新增三条用例（同步加载、异步加载、先后读取两个清单），锁定名字替换与「旧名字退化为未识别片段」的失败方向。
+
+验证：`pnpm exec vitest run packages/legal/legal-law/tests` 138 用例通过；`baseline.ts`、`reference.ts` 在聚焦 `--coverage.include` 下均为 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`verify-translation-pairing` 重录后通过。
+
+### 批次 E8：证据通用规则改由 YAML 驱动（2026-11-17）
+
+用户要求继续修复后完成。只改 `legal-evidence` 通用规则的来源，不改三性评分与类型判定器。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-LEG-002 | `checkGeneralFindings` 改为遍历 YAML 的 `general` 条目：`check` 经固定映射（`hasFactToProve`／`collectionLegal`）取判定函数，`ruleId`、`severity` 取自资产；未知 `check` 在加载期记警告且该条不执行。未加载资产时沿用与随包资产一致的两条默认通用规则 | `legal-evidence/src/engine.ts`、`src/types.ts`、`assets/legal-evidence-rules.yaml` |
+
+**行为变化**：部署修改 YAML 里 `LEGAL-EVI-GEN-001`／`GEN-002` 的 `severity` 现在会改变发现与「严重问题」计数；删除条目即不再执行该通用检查。类型专属规则的 `check` 仍是声明性元数据，判定逻辑位于各类型判定器。
+
+**既有测试行为**：`engine.spec.ts` 新增四条用例（YAML 声明驱动 id/severity、资产不声明通用规则时不执行、未知 `check` 记警告、未加载资产时保留两条默认规则）；`rule-table.spec.ts` 的 YAML↔发现对应断言不变。
+
+验证：`pnpm exec vitest run packages/legal/legal-evidence/tests` 173 用例通过；`engine.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`verify-translation-pairing` 重录后通过。
+### 批次 E10：DOCX 渲染识别围栏代码块（2026-11-17）
+
+用户要求继续修复后完成。只改 `docx-kit` 的 Markdown 块解析，不改 DOCX 写入结构。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-DOC-001 | `parseMarkdown` 增加围栏状态机：`` ` ``／`~` 三连以上开栏（缩进至多 3 格、信息串丢弃），同字符且不短于开栏的闭栏行结束；栏内每行按原样生成等宽段落 run，`#`／`|`／`**` 不再参与标题、表格或行内解析 | `docx-kit/src/markdown.ts` |
+
+**行为变化**：含围栏代码块的模板与渲染源不再被静默改写——栏内 `#` 行不再变成标题、`|` 行不再拼成表格、`**` 不再变成加粗；行内缩进与行尾空格保留。信息串与围栏标记本身不写入 DOCX，文本投影也不还原围栏。
+
+**既有测试行为**：`markdown.spec.ts` 新增 14 条围栏用例（标题/表格/加粗不再生效、信息串、`~` 栏、闭栏长度、缩进与行尾空格、未闭栏、开栏缩进、表格中断、空行、反引号信息串、短于三连）；`docx-render.spec.ts` 新增一条渲染断言（等宽字体、无标题层级、无表格）。非围栏输入的解析结果不变。
+
+验证：`pnpm exec vitest run packages/document/docx-kit/tests` 153 用例通过；`markdown.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`verify-translation-pairing` 重录后通过。
+
+### 批次 E11：视频 journal 与账本改用版本守卫写入（2026-11-17）
+
+用户要求继续修复后完成。只改 `video-mode` 的持久写入与冲突报告，不改工具参数与媒体执行路径。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-VID-001 | 读取时先 `stat` 取版本再读文本，写入改用 `replaceIfVersion`（文件不存在时 `createIfAbsent`）；`FS_STALE_VERSION`／`FS_NOT_OBSERVED` 触发重新读取并合并，连续三次失败以新码 `MEDIA_STORE_CONFLICT` 报告。项目文档的 `mutateProjectFile` 按 `ProjectFileIo` 返回的版本守卫发布；`writeProject` 初始化改为守卫创建。`withKeyLock` 保留为进程内优化 | `video-mode/src/store.ts`、`src/project.ts`、`src/tools/project.ts`、`src/types.ts` |
+
+**行为变化**：两个进程并发追加 journal／账本时，输掉竞争的一方重新读取并合并，不再静默覆盖；持续冲突报 `MEDIA_STORE_CONFLICT`。项目初始化不再覆盖已有项目文件（`FS_NOT_OBSERVED`）。`ProjectFileIo.read` 改为返回 `{ text, version }`、`write` 接收版本，仓库内消费者已同步更新。
+
+**既有测试行为**：`project.spec.ts` 原先靠「读两次比对」模拟并发，现改为假 IO 在守卫写入时抛 `FS_STALE_VERSION`，并新增非冲突写入透传、初始化拒绝覆盖、stat 与读取之间被删除三类用例；`store.spec.ts` 新增 journal／账本竞争合并、守卫创建竞争、持续冲突与删除即缺席用例。测试用 `ctx.fs.writeText` 注入竞争写者，不改产品代码。
+
+验证：`pnpm exec vitest run packages/experimental/video-mode/tests` 276 用例通过；`store.ts`、`project.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`verify-translation-pairing` 重录后通过。
 
 ## 复核记录
 

@@ -341,12 +341,12 @@ export interface ResolvedMediaConfig {
 /**
  * Resolve the host ledger directory.
  * A blank value selects the per-user directory outside a normal project workspace.
- * @param configured - Config value, when the deployment set one.
+ * @param configured - Config value; the schema supplies an empty string by default.
  * @returns the absolute directory.
  * @throws When the configured value is not absolute.
  */
-function resolveLedgerDir(configured: string | undefined): string {
-  const value = configured?.trim() ?? ''
+function resolveLedgerDir(configured: string): string {
+  const value = configured.trim()
   if (value.length === 0) return join(homedir(), '.dsh', 'video-mode', 'ledgers')
   if (!isAbsolute(value)) throw new Error('video mode: ledgerDir must be an absolute path')
   return value
@@ -389,8 +389,7 @@ export function resolveMediaConfig(config: MediaRuntimeConfig = {}): ResolvedMed
     ...siliconflow?.enabled === true
       ? { siliconflow: resolveSiliconFlow(siliconflow, resolved.maxArtifactBytes) }
       : {},
-}
-
+  }
 }
 
 /**
@@ -586,8 +585,11 @@ function speechEmotionOf(value: string | undefined): MiniMaxSpeechEmotion | unde
   return emotion as MiniMaxSpeechEmotion
 }
 
-/** Schemastery face for the Loader row. */
-export const Config: z<MediaRuntimeConfig> = z.object({
+/**
+ * Schemastery face for the Loader row.
+ * The output type marks `ledgerDir` as present because the schema default supplies it.
+ */
+export const Config: z<MediaRuntimeConfig, MediaRuntimeConfig & { readonly ledgerDir: string }> = z.object({
   fakeProvider: z.boolean().default(true),
   imageModel: z.string().default(SYNTHETIC_IMAGE_MODEL),
   videoModel: z.string().default(SYNTHETIC_VIDEO_MODEL),

@@ -84,7 +84,7 @@
 | F-PAT-049 | 结构门禁与引用门禁不核对 `textArgs`，声明写错即静默放行 | PAT | E | Medium | 低 | fixed |
 | F-PAT-050 | 重规划按哈希保留已完成步骤，重复步骤全部判为已完成 | PAT | E | Medium | 低 | new |
 | F-PAT-051 | 沿革快照按条号跨法套用，实施细则条文取到专利法同号条的生效日与状态 | PAT | E | Medium | 高 | new |
-| F-PAT-052 | 指南未修改的节在 rule-lock 判「已修订/已失效」，law_verify 判「已核验」 | PAT | E | High | 高 | new |
+| F-PAT-052 | 指南未修改的节在 rule-lock 判「已修订/已失效」，law_verify 判「已核验」 | PAT | E | High | 高 | fixed |
 | F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | new |
 | F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | new |
 | F-PAT-055 | 上游 JSON 字符串含 null 元素时 `mapPatentData` 抛 TypeError | PAT | E | Low | 低 | new |
@@ -831,7 +831,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把指南版本视图的解析收成一处，`verify.ts` 与 `citator.ts` 共用：不在 `versions` 也不在 `staleSections` 的节按未修改处理（`active`／`valid`），6 条旧路径维持 `unverified`，43 条覆盖路径用 2026 年文本。若产品选择保守语义（2023 文本不再当作已核验），则 `verifySection` 对同样的节也应返回 `unverified`，两边不能继续相反。报告把「已修订」与「已失效」分开，只有 `repealed` 与旧编号路径才写已失效。
 - 预估工作量：M
 - 是否可自动化：是（3.2.1.1 一条断言：`queryValidity` 与 `verifyCitation` 的结论一致；6 条旧路径仍为未核验）
-- 状态：new
+- 状态：fixed（2026-11-16，批次 E4）
 
 ### F-PAT-053 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符
 
@@ -1544,6 +1544,20 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`problem-check-atom.spec.ts` 两条「放行并说明原因」用例改为 `problem_check_passed: false` 且报告含「本次未执行」，原断言锁住的正是本条缺陷。`legal-gaps` 的判定顺序调整只影响「报告写明未执行且失败键为 false」的输入，既有证据与受理用例未改写。
 
 验证：`pnpm exec vitest run packages/patent/patent-core/tests packages/patent/patent-tools/tests packages/patent/patent-rule/tests` 通过（230 文件、4510 用例，4 skipped）；五个改动源码文件在聚焦 `--coverage.include` 下均为 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`pnpm run test:snapshot -t patent-` 11 个专利会话全部通过；`pnpm run test:docs` 30 passed。
+
+### 批次 E4：指南效力单一来源（2026-11-16）
+
+用户要求按建议顺序全部修复后完成。采用推荐口径：2026 年修订未改动的节继续按 2023 年文本作为现行条文；`versions` 覆盖的 43 节用 2026 年文本；改号后未被复用的旧路径维持未核验。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-052 | `decideSectionValidity` 删除「`supersededBy` 覆盖即整节已修订」的兜底：不在 `versions` 也不在 `staleSections` 的节判 `active`，与 `verifyCitation` 一致；旧编号路径判 `unverified` 并带 `stalePath`；声明了 `supersededBy` 却没有任何修订记录时失败关闭。`rule-lock` 的 `stale` 只在废止或旧编号路径时为 true，报告把旧路径写成「旧编号失效」，已修订的条文不再标「已失效」 | `patent-law/src/citator.ts`、`patent-law/src/rule-lock.ts`、`patent-law/src/types.ts` |
+
+**行为变化**：`queryValidity` 对 1241 条未修改的指南节（含创造性三步法 3.2.1.1）由 `revised` 改为 `active`，`rule-lock` 不再把它们写成「已修订 ⚠️已失效」。6 条旧编号路径中，编号被 2026 年版复用的 5 条按新节判定，原 4.2.1.3 维持未核验。已修订的法条与指南节保持 `stale: false`。
+
+**既有测试行为**：`citator.spec.ts`、`branches.spec.ts`、`rule-lock.spec.ts` 中把 staleSection 与 `supersededBy` 断言为 `revised` 的用例改为新口径；新增随包资产断言锁住 3.2.1.1、6.4 与 6 条旧路径的结论一致性。
+
+验证：`pnpm exec vitest run packages/patent/patent-law/tests` 通过（15 文件、328 用例）；`citator.ts` 与 `rule-lock.ts` 在聚焦 `--coverage.include` 下均为 100%；`patent-core` 与 `patent-tools` 全量 3974 用例通过（4 skipped）；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`pnpm run test:snapshot -t patent-` 11 个会话通过；`pnpm run test:docs` 30 passed。
 
 ### 批次 A：复用收口（2026-11-15）
 

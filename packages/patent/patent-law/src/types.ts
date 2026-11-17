@@ -239,6 +239,11 @@ export type ValidityResult = {
   state: ValidityState
   /** Why the verdict was reached, in the model's language. */
   reason: string
+  /**
+   * 引用的指南节是现行版本已改号或删除的旧路径；为 true 时 `state` 为 `unverified`，
+   * 报告据此把「旧编号失效」与普通「未核验」分开。
+   */
+  stalePath?: true
   /** The indexed entry the verdict used, when one was found. */
   entry?: ArticleEntry | SectionEntry
   /** Revision history entries when the provision has been through versions. */

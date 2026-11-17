@@ -47,14 +47,15 @@ describe('lockProvisions — 单条法条判定', () => {
     expect(result.unverified).toEqual([])
   })
 
-  it('revised：staleSection 覆盖的指南节返回 revised', () => {
+  it('unverified：旧编号指南节返回 unverified 并标记失效', () => {
     const result = lockProvisions(['审查指南第二部分第四章3.2.1.1'], testBaselines())
     expect(result.locked).toHaveLength(1)
     const entry = result.locked[0]!
-    expect(entry.validityStatus).toBe('revised')
+    expect(entry.validityStatus).toBe('unverified')
     expect(entry.stale).toBe(true)
+    expect(entry.stalePath).toBe(true)
     expect(entry.level).toBe('section')
-    expect(result.unverified).toEqual([])
+    expect(result.unverified).toEqual(['审查指南第二部分第四章3.2.1.1'])
   })
 
   it('unverified：超出索引范围的法条返回 unverified', () => {
@@ -112,16 +113,17 @@ describe('lockProvisions — 粒度级别推断', () => {
 })
 
 describe('lockProvisions — 多条法条批量判定', () => {
-  it('混合状态：部分 active、部分 revised、部分 unverified', () => {
+  it('混合状态：部分 active、部分旧编号失效、部分 unverified', () => {
     const result = lockProvisions(
       ['专利法第22条第3款', '审查指南第二部分第四章3.2.1.1', '专利法第99条'],
       testBaselines(),
     )
     expect(result.locked).toHaveLength(3)
     expect(result.locked[0]!.validityStatus).toBe('active')
-    expect(result.locked[1]!.validityStatus).toBe('revised')
+    expect(result.locked[1]!.validityStatus).toBe('unverified')
+    expect(result.locked[1]!.stalePath).toBe(true)
     expect(result.locked[2]!.validityStatus).toBe('unverified')
-    expect(result.unverified).toEqual(['专利法第99条'])
+    expect(result.unverified).toEqual(['审查指南第二部分第四章3.2.1.1', '专利法第99条'])
   })
 
   it('全部 active 时 unverified 为空', () => {
@@ -168,12 +170,12 @@ describe('renderRuleLockReport', () => {
     const report = renderRuleLockReport(output)
     expect(report).toContain('共 3 条')
     expect(report).toContain('现行有效 1')
-    expect(report).toContain('已修订 1')
-    expect(report).toContain('未判定 1')
+    expect(report).toContain('已修订 0')
+    expect(report).toContain('未判定 2')
     expect(report).toContain('专利法第22条第3款')
     expect(report).toContain('现行有效')
     expect(report).toContain('审查指南第二部分第四章3.2.1.1')
-    expect(report).toContain('已修订')
+    expect(report).toContain('旧编号失效 ⚠️已失效')
     expect(report).toContain('未判定法条')
     expect(report).toContain('限制说明')
   })
@@ -286,5 +288,20 @@ describe('沿革快照接入', () => {
     }
     const result = lockProvisions(['专利法第22条'], testBaselines(), undefined, lineage)
     expect(result.locked[0]).toMatchObject({ validityStatus: 'repealed', stale: true })
+  })
+
+  it('沿革记录为 revised 时报告已修订，但不标记失效', () => {
+    const lineage: LawLineageSnapshot = {
+      law: '专利法',
+      document: '中华人民共和国专利法',
+      lineageVersion: '1.0.0',
+      revisions: [],
+      articles: [{ articleId: 22, title: null, currentStatus: 'revised', revisionHistory: [] }],
+    }
+    const result = lockProvisions(['专利法第22条'], testBaselines(), undefined, lineage)
+    expect(result.locked[0]).toMatchObject({ validityStatus: 'revised', stale: false })
+    const report = renderRuleLockReport(result)
+    expect(report).toContain('已修订 ✓')
+    expect(report).not.toContain('已修订 ⚠️已失效')
   })
 })

@@ -120,7 +120,7 @@ function recapStageLines(stages: readonly unknown[]): string[] {
  * @param value - the assembled run record.
  * @returns the multi-line result, or the unknown/validation message.
  */
-export function renderPatentWorkflow(value: {
+export function renderPatentWorkflow(value: PatentWorkflowOutput | {
   manifestId: string
   found: boolean
   valid: boolean

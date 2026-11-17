@@ -318,8 +318,8 @@ function mutationMessage(action: FlexiblePlanAction, input: { stageId?: string; 
  * @returns the multi-line plan summary or run result.
  */
 export function renderFlexiblePlan(
-  args: { action: FlexiblePlanAction; stageId?: string; stage?: { id?: string } },
-  value: { action: FlexiblePlanAction; caseId: string; plan?: unknown; run?: unknown; persistNote?: string },
+  args: FlexiblePlanToolInput | { action: FlexiblePlanAction; stageId?: string; stage?: { id?: string }; caseId?: string },
+  value: FlexiblePlanOutput | { action: FlexiblePlanAction; caseId: string; plan?: unknown; run?: unknown; persistNote?: string },
 ): string {
   const plan = value.plan
   /* v8 ignore next 3 -- every execute return path carries a plan. */

@@ -482,7 +482,7 @@ export function createWorkbenchLinkPatentCaseTool(deps: WorkbenchLinkPatentCaseD
  * @param value - the link result.
  * @returns the multi-line summary.
  */
-export function renderLinkResult(value: {
+export function renderLinkResult(value: WorkbenchLinkPatentCaseOutput | {
   ok: boolean
   error?: string
   caseNumber: string

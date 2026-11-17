@@ -34,7 +34,7 @@
 | ID | 标题 | 域 | 维度 | 严重度 | 可能性 | 状态 |
 |---|---|---|---|---|---|---|
 | F-PAT-001 | 交付物原子写在 POSIX 上先删后改名 | PAT | E | High | 中 | fixed |
-| F-PAT-002 | `rule_check` 丢弃同义词资产警告，合规检查静默降级 | PAT | B | High | 中 | confirmed |
+| F-PAT-002 | `rule_check` 丢弃同义词资产警告，合规检查静默降级 | PAT | B | High | 中 | fixed |
 | F-PAT-003 | 原子写四份手写实现，未复用仓库共享 `atomic-write` 包 | PAT | A/B | High | 高 | fixed（3/4） |
 | F-PAT-004 | 品牌配置损坏时静默回退默认品牌 | PAT | B | Medium | 中 | confirmed |
 | F-PAT-005 | 四个输出路径默认锚定 `process.cwd()` | PAT | E | Medium | 中 | confirmed |
@@ -1568,6 +1568,20 @@ Day 41 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`element-validator.spec.ts` 的多 claim 用例原本把第二条权项写在同一行，`splitClaimSegments` 只认行首编号，该输入在新规则下会把第二条权项当成无段落；用例改为换行分隔。`atoms-coverage.spec.ts` 的多 claimNo 用例把第二项要素挂在原文没有的第二条权项上，新规则会判为无段落；用例改用两条权项的原文。两处断言的「多 claim 共存」行为不变。
 
 验证：`pnpm exec vitest run` 的 `patent-core` 全量（1761 用例）通过；五个改动文件在聚焦 `--coverage.include` 下均为 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0；`pnpm run test:snapshot -t patent-claim-chart` 通过。
+
+### 批次 E9：同义词资产降级写进 `rule_check` 结果（2026-11-17）
+
+用户要求继续修复后完成。只改 `rule_check` 的结果字段与渲染，不改规则判定。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-002 | `loadSynonymsAsset()` 的 `warnings` 并入结果的新字段 `assetWarnings`，渲染时追加「资产警告」行；工具描述说明资产缺失时同义词匹配退化为纯关键词；`RuleCheckDeps` 增加可选 `synonymsAsset` 注入以便断言降级路径 | `patent-tools/src/tool/rule-check.ts` |
+
+**行为变化**：同义词资产缺失或解析失败时，`rule_check` 结果带 `assetWarnings`（此前静默丢弃），模型不再把降级后的判定当成完整资产的结果。资产正常时结果字段不变。
+
+**既有测试行为**：`engine-tools.spec.ts` 新增一条用例注入带警告的资产结果，断言 `assetWarnings` 与渲染文本；`patent-oa-response` 的固定工具 schema 只更新了 `rule_check` 描述一行，其余快照不变。
+
+验证：`pnpm exec vitest run packages/patent/patent-tools/tests/engine-tools.spec.ts packages/patent/patent-tools/tests/drafting-engine.spec.ts` 通过；`rule-check.ts` 聚焦覆盖率 100%；`pnpm run test:snapshot -t patent-` 11 passed；`pnpm run typecheck` 5/5；`pnpm run lint` 0。
 
 ## 复核记录
 

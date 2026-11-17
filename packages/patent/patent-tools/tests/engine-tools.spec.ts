@@ -9,7 +9,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { RuleSet } from '@deepseek-ai/dsh-patent-core'
 import type { EvidenceEngine } from '@deepseek-ai/dsh-patent-core'
-import { createRuleCheckTool } from '../src/tool/rule-check.ts'
+import { createRuleCheckTool, type RuleCheckOutput } from '../src/tool/rule-check.ts'
 import { createEvaluateEvidenceTool } from '../src/tool/evaluate-evidence.ts'
 import { createClaimChartBuildTool } from '../src/tool/claim-chart-build.ts'
 import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
@@ -48,6 +48,29 @@ describe('rule_check', () => {
       expect(result.isError).toBe(true)
       expect(JSON.stringify(result.content)).toContain('text 不能为空白')
     }
+  })
+
+  it('reports a degraded synonym asset instead of silently matching keywords', async () => {
+    const warning = '未找到同义词资产（assets/rules/patent/synonyms.yaml），降级为纯关键词匹配'
+    const tool = createRuleCheckTool({
+      loader: () => ({
+        rules: [{
+          id: 'r-syn',
+          name: '同义词规则',
+          severity: 'major',
+          action: 'warn',
+          check: { type: 'synonym_match', requirements: [{ element: '创造性', keywords: ['创造性'] }] },
+        }],
+      }),
+      synonymsAsset: () => ({ synonyms: new Map(), source: null, warnings: [warning] }),
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'rule_check', { text: '本方案具备创造性。', scope: 'patent' }, 'r-asset-warning')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    expect((result.value as RuleCheckOutput).assetWarnings).toEqual([warning])
+    expect(text(result)).toContain('资产警告')
+    expect(text(result)).toContain('降级为纯关键词匹配')
   })
 
   it('patent-mechanical scope adds the mechanical domain pack on top of the full assets', async () => {

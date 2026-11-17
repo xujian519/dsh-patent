@@ -196,7 +196,10 @@ const NOTICE_SCHEMA = {
     actualReceiptDate: { ...DATE, description: 'Actual receipt date, when evidenced' },
     handedOverDate: { ...DATE, description: 'Hand-over date for direct delivery' },
     publicationDate: { ...DATE, description: 'Announcement date for service by publication' },
-    designatedMonths: { type: 'number', description: 'Months the notice itself designates' },
+    designatedMonths: {
+      type: 'number',
+      description: 'Months the notice itself designates; only for office-action-first, office-action-subsequent, reexamination-notice, and invalidation-transfer',
+    },
     stage: {
       type: 'string',
       enum: ['substantive', 'preliminary'],

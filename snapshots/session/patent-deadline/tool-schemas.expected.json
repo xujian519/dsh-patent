@@ -354,7 +354,7 @@
                 },
                 "designatedMonths": {
                   "type": "number",
-                  "description": "Months the notice itself designates"
+                  "description": "Months the notice itself designates; only for office-action-first, office-action-subsequent, reexamination-notice, and invalidation-transfer"
                 },
                 "stage": {
                   "type": "string",

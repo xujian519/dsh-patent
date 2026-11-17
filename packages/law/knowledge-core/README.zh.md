@@ -46,7 +46,7 @@ kind: "package-reference"
 <a id="statute-validity"></a>
 ## 法规效力
 
-`resolveLawValidity` 回答法规在给定时点是否可见，读取 `expired` 标记、施行日与失效日三列。`expired=1` 或失效日早于时点为 `expired`；施行日晚于时点为 `not-yet-effective`；任一时间列存在且未命中上述情形为 `in-force`；三列全缺失为 `unverified`，未核验不等于在效。畸形日期按时间列缺失处理，不会被当成在效。`isLawVisible` 隐藏已废止与尚未生效的记录，未核验记录由调用方决定是否返回；`resolveAsOf` 读取调用方给的时点（缺省为今天，非法日期直接抛错而不当作今天）；`todayIsoDate` 渲染当前 UTC 日期。
+`resolveLawValidity` 回答法规在给定时点是否可见，读取 `expired` 标记、施行日与失效日三列。`expired=1` 或失效日早于时点为 `expired`；施行日晚于时点为 `not-yet-effective`；任一时间列存在且未命中上述情形为 `in-force`；三列全缺失为 `unverified`，未核验不等于在效。畸形日期按时间列缺失处理，不会被当成在效。`isLawVisible` 隐藏已废止与尚未生效的记录，未核验记录由调用方决定是否返回；`resolveAsOf` 读取调用方给的时点（缺省为今天，非法日期直接抛错而不当作今天）；`todayIsoDate` 渲染当前中国法域日期（`Asia/Shanghai`），默认判定时点因此按大陆自然日而不是 UTC 日。
 
 <a id="install-file-operations"></a>
 ## 安装文件操作

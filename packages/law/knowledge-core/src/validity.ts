@@ -33,11 +33,25 @@ function isoDateOrUndefined(value: string | null | undefined): string | undefine
 }
 
 /**
- * 今天的 UTC 日期（YYYY-MM-DD）；作为未显式给定时点的默认值。
- * @returns 当前 UTC 日期的 YYYY-MM-DD 文本。
+ * 中国法域的时区：效力判定按中国大陆的自然日，而不是主机所在时区或 UTC 日。
+ */
+const LEGAL_TIME_ZONE = 'Asia/Shanghai'
+
+/**
+ * 今天的中国法域日期（YYYY-MM-DD）；作为未显式给定时点的默认值。
+ * @returns 当前中国法域日期的 YYYY-MM-DD 文本。
  */
 export function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10)
+  const parts = new Map(new Intl.DateTimeFormat('en-CA', {
+    timeZone: LEGAL_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date()).map(part => [part.type, part.value]))
+  const year = Number(parts.get('year'))
+  const month = Number(parts.get('month'))
+  const day = Number(parts.get('day'))
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
 /**

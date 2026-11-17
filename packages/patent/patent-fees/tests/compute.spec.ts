@@ -318,6 +318,40 @@ describe('pricing a case', () => {
     expect(report.total).toEqual({ amount: '1035.00', complete: true, unverifiedIds: [] })
   })
 
+  it('refuses a single delay for several annual-fee years', () => {
+    const annual = item({
+      id: 'annual-fee',
+      name: '年费',
+      trigger: 'annual-fee',
+      basis: 'per-annuity-year',
+      amount: '1200',
+      verifiedOn: '2026-01-01',
+      latePayment: {
+        monthlyPercent: 5,
+        maxMonths: 6,
+        legalBasis: null,
+        sourceDoc: null,
+        effectiveFrom: null,
+        verifiedOn: '2026-01-01',
+      },
+    })
+    const report = computeFees(
+      table([annual]),
+      query({ triggers: ['annual-fee'], annuityYears: [4, 5], lateMonths: 3 }),
+      POLICY,
+    )
+    // The years fall due twelve months apart, so one lateMonths cannot describe both:
+    // the surcharge is withheld instead of stamped onto every year.
+    expect(report.lines.map(line => line.id)).toEqual(['annual-fee-4', 'annual-fee-5'])
+    expect(report.pending).toEqual([{
+      id: 'annual-fee-late-payment',
+      name: '年费滞纳金',
+      requiredInput: 'lateMonths（逐年度）',
+      reason: '一次给出 2 个年度时，单一的 lateMonths 无法表达各年度不同的超期月数：请按年度分别调用，每次只给一个 annuityYears 元素与该年度的 lateMonths。',
+    }])
+    expect(report.total).toEqual({ amount: null, complete: false, unverifiedIds: ['annual-fee-late-payment'] })
+  })
+
   it('refuses the surcharge once the payment window has passed', () => {
     const annual = item({
       id: 'annual-fee',

@@ -104,7 +104,7 @@ const DESCRIPTION = [
   '- Announce every step of the case in triggers. A step you do not name is not priced at all, so a grant or a procedure left out reads as "no fee" — this list is the report\'s coverage, not a hint.',
   '- Money is reported only from transcribed amounts. Each line carries status: verified (amount and its verification date are recorded), unverified (amount recorded, verification date is not), or unrecorded (no amount yet). With the shipped index 17 of 19 items carry transcribed, verified amounts; specification-surcharge and extension-fee stay unrecorded because their tiered pricing does not fit one unit amount, so those two lines carry no figures and withhold the total.',
   '- The total is withheld while any applicable line is not verified or any applicable item still needs a case fact from the pending list, and the ids that withhold it are listed. A trigger the index carries no item for is reported under total.uncoveredTriggers and also withholds the total. Never fill in a missing amount, a missing case fact, or an unindexed stage yourself, and never quote a total this tool refused: an amount that is not transcribed is unknown, not free.',
-  '- annuityYears is the list of patent years to price; it comes from patent_deadlines, which owns the dates. lateMonths is the number of started months of delay, likewise from that tool.',
+  '- annuityYears is the list of patent years to price; it comes from patent_deadlines, which owns the dates. lateMonths is the number of started months of delay, likewise from that tool. Two annual fees fall due twelve months apart, so one lateMonths describes one year: price several delayed years in separate calls, and this tool reports the surcharge as pending when a call names more than one year with lateMonths.',
   '- This is arithmetic over an index, not a fee quote: the index carries a fee item\'s structure and transcribed amount with its verification date. Confirm any amount against the official announcement before invoicing a client.',
   '',
   'Usage notes:',
@@ -159,7 +159,7 @@ export function createPatentFeesTool(options: PatentFeesToolOptions): ToolDefini
         description: 'Patent years to price, 1-based, taken from patent_deadlines',
       },
       extensionMonths: { type: 'number', description: 'Months of extension requested' },
-      lateMonths: { type: 'number', description: 'Started months of delay on the annual fee' },
+      lateMonths: { type: 'number', description: 'Started months of delay on one annual-fee year; price each delayed year in its own call' },
       reduction: REDUCTION_SCHEMA,
     },
     output: {

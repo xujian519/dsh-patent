@@ -48,13 +48,13 @@ export type CircuitFigureJson = {
 
 /** 曲线图输入（与工具 schema 同形）。 */
 export type PlotFigureJson = {
-  series: readonly { name?: string; points: readonly (readonly [number, number])[]; marker?: 'none' | 'circle' | 'square' | 'triangle' }[]
+  series: readonly { name?: string; points: readonly (readonly number[])[]; marker?: 'none' | 'circle' | 'square' | 'triangle' }[]
   x_label: string
   y_label: string
   x_unit?: string
   y_unit?: string
-  x_range?: readonly [number, number]
-  y_range?: readonly [number, number]
+  x_range?: readonly number[]
+  y_range?: readonly number[]
   tick_count?: number
   show_grid?: boolean
   width_mm?: number
@@ -88,23 +88,23 @@ export type SectionSourceJson = {
 
 /** 剖视图输入（与工具 schema 同形）。 */
 export type SectionFigureJson = {
-  outline?: readonly (readonly [number, number])[]
+  outline?: readonly (readonly number[])[]
   parts: readonly {
     label?: string
     /** 零件闭合轮廓（毫米）；给了 `source` 时由工具从模型切出，不要再给。 */
-    outline?: readonly (readonly [number, number])[]
+    outline?: readonly (readonly number[])[]
     /**
      * 落在某个材料区域内的图面毫米坐标点：`source` 模式下用它把本 entry 与模型切出的材料区域
      * 对上（区域顺序由 OCCT 决定，按序号对会把标号与剖面线挂到别的区域上）。
      */
-    anchor?: readonly [number, number]
+    anchor?: readonly number[]
     /**
      * 该零件轮廓内的孔（毫米，工具从模型切出时填入）。
      *
      * 模型输入不接受本字段（schema 的 `additionalProperties: false` 会拒绝）：孔环必须与材料
      * 外环来自同一次剖切，手写孔环与轮廓对不上时剖面线会穿出材料。
      */
-    holes?: readonly (readonly (readonly [number, number])[])[]
+    holes?: readonly (readonly (readonly number[])[])[]
     /**
      * 已按区域裁好的剖面线段（毫米，工具从模型切出时填入）。
      *
@@ -112,8 +112,8 @@ export type SectionFigureJson = {
      * 零件的剖面线只能来自模型。
      */
     hatch_segments?: readonly {
-      readonly from: readonly [number, number]
-      readonly to: readonly [number, number]
+      readonly from: readonly number[]
+      readonly to: readonly number[]
     }[]
     /** `'none'` 表示该轮廓不是被剖切实体（轴线、引出线、非剖切件），只画轮廓。 */
     hatch?: { angle_deg?: number; spacing_mm?: number; direction?: 'forward' | 'backward' } | 'none'
@@ -124,22 +124,22 @@ export type SectionFigureJson = {
   source?: SectionSourceJson
   labels?: readonly {
     text: string
-    at: readonly [number, number]
-    from?: readonly [number, number]
+    at: readonly number[]
+    from?: readonly number[]
   }[]
   centerlines?: readonly {
-    from: readonly [number, number]
-    to: readonly [number, number]
+    from: readonly number[]
+    to: readonly number[]
   }[]
   cutting_marks?: readonly {
     id: string
-    from: readonly [number, number]
-    to: readonly [number, number]
+    from: readonly number[]
+    to: readonly number[]
     arrow: 'left' | 'right' | 'up' | 'down'
   }[]
   break_lines?: readonly {
-    from: readonly [number, number]
-    to: readonly [number, number]
+    from: readonly number[]
+    to: readonly number[]
     style?: 'zigzag' | 'wavy' | undefined
     amplitude_mm?: number | undefined
     teeth?: number | undefined
@@ -264,6 +264,19 @@ function sectionWarnings(section: SectionFigureJson): string[] {
  * @returns 图形规格与提示。
  * @throws VectorFigureError 对应字段缺失或图型模块校验失败时。
  */
+function requirePair(value: readonly number[], label: string): readonly [number, number] {
+  const x = value[0]
+  const y = value[1]
+  if (x === undefined || y === undefined || !Number.isFinite(x) || !Number.isFinite(y)) {
+    throw new VectorFigureError('invalid_input', `${label}必须是两个有限数：[${String(x)}, ${String(y)}]`)
+  }
+  return [x, y]
+}
+
+function requireRing(points: readonly (readonly number[])[], label: string): (readonly [number, number])[] {
+  return points.map(point => requirePair(point, label))
+}
+
 export function buildVectorFigure(figureType: VectorFigureType, input: VectorFigureJsonInput): VectorFigureBuild {
   switch (figureType) {
     case 'circuit': {
@@ -282,13 +295,16 @@ export function buildVectorFigure(figureType: VectorFigureType, input: VectorFig
       const plot = required(input.plot, figureType, 'plot')
       return {
         spec: buildPlotDiagram({
-          series: plot.series,
+          series: plot.series.map(series => ({
+            ...series,
+            points: series.points.map(point => requirePair(point, '数据点')),
+          })),
           xLabel: plot.x_label,
           yLabel: plot.y_label,
           ...(plot.x_unit === undefined ? {} : { xUnit: plot.x_unit }),
           ...(plot.y_unit === undefined ? {} : { yUnit: plot.y_unit }),
-          ...(plot.x_range === undefined ? {} : { xRange: plot.x_range }),
-          ...(plot.y_range === undefined ? {} : { yRange: plot.y_range }),
+          ...(plot.x_range === undefined ? {} : { xRange: requirePair(plot.x_range, 'x_range') }),
+          ...(plot.y_range === undefined ? {} : { yRange: requirePair(plot.y_range, 'y_range') }),
           ...(plot.tick_count === undefined ? {} : { tickCount: plot.tick_count }),
           ...(plot.show_grid === undefined ? {} : { showGrid: plot.show_grid }),
           ...(plot.width_mm === undefined ? {} : { widthMm: plot.width_mm }),
@@ -325,9 +341,14 @@ export function buildVectorFigure(figureType: VectorFigureType, input: VectorFig
             }
             return {
               ...(part.label === undefined ? {} : { label: part.label }),
-              outline: part.outline,
-              ...(part.holes === undefined ? {} : { holes: part.holes }),
-              ...(part.hatch_segments === undefined ? {} : { hatchSegments: part.hatch_segments }),
+              outline: requireRing(part.outline, `零件 #${index + 1} outline`),
+              ...(part.holes === undefined ? {} : { holes: part.holes.map(hole => requireRing(hole, `零件 #${index + 1} hole`)) }),
+              ...(part.hatch_segments === undefined ? {} : {
+                hatchSegments: part.hatch_segments.map(segment => ({
+                  from: requirePair(segment.from, `零件 #${index + 1} hatch`),
+                  to: requirePair(segment.to, `零件 #${index + 1} hatch`),
+                })),
+              }),
               ...(part.stroke_width_mm === undefined ? {} : { strokeWidthMm: part.stroke_width_mm }),
               ...(part.hatch === undefined
                 ? {}
@@ -342,14 +363,32 @@ export function buildVectorFigure(figureType: VectorFigureType, input: VectorFig
                   }),
             }
           }),
-          ...(sections.outline === undefined ? {} : { outline: sections.outline }),
-          ...(sections.labels === undefined ? {} : { labels: sections.labels }),
-          ...(sections.centerlines === undefined ? {} : { centerlines: sections.centerlines }),
-          ...(sections.cutting_marks === undefined ? {} : { cuttingMarks: sections.cutting_marks }),
+          ...(sections.outline === undefined ? {} : { outline: requireRing(sections.outline, 'outline') }),
+          ...(sections.labels === undefined ? {} : {
+            labels: sections.labels.map(label => ({
+              text: label.text,
+              at: requirePair(label.at, 'label.at'),
+              ...(label.from === undefined ? {} : { from: requirePair(label.from, 'label.from') }),
+            })),
+          }),
+          ...(sections.centerlines === undefined ? {} : {
+            centerlines: sections.centerlines.map(line => ({
+              from: requirePair(line.from, 'centerline'),
+              to: requirePair(line.to, 'centerline'),
+            })),
+          }),
+          ...(sections.cutting_marks === undefined ? {} : {
+            cuttingMarks: sections.cutting_marks.map(mark => ({
+              id: mark.id,
+              from: requirePair(mark.from, 'cutting_mark'),
+              to: requirePair(mark.to, 'cutting_mark'),
+              arrow: mark.arrow,
+            })),
+          }),
           ...(sections.break_lines === undefined ? {} : {
             breakLines: sections.break_lines.map(line => ({
-              from: line.from,
-              to: line.to,
+              from: requirePair(line.from, 'break_line'),
+              to: requirePair(line.to, 'break_line'),
               style: line.style,
               amplitudeMm: line.amplitude_mm,
               teeth: line.teeth,

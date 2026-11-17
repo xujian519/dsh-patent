@@ -22,6 +22,7 @@ import { resolve } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { PatentToolError } from '../error.ts'
+import { recordList, recordText } from './internal/json-read.ts'
 import { FIGURE_TYPE_NAMES } from './analyze-patent-figure.ts'
 import type { FigureAnalysisResult, FigureComponent } from './analyze-patent-figure.ts'
 import { clearanceMmForFigure } from '../figure/render-check.ts'
@@ -45,7 +46,7 @@ export type {
   StructureManifestAnchor,
   StructureManifestView,
 } from './structure-types.ts'
-import type { GenerateStructureFigureDeps, GenerateStructureFigureOutput, StructureFigureView } from './structure-types.ts'
+import type { GenerateStructureFigureDeps, StructureFigureView } from './structure-types.ts'
 import {
   applyStructureLayout,
   applyViewLineStyles,
@@ -216,8 +217,7 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
           indexed: { type: 'boolean', required: true },
         },
       },
-      // value 由输出 schema 推断（manifest 宽化为 Record）；execute 恒返回该领域类型，此处收窄回 presentation 用类型。
-      render: (_args, value) => renderStructureResult(value as unknown as GenerateStructureFigureOutput),
+      render: (_args, value) => renderStructureResult(value),
     },
     async execute(args, exec) {
       // 门禁：结构线稿默认关闭，未显式开启即 fail-loud（不静默降级为示意图）。
@@ -321,10 +321,21 @@ function structureAnalysis(
 }
 
 /** 简单文本渲染：标号表 + 附图说明 + 路径。 */
-function renderStructureResult(value: GenerateStructureFigureOutput): { type: 'text'; text: string }[] {
+function manifestViewNames(manifest: unknown): string {
+  return recordList(manifest, 'views').map(view => recordText(view, 'name')).join('/')
+}
+
+function renderStructureResult(value: {
+  paths: readonly string[]
+  figures: readonly { figureNumber: number; paths: readonly string[]; manifest: unknown }[]
+  figureDescription: string
+  layout?: { office: string; pageScale: number; placedWidthMm: number; placedHeightMm: number; sheetNumber: string }
+  numeralMap: readonly { numeral: string; label: string }[]
+  warnings: readonly string[]
+}): { type: 'text'; text: string }[] {
   const lines = [
     `已生成结构线稿附图（${value.figures.length} 张图，${value.paths.length} 个视图）：`,
-    ...value.figures.map(figure => `- 图${figure.figureNumber}（${figure.manifest.views.map(v => v.name).join('/')}）：${figure.paths.join('、')}`),
+    ...value.figures.map(figure => `- 图${figure.figureNumber}（${manifestViewNames(figure.manifest)}）：${figure.paths.join('、')}`),
     '',
     value.figureDescription,
     ...(value.layout === undefined

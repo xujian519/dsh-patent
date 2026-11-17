@@ -12,7 +12,8 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { isDataRecord, recordChild, recordFlag, recordList, recordNumberOr, recordText, recordValue, textList } from './internal/json-read.ts'
+import { toJsonArray, toJsonValue } from './internal/json-value.ts'
 import {
   createSpan,
   loadEvidenceRulesEngine,
@@ -101,27 +102,38 @@ export type EvaluateEvidenceDeps = {
 const DESCRIPTION = '对专利证据做确定性三性判定（相关性/合法性/真实性）与类型特定检查（电子证据/互联网公开/使用公开四要件/域外证据/公知常识），输出综合评分、举证责任分配与实际适用的证据规则。在 OA 答复、无效宣告论证引用证据前调用，可提前发现证据缺陷。'
 
 /** Render the canonical evidence judgment into model-facing prose. */
-function renderEvidence(value: EvaluateEvidenceOutput): string {
-  const j = value.judgment
+function scoreLine(label: string, value: unknown): string {
+  return `- ${label}: ${recordNumberOr(value, 'score', 0)} (${recordText(value, 'level')})`
+}
+
+function renderEvidence(value: {
+  judgment: unknown
+  burden?: unknown
+  rulesMatched: readonly unknown[]
+  rulesPending: readonly unknown[]
+}): string {
+  const judgment = value.judgment
   const lines = [
-    `evaluate_evidence(${j.spanId}): 综合 ${j.overallScore} / 置信度 ${j.confidence}`,
-    `- 相关性: ${j.relevance.score} (${j.relevance.level})`,
-    `- 合法性: ${j.legality.score} (${j.legality.level})`,
-    `- 真实性: ${j.authenticity.score} (${j.authenticity.level})`,
+    `evaluate_evidence(${recordText(judgment, 'spanId')}): 综合 ${recordNumberOr(judgment, 'overallScore', 0)} / 置信度 ${recordNumberOr(judgment, 'confidence', 0)}`,
+    scoreLine('相关性', recordChild(judgment, 'relevance')),
+    scoreLine('合法性', recordChild(judgment, 'legality')),
+    scoreLine('真实性', recordChild(judgment, 'authenticity')),
     '',
-    j.reasoning,
+    recordText(judgment, 'reasoning'),
   ]
-  if (value.burden) {
-    lines.push('', `举证责任: ${value.burden.burdenHolder}（标准 ${value.burden.standard}${value.burden.hasShifted ? '，已转移' : ''}）`, value.burden.reasoning)
+  const burden = value.burden
+  if (isDataRecord(burden)) {
+    lines.push('', `举证责任: ${recordText(burden, 'burdenHolder')}（标准 ${recordText(burden, 'standard')}${recordFlag(burden, 'hasShifted') ? '，已转移' : ''}）`, recordText(burden, 'reasoning'))
   }
   if (value.rulesMatched.length > 0) {
-    lines.push('', '适用规则:', ...value.rulesMatched.map(r => `- [${r.action}] ${r.ruleId} ${r.name}`))
+    lines.push('', '适用规则:', ...value.rulesMatched.map(rule => `- [${recordText(rule, 'action')}] ${recordText(rule, 'ruleId')} ${recordText(rule, 'name')}`))
   }
   if (value.rulesPending.length > 0) {
-    lines.push('', '待外部输入:', ...value.rulesPending.map(r => `- ${r.ruleId} ${r.name}: 需 ${r.pendingInputs.join('、')}`))
+    lines.push('', '待外部输入:', ...value.rulesPending.map(rule => `- ${recordText(rule, 'ruleId')} ${recordText(rule, 'name')}: 需 ${textList(recordValue(rule, 'pendingInputs')).join('、')}`))
   }
-  if (j.flaggedIssues.length > 0) {
-    lines.push('', '问题:', ...j.flaggedIssues.map(i => `- [${i.severity}] ${i.type}: ${i.description}`))
+  const issues = recordList(judgment, 'flaggedIssues')
+  if (issues.length > 0) {
+    lines.push('', '问题:', ...issues.map(issue => `- [${recordText(issue, 'severity')}] ${recordText(issue, 'type')}: ${recordText(issue, 'description')}`))
   }
   return lines.join('\n')
 }
@@ -177,7 +189,7 @@ export function createEvaluateEvidenceTool(deps: EvaluateEvidenceDeps = {}): Too
           rulesPending: { type: 'array', required: true },
         },
       },
-      render: (_args, value) => [{ type: 'text', text: renderEvidence(value as unknown as EvaluateEvidenceOutput) }],
+      render: (_args, value) => [{ type: 'text', text: renderEvidence(value) }],
     },
     // oxlint-disable-next-line typescript/require-await -- tool contract requires async execute
     async execute(args) {
@@ -214,7 +226,7 @@ export function createEvaluateEvidenceTool(deps: EvaluateEvidenceDeps = {}): Too
       const burden = args.caseType !== undefined ? engine.assessBurdenOfProof(args.caseType) : undefined
 
       return {
-        judgment: {
+        judgment: toJsonValue({
           spanId: judgment.spanId,
           overallScore: Number(judgment.overallScore.toFixed(3)),
           confidence: judgment.confidence,
@@ -226,14 +238,14 @@ export function createEvaluateEvidenceTool(deps: EvaluateEvidenceDeps = {}): Too
             : {}),
           flaggedIssues: judgment.flaggedIssues,
           reasoning: judgment.reasoning,
-        } as unknown as JsonValue,
-        ...(burden !== undefined ? { burden: burden as unknown as JsonValue } : {}),
-        rulesMatched: judgment.rulesApplied
+        }),
+        ...(burden !== undefined ? { burden: toJsonValue(burden) } : {}),
+        rulesMatched: toJsonArray(judgment.rulesApplied
           .filter(r => r.satisfied)
-          .map(r => ({ ruleId: r.ruleId, name: r.name, action: r.action, severity: r.severity })) as unknown as JsonValue[],
-        rulesPending: judgment.rulesApplied
+          .map(r => ({ ruleId: r.ruleId, name: r.name, action: r.action, severity: r.severity }))),
+        rulesPending: toJsonArray(judgment.rulesApplied
           .filter(r => r.pendingInputs.length > 0)
-          .map(r => ({ ruleId: r.ruleId, name: r.name, pendingInputs: r.pendingInputs })) as unknown as JsonValue[],
+          .map(r => ({ ruleId: r.ruleId, name: r.name, pendingInputs: r.pendingInputs }))),
       }
     },
   })

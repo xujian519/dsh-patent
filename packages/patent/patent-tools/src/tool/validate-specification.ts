@@ -542,7 +542,7 @@ export function createValidateSpecificationTool(deps?: ValidateSpecificationDeps
       render: (_args, value) => [{ type: 'text', text: renderSpecification(value) }],
     },
     execute: (args) => {
-      const input = args as unknown as ValidateSpecificationInput
+      const input = args
       const output = validateSpecification(input)
       // Sati's SMILES spot-check appends warnings only when RDKit is available;
       // dsh does not bundle RDKit, so this is a no-op (see checkSmilesValidity).

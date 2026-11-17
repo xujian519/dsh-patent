@@ -1088,6 +1088,17 @@ describe.skipIf(!hasFreeCad)('real FreeCAD section source (needs `freecadcmd` in
   }
 
   /** 对称 Hausdorff 距离（顶点集之间）。 */
+  function point(value: readonly number[]): readonly [number, number] {
+    const x = value[0]
+    const y = value[1]
+    if (x === undefined || y === undefined) throw new Error('expected a 2D point')
+    return [x, y]
+  }
+
+  function ring(points: readonly (readonly number[])[] | undefined): (readonly [number, number])[] {
+    return (points ?? []).map(point)
+  }
+
   function hausdorff(left: readonly (readonly [number, number])[], right: readonly (readonly [number, number])[]): number {
     return Math.max(directedHausdorff(left, right), directedHausdorff(right, left))
   }
@@ -1129,7 +1140,7 @@ describe.skipIf(!hasFreeCad)('real FreeCAD section source (needs `freecadcmd` in
     const expanded = await expandSectionSource(sourceInput(), { ports, cwd: import.meta.dirname, artifactDir: outDir })
     expect(expanded.sections.parts).toHaveLength(1)
     const [part] = expanded.sections.parts
-    const outline = part?.outline as readonly (readonly [number, number])[]
+    const outline = ring(part?.outline)
     const rectangle: (readonly [number, number])[] = [
       [-30, -15], [30, -15], [30, 15], [-30, 15],
     ]
@@ -1143,7 +1154,7 @@ describe.skipIf(!hasFreeCad)('real FreeCAD section source (needs `freecadcmd` in
         return [centerX + SECTION_HOLE_RADIUS_MM * Math.cos(angle), SECTION_HOLE_RADIUS_MM * Math.sin(angle)] as const
       })
       expect(hole).toHaveLength(240)
-      expect(hausdorff(hole, circle)).toBeLessThan(0.1)
+      expect(hausdorff(ring(hole), circle)).toBeLessThan(0.1)
     }
     expect(expanded.warnings.join('\n')).toContain('切出 1 个材料区域')
   }, 180_000)
@@ -1153,24 +1164,23 @@ describe.skipIf(!hasFreeCad)('real FreeCAD section source (needs `freecadcmd` in
     const [part] = expanded.sections.parts
     const segments = part?.hatch_segments ?? []
     expect(segments.length).toBeGreaterThan(0)
-    const outlines: (readonly (readonly [number, number])[])[] = [
-      part?.outline as readonly (readonly [number, number])[],
-      ...(part?.holes ?? []),
-    ]
+    const outlines = [ring(part?.outline), ...(part?.holes ?? []).map(ring)]
     let longestToOutline = 0
     for (const segment of segments) {
+      const from = point(segment.from)
+      const to = point(segment.to)
       // 中点不落在任何孔内：孔由 makeGeomHatch 精确裁剪（section-diagram 的逐多边形裁剪做不到）。
-      const midpoint = [(segment.from[0] + segment.to[0]) / 2, (segment.from[1] + segment.to[1]) / 2] as const
+      const midpoint = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2] as const
       for (const [index] of (part?.holes ?? []).entries()) {
         const centerX = SECTION_HOLE_CENTERS_MM[index] as number
         expect(Math.hypot(midpoint[0] - centerX, midpoint[1])).toBeGreaterThan(SECTION_HOLE_RADIUS_MM)
       }
       // 端点到轮廓边（外环或孔环的线段）的距离：剖面线落在画出来的轮廓线上。
       for (const end of [segment.from, segment.to]) {
-        longestToOutline = Math.max(longestToOutline, Math.min(...outlines.map(polygon => distanceToOutline(end, polygon))))
+        longestToOutline = Math.max(longestToOutline, Math.min(...outlines.map(polygon => distanceToOutline(point(end), polygon))))
       }
       // 取向：45°（无向）。产物坐标取 6 位小数，端点各带约 1e-6 的取整噪声，故容差取 1e-3 度。
-      const degrees = (Math.atan2(segment.to[1] - segment.from[1], segment.to[0] - segment.from[0]) * 180) / Math.PI
+      const degrees = (Math.atan2(to[1] - from[1], to[0] - from[0]) * 180) / Math.PI
       expect(Math.abs((degrees + 180) % 180 - 45)).toBeLessThan(1e-3)
     }
     expect(longestToOutline).toBeLessThan(1e-5)

@@ -1509,6 +1509,22 @@ describe('generate_patent_figure：面板与非 SVG 全链', () => {
     }
   })
 
+  it('面板可自带组件层级树', async () => {
+    const dir = tempDir()
+    const { render, calls } = sizedRenderer()
+    const tool = createGeneratePatentFigureTool({ render, outputDir: dir, cwd: dir })
+    try {
+      const value = await tool.execute({
+        panels: [{ suffix: 'A', figure_type: 'component_hierarchy', tree: [{ id: 'a', label: '组件A' }] }],
+        format: 'svg',
+      }, exec) as { path: string }
+      expect(value.path).toBe('fig1A.svg')
+      expect(calls[0]?.dot).toContain('组件A')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('无组件的模板面板不写「图中」标号表', async () => {
     const dir = tempDir()
     const { render } = sizedRenderer()

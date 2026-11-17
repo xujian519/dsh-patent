@@ -160,6 +160,11 @@ describe('flexible_plan', () => {
     expect(run.run?.stages).toHaveLength(2)
   })
 
+  it('rejects a blank caseId', async () => {
+    const tool = createFlexiblePlanTool({ store: new MemoryPlanStore() })
+    await expect(tool.execute({ action: 'get', caseId: '  ' }, exec)).rejects.toThrow(/caseId 不能为空/)
+  })
+
   it('fails closed on create without caseType', async () => {
     const tool = createFlexiblePlanTool({ store: new MemoryPlanStore() })
     await expect(tool.execute({ action: 'create', caseId: 'c' }, exec)).rejects.toThrow('create 需要 caseType')

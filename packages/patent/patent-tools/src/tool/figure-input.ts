@@ -7,6 +7,7 @@
  */
 
 import { assertNever } from '@deepseek-ai/dsh-util-values'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { PatentToolError } from '../error.ts'
 import { sanitizeId } from '../figure/dot-builder.ts'
 import type {
@@ -164,7 +165,7 @@ export type GeneratePatentFigurePanelInput = SharedFigureInputFields & {
   /** 面板后缀（字母/数字/下划线/连字符，如 A → fig1A.svg）。 */
   suffix: string
   /** 面板显式标号（组件 id → 标号；优先于顶层 numerals 与家族种子）。 */
-  numerals?: Record<string, string>
+  numerals?: { [key: string]: JsonValue }
 }
 
 /** 生成图输入（与 schema 保持一致）。 */
@@ -174,7 +175,7 @@ export type GeneratePatentFigureInput = SharedFigureInputFields & {
   figure_number?: number
   invention_name?: string
   /** 显式标号（组件 id → 标号；跨图同件同号续接）。 */
-  numerals?: Record<string, string>
+  numerals?: { [key: string]: JsonValue }
   numeral_start?: number
   numeral_step?: number
   /** 发明家族标识（跨图续号）：声明后同名组件沿用既有标号、新组件续接空闲号；缺省每图独立编号。 */

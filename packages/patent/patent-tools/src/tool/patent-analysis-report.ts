@@ -12,7 +12,8 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { dataList, recordDisplay, recordNumberOr, recordString, recordText, recordValue, textList } from './internal/json-read.ts'
+import { toJsonValue } from './internal/json-value.ts'
 import { loggedToolModel } from './internal/model-call-log.ts'
 import {
   buildAnalysisReport,
@@ -99,41 +100,54 @@ async function scoreWithModel(
 }
 
 /** Render the canonical report into model-facing Markdown prose. */
-function renderReport(report: PatentAnalysisReport): string {
+function renderReport(report: {
+  title?: string
+  patentId?: string
+  checkerVerdict?: string
+  ipc: unknown
+  technicalFeatures: unknown
+  scores: unknown
+  innovationInsights: unknown
+  expertConsiderations: unknown
+  searchStrategy?: unknown
+}): string {
   const lines: string[] = []
   if (report.title !== undefined) lines.push(`# 专利分析报告：${report.title}`)
   else lines.push('# 专利分析报告')
   if (report.patentId !== undefined) lines.push(`专利号：${report.patentId}`)
-  const top = report.ipc[0]
+  const top = dataList(report.ipc)[0]
   if (top !== undefined) {
+    const detail = recordString(top, 'detail')
     lines.push(
-      `IPC：${top.section} ${top.domainName}（置信度 ${top.confidence.toFixed(2)}）` +
-        (top.detail !== undefined ? `，大类 ${top.detail}` : ''),
+      `IPC：${recordText(top, 'section')} ${recordText(top, 'domainName')}（置信度 ${recordNumberOr(top, 'confidence', 0).toFixed(2)}）` +
+        (detail !== undefined ? `，大类 ${detail}` : ''),
     )
-    if (top.noveltyImplications !== undefined && top.noveltyImplications.length > 0) {
-      lines.push(`领域创造性要点：${top.noveltyImplications.join('；')}`)
-    }
+    const implications = textList(recordValue(top, 'noveltyImplications'))
+    if (implications.length > 0) lines.push(`领域创造性要点：${implications.join('；')}`)
   }
   lines.push('', '## 技术特征')
-  for (const feature of report.technicalFeatures) {
-    lines.push(`- 权${feature.claimNo} [${feature.type}/${feature.importance}] ${feature.text}`)
+  for (const feature of dataList(report.technicalFeatures)) {
+    lines.push(`- 权${recordDisplay(feature, 'claimNo')} [${recordText(feature, 'type')}/${recordText(feature, 'importance')}] ${recordText(feature, 'text')}`)
   }
   lines.push('', '## 质量评分')
-  for (const s of report.scores) {
-    lines.push(`- ${s.domain}：${s.score}/100（${s.basis === 'model' ? 'LLM' : '规则'}）— ${s.rationale}`)
+  for (const score of dataList(report.scores)) {
+    lines.push(`- ${recordText(score, 'domain')}：${recordDisplay(score, 'score')}/100（${recordText(score, 'basis') === 'model' ? 'LLM' : '规则'}）— ${recordText(score, 'rationale')}`)
   }
   lines.push('', '## 创新性洞察')
-  for (const insight of report.innovationInsights) lines.push(`- ${insight}`)
-  if (report.expertConsiderations.length > 0) {
+  for (const insight of textList(report.innovationInsights)) lines.push(`- ${insight}`)
+  const considerations = textList(report.expertConsiderations)
+  if (considerations.length > 0) {
     lines.push('', '## 专家考量')
-    for (const c of report.expertConsiderations) lines.push(`- ${c}`)
+    for (const item of considerations) lines.push(`- ${item}`)
   }
   if (report.searchStrategy !== undefined) {
-    const s = report.searchStrategy
+    const strategy = report.searchStrategy
     lines.push('', '## 检索策略')
-    lines.push(`- 检索式：${s.query}`)
-    if (s.ipc !== undefined && s.ipc.length > 0) lines.push(`- IPC：${s.ipc.join('、')}`)
-    if (s.keywords !== undefined && s.keywords.length > 0) lines.push(`- 关键词：${s.keywords.slice(0, 8).join('、')}`)
+    lines.push(`- 检索式：${recordText(strategy, 'query')}`)
+    const ipc = textList(recordValue(strategy, 'ipc'))
+    if (ipc.length > 0) lines.push(`- IPC：${ipc.join('、')}`)
+    const keywords = textList(recordValue(strategy, 'keywords')).slice(0, 8)
+    if (keywords.length > 0) lines.push(`- 关键词：${keywords.join('、')}`)
   }
   if (report.checkerVerdict !== undefined) lines.push('', `检查判定：${report.checkerVerdict}`)
   return lines.join('\n')
@@ -186,7 +200,7 @@ export function createPatentAnalysisReportTool(deps: PatentAnalysisReportDeps = 
           searchStrategy: { type: 'json' },
         },
       },
-      render: (_args, value) => [{ type: 'text', text: renderReport(value as unknown as PatentAnalysisReport) }],
+      render: (_args, value) => [{ type: 'text', text: renderReport(value) }],
     },
     async execute(args, exec) {
       const input: PatentAnalysisReportInput = {
@@ -210,17 +224,17 @@ export function createPatentAnalysisReportTool(deps: PatentAnalysisReportDeps = 
         ...(strategy !== undefined ? { searchStrategy: strategy } : {}),
       })
       return {
-        ipc: report.ipc as unknown as JsonValue,
-        technicalFeatures: report.technicalFeatures as unknown as JsonValue,
-        featureStatistics: report.featureStatistics as unknown as JsonValue,
-        scores: report.scores as unknown as JsonValue,
-        innovationInsights: report.innovationInsights as unknown as JsonValue,
-        expertConsiderations: report.expertConsiderations as unknown as JsonValue,
+        ipc: toJsonValue(report.ipc),
+        technicalFeatures: toJsonValue(report.technicalFeatures),
+        featureStatistics: toJsonValue(report.featureStatistics),
+        scores: toJsonValue(report.scores),
+        innovationInsights: toJsonValue(report.innovationInsights),
+        expertConsiderations: toJsonValue(report.expertConsiderations),
         ...(report.patentId !== undefined ? { patentId: report.patentId } : {}),
         ...(report.title !== undefined ? { title: report.title } : {}),
         /* v8 ignore next -- this tool never supplies checker failures, so the report has no verdict */
         ...(report.checkerVerdict !== undefined ? { checkerVerdict: report.checkerVerdict } : {}),
-        ...(report.searchStrategy !== undefined ? { searchStrategy: report.searchStrategy as unknown as JsonValue } : {}),
+        ...(report.searchStrategy !== undefined ? { searchStrategy: toJsonValue(report.searchStrategy) } : {}),
       }
     },
   })

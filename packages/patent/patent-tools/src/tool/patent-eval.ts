@@ -8,7 +8,8 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { recordEntries, recordFlag, recordNumberOr, recordString } from './internal/json-read.ts'
+import { toJsonValue } from './internal/json-value.ts'
 import type { SearchStrategy } from '@deepseek-ai/dsh-patent-core'
 import { analyzeSlop } from '../internal/slop-engine.ts'
 
@@ -86,10 +87,11 @@ export const ABSOLUTE_PHRASES: readonly string[] = [
 const DESCRIPTION = '评估专利相关产出的质量（报告/检索/流程/引用/综合）。返回结构化评分和通过/失败判定。支持 5 种评估模式（report/retrieval/workflow/citations/comprehensive），在提交人工复核前使用可提前发现质量问题。'
 
 /** Render the canonical evaluation value into model-facing prose. */
-function renderEval(value: PatentEvalOutput): string {
+function renderEval(value: { summary: string; details: unknown }): string {
   const parts = [value.summary]
-  for (const [key, dim] of Object.entries(value.details)) {
-    parts.push(`  ${dim.passed ? '✅' : '❌'} ${key}: ${dim.score.toFixed(2)}${dim.details ? `（${dim.details}）` : ''}`)
+  for (const [key, dim] of recordEntries(value.details)) {
+    const extra = recordString(dim, 'details')
+    parts.push(`  ${recordFlag(dim, 'passed') ? '✅' : '❌'} ${key}: ${recordNumberOr(dim, 'score', 0).toFixed(2)}${extra ? `（${extra}）` : ''}`)
   }
   return parts.join('\n')
 }
@@ -331,7 +333,7 @@ export function createPatentEvalTool(): ToolDefinition {
           searchStrategy: { type: 'json' },
         },
       },
-      render: (_args, value) => [{ type: 'text', text: renderEval(value as unknown as PatentEvalOutput) }],
+      render: (_args, value) => [{ type: 'text', text: renderEval(value) }],
     },
     // oxlint-disable-next-line typescript/require-await -- tool contract requires async execute
     async execute(args) {
@@ -342,7 +344,7 @@ export function createPatentEvalTool(): ToolDefinition {
         passed: out.passed,
         details: out.details,
         summary: out.summary,
-        ...(out.searchStrategy !== undefined ? { searchStrategy: out.searchStrategy as unknown as JsonValue } : {}),
+        ...(out.searchStrategy !== undefined ? { searchStrategy: toJsonValue(out.searchStrategy) } : {}),
       }
     },
   })

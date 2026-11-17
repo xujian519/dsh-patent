@@ -20,6 +20,7 @@
  */
 
 import { basename, isAbsolute, join } from 'node:path'
+import { recordFlag, recordString, recordText } from './json-read.ts'
 import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import {
   caseWorkflowRunsDir,
@@ -230,8 +231,8 @@ export async function runWorkflowWithPersist(
 interface RenderWorkflowResultTextOptions {
   /** Tool label prefixing the summary line. */
   toolName: string
-  /** The run result whose summary/completion drive the text. */
-  result: WorkflowRunResult
+  /** The run result whose summary and completion drive the text. */
+  result: { manifestId: string; summary: string; completed: boolean | undefined }
   /** Per-stage lines already formatted by the caller. */
   stageLines: string[]
   /** Persistence note line. */
@@ -249,7 +250,7 @@ interface RenderWorkflowResultTextOptions {
  * @returns the multi-line model-facing text.
  */
 export function renderWorkflowResultText(opts: RenderWorkflowResultTextOptions): string {
-  const completion = opts.result.completed ? 'completed' : 'incomplete'
+  const completion = opts.result.completed === true ? 'completed' : 'incomplete'
   /* v8 ignore next -- every caller renders an empty rule-gate section in this build. */
   const checkLines = opts.checkSection !== '' ? [opts.checkSection] : []
   return [
@@ -533,15 +534,39 @@ export function stageFlagAndPreview(stage: WorkflowStageResult): { flag: string;
 }
 
 /**
+ * Map raw stage records to per-stage flag/preview lines. The flag/preview pair
+ * comes from `stageFlagAndPreview`; the caller formats each line so recap and
+ * run modes can differ without duplicating the flag computation.
+ * @param stages - raw stage records.
+ * @param formatLine - renders one line from the stage record, flag, preview and atom note.
+ * @returns one line per executed stage.
+ */
+export function workflowStageFlagLines(
+  stages: readonly unknown[],
+  formatLine: (stage: unknown, flag: string, preview: string, atom: string | undefined) => string,
+): string[] {
+  return stages.map((stage) => {
+    const atom = recordString(stage, 'atom')
+    const { flag, preview } = stageFlagAndPreview({
+      stageId: recordText(stage, 'stageId'),
+      strategy: 'chain',
+      output: recordText(stage, 'output'),
+      degraded: recordFlag(stage, 'degraded'),
+      retries: 0,
+      ...(atom !== undefined ? { atom } : {}),
+    })
+    return formatLine(stage, flag, preview, atom)
+  })
+}
+
+/**
  * Format a run's stage results into the shared per-stage lines (flag + stage id
  * + atom note + output preview). Shared by patent_workflow_run and
  * flexible_plan(run).
  * @param result - the run result.
  * @returns one line per executed stage.
  */
-export function renderWorkflowStageLines(result: WorkflowRunResult): string[] {
-  return result.stages.map((s) => {
-    const { flag, preview } = stageFlagAndPreview(s)
-    return `- ${flag} ${s.stageId}${s.atom !== undefined ? ` [atom:${s.atom}]` : ''}: ${preview}`
-  })
+export function renderWorkflowStageLines(result: { stages: readonly unknown[] }): string[] {
+  return workflowStageFlagLines(result.stages, (stage, flag, preview, atom) =>
+    `- ${flag} ${recordText(stage, 'stageId')}${atom !== undefined ? ` [atom:${atom}]` : ''}: ${preview}`)
 }

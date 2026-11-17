@@ -13,6 +13,7 @@ import { basename } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { PatentToolError } from '../error.ts'
+import { namedLabel, recordText, textList } from './internal/json-read.ts'
 import { FIGURE_TYPE_NAMES } from './analyze-patent-figure.ts'
 import type { FigureComponent, FigureType } from './analyze-patent-figure.ts'
 import type { FigureIndexEntry, LoadFigureIndexResult } from '../figure/index-store.ts'
@@ -195,23 +196,37 @@ export function retrieveFiguresKeyword(
  * @param value - the figure search output to render.
  * @returns the rendered Markdown.
  */
-export function renderSearchFigure(value: SearchPatentFigureOutput): string {
+export function renderSearchFigure(value: {
+  hint?: string
+  results: readonly {
+    figureNumber: number
+    figureType: string
+    imagePath: string
+    score: number
+    usable: boolean
+    overallDescription: string
+    figureDescription: string
+    components: readonly unknown[]
+    warnings: readonly unknown[]
+  }[]
+}): string {
   if (value.results.length === 0) {
     return `search_patent_figure: 0 张附图命中。${value.hint ? `\n\n提示：${value.hint}` : ''}`
   }
-  const rows = value.results.map((r) => {
+  const rows = value.results.map((item) => {
     const lines = [
-      `## 图${r.figureNumber}（${FIGURE_TYPE_NAMES[r.figureType]} · score ${r.score.toFixed(2)}${r.usable ? '' : ' · 需人工确认'}）`,
-      `**image**: ${r.imagePath}`,
-      r.overallDescription,
+      `## 图${item.figureNumber}（${namedLabel(FIGURE_TYPE_NAMES, item.figureType)} · score ${item.score.toFixed(2)}${item.usable ? '' : ' · 需人工确认'}）`,
+      `**image**: ${item.imagePath}`,
+      item.overallDescription,
       '',
-      r.figureDescription,
+      item.figureDescription,
     ]
-    if (r.components.length > 0) {
-      lines.push('', '组件：' + r.components.map(c => `${c.refNumber} ${c.name}`).join('、'))
+    if (item.components.length > 0) {
+      lines.push('', '组件：' + item.components.map(component => `${recordText(component, 'refNumber')} ${recordText(component, 'name')}`).join('、'))
     }
-    if (r.warnings.length > 0) {
-      lines.push('', '**警告**', ...r.warnings.map(w => `- ${w}`))
+    const warnings = textList(item.warnings)
+    if (warnings.length > 0) {
+      lines.push('', '**警告**', ...warnings.map(warning => `- ${warning}`))
     }
     return lines.join('\n')
   })
@@ -272,7 +287,7 @@ export function createSearchPatentFigureTool(deps: SearchPatentFigureDeps): Tool
           results: { type: 'array', required: true, items: RESULT_ITEM_SCHEMA },
         },
       },
-      render: (_args, value) => [{ type: 'text', text: renderSearchFigure(value as unknown as SearchPatentFigureOutput) }],
+      render: (_args, value) => [{ type: 'text', text: renderSearchFigure(value) }],
     },
     async execute(args) {
       let loaded: LoadFigureIndexResult

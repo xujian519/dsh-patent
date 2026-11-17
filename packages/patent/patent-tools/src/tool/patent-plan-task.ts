@@ -9,7 +9,9 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { assertNever, type JsonValue } from '@deepseek-ai/dsh-util-values'
+import { assertNever } from '@deepseek-ai/dsh-util-values'
+import { recordString, recordText, recordValue, textList } from './internal/json-read.ts'
+import { toJsonArray } from './internal/json-value.ts'
 import {
   ISSUE_BLOCKING_GRADES,
   ISSUE_DISPOSITIONS,
@@ -130,21 +132,33 @@ function resolveIssues(drafts: readonly PatentPlanTaskIssue[], round: number | u
  * @param value - the plantask result.
  * @returns the multi-line result summary.
  */
-export function renderPlanTask(value: PatentPlanTaskOutput): string {
+export function renderPlanTask(value: {
+  ok: boolean
+  action: PatentPlanTaskAction
+  error?: string
+  from?: string
+  state?: string
+  tasks?: readonly unknown[]
+  preserved?: readonly string[]
+  toRun?: readonly string[]
+  issues?: readonly unknown[]
+}): string {
   if (!value.ok) return `patent_plan_task: ${value.error ?? '失败'}`
   switch (value.action) {
     case 'transition': {
       const head = `patent_plan_task: ${value.from} → ${value.state} ✅`
       const issues = value.issues ?? []
       if (issues.length === 0) return head
-      const lines = issues.map(issue => `- ${issue.id} ${issue.kind}/${issue.blocking}/${issue.status}: ${issue.summary}`)
+      const lines = issues.map(issue => `- ${recordText(issue, 'id')} ${recordText(issue, 'kind')}/${recordText(issue, 'blocking')}/${recordText(issue, 'status')}: ${recordText(issue, 'summary')}`)
       return `${head}\n案卷条目 ${issues.length} 条\n${lines.join('\n')}`
     }
     case 'sync': {
       const tasks = value.tasks ?? []
-      const lines = tasks.map(
-        t => `- ${t.id} ${t.status}${t.blockedBy ? `（依赖 ${t.blockedBy.join(',')}）` : ''}: ${t.description}`,
-      )
+      const lines = tasks.map((task) => {
+        const blockedBy = textList(recordValue(task, 'blockedBy'))
+        const dependency = blockedBy.length > 0 ? `（依赖 ${blockedBy.join(',')}）` : ''
+        return `- ${recordText(task, 'id')} ${recordText(task, 'status')}${dependency}: ${recordText(task, 'description')}`
+      })
       return `patent_plan_task: 同步 ${tasks.length} 个任务\n${lines.join('\n')}\n待执行: ${(value.toRun ?? []).join(', ')}`
     }
     case 'replan': {
@@ -158,6 +172,26 @@ export function renderPlanTask(value: PatentPlanTaskOutput): string {
     default:
       return assertNever(value.action, 'plan task action')
   }
+}
+
+/**
+ * Read a task list from model JSON. A missing list is empty. Fields the call
+ * omitted stay empty, and only `status: completed` is kept; the transition
+ * guard reads the list length, and replan matches on `hash`.
+ * @param value - the task array, or undefined when the call omitted it.
+ * @returns the tasks, in order.
+ */
+function readPlanTasks(value: readonly unknown[] | undefined): PlanTask[] {
+  return (value ?? []).map((item, index) => {
+    const blockedBy = textList(recordValue(item, 'blockedBy'))
+    return {
+      id: recordString(item, 'id') ?? `task-${index + 1}`,
+      description: recordString(item, 'description') ?? '',
+      hash: recordString(item, 'hash') ?? '',
+      status: recordString(item, 'status') === 'completed' ? 'completed' : 'pending',
+      ...(blockedBy.length > 0 ? { blockedBy } : {}),
+    }
+  })
 }
 
 /**
@@ -228,11 +262,11 @@ export function createPatentPlanTaskTool(): ToolDefinition {
           error: { type: 'string' },
         },
       },
-      render: (_args, value) => [{ type: 'text', text: renderPlanTask(value as unknown as PatentPlanTaskOutput) }],
+      render: (_args, value) => [{ type: 'text', text: renderPlanTask(value) }],
     },
     // oxlint-disable-next-line typescript/require-await -- tool contract requires async execute
     async execute(args) {
-      const input = args as unknown as PatentPlanTaskInput
+      const input = args
       switch (input.action) {
         case 'transition': {
           const from = (input.currentState ?? 'planning') as PlanTaskState
@@ -251,7 +285,7 @@ export function createPatentPlanTaskTool(): ToolDefinition {
           const issues = input.issues === undefined ? undefined : resolveIssues(input.issues, input.round)
           try {
             const next = machine.transition(to, {
-              ...(input.tasks !== undefined ? { tasks: input.tasks } : {}),
+              ...(input.tasks !== undefined ? { tasks: readPlanTasks(input.tasks) } : {}),
               ...(input.feedback !== undefined ? { feedback: input.feedback } : {}),
               ...(issues !== undefined ? { issues } : {}),
               ...(input.rounds !== undefined ? { rounds: input.rounds } : {}),
@@ -277,13 +311,13 @@ export function createPatentPlanTaskTool(): ToolDefinition {
           const steps = input.planSteps ?? []
           if (steps.length === 0) throw new PatentToolError('invalid_tool_input', 'sync 需要 planSteps 非空')
           const result = syncPlanToTasks(steps)
-          return { ok: true, action: 'sync' as const, tasks: result.tasks as unknown as JsonValue[], preserved: [], toRun: result.toRun }
+          return { ok: true, action: 'sync' as const, tasks: toJsonArray(result.tasks), preserved: [], toRun: result.toRun }
         }
         case 'replan': {
           const steps = input.planSteps ?? []
           if (steps.length === 0) throw new PatentToolError('invalid_tool_input', 'replan 需要 planSteps 非空')
-          const result = replanTasks(input.previousTasks ?? [], steps)
-          return { ok: true, action: 'replan' as const, tasks: result.tasks as unknown as JsonValue[], preserved: result.preserved, toRun: result.toRun }
+          const result = replanTasks(readPlanTasks(input.previousTasks), steps)
+          return { ok: true, action: 'replan' as const, tasks: toJsonArray(result.tasks), preserved: result.preserved, toRun: result.toRun }
         }
         /* v8 ignore next 5 -- the action schema enum already rejects unknown actions. */
         default:

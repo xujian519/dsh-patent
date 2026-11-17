@@ -16,11 +16,11 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { numberList, recordList, recordString, recordText, recordValue } from './internal/json-read.ts'
+import { toJsonValue } from './internal/json-value.ts'
 import {
   formatOfficeActionSummary,
   parseOfficeAction,
-  type CitedReference,
-  type ParsedOfficeAction,
 } from '@deepseek-ai/dsh-patent-core'
 import { requireNonBlankText } from './internal/tool-input.ts'
 
@@ -52,17 +52,19 @@ const DESCRIPTION = [
  * @param reference - the parsed citation.
  * @returns one line, with the co-occurrence caveat made explicit.
  */
-function renderCitation(reference: CitedReference): string {
-  const relevancy = reference.relevancy === undefined ? '未标注' : `${reference.relevancy} 类`
-  const claims = reference.claimsAffected.length > 0 ? reference.claimsAffected.join(', ') : '无'
-  return `- ${reference.documentNumber}（${relevancy}）→ 同句提到的权项: ${claims}`
+function renderCitation(reference: unknown): string {
+  const relevancy = recordString(reference, 'relevancy')
+  const relevancyText = relevancy === undefined ? '未标注' : `${relevancy} 类`
+  const claims = numberList(recordValue(reference, 'claimsAffected'))
+  const claimText = claims.length > 0 ? claims.join(', ') : '无'
+  return `- ${recordText(reference, 'documentNumber')}（${relevancyText}）→ 同句提到的权项: ${claimText}`
 }
 
 /** Render the canonical parse value into model-facing prose. */
-function renderParseOfficeAction(value: ParseOfficeActionOutput): string {
-  const parsed = value.parsed as unknown as ParsedOfficeAction
-  const citationLines = parsed.citations.length > 0
-    ? ['## 引用文献逐条（权项为同句共现，非权威对应）', ...parsed.citations.map(renderCitation)]
+function renderParseOfficeAction(value: { parsed: unknown; summary: string }): string {
+  const citations = recordList(value.parsed, 'citations')
+  const citationLines = citations.length > 0
+    ? ['## 引用文献逐条（权项为同句共现，非权威对应）', ...citations.map(renderCitation)]
     : []
   return [
     'parse_office_action: 审查意见通知书解析（确定性纯函数，未调用模型）',
@@ -97,7 +99,7 @@ export function createParseOfficeActionTool(): ToolDefinition {
     async execute(args) {
       requireNonBlankText(args.text, 'parse_office_action', 'text 为空（须为审查意见通知书正文）')
       const parsed = parseOfficeAction(args.text)
-      return { parsed: parsed as unknown as JsonValue, summary: formatOfficeActionSummary(parsed) }
+      return { parsed: toJsonValue(parsed), summary: formatOfficeActionSummary(parsed) }
     },
   })
 }

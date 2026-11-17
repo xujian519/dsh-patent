@@ -10,7 +10,8 @@
 import { join } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { isDataRecord, recordChild, recordFlag, recordList, recordString, recordText } from './internal/json-read.ts'
+import { toJsonValue } from './internal/json-value.ts'
 import {
   globalAtomRegistry,
   globalStageHandlerRegistry,
@@ -183,32 +184,48 @@ const DESCRIPTION = [
   'Flexible plan for patent cases (stage-level HITL). create: build a plan (optional IPC technical-field inference from the disclosure text). run: execute unconfirmed stages (pending + rolled_back) via the atom registry with LLM + prior-art search, exactly like patent_workflow_run. confirm / rollback: freeze or redo one stage; add / remove / reorder: edit stages at runtime; complete / abandon: finish the plan. Plans persist by caseId across calls (unlike patent_plan_task, which is stateless). confirmed stages are frozen, so confirm fixes the output; autoConfirm=true confirms all successful stages at the end of a run.',
 ].join('\n')
 /** Convert a caller-supplied stage into the state-machine stage (status pending). */
-function toFlexibleStage(s: FlexiblePlanStageInput): FlexibleStage {
+function toFlexibleStage(stage: {
+  id: string
+  name: string
+  goal: string
+  strategy: 'chain' | 'react' | 'sub_agent'
+  atom?: string
+  params?: object
+  artifacts?: readonly string[]
+  constraintIds?: readonly string[]
+  articleJudgments?: readonly string[]
+}): FlexibleStage {
+  const params = isDataRecord(stage.params) ? stage.params : undefined
   return {
-    id: s.id,
-    name: s.name,
-    goal: s.goal,
-    strategy: s.strategy,
-    ...(s.atom !== undefined ? { atom: s.atom } : {}),
-    ...(s.params !== undefined ? { params: s.params } : {}),
+    id: stage.id,
+    name: stage.name,
+    goal: stage.goal,
+    strategy: stage.strategy,
+    ...(stage.atom !== undefined ? { atom: stage.atom } : {}),
+    ...(params !== undefined ? { params } : {}),
     status: 'pending',
-    artifacts: s.artifacts ?? [],
-    constraintIds: s.constraintIds ?? [],
-    articleJudgments: s.articleJudgments ?? [],
+    artifacts: [...(stage.artifacts ?? [])],
+    constraintIds: [...(stage.constraintIds ?? [])],
+    articleJudgments: [...(stage.articleJudgments ?? [])],
   }
 }
 
 /** Render a plan summary (status/technical field/current stage + stage list). */
-function renderPlan(plan: FlexiblePlanState): string {
-  const lines = plan.stages.map((s) => {
-    const flag = s.status === 'confirmed' ? '✅' : s.status === 'rolled_back' ? '↩️' : '⏳'
-    const atomNote = s.atom !== undefined ? ` [atom:${s.atom}]` : ''
-    const artifactNote = s.artifacts.length > 0 ? `（产物: ${s.artifacts.length} 项）` : ''
-    return `- ${flag} ${s.id}${atomNote}（${s.strategy}）: ${s.goal}${artifactNote}`
+function renderPlan(plan: unknown): string {
+  const lines = recordList(plan, 'stages').map((stage) => {
+    const status = recordText(stage, 'status')
+    const flag = status === 'confirmed' ? '✅' : status === 'rolled_back' ? '↩️' : '⏳'
+    const atom = recordString(stage, 'atom')
+    const artifacts = recordList(stage, 'artifacts')
+    const atomNote = atom !== undefined ? ` [atom:${atom}]` : ''
+    const artifactNote = artifacts.length > 0 ? `（产物: ${artifacts.length} 项）` : ''
+    return `- ${flag} ${recordText(stage, 'id')}${atomNote}（${recordText(stage, 'strategy')}）: ${recordText(stage, 'goal')}${artifactNote}`
   })
-  const parts = [`flexible_plan(caseId=${plan.caseId}, caseType=${plan.caseType}, status=${plan.status})`]
-  if (plan.technicalField !== undefined) parts.push(`技术领域: ${plan.technicalField}`)
-  parts.push(`当前阶段: ${plan.currentStageId ?? '（无待执行阶段）'}`, ...lines)
+  const parts = [`flexible_plan(caseId=${recordText(plan, 'caseId')}, caseType=${recordText(plan, 'caseType')}, status=${recordText(plan, 'status')})`]
+  const technicalField = recordString(plan, 'technicalField')
+  if (technicalField !== undefined) parts.push(`技术领域: ${technicalField}`)
+  const currentStageId = recordString(plan, 'currentStageId')
+  parts.push(`当前阶段: ${currentStageId ?? '（无待执行阶段）'}`, ...lines)
   return parts.join('\n')
 }
 
@@ -248,7 +265,11 @@ const MUTATIONS: Partial<Record<Exclude<FlexiblePlanAction, 'create' | 'get' | '
   },
   add: {
     require: i => (i.stage === undefined ? 'add 需要 stage' : undefined),
-    apply: (s, i) => addStage(s, toFlexibleStage(i.stage as FlexiblePlanStageInput)),
+    apply: (s, i) => {
+      /* v8 ignore next -- require() already rejected a missing stage. */
+      if (i.stage === undefined) throw new PatentToolError('invalid_tool_input', 'flexible_plan: add 需要 stage')
+      return addStage(s, toFlexibleStage(i.stage))
+    },
   },
   remove: {
     require: i => (i.stageId === undefined ? 'remove 需要 stageId' : undefined),
@@ -268,7 +289,7 @@ const MUTATIONS: Partial<Record<Exclude<FlexiblePlanAction, 'create' | 'get' | '
 }
 
 /** The appended mutation message for a mutation action. */
-function mutationMessage(action: FlexiblePlanAction, input: FlexiblePlanToolInput): string {
+function mutationMessage(action: FlexiblePlanAction, input: { stageId?: string; stage?: { id?: string } }): string {
   switch (action) {
     case 'confirm':
       return `已确认阶段 "${input.stageId}"。`
@@ -296,7 +317,10 @@ function mutationMessage(action: FlexiblePlanAction, input: FlexiblePlanToolInpu
  * @param value - the plan/run result.
  * @returns the multi-line plan summary or run result.
  */
-export function renderFlexiblePlan(args: FlexiblePlanToolInput, value: FlexiblePlanOutput): string {
+export function renderFlexiblePlan(
+  args: FlexiblePlanToolInput | { action: FlexiblePlanAction; stageId?: string; stage?: { id?: string }; caseId?: string },
+  value: FlexiblePlanOutput | { action: FlexiblePlanAction; caseId: string; plan?: unknown; run?: unknown; persistNote?: string },
+): string {
   const plan = value.plan
   /* v8 ignore next 3 -- every execute return path carries a plan. */
   if (plan === undefined) {
@@ -315,13 +339,18 @@ export function renderFlexiblePlan(args: FlexiblePlanToolInput, value: FlexibleP
         // 不可达：action=run 的返回恒携带 run。
         return ''
       }
-      const interruptNote = run.interrupted
-        ? `⏸ 审批门暂停: "${run.interrupted.stageId}"（${run.interrupted.message}）——等待人工确认，后续阶段未执行`
-        : undefined
+      const interrupted = recordChild(run, 'interrupted')
+      const interruptNote = interrupted === undefined
+        ? undefined
+        : `⏸ 审批门暂停: "${recordText(interrupted, 'stageId')}"（${recordText(interrupted, 'message')}）——等待人工确认，后续阶段未执行`
       return renderWorkflowResultText({
         toolName: 'flexible_plan(run)',
-        result: run,
-        stageLines: renderWorkflowStageLines(run),
+        result: {
+          manifestId: recordText(run, 'manifestId'),
+          summary: recordText(run, 'summary'),
+          completed: recordFlag(run, 'completed'),
+        },
+        stageLines: renderWorkflowStageLines({ stages: recordList(run, 'stages') }),
         persistNote: value.persistNote ?? '持久化: 未启用',
         checkSection: '',
         ...(interruptNote !== undefined ? { interruptNote } : {}),
@@ -387,13 +416,12 @@ export function createFlexiblePlanTool(deps: FlexiblePlanToolDeps = {}): ToolDef
         },
       },
       render: (args, value) => [
-        { type: 'text', text: renderFlexiblePlan(args as unknown as FlexiblePlanToolInput, value as unknown as FlexiblePlanOutput) },
+        { type: 'text', text: renderFlexiblePlan(args, value) },
       ],
     },
     async execute(args, exec) {
-      const input = args as unknown as FlexiblePlanToolInput
-      /* v8 ignore next -- the caseId schema field is required, so it can never be empty here. */
-      if (input.caseId === undefined || input.caseId.trim() === '') {
+      const input = args
+      if (input.caseId.trim() === '') {
         throw new PatentToolError('invalid_tool_input', 'flexible_plan: caseId 不能为空（计划按 caseId 持久化，跨调用状态）')
       }
       const store = deps.store ?? defaultPlanStore(input.caseId, cwd)
@@ -405,7 +433,7 @@ export function createFlexiblePlanTool(deps: FlexiblePlanToolDeps = {}): ToolDef
           const plan = await loadPlan(store, input.caseId)
           const updated = mutation.apply(plan, input)
           await store.savePlan(updated)
-          return { action: input.action, caseId: input.caseId, plan: updated as unknown as JsonValue }
+          return { action: input.action, caseId: input.caseId, plan: toJsonValue(updated) }
         }
 
         switch (input.action) {
@@ -420,11 +448,11 @@ export function createFlexiblePlanTool(deps: FlexiblePlanToolDeps = {}): ToolDef
               ...(deps.now !== undefined ? { now: deps.now } : {}),
             })
             await store.savePlan(plan)
-            return { action: 'create' as const, caseId: input.caseId, plan: plan as unknown as JsonValue }
+            return { action: 'create' as const, caseId: input.caseId, plan: toJsonValue(plan) }
           }
           case 'get': {
             const plan = await loadPlan(store, input.caseId)
-            return { action: 'get' as const, caseId: input.caseId, plan: plan as unknown as JsonValue }
+            return { action: 'get' as const, caseId: input.caseId, plan: toJsonValue(plan) }
           }
           case 'run': {
             const plan = await loadPlan(store, input.caseId)
@@ -470,8 +498,8 @@ export function createFlexiblePlanTool(deps: FlexiblePlanToolDeps = {}): ToolDef
             return {
               action: 'run' as const,
               caseId: input.caseId,
-              plan: updated as unknown as JsonValue,
-              run: result as unknown as JsonValue,
+              plan: toJsonValue(updated),
+              run: toJsonValue(result),
               persistNote,
             }
           }

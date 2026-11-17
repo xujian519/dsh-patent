@@ -286,15 +286,15 @@ export interface VideoShot {
   /** Production state derived from the selected attempt. */
   readonly status: 'draft' | 'ready' | 'generating' | 'failed'
   /** Selected keyframe path, relative to the Session working directory. */
-  readonly keyframePath?: string
+  readonly keyframePath?: string | undefined
   /** Selected clip path, relative to the Session working directory. */
-  readonly clipPath?: string
+  readonly clipPath?: string | undefined
   /** Provider and model of the selected clip. */
-  readonly provider?: string
+  readonly provider?: string | undefined
   /** Provider and model of the selected clip. */
-  readonly model?: string
+  readonly model?: string | undefined
   /** Cost of the selected attempt in CNY. */
-  readonly costCny?: number
+  readonly costCny?: number | undefined
 }
 
 /** One finished render of the project. */
@@ -304,9 +304,9 @@ export interface VideoRender {
   /** Output path, relative to the Session working directory. */
   readonly path: string
   /** Measured duration in seconds. */
-  readonly durationSec?: number
+  readonly durationSec?: number | undefined
   /** Total generation cost of the render in CNY. */
-  readonly costCny?: number
+  readonly costCny?: number | undefined
   /** ISO-8601 creation time. */
   readonly createdAt: string
 }
@@ -337,7 +337,7 @@ export interface VideoProject {
 
 /** One visual clip of an edit decision list. */
 export type EdlVisualClip =
-  | { readonly kind: 'video'; readonly source: string; readonly inSec?: number; readonly outSec: number }
+  | { readonly kind: 'video'; readonly source: string; readonly inSec?: number | undefined; readonly outSec: number }
   | { readonly kind: 'image'; readonly source: string; readonly durationSec: number }
   | { readonly kind: 'color'; readonly color: string; readonly durationSec: number }
 
@@ -346,11 +346,11 @@ export interface EdlAudioClip {
   /** Path readable through the calling Session filesystem. */
   readonly source: string
   /** Start offset in the source. */
-  readonly inSec?: number
+  readonly inSec?: number | undefined
   /** End offset in the source. */
-  readonly outSec?: number
+  readonly outSec?: number | undefined
   /** Linear gain in decibels. */
-  readonly gainDb?: number
+  readonly gainDb?: number | undefined
 }
 
 /** The assembly contract: a complete, reproducible description of one render. */
@@ -369,9 +369,9 @@ export interface Edl {
   /** Ordered visual clips. */
   readonly clips: readonly EdlVisualClip[]
   /** Audio clips mixed over the visual track. */
-  readonly audio?: readonly EdlAudioClip[]
+  readonly audio?: readonly EdlAudioClip[] | undefined
   /** Subtitle file burned into the picture. */
-  readonly subtitles?: string
+  readonly subtitles?: string | undefined
   /** Output path relative to the calling Session working directory. */
   readonly output: string
 }

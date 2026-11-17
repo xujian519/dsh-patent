@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-rc.3/video-schema-optional-fields/guide.md
+/:
+  en: b82de0d3a535e503
+  zh: 3b4902e77ed13500
+/video-project-and-edl-optional-fields-include-undefined:
+  en: 9550b23d76976ce4
+  zh: 862deaa22f88db0a
+/video-project-and-edl-optional-fields-include-undefined/change:
+  en: c47723f3063e9b92
+  zh: 2dc44ab189770df2
+/video-project-and-edl-optional-fields-include-undefined/migration:
+  en: e212771fe064389d
+  zh: 2be8f313b31d8289

@@ -13,6 +13,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { FsError } from '@deepseek-ai/dsh-fs'
 import type { FsTarget, FsVersion } from '@deepseek-ai/dsh-fs'
 import { withKeyLock } from './lock.ts'
+import { lockToInterface } from './schema-lock.ts'
 import { MediaFailure, type VideoProject, type VideoRender, type VideoShot } from './types.ts'
 
 /** Project format version written by this package. */
@@ -47,8 +48,8 @@ const renderSchema = z.object({
   createdAt: z.string().min(1),
 }).strict()
 
-/** The complete project document schema. */
-export const projectSchema = z.object({
+/** The complete project document schema. Parsed fields match {@link VideoProject}. */
+export const projectSchema = lockToInterface<VideoProject>()(z.object({
   schemaVersion: z.literal(PROJECT_SCHEMA_VERSION),
   id: z.string().min(1).regex(/^[a-z0-9][a-z0-9-]*$/),
   title: z.string().min(1),
@@ -59,7 +60,7 @@ export const projectSchema = z.object({
   renders: z.array(renderSchema),
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1),
-}).strict()
+}).strict())
 
 /** Fields accepted when creating a project. */
 export interface NewProject {
@@ -131,7 +132,7 @@ export function validateProject(value: unknown): VideoProject {
   if (!parsed.success) {
     throw new MediaFailure(`invalid video project: ${parsed.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`, 'MEDIA_PROJECT_INVALID')
   }
-  return parsed.data as VideoProject
+  return parsed.data
 }
 
 /**

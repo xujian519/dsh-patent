@@ -37,7 +37,7 @@
 | F-PAT-002 | `rule_check` 丢弃同义词资产警告，合规检查静默降级 | PAT | B | High | 中 | confirmed |
 | F-PAT-003 | 原子写四份手写实现，未复用仓库共享 `atomic-write` 包 | PAT | A/B | High | 高 | fixed |
 | F-PAT-004 | 品牌配置损坏时静默回退默认品牌 | PAT | B | Medium | 中 | fixed |
-| F-PAT-005 | 四个输出路径默认锚定 `process.cwd()` | PAT | E | Medium | 中 | confirmed |
+| F-PAT-005 | 四个输出路径默认锚定 `process.cwd()` | PAT | E | Medium | 中 | fixed |
 | F-PAT-006 | `adversary-review` 以关键词启发式输出"置信度 87.5%" | PAT | B | High | 高 | fixed |
 | F-PAT-007 | `atomicWriteJson` 从 `patent-data` 历史导出面导入 | PAT | B | Low | 高 | fixed |
 | F-PAT-008 | TRIZ 资产裸 `JSON.parse as T`，失败无包内错误类型 | PAT | B | Low | 低 | confirmed |
@@ -197,7 +197,8 @@
 - 最小修复建议：默认根改为部署显式传入的工作区根（`ctx` 上的 workspace 服务）；确实没有时 fail loud 而不是猜 cwd。
 - 预估工作量：M
 - 是否可自动化：是（测试以不同 cwd 启动断言路径来源）
-- 状态：confirmed
+- 修复：未给出绝对路径时，以 `ctx.sandboxPolicy.workspaceRoot` 为根。该值为空或服务缺席时插件加载抛 `setup_required`，不再读取 `process.cwd()`。绝对路径配置保持原样。
+- 状态：fixed
 
 ### F-PAT-006 `adversary-review` 以关键词启发式输出"置信度 87.5%"
 

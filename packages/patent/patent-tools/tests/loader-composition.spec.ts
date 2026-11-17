@@ -83,6 +83,8 @@ async function boot(
 
   const ctx = new Context()
   context = ctx
+  const workspaceKey: string = 'sandboxPolicy'
+  ctx.provide(workspaceKey, { workspaceRoot: root })
   ctx.baseUrl = pathToFileURL(root).href + '/'
   await ctx.plugin(Loader)
   ctx.loader.builtins.include = Include

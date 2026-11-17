@@ -18,10 +18,17 @@ function exec(ctx: Context, name: string, args: unknown, label: string) {
   return executeToolFixture(ctx, { signal, callId: ToolCallId(label), name, arguments: args })
 }
 
+/** The catalog harness publishes a workspace root; production no longer guesses the process directory. */
+function publishWorkspace(ctx: Context): void {
+  const key: string = 'sandboxPolicy'
+  ctx.provide(key, { workspaceRoot: process.cwd() })
+}
+
 async function mounted(config: Record<string, unknown>): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
+  publishWorkspace(ctx)
   await ctx.plugin(tool, config)
   return ctx
 }
@@ -63,6 +70,7 @@ describe('patent-tools plugin wiring', () => {
         yield { type: 'finish', reason: { kind: 'stop' } }
       },
     })
+    publishWorkspace(ctx)
     await ctx.plugin(tool, { provider: 'p', model: 'm', maxTokens: 128 })
     const result = await exec(ctx, 'claim_chart_build', { mode: 'invalidity', claim_text: 'c', targets: [] }, 'w-2')
     expect(result.isError).toBe(true)
@@ -78,6 +86,7 @@ describe('patent-tools plugin wiring', () => {
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.provide('llm', { resolveModelInfo: async () => ({ inputModalities: ['text'] }) })
+    publishWorkspace(ctx)
     await ctx.plugin(tool, {})
     expect(ctx.tools.schemas().map(s => s.name)).toContain('analyze_patent_figure')
   })
@@ -111,6 +120,7 @@ describe('patent-tools plugin wiring', () => {
       paths: { wikiDir: join(temp, 'wiki'), queryDbPath: join(temp, 'query.db') },
       caseLawSearch: () => [],
     })
+    publishWorkspace(ctx)
     await ctx.plugin(tool, {})
 
     const caseResult = await exec(ctx, 'patent_case_search', { query: '创造性' }, 'w-3')
@@ -128,15 +138,15 @@ describe('patent-tools plugin wiring', () => {
       paths: { wikiDir: join(temp, 'wiki'), queryDbPath: join(temp, 'missing.db') },
       caseLawSearch: () => [],
     })
+    publishWorkspace(ctx)
     await ctx.plugin(tool, {})
     const result = await exec(ctx, 'patent_kg_query', { query: 'x' }, 'w-5')
     expect(result.isError).toBe(true)
   })
 
   it('serves search_patent_figure from the default (absent) figure index', async () => {
-    // Config.figureIndexFile is unset → resolveFigureIndexFile falls back to
-    // <cwd>/.sati/figures-index.json, which does not exist → empty entries →
-    // a zero-hit result (not an error).
+    // Config.figureIndexFile is unset, so the index is <workspace>/.sati/figures-index.json.
+    // This mount publishes the process directory as that workspace, and the file is absent.
     const ctx = await mounted({})
     const result = await exec(ctx, 'search_patent_figure', { query: 'x' }, 'w-6')
     expect(result.isError).toBe(false)
@@ -163,6 +173,7 @@ describe('patent-tools plugin wiring', () => {
         height: 1,
       }),
     })
+    publishWorkspace(ctx)
     await ctx.plugin(tool, { figureIndexFile: indexFile, provider: 'p', model: 'm' })
     const imagePath = join(temp, 'fig1.png')
     await writeFile(imagePath, 'fake-image')
@@ -210,6 +221,7 @@ describe('patent-tools plugin wiring', () => {
         height: 1,
       }),
     })
+    publishWorkspace(ctx)
     await ctx.plugin(tool, {
       figureAnalysisMode: 'two-step',
       figureIndexFile: join(temp, 'figures-index.json'),
@@ -275,6 +287,7 @@ describe('patent-tools plugin wiring', () => {
         },
       }),
     })
+    publishWorkspace(ctx)
     await ctx.plugin(tool, {})
     // 本用例只验证接线：输出目录受限于进程工作目录，传 '.' 解析后就是它本身，
     // mkdir 无副作用；ego 假实现回报 ok，工具不会落盘到仓库里。

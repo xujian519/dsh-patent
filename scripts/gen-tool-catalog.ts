@@ -817,6 +817,9 @@ const TOOL_PACKAGES: ToolPackage[] = [
     async mount(ctx) {
       // All 29 tools register from their factories alone; knowledge/LLM services are
       // read via ctx.get at execute time (absent here), so booting stays offline.
+      // Output paths need a published workspace root and do not fall back to the process directory.
+      const key: string = 'sandboxPolicy'
+      ctx.provide(key, { workspaceRoot: process.cwd() })
       await ctx.plugin(PatentTools, {})
     },
     note:

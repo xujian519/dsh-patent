@@ -6,6 +6,12 @@ import { globalAtomRegistry, globalStageHandlerRegistry } from '@deepseek-ai/dsh
 import { builtinPatentManifests } from '@deepseek-ai/dsh-patent-workflow'
 import * as tool from '../src/index.ts'
 
+/** Tests that load the plugin publish the process directory as the deployment workspace. */
+function publishWorkspace(ctx: Context): void {
+  const key: string = 'sandboxPolicy'
+  ctx.provide(key, { workspaceRoot: process.cwd() })
+}
+
 /** The 37 tools registered by patent-tools (render_patent_document is owned by dsh-patent-document). */
 const EXPECTED_TOOLS = [
   'patent_search',
@@ -111,6 +117,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
+    publishWorkspace(ctx)
     await ctx.plugin(tool, {})
     // Exact (order-insensitive) match: a missing, extra, or renamed tool fails.
     expect(ctx.tools.schemas().map(s => s.name).sort()).toEqual([...EXPECTED_TOOLS].sort())
@@ -120,6 +127,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
+    publishWorkspace(ctx)
     const fiber = await ctx.plugin(tool, {})
     expect(ctx.tools.schemas().map(s => s.name).sort()).toEqual([...EXPECTED_TOOLS].sort())
     await fiber.dispose()
@@ -130,6 +138,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
+    publishWorkspace(ctx)
     await ctx.plugin(tool, {})
     const names = ctx.tools.schemas().map(s => s.name)
     expect(names).not.toContain('render_patent_document')
@@ -163,6 +172,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
+    publishWorkspace(ctx)
     await ctx.plugin(tool, { workflowStageBudget: 27, workflowLlmStageBudget: 14 })
     expect(ctx.tools.schemas().map(schema => schema.name)).toContain('patent_workflow_run')
   })
@@ -171,6 +181,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
+    publishWorkspace(ctx)
     await ctx.plugin(tool, {})
     const declared = new Set(
       builtinPatentManifests.flatMap(manifest =>
@@ -189,6 +200,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
+    publishWorkspace(ctx)
     await ctx.plugin(tool, {})
     // 完整组合后注册表含 patent-core 的 27 个内置 + 本包注册的 slop-gate、draft-specification、spec-check、response-check、eligibility 与 legal-gaps。
     expect(globalAtomRegistry.list().map(atom => atom.name).sort()).toEqual(REGISTERED_ATOMS)
@@ -211,6 +223,7 @@ describe('model route fallback (B4)', () => {
         yield { type: 'finish', reason: { kind: 'stop' } }
       },
     })
+    publishWorkspace(ctx)
     await ctx.plugin(tool, {})
     // claim_chart_build needs a model port: with the default route fallback it
     // must reach the llm stream instead of throwing setup_required.

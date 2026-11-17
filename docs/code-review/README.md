@@ -70,8 +70,9 @@
 - Day 37 已完成：E 维度专利域-4 与文档模式（`patent-document`、`patent-filing`、document 全域）。新增 F-DOC-008 至 F-DOC-010。同一模板的 Markdown 只出一个标题、HTML 与 DOCX 出两个一级标题；DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃；`document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断。R-87（验收读取 DOCX 无归档预算）仍开放。H01–H10 不改。
 - Day 38 已完成：E 维度法律模式与共享机制（`legal-evidence`、`legal-knowledge`、`legal-law`、`law-core`、`knowledge-core`）。新增 F-LEG-011 至 F-LEG-014。证人利害关系省略时关键规则报「证人与案件无利害关系」通过；电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略；法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果；默认判定日期取 UTC，与中国法域自然日相差 8 小时。F-LEG-001、F-LEG-002、F-LEG-004、F-LEG-010 仍开放。H01–H10 不改。
 - Day 39 已完成：E 维度视频模式全域（`video-mode`、`video-bundle`、`ui-video-studio`）。新增 F-VID-011 至 F-VID-015。同一工程的并发生成会各自通过余额检查再分别结算，账本总额可超过预算；provider 被移除或记录被拒绝后 journal 没有工具侧清理路径；`status` 对 `artifacts: []` 的成功任务照常记账并清 journal；`init` 的绝对路径与其余动作的原始路径让同一工程在 studio 出现两次；EDL 音频区间的反向顺序晚到 ffmpeg 才失败。H04 的 Day 39 验证点完成：重复计费不成立，预算不变量部分成立；其余假设不改。
-- Day 40 已完成：E 维度跨域（错误处理、静默降级、模型可见性与会话日志一致性）。新增 F-CROSS-004：四域中只有视频域的工具错误类接入 `HarnessError`，其余七个带 `code` 的错误类在 `tool/result.error` 与轨迹界面里只剩文案。模型可见面逐项对齐：系统提示、工具 schema、用户/合成上下文、工具调用与结果、专利工具内模型调用都有会话事件；外部 provider 原始响应与视频 journal 不是模型可见面，残留缺口只有 F-PAT-010。H07、H10 改为部分确认；D34–D40 的 E 维度共 29 条新编号，加本条 30 条，已按六个主题汇总并列出 Day 41 的合并候选。
-- 当前进度：A 安全维度（Day 6–12）、B 维度（Day 13–19）、C 维度（Day 20–26）、D 测试缺口（Day 27–33）、E 正确性与边界（Day 34–40）已完成。下一日为 Day 41（收敛：去重与合并）。
+- Day 40 已完成：E 维度跨域（错误处理、静默降级、模型可见性与会话日志一致性）。新增 F-CROSS-004：四域中只有视频域的工具错误类接入 `HarnessError`，其余七个带 `code` 的错误类在 `tool/result.error` 与轨迹界面里只剩文案。模型可见面逐项对齐：系统提示、工具 schema、用户/合成上下文、工具调用与结果、专利工具内模型调用都有会话事件；外部 provider 原始响应与视频 journal 不是模型可见面，残留缺口只有 F-PAT-010。H07、H10 改为部分确认；D34–D40 的 E 维度共 29 条新编号，加本条 30 条，已按六个主题汇总并列出当时的合并候选。
+- Day 41–42 已完成（缩短收敛，2026-11-17，对照 Merge PR #886）：不重测已修条目。Day 40 的六个合并组里，对比表、门禁缺输入与法律证据未知值三组已落地，沿革组只剩 F-PAT-051。下一轮要改代码的 E 项改为 confirmed。F-PAT-002、F-LEG-001、F-DOC-001 的总表对齐为 fixed。剩余队列在 [06-priority.md](06-priority.md)。D43–D45 未做。
+- 当前进度：A 至 E（Day 6–40）与缩短收敛（Day 41–42）已完成。下一次按剩余队列修 R-E1（F-DOC-008、F-DOC-009）。
 - 已确认：45 天周期、包含 `packages/law`、视频按实验特性、在 Node 24 补跑构建与覆盖率基线。
 - 本目录的中文单语文档已加入 `scripts/translation-pairing.manifest.json` 的豁免清单；`verify-translation-pairing` 复跑通过。
 

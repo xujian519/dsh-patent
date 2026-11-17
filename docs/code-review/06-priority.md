@@ -38,15 +38,15 @@
 | ID | 严重度 | 可能性 | 紧迫性 | 分数 | 候选队列 |
 |---|---|---|---|---|---|
 | F-PAT-003 | High | 高 | 立即 | 27 | P0 |
-| F-DOC-001 | High | 高 | 立即 | 27 | P0 |
+| F-DOC-001 | High | 高 | 立即 | 27 | P0（已修） |
 | F-PAT-001 | High | 中 | 立即 | 18 | P0 |
 | F-PAT-006 | High | 高 | 本周期 | 18 | P0 |
 | F-LEG-002 | High | 高 | 本周期 | 18 | P0 |
 | F-VID-001 | High | 中 | 立即 | 18 | P0 |
-| F-LEG-001 | High | 中 | 本周期 | 12 | P0 |
+| F-LEG-001 | High | 中 | 本周期 | 12 | P0（已修） |
 | F-VID-003 | Medium | 高 | 本周期 | 12 | P0（已修） |
 | F-PAT-004 | High | 中 | 本周期 | 12 | P0 |
-| F-PAT-002 | High | 低 | 本周期 | 6 | P1 |
+| F-PAT-002 | High | 低 | 本周期 | 6 | P1（已修） |
 | F-PAT-009 | Medium | 高 | 可延后 | 6 | P1 |
 | F-PAT-010 | Medium | 中 | 本周期 | 8 | P1（已修） |
 | F-PAT-011 | Medium | 中 | 本周期 | 8 | P1 |
@@ -118,6 +118,7 @@
 | B 失败方向统一 | 已实施（2026-11-17） | F-PAT-004、F-LEG-003、F-DOC-002 已收口；F-PAT-002 由批次 E9 处理 |
 | C 配置生效 | 已实施（2026-11-17） | F-LEG-002 由 E8 处理；F-VID-005 已改为 schema 单一默认源 |
 | D 并发与恢复 | 已实施（2026-11-17） | F-VID-001 由 E11 处理，F-LEG-001 由 E7 处理；F-PAT-011 的契约已由 README、JSDoc 与重启用例锁定 |
+| E 语义与结构 | 未开始 | — |
 | E9 同义词资产降级可见 | 已实施（2026-11-17） | F-PAT-002：`rule_check` 结果携带 `assetWarnings`，渲染追加「资产警告」 |
 | E7 法条索引名字表复位 | 已实施（2026-11-17） | F-LEG-001：加载前复位名字表，旧目录的法律名不再残留 |
 | E8 证据通用规则 YAML 驱动 | 已实施（2026-11-17） | F-LEG-002：通用规则的 id、severity 与是否执行取自资产，未知 check 记警告 |
@@ -129,8 +130,49 @@
 | E15 截断模型调用落盘 | 已实施（2026-11-17） | F-PAT-010：`finally` 追加 `patent/model-call`，异常终止带 `truncated: true` |
 | E 语义与结构 | 已实施（2026-11-17） | F-PAT-012：写出改经无损 JSON 快照，读回按字段收窄；`patent-tools/src` 不再有 `as unknown as` |
 
+## 剩余队列（Day 41–42，2026-11-17）
+
+对照主干 Merge PR #886。已在主干修完的条目不重测，也不进入下一批。当前修复顺序以本节为准。
+
+### 已有补丁，本轮不变基
+
+| PR | 发现 | 处置 |
+|---|---|---|
+| [#887](https://github.com/xujian519/dsh-patent/pull/887) | F-PAT-016 | MERGEABLE。coverage 仍失败。本轮不修、不合 |
+| [#881](https://github.com/xujian519/dsh-patent/pull/881) | F-VID-002 | CONFLICTING。并入 R-E2 时再变基 |
+| [#873](https://github.com/xujian519/dsh-patent/pull/873) | F-VID-005 | CONFLICTING。排在 R-E1 至 R-E5 与 R-D1 之后 |
+| [#874](https://github.com/xujian519/dsh-patent/pull/874) | F-PAT-011 | CONFLICTING。排在结论批次之后 |
+| [#875](https://github.com/xujian519/dsh-patent/pull/875) | F-PAT-009 | CONFLICTING。排在结论批次之后 |
+| [#876](https://github.com/xujian519/dsh-patent/pull/876) | F-PAT-012 | CONFLICTING。排在结论批次之后 |
+| [#877](https://github.com/xujian519/dsh-patent/pull/877) | F-PAT-013 | CONFLICTING。排在结论批次之后 |
+| [#884](https://github.com/xujian519/dsh-patent/pull/884) | F-LEG-005 | CONFLICTING。排在结论批次之后 |
+
+### 下一批修复
+
+| 批次 | 条目 | 修法 |
+|---|---|---|
+| R-E1 渲染分叉 | F-DOC-008、F-DOC-009 | 标题注入与 DOCX 表格解析跟 Markdown／HTML 对齐 |
+| R-E2 视频终态 | F-VID-011、F-VID-012、F-VID-013，并入 #881 的 F-VID-002 | 余额检查、空产物、失效 journal 与缺输出路径收成一条终态路径 |
+| R-E3 期限与日期 | F-PAT-053、F-PAT-054、F-LEG-014 | 滞纳金按年度；法定期间拒绝 `designatedMonths`；默认日期用 `Asia/Shanghai` |
+| R-E4 沿革法律名 | F-PAT-051 | 仅当 `lineage.law` 与引用法律一致时使用快照。F-PAT-052 已修，不覆盖本条 |
+| R-E5 错误身份 | F-CROSS-004 | 独立批次。在工具边界保留 `code`，不并进 R-E1 至 R-E4 |
+
+R-E1 至 R-E5 的条目在 Day 41 已改为 confirmed。F-VID-002 维持 confirmed，补丁仍在 #881。
+
+### 测试缺口
+
+R-D1 只加测试，不改行为：F-PAT-033、F-PAT-034、F-PAT-035、F-PAT-036、F-PAT-037、F-PAT-038、F-DOC-007、F-LEG-010。状态保持 new。本轮未重测。排在 R-E5 之后、结构类 PR 之前。
+
+### 维持原处置
+
+F-PAT-047 维持 deferred，与旧登记 R-77 相同，真实续接另立项。F-DOC-004 的文档域已收口，专利域余项是 F-PAT-024。F-PAT-007 的导入侧已修，`patent-data` 再导出尾项不新开编号。
+
+F-PAT-045、F-PAT-050、F-PAT-055、F-DOC-010、F-LEG-013、F-VID-014、F-VID-015 仍是正确性项。Day 40 写明它们暂不并入已落地的组。本轮保持 new，排在 R-D1 之后。其余 B 维度重复与过宽导出（含 #873、#874、#875、#876、#877、#884）再往后。
+
+D43–D45 未做。R-E1 至 R-E5 落地后再写门禁建议与复盘。
+
 ## 与发现清单的关系
 
 - [05-findings.md](05-findings.md) 记录事实与证据。
-- 本页只记录排序结果、根因分组与修复批次，不改写发现内容。
-- Day 42 完成全量排序；每日记录可以提前标注候选优先级，但最终以 Day 42 为准。
+- 本页记录排序结果、根因分组与修复批次。
+- 「剩余队列（Day 41–42）」是当前修复顺序。上面的候选排序表保留 Day 5b 至 Day 11 的打分；已修条目以批次执行状态为准。

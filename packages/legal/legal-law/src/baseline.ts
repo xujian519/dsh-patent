@@ -302,16 +302,30 @@ async function readLegalLawManifest(dir: string): Promise<LegalLawManifest> {
 }
 
 /**
+ * Start one whole-corpus load: list the index files and reset the parser's
+ * name tables, so names from a previously loaded directory cannot leak in.
+ * @param baselineDir - directory override; defaults to the packaged assets.
+ * @returns the files to parse and the empty baseline map to fill.
+ * @throws LegalLawBaselineError when the directory is unreadable or empty.
+ */
+function beginLoad(baselineDir?: string): {
+  files: string[]
+  baselines: Map<LegalLawName, LegalLawBaseline>
+} {
+  const files = legalLawIndexFiles(baselineDir)
+  resetLegalLawIndex()
+  return { files, baselines: new Map() }
+}
+
+/**
  * Load every legal-law index file in a directory, keyed by law name.
  * @param baselineDir - directory override; defaults to the packaged assets.
  * @returns the baselines by law name.
  * @throws LegalLawBaselineError when the directory is unreadable, empty, or holds a malformed file.
  */
 export function loadLegalLawBaselines(baselineDir?: string): Map<LegalLawName, LegalLawBaseline> {
-  const files = legalLawIndexFiles(baselineDir)
-  resetLegalLawIndex()
+  const { files, baselines } = beginLoad(baselineDir)
 
-  const baselines = new Map<LegalLawName, LegalLawBaseline>()
   for (const file of files) {
     registerBaseline(baselines, parseLegalLawBaseline(readFileSync(file, 'utf8'), file), file)
   }
@@ -336,10 +350,7 @@ export async function loadLegalLawBaselinesAsync(
   baselineDir?: string,
   signal?: AbortSignal,
 ): Promise<Map<LegalLawName, LegalLawBaseline>> {
-  const files = legalLawIndexFiles(baselineDir)
-  resetLegalLawIndex()
-
-  const baselines = new Map<LegalLawName, LegalLawBaseline>()
+  const { files, baselines } = beginLoad(baselineDir)
   for (const file of files) {
     signal?.throwIfAborted()
     const baseline = parseLegalLawBaseline(await readFile(file, { encoding: 'utf8', signal }), file)

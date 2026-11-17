@@ -422,7 +422,6 @@ export type {
   RuleGateState,
   DomainGraphName,
   GraphState,
-  DegradationMark,
   GraphCheckpoint,
   CheckpointStore,
 } from './graph/index.ts'
@@ -448,7 +447,6 @@ export {
 // Deterministic parsers for procedure documents (office action, invalidation /
 // reexamination / design grounds).
 export type {
-  CitedReference,
   NoticeRejectionGround,
   ParsedOfficeAction,
 } from './notice/index.ts'
@@ -465,7 +463,6 @@ export {
 // Deterministic infringement kernel: all-elements coverage, equivalence
 // consistency, weighted risk grading.
 export type {
-  InfringementConclusion,
   InfringementConclusionInput,
   AllElementsOutcome,
   EquivalenceContradictionKind,

@@ -137,19 +137,76 @@ describe('EgoBrowserSession.runScript', () => {
     expect(result.output).toBe('你好…\n[output truncated]')
   })
 
-  it('uses the session-level environment for script runs', async () => {
+  it('forwards only the child allowlist from the session environment', async () => {
     const runner = new FakeRunner()
     const session = new EgoBrowserSession({
       runner,
       homeDir: '/Users/tester',
       platform: 'darwin',
-      env: { PATH: '/session/bin', MARKER: 'session' },
+      env: {
+        PATH: '/session/bin',
+        HOME: '/Users/tester',
+        LANG: 'zh_CN.UTF-8',
+        LANGUAGE: 'zh',
+        LC_CTYPE: 'zh_CN.UTF-8',
+        DISPLAY: ':0',
+        WAYLAND_DISPLAY: 'wayland-0',
+        XAUTHORITY: '/tmp/xauthority',
+        XDG_RUNTIME_DIR: '/tmp/runtime',
+        DBUS_SESSION_BUS_ADDRESS: 'unix:path=/tmp/bus',
+        LC_ALL: undefined,
+        DEEPSEEK_API_KEY: 'secret',
+        MARKER: 'session',
+      },
     })
 
     await session.runScript("cliLog('x')", { cwd: '/tmp' })
 
-    expect(runner.calls[0]?.env?.PATH).toContain('/session/bin')
-    expect(runner.calls[0]?.env?.MARKER).toBe('session')
+    const env = runner.calls[0]?.env
+    expect(env?.PATH).toContain('/session/bin')
+    expect(env?.PATH).toContain('/Users/tester/.local/bin')
+    expect(env?.HOME).toBe('/Users/tester')
+    expect(env?.LANG).toBe('zh_CN.UTF-8')
+    expect(env?.LANGUAGE).toBe('zh')
+    expect(env?.LC_CTYPE).toBe('zh_CN.UTF-8')
+    expect(env?.DISPLAY).toBe(':0')
+    expect(env?.WAYLAND_DISPLAY).toBe('wayland-0')
+    expect(env?.XAUTHORITY).toBe('/tmp/xauthority')
+    expect(env?.XDG_RUNTIME_DIR).toBe('/tmp/runtime')
+    expect(env?.DBUS_SESSION_BUS_ADDRESS).toBe('unix:path=/tmp/bus')
+    expect(env?.DEEPSEEK_API_KEY).toBeUndefined()
+    expect(env?.MARKER).toBeUndefined()
+    expect(Object.entries(env ?? {}).filter(([, value]) => value !== undefined).map(([name]) => name).sort()).toEqual([
+      'DBUS_SESSION_BUS_ADDRESS',
+      'DISPLAY',
+      'HOME',
+      'LANG',
+      'LANGUAGE',
+      'LC_CTYPE',
+      'PATH',
+      'WAYLAND_DISPLAY',
+      'XAUTHORITY',
+      'XDG_RUNTIME_DIR',
+    ])
+  })
+
+  it('uses the per-run environment as the allowlist source', async () => {
+    const runner = new FakeRunner()
+    const session = new EgoBrowserSession({
+      runner,
+      homeDir: '/Users/tester',
+      platform: 'darwin',
+      env: { PATH: '/session/bin', HOME: '/session/home', DEEPSEEK_API_KEY: 'session-secret' },
+    })
+
+    await session.runScript("cliLog('x')", {
+      cwd: '/tmp',
+      env: { PATH: '/call/bin', HOME: '/call/home', DEEPSEEK_API_KEY: 'call-secret' },
+    })
+
+    expect(runner.calls[0]?.env?.PATH).toContain('/call/bin')
+    expect(runner.calls[0]?.env?.HOME).toBe('/call/home')
+    expect(runner.calls[0]?.env?.DEEPSEEK_API_KEY).toBeUndefined()
   })
 
   it('fails loudly when no runner is configured', async () => {
@@ -250,6 +307,23 @@ describe('EgoBrowserSession.runConnectionProbe', () => {
 
     expect(await session.runConnectionProbe(5_000)).toBe(true)
     expect(runner.calls[0]?.argv).toEqual(['ego-browser', 'nodejs', '-e', "cliLog('EGO_DOCTOR_OK')"])
+  })
+
+  it('probes with the child allowlist and omits credentials', async () => {
+    const runner = new FakeRunner()
+    runner.result = { exitCode: 0, stdout: 'EGO_DOCTOR_OK\n', stderr: '', timedOut: false, durationMs: 10 }
+    const session = new EgoBrowserSession({
+      runner,
+      homeDir: '/Users/tester',
+      platform: 'darwin',
+      env: { PATH: '/usr/bin', LANG: 'en_US.UTF-8', DEEPSEEK_API_KEY: 'secret' },
+    })
+
+    expect(await session.runConnectionProbe()).toBe(true)
+    expect(runner.calls[0]?.env?.PATH).toContain('/usr/bin')
+    expect(runner.calls[0]?.env?.PATH).toContain('/Users/tester/.local/bin')
+    expect(runner.calls[0]?.env?.LANG).toBe('en_US.UTF-8')
+    expect(runner.calls[0]?.env?.DEEPSEEK_API_KEY).toBeUndefined()
   })
 
   it('fails on a non-zero exit or timeout', async () => {

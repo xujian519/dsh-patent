@@ -64,7 +64,7 @@ The remaining options are per-call only: they are test seams or values this serv
 | `createEgoSession` | `homeDir` | `os.homedir()` | Home directory locating `~/.local/bin`. |
 | `createEgoSession` | `pathEntries` | `[<home>/.local/bin]` | Extra PATH directories injected into the spawn env and checked by the availability probe. |
 | `createEgoSession` | `platform` | `process.platform` | Platform override. |
-| `createEgoSession` | `env` | `process.env` | Environment override. |
+| `createEgoSession` | `env` | `process.env` | Source for the child allowlist: `PATH` (plus `pathEntries`), `HOME`, `LANG`, `LANGUAGE`, `LC_*`, `DISPLAY`, `WAYLAND_DISPLAY`, `XAUTHORITY`, `XDG_RUNTIME_DIR`, and `DBUS_SESSION_BUS_ADDRESS`. Other names are omitted. |
 | `createEgoSession` | `runner` | subprocess-backed runner | Spawn runner injection for tests. |
 | `createCniprChannel` | `timeoutMs` | session `defaultTimeoutMs` | Deadline for one CNIPR script run. |
 | `createCniprChannel` | `pageBudgets` | the resolved `Config` values | Per-wait overrides for one channel; a field replaces only that wait. |

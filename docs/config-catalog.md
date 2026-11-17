@@ -989,20 +989,20 @@ export interface Config {
 - `source`: [`packages/document/doc-template/src/index.ts:113`](../packages/document/doc-template/src/index.ts)
 
 ```ts config-catalog
-/** Model-facing document-template plugin configuration. */
+/** Model-facing document-template plugin configuration, resolved with every default applied. */
 export interface Config {
   /** Template roots layered over the packaged root; a later root overrides an earlier template of the same name. */
-  templateDirs?: string[]
+  templateDirs: string[]
   /** Style directories layered over the packaged one, in ascending precedence. */
-  styleDirs?: string[]
+  styleDirs: string[]
   /** Language a template that declares none renders in. */
-  defaultLanguage?: string
+  defaultLanguage: string
   /** Whether the style disclaimer is injected into rendered documents. */
-  includeDisclaimer?: boolean
+  includeDisclaimer: boolean
   /** Loaded style name whose guide this agent reads before writing; empty for no section. */
-  styleGuide?: string
+  styleGuide: string
   /** Position of the injected style guide in the assembled system prompt. */
-  styleSectionOrder?: number
+  styleSectionOrder: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-doc-template -->
@@ -1013,25 +1013,25 @@ export interface Config {
 ## `@deepseek-ai/dsh-document-deliver`
 
 - `inject`: `tools` · `fs`
-- `source`: [`packages/document/document-deliver/src/index.ts:79`](../packages/document/document-deliver/src/index.ts)
+- `source`: [`packages/document/document-deliver/src/index.ts:80`](../packages/document/document-deliver/src/index.ts)
 
 ```ts config-catalog
-/** Document-delivery plugin configuration. */
+/** Document-delivery plugin configuration, resolved with every default applied. */
 export interface Config {
   /** Style directories layered over the packaged one, in ascending precedence. */
-  styleDirs?: string[]
+  styleDirs: string[]
   /** Style name the checks use when a registration names no style. */
-  defaultStyle?: string
+  defaultStyle: string
   /** Largest deliverable the checker reads, in bytes. */
-  maxCheckBytes?: number
+  maxCheckBytes: number
   /** Fraction of a declared character budget a document may fall short of or exceed. */
-  lengthTolerance?: number
+  lengthTolerance: number
   /** Findings kept per check before the rest are summarized into one line. */
-  maxFindingsPerCheck?: number
+  maxFindingsPerCheck: number
   /** Largest number of entries a checked DOCX package may declare. */
-  maxArchiveEntries?: number
+  maxArchiveEntries: number
   /** Largest total uncompressed bytes a checked DOCX package may expand to. */
-  maxUncompressedBytes?: number
+  maxUncompressedBytes: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-document-deliver -->
@@ -2872,7 +2872,7 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-office-kit`
 
-- `source`: [`packages/document/office-kit/src/index.ts:42`](../packages/document/office-kit/src/index.ts)
+- `source`: [`packages/document/office-kit/src/index.ts:43`](../packages/document/office-kit/src/index.ts)
 
 ```ts config-catalog
 /** Provider concurrency and kit rendering/font configuration. */
@@ -3262,7 +3262,7 @@ export type CitationPolicy = 'block' | 'warn' | 'allow'
 ## `@deepseek-ai/dsh-patent-rule`
 
 - `inject`: `tools`
-- `source`: [`packages/patent/patent-rule/src/index.ts:234`](../packages/patent/patent-rule/src/index.ts)
+- `source`: [`packages/patent/patent-rule/src/index.ts:239`](../packages/patent/patent-rule/src/index.ts)
 
 ```ts config-catalog
 /** Plugin config. */
@@ -3484,7 +3484,7 @@ export interface Config {
   model?: string
   /** Dedicated figure/image model route whose input modalities gate analyze_patent_figure. */
   imageModel?: ImageModelConfig
-  /** 知识笔记落盘目录（相对或绝对路径）；默认 <cwd>/99-知识库。 */
+  /** 知识笔记落盘目录。绝对路径原样使用；相对路径以及缺省的 `99-知识库` 相对于 `sandboxPolicy.workspaceRoot`。没有工作区根时插件加载失败。 */
   noteDir?: string
   /** Max output tokens for the LLM-consuming tools. */
   maxTokens?: number
@@ -3508,9 +3508,9 @@ export interface Config {
    * `DEFAULT_WORKFLOW_LLM_STAGE_BUDGET`.
    */
   workflowLlmStageBudget?: number
-  /** 附图索引文件路径（相对或绝对路径）；默认 <cwd>/.sati/figures-index.json。 */
+  /** 附图索引文件。绝对路径原样使用；相对路径以及缺省的 `.sati/figures-index.json` 相对于 `sandboxPolicy.workspaceRoot`。没有工作区根时插件加载失败。 */
   figureIndexFile?: string
-  /** 化学结构索引文件路径（相对或绝对路径）；默认 <cwd>/.sati/chemistry-index.json。 */
+  /** 化学结构索引文件。绝对路径原样使用；相对路径以及缺省的 `.sati/chemistry-index.json` 相对于 `sandboxPolicy.workspaceRoot`。没有工作区根时插件加载失败。 */
   chemistryIndexFile?: string
   /** Graphviz dot 可执行路径覆盖；默认自动探测（候选路径 + PATH）。 */
   graphvizExecutable?: string
@@ -3528,7 +3528,7 @@ export interface Config {
   figureDpi?: number
   /** 附图页边距（厘米，四边同值）；与 figurePageSize 同给时收缩绘图区 size。 */
   figureMargin?: number
-  /** 附图输出目录（相对或绝对路径）；默认 <cwd>/patent/figures/。 */
+  /** 附图输出目录。绝对路径原样使用；相对路径以及缺省的 `patent/figures` 相对于 `sandboxPolicy.workspaceRoot`。没有工作区根时插件加载失败。 */
   figureOutputDir?: string
   /** 附图导出时把图面文字转成轮廓路径；默认 false。开启后 SVG 不再依赖阅读器字体（需要 Inkscape，两个附图生成工具、仅 SVG 生效）。 */
   figureTextToPath?: boolean
@@ -3576,6 +3576,7 @@ export interface Config {
    * 在 manifest 审批门处询问本部署的 approval 服务；默认 false 保持「暂停后由
    * approveStageIds 续跑」的契约。开启后，前台运行在门前取一次用户决策，放行即
    * 继续，拒绝/取消/无应答则带原因暂停；后台运行仍暂停（审批服务只回答开着的回合）。
+   * 开启时任何运行方式都拒绝 `approveStageIds`，后台运行不能靠自报列表绕过审批门。
    */
   approveStageGates?: boolean
   /** 个人工作台 API 基址覆盖；缺省在 web 组合内自动取本进程 webServer 端口。 */

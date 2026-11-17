@@ -50,7 +50,7 @@
 | F-PAT-009 | Medium | 高 | 可延后 | 6 | P1 |
 | F-PAT-010 | Medium | 中 | 本周期 | 8 | P1 |
 | F-PAT-011 | Medium | 中 | 本周期 | 8 | P1 |
-| F-PAT-005 | Medium | 中 | 本周期 | 8 | P1 |
+| F-PAT-005 | Medium | 中 | 本周期 | 8 | P1（已修） |
 | F-DOC-002 | Medium | 中 | 本周期 | 8 | P1 |
 | F-DOC-004 | Medium | 中 | 本周期 | 8 | P1 |
 | F-LEG-003 | Medium | 中 | 本周期 | 8 | P1 |

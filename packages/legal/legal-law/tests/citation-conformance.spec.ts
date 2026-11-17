@@ -32,6 +32,13 @@ function baseline(ceiling: ConformanceCeiling): LegalLawBaseline {
 describe('shared citation samples', () => {
   it('keeps the legal default policy recorded beside the patent one', () => {
     expect(DEFAULT_LEGAL_CITATION_POLICY).toEqual(CONFORMANCE_POLICIES.legal)
+    expect(CONFORMANCE_POLICIES.legal.notIndexed).toBe('block')
+    expect(CONFORMANCE_POLICIES.legal.unverified).toBe('block')
+    expect(CONFORMANCE_POLICIES.patent.notIndexed).toBe('warn')
+    expect(CONFORMANCE_POLICIES.patent.unverified).toBe('warn')
+    expect(CONFORMANCE_POLICIES.patent.mismatch).toBe(CONFORMANCE_POLICIES.legal.mismatch)
+    expect(CONFORMANCE_POLICIES.patent.unmatched).toBe(CONFORMANCE_POLICIES.legal.unmatched)
+    expect(CONFORMANCE_POLICIES.patent.outOfRange).toBe(CONFORMANCE_POLICIES.legal.outOfRange)
   })
 
   for (const sample of CONFORMANCE_SAMPLES) {

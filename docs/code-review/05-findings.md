@@ -37,7 +37,7 @@
 | F-PAT-002 | `rule_check` 丢弃同义词资产警告，合规检查静默降级 | PAT | B | High | 中 | confirmed |
 | F-PAT-003 | 原子写四份手写实现，未复用仓库共享 `atomic-write` 包 | PAT | A/B | High | 高 | fixed |
 | F-PAT-004 | 品牌配置损坏时静默回退默认品牌 | PAT | B | Medium | 中 | fixed |
-| F-PAT-005 | 四个输出路径默认锚定 `process.cwd()` | PAT | E | Medium | 中 | confirmed |
+| F-PAT-005 | 四个输出路径默认锚定 `process.cwd()` | PAT | E | Medium | 中 | fixed |
 | F-PAT-006 | `adversary-review` 以关键词启发式输出"置信度 87.5%" | PAT | B | High | 高 | fixed |
 | F-PAT-007 | `atomicWriteJson` 从 `patent-data` 历史导出面导入 | PAT | B | Low | 高 | fixed |
 | F-PAT-008 | TRIZ 资产裸 `JSON.parse as T`，失败无包内错误类型 | PAT | B | Low | 低 | confirmed |
@@ -118,7 +118,7 @@
 | F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | confirmed |
 | F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | fixed |
 | F-VID-006 | `StrictRequest` 与 `MediaTaskRequest` 字段完全重复 | VID | B | Low | 高 | confirmed |
-| F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | confirmed |
+| F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | fixed |
 | F-VID-008 | `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份 | VID | B | Medium | 高 | confirmed |
 | F-VID-009 | 云 provider 的 submit/poll 与图片编码骨架各写一遍，拷贝已漂移 | VID | B | Low | 高 | confirmed |
 | F-VID-010 | store 的「锁 + 读 + 改 + 写」骨架三处各写一遍 | VID | B | Low | 高 | confirmed |
@@ -197,7 +197,8 @@
 - 最小修复建议：默认根改为部署显式传入的工作区根（`ctx` 上的 workspace 服务）；确实没有时 fail loud 而不是猜 cwd。
 - 预估工作量：M
 - 是否可自动化：是（测试以不同 cwd 启动断言路径来源）
-- 状态：confirmed
+- 修复：未给出绝对路径时，以 `ctx.sandboxPolicy.workspaceRoot` 为根。该值为空或服务缺席时插件加载抛 `setup_required`，不再读取 `process.cwd()`。绝对路径配置保持原样。
+- 状态：fixed
 
 ### F-PAT-006 `adversary-review` 以关键词启发式输出"置信度 87.5%"
 
@@ -1323,7 +1324,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：账本移出模型可写目录（按工程 id 存在应用数据目录），或由宿主持有密钥对条目签名并在读取时校验；更彻底的做法是与 provider 的用量对账，而不是只信本地文件。
 - 预估工作量：M
 - 是否可自动化：是（改写 `budget.json` 后断言预算仍被拒）
-- 状态：confirmed
+- 修复：宿主账本写在 `ledgerDir`（默认 `~/.dsh/video-mode/ledgers`），文件名是项目路径的摘要。写入使用只覆盖该目录的 `workspace-write` 策略。目录落在会话工作区内则拒绝。工程旁的 `budget.json` 只在宿主文件不存在时导入一次，之后改写它不影响预算门。
+- 状态：fixed
 
 ### F-VID-008 `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份
 

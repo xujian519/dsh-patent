@@ -57,7 +57,7 @@ kind: "package-reference"
 | `patent_workflow_run` | 工作流 | `@deepseek-ai/dsh-patent-workflow` + ModelPort |
 | `patent_plan_task` | 工作流 | `@deepseek-ai/dsh-patent-workflow` plantask 状态机；`transition` 接受案卷条目（`issues` + 规划轮次 `round`），用随包处置表补全默认值、回显解析后的条目并交给阻塞/终态/轮次上限守卫 |
 | `patent_worker_validate` | 质量 | `@deepseek-ai/dsh-patent-workflow` worker 契约 |
-| `knowledge_note_save` | 知识 | Config.noteDir 下的文件写入器（默认 `<cwd>/99-知识库`） |
+| `knowledge_note_save` | 知识 | Config.noteDir 下的文件写入器（默认 `<workspace>/99-知识库`） |
 | `workbench_link_patent_case` | 工作流 | 个人工作台 loopback HTTP API：幂等案件桥接（patent_* 字典种子化；根任务 + L1–L5 阶段子任务，`source='patent'`；`_matter-log.md` 状态投影；不写案件目录、不改根任务状态） |
 | `matter_log_append` | 工作流 | `<case_dir>/_matter-log.md` 的只追加写入口：每轮一条条目（本地时间 + UTC、动作、产物、本轮取代的路径、审批人、变更说明），写入前先判定取代链——产物须已存在、撰写/修订轮不得复用已登记的产物路径、取代目标必须已在日志中、同一旧版不得被取代两次 |
 
@@ -81,12 +81,12 @@ Schemastery 配置，所有字段可选。
 | `workflowStageBudget` | number | `27` | 单个内置工作流 manifest 允许声明的最大阶段数；超过即插件加载失败。 |
 | `workflowLlmStageBudget` | number | `14` | 单个内置工作流 manifest 允许声明的最大模型调用阶段数：未声明 atom 的阶段与契约标记 `usesModel` 的原子计入；超过即插件加载失败。 |
 | `approveStageGates` | boolean | `false` | 前台 manifest 运行到达 `approval-gate` 时向本部署的 `approval` 服务取一次决策：放行则继续，拒绝、取消、无应答者或 `never` 策略都会带结果名暂停。开启时任何运行方式都拒绝 `approveStageIds`，包括后台运行，模型无法自行声明已放行。后台运行仍在审批门暂停，因为审批服务只在开着的回合内应答；需要决策时改在前台重跑。 |
-| `noteDir` | string | `<cwd>/99-知识库` | `knowledge_note_save` 的知识笔记目录（绝对或相对 cwd）。 |
-| `figureIndexFile` | string | `<cwd>/.sati/figures-index.json` | 附图索引文件：`analyze_patent_figure` 写入分析条目、`search_patent_figure` 检索（绝对或相对 cwd）。 |
-| `chemistryIndexFile` | string | `<cwd>/.sati/chemistry-index.json` | `recognize_chemical_structure` 写入的化学索引文件（绝对或相对 cwd）。 |
+| `noteDir` | string | `<workspace>/99-知识库` | `knowledge_note_save` 的知识笔记目录。绝对路径，或相对于 `sandboxPolicy.workspaceRoot`。没有该根时加载失败。 |
+| `figureIndexFile` | string | `<workspace>/.sati/figures-index.json` | 附图索引文件：`analyze_patent_figure` 写入条目、`search_patent_figure` 检索。绝对路径，或相对于工作区根。 |
+| `chemistryIndexFile` | string | `<workspace>/.sati/chemistry-index.json` | `recognize_chemical_structure` 写入的化学索引文件。绝对路径，或相对于工作区根。 |
 | `graphvizExecutable` | string | 自动探测 | `dot` 可执行路径覆盖；探测顺序：覆盖值 → `DSH_GRAPHVIZ_DOT` → 平台候选路径 → `PATH`。 |
 | `graphvizRenderTimeoutMs` | number | `60000` | CLI `dot` 单次渲染的超时；WASM 引擎为同步渲染，不受它约束。 |
-| `figureOutputDir` | string | `<cwd>/patent/figures` | `generate_patent_figure` 的输出目录（绝对或相对 cwd）。 |
+| `figureOutputDir` | string | `<workspace>/patent/figures` | `generate_patent_figure` 的输出目录。绝对路径，或相对于工作区根。 |
 | `figureTextToPath` | boolean | `false` | 导出时把图面文字转成轮廓路径，SVG 因此不依赖阅读器字体；需要 Inkscape，两个附图生成工具都适用，也适用于导出 png/pdf 所依据的中间 SVG；不经该全链的 png/pdf 仍由渲染器出字，并回报该参数不生效。产物仍含 `<text>`、未通过 SVG 安全校验、或墨迹越出原图范围时拒绝替换，原图保持原样。含中文的图导出 pdf 时本参数还是前置条件：Inkscape 1.4.4 在字体子集化个别字形（实测「源」）时会截断 PDF 且退出码仍为 0，故 `exportWithInkscape` 对缺 `startxref`/`%%EOF` 的 PDF 一律判为失败而不交付。 |
 | `figureRequireCuttingMarks` | boolean | `false` | 要求每个剖视图都给出剖切位置符号（`sections.cutting_marks`）：未给即报错，不再交付缺剖切符号的剖视图。GB/T 4458.6 只在剖切平面与对称面重合且视图在标准位置时允许省略，此类剖视图可在调用时传 `require_cutting_marks: false`。 |
 | `figureFailOnRenderFindings` | boolean | `false` | 两个附图生成工具的渲染复核门禁：为 true 时，除 `not-measured` 外的任何发现都判本次生成失败——已写入的文件保留供修正，但不作为交付件。非 SVG 直绘没有可量测的图面，门禁会明确回报未生效，而不是假装通过。 |

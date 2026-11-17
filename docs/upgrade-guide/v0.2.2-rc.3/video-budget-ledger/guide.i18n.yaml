@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-rc.3/video-budget-ledger/guide.md
+/:
+  en: 3287abf7b4e3a3b8
+  zh: 4c36b300eb749fb4
+/video-budget-ledger-leaves-the-project-directory:
+  en: 38a02f0e4d44898a
+  zh: ff8b00bf4cd19eed
+/video-budget-ledger-leaves-the-project-directory/change:
+  en: 055e163a5c5b909e
+  zh: 6cce216e3346997e
+/video-budget-ledger-leaves-the-project-directory/migration:
+  en: 8004c63e2a7f47e3
+  zh: f9d72f470ee5cfa0

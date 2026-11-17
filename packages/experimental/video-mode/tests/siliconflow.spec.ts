@@ -113,6 +113,13 @@ async function submitVideo(
 }
 
 describe('siliconflow configuration', () => {
+  it('falls back to an empty key and the default poll interval when omitted', () => {
+    const settings = resolveSiliconFlow({ enabled: true }, 4)
+
+    expect(settings.apiKey).toBe('')
+    expect(settings.pollMs).toBe(10_000)
+  })
+
   it('applies the mainland defaults', () => {
     const settings = settingsOf()
     expect(settings.baseUrl).toBe('https://api.siliconflow.cn/v1')

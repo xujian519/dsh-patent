@@ -13,7 +13,7 @@ import type {} from '@deepseek-ai/dsh-user-approval'
 import { createLlmModelPort, globalAtomRegistry, globalStageHandlerRegistry, registerBuiltinAtoms, validateWorkflowBudget, validateWorkflowManifest } from '@deepseek-ai/dsh-patent-core'
 import type { Atom, PatentModelPort, StageHandler } from '@deepseek-ai/dsh-patent-core'
 import type { ImageAttachmentRef, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
-import { KgStore, PatentKgAdapter, WikiCardLoader } from '@deepseek-ai/dsh-patent-knowledge'
+import { KgStore, PatentKgAdapter, WikiCardLoader, type PatentKnowledge } from '@deepseek-ai/dsh-patent-knowledge'
 import { builtinPatentManifests, SHIPPED_GUIDELINE_REVISION } from '@deepseek-ai/dsh-patent-workflow'
 import { candidateRuleDirs, createCheckerRuleEvaluator } from '@deepseek-ai/dsh-patent-rule'
 import type { GenerateOptions, LlmResolvedModelInfo, ModelModality, StreamChunk } from '@deepseek-ai/dsh-llm'
@@ -326,6 +326,325 @@ function registerPackageAtoms(
 }
 
 /**
+ * Services and paths resolved once for every tool group.
+ * Tool registration order is the model-visible order, so each group owns one
+ * contiguous span and the groups run in that same order.
+ */
+interface PatentToolWiring {
+  ctx: Context
+  config: Config
+  model: PatentModelPort
+  gateModel: ReturnType<typeof figureRoute>
+  imageModel: PatentModelPort | undefined
+  attachments: ReturnType<typeof resolveAttachments>
+  resolveImageInputModalitiesFor: ReturnType<typeof buildImageGateResolver>
+  figureIndexFile: string
+  chemistryIndexFile: string
+  figureOutputDir: string
+  noteDir: string
+  knowledge: PatentKnowledge | undefined
+}
+
+/**
+ * Register search, metadata, legal-status, and knowledge tools.
+ * @param wiring - services and paths resolved by {@link registerPatentTools}.
+ */
+function registerKnowledgeTools(wiring: PatentToolWiring): void {
+  // Search / metadata / legal status: default to the nuo engine (no service needed).
+  // All three add the CNIPR channel as a second channel for what the nuo engine could
+  // not answer (a failed or zero-hit search, a failed or not-found China publication
+  // number, an unanswered legal status); the lookup is late-bound because patent-data
+  // declares inject:['subprocess'] and therefore activates one dependency hop after this
+  // tools-only consumer. The channel is undefined while the deployment leaves
+  // patent-data's cniprEnabled off.
+  wiring.ctx.tools.register(createPatentSearchTool({
+    cnipr: () => wiring.ctx.get('patentData')?.createCniprChannel(),
+  }))
+  wiring.ctx.tools.register(createPatentMetadataTool({
+    cnipr: () => wiring.ctx.get('patentData')?.createCniprChannel(),
+  }))
+  wiring.ctx.tools.register(createPatentLegalStatusTool({
+    cnipr: () => wiring.ctx.get('patentData')?.createCniprChannel(),
+  }))
+
+  // Knowledge tools: wire ctx.patentKnowledge when present, else fail loud at execute.
+  const knowledge = wiring.knowledge
+  if (knowledge !== undefined) {
+    const wiki = new WikiCardLoader(knowledge.paths.wikiDir)
+    wiring.ctx.tools.register(createPatentCaseSearchTool({
+      search: (q, o) => knowledge.caseLawSearch(q, o),
+      dbPath: knowledge.paths.queryDbPath,
+    }))
+    // 规范原文检索：法规条文与《专利审查指南》全文同出一库（知识库 documents 的两类文档）。
+    wiring.ctx.tools.register(createLawSearchTool({
+      searchLaw: (q, o) => knowledge.legalSearch(q, o),
+      searchGuideline: (q, o) => knowledge.guidelineSearch(q, o),
+      dbPath: knowledge.paths.queryDbPath,
+    }))
+    wiring.ctx.tools.register(createPatentWikiSearchTool({
+      searchIn: (prefix, keyword, limit) => wiki.searchIn(prefix, keyword, limit),
+      formatAsContext: (id, maxChars) => wiki.formatAsContext(id, maxChars),
+      wikiDir: knowledge.paths.wikiDir,
+    }))
+    if (existsSync(knowledge.paths.queryDbPath)) {
+      const adapter = new PatentKgAdapter(new KgStore(knowledge.paths.queryDbPath))
+      // The adapter owns a read-only SQLite handle: close it on plugin dispose so an
+      // HMR reload does not accumulate handles (the knowledge service holds its own).
+      // The flag keeps a repeated teardown from closing the handle twice.
+      let closed = false
+      wiring.ctx.effect(() => () => {
+        /* v8 ignore next -- ctx.effect runs a disposer at most once (its own latch), so a repeated teardown cannot reach the guard */
+        if (closed) return
+        closed = true
+        adapter.close()
+      }, 'patent-tools: knowledge graph store')
+      wiring.ctx.tools.register(createPatentKgQueryTool({ adapter, dbPath: knowledge.paths.queryDbPath }))
+    } else {
+      wiring.ctx.tools.register(createPatentKgQueryTool({ dbPath: knowledge.paths.queryDbPath }))
+    }
+  } else {
+    wiring.ctx.tools.register(createPatentCaseSearchTool({}))
+    wiring.ctx.tools.register(createLawSearchTool({}))
+    wiring.ctx.tools.register(createPatentWikiSearchTool({}))
+    wiring.ctx.tools.register(createPatentKgQueryTool({}))
+  }
+}
+
+/**
+ * Register the deterministic drafting tools, the workbench bridge, and the
+ * workflow-run tools. They occupy one contiguous span of the tool list.
+ * @param wiring - services and paths resolved by {@link registerPatentTools}.
+ */
+function registerWorkflowTools(wiring: PatentToolWiring): void {
+  // Pure deterministic tools.
+  wiring.ctx.tools.register(createPatentEvalTool())
+  wiring.ctx.tools.register(createDraftClaimsTool())
+  wiring.ctx.tools.register(createDraftSpecificationTool())
+  wiring.ctx.tools.register(createValidateSpecificationTool())
+  wiring.ctx.tools.register(createRuleCheckTool())
+  wiring.ctx.tools.register(createClaimLintTool())
+  wiring.ctx.tools.register(createDomainCheckTool())
+  wiring.ctx.tools.register(createParseOfficeActionTool())
+  wiring.ctx.tools.register(createPatentWorkerValidateTool())
+  wiring.ctx.tools.register(createPatentPlanTaskTool())
+  // Workbench case bridge: talk to the personal-workbench plugin's loopback
+  // HTTP API. Base URL: explicit config wins; otherwise the in-process
+  // webServer port (web profile); absent → the tool fails loud at execute.
+  // The service is read dynamically: this package's tsconfig does not
+  // reference the host-webserver project, so no declaration merge is pulled in.
+  const workbenchWebServer = wiring.ctx.get('webServer') as { port: number } | undefined
+  const workbenchWebServerPort = workbenchWebServer?.port
+  wiring.ctx.tools.register(createWorkbenchLinkPatentCaseTool({
+    ...(wiring.config.workbenchBaseUrl === undefined && workbenchWebServerPort === undefined
+      ? {}
+      : { baseUrl: wiring.config.workbenchBaseUrl ?? `http://127.0.0.1:${workbenchWebServerPort}` }),
+    caseRoot: wiring.config.workbenchCaseRoot ?? './patent-workspace',
+  }))
+  wiring.ctx.tools.register(createRecognizeChemicalStructureTool({
+    // 识别引擎不可用（RDKit 未安装）时 usable 恒 false，该写入闭包不可达；
+    // RDKit 接入并产出 usable 结果后移除 ignore（与 recognize 工具内注释呼应）。
+    /* v8 ignore next -- dead until the chemistry engine produces a usable result. */
+    upsertIndex: entry => chemistryIndexStore.upsert(wiring.chemistryIndexFile, entry),
+  }))
+
+  // LLM-consuming tools.
+  wiring.ctx.tools.register(createPatentAnalysisReportTool({ model: wiring.model }))
+  wiring.ctx.tools.register(createClaimChartBuildTool({
+    model: wiring.model,
+    // 证据源相对路径按部署的工作根解析；缺省时内核回落到进程 cwd，
+    // 打包应用里那不是用户的案卷目录。
+    ...(wiring.config.workbenchCaseRoot === undefined ? {} : { cwd: wiring.config.workbenchCaseRoot }),
+  }))
+  wiring.ctx.tools.register(createTrizContradictionAnalysisTool({ model: wiring.model }))
+  // ctx.jobs backs `run_in_background`: read lazily, because the job registry
+  // may load after this plugin; absent means the tool fails loud on that flag.
+  // 图模式的规则门评估器在组合点注入：规则语料随 patent-rule 发布，
+  // patent-core 只保留端口与引擎。
+  const writingSkillsForStage = (stageId: string): string | undefined =>
+    stageWritingSkills(readStagePatterns(wiring.ctx.get('writingPatterns')), stageId)
+  wiring.ctx.tools.register(createPatentWorkflowRunTool({
+    model: wiring.model,
+    jobs: () => wiring.ctx.get('jobs'),
+    approval: () => wiring.ctx.get('approval'),
+    approveStageGates: wiring.config.approveStageGates === true,
+    ruleEvaluator: createCheckerRuleEvaluator(),
+    writingSkillsForStage,
+  }))
+  wiring.ctx.tools.register(createFlexiblePlanTool({ model: wiring.model, writingSkillsForStage }))
+}
+
+/**
+ * Register figure tools. `evaluate_evidence` stays here so the model-visible
+ * registration order is unchanged.
+ * @param wiring - services and paths resolved by {@link registerPatentTools}.
+ */
+function registerFigureTools(wiring: PatentToolWiring): void {
+  const attachments = wiring.attachments
+  wiring.ctx.tools.register(createAnalyzePatentFigureTool({
+    ...(wiring.imageModel === undefined ? {} : { imageModel: wiring.imageModel }),
+    ...(wiring.gateModel === undefined ? {} : { gateModel: wiring.gateModel }),
+    ...(attachments === undefined ? {} : { saveImage: input => attachments.saveImage(input) }),
+    ...(wiring.resolveImageInputModalitiesFor === undefined ? {} : { resolveImageInputModalities: wiring.resolveImageInputModalitiesFor }),
+    upsertIndex: entry => figureIndexStore.upsert(wiring.figureIndexFile, entry),
+    // 两步分析引擎在组合点按 Config 选择注入；缺省 single 由工具内部构造默认单步引擎。
+    // 引擎按调用接收模型端口，故这里不需要（也不应）在组合点捕获模型。
+    ...(wiring.config.figureAnalysisMode === 'two-step'
+      ? { analysisEngine: createTwoStepAnalysisEngine() }
+      : {}),
+  }))
+
+  // Evidence + rule-asset + recap + figure-index + notes.
+  wiring.ctx.tools.register(createEvaluateEvidenceTool({ ruleDirs: candidateRuleDirs() }))
+  wiring.ctx.tools.register(createPatentWorkflowTool({}))
+  // Search figure index: analyze_patent_figure persists its results through
+  // figureIndexStore.upsert into the configured figureIndexFile, which the
+  // search tool loads on each call.
+  wiring.ctx.tools.register(createSearchPatentFigureTool({
+    loadIndex: () => figureIndexStore.load(wiring.figureIndexFile),
+  }))
+
+  // 跨图一致性：对多张附图的分析结果做确定性校验（同一标记跨图同名、图号连续、
+  // 权利要求引用齐全）。纯函数、无模型调用；电学符号与网表不在范围。
+  wiring.ctx.tools.register(createCheckPatentFigureConsistencyTool())
+
+  // 图文比对：把出图时声明的标号清单与 analyze_patent_figure 的识别结果对齐，闭合
+  // 「生成 → 识图 → 比对」。确定性比对，不调用模型；连接关系暂不比对。
+  wiring.ctx.tools.register(createComparePatentFigureAnalysisTool())
+
+  // Figure generation: default renderer is the bundled WASM engine (SVG with no
+  // system dependency); PNG/PDF and figureRenderer="cli" go through the dot CLI
+  // via ctx.subprocess, failing loud with install guidance when absent.
+  const subprocess = wiring.ctx.get('subprocess')
+  const renderBudgets = resolveRenderBudgets(wiring.config)
+  const renderDot = pickRenderer(wiring.config.figureRenderer, {
+    ...(subprocess === undefined ? {} : { subprocess }),
+    ...(wiring.config.graphvizExecutable === undefined ? {} : { graphvizExecutable: wiring.config.graphvizExecutable }),
+    graphvizRenderTimeoutMs: renderBudgets.graphvizRenderTimeoutMs,
+  })
+  // 文字转路径（Config.figureTextToPath）是可选的导出加固：开启时注入端口，关闭时
+  // 完全不接线。缺 subprocess 或 Inkscape 时 fail loud（setup_required），不静默
+  // 交出仍有字体依赖的图。
+  const outlineText: OutlineTextPort | undefined = wiring.config.figureTextToPath === true
+    ? spec => (subprocess === undefined
+      ? Promise.resolve({ ok: false as const, code: 'not_installed' as const, error: '文字转路径需要 subprocess 服务（宿主未挂载 @deepseek-ai/dsh-subprocess）。' })
+      : outlineSvgText(subprocess, spec, {
+        ...(wiring.config.inkscapeExecutable === undefined ? {} : { executable: wiring.config.inkscapeExecutable }),
+        renderTimeoutMs: renderBudgets.inkscapeRenderTimeoutMs,
+      }))
+    : undefined
+  // 格式导出端口：png/pdf 要落版就必须先出 SVG 再导出，故这一段取决于「本机有没有
+  // Inkscape」。可用性在装载时解析一次（与 findFreeCadCmd 同序），工具层据此决定是走
+  // 全链还是渲染器直接出图；没有端口时工具层给出「落版与复核未生效」的警告，不静默。
+  const exportFigure: ExportFigurePort | undefined = subprocess !== undefined
+    && findInkscape(wiring.config.inkscapeExecutable) !== undefined
+    ? spec => exportWithInkscape(subprocess, spec, {
+      ...(wiring.config.inkscapeExecutable === undefined ? {} : { executable: wiring.config.inkscapeExecutable }),
+      renderTimeoutMs: renderBudgets.inkscapeRenderTimeoutMs,
+    })
+    : undefined
+  // 剖切来源（剖视图的 sections.source）：与结构线稿共用同一段 FreeCAD 通道。宿主未挂载
+  // subprocess 时不注入端口，工具层对 source 报 setup_required —— 需要 CAD 就 fail loud，
+  // 不静默降级成手写轮廓的示意图。
+  const sectionSource: SectionSourcePorts | undefined = subprocess === undefined
+    ? undefined
+    : {
+      sectionGeometry: spec => renderSectionGeometry(subprocess, spec, {
+        ...(wiring.config.freecadExecutable === undefined ? {} : { executable: wiring.config.freecadExecutable }),
+        renderTimeoutMs: renderBudgets.freecadRenderTimeoutMs,
+      }),
+      sectionHatch: spec => renderSectionHatch(subprocess, spec, {
+        ...(wiring.config.freecadExecutable === undefined ? {} : { executable: wiring.config.freecadExecutable }),
+        renderTimeoutMs: renderBudgets.freecadRenderTimeoutMs,
+      }),
+    }
+  wiring.ctx.tools.register(createGeneratePatentFigureTool({
+    render: renderDot,
+    ...(outlineText === undefined ? {} : { outlineText }),
+    ...(exportFigure === undefined ? {} : { exportFigure }),
+    ...(sectionSource === undefined ? {} : { sectionSource }),
+    outputDir: wiring.figureOutputDir,
+    upsertIndex: entry => figureIndexStore.upsert(wiring.figureIndexFile, entry),
+    loadIndex: async () => (await figureIndexStore.load(wiring.figureIndexFile)).entries,
+    resolveFont: labels => resolveDotFont(wiring.config, labels),
+    ...(wiring.config.figureRequireCuttingMarks === undefined ? {} : { requireCuttingMarks: wiring.config.figureRequireCuttingMarks }),
+    ...(wiring.config.figureFailOnRenderFindings === undefined ? {} : { failOnRenderFindings: wiring.config.figureFailOnRenderFindings }),
+    ...(wiring.config.figureMinSheetFillRatio === undefined ? {} : { minSheetFillRatio: wiring.config.figureMinSheetFillRatio }),
+    ...(wiring.config.figureFontMm === undefined ? {} : { figureFontMm: wiring.config.figureFontMm }),
+    ...(wiring.config.figurePageSize === undefined ? {} : { pageSize: wiring.config.figurePageSize }),
+    ...(wiring.config.figureOrientation === undefined ? {} : { orientation: wiring.config.figureOrientation }),
+    ...(wiring.config.figureDpi === undefined ? {} : { dpi: wiring.config.figureDpi }),
+    ...(wiring.config.figureMargin === undefined ? {} : { marginCm: wiring.config.figureMargin }),
+  }))
+  wiring.ctx.tools.register(createAddPatentFigureReferencesTool({}))
+  // 渲染复核:量测已生成的 SVG 附图(标号是否被线条贯穿、点划线是否被实线覆盖、相邻
+  // 零件剖面线是否可区分、内容是否越出画布)。生成后的自动复核在生成工具内部完成,
+  // 本工具供已交付/外部生成的 SVG 做交付前自检。
+  wiring.ctx.tools.register(createVerifyPatentFigureTool(
+    wiring.config.figureMinFontMm === undefined ? {} : { minFontMm: wiring.config.figureMinFontMm },
+  ))
+
+  // Structure line-art figure: an independent tool parallel to generate_patent_figure,
+  // projecting STEP/IGES/BREP models through the host FreeCAD (TechDraw) via
+  // ctx.subprocess. CAD-isolated and off by default (Config.structureFigureEnabled);
+  // when the gate is closed or freecadcmd is missing it fails loud with setup
+  // guidance at execute — it never silently degrades to a schematic.
+  const structureSubprocess = subprocess
+  // 注：返回对象字面量的 async 箭头不能直接作三元分支（TS 解析器缺陷），故先提升为具名常量。
+  const structureNoSubprocess: GenerateStructureFigureDeps['render'] = () => Promise.resolve({
+    ok: false,
+    code: 'not_installed',
+    error: 'generate_structure_figure 需要 subprocess 服务（宿主未挂载），无法调用 FreeCAD。',
+  })
+  const structureRender: GenerateStructureFigureDeps['render'] = structureSubprocess === undefined
+    ? structureNoSubprocess
+    : spec => renderStructureViews(structureSubprocess, spec, {
+      ...(wiring.config.freecadExecutable === undefined ? {} : { executable: wiring.config.freecadExecutable }),
+      renderTimeoutMs: renderBudgets.freecadRenderTimeoutMs,
+    })
+  const structureViews = wiring.config.structureFigureViews
+  wiring.ctx.tools.register(createGenerateStructureFigureTool({
+    render: structureRender,
+    ...(outlineText === undefined ? {} : { outlineText }),
+    ...(wiring.config.structureFigureEnabled === undefined ? {} : { enabled: wiring.config.structureFigureEnabled }),
+    outputDir: wiring.figureOutputDir,
+    upsertIndex: entry => figureIndexStore.upsert(wiring.figureIndexFile, entry),
+    ...(wiring.config.structureFigureScale === undefined ? {} : { defaultScale: wiring.config.structureFigureScale }),
+    ...(wiring.config.figureFailOnRenderFindings === undefined ? {} : { failOnRenderFindings: wiring.config.figureFailOnRenderFindings }),
+    ...(wiring.config.figureMinSheetFillRatio === undefined ? {} : { minSheetFillRatio: wiring.config.figureMinSheetFillRatio }),
+    ...(structureViews === undefined ? {} : { defaultViews: structureViews }),
+  }))
+}
+
+/**
+ * Register filing delivery tools: PDF download, knowledge notes, and the matter log.
+ * @param wiring - services and paths resolved by {@link registerPatentTools}.
+ */
+function registerFilingTools(wiring: PatentToolWiring): void {
+  // PDF download: the runner resolves ctx.patentData per call, because
+  // patent-data declares inject:['subprocess'] and therefore activates after
+  // this plugin (which injects ['tools'] only) — reading the service here would
+  // freeze it as undefined in the shipped ordering. The unified ego stack routes
+  // the download to ego-browser only; browseros-neo / playwright / browser-use
+  // stay out of the download path, and a host without a usable browser falls
+  // back to a browser-free scrape of the CDN link.
+  const runEgo = createDownloadChannelRunner(() => wiring.ctx.get('patentData'))
+  wiring.ctx.tools.register(createPatentPdfDownloadTool({
+    runEgo,
+    fetchImpl: globalThis.fetch,
+    resolveRunner: createDownloadRunnerResolver({ runEgo }),
+  }))
+
+  // Notes land as files under the configured noteDir (default <cwd>/99-知识库):
+  // no storage service dependency, works in headless and web compositions.
+  wiring.ctx.tools.register(createKnowledgeNoteSaveTool({
+    writeNote: createNoteFileWriter(wiring.noteDir),
+  }))
+
+  // 案卷留档的唯一写入口：交付前置门禁要求它先成功，交付件才允许落盘。
+  wiring.ctx.tools.register(createMatterLogAppendTool())
+}
+
+/**
  * Register the 37 patent tools.
  * @param ctx - registrant context carrying the tool registry and optional services.
  * @param config - validated {@link Config}.
@@ -364,283 +683,23 @@ export function registerPatentTools(ctx: Context, config: Config): void {
   for (const manifest of builtinPatentManifests) {
     validateWorkflowBudget(manifest, budget, globalAtomRegistry)
   }
-  const model = buildModelPort(ctx, config)
-  const gateModel = figureRoute(ctx, config)
-  const imageModel = buildFigureModelPort(ctx, config)
-  const attachments = resolveAttachments(ctx)
-  const resolveImageInputModalitiesFor = buildImageGateResolver(ctx)
   const workspaceRoot = outputPathsNeedWorkspace(config) ? deploymentWorkspaceRoot(ctx) : undefined
-  const figureIndexFile = resolveOutputPath(config.figureIndexFile, DEFAULT_FIGURE_INDEX_RELATIVE_PATH, workspaceRoot, 'figureIndexFile')
-  const chemistryIndexFile = resolveOutputPath(config.chemistryIndexFile, DEFAULT_CHEMISTRY_INDEX_RELATIVE_PATH, workspaceRoot, 'chemistryIndexFile')
-  const figureOutputDir = resolveOutputPath(config.figureOutputDir, 'patent/figures', workspaceRoot, 'figureOutputDir')
-  const noteDir = resolveOutputPath(config.noteDir, '99-知识库', workspaceRoot, 'noteDir')
-  const knowledge = ctx.get('patentKnowledge')
-
-  // Search / metadata / legal status: default to the nuo engine (no service needed).
-  // All three add the CNIPR channel as a second channel for what the nuo engine could
-  // not answer (a failed or zero-hit search, a failed or not-found China publication
-  // number, an unanswered legal status); the lookup is late-bound because patent-data
-  // declares inject:['subprocess'] and therefore activates one dependency hop after this
-  // tools-only consumer. The channel is undefined while the deployment leaves
-  // patent-data's cniprEnabled off.
-  ctx.tools.register(createPatentSearchTool({
-    cnipr: () => ctx.get('patentData')?.createCniprChannel(),
-  }))
-  ctx.tools.register(createPatentMetadataTool({
-    cnipr: () => ctx.get('patentData')?.createCniprChannel(),
-  }))
-  ctx.tools.register(createPatentLegalStatusTool({
-    cnipr: () => ctx.get('patentData')?.createCniprChannel(),
-  }))
-
-  // Knowledge tools: wire ctx.patentKnowledge when present, else fail loud at execute.
-  if (knowledge !== undefined) {
-    const wiki = new WikiCardLoader(knowledge.paths.wikiDir)
-    ctx.tools.register(createPatentCaseSearchTool({
-      search: (q, o) => knowledge.caseLawSearch(q, o),
-      dbPath: knowledge.paths.queryDbPath,
-    }))
-    // 规范原文检索：法规条文与《专利审查指南》全文同出一库（知识库 documents 的两类文档）。
-    ctx.tools.register(createLawSearchTool({
-      searchLaw: (q, o) => knowledge.legalSearch(q, o),
-      searchGuideline: (q, o) => knowledge.guidelineSearch(q, o),
-      dbPath: knowledge.paths.queryDbPath,
-    }))
-    ctx.tools.register(createPatentWikiSearchTool({
-      searchIn: (prefix, keyword, limit) => wiki.searchIn(prefix, keyword, limit),
-      formatAsContext: (id, maxChars) => wiki.formatAsContext(id, maxChars),
-      wikiDir: knowledge.paths.wikiDir,
-    }))
-    if (existsSync(knowledge.paths.queryDbPath)) {
-      const adapter = new PatentKgAdapter(new KgStore(knowledge.paths.queryDbPath))
-      // The adapter owns a read-only SQLite handle: close it on plugin dispose so an
-      // HMR reload does not accumulate handles (the knowledge service holds its own).
-      // The flag keeps a repeated teardown from closing the handle twice.
-      let closed = false
-      ctx.effect(() => () => {
-        /* v8 ignore next -- ctx.effect runs a disposer at most once (its own latch), so a repeated teardown cannot reach the guard */
-        if (closed) return
-        closed = true
-        adapter.close()
-      }, 'patent-tools: knowledge graph store')
-      ctx.tools.register(createPatentKgQueryTool({ adapter, dbPath: knowledge.paths.queryDbPath }))
-    } else {
-      ctx.tools.register(createPatentKgQueryTool({ dbPath: knowledge.paths.queryDbPath }))
-    }
-  } else {
-    ctx.tools.register(createPatentCaseSearchTool({}))
-    ctx.tools.register(createLawSearchTool({}))
-    ctx.tools.register(createPatentWikiSearchTool({}))
-    ctx.tools.register(createPatentKgQueryTool({}))
+  const wiring: PatentToolWiring = {
+    ctx,
+    config,
+    model: buildModelPort(ctx, config),
+    gateModel: figureRoute(ctx, config),
+    imageModel: buildFigureModelPort(ctx, config),
+    attachments: resolveAttachments(ctx),
+    resolveImageInputModalitiesFor: buildImageGateResolver(ctx),
+    figureIndexFile: resolveOutputPath(config.figureIndexFile, DEFAULT_FIGURE_INDEX_RELATIVE_PATH, workspaceRoot, 'figureIndexFile'),
+    chemistryIndexFile: resolveOutputPath(config.chemistryIndexFile, DEFAULT_CHEMISTRY_INDEX_RELATIVE_PATH, workspaceRoot, 'chemistryIndexFile'),
+    figureOutputDir: resolveOutputPath(config.figureOutputDir, 'patent/figures', workspaceRoot, 'figureOutputDir'),
+    noteDir: resolveOutputPath(config.noteDir, '99-知识库', workspaceRoot, 'noteDir'),
+    knowledge: ctx.get('patentKnowledge'),
   }
-
-  // Pure deterministic tools.
-  ctx.tools.register(createPatentEvalTool())
-  ctx.tools.register(createDraftClaimsTool())
-  ctx.tools.register(createDraftSpecificationTool())
-  ctx.tools.register(createValidateSpecificationTool())
-  ctx.tools.register(createRuleCheckTool())
-  ctx.tools.register(createClaimLintTool())
-  ctx.tools.register(createDomainCheckTool())
-  ctx.tools.register(createParseOfficeActionTool())
-  ctx.tools.register(createPatentWorkerValidateTool())
-  ctx.tools.register(createPatentPlanTaskTool())
-  // Workbench case bridge: talk to the personal-workbench plugin's loopback
-  // HTTP API. Base URL: explicit config wins; otherwise the in-process
-  // webServer port (web profile); absent → the tool fails loud at execute.
-  // The service is read dynamically: this package's tsconfig does not
-  // reference the host-webserver project, so no declaration merge is pulled in.
-  const workbenchWebServer = ctx.get('webServer') as { port: number } | undefined
-  const workbenchWebServerPort = workbenchWebServer?.port
-  ctx.tools.register(createWorkbenchLinkPatentCaseTool({
-    ...(config.workbenchBaseUrl === undefined && workbenchWebServerPort === undefined
-      ? {}
-      : { baseUrl: config.workbenchBaseUrl ?? `http://127.0.0.1:${workbenchWebServerPort}` }),
-    caseRoot: config.workbenchCaseRoot ?? './patent-workspace',
-  }))
-  ctx.tools.register(createRecognizeChemicalStructureTool({
-    // 识别引擎不可用（RDKit 未安装）时 usable 恒 false，该写入闭包不可达；
-    // RDKit 接入并产出 usable 结果后移除 ignore（与 recognize 工具内注释呼应）。
-    /* v8 ignore next -- dead until the chemistry engine produces a usable result. */
-    upsertIndex: entry => chemistryIndexStore.upsert(chemistryIndexFile, entry),
-  }))
-
-  // LLM-consuming tools.
-  ctx.tools.register(createPatentAnalysisReportTool({ model }))
-  ctx.tools.register(createClaimChartBuildTool({
-    model,
-    // 证据源相对路径按部署的工作根解析；缺省时内核回落到进程 cwd，
-    // 打包应用里那不是用户的案卷目录。
-    ...(config.workbenchCaseRoot === undefined ? {} : { cwd: config.workbenchCaseRoot }),
-  }))
-  ctx.tools.register(createTrizContradictionAnalysisTool({ model }))
-  // ctx.jobs backs `run_in_background`: read lazily, because the job registry
-  // may load after this plugin; absent means the tool fails loud on that flag.
-  // 图模式的规则门评估器在组合点注入：规则语料随 patent-rule 发布，
-  // patent-core 只保留端口与引擎。
-  const writingSkillsForStage = (stageId: string): string | undefined =>
-    stageWritingSkills(readStagePatterns(ctx.get('writingPatterns')), stageId)
-  ctx.tools.register(createPatentWorkflowRunTool({
-    model,
-    jobs: () => ctx.get('jobs'),
-    approval: () => ctx.get('approval'),
-    approveStageGates: config.approveStageGates === true,
-    ruleEvaluator: createCheckerRuleEvaluator(),
-    writingSkillsForStage,
-  }))
-  ctx.tools.register(createFlexiblePlanTool({ model, writingSkillsForStage }))
-  ctx.tools.register(createAnalyzePatentFigureTool({
-    ...(imageModel === undefined ? {} : { imageModel }),
-    ...(gateModel === undefined ? {} : { gateModel }),
-    ...(attachments === undefined ? {} : { saveImage: input => attachments.saveImage(input) }),
-    ...(resolveImageInputModalitiesFor === undefined ? {} : { resolveImageInputModalities: resolveImageInputModalitiesFor }),
-    upsertIndex: entry => figureIndexStore.upsert(figureIndexFile, entry),
-    // 两步分析引擎在组合点按 Config 选择注入；缺省 single 由工具内部构造默认单步引擎。
-    // 引擎按调用接收模型端口，故这里不需要（也不应）在组合点捕获模型。
-    ...(config.figureAnalysisMode === 'two-step'
-      ? { analysisEngine: createTwoStepAnalysisEngine() }
-      : {}),
-  }))
-
-  // Evidence + rule-asset + recap + figure-index + notes.
-  ctx.tools.register(createEvaluateEvidenceTool({ ruleDirs: candidateRuleDirs() }))
-  ctx.tools.register(createPatentWorkflowTool({}))
-  // Search figure index: analyze_patent_figure persists its results through
-  // figureIndexStore.upsert into the configured figureIndexFile, which the
-  // search tool loads on each call.
-  ctx.tools.register(createSearchPatentFigureTool({
-    loadIndex: () => figureIndexStore.load(figureIndexFile),
-  }))
-
-  // 跨图一致性：对多张附图的分析结果做确定性校验（同一标记跨图同名、图号连续、
-  // 权利要求引用齐全）。纯函数、无模型调用；电学符号与网表不在范围。
-  ctx.tools.register(createCheckPatentFigureConsistencyTool())
-
-  // 图文比对：把出图时声明的标号清单与 analyze_patent_figure 的识别结果对齐，闭合
-  // 「生成 → 识图 → 比对」。确定性比对，不调用模型；连接关系暂不比对。
-  ctx.tools.register(createComparePatentFigureAnalysisTool())
-
-  // Figure generation: default renderer is the bundled WASM engine (SVG with no
-  // system dependency); PNG/PDF and figureRenderer="cli" go through the dot CLI
-  // via ctx.subprocess, failing loud with install guidance when absent.
-  const subprocess = ctx.get('subprocess')
-  const renderBudgets = resolveRenderBudgets(config)
-  const renderDot = pickRenderer(config.figureRenderer, {
-    ...(subprocess === undefined ? {} : { subprocess }),
-    ...(config.graphvizExecutable === undefined ? {} : { graphvizExecutable: config.graphvizExecutable }),
-    graphvizRenderTimeoutMs: renderBudgets.graphvizRenderTimeoutMs,
-  })
-  // 文字转路径（Config.figureTextToPath）是可选的导出加固：开启时注入端口，关闭时
-  // 完全不接线。缺 subprocess 或 Inkscape 时 fail loud（setup_required），不静默
-  // 交出仍有字体依赖的图。
-  const outlineText: OutlineTextPort | undefined = config.figureTextToPath === true
-    ? spec => (subprocess === undefined
-      ? Promise.resolve({ ok: false as const, code: 'not_installed' as const, error: '文字转路径需要 subprocess 服务（宿主未挂载 @deepseek-ai/dsh-subprocess）。' })
-      : outlineSvgText(subprocess, spec, {
-        ...(config.inkscapeExecutable === undefined ? {} : { executable: config.inkscapeExecutable }),
-        renderTimeoutMs: renderBudgets.inkscapeRenderTimeoutMs,
-      }))
-    : undefined
-  // 格式导出端口：png/pdf 要落版就必须先出 SVG 再导出，故这一段取决于「本机有没有
-  // Inkscape」。可用性在装载时解析一次（与 findFreeCadCmd 同序），工具层据此决定是走
-  // 全链还是渲染器直接出图；没有端口时工具层给出「落版与复核未生效」的警告，不静默。
-  const exportFigure: ExportFigurePort | undefined = subprocess !== undefined && findInkscape(config.inkscapeExecutable) !== undefined
-    ? spec => exportWithInkscape(subprocess, spec, {
-      ...(config.inkscapeExecutable === undefined ? {} : { executable: config.inkscapeExecutable }),
-      renderTimeoutMs: renderBudgets.inkscapeRenderTimeoutMs,
-    })
-    : undefined
-  // 剖切来源（剖视图的 sections.source）：与结构线稿共用同一段 FreeCAD 通道。宿主未挂载
-  // subprocess 时不注入端口，工具层对 source 报 setup_required —— 需要 CAD 就 fail loud，
-  // 不静默降级成手写轮廓的示意图。
-  const sectionSource: SectionSourcePorts | undefined = subprocess === undefined
-    ? undefined
-    : {
-      sectionGeometry: spec => renderSectionGeometry(subprocess, spec, {
-        ...(config.freecadExecutable === undefined ? {} : { executable: config.freecadExecutable }),
-        renderTimeoutMs: renderBudgets.freecadRenderTimeoutMs,
-      }),
-      sectionHatch: spec => renderSectionHatch(subprocess, spec, {
-        ...(config.freecadExecutable === undefined ? {} : { executable: config.freecadExecutable }),
-        renderTimeoutMs: renderBudgets.freecadRenderTimeoutMs,
-      }),
-    }
-  ctx.tools.register(createGeneratePatentFigureTool({
-    render: renderDot,
-    ...(outlineText === undefined ? {} : { outlineText }),
-    ...(exportFigure === undefined ? {} : { exportFigure }),
-    ...(sectionSource === undefined ? {} : { sectionSource }),
-    outputDir: figureOutputDir,
-    upsertIndex: entry => figureIndexStore.upsert(figureIndexFile, entry),
-    loadIndex: async () => (await figureIndexStore.load(figureIndexFile)).entries,
-    resolveFont: labels => resolveDotFont(config, labels),
-    ...(config.figureRequireCuttingMarks === undefined ? {} : { requireCuttingMarks: config.figureRequireCuttingMarks }),
-    ...(config.figureFailOnRenderFindings === undefined ? {} : { failOnRenderFindings: config.figureFailOnRenderFindings }),
-    ...(config.figureMinSheetFillRatio === undefined ? {} : { minSheetFillRatio: config.figureMinSheetFillRatio }),
-    ...(config.figureFontMm === undefined ? {} : { figureFontMm: config.figureFontMm }),
-    ...(config.figurePageSize === undefined ? {} : { pageSize: config.figurePageSize }),
-    ...(config.figureOrientation === undefined ? {} : { orientation: config.figureOrientation }),
-    ...(config.figureDpi === undefined ? {} : { dpi: config.figureDpi }),
-    ...(config.figureMargin === undefined ? {} : { marginCm: config.figureMargin }),
-  }))
-  ctx.tools.register(createAddPatentFigureReferencesTool({}))
-  // 渲染复核:量测已生成的 SVG 附图(标号是否被线条贯穿、点划线是否被实线覆盖、相邻
-  // 零件剖面线是否可区分、内容是否越出画布)。生成后的自动复核在生成工具内部完成,
-  // 本工具供已交付/外部生成的 SVG 做交付前自检。
-  ctx.tools.register(createVerifyPatentFigureTool(
-    config.figureMinFontMm === undefined ? {} : { minFontMm: config.figureMinFontMm },
-  ))
-
-  // Structure line-art figure: an independent tool parallel to generate_patent_figure,
-  // projecting STEP/IGES/BREP models through the host FreeCAD (TechDraw) via
-  // ctx.subprocess. CAD-isolated and off by default (Config.structureFigureEnabled);
-  // when the gate is closed or freecadcmd is missing it fails loud with setup
-  // guidance at execute — it never silently degrades to a schematic.
-  const structureSubprocess = subprocess
-  // 注：返回对象字面量的 async 箭头不能直接作三元分支（TS 解析器缺陷），故先提升为具名常量。
-  const structureNoSubprocess: GenerateStructureFigureDeps['render'] = () => Promise.resolve({
-    ok: false,
-    code: 'not_installed',
-    error: 'generate_structure_figure 需要 subprocess 服务（宿主未挂载），无法调用 FreeCAD。',
-  })
-  const structureRender: GenerateStructureFigureDeps['render'] = structureSubprocess === undefined
-    ? structureNoSubprocess
-    : spec => renderStructureViews(structureSubprocess, spec, {
-      ...(config.freecadExecutable === undefined ? {} : { executable: config.freecadExecutable }),
-      renderTimeoutMs: renderBudgets.freecadRenderTimeoutMs,
-    })
-  const structureViews = config.structureFigureViews
-  ctx.tools.register(createGenerateStructureFigureTool({
-    render: structureRender,
-    ...(outlineText === undefined ? {} : { outlineText }),
-    ...(config.structureFigureEnabled === undefined ? {} : { enabled: config.structureFigureEnabled }),
-    outputDir: figureOutputDir,
-    upsertIndex: entry => figureIndexStore.upsert(figureIndexFile, entry),
-    ...(config.structureFigureScale === undefined ? {} : { defaultScale: config.structureFigureScale }),
-    ...(config.figureFailOnRenderFindings === undefined ? {} : { failOnRenderFindings: config.figureFailOnRenderFindings }),
-    ...(config.figureMinSheetFillRatio === undefined ? {} : { minSheetFillRatio: config.figureMinSheetFillRatio }),
-    ...(structureViews === undefined ? {} : { defaultViews: structureViews }),
-  }))
-
-  // PDF download: the runner resolves ctx.patentData per call, because
-  // patent-data declares inject:['subprocess'] and therefore activates after
-  // this plugin (which injects ['tools'] only) — reading the service here would
-  // freeze it as undefined in the shipped ordering. The unified ego stack routes
-  // the download to ego-browser only; browseros-neo / playwright / browser-use
-  // stay out of the download path, and a host without a usable browser falls
-  // back to a browser-free scrape of the CDN link.
-  const runEgo = createDownloadChannelRunner(() => ctx.get('patentData'))
-  ctx.tools.register(createPatentPdfDownloadTool({
-    runEgo,
-    fetchImpl: globalThis.fetch,
-    resolveRunner: createDownloadRunnerResolver({ runEgo }),
-  }))
-
-  // Notes land as files under the configured noteDir (default <workspace>/99-知识库).
-  ctx.tools.register(createKnowledgeNoteSaveTool({
-    writeNote: createNoteFileWriter(noteDir),
-  }))
-
-  // 案卷留档的唯一写入口：交付前置门禁要求它先成功，交付件才允许落盘。
-  ctx.tools.register(createMatterLogAppendTool())
+  registerKnowledgeTools(wiring)
+  registerWorkflowTools(wiring)
+  registerFigureTools(wiring)
+  registerFilingTools(wiring)
 }

@@ -341,12 +341,12 @@ export interface ResolvedMediaConfig {
 /**
  * Resolve the host ledger directory.
  * A blank value selects the per-user directory outside a normal project workspace.
- * @param configured - Config value, when the deployment set one.
+ * @param configured - Config value; the schema supplies an empty string by default.
  * @returns the absolute directory.
  * @throws When the configured value is not absolute.
  */
-function resolveLedgerDir(configured: string | undefined): string {
-  const value = configured?.trim() ?? ''
+function resolveLedgerDir(configured: string): string {
+  const value = configured.trim()
   if (value.length === 0) return join(homedir(), '.dsh', 'video-mode', 'ledgers')
   if (!isAbsolute(value)) throw new Error('video mode: ledgerDir must be an absolute path')
   return value
@@ -354,49 +354,31 @@ function resolveLedgerDir(configured: string | undefined): string {
 
 /**
  * Apply deployment defaults to the user-supplied media configuration.
+ *
+ * {@link Config} is the only default source: the Loader displays those values and
+ * this resolver materializes them, so changing a default in one place cannot
+ * leave the runtime on an older value. The schema also owns the numeric bounds.
  * @param config - partial configuration from the Loader row or a test.
  * @returns the complete configuration.
- * @throws When a numeric bound is not a positive integer.
+ * @throws When the schema rejects a value (non-integer, negative, or zero bound).
  */
 export function resolveMediaConfig(config: MediaRuntimeConfig = {}): ResolvedMediaConfig {
-  const minimax = config.minimax
-  const resolved: ResolvedMediaConfig = {
-    fakeProvider: config.fakeProvider ?? true,
-    imageModel: config.imageModel ?? SYNTHETIC_IMAGE_MODEL,
-    videoModel: config.videoModel ?? SYNTHETIC_VIDEO_MODEL,
-    speechModel: config.speechModel ?? SYNTHETIC_SPEECH_MODEL,
-    waitMs: config.waitMs ?? 30_000,
-    pollMs: config.pollMs ?? 250,
-    maxArtifactBytes: config.maxArtifactBytes ?? 512 * 1024 * 1024,
-    maxTasks: config.maxTasks ?? 64,
-    ffmpegPath: config.ffmpegPath ?? 'ffmpeg',
-    ffprobePath: config.ffprobePath ?? 'ffprobe',
-    syntheticLatencyMs: config.syntheticLatencyMs ?? 0,
-    subtitleFont: config.subtitleFont ?? '',
-    approvalThresholdCny: config.approvalThresholdCny ?? 10,
-    ledgerDir: resolveLedgerDir(config.ledgerDir),
-  }
-  for (const [name, value] of [
-    ['waitMs', resolved.waitMs],
-    ['pollMs', resolved.pollMs],
-    ['maxArtifactBytes', resolved.maxArtifactBytes],
-    ['maxTasks', resolved.maxTasks],
-    ['syntheticLatencyMs', resolved.syntheticLatencyMs],
-  ] as const) {
-    if (!Number.isSafeInteger(value) || value < 0) {
-      throw new Error(`video mode: ${name} must be a non-negative integer`)
-    }
-  }
-  if (resolved.waitMs === 0 || resolved.pollMs === 0 || resolved.maxTasks === 0) {
-    throw new Error('video mode: waitMs, pollMs, and maxTasks must be positive')
-  }
-  if (!Number.isFinite(resolved.approvalThresholdCny) || resolved.approvalThresholdCny < 0) {
-    throw new Error('video mode: approvalThresholdCny must be a non-negative number')
+  // Keep the backend sections separate: the resolved shape exposes them only when
+  // enabled, while the schema materializes a disabled section with its defaults.
+  const { comfyui, minimax, siliconflow, ...scalars } = Config(config)
+  const resolved = {
+    ...scalars,
+    ledgerDir: resolveLedgerDir(scalars.ledgerDir),
+  } as ResolvedMediaConfig
+  // The schema's minimum comparison lets NaN through; a NaN threshold would make
+  // every cost comparison false and silently disable the confirmation gate.
+  if (!Number.isFinite(resolved.approvalThresholdCny)) {
+    throw new Error('video mode: approvalThresholdCny must be a finite number')
   }
   return {
     ...resolved,
-    ...config.comfyui?.enabled === true
-      ? { comfyui: resolveComfyUi(config.comfyui, resolved.maxArtifactBytes) }
+    ...comfyui?.enabled === true
+      ? { comfyui: resolveComfyUi(comfyui, resolved.maxArtifactBytes) }
       : {},
     ...minimax?.enabled === true
       ? { minimax: resolveMiniMax(minimax, resolved.maxArtifactBytes) }
@@ -404,8 +386,8 @@ export function resolveMediaConfig(config: MediaRuntimeConfig = {}): ResolvedMed
     ...minimax !== undefined && minimax.speech?.enabled === true
       ? { minimaxSpeech: resolveMiniMaxSpeech(minimax, resolved.maxArtifactBytes) }
       : {},
-    ...config.siliconflow?.enabled === true
-      ? { siliconflow: resolveSiliconFlow(config.siliconflow, resolved.maxArtifactBytes) }
+    ...siliconflow?.enabled === true
+      ? { siliconflow: resolveSiliconFlow(siliconflow, resolved.maxArtifactBytes) }
       : {},
   }
 }
@@ -603,8 +585,11 @@ function speechEmotionOf(value: string | undefined): MiniMaxSpeechEmotion | unde
   return emotion as MiniMaxSpeechEmotion
 }
 
-/** Schemastery face for the Loader row. */
-export const Config: z<MediaRuntimeConfig> = z.object({
+/**
+ * Schemastery face for the Loader row.
+ * The output type marks `ledgerDir` as present because the schema default supplies it.
+ */
+export const Config: z<MediaRuntimeConfig, MediaRuntimeConfig & { readonly ledgerDir: string }> = z.object({
   fakeProvider: z.boolean().default(true),
   imageModel: z.string().default(SYNTHETIC_IMAGE_MODEL),
   videoModel: z.string().default(SYNTHETIC_VIDEO_MODEL),

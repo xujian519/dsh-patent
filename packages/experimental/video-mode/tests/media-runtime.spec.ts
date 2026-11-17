@@ -10,6 +10,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import VideoMode, {
+  Config,
   SYNTHETIC_IMAGE_MODEL,
   SYNTHETIC_PROVIDER_ID,
   SYNTHETIC_SPEECH_MODEL,
@@ -70,9 +71,30 @@ async function bareRuntime(): Promise<{ ctx: Context; media: Context['media'] }>
 }
 
 describe('configuration guards', () => {
+  it('takes every scalar default from the plugin schema', () => {
+    const resolved = resolveMediaConfig()
+    const schema = Config({})
+    const keys = [
+      'fakeProvider',
+      'imageModel',
+      'videoModel',
+      'speechModel',
+      'waitMs',
+      'pollMs',
+      'maxArtifactBytes',
+      'maxTasks',
+      'ffmpegPath',
+      'ffprobePath',
+      'syntheticLatencyMs',
+      'subtitleFont',
+      'approvalThresholdCny',
+    ] as const
+    for (const key of keys) expect(resolved[key]).toEqual(schema[key])
+  })
+
   it('rejects invalid runtime bounds', () => {
-    expect(() => resolveMediaConfig({ waitMs: -1 })).toThrow(/non-negative integer/)
-    expect(() => resolveMediaConfig({ waitMs: 0 })).toThrow(/must be positive/)
+    expect(() => resolveMediaConfig({ waitMs: -1 })).toThrow(/waitMs/)
+    expect(() => resolveMediaConfig({ waitMs: 0 })).toThrow(/waitMs/)
     expect(() => resolveMediaConfig({ approvalThresholdCny: Number.NaN })).toThrow(/approvalThresholdCny/)
     const hostLedger = join(homedir(), '.dsh', 'video-mode', 'ledgers')
     expect(resolveMediaConfig().ledgerDir).toBe(hostLedger)

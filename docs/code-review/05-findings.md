@@ -41,9 +41,9 @@
 | F-PAT-006 | `adversary-review` 以关键词启发式输出"置信度 87.5%" | PAT | B | High | 高 | fixed |
 | F-PAT-007 | `atomicWriteJson` 从 `patent-data` 历史导出面导入 | PAT | B | Low | 高 | fixed |
 | F-PAT-008 | TRIZ 资产裸 `JSON.parse as T`，失败无包内错误类型 | PAT | B | Low | 低 | confirmed |
-| F-PAT-009 | `registerPatentTools` 单函数 312 行 | PAT | B | Medium | 高 | confirmed |
+| F-PAT-009 | `registerPatentTools` 单函数 312 行 | PAT | B | Medium | 高 | fixed |
 | F-PAT-010 | `patent/model-call` 在流异常时不落会话事件 | PAT | E | Medium | 中 | fixed |
-| F-PAT-011 | `pending`/`rounds` 为进程内状态且未声明单进程语义 | PAT | E | Medium | 中 | confirmed |
+| F-PAT-011 | `pending`/`rounds` 为进程内状态且未声明单进程语义 | PAT | E | Medium | 中 | fixed |
 | F-PAT-012 | 51 处 `as unknown as` 与两个零引用导出类型 | PAT | B | Low | 高 | confirmed |
 | F-PAT-013 | `patent-core` 导出面过宽，大量内部符号对外 | PAT | B | Low | 高 | confirmed |
 | F-PAT-014 | `patent_pdf_download` 的输出目录不受部署文件策略约束 | PAT | A | High | 中 | fixed |
@@ -116,7 +116,7 @@
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | confirmed |
 | F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | fixed |
 | F-VID-004 | ffmpeg 直接覆写目标，失败会毁掉上一版成片 | VID | E | Medium | 中 | fixed |
-| F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | confirmed |
+| F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | fixed |
 | F-VID-006 | `StrictRequest` 与 `MediaTaskRequest` 字段完全重复 | VID | B | Low | 高 | fixed |
 | F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | fixed |
 | F-VID-008 | `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份 | VID | B | Medium | 高 | confirmed |
@@ -251,7 +251,7 @@
 - 最小修复建议：按 figures / workflow / knowledge / filing 拆成四个 `register*Group`，主函数只保留编排与依赖解析。
 - 预估工作量：M
 - 是否可自动化：否（结构重构，靠测试护栏）
-- 状态：confirmed
+- 状态：fixed（拆成知识、工作流、附图、立案四组函数；主函数保留清单校验与依赖解析；注册顺序不变）
 
 ### F-PAT-010 `patent/model-call` 在流异常时不落会话事件
 
@@ -277,7 +277,7 @@
 - 最小修复建议：README 显式声明单进程契约（含重启行为），或从会话事件重建 pending 与轮次。
 - 预估工作量：M
 - 是否可自动化：是（重启用例断言状态可恢复或明确报错）
-- 状态：confirmed
+- 状态：fixed（README 已声明单进程契约；`approve`／`reject` 的 JSDoc 写明重启后报 no pending plantask；重启用例锁定）
 
 ### F-PAT-012 51 处 `as unknown as` 与两个零引用导出类型
 
@@ -1768,6 +1768,45 @@ Day 40 的合并候选：F-PAT-040/041/046（对比表覆盖与行校验）、F-
 **既有测试行为**：`brand-injector.spec.ts` 把「缺失/损坏返回空品牌」改为四类失败断言；`render-patent-document.spec.ts` 的缺失品牌用例改为期望 `DocumentRenderError`；`branches.spec.ts` 的警告条数从 5 改为 6 并断言新文案。新增取消用例覆盖 `document_deliver` 中途中止。
 
 验证：三个包的测试共 153 用例通过；`rule-set.ts`、`brandInjector.ts`、`renderPatentDocument.ts`、`document-deliver/src/tool.ts` 在聚焦覆盖率下均为 100%；升级指南 `brand-path-must-be-usable` 已创建并重录配对。
+### 批次 C：媒体配置单一默认源（2026-11-17）
+
+用户要求继续修复后完成。批次 C 的通用规则 YAML 驱动一项已由 E8 处理，本批收口 `resolveMediaConfig` 的默认值重复。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-VID-005 | `resolveMediaConfig` 改为调用 `Config(config)` 取全部标量默认值，删除 13 个 `??` 字面量；后端段在 spread 前剥离，仅启用时以解析后的 settings 出现；保留 `approvalThresholdCny` 的 finite 校验（schema 的 `min` 让 `NaN` 通过，会让确认门失效） | `video-mode/src/media.ts` |
+
+**行为变化**：Loader 展示的默认值与运行时值来自同一 schema；非法数值的报错改为 schema 的字段化消息（`$.waitMs expected number >= 1 but got -1`）。`approvalThresholdCny: NaN` 仍以明确错误拒绝。
+
+**既有测试行为**：`media-runtime.spec.ts` 的非法边界用例改为匹配字段名；新增一条「13 个标量默认值等于 `Config({})`」的护栏用例；`siliconflow.spec.ts` 补一条省略 `apiKey`/`pollMs` 时的默认值用例。
+
+验证：`pnpm exec vitest run packages/experimental/video-mode/tests` 268 用例通过；`media.ts` 聚焦覆盖率 100%；`pnpm run typecheck` 5/5；`pnpm run lint` 0。
+### 批次 D：plantask 单进程契约显式化（2026-11-17）
+
+用户要求继续修复后完成。批次 D 的 legal-law 名字表复位与视频持久写入已分别由 E7、E11 处理，本批收口 plantask 的进程内状态语义。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-011 | README 已声明「挂起计划与轮次计数器只在服务实例内、重启丢失、会话事件不回读」，本批在 `approve`／`reject` 的 JSDoc 写明重启后的失败方式，并新增「重启后服务不恢复挂起计划」用例锁定该契约 | `patent-workflow/src/index.ts`、`tests/service.spec.ts` |
+
+**行为变化**：无运行时行为变化；契约由文档与用例明确。重启后的 `approve`／`reject` 继续报「no pending plantask」，与原实现一致。
+
+**既有测试行为**：`service.spec.ts` 新增一条重启模拟用例（旧 service 停等后销毁，新 service 上决策失败）；既有「重复决策」用例不变。
+
+验证：`pnpm exec vitest run packages/patent/patent-workflow/tests/service.spec.ts --coverage --coverage.include=packages/patent/patent-workflow/src/index.ts` 22 用例通过，`index.ts` 覆盖率 100%。
+### 批次 E：registerPatentTools 拆分（2026-11-17）
+
+用户要求继续修复后完成。`adversary-review` 的伪置信度由另一批处理；51 处双断言不在本批。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-009 | `registerPatentTools` 改为编排：校验内置 manifest 与预算，解析模型、附图与知识依赖，再按模型可见顺序调用四个分组函数 | `patent-tools/src/wiring.ts` |
+
+**行为变化**：无。工具注册顺序、effect 名称与各工具入参与拆分前一致。
+
+**既有测试行为**：`wiring-composition.spec.ts` 与 `loader-composition.spec.ts` 不改断言。
+
+验证：`pnpm exec vitest related packages/patent/patent-tools/src/wiring.ts --run --coverage --coverage.include=packages/patent/patent-tools/src/wiring.ts` 19 个文件、316 用例通过，`wiring.ts` 覆盖率 100%。
 
 ## 复核记录
 

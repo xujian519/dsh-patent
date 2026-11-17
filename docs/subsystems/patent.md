@@ -326,7 +326,9 @@ async runPlantask( agent: PatentAgent, caseId: string, planSteps: string[], opti
 /**
  * Decision entry: approve a pending plantask (resume to executing).
  * Single-session single-case semantics: one pending plantask per caseId;
- * concurrent runs of the same caseId are rejected by runPlantask.
+ * concurrent runs of the same caseId are rejected by runPlantask. The parked
+ * plan lives in this service instance, so a restart loses it and this call
+ * then reports the ordinary "no pending plantask" failure.
  * @param caseId - the case keying the parked plantask.
  * @returns the final plantask state, tasks, and approval outcome.
  */
@@ -334,6 +336,8 @@ approve(caseId: string): PlantaskRunResult
 
 /**
  * Decision entry: reject a pending plantask and roll back to replanning.
+ * Like {@link approve}, the parked plan is process-local: a restart loses it
+ * and this call reports "no pending plantask".
  * @param caseId - the case keying the parked plantask.
  * @param feedback - optional rejection feedback driving the replanning transition.
  * @returns the final plantask state, tasks, and approval outcome.

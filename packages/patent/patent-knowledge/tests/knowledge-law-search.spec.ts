@@ -211,7 +211,7 @@ describe('KnowledgeLawSearch edge paths', () => {
     })
     expect(search.ftsAvailable).toBe(false)
     expect(warns).toHaveLength(1)
-    expect(warns[0]).toMatch(/FTS5 不可用，已降级 LIKE/)
+    expect(warns[0]).toMatch(/^\[patent-knowledge\] 法规 FTS5 不可用，已降级 LIKE:/)
     expect(stats.snapshot().legalFtsDegraded).toBe(true)
     const hits = search.search('新颖性')
     expect(hits.some(h => h.name === '中华人民共和国专利法')).toBe(true)

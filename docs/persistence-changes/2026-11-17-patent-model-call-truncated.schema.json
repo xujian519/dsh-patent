@@ -1,0 +1,16 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {"key":"event:patent/model-call","kind":"event","event":"patent/model-call","surface":false,"digest":"c53e3ced83c58e024f03a2d8aeb314be89a5cd76477737ce55d9a3e45eac46ec"}
+  ],
+  "types": [],
+  "nodes": {
+    "0657d3ca5ac4e7bf": {"kind":"primitive","type":"number"},
+    "1d29b69d7ba9c85c": {"kind":"object","properties":[{"name":"callSequence","type":"0657d3ca5ac4e7bf","optional":true},{"name":"callSite","type":"4cd48f3e5108bd6e","optional":false},{"name":"durationMs","type":"0657d3ca5ac4e7bf","optional":true},{"name":"llmStreamCall","type":"dacf3d5f3e4ff619","optional":false},{"name":"manifestId","type":"4cd48f3e5108bd6e","optional":true},{"name":"model","type":"4cd48f3e5108bd6e","optional":true},{"name":"output","type":"4cd48f3e5108bd6e","optional":false},{"name":"provider","type":"4cd48f3e5108bd6e","optional":true},{"name":"truncated","type":"dacf3d5f3e4ff619","optional":true},{"name":"usage","type":"aec56c91a0f50f29","optional":true}],"indices":[]},
+    "4cd48f3e5108bd6e": {"kind":"primitive","type":"string"},
+    "ae8f246e9a4be18f": {"kind":"literal","value":"patent/model-call"},
+    "aec56c91a0f50f29": {"kind":"object","properties":[{"name":"inputTokens","type":"0657d3ca5ac4e7bf","optional":true},{"name":"outputTokens","type":"0657d3ca5ac4e7bf","optional":true}],"indices":[]},
+    "c53e3ced83c58e02": {"kind":"object","properties":[{"name":"data","type":"1d29b69d7ba9c85c","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"ae8f246e9a4be18f","optional":false}],"indices":[]},
+    "dacf3d5f3e4ff619": {"kind":"literal","value":true}
+  }
+}

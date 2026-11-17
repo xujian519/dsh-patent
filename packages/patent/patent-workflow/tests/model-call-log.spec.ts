@@ -165,7 +165,7 @@ describe('loggedPatentModel', () => {
     expect(loggedPatentModel(port, undefined, { callSite: 'patent_workflow_run' })).toBe(port)
   })
 
-  it('records nothing for a stream that fails mid-flight, and propagates the failure', async () => {
+  it('appends a truncated record when the stream fails mid-flight, and propagates the failure', async () => {
     const { agent, appended } = agentStub()
     const failing: PatentModelPort = {
       async *stream() {
@@ -173,24 +173,66 @@ describe('loggedPatentModel', () => {
         throw new Error('provider exploded')
       },
     }
+    const port = loggedPatentModel(failing, agent, { callSite: 'patent_workflow_run', manifestId: 'm1' })
+
+    await expect(drain(port)).rejects.toThrow('provider exploded')
+    const { durationMs, ...payload } = recordAt(appended, 0)
+    expect(payload).toEqual({
+      callSite: 'patent_workflow_run',
+      manifestId: 'm1',
+      output: '半',
+      callSequence: 1,
+      truncated: true,
+      llmStreamCall: true,
+    })
+    expect(typeof durationMs).toBe('number')
+  })
+
+  it('appends a truncated record when the stream fails before any visible text', async () => {
+    const { agent, appended } = agentStub()
+    const failing: PatentModelPort = {
+      async *stream() {
+        throw new Error('provider exploded')
+      },
+    }
     const port = loggedPatentModel(failing, agent, { callSite: 'patent_workflow_run' })
 
     await expect(drain(port)).rejects.toThrow('provider exploded')
-    expect(appended).toEqual([])
+    const { durationMs, ...payload } = recordAt(appended, 0)
+    expect(payload).toEqual({
+      callSite: 'patent_workflow_run',
+      output: '',
+      callSequence: 1,
+      truncated: true,
+      llmStreamCall: true,
+    })
+    expect(typeof durationMs).toBe('number')
   })
 
-  it('records nothing when the consumer stops before the stream ends', async () => {
+  it('appends a truncated record when the consumer stops before the stream ends', async () => {
     const { agent, appended } = agentStub()
     const port = loggedPatentModel(
-      portStub([{ type: 'delta', text: 'a' }, { type: 'delta', text: 'b' }, { type: 'done' }]),
+      portStub([
+        { type: 'delta', text: 'a' },
+        { type: 'delta', text: 'b' },
+        { type: 'done', usage: { inputTokens: 3, outputTokens: 1 } },
+      ]),
       agent,
       { callSite: 'patent_workflow_run' },
     )
 
     for await (const event of port.stream({ messages: [] })) {
-      expect(event.type).toBe('delta')
+      expect(event).toEqual({ type: 'delta', text: 'a' })
       break
     }
-    expect(appended).toEqual([])
+    const { durationMs, ...payload } = recordAt(appended, 0)
+    expect(payload).toEqual({
+      callSite: 'patent_workflow_run',
+      output: 'a',
+      callSequence: 1,
+      truncated: true,
+      llmStreamCall: true,
+    })
+    expect(typeof durationMs).toBe('number')
   })
 })

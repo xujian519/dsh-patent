@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-11-17-patent-model-call-truncated.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-11-17-patent-model-call-truncated.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-11-17-patent-model-call-truncated:
+  en: 0147a6ab93d0ad45
+  zh: cf06a2e4dd303f9c
+/2026-11-17-patent-model-call-truncated/summary:
+  en: ccbf71c082b239cd
+  zh: c23451abe173d7aa
+/2026-11-17-patent-model-call-truncated/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-11-17-patent-model-call-truncated/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-11-17-patent-model-call-truncated/compatibility:
+  en: 1d3e8cd4349b8664
+  zh: d2c0cc45f1b079e6
+/2026-11-17-patent-model-call-truncated/verification:
+  en: 989533561f442723
+  zh: e1b3859c2289c1e2
+/2026-11-17-patent-model-call-truncated/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

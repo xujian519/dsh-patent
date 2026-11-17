@@ -49,7 +49,7 @@ kind: "package-reference"
 
 ### loggedPatentModel(port, agent, context)
 
-包装专利模型端口，使其服务的每次调用向 `agent.session` 追加一条 `patent/model-call` 事件，记录调用点、manifest、provider 路由、token 用量与完整输出文本。agent loop 自己的调用记为 `request/*` 与 `assistant/*`；专利工具在函数体内发起的模型调用两者皆无，请求因此对会话日志不可见，keyless 回放也无法重建调用次序。请求侧无需自己的记录即可重建：工具调用的入参已入日志，manifest 与该轮各阶段产出共同构成提示词。流中途失败、或消费方提前停止消费的调用不追加任何事件——它没有产生完整的可见输出，其降级阶段由本轮结果记录。无 agent 时（直接库调用、单测）原样返回端口。
+包装专利模型端口，使其服务的每次调用向 `agent.session` 追加一条 `patent/model-call` 事件，记录调用点、manifest、provider 路由、token 用量与可见输出文本。agent loop 自己的调用记为 `request/*` 与 `assistant/*`；专利工具在函数体内发起的模型调用两者皆无，请求因此对会话日志不可见，keyless 回放也无法重建调用次序。请求侧无需自己的记录即可重建：工具调用的入参已入日志，manifest 与该轮各阶段产出共同构成提示词。流中途失败，或消费方提前停止时，仍追加已经产出的文本，并设置 `truncated: true`。流正常结束则不带 `truncated`。keyless 回放把截断记录当作抛错，接在这段文本之后，因此这段前缀不会被当成正常结束回放。无 agent 时（直接库调用、单测）原样返回端口。
 
 <a id="case-docket-issues"></a>
 ## 案卷问题条目

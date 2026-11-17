@@ -2,8 +2,9 @@
  * Keyless snapshot-test LLM replay. It derives one model-call script per
  * recorded session from v3 embedded Assistant streams and explicitly marked local
  * compaction calls, then binds fresh live sessions to parent/child scripts by
- * first-call order. Throw and hang cases require an explicit override because
- * a session log cannot reconstruct them alone.
+ * first-call order. A truncated patent model call replays as a throw after its
+ * visible prefix. Other throw and hang cases require an explicit override
+ * because a session log cannot reconstruct them alone.
  * @module @deepseek-ai/dsh-llm-replay
  */
 
@@ -455,8 +456,13 @@ export function parseSessionHeader(text: string): {
 
 /** One log-only model call: the chunks its output replays as, plus its recorded start ordinal. */
 type MarkedCall = {
-  /** Canonical chunks of the recorded output, ending in `finish`. */
+  /**
+   * Canonical chunks of the recorded output. A completed call ends in `finish`.
+   * A truncated call is the visible prefix only; the script entry throws.
+   */
   chunks: StreamChunk[]
+  /** The recorded call ended before a normal completion. */
+  truncated: boolean
   /**
    * Ordinal the owning port wrapper recorded at stream start, or `undefined` on a
    * record written before the field existed. An unrecorded ordinal is not an error:
@@ -469,9 +475,10 @@ type MarkedCall = {
  * One log-only model call marked with the shared `llmStreamCall` protocol, or
  * `undefined` for any event that does not mark one.
  *
- * The marker identifies exactly one call through the ctx.llm stream seam, and an
- * owner that marks a call records its complete output; a call a plugin makes
- * outside the agent loop has no `request/*`/`assistant/*` pair to read instead.
+ * The marker identifies exactly one call through the ctx.llm stream seam. An
+ * owner records the complete output, or, when `truncated` is set, the visible
+ * prefix of a call that did not finish. A call a plugin makes outside the agent
+ * loop has no `request/*`/`assistant/*` pair to read instead.
  * Two recorded forms exist: an owner holding the provider's content blocks
  * records `rawOutput`, an owner whose seam surfaces visible text only records
  * `output`. JSONL decoding crosses an untyped durable boundary, so both are read
@@ -500,10 +507,15 @@ function markedCall(data: unknown): MarkedCall | undefined {
       'llm-replay: an event marks an LLM stream call but records neither rawOutput blocks nor output text',
     )
   }
+  const truncated = record.truncated === true
   if (usage !== undefined) chunks.push({ type: 'usage', usage })
-  chunks.push({ type: 'finish', reason: { kind: 'stop' } })
+  if (!truncated) chunks.push({ type: 'finish', reason: { kind: 'stop' } })
   const ordinal = record.callSequence
-  return { chunks, sequence: Number.isInteger(ordinal) ? (ordinal as number) : undefined }
+  return {
+    chunks,
+    sequence: Number.isInteger(ordinal) ? (ordinal as number) : undefined,
+    truncated,
+  }
 }
 
 /**
@@ -522,7 +534,8 @@ function markedCall(data: unknown): MarkedCall | undefined {
  * the run executed concurrently — the replay binds entries by cursor position,
  * in call order, while the log holds them in completion order.
  * @param events - the recorded session's events.
- * @returns one `chunks` entry per recorded model call, in call order.
+ * @returns one entry per recorded model call, in call order. A truncated call is
+ * a `throw` entry after its visible prefix.
  */
 export function deriveReplayScript(events: SessionEvent[]): ReplayEntry[] {
   const script: ReplayEntry[] = []
@@ -549,7 +562,11 @@ export function deriveReplayScript(events: SessionEvent[]): ReplayEntry[] {
     const ordered = run.every(entry => entry.sequence !== undefined)
       ? [...run].sort((left, right) => Number(left.sequence) - Number(right.sequence))
       : run
-    for (const entry of ordered) script.push({ kind: 'chunks', chunks: entry.chunks })
+    for (const entry of ordered) {
+      script.push(entry.truncated
+        ? { kind: 'throw', chunks: entry.chunks, message: 'truncated patent model call', code: 'truncated' }
+        : { kind: 'chunks', chunks: entry.chunks })
+    }
   }
   for (const event of events) {
     const marked = markedCall(event.data)

@@ -50,16 +50,16 @@ declare module '@deepseek-ai/dsh-session/types' {
      * record the request is invisible to the log and the keyless replay cannot
      * rebuild the call order. Log-only; the request side stays reconstructable
      * from the tool-call arguments plus the manifest and stage state.
-     * @param event - the completed model call appended to the session log.
+     * @param event - the model call appended to the session log.
      */
     'patent/model-call': PatentModelCallEvent
   }
 }
 
 /**
- * Durable record of one completed patent model call. A call whose stream fails
- * before completing appends nothing: it produced no visible model output, and
- * its degraded stage is recorded by the run result.
+ * Durable record of one patent model call. A stream that fails, or a consumer
+ * that stops early, still appends the text yielded so far and sets `truncated`.
+ * A stream that runs to completion omits `truncated`.
  */
 export interface PatentModelCallEvent {
   /** Which patent surface issued the call (e.g. `patent_workflow_run`). */
@@ -70,7 +70,10 @@ export interface PatentModelCallEvent {
   provider?: string
   /** Model the call was sent to; absent when the port declares no route. */
   model?: string
-  /** Complete visible output text. */
+  /**
+   * Visible output text yielded before the stream settled. When `truncated` is
+   * set, this is a prefix, not the full response.
+   */
   output: string
   /**
    * Ordinal of this call among the calls one port wrapper served, counted at
@@ -94,6 +97,12 @@ export interface PatentModelCallEvent {
    * normalization drops it.
    */
   durationMs?: number
+  /**
+   * The stream settled before a normal completion: the provider threw, or the
+   * consumer stopped pulling. Absent on a completed call, and on records
+   * written before incomplete calls were logged.
+   */
+  truncated?: true
   /** Identifies exactly one call through this context's `ctx.llm.stream()`. */
   llmStreamCall: true
 }

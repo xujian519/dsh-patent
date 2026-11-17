@@ -20,9 +20,9 @@ import type { PatentAgent, PatentModelCallContext } from './types.ts'
  * tests) the port is returned unchanged, so a caller never has to branch on
  * session availability.
  *
- * The event is appended after the wrapped stream ends: a consumer that stops
- * early or a provider that fails mid-stream leaves no record, matching what a
- * replay can serve (the recorded output is the complete visible text).
+ * The event is appended when the wrapped stream settles, including a provider
+ * failure and a consumer that stops early. Those records carry `truncated` and
+ * the text yielded so far. A stream that runs to completion omits `truncated`.
  * @param port - the port to wrap.
  * @param agent - the calling agent whose session records the calls, when present.
  * @param context - static labels recorded on every call this port serves.
@@ -52,21 +52,27 @@ export function loggedPatentModel(
       const startedAt = performance.now()
       let output = ''
       let usage: PatentModelUsage | undefined
-      for await (const event of target.stream(request, signal)) {
-        if (event.type === 'delta') output += event.text
-        else usage = event.usage
-        yield event
+      let completed = false
+      try {
+        for await (const event of target.stream(request, signal)) {
+          if (event.type === 'delta') output += event.text
+          else usage = event.usage
+          yield event
+        }
+        completed = true
+      } finally {
+        session.append('patent/model-call', {
+          callSite: context.callSite,
+          ...(context.manifestId === undefined ? {} : { manifestId: context.manifestId }),
+          ...(route === undefined ? {} : { provider: route.provider, model: route.model }),
+          output,
+          callSequence,
+          ...(usage === undefined ? {} : { usage }),
+          durationMs: Math.round(performance.now() - startedAt),
+          ...(completed ? {} : { truncated: true as const }),
+          llmStreamCall: true,
+        })
       }
-      session.append('patent/model-call', {
-        callSite: context.callSite,
-        ...(context.manifestId === undefined ? {} : { manifestId: context.manifestId }),
-        ...(route === undefined ? {} : { provider: route.provider, model: route.model }),
-        output,
-        callSequence,
-        ...(usage === undefined ? {} : { usage }),
-        durationMs: Math.round(performance.now() - startedAt),
-        llmStreamCall: true,
-      })
     },
   }
 }

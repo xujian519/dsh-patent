@@ -895,7 +895,7 @@ describe('prepareSessionSnapshotFixtureForComparison', () => {
 
 describe('deriveReplayScript', () => {
   /** One `patent/model-call` record without its usage, at `seq`, optionally carrying its start ordinal. */
-  const marked = (output: string, callSequence?: number, seq = 1) => ({
+  const marked = (output: string, callSequence?: number, seq = 1, truncated = false) => ({
     type: 'patent/model-call',
     seq: SessionSeq(seq),
     time: 0,
@@ -903,6 +903,7 @@ describe('deriveReplayScript', () => {
       callSite: 'patent_workflow_run',
       output,
       ...(callSequence === undefined ? {} : { callSequence }),
+      ...(truncated ? { truncated: true } : {}),
       llmStreamCall: true,
     },
   }) as unknown as SessionEvent
@@ -1084,6 +1085,19 @@ describe('deriveReplayScript', () => {
     } as unknown as SessionEvent
     expect(() => deriveReplayScript([unmarkedOutput]))
       .toThrow(/records neither rawOutput blocks nor output text/)
+  })
+
+  it('replays a truncated patent model call as a throw after its visible prefix', () => {
+    const prefix: StreamChunk[] = [
+      { type: 'block-start', index: 0, blockType: 'text' },
+      { type: 'text-delta', index: 0, text: '半' },
+      { type: 'block-end', index: 0, block: { type: 'text', text: '半' } },
+    ]
+    // 截断记录先落盘，开始序号仍把它排回第二次调用，并且不补正常结束。
+    expect(deriveReplayScript([marked('半', 2, 1, true), marked('完整', 1, 2)])).toEqual([
+      { kind: 'chunks', chunks: text('完整') },
+      { kind: 'throw', chunks: prefix, message: 'truncated patent model call', code: 'truncated' },
+    ])
   })
 
   it('orders a fully numbered run of marked calls by their recorded start ordinal', () => {

@@ -61,7 +61,7 @@ The [format references](persistence-changes/historical-formats/README.md) cover 
 | `event:patent-teams/team-deleted` | event | `6ccaff85d31459a300c449653602514c34489d856e2e1bc31d9a27b77e634d95` | [`{ type: "patent-teams/team-deleted" }`](#persistence-type-sha256-6ccaff85d31459a300c449653602514c34489d856e2e1bc31d9a27b77e634d95) |
 | `event:patent/evidence-ledger` | event | `21a8536f828f11e9faf08635fe52956af4ee6017ef8983cbd91defb41bac4288` | [`{ type: "patent/evidence-ledger" }`](#persistence-type-sha256-21a8536f828f11e9faf08635fe52956af4ee6017ef8983cbd91defb41bac4288) |
 | `event:patent/legal-gaps` | event | `790077a8f3ba90b34c4283a4b38b878b4e10af2cd53120f8f5da747c108932a9` | [`{ type: "patent/legal-gaps" }`](#persistence-type-sha256-790077a8f3ba90b34c4283a4b38b878b4e10af2cd53120f8f5da747c108932a9) |
-| `event:patent/model-call` | event | `51f9e4dc4f832e4da517baeacb732861e29ccd1a08290c18a449e5dd2a03f9e2` | [`{ type: "patent/model-call" }`](#persistence-type-sha256-51f9e4dc4f832e4da517baeacb732861e29ccd1a08290c18a449e5dd2a03f9e2) |
+| `event:patent/model-call` | event | `c53e3ced83c58e024f03a2d8aeb314be89a5cd76477737ce55d9a3e45eac46ec` | [`{ type: "patent/model-call" }`](#persistence-type-sha256-c53e3ced83c58e024f03a2d8aeb314be89a5cd76477737ce55d9a3e45eac46ec) |
 | `event:patent/plantask` | event | `21031fbcbdff405ad47179a7acc9fb7bcf70e838ee106d70f7aa26604fb61ce5` | [`{ type: "patent/plantask" }`](#persistence-type-sha256-21031fbcbdff405ad47179a7acc9fb7bcf70e838ee106d70f7aa26604fb61ce5) |
 | `event:patent/workflow-run` | event | `95ce6e0724b8c18c699693753732e17e4434f9fb94f1ad64c5e5ad365d7c4d82` | [`{ type: "patent/workflow-run" }`](#persistence-type-sha256-95ce6e0724b8c18c699693753732e17e4434f9fb94f1ad64c5e5ad365d7c4d82) |
 | `event:permission/preset` | event | `5c45bf4c544a7211dcd8ba6ba7e5f1bc39b49e7a9df9d5cbdc8e87c22771b37b` | [`{ type: "permission/preset" }`](#persistence-type-sha256-5c45bf4c544a7211dcd8ba6ba7e5f1bc39b49e7a9df9d5cbdc8e87c22771b37b) |
@@ -796,7 +796,7 @@ Source: [`packages/patent/patent-workflow/src/types.ts:36`](../packages/patent/p
  * record the request is invisible to the log and the keyless replay cannot
  * rebuild the call order. Log-only; the request side stays reconstructable
  * from the tool-call arguments plus the manifest and stage state.
- * @param event - the completed model call appended to the session log.
+ * @param event - the model call appended to the session log.
  */
 'patent/model-call': PatentModelCallEvent
 ```
@@ -5552,7 +5552,7 @@ One of:
 
 SHA-256: `20780c30db8f475b23bcf264dd72bf91d0098b013895de5090b79af17eb7c24e`
 
-Sources: [`packages/patent/patent-workflow/src/types.ts:128`](../packages/patent/patent-workflow/src/types.ts)
+Sources: [`packages/patent/patent-workflow/src/types.ts:137`](../packages/patent/patent-workflow/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -5570,7 +5570,7 @@ Sources: [`packages/patent/patent-workflow/src/types.ts:128`](../packages/patent
 
 SHA-256: `01895603a724536b7865a243c9b50c127d022e8e7d24b5d2603cea1bf2ffb9f7`
 
-Sources: [`packages/patent/patent-workflow/src/types.ts:138`](../packages/patent/patent-workflow/src/types.ts)
+Sources: [`packages/patent/patent-workflow/src/types.ts:147`](../packages/patent/patent-workflow/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -5578,7 +5578,7 @@ Sources: [`packages/patent/patent-workflow/src/types.ts:138`](../packages/patent
 | `report` | required | `string` |
 | `runId` | optional | `string` |
 
-<a id="persistence-type-sha256-0037fb0bcbf58549d99d5cf2571aa51f9b3179b0e38f429a1df379058aeb7ed6"></a>
+<a id="persistence-type-sha256-1d29b69d7ba9c85c58528c8a4732280cd5b41e404bc03bac3f69115e1dcefb31"></a>
 
 <a id="persistence-type-packagespatentpatent-workflowsrctypestspatentmodelcallevent"></a>
 
@@ -5586,7 +5586,7 @@ Sources: [`packages/patent/patent-workflow/src/types.ts:138`](../packages/patent
 
 ### `PatentModelCallEvent`
 
-SHA-256: `0037fb0bcbf58549d99d5cf2571aa51f9b3179b0e38f429a1df379058aeb7ed6`
+SHA-256: `1d29b69d7ba9c85c58528c8a4732280cd5b41e404bc03bac3f69115e1dcefb31`
 
 Sources: [`packages/patent/patent-workflow/src/types.ts:64`](../packages/patent/patent-workflow/src/types.ts)
 
@@ -5600,6 +5600,7 @@ Sources: [`packages/patent/patent-workflow/src/types.ts:64`](../packages/patent/
 | `model` | optional | `string` |
 | `output` | required | `string` |
 | `provider` | optional | `string` |
+| `truncated` | optional | `true` |
 | `usage` | optional | [`PatentModelUsage`](#persistence-type-sha256-aec56c91a0f50f29e02ad4275af5df9aac630f165203c2f9d390f0ce40bbd43d) |
 
 <a id="persistence-type-sha256-aec56c91a0f50f29e02ad4275af5df9aac630f165203c2f9d390f0ce40bbd43d"></a>
@@ -5629,7 +5630,7 @@ Sources: [`packages/patent/patent-core/src/types.ts:45`](../packages/patent/pate
 
 SHA-256: `26647df86465d4f99aef29c880bafd648dc17c4fd73f048144e32ba70f21463d`
 
-Sources: [`packages/patent/patent-workflow/src/types.ts:114`](../packages/patent/patent-workflow/src/types.ts)
+Sources: [`packages/patent/patent-workflow/src/types.ts:123`](../packages/patent/patent-workflow/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -5843,7 +5844,7 @@ Sources: [`packages/patent/patent-teams/src/event-types.ts:89`](../packages/pate
 
 SHA-256: `0157ad8cef23f164025c566115c3da042ab0855af15d187a17ae795d7e924e5f`
 
-Sources: [`packages/patent/patent-workflow/src/types.ts:123`](../packages/patent/patent-workflow/src/types.ts)
+Sources: [`packages/patent/patent-workflow/src/types.ts:132`](../packages/patent/patent-workflow/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -11004,17 +11005,17 @@ SHA-256: `790077a8f3ba90b34c4283a4b38b878b4e10af2cd53120f8f5da747c108932a9`
 | `time` | required | `number` |
 | `type` | required | `"patent/legal-gaps"` |
 
-<a id="persistence-type-sha256-51f9e4dc4f832e4da517baeacb732861e29ccd1a08290c18a449e5dd2a03f9e2"></a>
+<a id="persistence-type-sha256-c53e3ced83c58e024f03a2d8aeb314be89a5cd76477737ce55d9a3e45eac46ec"></a>
 
 <a id="persistence-type-eventpatentmodel-call"></a>
 
 ### `{ type: "patent/model-call" }`
 
-SHA-256: `51f9e4dc4f832e4da517baeacb732861e29ccd1a08290c18a449e5dd2a03f9e2`
+SHA-256: `c53e3ced83c58e024f03a2d8aeb314be89a5cd76477737ce55d9a3e45eac46ec`
 
 | Property | Presence | Type |
 |---|---|---|
-| `data` | required | [`PatentModelCallEvent`](#persistence-type-sha256-0037fb0bcbf58549d99d5cf2571aa51f9b3179b0e38f429a1df379058aeb7ed6) |
+| `data` | required | [`PatentModelCallEvent`](#persistence-type-sha256-1d29b69d7ba9c85c58528c8a4732280cd5b41e404bc03bac3f69115e1dcefb31) |
 | `ignorable` | optional | `true` |
 | `seq` | required | `number` |
 | `time` | required | `number` |

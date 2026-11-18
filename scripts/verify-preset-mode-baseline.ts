@@ -34,6 +34,13 @@ const ROOT = resolve(import.meta.dirname, '..')
 /** Repository-relative path of the declared delivery-mode baseline. */
 export const BASELINE_PATH = 'scripts/preset-mode-baseline.json'
 
+/**
+ * Repository-relative path of the web bundle's host composition. Rows here are
+ * composed for every profile before a preset mounts, so a recorded absence that
+ * this file contradicts is a false reason.
+ */
+export const HOST_PATCH_PATH = 'packages/bundle/web-app/cordis.patch.yml'
+
 /** Row ids shaped like a preset's own `@deepseek-ai/dsh-agent-preset` declaration row. */
 const PRESET_DECLARATION_RE = /^preset-/u
 
@@ -273,6 +280,24 @@ export function parseModeBaseline(source: string): ModeBaseline {
 }
 
 /**
+ * Read the row ids a host patch composition carries enabled.
+ *
+ * A row the host disables contributes nothing to a session, so it stays out of
+ * the set; that is the same reading the load applies and the one the recorded
+ * reasons for `tool-plugin-manager` rely on.
+ * @param source - the host patch text.
+ * @returns the enabled row ids.
+ */
+export function enabledHostRowIds(source: string): Set<string> {
+  const enabled = new Set<string>()
+  for (const [id, block] of presetRowBlocks(source)) {
+    const effective = block.split('\n').filter(line => !line.trimStart().startsWith('#')).join('\n')
+    if (!/^\s*disabled:\s*true\s*$/mu.test(effective)) enabled.add(id)
+  }
+  return enabled
+}
+
+/**
  * Escape one row key for a literal match inside a regular expression.
  * @param key - the row key as declared in the baseline.
  * @returns the key with regular-expression metacharacters escaped.
@@ -305,11 +330,14 @@ function rowsCarryingKey(blocks: ReadonlyMap<string, string>, key: string): stri
  * Compare every shipped preset against the declared baseline.
  * @param presets - the shipped presets with their raw text.
  * @param baseline - the declared baseline.
+ * @param hostRows - row ids the host composition carries enabled; an absence
+ *   reason for one of them contradicts that composition.
  * @returns one finding per violated declaration, naming the preset file and the row id where a row is at issue.
  */
 export function modeBaselineFindings(
   presets: readonly ModeSource[],
   baseline: ModeBaseline,
+  hostRows: ReadonlySet<string> = new Set(),
 ): ModeFinding[] {
   const findings: ModeFinding[] = []
   const presetBlocks = new Map(presets.map(preset => [preset.file, presetRowBlocks(preset.source)]))
@@ -355,6 +383,12 @@ export function modeBaselineFindings(
     for (const [id, reason] of Object.entries(explained).sort(([left], [right]) => left.localeCompare(right))) {
       if (reason.trim() === '') findings.push({ mode: file, detail: `explains ${id} with no reason` })
       if (carried.has(id)) findings.push({ mode: file, detail: `carries ${id} again; drop the recorded absence` })
+      if (hostRows.has(id)) {
+        findings.push({
+          mode: file,
+          detail: `explains ${id} as absent, but ${HOST_PATCH_PATH} carries it enabled`,
+        })
+      }
     }
 
     const required = declaration.requiredRows
@@ -436,7 +470,8 @@ if (process.argv[1] !== undefined && import.meta.filename === resolve(process.ar
       )
     }
   }
-  const findings = modeBaselineFindings(presets, baseline)
+  const hostRows = enabledHostRowIds(readFileSync(resolve(ROOT, HOST_PATCH_PATH), 'utf8'))
+  const findings = modeBaselineFindings(presets, baseline, hostRows)
   if (findings.length > 0) {
     process.stderr.write(`verify-preset-mode-baseline: declarations outside the baseline (${PRESET_DIR}):\n`)
     for (const finding of findings) process.stderr.write(`  ${finding.mode}: ${finding.detail}\n`)

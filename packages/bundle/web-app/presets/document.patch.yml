@@ -172,14 +172,6 @@
             config:
               styleGuide: assistant-neutral
 
-          # `tool-office` registers `office_render`, `office_convert`, and
-          # `office_recalculate` once a model loads one of the Office skills. The host
-          # patch mounts `skill-office` unscoped, so those four skills reach this
-          # preset's catalog through the skill registry's global layer; without this
-          # row the model is told to load `office` for tools that cannot appear.
-          - id: tool-office
-            name: '@deepseek-ai/dsh-tool-office'
-
           # ── goals ───────────────────────────────────────────────────────────────────
 
           # The host patch disables its own `command-goal` row and leaves the command to
@@ -333,6 +325,14 @@
             name: '@deepseek-ai/dsh-tool-todo'
             config:
               allowParallelInProgress: true
+
+          # `office_render` / `office_convert` / `office_recalculate`, admitted once
+          # one of the host-mounted `skill-office` skills loads. Without this row the
+          # skills are visible but their only fallback ("load `office` again") never
+          # yields a tool. `office-kit` and `skill-office` stay host rows; this row
+          # carries no config.
+          - id: tool-office
+            name: '@deepseek-ai/dsh-tool-office'
 
           # The `web` service and its search provider stay in the host composition; only
           # the model-facing tool is per-session. `fetch` is true because every shipped

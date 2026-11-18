@@ -123,6 +123,10 @@
               searchTimeoutMs: 60000
           - id: tool-cordis
             name: '@deepseek-ai/dsh-tool-cordis'
+          # The host mounts `skill-office` for every web preset, so this preset's skill
+          # catalog lists the Office skills; the tools they activate must be mounted too.
+          - id: tool-office
+            name: '@deepseek-ai/dsh-tool-office'
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
             config:

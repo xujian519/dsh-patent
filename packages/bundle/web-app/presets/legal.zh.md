@@ -6,9 +6,11 @@
 
 ## 挂载内容
 
-除标准工作行（shell、文件、jobs、提醒、skills、goal 命令与工具、计划模式、压缩、委托、web，以及告诉模型今天日期的时钟行）外，本 preset 另挂载两个交付行：`@deepseek-ai/dsh-doc-template` 按受审模板渲染 Markdown/DOCX/PDF，并通过 `templateDirs` 加载当事人诉讼文书模板；`@deepseek-ai/dsh-document-deliver` 登记交付件并运行确定性文档检查。人设补上法律身份、引用纪律与交付门禁。
+除标准工作行（shell、文件、jobs、提醒、skills、goal 命令与工具、计划模式、压缩、委托、web、Office 工具，以及告诉模型今天日期的时钟行）外，本 preset 另挂载三个法律行——`@deepseek-ai/dsh-legal-knowledge` 及其 `/tool` 伴随插件（`legal_knowledge_search`）、`@deepseek-ai/dsh-legal-law`（`legal_law_verify`）、`@deepseek-ai/dsh-legal-evidence`（`evaluate_legal_evidence`）——以及两个交付行：`@deepseek-ai/dsh-doc-template` 按受审模板渲染 Markdown/DOCX/PDF，并通过 `templateDirs` 加载当事人诉讼文书模板；`@deepseek-ai/dsh-document-deliver` 登记交付件并运行确定性文档检查。人设补上法律身份、引用纪律与交付门禁。
 
-`tool-web` 配置为 `search: false`、`fetch: true`。宿主机安装了元典官方插件时，检索优先走 `mcp__yuandian__*`；未安装时走 ego lite：模型在 `tool-bash` 中运行 `ego-browser nodejs`，按 `legal-research` 技能操作，因此搜索摘要不能代替已打开的原文。`web_fetch` 只在浏览器不可用时作为公开静态页面的兜底。本预设自身不声明法律 MCP；元典是宿主插件，没有安装它的 profile 仍使用 keyless 浏览器路径。
+`tool-web` 配置为 `search: false`、`fetch: true`。`legal_knowledge_search` 是法规、司法解释与指导案例的第一步检索：快速、可离线地定位条文；空结果表示本部署没有匹配记录，而不是该规范不存在。命中的文本仍须回到官方原文核对：宿主机安装了元典官方插件时走 `mcp__yuandian__*`，未安装时走 ego lite——模型在 `tool-bash` 中运行 `ego-browser nodejs`，按 `legal-research` 技能操作，因此搜索摘要不能代替已打开的原文。`web_fetch` 只在浏览器不可用时作为公开静态页面的兜底。本预设自身不声明法律 MCP；元典是宿主插件，没有安装它的 profile 仍使用 keyless 浏览器路径。
+
+交付门禁在 `legal_law_verify` 运行且至少返回一条 findings 之前拒绝 `document_deliver`。因此 `legal-citation-check` 先跑这一遍确定性判定（条号、索引收录、条文转录状态），再回官方原文核对命题、版本与案例效力；技能同时给出工具判定与自身「已核验 / 部分核验 / 未核验 / 不适用」四种状态的对应关系。
 
 ## 元典 MCP（可选）
 

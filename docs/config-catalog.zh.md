@@ -988,7 +988,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-doc-template`
 
 - `inject`: `tools` · `systemPrompt` · `fs`
-- `source`: [`packages/document/doc-template/src/index.ts:113`](../packages/document/doc-template/src/index.ts)
+- `source`: [`packages/document/doc-template/src/index.ts:107`](../packages/document/doc-template/src/index.ts)
 
 ```ts config-catalog
 /** Model-facing document-template plugin configuration, resolved with every default applied. */
@@ -3480,9 +3480,12 @@ export interface Config {
 ```ts config-catalog
 /** Model-facing patent plugin configuration: LLM routes, workflow budgets, knowledge locations, and figure knobs. */
 export interface Config {
-  /** LLM provider route for the LLM-consuming tools (claim_chart_build / workflow run / figure analysis). */
+  /**
+   * LLM provider route for the LLM-consuming tools (claim_chart_build / workflow run / figure analysis).
+   * When this and `model` are unset, the route comes from the host `agentDefaultModel` selection.
+   */
   provider?: string
-  /** LLM model id for the LLM-consuming tools. */
+  /** LLM model id for the LLM-consuming tools; resolved with `provider` and falling back to `agentDefaultModel`. */
   model?: string
   /** Dedicated figure/image model route whose input modalities gate analyze_patent_figure. */
   imageModel?: ImageModelConfig

@@ -63,6 +63,7 @@
 
                 ## 检索（元典与 ego lite）
                 - 先看工具清单：有 `mcp__yuandian__*` 时优先用元典检索法规、案例、企业与证券数据；没有时走 ego lite，不要假设可用。元典结果只作线索，引用前回到官方法源原文。
+                - **本地知识库先行。** `legal_knowledge_search` 用于法规条文、司法解释与指导案例的快速定位（可离线）；空结果只说明本部署未收录，不证明不存在——改用元典或 ego lite，不要重复同一查询。命中项只作定位线索，仍按下面的法源优先级回到官方原文核验。
                 - **法条检索优先，案例检索补充。** 任何检索先锁定适用的法律法规条文并确认现行有效版本，再以案例佐证法条适用方式或补充裁判观点。法条是结论的必要依据，案例是说服性辅助——不可颠倒。
                 - ego lite 用法：用 `tool-bash` 运行 `ego-browser nodejs`，按 `legal-research` 技能的快照与抓取流程操作。
                 - 法源优先级：国家法律法规数据库、中国政府网、最高人民法院、最高人民检察院、地方人大/政府/法院官网、仲裁机构官网；北大法宝、威科、元典只作线索与交叉定位，引用前回到官方原文。
@@ -77,7 +78,7 @@
                 4. 检索：`legal-research` 取官方法源，写 `evidence.jsonl`。
                 5. 分析：按请求/要件/争点展开；合同审查按条款逐条给风险、触发条件、后果与修改建议。
                 6. 起草：在 `work/` 起稿，结构为结论先行、依据、风险、建议、附件。
-                7. 核验：`legal-citation-check` 逐条核引用；`legal-quality-gate` 跑 P0/P1。
+                7. 核验：`legal-citation-check` 先跑 `legal_law_verify` 再逐条回原文核引用；`legal-quality-gate` 跑 P0/P1。
                 8. 交付：写入 `output/`，在 `audit/matter-log.md` 追加一条，给出文件路径与未决事项。
 
                 ## 输出纪律
@@ -91,7 +92,8 @@
 
                 ## 工具
                 - 文件与命令：`tool-fs`、`tool-fs-search`、`tool-bash`；长任务用后台作业。
-                - 检索：元典工具或 `legal-research` + `ego-browser`；静态兜底用 `web_fetch`。
+                - 检索：`legal_knowledge_search` 定位条款线索；元典工具或 `legal-research` + `ego-browser` 取官方原文；静态兜底用 `web_fetch`。
+                - 引用核验：先跑 `legal_law_verify` 取条号、索引与转录状态的确定性判定，再按 `legal-citation-check` 回原文核对命题；两套状态的对应关系见该技能。
                 - 编排：`todo` 跟踪多阶段任务，`goal` 承载跨轮案件目标，`plan` 用于策略与交付方案，`subagent` 用于独立复核或对立论证。
                 - 交付：`render_doc_template` 生成 DOCX/PDF 等格式，`output_path` 必填；`document_deliver` 登记交付件并做确定性检查，法律质量门禁另行执行。DOCX 不保留修订痕迹、批注、脚注与文内图片；需要这些内容时输出干净副本并另附复核备忘录。
                 - 外部集成：合同管理、电子签章、Slack、邮件未挂载；元典仅当工具清单出现时可用。冷启动访谈的集成检查如实报告"未连接"，不要尝试配置。
@@ -389,6 +391,14 @@
             name: '@deepseek-ai/dsh-tool-todo'
             config:
               allowParallelInProgress: true
+
+          # `office_render` / `office_convert` / `office_recalculate`, admitted once
+          # one of the host-mounted `skill-office` skills loads. Without this row the
+          # skills are visible but their only fallback ("load `office` again") never
+          # yields a tool. `office-kit` and `skill-office` stay host rows; this row
+          # carries no config.
+          - id: tool-office
+            name: '@deepseek-ai/dsh-tool-office'
 
           # The `web` service and its providers stay in the host composition; only the
           # model-facing tool is per-session. `search: false` makes ego lite the single

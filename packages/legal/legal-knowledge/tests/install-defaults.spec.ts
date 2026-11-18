@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, expect, it, vi } from 'vitest'
+import { parseInstallArguments } from '../src/bin.ts'
 
 const tempDirs: string[] = []
 function tempDir(): string {
@@ -67,4 +68,19 @@ it('resolves the home knowledge directory, default output, and console log', asy
   expect(result.output).toBe(join(knowledgeDir, 'legal.db'))
   expect(logs[0]).toBe(`输入: ${sourcePath}`)
   expect(logs[1]).toBe(`输出: ${join(knowledgeDir, 'legal.db')}`)
+})
+
+it('parses the installer command line, including a missing --from', () => {
+  expect(parseInstallArguments(['--from', '/tmp/legal.db'])).toEqual({
+    from: '/tmp/legal.db', output: undefined, noFts: false, help: false,
+  })
+  expect(parseInstallArguments(['--from', 'source.db', '--output', 'out.db', '--no-fts'])).toEqual({
+    from: 'source.db', output: 'out.db', noFts: true, help: false,
+  })
+  expect(parseInstallArguments(['-h'])).toEqual({
+    from: undefined, output: undefined, noFts: false, help: true,
+  })
+  // The default source path is the file the installer writes, so the bin
+  // requires --from instead of letting the same-file guard reject a bare run.
+  expect(parseInstallArguments([]).from).toBeUndefined()
 })

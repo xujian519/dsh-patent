@@ -54,6 +54,19 @@ const PRESET_DIR = 'packages/bundle/web-app/presets'
 const SKILL_DIR = 'packages/bundle/web-app/skills'
 
 /**
+ * Skill assets the web host mounts for every preset: the `skill-office` row in
+ * `packages/bundle/web-app/cordis.patch.yml` publishes these four skills into
+ * the global skill layer, so a preset that can load skills sees them whether or
+ * not it names a skill provider itself. A tool these files name must therefore
+ * resolve in that preset, or the skill's fallback ("load the skill again and the
+ * tools appear next step") can never succeed.
+ */
+const HOST_SKILL_ASSETS = 'packages/skill/skill-office/assets'
+
+/** The skill-loading tool whose presence makes the host skill assets reachable. */
+const SKILL_TOOL_PACKAGE = '@deepseek-ai/dsh-tool-skill'
+
+/**
  * Backticked names the mounted tool set does not account for, each with the
  * reason it is exempt: a data field, a status value, an external MCP tool, or
  * another plugin's tool that the corpus names without mounting it.
@@ -148,6 +161,11 @@ export interface PresetCorpus {
   readonly readmeFiles: readonly PresetFile[]
   /** The Markdown files under the preset's skills directory, in path order. */
   readonly skillFiles: readonly PresetFile[]
+  /**
+   * Markdown files of the skill providers the host mounts for every preset,
+   * present only when the preset can load skills (it mounts `tool-skill`).
+   */
+  readonly hostSkillFiles?: readonly PresetFile[]
 }
 
 /** A backticked name and the line it appears on. */
@@ -664,7 +682,7 @@ export function findToolRefViolations(
   const violations: string[] = []
   for (const entry of corpus) {
     const mounted = mountedToolNames(entry.presetFile.source, catalog)
-    for (const file of [entry.presetFile, ...entry.readmeFiles, ...entry.skillFiles]) {
+    for (const file of [entry.presetFile, ...entry.readmeFiles, ...entry.skillFiles, ...entry.hostSkillFiles ?? []]) {
       for (const reference of toolReferences(file.source)) {
         if (mounted.has(reference.name) || exemptReferences.has(reference.name)) continue
         // A stage id is not a tool: skill text names stages to say which part of a
@@ -709,6 +727,14 @@ export function loadPresetCorpus(root: string): PresetCorpus[] {
   if (orphans.length > 0) {
     throw new Error(`verify-preset-tool-refs: skills director(ies) without a preset: ${orphans.join(', ')}`)
   }
+  if (!existsSync(resolve(root, HOST_SKILL_ASSETS))) {
+    throw new Error(`verify-preset-tool-refs: ${HOST_SKILL_ASSETS} is missing; the host ` +
+      '`skill-office` row names it, so its tool references would go unchecked')
+  }
+  const hostSkillFiles = globSync(`${HOST_SKILL_ASSETS}/**/*.md`, { cwd: root }).sort().map(path => ({
+    path,
+    source: readFileSync(resolve(root, path), 'utf8'),
+  }))
   return presetFiles.map((file) => {
     const preset = file.replace(/\.patch\.yml$/u, '')
     const presetPath = `${PRESET_DIR}/${file}`
@@ -720,11 +746,17 @@ export function loadPresetCorpus(root: string): PresetCorpus[] {
       path,
       source: readFileSync(resolve(root, path), 'utf8'),
     }))
+    const presetFile = { path: presetPath, source: readFileSync(resolve(root, presetPath), 'utf8') }
+    // A preset without the skill tool cannot list or load a skill, so the host
+    // provider's text is not part of what its agent can reach.
+    const loadsSkills = presetRowRecords(presetFile.source)
+      .some(record => record.name === SKILL_TOOL_PACKAGE)
     return {
       preset,
-      presetFile: { path: presetPath, source: readFileSync(resolve(root, presetPath), 'utf8') },
+      presetFile,
       readmeFiles,
       skillFiles,
+      ...loadsSkills ? { hostSkillFiles } : {},
     }
   })
 }
@@ -756,7 +788,7 @@ if (process.argv[1] !== undefined && import.meta.filename === resolve(process.ar
   const descriptionSource = readFileSync(resolve(ROOT, TEMPLATE_DESCRIPTION_PATH), 'utf8')
   const references = corpus.reduce(
     (sum, entry) => sum
-      + [entry.presetFile, ...entry.readmeFiles, ...entry.skillFiles]
+      + [entry.presetFile, ...entry.readmeFiles, ...entry.skillFiles, ...entry.hostSkillFiles ?? []]
         .reduce((fileSum, file) => fileSum + toolReferences(file.source).length, 0)
       + gateToolReferences(entry.presetFile.source).length,
     0,

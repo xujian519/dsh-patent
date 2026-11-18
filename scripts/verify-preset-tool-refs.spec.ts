@@ -385,6 +385,22 @@ describe('findToolRefViolations', () => {
     ])
   })
 
+  it('reports a host-mounted skill that names a tool the preset does not mount', () => {
+    const catalog = [
+      CATALOG,
+      '| `@deepseek-ai/dsh-tool-office` | `office_convert`, `office_render` | `ctx.tools` | `tool/call` | - | - |',
+    ].join('\n')
+    const hostSkillFiles = [{
+      path: 'skill-office/assets/office/SKILL.md',
+      source: 'Load `office`; `office_render` appears next step.',
+    }]
+    expect(findToolRefViolations(catalog, [{ ...corpusOf('document', FS_PRESET), hostSkillFiles }])).toEqual([
+      'skill-office/assets/office/SKILL.md:1: `office_render` is not a tool preset document mounts',
+    ])
+    const mounted = ['- insert:', "    - name: '@deepseek-ai/dsh-tool-office'", ''].join('\n')
+    expect(findToolRefViolations(catalog, [{ ...corpusOf('document', mounted), hostSkillFiles }])).toEqual([])
+  })
+
   it('accepts an explicitly exempted name and still reports the rest', () => {
     const violations = findToolRefViolations(
       CATALOG,
@@ -489,12 +505,15 @@ describe('loadPresetCorpus', () => {
     tempRoots.push(tempRoot)
     const presetRoot = join(tempRoot, 'packages/bundle/web-app/presets')
     const skillDir = join(tempRoot, 'packages/bundle/web-app/skills/a/probe')
+    const hostSkillDir = join(tempRoot, 'packages/skill/skill-office/assets/office')
     mkdirSync(presetRoot, { recursive: true })
     mkdirSync(skillDir, { recursive: true })
+    mkdirSync(hostSkillDir, { recursive: true })
     writeFileSync(join(presetRoot, 'a.patch.yml'), FS_PRESET)
     writeFileSync(join(presetRoot, 'a.md'), 'English README')
     writeFileSync(join(presetRoot, 'a.zh.md'), '中文 README')
     writeFileSync(join(skillDir, 'SKILL.md'), 'use `read`')
+    writeFileSync(join(hostSkillDir, 'SKILL.md'), 'use `read`')
     const corpus = loadPresetCorpus(tempRoot)
     expect(corpus.map(entry => entry.preset)).toEqual(['a'])
     expect(corpus[0]?.readmeFiles.map(file => file.path)).toEqual([
@@ -502,6 +521,29 @@ describe('loadPresetCorpus', () => {
       'packages/bundle/web-app/presets/a.zh.md',
     ])
     expect(corpus[0]?.skillFiles.map(file => file.path)).toEqual(['packages/bundle/web-app/skills/a/probe/SKILL.md'])
+    // A preset without the skill tool cannot reach the host provider's skills.
+    expect(corpus[0]?.hostSkillFiles).toBeUndefined()
+  })
+
+  it('adds the host skill provider files only to presets that can load skills', () => {
+    const tempRoot = mkdtempSync(join(tmpdir(), 'dsh-preset-tool-refs-'))
+    tempRoots.push(tempRoot)
+    const presetRoot = join(tempRoot, 'packages/bundle/web-app/presets')
+    const hostSkillDir = join(tempRoot, 'packages/skill/skill-office/assets/office')
+    mkdirSync(presetRoot, { recursive: true })
+    mkdirSync(hostSkillDir, { recursive: true })
+    writeFileSync(join(hostSkillDir, 'SKILL.md'), 'use `office_render`')
+    writeFileSync(join(presetRoot, 'a.patch.yml'), FS_PRESET)
+    writeFileSync(join(presetRoot, 'b.patch.yml'), [
+      '- insert:',
+      "    - name: '@deepseek-ai/dsh-tool-skill'",
+      '',
+    ].join('\n'))
+    const corpus = loadPresetCorpus(tempRoot)
+    expect(corpus.find(entry => entry.preset === 'a')?.hostSkillFiles).toBeUndefined()
+    expect(corpus.find(entry => entry.preset === 'b')?.hostSkillFiles?.map(file => file.path)).toEqual([
+      'packages/skill/skill-office/assets/office/SKILL.md',
+    ])
   })
 
   it('fails loud on a skills directory without a preset', () => {

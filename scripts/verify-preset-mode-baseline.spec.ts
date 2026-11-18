@@ -3,6 +3,8 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   BASELINE_PATH,
+  HOST_PATCH_PATH,
+  enabledHostRowIds,
   modeBaselineFindings,
   parseModeBaseline,
   personaPrefixBody,
@@ -87,6 +89,20 @@ function findingsFor(mode: ModeSource, delivery: ModeDeclaration): readonly stri
   return modeBaselineFindings([AUTHORITY_PRESET, mode], baseline(delivery))
     .map(finding => `${finding.mode}: ${finding.detail}`)
 }
+
+describe('enabledHostRowIds', () => {
+  it('reads enabled row ids and skips a row the host disables or comments out', () => {
+    const source = [
+      '- id: skill-office',
+      "  name: '@deepseek-ai/dsh-skill-office'",
+      '- id: tool-plugin-manager',
+      '  disabled: true',
+      '# - id: commented-row',
+      '- id: office-kit',
+    ].join('\n')
+    expect(enabledHostRowIds(source)).toEqual(new Set(['skill-office', 'office-kit']))
+  })
+})
 
 describe('personaPrefixBody', () => {
   it('reads the block scalar with its indentation removed and trailing blank lines dropped', () => {
@@ -183,6 +199,23 @@ describe('modeBaselineFindings', () => {
       requiredRows: ['persona', 'tool-goal'],
       explainedAbsences: { 'tool-fs': '   ', 'tool-market': '由宿主行提供' },
     }))).toEqual([`${DELIVERY}: explains tool-fs with no reason`])
+  })
+
+  it('rejects an absence reason the host composition contradicts', () => {
+    const findings = modeBaselineFindings([AUTHORITY_PRESET, DROPPED_DELIVERY], baseline(declaration({
+      requiredRows: ['persona', 'tool-goal'],
+      explainedAbsences: { 'tool-fs': '本模式不挂载文件工具', 'tool-market': '由宿主行提供' },
+    })), new Set(['tool-fs']))
+    expect(findings.map(finding => `${finding.mode}: ${finding.detail}`)).toEqual([
+      `${DELIVERY}: explains tool-fs as absent, but ${HOST_PATCH_PATH} carries it enabled`,
+    ])
+  })
+
+  it('accepts an absence reason for a row the host disables', () => {
+    expect(findingsFor(DROPPED_DELIVERY, declaration({
+      requiredRows: ['persona', 'tool-goal'],
+      explainedAbsences: { 'tool-fs': '由宿主行提供但默认关闭', 'tool-market': '由宿主行提供' },
+    }))).toEqual([])
   })
 
   it('rejects a recorded absence for a row the mode carries again', () => {

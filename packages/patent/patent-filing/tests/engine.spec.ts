@@ -219,6 +219,30 @@ describe('buildFiling', () => {
     }
   })
 
+  it('reports a non-Error rejection from the acceptance run by value', async () => {
+    // 子进程替身拒绝的是任意值；验收失败的原因不能因为不是 Error 就换成占位说法。
+    const { spawner } = fakeSubprocess((spec) => {
+      const argv = argvOf(spec)
+      if ((argv[1] ?? '').endsWith('verify.py')) {
+        // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- 本条要的正是非 Error 的拒绝值
+        return { ...stdoutHandle(''), done: Promise.reject('acceptance double crashed') }
+      }
+      const out = argv[argv.indexOf('--out') + 1]
+      if (out !== undefined) writeFileSync(out, 'docx')
+      return stdoutHandle(buildReport())
+    })
+    const outDir = mkdtempSync(join(tmpdir(), 'dsh-filing-verify-thrown-'))
+    const figure = join(outDir, 'fig1.png')
+    writeFileSync(figure, 'png')
+    const input = { content: { ...CONTENT, figures: [figure] }, outputName: 'thrown', outputDir: outDir }
+    try {
+      await expect(buildFiling(input, buildOptions(spawner), outDir, new AbortController().signal))
+        .rejects.toThrow(/但验收无法完成：acceptance double crashed/)
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
   it('rasterizes .svg figures first and keeps the caller figure order', async () => {
     const work = mkdtempSync(join(tmpdir(), 'dsh-filing-svg-'))
     const first = join(work, 'fig1.svg')
@@ -505,7 +529,9 @@ describe('engine output parsing', () => {
     ]
     try {
       for (const stdout of bad) {
-        const options = { ...buildOptions(fakeSubprocess(() => stdoutHandle(stdout)).spawner), templatePath: template }
+        // 坏输出只答给 build.py。成文现在先验收后解析报告，若验收也拿到坏输出，
+        // 用例会在验收处抛出，走到报告解析的坏值分支一次都盖不到。
+        const options = { ...buildOptions(answering({ 'build.py': stdout }).spawner), templatePath: template }
         await expect(buildFiling(input, options, dir, new AbortController().signal)).rejects.toThrow(PatentFilingError)
       }
     } finally {
@@ -631,7 +657,8 @@ describe('engine invocation edge branches', () => {
         JSON.stringify({ numbering_total: 1, upstream_numbering_seen: 0, template_style: {} }),
         JSON.stringify({ sections: [], numbering_total: 1, upstream_numbering_seen: 0 }),
       ]) {
-        const options = { ...buildOptions(fakeSubprocess(() => stdoutHandle(stdout)).spawner) }
+        // 缺字段的 build 报告只答给 build.py；验收另答一份正常报告，否则先抛在验收处。
+        const options = { ...buildOptions(answering({ 'build.py': stdout }).spawner) }
         await expect(buildFiling(input, options, dir, new AbortController().signal)).rejects.toThrow(PatentFilingError)
       }
     } finally {

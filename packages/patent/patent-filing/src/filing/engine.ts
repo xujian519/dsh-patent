@@ -374,8 +374,8 @@ export async function buildFiling(
       verification = await verifyFiling({ docxPath }, options, signal)
     } catch (error) {
       // 成品已落盘；验收无法完成时调用方必须知道盘上有这份文件，否则会当成没写成。
-      const reason = error instanceof Error ? error.message : '未知原因'
-      throw new PatentFilingError(`成品已写出（${docxPath}），但验收无法完成：${reason}`)
+      const reason = error instanceof Error ? error.message : String(error)
+      throw new PatentFilingError(`成品已写出（${docxPath}），但验收无法完成：${reason}`, { cause: error })
     }
     return {
       docxPath,

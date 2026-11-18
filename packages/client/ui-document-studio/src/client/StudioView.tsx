@@ -482,10 +482,10 @@ export function StudioView({
     <div className={css.studio} data-session-id={sessionId}>
       {rejection !== null && (
         <p className={`${css.error} ${css.rejection}`} data-document-registration-rejected>
-          {t('studio.registration.rejected', {
-            paths: rejection.paths.join(', '),
-            message: rejection.message,
-          })}
+          {t(
+            rejection.paths.length === 0 ? 'studio.registration.rejectedNoFiles' : 'studio.registration.rejected',
+            { paths: rejection.paths.join(', '), message: rejection.message },
+          )}
         </p>
       )}
       {produced.length === 0

@@ -279,6 +279,19 @@ describe('StudioView', () => {
     expect(banner?.textContent).toContain('P0 门未通过：命名规范')
   })
 
+  it('leaves the file list out of a refusal that declared no file', () => {
+    const { container } = render(
+      <StudioView {...studioProps(
+        [],
+        {},
+        'document',
+        { seq: 9, paths: [], message: 'files 不能为空' },
+      )} />,
+    )
+    const banner = container.querySelector('[data-document-registration-rejected]')
+    expect(banner?.textContent).toBe(t('studio.registration.rejectedNoFiles', { message: 'files 不能为空' }))
+  })
+
   it('shows the check style and the registration notes beside the claim', () => {
     render(
       <StudioView {...studioProps([{

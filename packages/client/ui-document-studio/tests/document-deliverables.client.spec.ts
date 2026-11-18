@@ -470,6 +470,8 @@ describe('registration facts and refused registrations', () => {
     expect(parseRegistrationFacts({ warnings: ['a', 7] })).toEqual({})
     expect(parseRegistrationFacts({ style: 'assistant-neutral', warnings: ['a'] }))
       .toEqual({ style: 'assistant-neutral', warnings: ['a'] })
+    // A declaration repeating one mistake reports it once, keeping the order.
+    expect(parseRegistrationFacts({ warnings: ['a', 'b', 'a'] })).toEqual({ warnings: ['a', 'b'] })
   })
 
   it('attaches the style and the declaration warnings the registration recorded', () => {

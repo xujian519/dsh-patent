@@ -255,8 +255,10 @@ function normalizeCheckFinding(value: unknown): DocumentCheckFinding | undefined
 export function parseRegistrationFacts(meta: unknown): RegistrationFacts {
   if (!isRecord(meta)) return {}
   const style = typeof meta.style === 'string' && meta.style.trim() !== '' ? meta.style : undefined
+  // A declaration that repeats one mistake reports one note: the text is the
+  // identity, and the studio renders the notes as a keyed list.
   const warnings = Array.isArray(meta.warnings) && meta.warnings.every(warning => typeof warning === 'string')
-    ? meta.warnings as readonly string[]
+    ? [...new Set(meta.warnings as readonly string[])]
     : undefined
   return {
     ...style === undefined ? {} : { style },
@@ -481,7 +483,9 @@ export const documentDeliverablesDefinition: ConversationNodeDefinition<Document
         ? []
         : [mutationEntry(match.event.seq, call.producedPath, match.event.data.meta)]
     // A registration that the harness accepted settles an earlier refusal in
-    // this turn; any other settle leaves the refusal standing.
+    // this turn; any other settle leaves the refusal standing. A registration
+    // declaring no files adds no entry, so the session fold keeps the earlier
+    // refusal: nothing replaced the deliverable that was refused.
     const cleared = call?.registration !== undefined && context.state.rejected !== undefined
     if (additions.length === 0 && !cleared) return context.state
     return {

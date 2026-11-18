@@ -36,7 +36,7 @@ knowledge.db 查询接缝的服务定义（`ctx.patentKnowledge`）：判例全�
 
 对 `knowledge.db` 的 `guideline_rule` 文档（《专利审查指南》全文）做全文检索，由第二个以 `docTypes: ['guideline_rule']` 限定的 `KnowledgeLawSearch` 提供。引擎索引哪类规范文档由构造时的文档类型决定（缺省 `law_article`），因此法规语料与指南语料各自独立、共用同一条检索通路；`documents` 表早于 `file_path` 列的库仍可检索，只是命中不带来源路径。
 
-### wikiCards(query, limit?) / wikiCardsIn(prefix, keyword?, limit?)
+### wikiCards(query, limit?) / wikiCardsIn(prefix, keyword, limit?)
 
 对 wiki 卡片目录做关键词查询（标题/概念/领域），可跨全部目录或限定一个目录前缀；前缀形式下关键词为空时列出该目录。P1 仅关键词路径：语义/向量 wiki 索引已延后，wiki 目录缺失时降级为空结果。
 

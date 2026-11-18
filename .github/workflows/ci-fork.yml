@@ -52,8 +52,9 @@ jobs:
         # problem-space DAG, thresholds, and baseline: no key, no build.
         run: pnpm run verify-patent-oas-gold
 
-      # The legal corpus and rule assets need their own lane: each check reads
-      # only checked-in law, rules, and manifests, and no other lane runs them.
+      # The legal corpus and rule assets reach no aggregate in this fork: each
+      # check reads only checked-in law, rules, and manifests, so this required
+      # lane carries all four.
       - name: Patent law coverage
         run: pnpm run verify-patent-law-coverage
 

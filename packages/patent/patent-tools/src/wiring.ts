@@ -462,8 +462,8 @@ function registerWorkflowTools(wiring: PatentToolWiring): void {
   const writingSkillsForStage = (stageId: string): string | undefined =>
     stageWritingSkills(readStagePatterns(wiring.ctx.get('writingPatterns')), stageId)
   // Resolve the search function per run through ctx.patentData: the service owns
-  // the nuo provider, and patent-data activates one hop after this plugin, so
-  // load time is too early to read it.
+  // the nuo search provider factory, and patent-data activates one hop after this
+  // plugin, so load time is too early to read it.
   const searchProvider = (): StageProvider['search'] | undefined =>
     wiring.ctx.get('patentData')?.createSearchProvider().search
   wiring.ctx.tools.register(createPatentWorkflowRunTool({

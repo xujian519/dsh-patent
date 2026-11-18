@@ -35,7 +35,7 @@ Full-text search over the `law_article` documents of `knowledge.db` via `Knowled
 
 Full-text search over the `guideline_rule` documents of `knowledge.db` (the 《专利审查指南》 chapters), through a second `KnowledgeLawSearch` scoped with `docTypes: ['guideline_rule']`. The engine indexes whichever normative document types it is constructed with (`law_article` by default), so the statute corpus and the guideline corpus stay separate while sharing one query path; a database whose `documents` table predates the `file_path` column still searches, and then reports no source path.
 
-### wikiCards(query, limit?) / wikiCardsIn(prefix, keyword?, limit?)
+### wikiCards(query, limit?) / wikiCardsIn(prefix, keyword, limit?)
 
 Keyword lookup over the wiki-card directory (title/concept/domain), either across every directory or under one prefix; in the prefix form an empty keyword lists that directory. Keyword-only in P1: the semantic/vector wiki index is deferred, so an absent wiki directory degrades to an empty result.
 

@@ -8,6 +8,7 @@ import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import { resolveNodeTypes } from '@deepseek-ai/dsh-patent-knowledge'
 import * as tool from '../src/index.ts'
 import { buildImageGateResolver } from '../src/index.ts'
 import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
@@ -161,23 +162,23 @@ describe('patent-tools plugin wiring', () => {
 
     // The KG tool reads the service through the wiring facade in all three modes.
     expect((await exec(ctx, 'patent_kg_query', { query: '创造性' }, 'w-5')).isError).toBe(false)
+    expect(kgCalls).toEqual(['search'])
+    kgCalls.length = 0
+
     expect((await exec(ctx, 'patent_kg_query', { id: 'kg:n1' }, 'w-6')).isError).toBe(false)
-    expect((await exec(ctx, 'patent_kg_query', { node_type: 'Concept' }, 'w-7')).isError).toBe(false)
-    // Concept expands to five node types, so the browse mode lists each one.
     expect(kgCalls).toEqual([
-      'search',
       'get:kg:n1',
       'similar',
       'neighbors:CITES',
       'neighbors:CITES_LAW',
       'neighbors:FREQUENTLY_CITES',
       'neighbors:REFERENCES',
-      'list',
-      'list',
-      'list',
-      'list',
-      'list',
     ])
+    kgCalls.length = 0
+
+    expect((await exec(ctx, 'patent_kg_query', { node_type: 'Concept' }, 'w-7')).isError).toBe(false)
+    // Browse mode lists once per expanded node type; the alias table decides the count.
+    expect(kgCalls).toEqual(resolveNodeTypes('Concept').map(() => 'list'))
   })
 
   it('keeps the kg tool dbPath-only when the knowledge db is absent', async () => {

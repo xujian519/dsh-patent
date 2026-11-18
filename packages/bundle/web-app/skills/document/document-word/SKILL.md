@@ -15,16 +15,20 @@ whenToUse: 用户明确要求 .docx/Word 文件（合同、规范、报告、论
 
 1. 读 brief；无则先跑 document-brief。确认 Word 特殊要求：页眉页脚、封面、
    目录字段、页码、样式名。
-2. `list_doc_templates` 找到匹配模板与其变量表；无匹配模板时说明并改用通用的
-   规范样式撰写（不要手工拼 .docx 字节）。
-3. 撰写变量内容（正文段落、表格以 Markdown 片段传入），调用 `render_doc_template`：
+2. `list_doc_templates` 找到匹配模板与其变量表。没有匹配模板时本管线产不出
+   `.docx`：`render_doc_template` 只渲染已加载的模板资产，`office_convert` 只
+   接受 Office 文件、不接受 Markdown。此时告知用户缺模板，交付 Markdown 成品；
+   不要手工拼 .docx 字节，也不要把 `.md` 冒充 Word 文件。
+3. 有匹配模板时，撰写变量内容（正文段落、表格以 Markdown 片段传入），调用
+   `render_doc_template`：
    - `variables` 必须填齐模板的全部必填变量，缺失会让调用失败并指名变量；
    - 读回 `residual`（未填占位符）与 `warnings`，两者都必须清空再交付；
    - 必须传 `output_path`（如 `out/report.docx`）由工具直接落盘，返回 `path` 与 `bytes`；DOCX 不传 `output_path` 会失败；
    - 需要时用 `title` / `author` / `date` / `filename` 覆盖元数据。
 4. 结果只含路径、字节数、残余占位符与警告。需要复核或继续加工时用文件工具读取 `path`，不要期待结果里带包内容。
 5. 需要页眉页脚、目录字段、页码或命名样式套用时，交 officecli 技能继续加工同一文件。
-6. 自检（document-quality-gate）后交付：`<name>.docx` 路径与摘要；登记时格式填 `docx`。
+6. 自检（document-quality-gate）后交付：有模板时为 `<name>.docx` 路径与摘要，登记时
+   格式填 `docx`；无模板时为 Markdown 路径与摘要，登记时格式填 `md`。
 
 ## 硬性规则
 

@@ -44,7 +44,7 @@
       "standard.patch.yml": "34268d526f"
     },
     "doc-template": {
-      "document.patch.yml": "4e39d12aeb",
+      "document.patch.yml": "feb9b4ed2b",
       "legal.patch.yml": "f993a9d5cc"
     },
     "patent-rule": {
@@ -136,6 +136,11 @@
       "patent.patch.yml": "7911e129f9",
       "ptc.patch.yml": "c6b0f62bce",
       "standard.patch.yml": "c6b0f62bce"
+    },
+    "tool-office": {
+      "document.patch.yml": "22557c1cca",
+      "ptc.patch.yml": "d302d2224e",
+      "standard.patch.yml": "d302d2224e"
     },
     "tool-plugin-manager": {
       "cordis.patch.yml": "689227cb3b",

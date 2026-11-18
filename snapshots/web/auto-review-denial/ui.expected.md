@@ -7,6 +7,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Board"
+    - tab "Deliverables"
+    - tab "Teams"
   - button "More conversation views"
 - text: Inspect the protected operation, but do not run it unless authorized. {{clock}}
 - button "Copy"
@@ -34,6 +37,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Board"
+    - tab "Deliverables"
+    - tab "Teams"
   - button "More conversation views"
 - text: Inspect the protected operation, but do not run it unless authorized. {{clock}}
 - button "Copy"
@@ -65,6 +71,9 @@
   - tablist:
     - tab "Chat"
     - tab "Trajectory" [selected]
+    - tab "Board"
+    - tab "Deliverables"
+    - tab "Teams"
   - button "More conversation views"
 - toolbar "Trajectory toolbar":
   - button "Use actual duration": Duration

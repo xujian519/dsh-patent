@@ -6,6 +6,9 @@
   - tablist:
     - tab "Chat"
     - tab "Trajectory" [selected]
+    - tab "Board"
+    - tab "Deliverables"
+    - tab "Teams"
   - button "More conversation views"
 - toolbar "Trajectory toolbar":
   - button "Use actual duration": Duration

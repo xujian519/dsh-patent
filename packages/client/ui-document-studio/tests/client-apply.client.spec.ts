@@ -171,7 +171,7 @@ describe('document studio plugin body', () => {
     const label = resolveSlotLabel(entry.options.label)
     expect([zh['view.document'], en['view.document']]).toContain(label)
     expect(entry.options.id).toBe('documentDeliverables')
-    expect(entry.options.order).toBe(20)
+    expect(entry.options.order).toBe(25)
     expect(entry.locale).toBe('documentStudio')
     expect(ctx.uiConversation.views.entries().map(view => view.target)).toEqual(['documentDeliverables'])
     expect(ctx.uiConversation.events.entries().map(event => event.kind)).toContain('documentDeliverables')

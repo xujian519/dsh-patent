@@ -7,6 +7,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Board"
+    - tab "Deliverables"
+    - tab "Teams"
   - button "More conversation views"
 - text: Clean up the stale build log. {{clock}}
 - button "Copy"
@@ -33,6 +36,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Board"
+    - tab "Deliverables"
+    - tab "Teams"
   - button "More conversation views"
 - text: Clean up the stale build log. {{clock}}
 - button "Copy"

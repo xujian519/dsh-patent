@@ -3,7 +3,7 @@ import { contextMenuHook } from '@deepseek-ai/dsh-client-test-runtime'
 import type { GlobalStandardProps, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createContext, useContext, type ReactNode } from 'react'
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within, type RenderResult } from '@testing-library/react'
 import type { Context } from '@deepseek-ai/cordis'
 import type { SessionListState, SessionSnapshot } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { WorkspaceSnapshot, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client'
@@ -422,10 +422,64 @@ function mount(
   }
 }
 
+const BRAND_HEADLINES = ['深则相契', '深则见界', '深则自固', '深则无隙'] as const
+
+/** The single brand line the hero rendered. */
+function shownHeadline(view: RenderResult): string {
+  const shown = BRAND_HEADLINES.filter(line => view.queryByText(line) !== null)
+  const [line] = shown
+  if (shown.length !== 1 || line === undefined) {
+    throw new Error(`expected one hero headline, saw ${shown.length}`)
+  }
+  return line
+}
+
 describe('Hero chrome', () => {
+  it('opens a blank conversation on exactly one brand line', () => {
+    const view = render(<HeroShell t={t} sessionId={SID} renderSlot={vi.fn(() => null) as never} />)
+    expect(BRAND_HEADLINES).toContain(shownHeadline(view))
+  })
+
+  it('moves the line when the conversation changes', () => {
+    const renderSlot = vi.fn(() => null) as never
+    // `s3` draws the first line, `s1` a later one.
+    const view = render(<HeroShell t={t} sessionId={sid('s3')} renderSlot={renderSlot} />)
+    const opened = shownHeadline(view)
+    view.rerender(<HeroShell t={t} sessionId={SID} renderSlot={renderSlot} />)
+    expect(shownHeadline(view)).not.toBe(opened)
+  })
+
+  it('keeps the line a conversation opened with', () => {
+    const renderSlot = vi.fn(() => null) as never
+    const view = render(<HeroShell t={t} sessionId={SID} renderSlot={renderSlot} />)
+    const opened = shownHeadline(view)
+    view.rerender(<HeroShell t={t} sessionId={SID} renderSlot={renderSlot} />)
+    expect(shownHeadline(view)).toBe(opened)
+  })
+
+  it('moves the line on with the conversation', () => {
+    const seen = new Set<string>()
+    for (const id of ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8']) {
+      const view = render(<HeroShell t={t} sessionId={sid(id)} renderSlot={vi.fn(() => null) as never} />)
+      seen.add(shownHeadline(view))
+      view.unmount()
+    }
+    expect(seen.size).toBeGreaterThan(1)
+  })
+
+  it('stands with the mark alone until a conversation exists', () => {
+    const renderSlot = vi.fn(() => null) as never
+    const view = render(<HeroShell t={t} renderSlot={renderSlot} />)
+    expect(BRAND_HEADLINES.filter(line => view.queryByText(line) !== null)).toEqual([])
+    // The Session supplies the line the moment it exists, which is what keeps a
+    // cold start from swapping one headline for another.
+    view.rerender(<HeroShell t={t} sessionId={SID} renderSlot={renderSlot} />)
+    expect(BRAND_HEADLINES).toContain(shownHeadline(view))
+  })
+
   it('renders the English preview badge through the hero locale seat', () => {
     const renderSlot = vi.fn<(key: string, owner: object, opts?: { fallback?: ReactNode }) => ReactNode>(() => null)
-    const view = render(<HeroShell t={makeTranslate(en, commonEn)} renderSlot={renderSlot as never} />)
+    const view = render(<HeroShell t={makeTranslate(en, commonEn)} sessionId={SID} renderSlot={renderSlot as never} />)
     expect(view.getByText('Deeper, and it fits')).toBeTruthy()
     expect(view.getByText('Preview')).toBeTruthy()
     expect(renderSlot).toHaveBeenCalledOnce()
@@ -596,7 +650,7 @@ describe('ConversationRoot resident composer', () => {
     expect(b.slotCalls).not.toContain('conversation.session.header.utilities')
     expect(b.headerFactory).not.toHaveBeenCalled()
     expect(b.slotCalls).not.toContain('conversation.session.header.actions')
-    expect(b.view.getByText('深则相契')).toBeTruthy()
+    expect(BRAND_HEADLINES).toContain(shownHeadline(b.view))
     expect(b.view.getByText('预览版')).toBeTruthy()
     expect(b.view.queryByTestId('view-chat')).toBeNull()
     // The same machine-backed textarea is live in the hero, and the
@@ -630,7 +684,7 @@ describe('ConversationRoot resident composer', () => {
     expect(conversationPhase(failed, EMPTY_CONVERSATION_SNAPSHOT)).toBe('engaging')
     const b = mount(failed, undefined, undefined, { summaryBlank: true })
     expect(b.view.container.querySelector('[data-phase]')?.getAttribute('data-phase')).toBe('active')
-    expect(b.view.queryByText('深则相契')).toBeNull()
+    expect(BRAND_HEADLINES.filter(line => b.view.queryByText(line) !== null)).toEqual([])
   })
 
   it('settling phase: a summary that does not prove the session blank hides the composer while it opens', () => {
@@ -662,7 +716,7 @@ describe('ConversationRoot resident composer', () => {
     // blank the column for the history round-trip.
     const root = b.view.container.querySelector('[data-phase]')
     expect(root?.getAttribute('data-phase')).toBe('hero')
-    expect(b.view.getByText('深则相契')).toBeTruthy()
+    expect(BRAND_HEADLINES).toContain(shownHeadline(b.view))
     expect(b.view.getByRole('textbox')).toBeTruthy()
   })
 

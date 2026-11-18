@@ -10,6 +10,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Board"
+    - tab "Deliverables"
+    - tab "Teams"
   - button "More conversation views"
 - text: Give one concrete event sourcing example. {{clock}}
 - button "Copy"

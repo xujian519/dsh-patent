@@ -58,7 +58,7 @@ Slot 声明固定两个相互独立的维度。
 | 维度 | 值 | 含义 |
 |---|---|---|
 | cardinality | `single` | 单个 cell，渲染当前 priority 胜者；需要并列内容时应声明 child slot，而不是把它当作列表。 |
-| cardinality | `list` | cell 由必填 `id` 定址，先按 `order`、再按注册顺序排列。 |
+| cardinality | `list` | cell 由必填 `id` 定址，先按 `order`、再按注册顺序排列。需要与激活顺序无关的行的投影，在该 rank 之后按 id 排序，会话标签行即如此。 |
 | cardinality | `keyed` | owner 传入 `entryKey`；匹配 cell 以该 key 对应的 props 渲染。 |
 | cardinality | `chain` | 每个 entry 提供纯 `select(owner)` 函数；按 priority 顺序遇到的第一个非 null 结果获选，并以 `matched` 传给组件；全部拒绝时渲染 owner fallback。 |
 | cardinality | `hoc` | entry 层层包裹 owner 经 `renderSlot(key, owner, { children })` 传入的内容，最小者在最外层；可选的 `key` 按 owner 的 `entryKey` 选层。见 [Hoc 层](#hoc-layers)。 |

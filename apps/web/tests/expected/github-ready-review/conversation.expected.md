@@ -16,6 +16,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Board"
+    - tab "Deliverables"
+    - tab "Teams"
   - button "More conversation views"
 - button "GitHub event received {{clock}}":
   - text: GitHub event received

@@ -94,10 +94,26 @@ it('hot-reloads a real client-plugin source edit without refreshing the page', a
     .map(async path => [path, await readFile(path)] as const))
   const originalClientArtifactPaths = new Set(originalClientArtifacts.map(([path]) => path))
   const originalSource = await readFile(sourcePath)
-  const oldText = 'Into the Unknown'
-  const sourceNeedle = "'hero.headline': 'Into the Unknown'"
+  const oldText = 'Deeper, and it fits'
   const newText = `HMR UPDATED ${'x'.repeat(80)}`
-  const updatedSource = originalSource.toString().replace(sourceNeedle, `'hero.headline': '${newText}'`)
+  // The blank home draws one of four headline keys from its Session id, so the
+  // edit rewrites the whole English set: whichever line that Session picked,
+  // the page has to show the edited text.
+  const sourceNeedle = [
+    "  'hero.headline': 'Deeper, and it fits',",
+    "  'hero.headline.edge': 'Deeper, and it fits',",
+    "  'hero.headline.hold': 'Deeper, and it fits',",
+    "  'hero.headline.seam': 'Deeper, and it fits',",
+    "  'hero.preview': 'Preview',",
+  ].join('\n')
+  const edited = [
+    `  'hero.headline': '${newText}',`,
+    `  'hero.headline.edge': '${newText}',`,
+    `  'hero.headline.hold': '${newText}',`,
+    `  'hero.headline.seam': '${newText}',`,
+    "  'hero.preview': 'Preview',",
+  ].join('\n')
+  const updatedSource = originalSource.toString().replace(sourceNeedle, () => edited)
   if (updatedSource === originalSource.toString()) throw new Error(`HMR source lacks ${JSON.stringify(sourceNeedle)}`)
 
   const subprocessCtx = new Context()

@@ -45,6 +45,9 @@
       "path": "../patent-document"
     },
     {
+      "path": "../patent-filing"
+    },
+    {
       "path": "../tool-literature"
     },
     {

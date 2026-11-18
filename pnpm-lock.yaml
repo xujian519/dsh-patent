@@ -16089,6 +16089,9 @@ importers:
       '@deepseek-ai/dsh-patent-document':
         specifier: workspace:*
         version: link:../patent-document
+      '@deepseek-ai/dsh-patent-filing':
+        specifier: workspace:*
+        version: link:../patent-filing
       '@deepseek-ai/dsh-patent-knowledge':
         specifier: workspace:*
         version: link:../patent-knowledge

@@ -277,6 +277,13 @@ function requireRing(points: readonly (readonly number[])[], label: string): (re
   return points.map(point => requirePair(point, label))
 }
 
+/**
+ * 按图型把工具 JSON 输入构造成矢量图规格。
+ * @param figureType - 决定读取哪个输入字段、交给哪个图型构造器的图型。
+ * @param input - 工具接受的矢量图 JSON 输入，字段用下划线命名。
+ * @returns 交给 SVG 封装的图形规格，以及该图型自身的法律与几何检查提示。
+ * @throws VectorFigureError 该图型对应的输入缺失，或坐标、轮廓等字段校验不通过时（`invalid_input`）。
+ */
 export function buildVectorFigure(figureType: VectorFigureType, input: VectorFigureJsonInput): VectorFigureBuild {
   switch (figureType) {
     case 'circuit': {

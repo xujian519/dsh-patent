@@ -59,6 +59,16 @@ describe('formTextFromDraft', () => {
     expect(claims.split('\n')[0]).toBe('1. 一种智能保温杯，其特征在于，包括杯体、温度显示模块和加热单元。')
     expect(abstract).toContain('本发明公开一种智能保温杯')
   })
+
+  it('表格行不进文本，表题段照常进入', () => {
+    const draft = specDraft()
+    draft.sections.embodiment = [
+      { kind: 'table', name: '温度档位', header: ['档位', '温度'], rows: [['一档', '40℃']] },
+    ]
+    const { text } = formTextFromDraft(draft)
+    expect(text).toContain('表 1 · 温度档位')
+    expect(text).not.toContain('一档')
+  })
 })
 
 describe('auditFilingDraft', () => {
@@ -145,6 +155,34 @@ describe('build_patent_filing 的成文前预检（真实插件注册路径）',
     await dispose()
     expect((await call(ctx, { draft })).isError).toBe(false)
   })
+
+  // 预检只拦「读得出草案且形式不合规」的调用。参数缺失、不是对象或草案不合法时，
+  // 拒绝由工具自己的参数校验负责，预检不能抢在它前面给出第二种说法。
+  it('参数里没有 draft 时放行到工具的参数校验', async () => {
+    const { ctx } = await mount()
+    const result = await call(ctx, {})
+    expect(result.isError).toBe(false)
+    expect(JSON.stringify(result.content)).toContain('docx written')
+  })
+
+  it('草案不合法时放行到工具的参数校验', async () => {
+    const { ctx } = await mount()
+    const result = await call(ctx, { draft: { meta: {} } })
+    expect(result.error?.message ?? '').not.toContain('形式预检')
+  })
+
+  it('参数不是对象时放行到工具的参数校验', async () => {
+    const { ctx } = await mount()
+    for (const args of [null, 'draft']) {
+      const result = await executeToolFixture(ctx, {
+        name: 'build_patent_filing',
+        callId: ToolCallId('filing-form-audit'),
+        arguments: args,
+        signal: new AbortController().signal,
+      })
+      expect(result.error?.message ?? '').not.toContain('形式预检')
+    }
+  })
 })
 
 describe('renderFilingFormDenial', () => {
@@ -155,5 +193,27 @@ describe('renderFilingFormDenial', () => {
     expect(text).toContain('figure_number_spacing')
     expect(text).toContain('修法：')
     expect(text).toContain('不会写出 docx')
+  })
+
+  it('给出规则命中的原句，而不是模型手上没有的行号', () => {
+    const text = renderFilingFormDenial([
+      {
+        rule: 'figure_number_spacing',
+        family: 'figures',
+        severity: 'error',
+        message: '图号与数字之间不得留空格',
+        matchedSentence: '如图 1 所示，杯体1与杯盖2连接。',
+        line: 3,
+      },
+    ])
+    expect(text).toContain('命中句：如图 1 所示，杯体1与杯盖2连接。')
+    expect(text).not.toContain('第 3 行')
+  })
+
+  it('没有命中句与修法时只列规则与说明', () => {
+    const text = renderFilingFormDenial([
+      { rule: 'abstract_length', family: 'abstract', severity: 'error', message: '摘要超过 300 字' },
+    ])
+    expect(text).toContain('- abstract_length：摘要超过 300 字\n修改 draft 后重新调用；被拒绝的调用不会写出 docx。')
   })
 })

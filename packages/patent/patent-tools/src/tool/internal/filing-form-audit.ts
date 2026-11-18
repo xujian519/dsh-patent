@@ -3,12 +3,14 @@
  *
  * `build_patent_filing` 只做草案结构校验（`validateSpecDraft`），不跑形式规则；
  * 交付门禁里的 `validate_specification` 又只按会话记账，无法证明模型交给它的
- * 文本就是这次要成文的草案。正式稿的形式错误（章节标题集合与顺序、附图标记
- * 括号、图号空格、摘要篇幅）因此可能整批漏出。
+ * 文本就是这次要成文的草案。正式稿的形式错误（附图标记括号、图号空格、摘要
+ * 篇幅、禁止性表述、发明名称）因此可能整批漏出。
  *
  * 本模块用 docx 通道同一份 `contentFromDraft` 映射重建说明书全文，再跑
  * `validateSpecification` 的确定性规则。校验的文本与成文的文本出自同一次映射，
- * 所以两者的标题、项号与图号必然同源。
+ * 所以两者的标题、项号与图号必然同源。章节标题由映射按 `SPEC_PART_ORDER` 生成，
+ * 集合与顺序不可能错；`structure` 族里能命中的只剩与草案内容有关的项
+ * （实用新型缺附图、声明无附图却引用图号）。
  * @module @deepseek-ai/dsh-patent-tools/tool/internal/filing-form-audit
  */
 
@@ -29,8 +31,9 @@ const FORM_FAMILIES: ReadonlySet<SpecFamily> = new Set(['structure', 'figures', 
 /**
  * 说明书正文按 docx 通道的节点顺序摊平为带 Markdown 标题的全文。
  *
- * 形式规则按行扫描标题与图号，因此五个部分标题必须写成标题行；表格不进正文文本，
- * 其内容由 `validateSpecification` 的表格类规则另行处理。
+ * 形式规则按行扫描标题与图号，因此各部分标题必须写成标题行。`contentFromDraft`
+ * 只产出 `h3` 标题与 `p` 正文：`table` 节点不带文字，行内容不进文本，形式规则
+ * 也不看表格内容，表题段（`p` 节点）照常进入。
  * @param draft - 已通过 `validateSpecDraft` 的草案。
  * @returns 说明书全文、权利要求全文与摘要全文。
  */
@@ -38,9 +41,11 @@ export function formTextFromDraft(draft: SpecDraft): { text: string; claims: str
   const content = contentFromDraft(draft)
   const lines: string[] = []
   for (const node of content.specification) {
-    if (node.kind === 'h3' || node.kind === 'h4') {
+    if (node.kind === 'h3') {
+      /* v8 ignore next -- contentFromDraft 的 h3 标题由 SPEC_PART_HEADINGS 生成，text 必然存在 */
       lines.push(`### ${node.text ?? ''}`)
     } else if (node.kind === 'p') {
+      /* v8 ignore next -- p 节点的 text 来自草案正文、列表项或表题，必然存在 */
       lines.push(node.text ?? '')
     }
   }
@@ -76,16 +81,19 @@ export function auditFilingDraft(draft: SpecDraft): SpecViolation[] {
 
 /**
  * 把阻断项渲染成模型可据此修改草案的拒绝理由。
+ *
+ * 行号指向本模块重建的全文，模型手上没有这份文本，指不到自己该改的那句；
+ * 因此给出规则命中的原句。
  * @param violations - 形式规则报出的 error 级违规。
- * @returns 逐条列出规则、位置与修法的多行文本。
+ * @returns 逐条列出规则、命中句与修法的多行文本。
  */
 export function renderFilingFormDenial(violations: readonly SpecViolation[]): string {
   const lines = [
     `申请文件形式预检未通过，成文已拒绝（${violations.length} 项）：`,
   ]
   for (const violation of violations) {
-    const where = violation.line === undefined ? '' : `（第 ${violation.line} 行）`
-    lines.push(`- ${violation.rule}${where}：${violation.message}`)
+    lines.push(`- ${violation.rule}：${violation.message}`)
+    if (violation.matchedSentence !== undefined) lines.push(`  命中句：${violation.matchedSentence}`)
     if (violation.suggestion !== undefined) lines.push(`  修法：${violation.suggestion}`)
   }
   lines.push('修改 draft 后重新调用；被拒绝的调用不会写出 docx。')

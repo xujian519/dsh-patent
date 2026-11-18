@@ -1593,6 +1593,10 @@ function normalizeAria(snapshot: string, workspaceCwd: string, age: boolean): st
   return (age ? snapshot.replace(ARIA_AGE, '{{age}}') : snapshot)
     .split(workspaceCwd).join('{{cwd}}')
     .split(base).join('{{workspace}}')
+    // The blank home draws one of four brand headlines from its Session id,
+    // which a scenario cannot pin; the line is brand copy rather than chrome,
+    // so it collapses instead of forcing a golden per drawn line.
+    .replace(/深则相契|深则见界|深则自固|深则无隙|Deeper, and it fits/g, '{{heroHeadline}}')
     .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '{{uuid}}')
     .replace(/(?<=-)[0-9a-f]{16}(?![0-9a-f])/gi, '{{uuid}}')
     // The optional space in `\d+m ?\d+s` covers both minute spellings: the

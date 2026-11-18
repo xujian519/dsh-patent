@@ -7,6 +7,7 @@ import {
   FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronDownOutlineRegular, IconFolderCloseRegular, IconFolderOpenRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { workspaceTitleOf } from '@deepseek-ai/dsh-util-workspace-path'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ConversationContentProps } from '../contract/slots.ts'
 import css from './HeroShell.module.css'
 
@@ -65,6 +66,8 @@ export function WorkspaceChip({ buttonRef, label, menuOpen = false, onClick, t }
 export interface HeroShellProps {
   /** The owner's locale seat, passed down as a plain prop. */
   t: HeroTranslate
+  /** The blank conversation's identity; decides which headline line it opens with. */
+  sessionId?: SessionId | undefined
   /** Authorized renderer for the hero brand-mark slot. */
   renderSlot: ConversationContentProps['renderSlot']
   /** Overlay content after the stack (modals). */
@@ -125,11 +128,37 @@ function HeroFish({ hovering }: { hovering: boolean }) {
 }
 
 /**
+ * Brand headlines the blank home rotates through. Every line keeps the
+ * 深则 … cadence and the fit the mark draws; the other locales repeat one
+ * English line, so rotating changes what only a Chinese reader sees.
+ */
+const HERO_HEADLINES = [
+  'hero.headline',
+  'hero.headline.edge',
+  'hero.headline.hold',
+  'hero.headline.seam',
+] as const
+
+/**
+ * Pick the line a blank home opens with. The Session carries the choice, so a
+ * conversation keeps the line it started on while the next conversation moves
+ * on; a home without a Session (cold start) stands on the first line.
+ * @param sessionId - the blank conversation's Session identity, when it has one.
+ * @returns the locale key of the line to render.
+ */
+function heroHeadlineOf(sessionId: SessionId | undefined): typeof HERO_HEADLINES[number] {
+  if (sessionId === undefined) return HERO_HEADLINES[0]
+  let hash = 0
+  for (const character of sessionId) hash = (hash * 31 + character.charCodeAt(0)) | 0
+  return HERO_HEADLINES[Math.abs(hash) % HERO_HEADLINES.length] ?? HERO_HEADLINES[0]
+}
+
+/**
  * Render the hero chrome (headline only; no composer, no workspace row).
  * @param props - see {@link HeroShellProps}.
  * @returns the centered hero element tree.
  */
-export function HeroShell({ t, renderSlot, children }: HeroShellProps) {
+export function HeroShell({ t, sessionId, renderSlot, children }: HeroShellProps) {
   const [hovering, setHovering] = useState(false)
   return (
     <div className={css.root}>
@@ -152,7 +181,7 @@ export function HeroShell({ t, renderSlot, children }: HeroShellProps) {
           </span>
           <span className={css.titleGroup}>
             {/* Own element: keeps the headline text addressable apart from the badge. */}
-            <span>{t('hero.headline')}</span>
+            <span>{t(heroHeadlineOf(sessionId))}</span>
             <span className={css.previewBadge}>{t('hero.preview')}</span>
           </span>
         </div>

@@ -208,7 +208,9 @@ export function apply(ctx: Context, config: Config): void {
   }
   ctx.tools.register(createLawVerifyTool({ baselines, policies, supportThreshold: config.propositionSupport }))
   // Register the rule-lock atom and handler as one owned effect: plugin
-  // disposal must withdraw both from the shared registries.
+  // disposal must withdraw both from the shared registries. The shipped
+  // manifests do not declare this gate; it stays available to custom manifests
+  // run through ctx.patentWorkflow.runWorkflow.
   ctx.effect(() => {
     const disposers = [
       globalAtomRegistry.register(ruleLockAtom),

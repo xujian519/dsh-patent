@@ -234,6 +234,9 @@ export function workerToolList(role: string): string[] {
 
 /**
  * Join the tools a role's workers declare for display.
+ * Exported from the package entry for callers outside this package; this
+ * package's tests are the only in-repo consumers.
+ * @public
  * @param role - SKILL.md role id.
  * @returns the '、'-joined tool list, or '' when the role declares none.
  */

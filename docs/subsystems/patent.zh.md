@@ -26,7 +26,7 @@ PatentData service: the patent data seam (ctx.patentData). It exposes the nuo se
 /**
  * Build a nuo-backed search provider (default: LRU-cached nuo searchPatents).
  * @param options - optional search-function injection.
- * @returns the StageProvider for the workflow atoms' search stage.
+ * @returns the provider for the workflow atoms' search stage.
  */
 createSearchProvider(options?: CreateNuoSearchProviderOptions): StageProvider
 
@@ -53,7 +53,7 @@ Source: [`packages/patent/patent-data/src/index.ts`](../../packages/patent/paten
 
 ### `ctx.patentKnowledge` — `PatentKnowledge`
 
-PatentKnowledge service: the knowledge.db query seam (ctx.patentKnowledge). It lazily opens the resolved knowledge.db read-only and delegates to the ported engines; the engines close when the owning fiber unloads.
+PatentKnowledge service: the knowledge.db query seam (ctx.patentKnowledge). It lazily opens the resolved knowledge.db read-only and delegates to the ported engines; the engines close when the owning fiber unloads. `ipcClassify` and the `ipcStandards*` lookups read the shipped classification and standard tables instead of the database, and serve plugins that hold only the service reference; code with a package import uses the same-named pure exports.
 
 ```ts cordis-catalog
 /**
@@ -92,6 +92,24 @@ guidelineSearch(query: string, options?: KnowledgeLawSearchOptions): LawSearchRe
 wikiCards(query: string, limit: number = 10): WikiCardMeta[]
 
 /**
+ * Wiki-card lookup under one directory prefix. An empty keyword lists the
+ * prefix, which serves directory browsing.
+ * @param prefix - directory prefix relative to the wiki root; empty searches all.
+ * @param keyword - the keyword; empty lists the prefix.
+ * @param limit - result cap.
+ * @returns matching card metadata.
+ */
+wikiCardsIn(prefix: string, keyword: string, limit: number = 10): WikiCardMeta[]
+
+/**
+ * Render one wiki card's body fragment for model context.
+ * @param id - card id (relative path without `.md`).
+ * @param maxChars - body cap before truncation.
+ * @returns the rendered fragment, or an empty string when the card is absent.
+ */
+wikiContext(id: string, maxChars: number = 1200): string
+
+/**
  * IPC classification of a patent-domain text.
  * @param text - the patent-domain text to classify.
  * @returns classification results in confidence order.
@@ -120,6 +138,23 @@ kgGetNode(id: string): KgNode | undefined
  * @returns the matching nodes.
  */
 kgListByType(nodeType: string, limit: number = 50): KgNode[]
+
+/**
+ * Knowledge-graph similar nodes of one node (similarity relations).
+ * @param id - the node id.
+ * @param limit - result cap.
+ * @returns the neighbor nodes with their relation.
+ */
+kgSimilarNodes(id: string, limit: number = 10): Array<{ node: KgNode; relation: string }>
+
+/**
+ * Knowledge-graph outgoing neighbors of one node.
+ * @param id - the node id.
+ * @param relation - optional relation filter.
+ * @param limit - result cap.
+ * @returns the outgoing neighbors.
+ */
+kgNeighbors(id: string, relation?: string, limit: number = 20): Array<{ targetId: string; relation: string }>
 
 /**
  * IPC examination-standard cards for one section.
@@ -294,7 +329,7 @@ Source: [`packages/patent/patent-teams/src/service.ts`](../../packages/patent/pa
 
 ### `ctx.patentWorkflow` — `PatentWorkflow`
 
-PatentWorkflow service: the patent execution pipeline (ctx.patentWorkflow), which runs workflow manifests, drives the plantask HITL state machine, and holds the case-docket issue schema whose blocking and terminal grades the state machine's transition guards enforce. `Config.maxRounds` bounds the replanning rounds one case may spend. Approval is an optional seam read via ctx.get('approval'); storage-backed file products are caller-provided stores (see the package README). The constructor registers patent-core's built-in atoms only: the six atoms that `@deepseek-ai/dsh-patent-tools` registers (`eligibility`, `spec-check`, `slop-gate`, `draft-specification`, `response-check`, `legal-gaps`) are absent unless that plugin is mounted or the caller injects their contracts and handlers through the run options, and a manifest declaring one of them fails the unknown-atom check before any stage executes.
+PatentWorkflow service: the patent execution pipeline (ctx.patentWorkflow), which runs workflow manifests, drives the plantask HITL state machine, and holds the case-docket issue schema whose blocking and terminal grades the state machine's transition guards enforce. `Config.maxRounds` bounds the replanning rounds one case may spend. Approval is an optional seam read via ctx.get('approval'); storage-backed file products are caller-provided stores (see the package README). The constructor registers patent-core's built-in atoms only: the nine atoms that `@deepseek-ai/dsh-patent-tools` registers (`admissibility`, `draft-specification`, `eligibility`, `figure-analysis`, `legal-gaps`, `response-check`, `slop-gate`, `spec-check`, `tighten`) are absent unless that plugin is mounted or the caller injects their contracts and handlers through the run options, and a manifest declaring one of them fails the unknown-atom check before any stage executes.
 
 ```ts cordis-catalog
 /**

@@ -22,7 +22,7 @@ Service Definition for the patent execution pipeline (`ctx.patentWorkflow`): the
 
 ## Service
 
-The `PatentWorkflow` service exposes the pipeline entry points and re-exports the pure pipeline API (workflow, workflow-dag, workflow-store, flexible-plan, flexible-plan-store, plantask, worker-contract, docket-issue) from this package's root export.
+The `PatentWorkflow` service exposes the pipeline entry points and re-exports the pure pipeline API (workflow, workflow-dag, workflow-store, flexible-plan, flexible-plan-store, plantask, worker-contract, role-contracts, docket-issue) from this package's root export. That surface includes the manifest graph helpers `manifestToFlowGraph` and `validateWorkflowManifestDag`, the flexible-plan compiler `toCompiledGraph`, and the role display helper `workerTools`.
 
 ### runWorkflow(manifest, ctx, executor?, options?, agent?)
 

@@ -16,7 +16,7 @@
 | [05-findings.md](05-findings.md) | 统一发现清单与记录模板 |
 | [06-priority.md](06-priority.md) | 严重度、可能性、紧迫性的排序规则 |
 | [07-ci-hardening.md](07-ci-hardening.md) | 把反复出现的问题转为持续防线 |
-| [08-retrospective.md](08-retrospective.md) | 复盘模板与下一周期输入 |
+| [08-retrospective.md](08-retrospective.md) | 四张复盘表与下一周期建议 |
 | [daily/day-01.md](daily/day-01.md) | 每日一页执行记录；`day-01` 至 `day-45` 同目录，另含计划外补充轮 [day-05b.md](daily/day-05b.md) |
 
 ## 每日节奏
@@ -71,8 +71,11 @@
 - Day 38 已完成：E 维度法律模式与共享机制（`legal-evidence`、`legal-knowledge`、`legal-law`、`law-core`、`knowledge-core`）。新增 F-LEG-011 至 F-LEG-014。证人利害关系省略时关键规则报「证人与案件无利害关系」通过；电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略；法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果；默认判定日期取 UTC，与中国法域自然日相差 8 小时。F-LEG-001、F-LEG-002、F-LEG-004、F-LEG-010 仍开放。H01–H10 不改。
 - Day 39 已完成：E 维度视频模式全域（`video-mode`、`video-bundle`、`ui-video-studio`）。新增 F-VID-011 至 F-VID-015。同一工程的并发生成会各自通过余额检查再分别结算，账本总额可超过预算；provider 被移除或记录被拒绝后 journal 没有工具侧清理路径；`status` 对 `artifacts: []` 的成功任务照常记账并清 journal；`init` 的绝对路径与其余动作的原始路径让同一工程在 studio 出现两次；EDL 音频区间的反向顺序晚到 ffmpeg 才失败。H04 的 Day 39 验证点完成：重复计费不成立，预算不变量部分成立；其余假设不改。
 - Day 40 已完成：E 维度跨域（错误处理、静默降级、模型可见性与会话日志一致性）。新增 F-CROSS-004：四域中只有视频域的工具错误类接入 `HarnessError`，其余七个带 `code` 的错误类在 `tool/result.error` 与轨迹界面里只剩文案。模型可见面逐项对齐：系统提示、工具 schema、用户/合成上下文、工具调用与结果、专利工具内模型调用都有会话事件；外部 provider 原始响应与视频 journal 不是模型可见面，残留缺口只有 F-PAT-010。H07、H10 改为部分确认；D34–D40 的 E 维度共 29 条新编号，加本条 30 条，已按六个主题汇总并列出当时的合并候选。
-- Day 41–42 已完成（缩短收敛，2026-11-17，对照 Merge PR #886）：不重测已修条目。Day 40 的六个合并组里，对比表、门禁缺输入与法律证据未知值三组已落地，沿革组只剩 F-PAT-051。下一轮要改代码的 E 项改为 confirmed。F-PAT-002、F-LEG-001、F-DOC-001 的总表对齐为 fixed。剩余队列在 [06-priority.md](06-priority.md)。D43–D45 未做。
-- 当前进度：A 至 E（Day 6–40）与缩短收敛（Day 41–42）已完成。R-E1（F-DOC-008、F-DOC-009）已修。下一次按剩余队列修 R-E2（F-VID-011、F-VID-012、F-VID-013）。
+- Day 41–42 已完成（缩短收敛，2026-11-17，对照 Merge PR #886）：不重测已修条目。Day 40 的六个合并组里，对比表、门禁缺输入与法律证据未知值三组已落地，沿革组只剩 F-PAT-051。下一轮要改代码的 E 项改为 confirmed。F-PAT-002、F-LEG-001、F-DOC-001 的总表对齐为 fixed。剩余队列在 [06-priority.md](06-priority.md)。
+- Day 43 已完成（2026-11-18）：CI 门禁建议定稿。12 条建议逐条裁定——采纳 7 条、部分已落地 2 条、降级为可选观察 1 条、拒绝 2 条；拒绝依据是 H08、H09 已被推翻，降级依据是 H03 已被推翻且本机无 LibreOffice。`verify-patent-core-exports` 记为「导出面消费者校验」的部分落地。见 [07-ci-hardening.md](07-ci-hardening.md)。
+- Day 44 已完成（2026-11-18）：抽样 10 条回到源码取证（P0 全取、P1 按域各取、另取 1 条 deferred）。9 条仍成立、1 条维持 deferred、误报 0。见 [daily/day-44.md](daily/day-44.md) 与 [05-findings.md](05-findings.md) 的「Day 44 抽样复核」。
+- Day 45 已完成（2026-11-18）：复盘四张表填完。98 条发现、修复率 57%、误报 0、根因型 19 条；假设命中 1 条、部分命中 5 条、推翻 4 条。下一周期建议为专利域 30 天紧凑版、维度顺序改为先 E 后 B。见 [08-retrospective.md](08-retrospective.md)。
+- 当前进度：D1–D45 全部完成，共 98 条编号发现，56 条已修复、42 条未修。未修 42 条按 P0 1 / P1 9 / P2 26 / P3 6 分布，分派顺序见 [06-priority.md](06-priority.md) 的「未修条目打分（Day 44）」与 G1–G4 分组。下一周期的范围、天数与待确认事项见 [08-retrospective.md](08-retrospective.md)。
 - 已确认：45 天周期、包含 `packages/law`、视频按实验特性、在 Node 24 补跑构建与覆盖率基线。
 - 本目录的中文单语文档已加入 `scripts/translation-pairing.manifest.json` 的豁免清单；`verify-translation-pairing` 复跑通过。
 

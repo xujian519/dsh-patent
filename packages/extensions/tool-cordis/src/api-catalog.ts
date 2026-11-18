@@ -2585,7 +2585,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         signature: 'createSearchProvider(options?: CreateNuoSearchProviderOptions): StageProvider',
         description: 'Build a nuo-backed search provider (default: LRU-cached nuo searchPatents).',
         parameters: [{ name: 'options', description: 'optional search-function injection.' }],
-        returns: 'the StageProvider for the workflow atoms\' search stage.',
+        returns: 'the provider for the workflow atoms\' search stage.',
       },
       {
         signature: 'createEgoSession(options?: EgoSessionOptions): EgoBrowserSession',
@@ -2604,7 +2604,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
   {
     key: 'patentKnowledge',
     summary: 'PatentKnowledge service: the knowledge.db query seam (ctx.patentKnowledge).',
-    description: 'PatentKnowledge service: the knowledge.db query seam (ctx.patentKnowledge). It lazily opens the resolved knowledge.db read-only and delegates to the ported engines; the engines close when the owning fiber unloads.',
+    description: 'PatentKnowledge service: the knowledge.db query seam (ctx.patentKnowledge). It lazily opens the resolved knowledge.db read-only and delegates to the ported engines; the engines close when the owning fiber unloads. `ipcClassify` and the `ipcStandards*` lookups read the shipped classification and standard tables instead of the database, and serve plugins that hold only the service reference; code with a package import uses the same-named pure exports.',
     methods: [
       {
         signature: 'readonly paths: KnowledgePaths',
@@ -2636,6 +2636,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'matching card metadata.',
       },
       {
+        signature: 'wikiCardsIn(prefix: string, keyword: string, limit: number = 10): WikiCardMeta[]',
+        description: 'Wiki-card lookup under one directory prefix. An empty keyword lists the prefix, which serves directory browsing.',
+        parameters: [{ name: 'prefix', description: 'directory prefix relative to the wiki root; empty searches all.' }, { name: 'keyword', description: 'the keyword; empty lists the prefix.' }, { name: 'limit', description: 'result cap.' }],
+        returns: 'matching card metadata.',
+      },
+      {
+        signature: 'wikiContext(id: string, maxChars: number = 1200): string',
+        description: 'Render one wiki card\'s body fragment for model context.',
+        parameters: [{ name: 'id', description: 'card id (relative path without `.md`).' }, { name: 'maxChars', description: 'body cap before truncation.' }],
+        returns: 'the rendered fragment, or an empty string when the card is absent.',
+      },
+      {
         signature: 'ipcClassify(text: string): IpcClassification[]',
         description: 'IPC classification of a patent-domain text.',
         parameters: [{ name: 'text', description: 'the patent-domain text to classify.' }],
@@ -2658,6 +2670,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Knowledge-graph nodes by type.',
         parameters: [{ name: 'nodeType', description: 'the node type to list.' }, { name: 'limit', description: 'result cap.' }],
         returns: 'the matching nodes.',
+      },
+      {
+        signature: 'kgSimilarNodes(id: string, limit: number = 10): Array<{ node: KgNode; relation: string }>',
+        description: 'Knowledge-graph similar nodes of one node (similarity relations).',
+        parameters: [{ name: 'id', description: 'the node id.' }, { name: 'limit', description: 'result cap.' }],
+        returns: 'the neighbor nodes with their relation.',
+      },
+      {
+        signature: 'kgNeighbors(id: string, relation?: string, limit: number = 20): Array<{ targetId: string; relation: string }>',
+        description: 'Knowledge-graph outgoing neighbors of one node.',
+        parameters: [{ name: 'id', description: 'the node id.' }, { name: 'relation', description: 'optional relation filter.' }, { name: 'limit', description: 'result cap.' }],
+        returns: 'the outgoing neighbors.',
       },
       {
         signature: 'ipcStandards(section: string): IpcStandardCard[]',
@@ -2761,7 +2785,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
   {
     key: 'patentWorkflow',
     summary: 'PatentWorkflow service: the patent execution pipeline (ctx.patentWorkflow), which runs workflow manifests, drives the plantask HITL state machine, and holds the case-docket issue schema whose blocking and terminal grades the state machine\'s transition guards enforce.',
-    description: 'PatentWorkflow service: the patent execution pipeline (ctx.patentWorkflow), which runs workflow manifests, drives the plantask HITL state machine, and holds the case-docket issue schema whose blocking and terminal grades the state machine\'s transition guards enforce. `Config.maxRounds` bounds the replanning rounds one case may spend. Approval is an optional seam read via ctx.get(\'approval\'); storage-backed file products are caller-provided stores (see the package README). The constructor registers patent-core\'s built-in atoms only: the six atoms that `@deepseek-ai/dsh-patent-tools` registers (`eligibility`, `spec-check`, `slop-gate`, `draft-specification`, `response-check`, `legal-gaps`) are absent unless that plugin is mounted or the caller injects their contracts and handlers through the run options, and a manifest declaring one of them fails the unknown-atom check before any stage executes.',
+    description: 'PatentWorkflow service: the patent execution pipeline (ctx.patentWorkflow), which runs workflow manifests, drives the plantask HITL state machine, and holds the case-docket issue schema whose blocking and terminal grades the state machine\'s transition guards enforce. `Config.maxRounds` bounds the replanning rounds one case may spend. Approval is an optional seam read via ctx.get(\'approval\'); storage-backed file products are caller-provided stores (see the package README). The constructor registers patent-core\'s built-in atoms only: the nine atoms that `@deepseek-ai/dsh-patent-tools` registers (`admissibility`, `draft-specification`, `eligibility`, `figure-analysis`, `legal-gaps`, `response-check`, `slop-gate`, `spec-check`, `tighten`) are absent unless that plugin is mounted or the caller injects their contracts and handlers through the run options, and a manifest declaring one of them fails the unknown-atom check before any stage executes.',
     methods: [
       {
         signature: 'readonly config: ResolvedConfig',
@@ -5085,7 +5109,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
   {
     key: 'web',
     summary: 'The web access service.',
-    description: 'The web access service. Registered as `ctx.web` (one instance per context) and exposed to Clients as the `web` Remote namespace (`listProviders`).\n\nSelection semantics (resolved at execution time, never order-dependent):\n\n- A configured id that is registered and `available()` → that provider.\n- A configured id not registered → `WEB_PROVIDER_CONFIGURED_MISSING`.\n- A configured id registered but unavailable → `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`.\n- No id configured, exactly one registered usable provider → that provider.\n- No id configured, multiple usable providers → `WEB_PROVIDER_AMBIGUOUS`.\n- No id configured, no usable provider → `WEB_PROVIDER_UNAVAILABLE`.',
+    description: 'The web access service. Registered as `ctx.web` (one instance per context) and exposed to Clients as the `web` Remote namespace (`listProviders`).\n\nSelection semantics (resolved at execution time, never order-dependent):\n\n- A configured id that is registered and `available()` → that provider.\n- A configured id not registered → `WEB_PROVIDER_CONFIGURED_MISSING`.\n- A configured id registered but unavailable → `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`.\n- No search id configured, and the provider assigned to the route of the model request the search serves is usable → that provider: `deepseek-official` (Messages search) on the `deepseek-official` and `deepseek-account` routes, `deepseek-search-api` on every other route and outside a model request.\n- No id configured, exactly one registered usable provider → that provider.\n- No id configured, multiple usable providers → `WEB_PROVIDER_AMBIGUOUS`.\n- No id configured, no usable provider → `WEB_PROVIDER_UNAVAILABLE`.',
     methods: [
       {
         signature: 'registerSearchProvider(provider: WebSearchProvider): () => void',
@@ -5108,7 +5132,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       {
         signature: 'async search(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearchResult>',
         description: 'Run one search through the selected provider. Resolves the provider at call time with the selection rules above; throws WebError when the capability cannot run. The seam enforces `request.maxResults` on the result: if the provider over-returns, `sources[]` is truncated and `truncated` set.',
-        parameters: [{ name: 'request', description: 'the query and optional result limit.' }, { name: 'signal', description: 'optional cancellation signal forwarded to the provider.' }],
+        parameters: [{ name: 'request', description: 'the query, the optional result limit, and the route of the model request the search serves.' }, { name: 'signal', description: 'optional cancellation signal forwarded to the provider.' }],
         returns: 'the provider\'s results, capped to `request.maxResults`.',
       },
       {
@@ -11873,7 +11897,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WebSearchRequest',
-    declaration: 'export interface WebSearchRequest {\n    readonly query: string;\n    readonly maxResults?: number;\n}',
+    declaration: 'export interface WebSearchRequest {\n    readonly query: string;\n    readonly maxResults?: number;\n    readonly llmProvider?: string;\n}',
   },
   {
     name: 'WebSearchResult',

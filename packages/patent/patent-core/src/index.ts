@@ -462,9 +462,6 @@ export {
   parseOfficeAction,
 } from './notice/index.ts'
 
-// Response preparation: per-claim amendment plan for an office action and the
-// reexamination preparation sections.
-
 // Deterministic infringement kernel: all-elements coverage, equivalence
 // consistency, weighted risk grading.
 export type {

@@ -373,6 +373,8 @@ export function toManifest(state: FlexiblePlanState): WorkflowManifest {
 
 /**
  * 灵活计划 → 可执行图（toManifest + manifestToGraph 一步到位）。
+ * 包外调用方可直接取用；仓内消费方目前只有测试。
+ * @public
  * @param state - 当前计划状态（须为 active）。
  * @param deps - 构图依赖（默认空）。
  * @returns 编译后的可执行图。

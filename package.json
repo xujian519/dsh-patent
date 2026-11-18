@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-root",
-  "version": "0.2.2-rc.4",
+  "version": "0.2.2-rc.5",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -246,6 +246,8 @@
     "patent-authority-eval": "tsx scripts/verify-patent-authority-eval.ts",
     "verify-patent-law-coverage": "tsx scripts/verify-patent-law-coverage.ts",
     "verify-patent-law-freshness": "tsx scripts/verify-patent-law-freshness.ts",
+    "verify-patent-rule-alignment": "tsx scripts/verify-patent-rule-alignment.ts",
+    "verify-patent-rule-citations": "tsx scripts/verify-patent-rule-citations.ts",
     "rehearse-patent-amendment": "tsx scripts/rehearse-patent-amendment.ts",
     "patent-authority-closeout": "tsx scripts/verify-patent-authority-closeout.ts",
     "gate:patent-oas": "tsx scripts/run-patent-oas.ts",

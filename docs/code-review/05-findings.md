@@ -1841,6 +1841,25 @@ F-PAT-012。`patent-tools/src` 不再用 `as unknown as` 穿过工具 JSON。
 - 已否决：`knowledge-core` 根入口同时导出纯函数与 `node:fs` 的安装助手——`grep` 显示其消费者只有 `patent-core`、`patent-knowledge`、`legal-knowledge` 三个 Node 侧包，不进入客户端构建，不构成实际问题；仅作为包边界整洁度观察，不立发现。
 - 已否决：Day 3 提出的"资产定位不一致"。`patent-rule`/`law`/`fees`/`deadline`/`writing-patterns` 用单层 `../assets` 且在主进程内经 Electron fs 垫片读取；`patent-document`/`filing` 因模块嵌套更深或资产交给 Python 子进程，必须用双候选路径加 `unpackedFsPath`。两类都能在 ASAR 下命中，真正的差异是失败方向（见 F-PAT-002 与 F-PAT-004）。
 
+### Day 44 抽样复核（2026-11-18）
+
+从 P0 全取、P1 按域各取，共 10 条回到源码逐点取证；明细与命令见 [daily/day-44.md](daily/day-44.md)。
+
+| 编号 | 分数 | 复核位置 | 结论 |
+|---|---|---|---|
+| F-PAT-045 | 12（P0） | `patent-core/src/atoms/handlers/builtin/claim-breadth.ts:217`；`patent-core/src/llm-json.ts:200` | 成立 |
+| F-DOC-010 | 10（P1） | `document-deliver/src/checks.ts:596`–`:601` | 成立 |
+| F-LEG-013 | 10（P1） | `legal-knowledge/src/legal/search.ts:199`、`:215` | 成立 |
+| F-PAT-050 | 9（P1） | `patent-workflow/src/plantask.ts:202`、`:209` | 成立 |
+| F-PAT-055 | 9（P1） | `patent-data/src/mapper.ts:27`–`:34` | 成立 |
+| F-CROSS-002 | 9（P1） | `patent-tools/package.json:40`；`src/tool/law-search.ts:16` | 成立 |
+| F-VID-015 | 9（P1） | `video-mode/src/edl.ts:43`–`:44`、`:121` | 成立 |
+| F-VID-014 | 8（P1） | `video-mode/src/tools/project.ts:169`、`:186` | 成立 |
+| F-PAT-024 | 7（P1） | 七个专利包入口（`patent-teams/src/index.ts` 10 对 10；`patent-data/src/index.ts` 15 对 16） | 成立 |
+| F-PAT-047 | —（deferred） | `patent-core/src/workflow/types.ts:190`；`patent-workflow/src/workflow.ts:481` | 维持 deferred |
+
+抽样误报 0 条。截至本日，全部 98 条编号发现中没有任何一条被改判为 false-positive；此前否决的 2 条在编号前即被拦下（见本节前两条）。
+
 ## 观察列表
 
 | ID | 观察 | 影响 | 建议 | 状态 |

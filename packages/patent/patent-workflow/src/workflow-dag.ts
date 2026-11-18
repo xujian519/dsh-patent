@@ -36,6 +36,8 @@ function sequentialEdges(stages: readonly WorkflowStage[]): Array<{ from: Workfl
 /**
  * 用 FlowGraph 构建 manifest 的执行链图：仅顺序边（依赖边），回退边不入图。
  * 返回的图是严格 DAG，可安全用于 topologicalLevels / validate。
+ * 包外调用方可直接取用；仓内消费方目前只有测试。
+ * @public
  * @param manifest - 工作流清单。
  * @returns 顺序执行链的 FlowGraph。
  */
@@ -53,6 +55,8 @@ export function manifestToFlowGraph(manifest: WorkflowManifest): FlowGraph {
 /**
  * 用 FlowGraph 静态校验 manifest 顺序链图（环 / 孤儿节点）。
  * 顺序链是严格 DAG，正常返回空数组；返回问题列表 = 图不合法。
+ * 包外调用方免去先构造图的公开便利入口；仓内消费方目前只有测试。
+ * @public
  * @param manifest - 工作流清单。
  * @returns 图问题列表（环 / 孤儿节点），合法时为空数组。
  */

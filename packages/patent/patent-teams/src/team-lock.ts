@@ -60,6 +60,8 @@ export async function serialize<T>(key: string, fn: () => Promise<T>): Promise<T
 /**
  * How many operations have entered this scope and not yet left.
  * A value above 1 means a later caller is waiting on the current holder.
+ * Module export for the package's lock tests; it reports in-process state and
+ * stays outside the package root API.
  * @param key - the mutation scope.
  * @returns the number of entered operations.
  */

@@ -36,11 +36,13 @@ import {
   type StageProvider,
   type WorkflowContext,
   type WorkflowManifest,
+  type WorkflowRunOptions,
   type WorkflowRunResult,
   type WorkflowStage,
   type WorkflowStageResult,
 } from '@deepseek-ai/dsh-patent-core'
 import { JsonFileWorkflowRunStore, runWorkflow, workflowManifestToMermaid } from '@deepseek-ai/dsh-patent-workflow'
+import type { PatentAgent } from '@deepseek-ai/dsh-patent-workflow'
 import { createNuoSearchProvider } from '@deepseek-ai/dsh-patent-data'
 import { PatentToolError } from '../../error.ts'
 import { projectConsumedOutput } from './consume-projections.ts'
@@ -166,6 +168,18 @@ export async function writeRunArtifacts(
   }
 }
 
+/**
+ * One manifest execution entry: the library executor's signature, or the
+ * `ctx.patentWorkflow` method, which appends the run's session events itself.
+ */
+export type ManifestRunner = (
+  manifest: WorkflowManifest,
+  ctx: WorkflowContext,
+  executor: StageExecutor,
+  options: WorkflowRunOptions,
+  agent?: PatentAgent,
+) => Promise<WorkflowRunResult>
+
 /** Options for executing a manifest via runWorkflow with optional persistence. */
 interface RunWorkflowWithPersistOptions {
   /** Stage-handler registry (default: the global registry). */
@@ -184,6 +198,10 @@ interface RunWorkflowWithPersistOptions {
   cwd: string
   /** Already-approved approval-gate stage ids (skipped on rerun). */
   approvalGrants?: string[]
+  /** Executor to use instead of the library function; the service path also records session events. */
+  run?: ManifestRunner
+  /** Calling agent, forwarded to a service executor that records the run. */
+  agent?: PatentAgent
 }
 
 /** Result of a persisted workflow run (the persist target feeds the artifact writes). */
@@ -210,7 +228,7 @@ export async function runWorkflowWithPersist(
   opts: RunWorkflowWithPersistOptions,
 ): Promise<PersistedWorkflowRun> {
   const persistTarget = resolveRunPersistTarget(opts.caseId, manifest.id, opts.cwd)
-  const result = await runWorkflow(manifest, ctx, executor, {
+  const options: WorkflowRunOptions = {
     handlers: opts.handlers,
     atoms: opts.atoms,
     provider: opts.provider,
@@ -223,7 +241,10 @@ export async function runWorkflowWithPersist(
     ...(opts.approvalGrants !== undefined && opts.approvalGrants.length > 0
       ? { approvalGrants: opts.approvalGrants }
       : {}),
-  })
+  }
+  const result = opts.run === undefined
+    ? await runWorkflow(manifest, ctx, executor, options)
+    : await opts.run(manifest, ctx, executor, options, opts.agent)
   return { result, persistTarget }
 }
 
@@ -396,6 +417,11 @@ export interface WorkflowProviderDeps {
   /** Prior-art search function (default: the nuo-patent provider). */
   search?: StageProvider['search']
   /**
+   * Late-bound search function, read once per provider build. The composition
+   * uses it to resolve `ctx.patentData` after that plugin activates.
+   */
+  searchProvider?: () => StageProvider['search'] | undefined
+  /**
    * Compiled writing skills for one workflow stage. Copied onto the provider
    * so model-calling atoms can append them. Absent leaves those prompts unchanged.
    */
@@ -425,7 +451,7 @@ export function buildWorkflowProvider(
   if (!model) return undefined
   // callLLM bridges the port into the string seam the graph LLM nodes use;
   // llm feeds the atoms' builtin/llm bridge (which also prefers callLLM).
-  const search: StageProvider['search'] = deps.search ?? createNuoSearchProvider().search
+  const search: StageProvider['search'] = deps.search ?? deps.searchProvider?.() ?? createNuoSearchProvider().search
   return {
     callLLM: async (prompt, opts, signal) =>
       collectPortText(model, prompt, signal, {

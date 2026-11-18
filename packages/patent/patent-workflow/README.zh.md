@@ -23,7 +23,7 @@ kind: "package-reference"
 <a id="service"></a>
 ## 服务
 
-`PatentWorkflow` 服务暴露管线入口，并从本包根导出再导出纯管线 API（workflow、workflow-dag、workflow-store、flexible-plan、flexible-plan-store、plantask、worker-contract、docket-issue）。
+`PatentWorkflow` 服务暴露管线入口，并从本包根导出再导出纯管线 API（workflow、workflow-dag、workflow-store、flexible-plan、flexible-plan-store、plantask、worker-contract、role-contracts、docket-issue）。该公开面还包含 manifest 执行链助手 `manifestToFlowGraph`、`validateWorkflowManifestDag`，灵活计划编译器 `toCompiledGraph`，以及角色工具展示助手 `workerTools`。
 
 ### runWorkflow(manifest, ctx, executor?, options?, agent?)
 

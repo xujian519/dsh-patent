@@ -250,6 +250,27 @@ describe('workflow-helpers', () => {
     expect(provider?.writingSkillsForStage).toBe(writingSkillsForStage)
   })
 
+  it('prefers an injected search over the late-bound provider', () => {
+    const search = async (): Promise<never[]> => []
+    const provider = buildWorkflowProvider({
+      model: { stream: async function* () { yield { type: 'done' } } },
+      search,
+      searchProvider: () => {
+        throw new Error('the injected search must win')
+      },
+    })
+    expect(provider?.search).toBe(search)
+  })
+
+  it('reads the late-bound search provider when no search is injected', () => {
+    const search = async (): Promise<never[]> => []
+    const provider = buildWorkflowProvider({
+      model: { stream: async function* () { yield { type: 'done' } } },
+      searchProvider: () => search,
+    })
+    expect(provider?.search).toBe(search)
+  })
+
   it('resolves the runs dir for absolute, path-like, and plain case ids', () => {
     const cwd = '/base'
     expect(resolveWorkflowRunsDir('/abs/case', cwd)).toBe('/abs/case/workflow-runs')

@@ -18,6 +18,7 @@ import {
   type RuleEvaluator,
   type WorkflowStageResult,
 } from '@deepseek-ai/dsh-patent-core'
+import { runWorkflow } from '@deepseek-ai/dsh-patent-workflow'
 import { JobId } from '@deepseek-ai/dsh-jobs'
 import type { JobHooks, JobSpec, JobView } from '@deepseek-ai/dsh-jobs'
 import type { ApprovalRequest } from '@deepseek-ai/dsh-user-approval'
@@ -220,6 +221,28 @@ describe('patent_workflow_run', () => {
       expect(stages.find(stage => stage.stageId === stageId)?.degraded, stageId).toBe(false)
     }
     expect(stages.find(stage => stage.stageId === 'extract_problem')?.output).toContain('problem_insight')
+  })
+
+  it('runs the manifest through ctx.patentWorkflow and leaves event appending to it', async () => {
+    const calls: string[] = []
+    const appended: string[] = []
+    const tool = createPatentWorkflowRunTool({
+      model: fakeModel(),
+      search: fakeSearch,
+      workflow: () => ({
+        runWorkflow: async (manifest, ctx, executor, options) => {
+          calls.push(manifest.id)
+          return await runWorkflow(manifest, ctx, executor, options)
+        },
+      }),
+    })
+    const value = (await tool.execute(
+      { manifestId: 'patent_disclosure_v1', input: 'technical disclosure' },
+      toolExec(true, type => appended.push(type)),
+    )) as PatentWorkflowRunOutput
+    expect(value.ok).toBe(true)
+    expect(calls).toEqual(['patent_disclosure_v1'])
+    expect(appended).not.toContain('patent/workflow-run')
   })
 
   it('asks the approval service at the gate and continues when allowed', async () => {

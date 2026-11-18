@@ -237,7 +237,7 @@ export class PatentData extends Service {
   /**
    * Build a nuo-backed search provider (default: LRU-cached nuo searchPatents).
    * @param options - optional search-function injection.
-   * @returns the StageProvider for the workflow atoms' search stage.
+   * @returns the provider for the workflow atoms' search stage.
    */
   createSearchProvider(options?: CreateNuoSearchProviderOptions): StageProvider {
     return createNuoSearchProvider(options)

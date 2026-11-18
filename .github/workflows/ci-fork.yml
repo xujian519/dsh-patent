@@ -52,6 +52,21 @@ jobs:
         # problem-space DAG, thresholds, and baseline: no key, no build.
         run: pnpm run verify-patent-oas-gold
 
+      # The legal corpus and rule assets reach no aggregate in this fork: each
+      # check reads only checked-in law, rules, and manifests, so this required
+      # lane carries all four.
+      - name: Patent law coverage
+        run: pnpm run verify-patent-law-coverage
+
+      - name: Patent law freshness
+        run: pnpm run verify-patent-law-freshness
+
+      - name: Patent rule alignment
+        run: pnpm run verify-patent-rule-alignment
+
+      - name: Patent rule citations
+        run: pnpm run verify-patent-rule-citations
+
       - name: Issue management policy
         # The suite asserts this fork's issue and pull-request templates and the
         # structure of the upstream workflows it archives under

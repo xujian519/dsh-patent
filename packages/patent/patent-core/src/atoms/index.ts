@@ -184,7 +184,12 @@ import { globalAtomRegistry } from './atom.ts'
 import { globalStageHandlerRegistry } from './handler.ts'
 import * as builtin from './handlers/builtin/index.ts'
 
-/** 将 32 个内置原子（契约 + 运行时）注册进全局注册表。幂等：同名覆盖。 */
+/**
+ * 将 32 个内置原子（契约 + 运行时）注册进全局注册表。幂等：同名覆盖。
+ *
+ * 随包的 8 个 manifest 引用其中 30 个；`compare` 与 `reasoning` 是通用扩展原子，
+ * 供经 `ctx.patentWorkflow.runWorkflow` 传入自定义 manifest 的调用方使用。
+ */
 export function registerBuiltinAtoms(): void {
   globalAtomRegistry.register(builtin.searchAtom)
   globalAtomRegistry.register(builtin.extractAtom)

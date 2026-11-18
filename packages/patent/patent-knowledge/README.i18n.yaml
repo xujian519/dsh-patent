@@ -26,15 +26,18 @@
 /deepseek-ai-dsh-patent-knowledge/service/guidelinesearch-query-options:
   en: ae9c904be82e181e
   zh: c502b0e962aef7eb
-/deepseek-ai-dsh-patent-knowledge/service/wikicards-query-limit:
-  en: 160d840333a60075
-  zh: cbfef29237f4b190
+/deepseek-ai-dsh-patent-knowledge/service/wikicards-query-limit-wikicardsin-prefix-keyword-limit:
+  en: c7d0ed16e9a28efc
+  zh: 11fec3a868cb0214
+/deepseek-ai-dsh-patent-knowledge/service/wikicontext-id-maxchars:
+  en: 5f35553d61b7e998
+  zh: 32ac59542dbbb3dd
 /deepseek-ai-dsh-patent-knowledge/service/ipcclassify-text:
   en: 2dc9f7841a90ac27
   zh: 0d034f4ccc80dc6d
-/deepseek-ai-dsh-patent-knowledge/service/kgsearch-kggetnode-kglistbytype:
-  en: 2a278d4895c186e0
-  zh: 880045f017871eee
+/deepseek-ai-dsh-patent-knowledge/service/kgsearch-kggetnode-kglistbytype-kgsimilarnodes-kgneighbors:
+  en: dabd0fc8756c90b2
+  zh: eadd67aef3bcb90f
 /deepseek-ai-dsh-patent-knowledge/service/ipcstandards-ipcstandardsbyarticle-ipcstandardssearch:
   en: f6d093dae74b558c
   zh: 7086ea0647d2eb10

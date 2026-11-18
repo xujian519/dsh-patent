@@ -132,9 +132,9 @@ export function appendWorkflowRunEvents(
  * replanning rounds one case may spend. Approval is an optional seam read via
  * ctx.get('approval'); storage-backed file products are caller-provided stores
  * (see the package README). The constructor registers patent-core's built-in
- * atoms only: the six atoms that `@deepseek-ai/dsh-patent-tools` registers
- * (`eligibility`, `spec-check`, `slop-gate`, `draft-specification`,
- * `response-check`, `legal-gaps`) are absent unless that plugin is mounted or
+ * atoms only: the nine atoms that `@deepseek-ai/dsh-patent-tools` registers
+ * (`admissibility`, `draft-specification`, `eligibility`, `figure-analysis`,
+ * `legal-gaps`, `response-check`, `slop-gate`, `spec-check`, `tighten`) are absent unless that plugin is mounted or
  * the caller injects their contracts and handlers through the run options, and
  * a manifest declaring one of them fails the unknown-atom check before any
  * stage executes.

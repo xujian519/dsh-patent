@@ -59,6 +59,7 @@ import {
   buildWorkflowRunContext,
   type SpecificationRunOptions,
   createChainStageExecutor,
+  type ManifestRunner,
   renderWorkflowResultText,
   renderWorkflowStageLines,
   resolveRunPersistTarget,
@@ -234,6 +235,13 @@ export interface PatentWorkflowRunDeps extends WorkflowProviderDeps {
    * is refused on every run so a background job cannot self-approve the gate.
    */
   approveStageGates?: boolean
+  /**
+   * Read `ctx.patentWorkflow` at run time. When present, the manifest runs through
+   * the service, which records the run's session events; absent (tests, a
+   * composition without the plugin) falls back to the library executor and the
+   * tool records them itself.
+   */
+  workflow?: () => { runWorkflow: ManifestRunner } | undefined
 }
 
 /**
@@ -607,6 +615,7 @@ async function runManifest(
 ): Promise<PatentWorkflowRunOutput> {
   const { manifest, provider, ctx: workflowCtx, input, cwd } = run
   const executor = createChainStageExecutor(provider, 'patent_workflow_run')
+  const workflow = run.deps.workflow?.()
   const { result, persistTarget } = await runWorkflowWithPersist(manifest, workflowCtx, executor, {
     handlers: runHandlerRegistry(run, signal),
     atoms: globalAtomRegistry,
@@ -617,6 +626,12 @@ async function runManifest(
     cwd,
     ...(input.approveStageIds !== undefined && input.approveStageIds.length > 0
       ? { approvalGrants: input.approveStageIds }
+      : {}),
+    ...(workflow !== undefined
+      ? {
+        run: (m, c, e, o, agent) => workflow.runWorkflow(m, c, e, o, agent),
+        agent: run.agent,
+      }
       : {}),
   })
 
@@ -629,7 +644,9 @@ async function runManifest(
     : typeof liveOutcome === 'string'
       ? `⏸ 审批门未放行（${liveOutcome}）: "${result.interrupted.stageId}"（${result.interrupted.message}）——后续阶段未执行；不要用 approveStageIds 绕过本次决定`
       : `⏸ 审批门暂停: "${result.interrupted.stageId}"（${result.interrupted.message}）——等待人工确认；带 approveStageIds 重跑可继续`
-  appendWorkflowRunEvents(run.agent, result, persistTarget?.runId)
+  // The service records the run's events on its own path; the library path has
+  // no session side effect, so the tool appends them there.
+  if (workflow === undefined) appendWorkflowRunEvents(run.agent, result, persistTarget?.runId)
 
   return {
     ok: true,

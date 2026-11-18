@@ -1071,9 +1071,9 @@ describe('fork CI workflow', () => {
       .toContainEqual(expect.objectContaining({ run: 'pnpm run test:issue-management' }))
   })
 
-  // Upstream runs these four leaves from `check:ci:static`, which no fork
-  // workflow calls, so they reached no lane at all. Each is keyless and reads no
-  // built artifact; the required lane carries them.
+  // Upstream runs these static leaves from `check:ci:static`, which no fork
+  // workflow calls, so the fork's required lane carries each one itself. Every
+  // entry is keyless and reads no built artifact.
   it('runs the static gates the fork has no aggregate for', () => {
     const job = workflowJob(loadWorkflow('.github/workflows/ci-fork.yml'), 'node-checks')
     if (!Array.isArray(job.steps)) throw new TypeError('node-checks must define steps')
@@ -1083,6 +1083,10 @@ describe('fork CI workflow', () => {
       'pnpm run verify-ipc-standards-source',
       'pnpm run verify-package-meta',
       'pnpm run test:approval-policy',
+      'pnpm run verify-patent-law-coverage',
+      'pnpm run verify-patent-law-freshness',
+      'pnpm run verify-patent-rule-alignment',
+      'pnpm run verify-patent-rule-citations',
     ]))
   })
 

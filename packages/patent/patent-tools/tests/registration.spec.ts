@@ -243,4 +243,16 @@ describe('model route fallback (B4)', () => {
     }
     expect(streamed).toBe(true)
   })
+
+  it('fails loud with setup_required only when neither Config nor the deployment default resolves', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    publishWorkspace(ctx)
+    await ctx.plugin(tool, {})
+    const def = ctx.tools.get('claim_chart_build')
+    expect(def).toBeDefined()
+    await expect(def!.execute({ claim_text: '1. 一种装置', targets: [], mode: 'patentability' }, {} as never))
+      .rejects.toMatchObject({ code: 'setup_required' })
+  })
 })

@@ -72,8 +72,8 @@ Schemastery configuration, every field optional.
 
 | Key | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `provider` | string | — | LLM provider route for the LLM-consuming tools (`patent_analysis_report`, `claim_chart_build`, `patent_workflow_run`, `flexible_plan`, `analyze_patent_figure`). |
-| `model` | string | — | LLM model id for the LLM-consuming tools. |
+| `provider` | string | unset → deployment default route | LLM provider route for the LLM-consuming tools (`patent_analysis_report`, `claim_chart_build`, `patent_workflow_run`, `flexible_plan`, `analyze_patent_figure`). When both `provider` and `model` are unset the route comes from the host `agentDefaultModel` service (`currentSelection()`); only when that is absent too does a call fail with `setup_required`. |
+| `model` | string | unset → deployment default route | LLM model id for the LLM-consuming tools; resolved together with `provider` as described above. |
 | `imageModel` | object | — | Dedicated figure/image model route (`{ provider, model }`) whose declared input modalities gate `analyze_patent_figure`; falls back to `provider`/`model` when unset. |
 | `maxTokens` | number | — | Optional output token cap for the LLM-consuming tools; omitted leaves the provider default. |
 | `workflowStageBudget` | number | `27` | Maximum stages one built-in workflow manifest may declare; plugin load fails above it. |
@@ -110,7 +110,7 @@ Schemastery configuration, every field optional.
 
 Two subprocess budgets stay fixed rather than configurable: the SIGTERM→SIGKILL escalation grace (3 s) because `dsh-patent-data`'s subprocess runner shares it and changing one ends teardown symmetry, and the per-stream output cap (100 000 bytes) because it bounds renderer memory. The exported `probeGraphviz`/`probeFreeCad` helpers take their own timeout from the caller (`DEFAULT_GRAPHVIZ_PROBE_TIMEOUT_MS`/`DEFAULT_FREECAD_PROBE_TIMEOUT_MS`); the plugin itself never probes, so no probe budget is configurable.
 
-When `provider`/ `model` are unset the LLM-consuming tools register but fail loud (`setup_required`) when called. The knowledge tools require a knowledge.db prepared via `patent-knowledge:install`; they fail loud with install guidance when it is absent.
+When `provider` and `model` are unset the LLM-consuming tools use the host `agentDefaultModel` selection — the deployment's default route, not the model a session's user picked. The tools fail loud (`setup_required`) only when no route resolves at all. The knowledge tools require a knowledge.db prepared via `patent-knowledge:install`; they fail loud with install guidance when it is absent.
 
 ## Model Experience
 

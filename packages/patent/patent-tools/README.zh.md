@@ -74,8 +74,8 @@ Schemastery 配置，所有字段可选。
 
 | 键 | 类型 | 默认 | 含义 |
 | --- | --- | --- | --- |
-| `provider` | string | — | LLM 消费工具（`patent_analysis_report`、`claim_chart_build`、`patent_workflow_run`、`flexible_plan`、`analyze_patent_figure`）的 provider 路由。 |
-| `model` | string | — | LLM 消费工具的模型 id。 |
+| `provider` | string | 未设置 → 部署默认路由 | LLM 消费工具（`patent_analysis_report`、`claim_chart_build`、`patent_workflow_run`、`flexible_plan`、`analyze_patent_figure`）的 provider 路由。`provider` 与 `model` 都未设置时，路由取自宿主 `agentDefaultModel` 服务（`currentSelection()`）；只有该服务也缺失时，调用才以 `setup_required` 报错。 |
+| `model` | string | 未设置 → 部署默认路由 | LLM 消费工具的模型 id；与 `provider` 一起按上述规则解析。 |
 | `imageModel` | object | — | 专用附图/图片模型路由（`{ provider, model }`），其声明的输入模态用于门禁 `analyze_patent_figure`；未设置时回退到 `provider`/`model`。 |
 | `maxTokens` | number | — | LLM 消费工具的输出 token 上限（可选）；省略时用 provider 默认值。 |
 | `workflowStageBudget` | number | `27` | 单个内置工作流 manifest 允许声明的最大阶段数；超过即插件加载失败。 |
@@ -112,7 +112,7 @@ Schemastery 配置，所有字段可选。
 
 有两项子进程预算保持固定、不做配置：SIGTERM→SIGKILL 升级宽限（3 秒），因为 `dsh-patent-data` 的 subprocess runner 与它共用，改一处就破坏收尾对称；单流输出上限（100 000 字节），因为它约束渲染器内存。导出的 `probeGraphviz`/`probeFreeCad` 由调用方自带超时（`DEFAULT_GRAPHVIZ_PROBE_TIMEOUT_MS`/`DEFAULT_FREECAD_PROBE_TIMEOUT_MS`）；插件自身不探测，因此没有可配置的探测预算。
 
-未设置 `provider`/ `model` 时，LLM 消费工具照常注册，但调用时 fail loud（`setup_required`）。知识类工具需要经 `patent-knowledge:install` 准备的 knowledge.db；缺失时 fail loud 并给出安装引导。
+未设置 `provider` 与 `model` 时，LLM 消费工具使用宿主 `agentDefaultModel` 的选择——即部署默认路由，而不是会话用户所选模型；只有完全解析不到路由时才以 `setup_required` fail loud。知识类工具需要经 `patent-knowledge:install` 准备的 knowledge.db；缺失时 fail loud 并给出安装引导。
 
 <a id="model-experience"></a>
 ## Model Experience

@@ -361,7 +361,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `structure.long-functions` | 191 |
 | `structure.large-files` | 96 |
 | `structure.patent-large-files` | 10 |
-| `lint.v8-ignore` | 1338 |
+| `lint.v8-ignore` | 1340 |
 | `lint.ts-expect-error` | 202 |
 | `packages.patent-directories` | 16 |
 <!-- tech-debt-counters:end -->
@@ -406,6 +406,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-18 成文形式预检**:`filing-form-audit.ts` 摊平 `contentFromDraft` 的节点时,`SpecificationNode.text` 是可选字段而映射对 `h3` 与 `p` 节点必定写了文本,两处空串兜底补带理由的豁免,`lint.v8-ignore` 由 1338 升至 **1340**;其余计数不变。
 - **2026-11-18 R-E2 视频终态收口**:`tools/media.ts` 的 `execute` 把预算检查、终态结算与任务恢复拆为 `assertBudget`、`settleSucceeded` 与 `refreshTask` 后回落到 150 行以下,`structure.long-functions` 由 192 降至 **191**;其余计数不变。
 - **2026-11-17 F-PAT-012 工具 JSON 写出与读回收口**:`vector-figure-build.ts` 的 `buildVectorFigure` 与 `generate-patent-figure.ts` 的 `createGeneratePatentFigureTool` 新增 JSON 快照写出后超过 150 行,`structure.long-functions` 由 190 升至 **192**;`json-read.ts` 的 `readHierarchy` 新增一行 `v8 ignore`,`lint.v8-ignore` 由 1337 升至 **1338**;`patent-workflow-run.ts` 由 1032 升至 **1039** 行并同步重定接受上限(JSON 快照写出接线);其余计数不变。
 - **2026-11-17 F-PAT-009 工具注册拆分**:`wiring.ts` 的 `registerPatentTools` 按四组拆为分组注册函数后回落到 150 行以下,`structure.long-functions` 由 191 降至 **190**;其余计数不变。

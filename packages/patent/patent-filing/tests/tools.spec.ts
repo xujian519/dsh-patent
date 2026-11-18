@@ -55,6 +55,42 @@ const VERIFY_FAIL_REPORT = JSON.stringify({
   },
 })
 
+/** A passing verify report as `verify.py` prints it after a build. */
+const VERIFY_OK_REPORT = JSON.stringify({
+  passed: true,
+  errors: [],
+  info: {
+    sections: 5,
+    headers: ['说明书摘要'],
+    paragraphs: 10,
+    claims: 2,
+    numbering: '1..100',
+    tables: 0,
+    figures: 5,
+    layout: { abstract: { paragraphs: 1, figures: 0 } },
+    template: { sections: 5, sizes_pt: [12], line_spacings: [1.5] },
+  },
+})
+
+/**
+ * 成文通道的子进程替身：`build.py` 按 `--out` 写出占位 docx（成文后自动验收会读它），
+ * `verify.py` 回一份通过的验收报告。
+ * @returns 记录全部调用的 spawner。
+ */
+function filingSpawner() {
+  return fakeSubprocess((spec) => {
+    const argv = argvOf(spec)
+    const script = argv[1] ?? ''
+    if (script.endsWith('build.py')) {
+      const out = argv[argv.indexOf('--out') + 1]
+      if (out !== undefined) writeFileSync(out, 'docx')
+      return stdoutHandle(BUILD_REPORT)
+    }
+    if (script.endsWith('verify.py')) return stdoutHandle(VERIFY_OK_REPORT)
+    throw new Error(`unexpected engine script: ${script}`)
+  })
+}
+
 /** 最小可通过校验的受控草案（claims 不带项号）。 */
 function draftFixture(figure: string): Record<string, unknown> {
   return {
@@ -99,7 +135,7 @@ describe('build_patent_filing tool', () => {
     const work = mkdtempSync(join(tmpdir(), 'dsh-filing-tool-'))
     const figure = join(work, 'fig1.png')
     writeFileSync(figure, 'png')
-    const { spawner, calls } = fakeSubprocess(() => stdoutHandle(BUILD_REPORT))
+    const { spawner, calls } = filingSpawner()
     try {
       const tool = createBuildPatentFilingTool({
         subprocess: spawner,
@@ -135,7 +171,7 @@ describe('build_patent_filing tool', () => {
     process.chdir(work)
     try {
       const tool = createBuildPatentFilingTool({
-        subprocess: fakeSubprocess(() => stdoutHandle(BUILD_REPORT)).spawner,
+        subprocess: filingSpawner().spawner,
         pythonPath: '/usr/bin/python3',
         specPath: defaultSpecPath(),
         templatePath: defaultTemplatePath(),
@@ -162,7 +198,7 @@ describe('build_patent_filing tool', () => {
     writeFileSync(figure, 'png')
     try {
       const tool = createBuildPatentFilingTool({
-        subprocess: fakeSubprocess(() => stdoutHandle(BUILD_REPORT)).spawner,
+        subprocess: filingSpawner().spawner,
         pythonPath: '/usr/bin/python3',
         specPath: defaultSpecPath(),
         templatePath: defaultTemplatePath(),
@@ -240,8 +276,9 @@ describe('build_patent_filing tool', () => {
     expect(validateJsonSchemaValue(schema, { draft: drawingFree, outputName: 'out' })).toEqual([])
   })
 
-  it('renders the canonical result as pure model-facing prose', () => {
-    const value: FilingBuildResult = {
+  /** 一份成文结果，验收结论由调用方给：只有这一处随用例变化。 */
+  function buildResult(verification: FilingVerifyResult): FilingBuildResult {
+    return {
       docxPath: '/out/a.docx',
       figures: ['/out/f1.png', '/out/f2.png'],
       sections: [{ key: 'abstract', paragraphs: 1, figures: 0 }, { key: 'figures', paragraphs: 0, figures: 2 }],
@@ -259,14 +296,46 @@ describe('build_patent_filing tool', () => {
         lineSpacings: [1.5],
       },
       templateFingerprint: 'a'.repeat(64),
+      verification,
     }
-    const text = renderBuildResult(value)
+  }
+
+  /** 验收结论骨架，用例只覆盖断言结果。 */
+  function verifyResult(overrides: Partial<FilingVerifyResult>): FilingVerifyResult {
+    return {
+      passed: true,
+      errors: [],
+      docxPath: '/out/a.docx',
+      templateFingerprint: 'a'.repeat(64),
+      info: {
+        sections: 5,
+        headers: ['说明书摘要'],
+        paragraphs: 10,
+        claims: 2,
+        numbering: '1..100',
+        tables: 0,
+        figures: 2,
+        layout: [{ key: 'abstract', paragraphs: 1, figures: 0 }],
+      },
+      ...overrides,
+    }
+  }
+
+  it('renders the canonical result as pure model-facing prose', () => {
+    const text = renderBuildResult(buildResult(verifyResult({})))
     expect(text).toContain('成品：/out/a.docx')
+    expect(text).toContain('验收：✅ 断言全部通过（分节 5 · 权项 2 · 附图 2）')
     expect(text).toContain('宋体 / Times New Roman 12pt 行距 1.5 首行缩进 0pt')
     expect(text).toContain('abstract 1 段/0 图 · figures 0 段/2 图')
     expect(text).toContain('段落编号：100 条（源件已带编号 0 条）')
     expect(text).toContain('附图：2 张')
     expect(text).toContain(`模板指纹：sha256 ${'a'.repeat(16)}…`)
+  })
+
+  it('says a failing acceptance run left the filing on disk', () => {
+    const text = renderBuildResult(buildResult(verifyResult({ passed: false, errors: ['分节数 4 ≠ 期望 5'] })))
+    expect(text).toContain('验收：❌ 1 项未通过——成品已写出，修正草案后重新成文：')
+    expect(text).toContain('  - 分节数 4 ≠ 期望 5')
   })
 })
 

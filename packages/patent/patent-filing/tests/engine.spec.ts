@@ -89,12 +89,19 @@ function answering(byScript: Record<string, string | (() => string)>): {
 } {
   return fakeSubprocess((spec) => {
     // argv = [python, 脚本, ...]；脚本是第二项。
-    const script = argvOf(spec)[1] ?? ''
+    const argv = argvOf(spec)
+    const script = argv[1] ?? ''
     for (const [name, answer] of Object.entries(byScript)) {
       if (script.endsWith(name)) {
+        // 成文成功后立刻验收，验收读的是 build.py 写出的文件。
+        if (name === 'build.py') {
+          const out = argv[argv.indexOf('--out') + 1]
+          if (out !== undefined) writeFileSync(out, 'docx')
+        }
         return stdoutHandle(typeof answer === 'function' ? answer() : answer)
       }
     }
+    if (script.endsWith('verify.py')) return stdoutHandle(verifyReport())
     throw new Error(`unexpected engine script: ${script}`)
   })
 }
@@ -159,6 +166,8 @@ describe('buildFiling', () => {
       expect(result.templateStyle.sizePt).toBe(12)
       expect(result.figures).toEqual([figure])
       expect(result.templateFingerprint).toMatch(/^[0-9a-f]{64}$/)
+      expect(result.verification.passed).toBe(true)
+      expect(result.verification.docxPath).toBe(result.docxPath)
       expect(existsSync(outDir)).toBe(true)
 
       const argv = argvOf(calls[0] as SubprocessSpawnSpec)
@@ -171,6 +180,64 @@ describe('buildFiling', () => {
       const contentPath = argv[argv.indexOf('--content') + 1] ?? ''
       expect(contentPath).toMatch(/content\.json$/)
       expect(existsSync(contentPath)).toBe(false)
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps the written filing and reports a failing acceptance run as its result', async () => {
+    const { spawner } = answering({
+      'build.py': buildReport(),
+      'verify.py': verifyReport({ passed: false, errors: ['分节数 4 ≠ 期望 5'] }),
+    })
+    const outDir = mkdtempSync(join(tmpdir(), 'dsh-filing-verify-fail-'))
+    const figure = join(outDir, 'fig1.png')
+    writeFileSync(figure, 'png')
+    const input = { content: { ...CONTENT, figures: [figure] }, outputName: 'failed', outputDir: outDir }
+    try {
+      // 断言不通过是成功的领域结果：成品留在盘上，结论随结果返回，不抛错。
+      const result = await buildFiling(input, buildOptions(spawner), outDir, new AbortController().signal)
+      expect(result.verification.passed).toBe(false)
+      expect(result.verification.errors).toEqual(['分节数 4 ≠ 期望 5'])
+      expect(existsSync(result.docxPath)).toBe(true)
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  it('names the written filing when the acceptance run cannot produce a report', async () => {
+    const { spawner } = answering({ 'build.py': buildReport(), 'verify.py': 'not json' })
+    const outDir = mkdtempSync(join(tmpdir(), 'dsh-filing-verify-broken-'))
+    const figure = join(outDir, 'fig1.png')
+    writeFileSync(figure, 'png')
+    const input = { content: { ...CONTENT, figures: [figure] }, outputName: 'broken', outputDir: outDir }
+    try {
+      await expect(buildFiling(input, buildOptions(spawner), outDir, new AbortController().signal))
+        .rejects.toThrow(/成品已写出（.*broken\.docx），但验收无法完成：/)
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  it('reports a non-Error rejection from the acceptance run by value', async () => {
+    // 子进程替身拒绝的是任意值；验收失败的原因不能因为不是 Error 就换成占位说法。
+    const { spawner } = fakeSubprocess((spec) => {
+      const argv = argvOf(spec)
+      if ((argv[1] ?? '').endsWith('verify.py')) {
+        // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- 本条要的正是非 Error 的拒绝值
+        return { ...stdoutHandle(''), done: Promise.reject('acceptance double crashed') }
+      }
+      const out = argv[argv.indexOf('--out') + 1]
+      if (out !== undefined) writeFileSync(out, 'docx')
+      return stdoutHandle(buildReport())
+    })
+    const outDir = mkdtempSync(join(tmpdir(), 'dsh-filing-verify-thrown-'))
+    const figure = join(outDir, 'fig1.png')
+    writeFileSync(figure, 'png')
+    const input = { content: { ...CONTENT, figures: [figure] }, outputName: 'thrown', outputDir: outDir }
+    try {
+      await expect(buildFiling(input, buildOptions(spawner), outDir, new AbortController().signal))
+        .rejects.toThrow(/但验收无法完成：acceptance double crashed/)
     } finally {
       rmSync(outDir, { recursive: true, force: true })
     }
@@ -462,7 +529,9 @@ describe('engine output parsing', () => {
     ]
     try {
       for (const stdout of bad) {
-        const options = { ...buildOptions(fakeSubprocess(() => stdoutHandle(stdout)).spawner), templatePath: template }
+        // 坏输出只答给 build.py。成文现在先验收后解析报告，若验收也拿到坏输出，
+        // 用例会在验收处抛出，走到报告解析的坏值分支一次都盖不到。
+        const options = { ...buildOptions(answering({ 'build.py': stdout }).spawner), templatePath: template }
         await expect(buildFiling(input, options, dir, new AbortController().signal)).rejects.toThrow(PatentFilingError)
       }
     } finally {
@@ -588,7 +657,8 @@ describe('engine invocation edge branches', () => {
         JSON.stringify({ numbering_total: 1, upstream_numbering_seen: 0, template_style: {} }),
         JSON.stringify({ sections: [], numbering_total: 1, upstream_numbering_seen: 0 }),
       ]) {
-        const options = { ...buildOptions(fakeSubprocess(() => stdoutHandle(stdout)).spawner) }
+        // 缺字段的 build 报告只答给 build.py；验收另答一份正常报告，否则先抛在验收处。
+        const options = { ...buildOptions(answering({ 'build.py': stdout }).spawner) }
         await expect(buildFiling(input, options, dir, new AbortController().signal)).rejects.toThrow(PatentFilingError)
       }
     } finally {

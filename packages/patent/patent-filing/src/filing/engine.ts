@@ -367,6 +367,16 @@ export async function buildFiling(
       '--template', options.templatePath,
       '--out', docxPath,
     ], signal), 'build 报告')
+    // 成品写好后立刻验收：分节是否承载内容、页眉、编号连续性、图序这些静默缺陷
+    // 只有引擎读得出，等模型记得再调 verify_patent_filing 就会漏出。
+    let verification: FilingVerifyResult
+    try {
+      verification = await verifyFiling({ docxPath }, options, signal)
+    } catch (error) {
+      // 成品已落盘；验收无法完成时调用方必须知道盘上有这份文件，否则会当成没写成。
+      const reason = error instanceof Error ? error.message : String(error)
+      throw new PatentFilingError(`成品已写出（${docxPath}），但验收无法完成：${reason}`, { cause: error })
+    }
     return {
       docxPath,
       figures: specimens,
@@ -375,6 +385,7 @@ export async function buildFiling(
       upstreamNumberingSeen: num(report, 'upstream_numbering_seen', 'build 报告'),
       templateStyle: parseTemplateStyle(report.template_style ?? null),
       templateFingerprint: await fileFingerprint(options.templatePath),
+      verification,
     }
   } finally {
     await rm(work, { recursive: true, force: true })

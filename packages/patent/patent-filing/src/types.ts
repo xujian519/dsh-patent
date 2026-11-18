@@ -100,6 +100,12 @@ export interface FilingBuildResult {
   templateStyle: TemplateStyle
   /** 本次所用模板的 sha256；与随包模板不一致即说明部署换了模板。 */
   templateFingerprint: string
+  /**
+   * 成品写出后立刻跑的验收结论。
+   *
+   * `passed === false` 表示成品已在盘上但未通过断言：成文本身成功，交付前须修正。
+   */
+  verification: FilingVerifyResult
 }
 
 /** 成品验收结果。 */

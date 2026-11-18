@@ -10,8 +10,8 @@ import { isAbsolute, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 // Declaration merge only: makes ctx.get('approval') resolve to the approval service.
 import type {} from '@deepseek-ai/dsh-user-approval'
-import { createLlmModelPort, globalAtomRegistry, globalStageHandlerRegistry, registerBuiltinAtoms, validateWorkflowBudget, validateWorkflowManifest } from '@deepseek-ai/dsh-patent-core'
-import type { Atom, PatentModelPort, StageHandler } from '@deepseek-ai/dsh-patent-core'
+import { createLlmModelPort, globalAtomRegistry, globalStageHandlerRegistry, registerBuiltinAtoms, validateSpecDraft, validateWorkflowBudget, validateWorkflowManifest } from '@deepseek-ai/dsh-patent-core'
+import type { Atom, PatentModelPort, SpecDraft, StageHandler } from '@deepseek-ai/dsh-patent-core'
 import type { ImageAttachmentRef, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
 import { KgStore, PatentKgAdapter, WikiCardLoader, type PatentKnowledge } from '@deepseek-ai/dsh-patent-knowledge'
 import { builtinPatentManifests, SHIPPED_GUIDELINE_REVISION } from '@deepseek-ai/dsh-patent-workflow'
@@ -27,6 +27,7 @@ import { DEFAULT_INKSCAPE_RENDER_TIMEOUT_MS, exportWithInkscape, findInkscape, o
 import type { ExportFigurePort, OutlineTextPort } from './figure/inkscape-renderer.ts'
 import { pickRenderer } from './figure/render-selector.ts'
 import { PatentToolError } from './error.ts'
+import { auditFilingDraft, renderFilingFormDenial } from './tool/internal/filing-form-audit.ts'
 import { readStagePatterns, stageWritingSkills } from './tool/internal/stage-writing-skills.ts'
 import { createPatentSearchTool } from './tool/patent-search.ts'
 import { createPatentMetadataTool } from './tool/patent-metadata.ts'
@@ -642,6 +643,32 @@ function registerFilingTools(wiring: PatentToolWiring): void {
 
   // 案卷留档的唯一写入口：交付前置门禁要求它先成功，交付件才允许落盘。
   wiring.ctx.tools.register(createMatterLogAppendTool())
+
+  // 成文前形式预检：校验文本由 docx 通道同一份 contentFromDraft 映射产出，因此
+  // 这次要成文的草案就是被校验的那一份。交付门禁只能按会话记账，证明不了同源。
+  // 草案本身不合法时不在这里拦——结构错误由成文工具自己逐条报告。
+  wiring.ctx.tools.guard((exec) => {
+    if (exec.name !== 'build_patent_filing') return undefined
+    const draft = readSpecDraftArgument(exec.arguments)
+    if (draft === undefined) return undefined
+    const violations = auditFilingDraft(draft)
+    return violations.length === 0 ? undefined : renderFilingFormDenial(violations)
+  })
+}
+
+/**
+ * 从工具入参里取出已校验的草案。
+ * @param args - 工具调用入参。
+ * @returns 通过 `validateSpecDraft` 的草案；入参缺 draft 或草案本身不合法时为 undefined。
+ */
+function readSpecDraftArgument(args: unknown): SpecDraft | undefined {
+  if (typeof args !== 'object' || args === null || !('draft' in args)) return undefined
+  try {
+    return validateSpecDraft(args.draft)
+  } catch {
+    // DraftValidationError：结构违规由 build_patent_filing 自己逐条报告，这里只管形式规则。
+    return undefined
+  }
 }
 
 /**

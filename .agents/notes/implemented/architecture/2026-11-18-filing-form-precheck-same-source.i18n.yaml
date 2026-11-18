@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-18-filing-form-precheck-same-source.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-18-filing-form-precheck-same-source.md
+/agent-note-the-filing-s-form-pre-check-reads-the-draft-that-gets-written:
+  en: b115c8962bc227bc
+  zh: 0f12d4fe7ee40e5b
+/agent-note-the-filing-s-form-pre-check-reads-the-draft-that-gets-written/problem:
+  en: 25bf19ee371a49fc
+  zh: a8b0c21430296296
+/agent-note-the-filing-s-form-pre-check-reads-the-draft-that-gets-written/decision:
+  en: 127f8a8750b76381
+  zh: eec727905ed952da
+/agent-note-the-filing-s-form-pre-check-reads-the-draft-that-gets-written/alternatives-considered:
+  en: dbceac8600a4768f
+  zh: 8fc6bc615c93c1d5
+/agent-note-the-filing-s-form-pre-check-reads-the-draft-that-gets-written/consequences:
+  en: ca3672a5a7a9b0a5
+  zh: 5d54ce40de7d4c4d
+/agent-note-the-filing-s-form-pre-check-reads-the-draft-that-gets-written/testing:
+  en: dccda6bd08dbfda4
+  zh: 00fdf467e53e527d

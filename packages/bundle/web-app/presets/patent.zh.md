@@ -15,7 +15,7 @@
 - `@deepseek-ai/dsh-patent-teams` — 持久多智能体团队服务（ctx.patentTeams），提供十二个 `patent_teams_*` 工具；`qualityGate: true` 时运行组合完成门禁，`approveCreation` / `approveClosure` 打开时把团队的两个案件级决定——建队与收口——交给本部署的 `approval` 服务判定，未获放行时直接拒绝该调用（结果名 `rejected` / `cancelled` / `unavailable`），不会创建或关闭用户未允许的团队。审批策略为 `never`（例如 `danger-full-access`）时两个调用都会在不弹提示的情况下被拒绝，因此打开任一开关的部署必须同时保持可交互的审批模式。
 - `@deepseek-ai/dsh-patent-rule` — 规则引擎、tools/post-execute 输出门禁、声明式结构门禁与交付前置门禁、EVI-011 证据守卫。
 - `@deepseek-ai/dsh-patent-document` — render_patent_document。
-- `@deepseek-ai/dsh-patent-filing` — build_patent_filing / verify_patent_filing：把一个 CNIPA 申请文件（摘要、摘要附图、权利要求书、说明书、说明书附图）装配成 DOCX，其排版由随包模板反推，并逐项核对成品与该模板一致。
+- `@deepseek-ai/dsh-patent-filing` — build_patent_filing / verify_patent_filing：把一个 CNIPA 申请文件（摘要、摘要附图、权利要求书、说明书、说明书附图）装配成 DOCX，其排版由随包模板反推，并逐项核对成品与该模板一致。成文一写出成品就先跑这次核对再返回，因此静默缺陷——某节没承载内容、页眉、编号断档——在成文这一步就暴露，不必等第二次调用。
 - `@deepseek-ai/dsh-patent-deadline` — patent_deadlines：案件的法定与指定期限，含专利法实施细则的期限与送达规则，以及随包节假日日历用于届满日顺延。
 - `@deepseek-ai/dsh-patent-fees` — patent_fees：逐项按本包随包的费用索引为案件计价（申请、实审、授权、年费与各项程序费用），按各费种的计数基准计数量——每件、超过免费基数的每项权利要求、每页、每项优先权要求、每个专利年度、每请求月数——并在索引登记了减缴时按案件适用的减缴计算。金额已按官方收费标准随包转录，因此工具会给出合计；只有适用项没有金额时才扣住合计——随包索引里这仍是说明书附加费与延长期限请求费两项，因为它们按条目模型承载不了的分档收费。
 - `@deepseek-ai/dsh-patent-law` — law_verify：逐条把法条引用对照本包随包的法规索引判定（《专利法》《专利法实施细则》按条，《专利审查指南》按归一化节路径），并把已索引但未转录的条目报「未核验」而不是放行。两部法律（法规）的条文已随包转录——每个条目带着所引条文的文本、抄录的文书与版本、以及抄录日期——条数上限也已核验，因此编造的条号判「条号超出有效范围」、索引未覆盖的有效条号判「索引中不存在」，两者都不是通过。指南的 64 条节级条目已随包转录 2023 年修订版正文，引用会判成「已核验」「与所引命题不符」或「未判定」；只登记到部分、章或节一级、其下各节又都没转录的条目仍报「未核验」。引用必须经官方来源核验的纪律没有变，只是未核验的条目不再可能被读成已核验。
@@ -23,7 +23,7 @@
 - `@deepseek-ai/dsh-tool-literature` — paper_search / paper_list_sources。
 - `@deepseek-ai/dsh-methodology` — `triz` 矛盾矩阵查表工具，用于已明确给出改善/恶化参数编号的场景。从交底书识别矛盾与参数缺口仍由 `triz_contradiction_analysis` 负责。
 
-相对 `standard` 携带的行集，本 preset 有意省略三行——`tool-plugin-market`、`present` 与 `tool-plugin-manager`。三者都属部署面或 UI 面，不是办案的一步：交付物由 `render_patent_document` / `build_patent_filing` 声明，交付前置门禁把它们扣在规则检查、法条核验与本轮留档（`matter_log_append`）上，另开一条声明通道就会落在那道门禁之外。门禁同时核对前置结果：`rule_check` 必须报告它实际读过的文本，引用型交付件必须来自一次识别到引用的 `law_verify`，分析类收口必须由模板对应的 manifest 成功运行。`scripts/preset-mode-baseline.json` 逐条记下理由，并把每个交付型模式扣在同一份共享行集上。
+相对 `standard` 携带的行集，本 preset 有意省略三行——`tool-plugin-market`、`present` 与 `tool-plugin-manager`。三者都属部署面或 UI 面，不是办案的一步：交付物由 `render_patent_document` / `build_patent_filing` 声明，交付前置门禁把它们扣在规则检查、法条核验与本轮留档（`matter_log_append`）上，另开一条声明通道就会落在那道门禁之外。提交格式的申请文件另要一次报告了所读文本的 `validate_specification`：合规规则库不判正式审查据以退案的形式项——附图标记括号、图号空格、摘要篇幅；命中这些形式项的 draft 由 patent-tools 在写出 DOCX 之前按同一份映射拦下，门禁因此证明的是模型读过完整的形式报告，而不是报告通过。门禁同时核对前置结果：`rule_check` 必须报告它实际读过的文本，引用型交付件必须来自一次识别到引用的 `law_verify`，分析类收口必须由模板对应的 manifest 成功运行。`scripts/preset-mode-baseline.json` 逐条记下理由，并把每个交付型模式扣在同一份共享行集上。
 
 专利服务放在 isolate 领域（patentData / patentKnowledge / patentWorkflow / patentTeams）内，与 patent-tools 共享该领域，使后者的 ctx.get('patentData') / ctx.get('patentKnowledge') 解析到本 preset 的实例而非宿主实例。省略 tool-ralph（一个案子用 goal / todo / workflow，而非 fresh-agent 迭代）；tool-web 开启 fetch，因为所有发货组合都挂载 http fetch provider（`dsh-base` 以 `fetchProvider: http` 组合 `dsh-web-fetch-http`，且没有任何 bundle 禁用它），先验证后引用因此可以打开来源页核验，而不是只信摘要。
 

@@ -100,6 +100,11 @@ describe('PatentKnowledge service', () => {
       const hits = ctx.patentKnowledge.kgSearch('创造性')
       expect(hits.some(h => h.node.id === 'kg:n1')).toBe(true)
 
+      const similar = ctx.patentKnowledge.kgSimilarNodes('kg:n1')
+      expect(similar.map(entry => [entry.node.id, entry.relation])).toEqual([['kg:n2', 'RELATED_TO']])
+      const neighbors = ctx.patentKnowledge.kgNeighbors('kg:n1', 'RELATED_TO')
+      expect(neighbors.map(entry => entry.targetId)).toEqual(['kg:n2'])
+
       const classified = ctx.patentKnowledge.ipcClassify('一种无线通信电路，包含集成电路芯片和天线')
       expect(classified[0]!.section).toBe('H')
 
@@ -113,8 +118,10 @@ describe('PatentKnowledge service', () => {
       const searchedDefault = ctx.patentKnowledge.ipcStandardsSearch('A')
       expect(Array.isArray(searchedDefault)).toBe(true)
 
-      // wiki dir is absent in the fixture: keyword lookup degrades to empty.
+      // wiki dir is absent in the fixture: keyword and prefix lookups degrade to empty.
       expect(ctx.patentKnowledge.wikiCards('创造性')).toEqual([])
+      expect(ctx.patentKnowledge.wikiCardsIn('专利实务/说明书', '')).toEqual([])
+      expect(ctx.patentKnowledge.wikiContext('专利实务/说明书/missing')).toBe('')
     } finally {
       await ctx.fiber.dispose()
     }

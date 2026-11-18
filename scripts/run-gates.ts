@@ -398,6 +398,12 @@ function ciSharedStaticGates(): Gate[] {
     pnpmScript('sbom', 'verify-sbom', { label: 'SBOM bytes lock' }),
     pnpmScript('self-evolve-eval', 'verify-self-evolve-eval', { label: 'self-evolve eval decision' }),
     pnpmScript('patent-oas-gold', 'verify-patent-oas-gold', { label: 'patent-oas gold gate' }),
+    // Legal corpus and rule assets: coverage, freshness, procedural alignment, and citations.
+    // Keyless and source-plane; every static aggregate runs them.
+    pnpmScript('patent-law-coverage', 'verify-patent-law-coverage', { label: 'patent law coverage' }),
+    pnpmScript('patent-law-freshness', 'verify-patent-law-freshness', { label: 'patent law freshness' }),
+    pnpmScript('patent-rule-alignment', 'verify-patent-rule-alignment', { label: 'patent rule alignment' }),
+    pnpmScript('patent-rule-citations', 'verify-patent-rule-citations', { label: 'patent rule citations' }),
     pnpmScript('ipc-standards-source', 'verify-ipc-standards-source', { label: 'IPC standards source' }),
     pnpmScript('package-meta', 'verify-package-meta', { label: 'package metadata' }),
     pnpmScript('cordis-config', 'verify-cordis-config', { label: 'Cordis config' }),

@@ -1083,6 +1083,10 @@ describe('fork CI workflow', () => {
       'pnpm run verify-ipc-standards-source',
       'pnpm run verify-package-meta',
       'pnpm run test:approval-policy',
+      'pnpm run verify-patent-law-coverage',
+      'pnpm run verify-patent-law-freshness',
+      'pnpm run verify-patent-rule-alignment',
+      'pnpm run verify-patent-rule-citations',
     ]))
   })
 

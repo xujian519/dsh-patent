@@ -110,7 +110,10 @@ export type { KgEdge, KgNode, KgNodeType } from './patent/types.ts'
 /**
  * PatentKnowledge service: the knowledge.db query seam (ctx.patentKnowledge).
  * It lazily opens the resolved knowledge.db read-only and delegates to the
- * ported engines; the engines close when the owning fiber unloads.
+ * ported engines; the engines close when the owning fiber unloads. `ipcClassify`
+ * and the `ipcStandards*` lookups read the shipped classification and standard
+ * tables instead of the database, and serve plugins that hold only the service
+ * reference; code with a package import uses the same-named pure exports.
  */
 export class PatentKnowledge extends Service {
   static Config: z<Config> = z.object({
@@ -183,6 +186,28 @@ export class PatentKnowledge extends Service {
   }
 
   /**
+   * Wiki-card lookup under one directory prefix. An empty keyword lists the
+   * prefix, which serves directory browsing.
+   * @param prefix - directory prefix relative to the wiki root; empty searches all.
+   * @param keyword - the keyword; empty lists the prefix.
+   * @param limit - result cap.
+   * @returns matching card metadata.
+   */
+  wikiCardsIn(prefix: string, keyword: string, limit: number = 10): WikiCardMeta[] {
+    return this.wiki.searchIn(prefix, keyword, limit)
+  }
+
+  /**
+   * Render one wiki card's body fragment for model context.
+   * @param id - card id (relative path without `.md`).
+   * @param maxChars - body cap before truncation.
+   * @returns the rendered fragment, or an empty string when the card is absent.
+   */
+  wikiContext(id: string, maxChars: number = 1200): string {
+    return this.wiki.formatAsContext(id, maxChars)
+  }
+
+  /**
    * IPC classification of a patent-domain text.
    * @param text - the patent-domain text to classify.
    * @returns classification results in confidence order.
@@ -218,6 +243,27 @@ export class PatentKnowledge extends Service {
    */
   kgListByType(nodeType: string, limit: number = 50): KgNode[] {
     return this.kgStore().listByType(nodeType, limit)
+  }
+
+  /**
+   * Knowledge-graph similar nodes of one node (similarity relations).
+   * @param id - the node id.
+   * @param limit - result cap.
+   * @returns the neighbor nodes with their relation.
+   */
+  kgSimilarNodes(id: string, limit: number = 10): Array<{ node: KgNode; relation: string }> {
+    return this.kgAdapter().getSimilarNodes(id, limit)
+  }
+
+  /**
+   * Knowledge-graph outgoing neighbors of one node.
+   * @param id - the node id.
+   * @param relation - optional relation filter.
+   * @param limit - result cap.
+   * @returns the outgoing neighbors.
+   */
+  kgNeighbors(id: string, relation?: string, limit: number = 20): Array<{ targetId: string; relation: string }> {
+    return this.kgAdapter().getNeighbors(id, relation, limit)
   }
 
   /**

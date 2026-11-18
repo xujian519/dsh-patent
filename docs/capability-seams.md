@@ -333,6 +333,7 @@ flowchart LR
   svc_cordisInspect["ctx.cordisInspect<br/>Dynamic Cordis inspect registry"]
   pkg_patent_data["patent-data"]
   svc_patentData["ctx.patentData<br/>Patent data access seam"]
+  pkg_patent_tools["patent-tools"]
   pkg_patent_knowledge["patent-knowledge"]
   svc_patentKnowledge["ctx.patentKnowledge<br/>knowledge.db query seam"]
   pkg_patent_workflow["patent-workflow"]
@@ -588,6 +589,9 @@ flowchart LR
   svc_officeKit --> pkg_tool_office
   svc_otel --> pkg_host_product_telemetry_otel
   svc_otel --> pkg_session_telemetry_otel
+  svc_patentData --> pkg_patent_tools
+  svc_patentKnowledge --> pkg_patent_tools
+  svc_patentWorkflow --> pkg_patent_tools
   svc_pluginManager --> pkg_plugin_manager
   svc_pluginManager --> pkg_ui_settings_plugin_inventory
   svc_pluginMarket --> pkg_client_ui_plugin_market
@@ -816,9 +820,9 @@ flowchart LR
 | `ctx.lsp` | `seam` | [`lsp`](../packages/lsp/lsp) | [`lsp-stdio`](../packages/lsp/lsp-stdio) | [`tool-lsp`](../packages/lsp/tool-lsp) | - | Provider registration and selection plus normalized query execution over exactly four operations; the seam offers no protocol escape hatch, so a backend translates into the normalized request and result. |
 | `ctx.dynamicCordisRunner` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | Owns the in-memory definition registry, the vm sandbox for host halves, and the request-run round trip; browser pages reach the same service over the wire through its remote namespace. |
 | `ctx.cordisInspect` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | Registers host inspect providers, mirrors the client provider manifest, and routes client queries through the dynamic Cordis transport. |
-| `ctx.patentData` | `seam` | [`patent-data`](../packages/patent/patent-data) | - | - | - | Service Definition for nuo-patent mapping/search plus the ego-browser subprocess provider; the provider and tool consumers land with the plan phases (P1.2, P3.2). |
-| `ctx.patentKnowledge` | `seam` | [`patent-knowledge`](../packages/patent/patent-knowledge) | - | - | - | Service Definition for case-law FTS, legal, wiki-card, and knowledge-graph lookups; the sqlite provider and install command land with P1.3. |
-| `ctx.patentWorkflow` | `seam` | [`patent-workflow`](../packages/patent/patent-workflow) | - | - | - | Service Definition for the workflow/flexible-plan/plantask state machines with HITL approval wiring; the implementation lands with P3.1. |
+| `ctx.patentData` | `seam` | [`patent-data`](../packages/patent/patent-data) | - | [`patent-tools`](../packages/patent/patent-tools) | - | Service Definition and provider for nuo-patent number mapping and search plus the ego-browser and CNIPR channels; patent-tools resolves the search provider and the CNIPR channel through it. |
+| `ctx.patentKnowledge` | `seam` | [`patent-knowledge`](../packages/patent/patent-knowledge) | - | [`patent-tools`](../packages/patent/patent-tools) | - | Service Definition and provider for case-law, legal, guideline, wiki-card, and knowledge-graph lookups over the installed knowledge.db; patent-tools reads every knowledge tool through it. |
+| `ctx.patentWorkflow` | `seam` | [`patent-workflow`](../packages/patent/patent-workflow) | - | [`patent-tools`](../packages/patent/patent-tools) | - | Service Definition and executor for workflow manifests, the flexible-plan layer, and the plantask HITL state machine; patent-tools runs manifests through it, and the constructor registers patent-core atoms. |
 | `ctx.patentTeams` | `core` | [`patent-teams`](../packages/patent/patent-teams) | - | - | - | Owns the durable team roster, shared task DAG, member mailbox, and scheduling lock; the co-located patent_teams_* tools are the model-facing controllers. |
 | `ctx.writingPatterns` | `core` | [`writing-patterns`](../packages/patent/writing-patterns) | - | - | - | Owns the loaded pattern corpus and the resolved stage map; an atom reads its stage’s 3–5 patterns here, while query_writing_patterns stays the model-facing search over the same corpus. |
 | `ctx.legalKnowledge` | `seam` | [`legal-knowledge`](../packages/legal/legal-knowledge) | [`legal-knowledge`](../packages/legal/legal-knowledge) | [`legal-knowledge`](../packages/legal/legal-knowledge) | - | Service Definition and SQLite/in-memory implementation share one package; the optional ./tool plugin is the model-facing legal_knowledge_search consumer and must mount in the same isolate realm. |

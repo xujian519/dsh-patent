@@ -335,6 +335,7 @@ flowchart LR
   svc_cordisInspect["ctx.cordisInspect<br/>Dynamic Cordis inspect registry"]
   pkg_patent_data["patent-data"]
   svc_patentData["ctx.patentData<br/>Patent data access seam"]
+  pkg_patent_tools["patent-tools"]
   pkg_patent_knowledge["patent-knowledge"]
   svc_patentKnowledge["ctx.patentKnowledge<br/>knowledge.db query seam"]
   pkg_patent_workflow["patent-workflow"]
@@ -590,6 +591,9 @@ flowchart LR
   svc_officeKit --> pkg_tool_office
   svc_otel --> pkg_host_product_telemetry_otel
   svc_otel --> pkg_session_telemetry_otel
+  svc_patentData --> pkg_patent_tools
+  svc_patentKnowledge --> pkg_patent_tools
+  svc_patentWorkflow --> pkg_patent_tools
   svc_pluginManager --> pkg_plugin_manager
   svc_pluginManager --> pkg_ui_settings_plugin_inventory
   svc_pluginMarket --> pkg_client_ui_plugin_market
@@ -818,9 +822,9 @@ flowchart LR
 | `ctx.lsp` | `seam` | [`lsp`](../packages/lsp/lsp) | [`lsp-stdio`](../packages/lsp/lsp-stdio) | [`tool-lsp`](../packages/lsp/tool-lsp) | - | 提供方注册与选择，加上恰好四种操作的标准化查询执行；该 seam 不提供协议逃生口，后端必须转换为标准化请求和结果。 |
 | `ctx.dynamicCordisRunner` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | 拥有内存定义注册表、Host 半的 vm 沙箱和 request-run 往返流程；浏览器页面通过其 Remote 命名空间在线访问同一服务。 |
 | `ctx.cordisInspect` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | 注册 Host inspect 提供方、镜像 Client 提供方 manifest，并通过动态 Cordis 传输路由 Client 查询。 |
-| `ctx.patentData` | `seam` | [`patent-data`](../packages/patent/patent-data) | - | - | - | nuo-patent 映射／检索与 ego-browser 子进程提供方的服务定义；提供方与工具消费者随计划阶段（P1.2、P3.2）落地。 |
-| `ctx.patentKnowledge` | `seam` | [`patent-knowledge`](../packages/patent/patent-knowledge) | - | - | - | 判例全文检索、法规、wiki 卡片与知识图谱查询的服务定义；SQLite 提供方与安装命令随 P1.3 落地。 |
-| `ctx.patentWorkflow` | `seam` | [`patent-workflow`](../packages/patent/patent-workflow) | - | - | - | workflow／flexible-plan／plantask 状态机及 HITL 审批接线的服务定义；实现随 P3.1 落地。 |
+| `ctx.patentData` | `seam` | [`patent-data`](../packages/patent/patent-data) | - | [`patent-tools`](../packages/patent/patent-tools) | - | nuo-patent 号族映射与检索、ego-browser 与 CNIPR 通道的服务定义与提供方；patent-tools 经它取检索 provider 与 CNIPR 通道。 |
+| `ctx.patentKnowledge` | `seam` | [`patent-knowledge`](../packages/patent/patent-knowledge) | - | [`patent-tools`](../packages/patent/patent-tools) | - | 已安装 knowledge.db 上判例、法规、指南、wiki 卡片与知识图谱查询的服务定义与提供方；patent-tools 的知识类工具全部经它读取。 |
+| `ctx.patentWorkflow` | `seam` | [`patent-workflow`](../packages/patent/patent-workflow) | - | [`patent-tools`](../packages/patent/patent-tools) | - | workflow manifest、flexible-plan 层与 plantask HITL 状态机的服务定义与执行器；patent-tools 经它运行 manifest，构造函数注册 patent-core 内置原子。 |
 | `ctx.patentTeams` | `core` | [`patent-teams`](../packages/patent/patent-teams) | - | - | - | 负责持久团队名册、共享任务 DAG、成员邮箱与调度锁；同目录的 patent_teams_* 工具是面向模型的控制器。 |
 | `ctx.writingPatterns` | `core` | [`writing-patterns`](../packages/patent/writing-patterns) | - | - | - | 负责已加载的范例语料与解析后的阶段映射；撰写单元在此读取本阶段的 3–5 条范例，query_writing_patterns 仍是对同一语料的面向模型检索。 |
 | `ctx.legalKnowledge` | `seam` | [`legal-knowledge`](../packages/legal/legal-knowledge) | [`legal-knowledge`](../packages/legal/legal-knowledge) | [`legal-knowledge`](../packages/legal/legal-knowledge) | - | 服务定义与 SQLite／内存实现共处一个包；可选的 ./tool 插件是面向模型的 legal_knowledge_search 消费者，且必须挂载在同一 isolate realm 内。 |

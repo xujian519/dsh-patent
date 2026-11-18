@@ -116,9 +116,39 @@ describe('patent-tools plugin wiring', () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
+    const wikiCalls: string[] = []
+    const kgCalls: string[] = []
     ctx.provide('patentKnowledge', {
       paths: { wikiDir: join(temp, 'wiki'), queryDbPath: join(temp, 'query.db') },
       caseLawSearch: () => [],
+      wikiCardsIn: () => {
+        wikiCalls.push('search')
+        return [{ id: 'a', title: '卡片A', relativePath: 'a.md' }]
+      },
+      wikiContext: () => {
+        wikiCalls.push('context')
+        return '卡片A'
+      },
+      kgSearch: () => {
+        kgCalls.push('search')
+        return []
+      },
+      kgGetNode: (id: string) => {
+        kgCalls.push(`get:${id}`)
+        return { id, nodeType: 'Concept', name: '创造性' }
+      },
+      kgSimilarNodes: () => {
+        kgCalls.push('similar')
+        return []
+      },
+      kgNeighbors: (_id: string, relation?: string) => {
+        kgCalls.push(`neighbors:${relation ?? ''}`)
+        return []
+      },
+      kgListByType: () => {
+        kgCalls.push('list')
+        return []
+      },
     })
     publishWorkspace(ctx)
     await ctx.plugin(tool, {})
@@ -127,6 +157,27 @@ describe('patent-tools plugin wiring', () => {
     expect(caseResult.isError).toBe(false)
     const wikiResult = await exec(ctx, 'patent_wiki_search', { query: 'a', include_body: true }, 'w-4')
     expect(wikiResult.isError).toBe(false)
+    expect(wikiCalls).toEqual(['search', 'context'])
+
+    // The KG tool reads the service through the wiring facade in all three modes.
+    expect((await exec(ctx, 'patent_kg_query', { query: '创造性' }, 'w-5')).isError).toBe(false)
+    expect((await exec(ctx, 'patent_kg_query', { id: 'kg:n1' }, 'w-6')).isError).toBe(false)
+    expect((await exec(ctx, 'patent_kg_query', { node_type: 'Concept' }, 'w-7')).isError).toBe(false)
+    // Concept expands to five node types, so the browse mode lists each one.
+    expect(kgCalls).toEqual([
+      'search',
+      'get:kg:n1',
+      'similar',
+      'neighbors:CITES',
+      'neighbors:CITES_LAW',
+      'neighbors:FREQUENTLY_CITES',
+      'neighbors:REFERENCES',
+      'list',
+      'list',
+      'list',
+      'list',
+      'list',
+    ])
   })
 
   it('keeps the kg tool dbPath-only when the knowledge db is absent', async () => {

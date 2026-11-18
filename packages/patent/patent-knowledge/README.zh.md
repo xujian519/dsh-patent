@@ -36,17 +36,21 @@ knowledge.db 查询接缝的服务定义（`ctx.patentKnowledge`）：判例全�
 
 对 `knowledge.db` 的 `guideline_rule` 文档（《专利审查指南》全文）做全文检索，由第二个以 `docTypes: ['guideline_rule']` 限定的 `KnowledgeLawSearch` 提供。引擎索引哪类规范文档由构造时的文档类型决定（缺省 `law_article`），因此法规语料与指南语料各自独立、共用同一条检索通路；`documents` 表早于 `file_path` 列的库仍可检索，只是命中不带来源路径。
 
-### wikiCards(query, limit?)
+### wikiCards(query, limit?) / wikiCardsIn(prefix, keyword?, limit?)
 
-对 wiki 卡片目录做关键词查询（标题/概念/领域）。P1 仅关键词路径：语义/向量 wiki 索引已延后，wiki 目录缺失时降级为空结果。
+对 wiki 卡片目录做关键词查询（标题/概念/领域），可跨全部目录或限定一个目录前缀；前缀形式下关键词为空时列出该目录。P1 仅关键词路径：语义/向量 wiki 索引已延后，wiki 目录缺失时降级为空结果。
+
+### wikiContext(id, maxChars?)
+
+渲染单张卡片的正文片段供模型上下文使用，按 `maxChars` 截断；卡片不存在时返回空串。
 
 ### ipcClassify(text)
 
 经移植的关键词分类器对专利领域文本做 IPC 分类。按置信度排序返回 `IpcClassification[]`。
 
-### kgSearch / kgGetNode / kgListByType
+### kgSearch / kgGetNode / kgListByType / kgSimilarNodes / kgNeighbors
 
-在 `kg_nodes`/`kg_edges` 表上做知识图谱关键词检索（含关系扩展）、按 id 取节点、按类型列节点（unified schema，兼容 legacy `nodes`/`edges`）。当随库的 trigram `kg_nodes_fts`（含节点正文）与 `kg_nodes` 行数一致时，整句匹配直接走 FTS；短查询与 legacy unicode61 schema 回退 LIKE，行数不一致时禁用快路径。
+在 `kg_nodes`/`kg_edges` 表上做知识图谱关键词检索（含关系扩展）、按 id 取节点、按类型列节点、取相似节点与出向邻居（unified schema，兼容 legacy `nodes`/`edges`）。当随库的 trigram `kg_nodes_fts`（含节点正文）与 `kg_nodes` 行数一致时，整句匹配直接走 FTS；短查询与 legacy unicode61 schema 回退 LIKE，行数不一致时禁用快路径。
 
 ### ipcStandards / ipcStandardsByArticle / ipcStandardsSearch
 

@@ -11,9 +11,9 @@ import type { Context } from '@deepseek-ai/cordis'
 // Declaration merge only: makes ctx.get('approval') resolve to the approval service.
 import type {} from '@deepseek-ai/dsh-user-approval'
 import { createLlmModelPort, globalAtomRegistry, globalStageHandlerRegistry, registerBuiltinAtoms, validateSpecDraft, validateWorkflowBudget, validateWorkflowManifest } from '@deepseek-ai/dsh-patent-core'
-import type { Atom, PatentModelPort, SpecDraft, StageHandler } from '@deepseek-ai/dsh-patent-core'
+import type { Atom, PatentModelPort, SpecDraft, StageHandler, StageProvider } from '@deepseek-ai/dsh-patent-core'
 import type { ImageAttachmentRef, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
-import { KgStore, PatentKgAdapter, WikiCardLoader, type PatentKnowledge } from '@deepseek-ai/dsh-patent-knowledge'
+import type { PatentKnowledge } from '@deepseek-ai/dsh-patent-knowledge'
 import { builtinPatentManifests, SHIPPED_GUIDELINE_REVISION } from '@deepseek-ai/dsh-patent-workflow'
 import { candidateRuleDirs, createCheckerRuleEvaluator } from '@deepseek-ai/dsh-patent-rule'
 import type { GenerateOptions, LlmResolvedModelInfo, ModelModality, StreamChunk } from '@deepseek-ai/dsh-llm'
@@ -35,7 +35,7 @@ import { createPatentLegalStatusTool } from './tool/patent-legal-status.ts'
 import { createPatentCaseSearchTool } from './tool/patent-case-search.ts'
 import { createLawSearchTool } from './tool/law-search.ts'
 import { createPatentWikiSearchTool } from './tool/patent-wiki-search.ts'
-import { createPatentKgQueryTool } from './tool/patent-kg-query.ts'
+import { createPatentKgQueryTool, type KgAdapter } from './tool/patent-kg-query.ts'
 import { createPatentEvalTool } from './tool/patent-eval.ts'
 import { createPatentAnalysisReportTool } from './tool/patent-analysis-report.ts'
 import { createClaimChartBuildTool } from './tool/claim-chart-build.ts'
@@ -371,7 +371,6 @@ function registerKnowledgeTools(wiring: PatentToolWiring): void {
   // Knowledge tools: wire ctx.patentKnowledge when present, else fail loud at execute.
   const knowledge = wiring.knowledge
   if (knowledge !== undefined) {
-    const wiki = new WikiCardLoader(knowledge.paths.wikiDir)
     wiring.ctx.tools.register(createPatentCaseSearchTool({
       search: (q, o) => knowledge.caseLawSearch(q, o),
       dbPath: knowledge.paths.queryDbPath,
@@ -383,22 +382,21 @@ function registerKnowledgeTools(wiring: PatentToolWiring): void {
       dbPath: knowledge.paths.queryDbPath,
     }))
     wiring.ctx.tools.register(createPatentWikiSearchTool({
-      searchIn: (prefix, keyword, limit) => wiki.searchIn(prefix, keyword, limit),
-      formatAsContext: (id, maxChars) => wiki.formatAsContext(id, maxChars),
+      searchIn: (prefix, keyword, limit) => knowledge.wikiCardsIn(prefix, keyword, limit),
+      formatAsContext: (id, maxChars) => knowledge.wikiContext(id, maxChars),
       wikiDir: knowledge.paths.wikiDir,
     }))
     if (existsSync(knowledge.paths.queryDbPath)) {
-      const adapter = new PatentKgAdapter(new KgStore(knowledge.paths.queryDbPath))
-      // The adapter owns a read-only SQLite handle: close it on plugin dispose so an
-      // HMR reload does not accumulate handles (the knowledge service holds its own).
-      // The flag keeps a repeated teardown from closing the handle twice.
-      let closed = false
-      wiring.ctx.effect(() => () => {
-        /* v8 ignore next -- ctx.effect runs a disposer at most once (its own latch), so a repeated teardown cannot reach the guard */
-        if (closed) return
-        closed = true
-        adapter.close()
-      }, 'patent-tools: knowledge graph store')
+      // The service owns the one read-only knowledge-graph handle and closes it when
+      // its fiber unloads; the tool queries that handle, so no second store with
+      // its own cache opens over the same database.
+      const adapter: KgAdapter = {
+        getNode: id => knowledge.kgGetNode(id),
+        searchRelevant: (query, options) => knowledge.kgSearch(query, options),
+        getSimilarNodes: (id, limit) => knowledge.kgSimilarNodes(id, limit),
+        getNeighbors: (id, relation, limit) => knowledge.kgNeighbors(id, relation, limit),
+        listByType: (type, limit) => knowledge.kgListByType(type, limit),
+      }
       wiring.ctx.tools.register(createPatentKgQueryTool({ adapter, dbPath: knowledge.paths.queryDbPath }))
     } else {
       wiring.ctx.tools.register(createPatentKgQueryTool({ dbPath: knowledge.paths.queryDbPath }))
@@ -463,15 +461,22 @@ function registerWorkflowTools(wiring: PatentToolWiring): void {
   // patent-core 只保留端口与引擎。
   const writingSkillsForStage = (stageId: string): string | undefined =>
     stageWritingSkills(readStagePatterns(wiring.ctx.get('writingPatterns')), stageId)
+  // Resolve the search function per run through ctx.patentData: the service owns
+  // the nuo provider, and patent-data activates one hop after this plugin, so
+  // load time is too early to read it.
+  const searchProvider = (): StageProvider['search'] | undefined =>
+    wiring.ctx.get('patentData')?.createSearchProvider().search
   wiring.ctx.tools.register(createPatentWorkflowRunTool({
     model: wiring.model,
+    searchProvider,
     jobs: () => wiring.ctx.get('jobs'),
     approval: () => wiring.ctx.get('approval'),
     approveStageGates: wiring.config.approveStageGates === true,
     ruleEvaluator: createCheckerRuleEvaluator(),
     writingSkillsForStage,
+    workflow: () => wiring.ctx.get('patentWorkflow'),
   }))
-  wiring.ctx.tools.register(createFlexiblePlanTool({ model: wiring.model, writingSkillsForStage }))
+  wiring.ctx.tools.register(createFlexiblePlanTool({ model: wiring.model, searchProvider, writingSkillsForStage }))
 }
 
 /**

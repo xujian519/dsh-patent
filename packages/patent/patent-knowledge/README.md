@@ -35,17 +35,21 @@ Full-text search over the `law_article` documents of `knowledge.db` via `Knowled
 
 Full-text search over the `guideline_rule` documents of `knowledge.db` (the 《专利审查指南》 chapters), through a second `KnowledgeLawSearch` scoped with `docTypes: ['guideline_rule']`. The engine indexes whichever normative document types it is constructed with (`law_article` by default), so the statute corpus and the guideline corpus stay separate while sharing one query path; a database whose `documents` table predates the `file_path` column still searches, and then reports no source path.
 
-### wikiCards(query, limit?)
+### wikiCards(query, limit?) / wikiCardsIn(prefix, keyword?, limit?)
 
-Keyword lookup over the wiki-card directory (title/concept/domain). Keyword-only in P1: the semantic/vector wiki index is deferred, so an absent wiki directory degrades to an empty result.
+Keyword lookup over the wiki-card directory (title/concept/domain), either across every directory or under one prefix; in the prefix form an empty keyword lists that directory. Keyword-only in P1: the semantic/vector wiki index is deferred, so an absent wiki directory degrades to an empty result.
+
+### wikiContext(id, maxChars?)
+
+Renders one card's body fragment for model context, truncated at `maxChars`, or an empty string when the card is absent.
 
 ### ipcClassify(text)
 
 IPC classification of a patent-domain text via the ported keyword classifier. Returns `IpcClassification[]` in confidence order.
 
-### kgSearch / kgGetNode / kgListByType
+### kgSearch / kgGetNode / kgListByType / kgSimilarNodes / kgNeighbors
 
-Knowledge-graph keyword search with relation expansion, node lookup by id, and node listing by type over the `kg_nodes`/`kg_edges` tables (unified schema, with legacy `nodes`/`edges` fallback). Whole-phrase matches use the bundled trigram `kg_nodes_fts` index (which includes node content) when its row count matches `kg_nodes`; short queries and legacy unicode61 schemas fall back to LIKE, and a row-count mismatch disables the fast path.
+Knowledge-graph keyword search with relation expansion, node lookup by id, node listing by type, similar-node lookup, and outgoing-neighbor lookup over the `kg_nodes`/`kg_edges` tables (unified schema, with legacy `nodes`/`edges` fallback). Whole-phrase matches use the bundled trigram `kg_nodes_fts` index (which includes node content) when its row count matches `kg_nodes`; short queries and legacy unicode61 schemas fall back to LIKE, and a row-count mismatch disables the fast path.
 
 ### ipcStandards / ipcStandardsByArticle / ipcStandardsSearch
 

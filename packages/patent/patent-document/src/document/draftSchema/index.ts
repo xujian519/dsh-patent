@@ -247,6 +247,8 @@ import type { GenericTemplateId } from './generic.ts'
 type DraftTemplateId = FormTemplateId | GenericTemplateId
 
 /** 判断模板 id 是否已接入 TemplateDraft（表单或通用文档；类型守卫）。
+ * 包外调用方可直接取用；仓内消费方目前只有测试。
+ * @public
  * @param id - 模板 id。
  * @returns 该 id 是否为受控草案模板 id。
  */

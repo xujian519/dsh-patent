@@ -45,7 +45,7 @@ export OPEN_DESIGN_DIR="$PWD/open-design"
 ## 已知限制与待办
 
 - **PDF 是导出指引而非渲染器**——`document-report` / `document-html` 交付自包含 HTML；PDF 导出经交付工作室的打印按钮（桌面端 print-to-PDF 或浏览器打印）完成，不在 preset 内部。Host 另有 Office→PDF 转换（`office-to-pdf`），供侧栏 Office 预览使用，不面向交付。
-- **`document-word` 需要本 preset 不挂载的 Office 技能**——随包的 `skill-office` 行由 desktop 宿主组合装配，Web bundle 没有装配，因此 Web 会话依赖用户级 `officecli` 技能；两者都缺时回退 Markdown 并说明。
+- **Word 交付走两条路径**——`document-word` 通过 `render_doc_template` 产出 `.docx`；页眉页脚与旧版 `.doc` 由随包 Office 栈处理。Web 宿主为所有 profile 挂载四个 Office 技能（`office`、`office-docx`、`office-pptx`、`office-xlsx`），本 preset 同时挂载 `tool-office`，因此加载任一 Office 技能后 `office_render`、`office_convert`、`office_recalculate` 即可用。用户级 `officecli` 技能仍可作为更丰富编辑的备选。
 - **OpenDesign 技能为可选**——未设置 `OPEN_DESIGN_DIR` 时使用内置基线模板，模板多样性降低但交付不被阻塞。
 - **面板内不内联渲染二进制**——工作室对 `.docx`/`.pptx`/`.pdf` 只给「在侧栏预览」，交接给 `ui-sidebar-documentpreview`；面板自己只内联 Markdown 与 HTML。
 - **`document_deliver` 只登记不转换**——工具仅校验声明的文件存在于会话工作区；PDF 导出或二进制转换仍需要相应管线步骤（打印动作 / officecli），工作区外保存的文件无法登记。

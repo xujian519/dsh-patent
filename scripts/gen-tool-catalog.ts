@@ -102,6 +102,7 @@ import * as PatentFiling from '@deepseek-ai/dsh-patent-filing'
 import * as PatentLaw from '@deepseek-ai/dsh-patent-law'
 import * as LegalLaw from '@deepseek-ai/dsh-legal-law'
 import * as LegalEvidence from '@deepseek-ai/dsh-legal-evidence'
+import * as LegalKnowledgeTool from '@deepseek-ai/dsh-legal-knowledge/tool'
 import * as DocTemplate from '@deepseek-ai/dsh-doc-template'
 import * as WritingPatterns from '@deepseek-ai/dsh-writing-patterns'
 import * as PatentTeams from '@deepseek-ai/dsh-patent-teams'
@@ -948,6 +949,24 @@ const TOOL_PACKAGES: ToolPackage[] = [
       'evaluate_legal_evidence scores the triple attributes (关联性、合法性、真实性) of one evidence record for the eight statutory evidence types under 《民事诉讼法》第 66 条. The scoring is deterministic and makes no model request; the weights come from the shipped YAML rules asset, and a record that omits a field the rules ask about reads as unanswered rather than inferred.',
   },
   {
+    pkg: '@deepseek-ai/dsh-legal-knowledge/tool',
+    dir: 'legal-knowledge',
+    source: 'packages/legal/legal-knowledge/src/tool.ts',
+    requires: ['ctx.tools', 'ctx.legalKnowledge'],
+    writes: ['tool/call', 'tool/result'],
+    async mount(ctx) {
+      // The service owns the deployment's database and query engines; the schema
+      // does not depend on either, so a stub keeps the catalog boot offline and
+      // independent of an installed legal.db. The preset mounts the service and
+      // this subpath plugin inside one isolate realm.
+      const key: string = 'legalKnowledge'
+      ctx.provide(key, {})
+      await ctx.plugin(LegalKnowledgeTool)
+    },
+    note:
+      'legal_knowledge_search queries the deployment\'s legal knowledge base in four families (case_law, regulation, judicial_interpretation, guiding_case) over SQLite FTS5 with an in-memory fallback; the service owns no schema, so this /tool subpath plugin is the model-facing half. An empty result states that this deployment has no matching record rather than that no such authority exists.',
+  },
+  {
     pkg: '@deepseek-ai/dsh-writing-patterns',
     dir: 'writing-patterns',
     source: 'packages/patent/writing-patterns/src/index.ts',
@@ -1085,9 +1104,33 @@ interface CatalogPackage {
 export type ToolCatalog = CatalogPackage[]
 
 /**
- * Assert the boot manifest covers every shipped tool package on disk (a
- * `tool-*` leaf under `packages/`, excluding test support).
- * Booting has no source declaration to enumerate, so this glob restores the
+ * Package dirs that expose a `./tool` subpath.
+ *
+ * A domain package whose service owns no model-facing surface registers its
+ * tool from a companion plugin, and the directory name carries no `tool-`
+ * prefix (`legal-knowledge` is the shipped case). The manifest has to name such
+ * a package by hand, so the completeness guard reads this export to include it.
+ * @param scanRoot - directory holding the `packages/` tree.
+ * @returns the leaf directory names, in path order.
+ */
+export function toolSubpathPackageDirs(scanRoot: string = root): string[] {
+  return globSync('packages/*/*/package.json', { cwd: scanRoot })
+    .filter(manifestPath => basename(dirname(dirname(manifestPath))) !== 'test-support')
+    .filter((manifestPath) => {
+      const parsed: unknown = JSON.parse(readFileSync(resolve(scanRoot, manifestPath), 'utf8'))
+      if (typeof parsed !== 'object' || parsed === null) return false
+      const exportsField = (parsed as { exports?: unknown }).exports
+      return typeof exportsField === 'object' && exportsField !== null && Object.hasOwn(exportsField, './tool')
+    })
+    .map(manifestPath => basename(dirname(manifestPath)))
+    .sort()
+}
+
+/**
+ * Assert the boot manifest covers every shipped tool package on disk: a
+ * `tool-*` leaf under `packages/` (excluding test support) or a package that
+ * exports a `./tool` subpath plugin.
+ * Booting has no source declaration to enumerate, so this scan restores the
  * "a new tool cannot be silently undocumented" guarantee: an unlisted package
  * fails the generator (and the freshness gate) until it is added to
  * {@link TOOL_PACKAGES}. Exported for a direct negative test.
@@ -1096,9 +1139,12 @@ export type ToolCatalog = CatalogPackage[]
  */
 export function assertManifestComplete(packages: ToolPackage[] = TOOL_PACKAGES, scanRoot: string = root): void {
   // Native execution owns no tool definitions; PTC contributes run_code.
-  const onDisk = globSync('packages/*/tool-*', { cwd: scanRoot })
-    .filter(path => basename(dirname(path)) !== 'test-support')
-    .map(p => basename(p))
+  const onDisk = [...new Set([
+    ...globSync('packages/*/tool-*', { cwd: scanRoot })
+      .filter(path => basename(dirname(path)) !== 'test-support')
+      .map(p => basename(p)),
+    ...toolSubpathPackageDirs(scanRoot),
+  ])]
     .filter(dir => dir !== 'tool-executor-native').sort()
   const listed = new Set(packages.map(p => p.dir))
   const missing = onDisk.filter(dir => !listed.has(dir))
@@ -1219,9 +1265,9 @@ export function render(catalog: ToolCatalog): string {
     '',
     'Every model-facing tool a shipped plugin contributes to `ctx.tools`: the `name`, `description`, and JSON-Schema `parameters` the model receives via the system-prompt assembly. It complements the [subsystem pages](subsystems/core.md) (the types plus each page\'s generated Cordis API region) — this page is the *tools* the agent is offered.',
     '',
-    'This file is GENERATED and verified fresh by `pnpm run verify-tool-catalog` (part of `doc-sync`) — do not edit it by hand. Unlike the cordis catalog (a pure source-AST pass), this generator BOOTS each tool plugin on a real context and reads `ctx.tools.schemas()`, because a tool schema is not statically knowable (runtime-spread enums, concatenated descriptions, config-driven names, raw-JSON-Schema MCP tools). A completeness guard globs `packages/*/tool-*` and fails if any package is missing from the generator\'s boot manifest, so a new tool cannot be silently undocumented.',
+    'This file is GENERATED and verified fresh by `pnpm run verify-tool-catalog` (part of `doc-sync`) — do not edit it by hand. Unlike the cordis catalog (a pure source-AST pass), this generator BOOTS each tool plugin on a real context and reads `ctx.tools.schemas()`, because a tool schema is not statically knowable (runtime-spread enums, concatenated descriptions, config-driven names, raw-JSON-Schema MCP tools). A completeness guard scans `packages/*/tool-*` plus every package that exports a `./tool` subpath plugin, and fails if any is missing from the generator\'s boot manifest, so a new tool cannot be silently undocumented.',
     '',
-    'Scope: shipped product tools under `packages/*/tool-*`, plus the domain packages that register tools directly (`patent-*`, `writing-patterns`, `methodology`, `document-deliver`, and `legal-*`), each booted with its DEFAULT config, except where a Config field is REQUIRED with no default — there the generator must choose, and the per-package note records which branch this page shows. The completeness guard globs `packages/*/tool-*`; a domain package that registers tools without that prefix is listed in the boot manifest by hand. The registered tool NAME can be a load-time config (e.g. `tool-subagent`\'s `toolName`), so a deployment may expose a package under a different or additional name — a per-package note records those shipped aliases where they exist. The `examples/` demo tools (e.g. `echo`) are excluded, matching the cordis catalog\'s packages-only scope.',
+    'Scope: shipped product tools under `packages/*/tool-*`, plus the domain packages that register tools directly (`patent-*`, `writing-patterns`, `methodology`, `document-deliver`, and `legal-*`), each booted with its DEFAULT config, except where a Config field is REQUIRED with no default — there the generator must choose, and the per-package note records which branch this page shows. The completeness guard covers `packages/*/tool-*` and packages that export a `./tool` subpath plugin (`legal-knowledge`); a domain package that registers tools with neither marker is listed in the boot manifest by hand. The registered tool NAME can be a load-time config (e.g. `tool-subagent`\'s `toolName`), so a deployment may expose a package under a different or additional name — a per-package note records those shipped aliases where they exist. The `examples/` demo tools (e.g. `echo`) are excluded, matching the cordis catalog\'s packages-only scope.',
     '',
     '## Tool Package Map',
     '',

@@ -38,7 +38,7 @@ Function plugin porting the Sati patent-domain tool set into the DeepSeek Harnes
 | `draft_specification` | drafting | deterministic |
 | `validate_specification` | quality | deterministic |
 | `evaluate_evidence` | evidence | `@deepseek-ai/dsh-patent-core` evidence engine |
-| `rule_check` | quality | `@deepseek-ai/dsh-patent-rule` rule engine; the `scope` argument selects the rule set, and `patent-mechanical` / `patent-chemical` / `patent-software` add that domain's rule pack (mechanical: structural-equivalence argument completeness; chemical: Markush inventiveness argument and biological-deposit completeness; software/AI: subject-matter argument completeness) on top of the full assets |
+| `rule_check` | quality | `@deepseek-ai/dsh-patent-rule` rule engine; the `scope` argument selects the rule set, and `patent-mechanical` / `patent-chemical` / `patent-software` / `patent-medical` add that domain's rule pack (mechanical: structural-equivalence argument completeness; chemical: Markush inventiveness argument and biological-deposit completeness; software/AI: subject-matter argument completeness; medical device: a use feature's contribution to the product itself) on top of the full assets |
 | `claim_lint` | quality | deterministic `@deepseek-ai/dsh-patent-core` claim-set lint (numbering, reference direction, multiple-dependent form, antecedent basis, subject names, two-part form, wording, punctuation, non-claim content); structural rules are exact, wording rules are vocabulary heuristics |
 | `domain_check` | quality | Runs `claim_lint` and `validate_specification` and groups their findings under one domain's drafting-defect checklist: each item reports `pass`, `hit` (with the rule and message) or `manual` with why it stays open. Two checklists ship: mechanical (30 items) and software/AI (28 items, run with `tech_domain: software` so the subject-matter rules apply), plus chemical (33 items, run with `tech_domain: chemical` so the chemistry claim-form and disclosure rules apply). An item stays `manual` when a required input is missing (`claims`, `abstract`, `figure_analysis`) or when the mapped rules cover only part of the defect — an unread input and a partial rule are both short of a pass. |
 | `analyze_patent_figure` | analysis | Vision ModelPort through a `FigureAnalysisEngine` (Config.figureAnalysisMode: `single` = one call, default; `two-step` = structure extraction, then description generation); image-input gated on the figure model |
@@ -72,8 +72,8 @@ Schemastery configuration, every field optional.
 
 | Key | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `provider` | string | — | LLM provider route for the LLM-consuming tools (`patent_analysis_report`, `claim_chart_build`, `patent_workflow_run`, `flexible_plan`, `analyze_patent_figure`). |
-| `model` | string | — | LLM model id for the LLM-consuming tools. |
+| `provider` | string | unset → deployment default route | LLM provider route for the LLM-consuming tools (`patent_analysis_report`, `claim_chart_build`, `patent_workflow_run`, `flexible_plan`, `analyze_patent_figure`). When both `provider` and `model` are unset the route comes from the host `agentDefaultModel` service (`currentSelection()`); only when that is absent too does a call fail with `setup_required`. |
+| `model` | string | unset → deployment default route | LLM model id for the LLM-consuming tools; resolved together with `provider` as described above. |
 | `imageModel` | object | — | Dedicated figure/image model route (`{ provider, model }`) whose declared input modalities gate `analyze_patent_figure`; falls back to `provider`/`model` when unset. |
 | `maxTokens` | number | — | Optional output token cap for the LLM-consuming tools; omitted leaves the provider default. |
 | `workflowStageBudget` | number | `27` | Maximum stages one built-in workflow manifest may declare; plugin load fails above it. |
@@ -110,7 +110,7 @@ Schemastery configuration, every field optional.
 
 Two subprocess budgets stay fixed rather than configurable: the SIGTERM→SIGKILL escalation grace (3 s) because `dsh-patent-data`'s subprocess runner shares it and changing one ends teardown symmetry, and the per-stream output cap (100 000 bytes) because it bounds renderer memory. The exported `probeGraphviz`/`probeFreeCad` helpers take their own timeout from the caller (`DEFAULT_GRAPHVIZ_PROBE_TIMEOUT_MS`/`DEFAULT_FREECAD_PROBE_TIMEOUT_MS`); the plugin itself never probes, so no probe budget is configurable.
 
-When `provider`/ `model` are unset the LLM-consuming tools register but fail loud (`setup_required`) when called. The knowledge tools require a knowledge.db prepared via `patent-knowledge:install`; they fail loud with install guidance when it is absent.
+When `provider` and `model` are unset the LLM-consuming tools use the host `agentDefaultModel` selection — the deployment's default route, not the model a session's user picked. The tools fail loud (`setup_required`) only when no route resolves at all. The knowledge tools require a knowledge.db prepared via `patent-knowledge:install`; they fail loud with install guidance when it is absent.
 
 ## Model Experience
 

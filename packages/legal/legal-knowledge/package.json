@@ -13,10 +13,17 @@
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
+  "bin": {
+    "legal-knowledge-install": "lib/bin.js"
+  },
   "exports": {
     ".": {
       "types": "./lib/types/index.d.ts",
       "default": "./lib/index.js"
+    },
+    "./bin": {
+      "types": "./lib/types/bin.d.ts",
+      "default": "./lib/bin.js"
     },
     "./tool": {
       "types": "./lib/types/tool.d.ts",
@@ -29,6 +36,7 @@
   "files": [
     "locale/*.json",
     "lib/index.js",
+    "lib/bin.js",
     "lib/types/**/*.js",
     "lib/types/**/*.d.ts",
     "lib/types/**/*.d.ts.map",

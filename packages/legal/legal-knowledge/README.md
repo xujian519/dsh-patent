@@ -43,7 +43,15 @@ When a query database exists and `useFts5` is true (the default), the engines op
 <a id="install-and-configuration"></a>
 ## Install and configuration
 
-`resolveLegalKnowledgePaths` resolves `knowledgeDir` (default `~/.dsh/legal-knowledge`) and `sourceDbPath` (default `~/.dsh/legal-knowledge/legal.db`), preferring `legal.db`, then `legal-lite.db`, then the source database. `installLegalKnowledgeDb` builds the query database from the source. The service is configured by `knowledgeDir`, `sourceDbPath`, and `useFts5`; an absent default database is the pre-install state, so the service starts in memory rather than failing a read-only open of a file that was never installed.
+`resolveLegalKnowledgePaths` resolves `knowledgeDir` (default `~/.dsh/legal-knowledge`) and `sourceDbPath` (default `~/.dsh/legal-knowledge/legal.db`), preferring `legal.db`, then `legal-lite.db`, then the source database. `installLegalKnowledgeDb` builds the query database from the source, and the package ships that installer as the `legal-knowledge-install` CLI:
+
+```sh
+npx legal-knowledge-install --from /path/to/legal.db
+# --output <path>   default ~/.dsh/legal-knowledge/legal.db
+# --no-fts          drop the FTS5 indexes; full-text search degrades to LIKE
+```
+
+`--from` is required: the installer's default source path is the file it writes, so a run without it would replace the source with itself. The run reads the source read-only, copies it beside the output, trims it, and atomically replaces the output. The service is configured by `knowledgeDir`, `sourceDbPath`, and `useFts5`; an absent default database is the pre-install state, so the service starts in memory rather than failing a read-only open of a file that was never installed.
 
 ## Known Limitations and Deferred Work
 

@@ -39,7 +39,7 @@ kind: "package-reference"
 | `draft_specification` | 撰写 | 确定性 |
 | `validate_specification` | 质量 | 确定性 |
 | `evaluate_evidence` | 证据 | `@deepseek-ai/dsh-patent-core` 证据引擎 |
-| `rule_check` | 质量 | `@deepseek-ai/dsh-patent-rule` 规则引擎；`scope` 决定规则集，`patent-mechanical` / `patent-chemical` / `patent-software` 在专利全量之上加该域规则包（机械：结构等效性论证完整性；化学：马库什创造性论证与生物材料保藏完整性；软件/AI：客体答辩三要素论证完整性） |
+| `rule_check` | 质量 | `@deepseek-ai/dsh-patent-rule` 规则引擎；`scope` 决定规则集，`patent-mechanical` / `patent-chemical` / `patent-software` / `patent-medical` 在专利全量之上加该域规则包（机械：结构等效性论证完整性；化学：马库什创造性论证与生物材料保藏完整性；软件/AI：客体答辩三要素论证完整性；医疗器械：用途特征对产品本身的贡献） |
 | `claim_lint` | 质量 | 确定性 `@deepseek-ai/dsh-patent-core` 权利要求书形式自检（编号、引用方向、多项从属形式、引用基础、主题名称、两段式、用语、标点、正文之外的内容）；结构性规则精确判定，用语类规则是词表启发式 |
 | `domain_check` | 质量 | 跑 `claim_lint` 与 `validate_specification`，把两者的结论按某一领域的撰写缺陷清单归并：每项给出 `pass`、`hit`（附规则与说明）或 `manual`（写明为何仍需人工）。现有三份清单：机械域 30 项、软件/AI 域 28 项（按 `tech_domain: software` 运行，客体规则才会生效）、化学域 33 项（按 `tech_domain: chemical` 运行，化学权项形式与公开规则才会生效）。缺少必需输入（`claims`、`abstract`、`figure_analysis`）或规则只覆盖该缺陷的一部分时均为 `manual`——没读到的输入、只覆盖一部分的规则都不算通过。 |
 | `analyze_patent_figure` | 分析 | 经 `FigureAnalysisEngine` 走视觉 ModelPort（Config.figureAnalysisMode：`single`=一次调用，默认；`two-step`=结构抽取+说明生成两次调用）；按附图模型做图片输入门禁 |
@@ -74,8 +74,8 @@ Schemastery 配置，所有字段可选。
 
 | 键 | 类型 | 默认 | 含义 |
 | --- | --- | --- | --- |
-| `provider` | string | — | LLM 消费工具（`patent_analysis_report`、`claim_chart_build`、`patent_workflow_run`、`flexible_plan`、`analyze_patent_figure`）的 provider 路由。 |
-| `model` | string | — | LLM 消费工具的模型 id。 |
+| `provider` | string | 未设置 → 部署默认路由 | LLM 消费工具（`patent_analysis_report`、`claim_chart_build`、`patent_workflow_run`、`flexible_plan`、`analyze_patent_figure`）的 provider 路由。`provider` 与 `model` 都未设置时，路由取自宿主 `agentDefaultModel` 服务（`currentSelection()`）；只有该服务也缺失时，调用才以 `setup_required` 报错。 |
+| `model` | string | 未设置 → 部署默认路由 | LLM 消费工具的模型 id；与 `provider` 一起按上述规则解析。 |
 | `imageModel` | object | — | 专用附图/图片模型路由（`{ provider, model }`），其声明的输入模态用于门禁 `analyze_patent_figure`；未设置时回退到 `provider`/`model`。 |
 | `maxTokens` | number | — | LLM 消费工具的输出 token 上限（可选）；省略时用 provider 默认值。 |
 | `workflowStageBudget` | number | `27` | 单个内置工作流 manifest 允许声明的最大阶段数；超过即插件加载失败。 |
@@ -112,7 +112,7 @@ Schemastery 配置，所有字段可选。
 
 有两项子进程预算保持固定、不做配置：SIGTERM→SIGKILL 升级宽限（3 秒），因为 `dsh-patent-data` 的 subprocess runner 与它共用，改一处就破坏收尾对称；单流输出上限（100 000 字节），因为它约束渲染器内存。导出的 `probeGraphviz`/`probeFreeCad` 由调用方自带超时（`DEFAULT_GRAPHVIZ_PROBE_TIMEOUT_MS`/`DEFAULT_FREECAD_PROBE_TIMEOUT_MS`）；插件自身不探测，因此没有可配置的探测预算。
 
-未设置 `provider`/ `model` 时，LLM 消费工具照常注册，但调用时 fail loud（`setup_required`）。知识类工具需要经 `patent-knowledge:install` 准备的 knowledge.db；缺失时 fail loud 并给出安装引导。
+未设置 `provider` 与 `model` 时，LLM 消费工具使用宿主 `agentDefaultModel` 的选择——即部署默认路由，而不是会话用户所选模型；只有完全解析不到路由时才以 `setup_required` fail loud。知识类工具需要经 `patent-knowledge:install` 准备的 knowledge.db；缺失时 fail loud 并给出安装引导。
 
 <a id="model-experience"></a>
 ## Model Experience

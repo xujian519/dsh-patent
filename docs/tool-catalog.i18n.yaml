@@ -6,11 +6,11 @@
   en: 0be8ffbf23193557
   zh: ce2c69aa86875171
 /tool-schema-catalog:
-  en: 788235fe5e9f4199
-  zh: 891fd445df64adeb
+  en: 9ce9c17eea4ddeb6
+  zh: 82f2293612b9000b
 /tool-schema-catalog/tool-package-map:
-  en: 00cb086ff965aa4d
-  zh: 2712ff9dbfdcec04
+  en: 7d7ef7e6989b20d3
+  zh: 1cdac75c73550796
 /tool-schema-catalog/deepseek-ai-dsh-plugin-manager:
   en: e0143916bb634762
   zh: e0143916bb634762
@@ -477,8 +477,8 @@
   en: d23cf293a4051b66
   zh: 1d8fbb3adc4c7be1
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/rule-check:
-  en: b37609cafb695d1d
-  zh: f09b8ff61ea26122
+  en: fd38d169641417ff
+  zh: b3028248d868e41b
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/search-patent-figure:
   en: e952950dd3a02826
   zh: ecc3c6b0f7b1df69
@@ -540,8 +540,14 @@
   en: 312889b7e6bbd6b1
   zh: 312889b7e6bbd6b1
 /tool-schema-catalog/deepseek-ai-dsh-legal-evidence/evaluate-legal-evidence:
-  en: 1b889f5d42476833
-  zh: 10d08e44ba509fe2
+  en: 0e4ff7da59034da2
+  zh: 564a919e56fcfab5
+/tool-schema-catalog/deepseek-ai-dsh-legal-knowledge-tool:
+  en: 1ee9c49e5a7de7c4
+  zh: 1ee9c49e5a7de7c4
+/tool-schema-catalog/deepseek-ai-dsh-legal-knowledge-tool/legal-knowledge-search:
+  en: 6a453476ee02b21a
+  zh: 2df3027072cf68db
 /tool-schema-catalog/deepseek-ai-dsh-writing-patterns:
   en: 8ab26b9ce6684b46
   zh: 8ab26b9ce6684b46

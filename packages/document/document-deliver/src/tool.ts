@@ -450,20 +450,26 @@ function renderResult(result: DocumentDeliverResult): string {
 }
 
 /**
- * Project the check reports into the presentation metadata persisted on the
+ * Project the registration into the presentation metadata persisted on the
  * tool result.
  *
- * The projection is written out field by field rather than passing the reports
+ * The projection is written out field by field rather than passing the result
  * through: this object is what the log keeps and what the delivery studio
  * narrows back on replay, so its fields are a wire commitment, not an alias for
- * whatever the in-process report happens to carry. `identity` is the canonical
- * key a consumer joins entries on; `path` stays the declared spelling.
- * @param checks - the check reports of one registration.
+ * whatever the in-process result happens to carry. `identity` is the canonical
+ * key a consumer joins entries on; `path` stays the declared spelling. The
+ * style and the declaration warnings belong here for the same reason: the
+ * model-facing text is only their summary, and a panel replaying a session must
+ * be able to say which style the checks ran against and what the declaration
+ * got wrong.
+ * @param result - the registration result.
  * @returns the metadata value for `tool/result`.
  */
-function checksMeta(checks: readonly DeliverableCheckReport[]) {
+function deliverMeta(result: DocumentDeliverResult) {
   return {
-    checks: checks.map(report => ({
+    style: result.gate.style,
+    ...result.warnings === undefined ? {} : { warnings: result.warnings },
+    checks: result.gate.checks.map(report => ({
       path: report.path,
       ...report.identity === undefined ? {} : { identity: report.identity },
       format: report.format,
@@ -642,7 +648,7 @@ export function createDocumentDeliverTool(ctx: Context, deps: DocumentDeliverDep
       render: (_args, value) => [{ type: 'text', text: renderResult(value) }],
       // The deliverable panel reads the same computed reports back on replay;
       // the model-facing text above is only their summary.
-      presentationMeta: (_args, value) => checksMeta(value.gate.checks),
+      presentationMeta: (_args, value) => deliverMeta(value),
     },
     presentCall: (args) => {
       try {

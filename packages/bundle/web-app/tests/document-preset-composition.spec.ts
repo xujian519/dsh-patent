@@ -8,7 +8,10 @@
  * uses, evaluates the rows' skill-root expressions with the Loader's own
  * evaluator, and mounts the four rows a document delivery depends on over a
  * minimal host composition, so the tool catalog and the merged skill catalog are
- * the ones a document session actually gets.
+ * the ones a document session actually gets. The Office row is asserted as a
+ * declaration rather than mounted: it registers nothing until a model loads an
+ * Office skill, and its `agents` / `workingDirectory` injections are not part of
+ * the delivery composition this spec boots.
  *
  * The rows are taken from the preset file rather than copied: a copy would be a
  * second definition of the same 22 rows, and the shipped file is the thing whose
@@ -92,6 +95,7 @@ const REQUIRED_ROWS: readonly { readonly id: string; readonly purpose: string }[
   { id: 'doc-template', purpose: 'list_doc_templates / render_doc_template and the injected style guide' },
   { id: 'skill-filesystem', purpose: 'the six document skills, rooted at the bundle’s skills/document' },
   { id: 'skill-open-design', purpose: 'the optional OpenDesign skill provider (zero roots without OPEN_DESIGN_DIR)' },
+  { id: 'tool-office', purpose: 'office_render / office_convert / office_recalculate once a globally visible Office skill is loaded' },
 ]
 
 /**
@@ -226,7 +230,7 @@ it('mounts the delivery rows the shipped preset declares', async () => {
 
 it('reports the row a composition lacks', () => {
   // The positive case above passes on any list only if the comparison can fail.
-  expect(missingRows(['tool-document-deliver', 'skill-filesystem'], REQUIRED_ROWS.map(row => row.id)))
+  expect(missingRows(['tool-document-deliver', 'skill-filesystem', 'tool-office'], REQUIRED_ROWS.map(row => row.id)))
     .toEqual(['doc-template', 'skill-open-design'])
 })
 

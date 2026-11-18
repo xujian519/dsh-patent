@@ -56,7 +56,7 @@ describe('template variable catalog', () => {
   })
 
   it('keeps the declared variables and the body placeholders in the same name set', () => {
-    for (const template of store.allTemplates) {
+    for (const template of store.list()) {
       const declared = [...template.varSchema.names()].sort()
       const used = [...extractPlaceholders(template.body)].sort()
       expect(declared, template.name).toEqual(used)

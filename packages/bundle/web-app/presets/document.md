@@ -36,7 +36,7 @@ git clone https://github.com/nexu-io/open-design.git
 export OPEN_DESIGN_DIR="$PWD/open-design"
 ```
 
-The `open-design` skill provider then catalogs that checkout's 276 skill and template directories (measured against open-design main 0.20.3). `document-word` additionally benefits from a user-level `officecli` skill when present; without it the agent delivers Markdown and says so.
+The `open-design` skill provider then catalogs that checkout's 276 skill and template directories (measured against open-design main 0.20.3). `document-word` additionally benefits from a user-level `officecli` skill when present; without it the agent delivers the `.docx` that `render_doc_template` produced and names the layout features it could not apply.
 
 ## Model Experience
 
@@ -45,7 +45,7 @@ The model sees the Chinese document-delivery persona (four sections: professiona
 ## Known Limitations and Deferred Work
 
 - **PDF is export guidance, not a renderer** — `document-report` / `document-html` deliver self-contained HTML; PDF export happens through the delivery studio's print action (desktop print-to-PDF or browser print), not inside the preset. The host also runs an Office→PDF conversion (`office-to-pdf`) that feeds the sidebar's Office preview; it is not a delivery path.
-- **Word delivery runs on two paths** — `document-word` produces the `.docx` through `render_doc_template`; header/footer and legacy-`.doc` work use the packaged Office stack. The web host mounts the four Office skills (`office`, `office-docx`, `office-pptx`, `office-xlsx`) for every profile, and this preset mounts `tool-office`, so `office_render`, `office_convert`, and `office_recalculate` activate after one of those skills loads. A user-level `officecli` skill remains an optional alternative for richer editing.
+- **`document-word` lacks a layout editor** — `render_doc_template` writes the `.docx`; the web host mounts the four Office skills (`office`, `office-docx`, `office-pptx`, `office-xlsx`) for every profile, and this preset mounts `tool-office`, so `office_render`, `office_convert`, and `office_recalculate` activate after one of them loads. Headers, footers, page numbers, TOC fields, and named styles are outside those operations: `document-word` hands them to a user-level `officecli` skill, which this repository does not ship. Without it the agent delivers the `.docx` the template produced and names the layout features it could not apply.
 - **OpenDesign skills are optional** — without `OPEN_DESIGN_DIR` the agent uses the built-in baseline templates; template variety is reduced but delivery is not blocked.
 - **The panel does not render binaries inline** — for `.docx`, `.pptx`, and `.pdf` the studio offers "Preview in sidebar" and hands the file to `ui-sidebar-documentpreview`; only Markdown and HTML render inside the panel.
 - **`document_deliver` registers, it does not convert** — the tool only checks that a declared file exists in the session workspace; PDF export or binary conversion still needs the matching pipeline step (print action / officecli), and files saved outside the workspace cannot be registered.

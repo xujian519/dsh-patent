@@ -988,7 +988,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-doc-template`
 
 - `inject`: `tools` · `systemPrompt` · `fs`
-- `source`: [`packages/document/doc-template/src/index.ts:113`](../packages/document/doc-template/src/index.ts)
+- `source`: [`packages/document/doc-template/src/index.ts:107`](../packages/document/doc-template/src/index.ts)
 
 ```ts config-catalog
 /** Model-facing document-template plugin configuration, resolved with every default applied. */

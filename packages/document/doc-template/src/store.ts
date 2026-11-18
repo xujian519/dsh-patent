@@ -40,18 +40,6 @@ export interface TemplateFilter {
   readonly query?: string
 }
 
-/** A version discrepancy between a first-loaded template and an overriding one. */
-export interface VersionConflict {
-  /** Template name. */
-  readonly templateName: string
-  /** Version of the first-loaded template, which the packaged asset declares. */
-  readonly packagedVersion: string
-  /** Version of the template that overrode it. */
-  readonly overrideVersion: string
-  /** `warn` when the override compares older than the packaged version, `info` otherwise. */
-  readonly severity: 'info' | 'warn'
-}
-
 /** Construction options of a template store. */
 export interface TemplateStoreOptions {
   /**
@@ -116,7 +104,6 @@ export interface RenderOutcome {
 export class TemplateStore {
   private readonly templates: readonly DocTemplate[]
   private readonly positionByName: ReadonlyMap<string, number>
-  private readonly firstVersions: ReadonlyMap<string, string>
   private readonly styles: readonly DocumentStyle[]
   private readonly defaultLanguage: string
   private readonly includeDisclaimer: boolean
@@ -132,13 +119,11 @@ export class TemplateStore {
     }
     const templates: DocTemplate[] = []
     const positions = new Map<string, number>()
-    const firstVersions = new Map<string, string>()
     for (const directory of options.templateDirs) {
       for (const template of loadTemplateDirectory(directory)) {
         const existing = positions.get(template.name)
         if (existing === undefined) {
           positions.set(template.name, templates.length)
-          firstVersions.set(template.name, template.version)
           templates.push(template)
           continue
         }
@@ -150,29 +135,10 @@ export class TemplateStore {
     }
     this.templates = templates
     this.positionByName = positions
-    this.firstVersions = firstVersions
     this.styles = options.styles
     this.defaultLanguage = options.defaultLanguage
     this.includeDisclaimer = options.includeDisclaimer
     this.renderers = options.renderers ?? createRendererRegistry()
-  }
-
-  /** The loaded templates, in load order. */
-  get allTemplates(): readonly DocTemplate[] {
-    return this.templates
-  }
-
-  /** The number of loaded templates. */
-  get count(): number {
-    return this.templates.length
-  }
-
-  /**
-   * The renderer registry, for a consumer that registers an additional format.
-   * @returns the registry.
-   */
-  get rendererRegistry(): RendererRegistry {
-    return this.renderers
   }
 
   /**
@@ -209,38 +175,6 @@ export class TemplateStore {
   findByName(name: string): DocTemplate | undefined {
     const position = this.positionByName.get(name)
     return position === undefined ? undefined : this.templates[position]
-  }
-
-  /**
-   * Find a template by name, restricted to one effective language.
-   * @param name - the template name.
-   * @param language - the required language; an empty string accepts any.
-   * @returns the template, or `undefined` when it is absent or in another language.
-   */
-  findByNameAndLanguage(name: string, language: string): DocTemplate | undefined {
-    const template = this.findByName(name)
-    if (template === undefined) return undefined
-    if (language !== '' && this.languageOf(template) !== language) return undefined
-    return template
-  }
-
-  /**
-   * Report the templates an override replaced with a different version.
-   * @returns one entry per differing template, in load order.
-   */
-  listConflicts(): readonly VersionConflict[] {
-    const conflicts: VersionConflict[] = []
-    for (const template of this.templates) {
-      const packagedVersion = this.firstVersions.get(template.name)
-      if (packagedVersion === undefined || template.version === packagedVersion) continue
-      conflicts.push({
-        templateName: template.name,
-        packagedVersion,
-        overrideVersion: template.version,
-        severity: compareVersions(template.version, packagedVersion) < 0 ? 'warn' : 'info',
-      })
-    }
-    return conflicts
   }
 
   /**
@@ -340,24 +274,6 @@ export function createTemplateStore(options: TemplateStoreOptions): TemplateStor
  */
 export function resolveTemplateDirectory(directory: string): string {
   return resolve(directory)
-}
-
-/**
- * Order two dotted template versions by segment, so `10.0.0` follows `1.0.0`
- * where a code-unit string comparison would order it first. A missing or
- * non-numeric segment counts as 0, so `1.0` equals `1.0.0`.
- * @param left - left version.
- * @param right - right version.
- * @returns negative when `left` is older, positive when newer, 0 when equal by this rule.
- */
-function compareVersions(left: string, right: string): number {
-  const leftSegments = left.split('.')
-  const rightSegments = right.split('.')
-  for (let index = 0; index < Math.max(leftSegments.length, rightSegments.length); index += 1) {
-    const difference = (Number(leftSegments[index]) || 0) - (Number(rightSegments[index]) || 0)
-    if (difference !== 0) return difference
-  }
-  return 0
 }
 
 /**

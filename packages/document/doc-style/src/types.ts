@@ -120,19 +120,6 @@ export interface DocumentStyle {
 }
 
 /**
- * The template fields the prompt projections read, so this package never depends
- * on `@deepseek-ai/dsh-doc-template` (whose `DocTemplate` satisfies this type).
- */
-export interface TemplateContext {
-  /** Template name. */
-  readonly name: string
-  /** Template title. */
-  readonly title: string
-  /** Template category, which selects the disclaimer. */
-  readonly category: string
-}
-
-/**
  * The render-time projection of a style: the two fields a renderer needs.
  * `@deepseek-ai/dsh-doc-template` declares the same record as its render
  * metadata, so the two packages meet structurally rather than by import.

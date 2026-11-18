@@ -48,14 +48,13 @@ Every call returns fresh expressions: a scan site owns its `lastIndex`, so no tw
 <a id="projections"></a>
 ## Projections
 
-One style projects into four shapes, because the consumers need different amounts of it.
+One style projects into three shapes, because the consumers need different amounts of it.
 
 - `systemPrompt(style)` renders the whole guide as the block a model reads before writing: the tone, the voice principles, the forbidden words with their replacements, the disclaimers, the citation rules, and the output conventions. A section the style leaves empty is omitted entirely.
-- `systemPromptForTemplate(style, template)` appends the template's name, title, category, and required disclaimer to that guide. It reads only `name`, `title`, and `category`, so a caller passes any template record rather than a `@deepseek-ai/dsh-doc-template` type.
 - `toRenderStyle(style, categoryHint)` reduces the style to what a renderer injects: the name, which selects an HTML stylesheet, and the disclaimer.
 - `disclaimerFor(style, category)` selects the disclaimer of one template category: `specification` and `claims` take `patent_drafting`, `oa-response` and `disclosure` take `patent_analysis`, and a category with no entry falls back to the domain-level `<domain>_analysis` disclaimer. A style that has neither returns the empty string, which means no disclaimer applies.
 
-`stylesForDomain(styles, domain)` and `findStyleByName(styles, name)` query a loaded set by domain and by name.
+`findStyleByName(styles, name)` queries a loaded set by name.
 
 <a id="loading"></a>
 ## Loading
@@ -70,7 +69,7 @@ The upstream loader skipped a missing directory and skipped a file it could not 
 
 #### What the model sees
 
-No prompt section and no tool schema of its own. A consumer that injects a style guide into a request calls `systemPrompt` or `systemPromptForTemplate` and owns the assembly, so the model sees a consumer-rendered block such as `Style: <name> (domain: <domain>, version: <version>)` followed by the sections that style declares.
+No prompt section and no tool schema of its own. A consumer that injects a style guide into a request calls `systemPrompt` and owns the assembly, so the model sees a consumer-rendered block such as `Style: <name> (domain: <domain>, version: <version>)` followed by the sections that style declares.
 
 #### Token effect
 
@@ -82,8 +81,6 @@ None: the package sends nothing to a provider and mutates no request prefix.
 
 ## Known Limitations and Deferred Work
 
-- **`systemPromptForTemplate` has no consumer yet** — [`@deepseek-ai/dsh-doc-template`](../doc-template/README.md) consumes `toRenderStyle` (which internally calls `disclaimerFor`) and (when a deployment names a `styleGuide`) `systemPrompt`; the template-context projection waits for a consumer, which is also why no template-context wiring ships with it.
-- **`stylesForDomain` has no consumer yet** — a rendered document selects its style by name, so nothing queries the loaded set by domain; a domain query waits for a consumer that composes styles across a domain.
 - **The disclaimer map is transcribed, not derived** — the category keys and the `<domain>_analysis` fallback are copied into `DISCLAIMER_CATEGORY_KEYS`, so a category needs its own entry rather than a derived key.
 - **No category reaches `prior_art`** — the patent style declares a `prior_art` disclaimer for search results, but no template category maps to it, so a search report carries the drafting disclaimer.
 - **Only `style` selects a style** — a template names its style in front-matter; nothing selects a style by domain at render time, so a template without a style renders without a disclaimer.
@@ -92,4 +89,4 @@ None: the package sends nothing to a provider and mutates no request prefix.
 
 ### Dev Note
 
-The package is a rewrite of two files of the MIT-licensed Go project Mady: `domains/config/style.go` for the model and its projections, and `domains/config/style_embed.go` for the loader, plus the four `styles/*.yaml` assets. The deliberate differences are recorded in the module JSDoc of the modules they touch: the loader fails loud where upstream skipped a missing directory and a malformed file, and `systemPromptForTemplate` takes a structural template record so this library never depends on `@deepseek-ai/dsh-doc-template`.
+The package is a rewrite of two files of the MIT-licensed Go project Mady: `domains/config/style.go` for the model and its projections, and `domains/config/style_embed.go` for the loader, plus the four `styles/*.yaml` assets. The deliberate differences are recorded in the module JSDoc of the modules they touch: the loader fails loud where upstream skipped a missing directory and a malformed file.

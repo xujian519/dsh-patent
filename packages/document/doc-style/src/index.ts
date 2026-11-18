@@ -5,9 +5,9 @@
  * durable state — so a consumer loads the styles with explicit directories and
  * projects them itself.
  *
- * The four projections are `systemPrompt` (the whole guide), `systemPromptForTemplate`
- * (guide plus template context), `toRenderStyle` (what a renderer injects), and
- * `disclaimerFor` (the disclaimer of one template category).
+ * The three projections are `systemPrompt` (the whole guide), `toRenderStyle`
+ * (what a renderer injects), and `disclaimerFor` (the disclaimer of one template
+ * category).
  */
 
 export {
@@ -30,7 +30,6 @@ export type {
   Perspective,
   RenderStyle,
   StyleSections,
-  TemplateContext,
   ToneSection,
   VoiceSection,
 } from './types.ts'
@@ -38,11 +37,4 @@ export { PLACEHOLDER_MARKERS, placeholderBracePattern, residualPlaceholderPatter
 export { parseStyleAsset } from './parse.ts'
 export { loadStyleFile, loadStyles, styleDirectories } from './load.ts'
 export { stylesDirectory } from './asset-location.ts'
-export {
-  disclaimerFor,
-  findStyleByName,
-  stylesForDomain,
-  systemPrompt,
-  systemPromptForTemplate,
-  toRenderStyle,
-} from './projection.ts'
+export { disclaimerFor, findStyleByName, systemPrompt, toRenderStyle } from './projection.ts'

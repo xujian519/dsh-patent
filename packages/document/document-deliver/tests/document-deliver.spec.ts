@@ -688,8 +688,13 @@ describe('document_deliver deterministic checks', () => {
           { path: 'archive.docx', format: 'docx', status: 'unreadable', reason: 'DOCX 结构报告 not-a-zip', ack: '历史归档件', findings: [] },
         ],
       },
+      warnings: ['P0 项 "自查" 不是已知的质量门 id'],
     }
-    expect(tool.output.presentationMeta?.({}, value as never)).toEqual({ checks: value.gate.checks })
+    expect(tool.output.presentationMeta?.({}, value as never)).toEqual({
+      style: value.gate.style,
+      warnings: value.warnings,
+      checks: value.gate.checks,
+    })
   })
 })
 
@@ -1027,6 +1032,7 @@ describe('deliverable identity', () => {
       },
     }
     expect(tool.output.presentationMeta?.({}, value as never)).toEqual({
+      style: 'assistant-neutral',
       checks: [
         { path: 'a.md', identity: '/work/a.md', format: 'markdown', status: 'checked', findings: [] },
         { path: 'b.md', format: 'markdown', status: 'checked', findings: [] },

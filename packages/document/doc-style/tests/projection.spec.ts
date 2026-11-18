@@ -1,11 +1,11 @@
 // 上游来源：Mady 项目 `domains/config/style_test.go`：
 // `TestSystemPrompt`（含 Tone/Voice/Anti-Patterns/Disclaimers/Citation/Output Conventions 全段）、
-// `TestSystemPrompt_Minimal`（空段不输出标题）、`TestStylesForDomain`、`TestFindStyleByName`。
-// `SystemPromptForTemplate`、`ToRenderStyle`、`DisclaimerFor` 在上游由 `domains/config/project.go`
+// `TestSystemPrompt_Minimal`（空段不输出标题）、`TestFindStyleByName`。
+// `ToRenderStyle`、`DisclaimerFor` 在上游由 `domains/config/project.go`
 // 之外的调用方使用，本包按 `style.go` 的实现逐分支覆盖。
 
 import { describe, expect, it } from 'vitest'
-import { disclaimerFor, findStyleByName, stylesForDomain, systemPrompt, systemPromptForTemplate, toRenderStyle } from '../src/projection.ts'
+import { disclaimerFor, findStyleByName, systemPrompt, toRenderStyle } from '../src/projection.ts'
 import type { DocumentStyle, StyleSections } from '../src/types.ts'
 
 /** Build a style whose every section keeps its empty value. */
@@ -136,34 +136,8 @@ describe('toRenderStyle', () => {
   })
 })
 
-describe('systemPromptForTemplate', () => {
-  const style = styleOf({ disclaimers: new Map([['patent_analysis', '分析免责声明']]) }, 'patent-standard', 'patent')
-
-  it('appends the template context and its required disclaimer', () => {
-    const prompt = systemPromptForTemplate(style, { name: 'search-report', title: '专利检索报告', category: 'patent-report' })
-    expect(prompt).toContain('<!-- Document Style Guide -->')
-    expect(prompt).toContain('<!-- Template Context -->')
-    expect(prompt).toContain('Template: search-report (专利检索报告)')
-    expect(prompt).toContain('Category: patent-report')
-    expect(prompt).toContain('Required Disclaimer: 分析免责声明')
-    expect(prompt).toContain('Generate content following the style guide above')
-    expect(prompt.endsWith('<!-- End Template Context -->')).toBe(true)
-  })
-
-  it('omits the disclaimer line when none applies', () => {
-    const prompt = systemPromptForTemplate(styleOf({}), { name: 't', title: 'T', category: 'claims' })
-    expect(prompt).not.toContain('Required Disclaimer')
-  })
-})
-
 describe('style lookups', () => {
   const styles = [styleOf({}, 'a', 'patent'), styleOf({}, 'b', 'patent'), styleOf({}, 'c', 'legal')]
-
-  it('selects the styles of one domain', () => {
-    expect(stylesForDomain(styles, 'patent').map(style => style.name)).toEqual(['a', 'b'])
-    expect(stylesForDomain(styles, 'legal').map(style => style.name)).toEqual(['c'])
-    expect(stylesForDomain(styles, 'nonexistent')).toEqual([])
-  })
 
   it('finds a style by name', () => {
     expect(findStyleByName(styles, 'b')?.domain).toBe('patent')

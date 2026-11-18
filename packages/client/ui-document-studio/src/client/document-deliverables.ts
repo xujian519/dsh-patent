@@ -52,6 +52,14 @@ interface DocumentCheckReport {
   readonly identity?: string
 }
 
+/** Registration-level facts a `document_deliver` result records beside its check reports. */
+interface RegistrationFacts {
+  /** Style the deterministic checks ran against; absent when the result recorded none. */
+  readonly style?: string
+  /** What the declaration itself got wrong, one line each; absent when nothing did. */
+  readonly warnings?: readonly string[]
+}
+
 /** One produced file with its first-producing turn event seq and optional registration metadata. */
 export interface DocumentDeliverable {
   readonly seq: number
@@ -81,16 +89,37 @@ export interface DocumentDeliverable {
   readonly checksWithdrawn?: true
   /** Brief reference path announced by a `document_deliver` registration. */
   readonly briefRef?: string
+  /** Style the registration's deterministic checks ran against. */
+  readonly verifiedStyle?: string
+  /** Registration-level warnings: what the declaration itself got wrong, one line each. */
+  readonly registrationWarnings?: readonly string[]
+}
+
+/** A `document_deliver` call the harness refused, with the reason it recorded. */
+export interface DocumentRegistrationRejection {
+  /** Seq of the failed `tool/result` event. */
+  readonly seq: number
+  /** The files the refused registration named, in declaration order. */
+  readonly paths: readonly string[]
+  /** Why the registration was refused: the recorded reason, else the result's text. */
+  readonly message: string
 }
 
 /** Turn-scoped produced-file facts published under `documentDeliverables`. */
 export interface DocumentTurnDeliverables {
   readonly produced: readonly DocumentDeliverable[]
+  /** The latest refused registration in this turn, if the harness refused one. */
+  readonly rejected?: DocumentRegistrationRejection
 }
 
 /** Studio snapshot: session-wide produced files in first-seen order. */
 export interface DocumentDeliverablesSnapshot {
   readonly produced: readonly DocumentDeliverable[]
+  /**
+   * The latest refused registration in the window. A turn that registers a
+   * deliverable settles it; any other later turn leaves it standing.
+   */
+  readonly rejection?: DocumentRegistrationRejection
 }
 
 declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
@@ -125,6 +154,27 @@ interface CallEntry {
 interface DocumentDeliverablesState extends DocumentTurnDeliverables {
   readonly turn: number
   readonly calls: ReadonlyMap<string, CallEntry>
+}
+
+/**
+ * The refusal text a failed `document_deliver` result records: the structured
+ * reason when the tool supplied one, else the text blocks of the model-facing
+ * message. Both are logged with the result, so a replayed session reports the
+ * same refusal.
+ * @param data - the `tool/result` event data.
+ * @returns the refusal text, or undefined when the result carries none.
+ */
+function failureText(data: {
+  readonly error?: { readonly reason?: string }
+  readonly message: { readonly content: readonly { readonly type: string; readonly text?: string }[] }
+}): string | undefined {
+  const reason = data.error?.reason?.trim()
+  if (reason !== undefined && reason !== '') return reason
+  const text = data.message.content
+    .flatMap(block => block.type === 'text' && block.text !== undefined ? [block.text] : [])
+    .join('\n')
+    .trim()
+  return text === '' ? undefined : text
 }
 
 /**
@@ -188,6 +238,31 @@ function normalizeCheckFinding(value: unknown): DocumentCheckFinding | undefined
     level: value.level,
     detail: value.detail,
     ...value.line === undefined ? {} : { line: value.line },
+  }
+}
+
+/**
+ * Narrow the registration-level fields of one `document_deliver` result's
+ * metadata: the style its checks ran against and what the declaration got
+ * wrong.
+ *
+ * These are annotations rather than a verdict, so an unreadable field degrades
+ * on its own instead of rejecting the payload: the check reports are parsed
+ * separately and keep their own fail-closed rule.
+ * @param meta - the `meta` field of a `tool/result` event.
+ * @returns the recorded facts; every field is absent when the payload lacks it.
+ */
+export function parseRegistrationFacts(meta: unknown): RegistrationFacts {
+  if (!isRecord(meta)) return {}
+  const style = typeof meta.style === 'string' && meta.style.trim() !== '' ? meta.style : undefined
+  // A declaration that repeats one mistake reports one note: the text is the
+  // identity, and the studio renders the notes as a keyed list.
+  const warnings = Array.isArray(meta.warnings) && meta.warnings.every(warning => typeof warning === 'string')
+    ? [...new Set(meta.warnings as readonly string[])]
+    : undefined
+  return {
+    ...style === undefined ? {} : { style },
+    ...warnings === undefined || warnings.length === 0 ? {} : { warnings },
   }
 }
 
@@ -332,7 +407,8 @@ function mutationEntry(seq: number, path: string, meta: unknown): DocumentDelive
 }
 
 function registeredEntries(
-  seq: number, registration: DeliverRegistration, checks: ReadonlyMap<string, DocumentCheckReport> | undefined,
+  seq: number, registration: DeliverRegistration, facts: RegistrationFacts,
+  checks: ReadonlyMap<string, DocumentCheckReport> | undefined,
 ): DocumentDeliverable[] {
   return registration.files.map((file) => {
     const report = checks?.get(file.path)
@@ -344,6 +420,8 @@ function registeredEntries(
       gate: registration.gate,
       ...report === undefined ? {} : { checks: report },
       ...registration.briefRef !== undefined ? { briefRef: registration.briefRef } : {},
+      ...facts.style === undefined ? {} : { verifiedStyle: facts.style },
+      ...facts.warnings === undefined ? {} : { registrationWarnings: facts.warnings },
     }
   })
 }
@@ -381,17 +459,41 @@ export const documentDeliverablesDefinition: ConversationNodeDefinition<Document
       return { ...context.state, calls }
     }
     if (match.event.type !== 'tool/result') return context.state
-    if (match.event.data.message.isError === true) return context.state
     const callId = String(match.event.data.message.source.callId)
     const call = context.state.calls.get(callId)
+    if (match.event.data.message.isError === true) {
+      if (call?.registration === undefined) return context.state
+      const message = failureText(match.event.data)
+      if (message === undefined) return context.state
+      return {
+        ...context.state,
+        rejected: {
+          seq: match.event.seq,
+          paths: call.registration.files.map(file => file.path),
+          message,
+        },
+      }
+    }
     const additions = call?.registration !== undefined
-      ? registeredEntries(match.event.seq, call.registration, parseCheckReports(match.event.data.meta))
+      ? registeredEntries(
+        match.event.seq, call.registration, parseRegistrationFacts(match.event.data.meta),
+        parseCheckReports(match.event.data.meta),
+      )
       : call === undefined || call.producedPath === null
         ? []
         : [mutationEntry(match.event.seq, call.producedPath, match.event.data.meta)]
-    return additions.length === 0
-      ? context.state
-      : { ...context.state, produced: [...context.state.produced, ...additions] }
+    // A registration that the harness accepted settles an earlier refusal in
+    // this turn; any other settle leaves the refusal standing. A registration
+    // declaring no files adds no entry, so the session fold keeps the earlier
+    // refusal: nothing replaced the deliverable that was refused.
+    const cleared = call?.registration !== undefined && context.state.rejected !== undefined
+    if (additions.length === 0 && !cleared) return context.state
+    return {
+      turn: context.state.turn,
+      calls: context.state.calls,
+      produced: additions.length === 0 ? context.state.produced : [...context.state.produced, ...additions],
+      ...context.state.rejected !== undefined && !cleared ? { rejected: context.state.rejected } : {},
+    }
   },
   buildLocationData: (context, scope) => scope !== 'turn' || context.state === undefined
     ? null
@@ -399,7 +501,10 @@ export const documentDeliverablesDefinition: ConversationNodeDefinition<Document
       kind: 'turn',
       turn: context.state.turn,
       key: 'documentDeliverables',
-      value: { produced: context.state.produced },
+      value: {
+        produced: context.state.produced,
+        ...context.state.rejected === undefined ? {} : { rejected: context.state.rejected },
+      },
     },
 }
 /* jscpd:ignore-end */
@@ -443,6 +548,12 @@ function augmented(previous: DocumentDeliverable, next: DocumentDeliverable): Do
     ...next.checks !== undefined ? { checks: next.checks } : {},
     ...withdrawn ? { checksWithdrawn: true as const } : {},
     ...next.briefRef !== undefined ? { briefRef: next.briefRef } : {},
+    // The check style and the declaration warnings describe the newest
+    // registration the same way the verdict does: a later entry that records
+    // neither leaves the row without them rather than inheriting an older
+    // registration's context.
+    ...next.verifiedStyle === undefined ? {} : { verifiedStyle: next.verifiedStyle },
+    ...next.registrationWarnings === undefined ? {} : { registrationWarnings: next.registrationWarnings },
   }
 }
 
@@ -470,9 +581,14 @@ function claimKeys(
 function producedFromTimeline(timeline: ConversationTimelineSnapshot): DocumentDeliverablesSnapshot {
   const produced: DocumentDeliverable[] = []
   const seen = new Map<string, number>()
+  let rejection: DocumentRegistrationRejection | undefined
   for (const turn of timeline.turns.values()) {
     const data = turn.data.get('documentDeliverables')
     if (data === undefined) continue
+    // A turn that ends on a refusal reports it; a turn that registered
+    // something settles the refusal an earlier turn left standing.
+    if (data.rejected !== undefined) rejection = data.rejected
+    else if (data.produced.some(entry => entry.gate !== undefined)) rejection = undefined
     for (const entry of data.produced) {
       // Identity first: the same file written as `out/report.html` and
       // registered under its absolute path is one deliverable. The declared
@@ -494,7 +610,7 @@ function producedFromTimeline(timeline: ConversationTimelineSnapshot): DocumentD
       claimKeys(seen, merged, index)
     }
   }
-  return { produced }
+  return { produced, ...rejection === undefined ? {} : { rejection } }
 }
 
 class DocumentDeliverablesBuilder implements ConversationViewBuilder<ConversationViewNode, DocumentDeliverablesSnapshot> {

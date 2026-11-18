@@ -166,6 +166,7 @@ describe('legal_knowledge_search tool', () => {
     const empty = await execute(ctx, { query: '   ' })
     expect(empty.isError).toBe(true)
     expect(empty.error?.message ?? '').toContain('query 不能为空')
+    expect(empty.error?.info).toMatchObject({ name: 'LegalKnowledgeSearchToolError', code: 'empty-query' })
     const nulOnly = await execute(ctx, { query: '\u0000' })
     expect(nulOnly.isError).toBe(true)
     expect(nulOnly.error?.message ?? '').toContain('query 不能为空')

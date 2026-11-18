@@ -7,6 +7,7 @@
  * @module @deepseek-ai/dsh-legal-knowledge/tool/search
  */
 
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { prepareSearchText } from '../shared/fts.ts'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
@@ -68,19 +69,17 @@ export type LegalKnowledgeSearchOutput = {
   summary: string
 }
 
-/** Thrown when the tool input cannot be used as a query. */
-class LegalKnowledgeSearchToolError extends Error {
-  /** Stable failure identifier. */
-  readonly code: string
-
+/**
+ * Thrown when the tool input cannot be used as a query.
+ * Extends {@link HarnessError} so the identifier reaches `tool/result`.
+ */
+class LegalKnowledgeSearchToolError extends HarnessError {
   /**
    * @param code - stable failure identifier.
    * @param message - what is wrong with the input.
    */
   constructor(code: string, message: string) {
-    super(message)
-    this.name = 'LegalKnowledgeSearchToolError'
-    this.code = code
+    super(message, code)
   }
 }
 

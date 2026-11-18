@@ -153,6 +153,7 @@ describe('evaluate_legal_evidence tool', () => {
       evidenceType: 'documentary',
     })
     expect(result.isError).toBe(true)
+    expect(result.error?.info).toMatchObject({ name: 'EvaluateLegalEvidenceToolError', code: 'no_evidence_id' })
   })
 
   it('throws on invalid evidence type', async () => {

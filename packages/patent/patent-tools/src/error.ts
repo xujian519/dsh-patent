@@ -1,10 +1,13 @@
 /**
  * Patent tool error, ported from Sati's `SatiToolRuntimeError` (renamed per dsh
- * conventions). An Error subclass carrying a stable code so callers can route
- * failures without matching on prose. The code set mirrors the Sati tool protocol
- * so ported tools keep their failure taxonomy.
+ * conventions). A `HarnessError` subclass carrying a stable code so callers can
+ * route failures without matching on prose and the code reaches `tool/result`
+ * and the trajectory. The code set mirrors the Sati tool protocol so ported
+ * tools keep their failure taxonomy.
  * @module @deepseek-ai/dsh-patent-tools/error
  */
+
+import { HarnessError } from '@deepseek-ai/dsh-error'
 
 /** Stable error codes the patent tools raise, matching Sati's tool protocol. */
 export type PatentToolErrorCode =
@@ -34,16 +37,19 @@ export type PatentToolErrorCode =
  * the stable programmatic discriminator and `details` carries structured
  * context (tool name, patent number, error code from an upstream source, etc.).
  */
-export class PatentToolError extends Error {
+export class PatentToolError extends HarnessError {
   /** Stable programmatic error code (Sati tool-protocol taxonomy). */
-  readonly code: PatentToolErrorCode
+  declare readonly code: PatentToolErrorCode
   /** Structured error context (tool name, patent number, upstream code, etc.). */
   readonly details: Record<string, unknown> | undefined
 
+  /**
+   * @param code - stable programmatic error code.
+   * @param message - stable, model-visible prose.
+   * @param details - structured error context.
+   */
   constructor(code: PatentToolErrorCode, message: string, details?: Record<string, unknown>) {
-    super(message)
-    this.name = 'PatentToolError'
-    this.code = code
+    super(message, code)
     this.details = details
   }
 }

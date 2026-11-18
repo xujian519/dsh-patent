@@ -89,6 +89,8 @@ describe('check_patent_figure_consistency', () => {
     const result = await execute(ctx, 'check_patent_figure_consistency', { figures: [] }, 'c3')
     expect(result.isError).toBe(true)
     expect(text(result)).toContain('至少需要一张附图')
+    // The domain code reaches the event and the trajectory, not only the prose.
+    expect(result.error?.info).toMatchObject({ name: 'PatentToolError', code: 'invalid_tool_input' })
   })
 
   it('图号不是正整数时报 invalid_tool_input', async () => {

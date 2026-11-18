@@ -23,6 +23,7 @@ import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
 import LocalAttachmentStore from '@deepseek-ai/dsh-attachment-local'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import OfficeKit, { OfficeKitError, type OfficeKitErrorCode, type OfficeImagesRequest, type OfficeImagesResult, type OfficeKitSource } from '@deepseek-ai/dsh-office-kit'
+import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { SESSION_FORMAT_VERSION, Session, SessionId } from '@deepseek-ai/dsh-session'
 import { SubagentError } from '@deepseek-ai/dsh-subagent'
 import * as ToolOffice from '../src/index.ts'
@@ -447,6 +448,18 @@ describe('Office service failures', () => {
     const result = await office(ctx, { operation: 'render', input: 'deck.pptx' })
     expect(result.isError).toBe(true)
     expect(text(result)).toContain(expected)
+    // The converter's code survives the tool boundary instead of becoming a bare error.
+    expect(result.error?.info).toMatchObject({ name: 'HarnessError', code })
+  })
+
+  it('keeps the remote converter failure code at the tool boundary', async () => {
+    const { ctx, kit } = await setup()
+    kit.renderImages.mockRejectedValueOnce(
+      new RemoteError('document-render/failed', 'Office conversion failed.', { reason: 'unavailable' }),
+    )
+    const result = await office(ctx, { operation: 'render', input: 'deck.pptx' })
+    expect(result.isError).toBe(true)
+    expect(result.error?.info).toMatchObject({ name: 'HarnessError', code: 'document-render/failed' })
   })
 
   it('reports conversion failures without a render hint and passes unclassified failures through', async () => {

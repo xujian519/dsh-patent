@@ -13,10 +13,12 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import type { FsInfo, FsTarget } from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-llm'
 import { SubagentError } from '@deepseek-ai/dsh-subagent'
 import type {} from '@deepseek-ai/dsh-skill'
+import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import { OfficeKitError, OfficeSourceKey, type OfficeDocumentExtension, type OfficeImageInputExtension, type OfficeKit,
   type OfficeKitSource, type OfficeWorkbookExtension } from '@deepseek-ai/dsh-office-kit'
 import { defineTool, type ToolActivationContext, type ToolExecution } from '@deepseek-ai/dsh-tools'
@@ -286,14 +288,25 @@ function codeOf(error: unknown): unknown {
   return typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined
 }
 
-/** Model-facing failure for a classified Office service error; other failures pass through unchanged. */
+/**
+ * Model-facing failure for a classified Office service error. The converter's code is kept on a `HarnessError`, so
+ * `tool/result` and the trajectory carry it; failures the boundary cannot classify pass through unchanged.
+ * @param verb - the operation the model asked for.
+ * @param path - the source the operation named, as the message states it.
+ * @param error - the failure the Office service or the remote seam reported.
+ * @returns the failure to throw.
+ */
 function officeFailure(verb: string, path: string, error: unknown): unknown {
+  const remote = remoteErrorOf(error)
+  if (remote !== undefined) {
+    return new HarnessError(`cannot ${verb} "${path}": ${remote.message}`, remote.code, { cause: error })
+  }
   if (!(error instanceof OfficeKitError)) return error
   const hint = error.code === 'unavailable'
     ? ' Tell the user this operation is unavailable, or retry later if the cause may be temporary; do not substitute system soffice, npx, or another converter.'
     : error.code === 'busy' ? ' Retry after other document operations finish.'
       : error.code === 'output-too-large' && verb === 'render' ? ' Select fewer pages, a smaller range, or a lower dpi.' : ''
-  return new Error(`cannot ${verb} "${path}": ${error.message}${hint}`, { cause: error })
+  return new HarnessError(`cannot ${verb} "${path}": ${error.message}${hint}`, error.code, { cause: error })
 }
 
 /**

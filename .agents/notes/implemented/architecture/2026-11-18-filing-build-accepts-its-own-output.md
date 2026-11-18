@@ -6,7 +6,7 @@ English | [中文](2026-11-18-filing-build-accepts-its-own-output.zh.md)
 
 ## Problem
 
-`build_patent_filing` wrote the DOCX and returned tallies about what it thought it wrote. The defects that survive into a delivered filing are the ones those tallies cannot see: a declared section that carried no content, a missing or wrong header, a numbering gap, figures out of sequence. `verify_patent_filing` reads the finished file and catches exactly those, but it is a second, optional call — the model has to remember it, and the preset's delivery gate can only record that some tool returned `passed: true` in the session, never that the file being delivered is the file that was checked.
+`build_patent_filing` wrote the DOCX and returned tallies about what it thought it wrote. The defects that survive into a delivered filing are the ones those tallies cannot see: a declared section that carried no content, a missing or wrong header, a numbering gap, figures out of sequence. `verify_patent_filing` reads the finished file and catches exactly those, but it is a second, optional call — the model has to remember it, and the preset's delivery gate can only record that some tool ran and reported in the session, never that the file being delivered is the file that was checked.
 
 ## Decision
 
@@ -35,3 +35,4 @@ English | [中文](2026-11-18-filing-build-accepts-its-own-output.zh.md)
 - Tool (`packages/patent/patent-filing/tests/tools.spec.ts`): the passing render carries `验收：✅ 断言全部通过（…）`; a failing verdict renders the head that says the filing was written plus one line per assertion.
 - Composition (`packages/patent/patent-filing/tests/loader-composition.spec.ts`): a build dispatched through the tool runtime under a real Loader returns the acceptance line in model-facing prose.
 - Gates: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test:docs`, `pnpm run hygiene`, `pnpm run build`, and `pnpm run test:snapshot -t patent` all pass on this change.
+- No recorded-session snapshot covers this tool: a build starts the packaged Python engine against a real template, which a keyless recorded session cannot replay. Every model-visible line is asserted verbatim in `tools.spec.ts`; the Loader-composed dispatch that carries them back is covered in `loader-composition.spec.ts` through a subprocess stand-in.

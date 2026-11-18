@@ -82,7 +82,7 @@ One registered tool named `build_patent_filing` with a required `draft` object (
 
 #### Token effect
 
-Fixed definition cost on every request while the tool is enabled; each result is about six short lines resent only until compaction, plus one line per failed acceptance assertion.
+Fixed definition cost on every request while the tool is enabled; each result is about seven short lines resent only until compaction, plus one line per failed acceptance assertion.
 
 #### KV Cache effect
 

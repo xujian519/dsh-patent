@@ -6,7 +6,7 @@ Status: implemented
 
 ## Problem
 
-`build_patent_filing` 写出 DOCX 后，返回的是它以为自己写了什么的计数。进入交付件的缺陷恰恰是这些计数看不见的：某一节声明了却没承载内容、页眉缺失或错位、编号断档、图序错位。`verify_patent_filing` 读成品，能抓到这些，但它是一次可选的第二次调用——模型得记得去调；而 preset 的交付门禁只能记下本会话里某个工具返回过 `passed: true`，记不了交付的那份文件就是被验过的那份。
+`build_patent_filing` 写出 DOCX 后，返回的是它以为自己写了什么的计数。进入交付件的缺陷恰恰是这些计数看不见的：某一节声明了却没承载内容、页眉缺失或错位、编号断档、图序错位。`verify_patent_filing` 读成品，能抓到这些，但它是一次可选的第二次调用——模型得记得去调；而 preset 的交付门禁只能记下本会话里某个工具跑过并报过结果，记不了交付的那份文件就是被验过的那份。
 
 ## Decision
 
@@ -35,3 +35,4 @@ Status: implemented
 - 工具（`packages/patent/patent-filing/tests/tools.spec.ts`）：通过时渲染出 `验收：✅ 断言全部通过（…）`；不通过时渲染出「成品已写出」的结论行与逐条断言。
 - 组合（`packages/patent/patent-filing/tests/loader-composition.spec.ts`）：经真实 Loader 由工具运行时派发的成文调用，把验收行带回模型可见文本。
 - 门禁：本次改动上 `pnpm run typecheck`、`pnpm run lint`、`pnpm run test:docs`、`pnpm run hygiene`、`pnpm run build` 与 `pnpm run test:snapshot -t patent` 全部通过。
+- 没有快照覆盖这道工具：成文要起随包 Python 引擎并读真实模板，keyless 录制会话无法重放。模型可见的每一行由 `tools.spec.ts` 逐字断言；把它们经真实 Loader 带回模型的那次派发由 `loader-composition.spec.ts` 用子进程替身覆盖。

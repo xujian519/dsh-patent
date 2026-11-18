@@ -48,14 +48,13 @@ kind: "package-reference"
 <a id="projections"></a>
 ## 投影
 
-一份样式投影成四种形态，因为各消费者需要的部分不同。
+一份样式投影成三种形态，因为各消费者需要的部分不同。
 
 - `systemPrompt(style)` 把整份指南渲染成模型动笔前阅读的文本块：语气、口吻原则、禁用词及其替换词、免责声明、引用规则与输出约定。样式留空的段落整体不输出。
-- `systemPromptForTemplate(style, template)` 在该指南之后补上模板的名称、标题、类别与必需免责声明。它只读取 `name`、`title`、`category`，所以调用方传任意模板记录即可，不必是 `@deepseek-ai/dsh-doc-template` 的类型。
 - `toRenderStyle(style, categoryHint)` 把样式裁剪成渲染器要注入的部分：选中 HTML 样式表的名称，以及免责声明。
 - `disclaimerFor(style, category)` 选取某个模板类别的免责声明：`specification` 与 `claims` 取 `patent_drafting`，`oa-response` 与 `disclosure` 取 `patent_analysis`，没有对应条目的类别回退到领域级 `<domain>_analysis`。两者都没有时返回空字符串，表示不需要免责声明。
 
-`stylesForDomain(styles, domain)` 与 `findStyleByName(styles, name)` 按领域与按名称查询已加载的样式集合。
+`findStyleByName(styles, name)` 按名称查询已加载的样式集合。
 
 <a id="loading"></a>
 ## 加载
@@ -70,7 +69,7 @@ kind: "package-reference"
 
 #### What the model sees
 
-本包没有自己的提示词段与工具 schema。把样式指南注入请求的消费者调用 `systemPrompt` 或 `systemPromptForTemplate` 并拥有装配过程，因此模型看到的是消费者渲染的文本块，例如 `Style: <name> (domain: <domain>, version: <version>)`，其后是该样式声明的各段落。
+本包没有自己的提示词段与工具 schema。把样式指南注入请求的消费者调用 `systemPrompt` 并拥有装配过程，因此模型看到的是消费者渲染的文本块，例如 `Style: <name> (domain: <domain>, version: <version>)`，其后是该样式声明的各段落。
 
 #### Token effect
 
@@ -83,8 +82,6 @@ kind: "package-reference"
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知局限与延期工作
 
-- **`systemPromptForTemplate` 目前没有消费者** — [`@deepseek-ai/dsh-doc-template`](../doc-template/README.zh.md) 用到 `toRenderStyle`（内部调用 `disclaimerFor`）以及（部署指定 `styleGuide` 时）`systemPrompt`；模板上下文投影在等一个消费者，这也是它没有配套接线的原因。
-- **`stylesForDomain` 目前没有消费者** — 渲染文档按名称选定样式，因此没有人按领域查询已加载的样式集合；按领域的查询在等一个跨领域组合样式的消费者。
 - **免责声明映射是照抄而非推导** — 类别键与 `<domain>_analysis` 回退被抄进 `DISCLAIMER_CATEGORY_KEYS`，因此新增的类别需要自己的条目，而不是推导出来的键。
 - **没有类别落到 `prior_art`** — 专利风格为检索结果声明了 `prior_art` 免责文本，但没有任何模板类别映射到它，因此检索报告拿到的是撰写类免责声明。
 - **只有 `style` 能选中样式** — 模板在 front-matter 里点名样式；渲染期没有按领域选择样式的机制，因此未声明样式的模板渲染时不带免责声明。
@@ -93,6 +90,6 @@ kind: "package-reference"
 
 ### 开发备注
 
-本包是 MIT 许可的 Go 项目 Mady 两个文件的重写：`domains/config/style.go` 提供模型与其投影，`domains/config/style_embed.go` 提供加载器，另加 `styles/*.yaml` 四个资产。有意差异记录在涉及模块的 JSDoc 里：上游跳过不存在的目录与非法文件，本包改为 fail-loud；`systemPromptForTemplate` 接收结构化模板记录，因此本库永不依赖 `@deepseek-ai/dsh-doc-template`。
+本包是 MIT 许可的 Go 项目 Mady 两个文件的重写：`domains/config/style.go` 提供模型与其投影，`domains/config/style_embed.go` 提供加载器，另加 `styles/*.yaml` 四个资产。有意差异记录在涉及模块的 JSDoc 里：上游跳过不存在的目录与非法文件，本包改为 fail-loud。
 
 不发布 companion：本包不拥有任何持久状态或事件，每个导出都是对显式加载的样式集合的纯函数，唯一读取的资产目录在加载期 fail-loud 校验。

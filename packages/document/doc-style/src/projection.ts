@@ -2,19 +2,13 @@
  * Projections of a loaded style, rewritten from the methods and helpers of
  * `domains/config/style.go` of the Go project Mady.
  *
- * Three projections exist because the three consumers need different amounts of
- * the style: the system prompt carries the whole guide to the model, the
- * template-context prompt adds the template and its required disclaimer, and the
- * render style carries only what a renderer injects into the output.
+ * Two projections exist because the two consumers need different amounts of the
+ * style: the system prompt carries the whole guide to the model, and the render
+ * style plus its disclaimer carry only what a renderer injects into the output.
  * @module @deepseek-ai/dsh-doc-style/projection
  */
 
-import {
-  DISCLAIMER_CATEGORY_KEYS,
-  type DocumentStyle,
-  type RenderStyle,
-  type TemplateContext,
-} from './types.ts'
+import { DISCLAIMER_CATEGORY_KEYS, type DocumentStyle, type RenderStyle } from './types.ts'
 
 /**
  * Render a style as the system-prompt block an agent reads before writing.
@@ -104,36 +98,6 @@ export function disclaimerFor(style: DocumentStyle, category: string): string {
  */
 export function toRenderStyle(style: DocumentStyle, categoryHint: string): RenderStyle {
   return { name: style.name, disclaimer: disclaimerFor(style, categoryHint) }
-}
-
-/**
- * Render the style guide followed by the template context, so a model fills a
- * template while following the style.
- * @param style - the style to project.
- * @param template - the template the content fills.
- * @returns the prompt block, without a trailing newline.
- */
-export function systemPromptForTemplate(style: DocumentStyle, template: TemplateContext): string {
-  const lines: string[] = [
-    systemPrompt(style),
-    '<!-- Template Context -->',
-    `Template: ${template.name} (${template.title})`,
-    `Category: ${template.category}`,
-  ]
-  const disclaimer = disclaimerFor(style, template.category)
-  if (disclaimer !== '') lines.push(`Required Disclaimer: ${disclaimer}`)
-  lines.push('', 'Generate content following the style guide above and filling the template variables below.', '<!-- End Template Context -->')
-  return lines.join('\n')
-}
-
-/**
- * The styles belonging to one domain.
- * @param styles - the loaded styles.
- * @param domain - the domain to select, e.g. `patent`.
- * @returns the matching styles, in load order.
- */
-export function stylesForDomain(styles: readonly DocumentStyle[], domain: string): readonly DocumentStyle[] {
-  return styles.filter(style => style.domain === domain)
 }
 
 /**

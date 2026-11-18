@@ -57,13 +57,7 @@ export { parseTemplate, splitFrontmatter } from './frontmatter.ts'
 export type { FrontmatterSplit } from './frontmatter.ts'
 export { loadTemplateDirectory, loadTemplateFile, TEMPLATE_FILE_SUFFIX } from './loader.ts'
 export { createTemplateStore, resolveTemplateDirectory, TemplateStore } from './store.ts'
-export type {
-  RenderOutcome,
-  RenderRequest,
-  TemplateFilter,
-  TemplateStoreOptions,
-  VersionConflict,
-} from './store.ts'
+export type { RenderOutcome, RenderRequest, TemplateFilter, TemplateStoreOptions } from './store.ts'
 export { createRendererRegistry, RendererRegistry } from './renderer-registry.ts'
 export { applyDisclaimer, markdownRenderer } from './renderers/markdown.ts'
 export { docxRenderer } from './renderers/docx.ts'

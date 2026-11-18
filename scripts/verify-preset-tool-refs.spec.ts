@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   declaredCountTotal,
   declaredToolCounts,
+  findGatePrerequisiteDocViolations,
   findTemplateCountViolations,
   findTemplateStatementViolations,
   findToolCountViolations,
@@ -496,6 +497,31 @@ describe('findToolRefViolations', () => {
 
   it('fails loud on an empty catalog package map', () => {
     expect(() => findToolRefViolations('# no rows', [corpusOf('a', FS_PRESET)])).toThrow(/carries no package rows/)
+  })
+})
+
+describe('findGatePrerequisiteDocViolations', () => {
+  /** A preset whose delivery gate requires `legal_law_verify`. */
+  const gatePreset = [
+    FS_PRESET,
+    "    - name: '@deepseek-ai/dsh-patent-rule'",
+    '      config:',
+    '        deliveryGate:',
+    "          - tool: 'render_patent_document'",
+    '            requires: [legal_law_verify]',
+    '',
+  ].join('\n')
+
+  it('reports a gate prerequisite no preset text or skill names', () => {
+    expect(findGatePrerequisiteDocViolations([corpusOf('a', gatePreset)])).toEqual([
+      'presets/a.patch.yml: deliveryGate requires legal_law_verify, which no preset text or skill names',
+    ])
+  })
+
+  it('accepts a prerequisite the skill corpus names', () => {
+    expect(findGatePrerequisiteDocViolations([
+      corpusOf('a', gatePreset, '先跑 `legal_law_verify` 再做原文核对'),
+    ])).toEqual([])
   })
 })
 

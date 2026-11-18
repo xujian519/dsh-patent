@@ -705,6 +705,49 @@ export function findToolRefViolations(
 }
 
 /**
+ * Check that every tool a delivery gate requires is named in the preset's own
+ * model-facing text (persona, README, or skills).
+ *
+ * A gate whose prerequisite no text routes the model to denies the guarded call
+ * once per session before the model can recover: the declaration and the
+ * instructions disagree about the workflow.
+ * @param corpus - one entry per shipped preset.
+ * @returns one diagnostic per required tool the corpus never names.
+ */
+export function findGatePrerequisiteDocViolations(corpus: readonly PresetCorpus[]): string[] {
+  const violations: string[] = []
+  for (const entry of corpus) {
+    // The gate declaration itself names the tool, so only the persona and the
+    // written corpus count as routing the model to it.
+    const persona = presetRowRecords(entry.presetFile.source)
+      .filter(record => record.id === 'persona')
+      .map((record) => {
+        const config = record.config
+        return typeof config === 'object' && config !== null && typeof (config as { prefix?: unknown }).prefix === 'string'
+          ? (config as { prefix: string }).prefix
+          : ''
+      })
+      .join('\n')
+    const text = [
+      persona,
+      ...entry.readmeFiles.map(file => file.source),
+      ...entry.skillFiles.map(file => file.source),
+    ].join('\n')
+    const required = new Set(gateToolReferences(entry.presetFile.source)
+      .filter(reference => reference.source === 'deliveryGate.requires')
+      .map(reference => reference.name))
+    for (const name of [...required].sort()) {
+      if (!new RegExp(`\\b${name}\\b`, 'u').test(text)) {
+        violations.push(
+          `${entry.presetFile.path}: deliveryGate requires ${name}, which no preset text or skill names`,
+        )
+      }
+    }
+  }
+  return violations
+}
+
+/**
  * Load every shipped preset with the README pair and skill files that belong to it.
  * @param root - repository root.
  * @returns one corpus entry per preset, in path order.
@@ -799,6 +842,7 @@ if (process.argv[1] !== undefined && import.meta.filename === resolve(process.ar
   const declaredCounts = declaredCountTotal(corpus)
   const violations = [
     ...findToolRefViolations(catalogSource, corpus),
+    ...findGatePrerequisiteDocViolations(corpus),
     ...findToolCountViolations(catalogSource, corpus),
     ...findTemplateCountViolations(catalogSource, TEMPLATE_IDS),
     ...findTemplateStatementViolations(descriptionSource, TEMPLATE_IDS.length, `${TEMPLATE_DESCRIPTION_PATH}:`),

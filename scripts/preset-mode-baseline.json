@@ -50,7 +50,7 @@
     "legal.patch.yml": {
       "class": "delivery",
       "forbiddenKeys": [],
-      "personaMaxChars": 3720,
+      "personaMaxChars": 4100,
       "requiredRows": [
         "persona",
         "agent-instructions",

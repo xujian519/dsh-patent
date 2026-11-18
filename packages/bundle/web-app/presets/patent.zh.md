@@ -15,7 +15,7 @@
 - `@deepseek-ai/dsh-patent-teams` — 持久多智能体团队服务（ctx.patentTeams），提供十二个 `patent_teams_*` 工具；`qualityGate: true` 时运行组合完成门禁，`approveCreation` / `approveClosure` 打开时把团队的两个案件级决定——建队与收口——交给本部署的 `approval` 服务判定，未获放行时直接拒绝该调用（结果名 `rejected` / `cancelled` / `unavailable`），不会创建或关闭用户未允许的团队。审批策略为 `never`（例如 `danger-full-access`）时两个调用都会在不弹提示的情况下被拒绝，因此打开任一开关的部署必须同时保持可交互的审批模式。
 - `@deepseek-ai/dsh-patent-rule` — 规则引擎、tools/post-execute 输出门禁、声明式结构门禁与交付前置门禁、EVI-011 证据守卫。
 - `@deepseek-ai/dsh-patent-document` — render_patent_document。
-- `@deepseek-ai/dsh-patent-filing` — build_patent_filing / verify_patent_filing：把一个 CNIPA 申请文件（摘要、摘要附图、权利要求书、说明书、说明书附图）装配成 DOCX，其排版由随包模板反推，并逐项核对成品与该模板一致。
+- `@deepseek-ai/dsh-patent-filing` — build_patent_filing / verify_patent_filing：把一个 CNIPA 申请文件（摘要、摘要附图、权利要求书、说明书、说明书附图）装配成 DOCX，其排版由随包模板反推，并逐项核对成品与该模板一致。成文一写出成品就先跑这次核对再返回，因此静默缺陷——某节没承载内容、页眉、编号断档——在成文这一步就暴露，不必等第二次调用。
 - `@deepseek-ai/dsh-patent-deadline` — patent_deadlines：案件的法定与指定期限，含专利法实施细则的期限与送达规则，以及随包节假日日历用于届满日顺延。
 - `@deepseek-ai/dsh-patent-fees` — patent_fees：逐项按本包随包的费用索引为案件计价（申请、实审、授权、年费与各项程序费用），按各费种的计数基准计数量——每件、超过免费基数的每项权利要求、每页、每项优先权要求、每个专利年度、每请求月数——并在索引登记了减缴时按案件适用的减缴计算。金额已按官方收费标准随包转录，因此工具会给出合计；只有适用项没有金额时才扣住合计——随包索引里这仍是说明书附加费与延长期限请求费两项，因为它们按条目模型承载不了的分档收费。
 - `@deepseek-ai/dsh-patent-law` — law_verify：逐条把法条引用对照本包随包的法规索引判定（《专利法》《专利法实施细则》按条，《专利审查指南》按归一化节路径），并把已索引但未转录的条目报「未核验」而不是放行。两部法律（法规）的条文已随包转录——每个条目带着所引条文的文本、抄录的文书与版本、以及抄录日期——条数上限也已核验，因此编造的条号判「条号超出有效范围」、索引未覆盖的有效条号判「索引中不存在」，两者都不是通过。指南的 64 条节级条目已随包转录 2023 年修订版正文，引用会判成「已核验」「与所引命题不符」或「未判定」；只登记到部分、章或节一级、其下各节又都没转录的条目仍报「未核验」。引用必须经官方来源核验的纪律没有变，只是未核验的条目不再可能被读成已核验。

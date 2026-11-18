@@ -8,7 +8,7 @@ import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { FilingVerifyResult } from '../types.ts'
 import { verifyFiling } from '../filing/engine.ts'
 import type { VerifyEngineOptions } from '../filing/engine.ts'
-import { SECTION_TALLY_SCHEMA } from './schemas.ts'
+import { VERIFY_RESULT_SCHEMA } from './schemas.ts'
 
 const DESCRIPTION = [
   '对一件申请文件 .docx 跑体例与内容断言：分节数（有附图 5 节、无附图 3 节，按可选节的实际取舍核对）、各节页眉、行距、首行缩进（图片段与说明书名称行按顶格核对）、字号、是否出现非黑色文字（Word 内置标题样式会带蓝色）、说明书各部分是否齐备（无附图时「附图说明」不是必需项）、说明书名称（spec 声明 specification_title 时：首行等于权利要求 1 的主题名称、左右居中、其后空一行）、每一节是否都承载了内容（空节意味着内容没落进那一节，而分节数、页眉与编号连续性都不会报）、权利要求项数、`[NNNN]` 段落编号是否从 1 起连续（按 spec 的 numbering 声明生效，没有节声明编号时该断言无主体）、各节实际承载的段落与图片数、图片总数与各节归属一致、说明书附图每图一页与摘要附图恰一张、图号文字与图序一致（图号由文档承载时）、以及内部复核痕迹是否清除。',
@@ -17,40 +17,7 @@ const DESCRIPTION = [
 ].join(' ')
 
 /** 输出 canonical 值的 JSON schema。 */
-const RESULT_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  properties: {
-    passed: { type: 'boolean', required: true },
-    errors: { type: 'array', required: true, items: { type: 'string' } },
-    docxPath: { type: 'string', required: true },
-    templateFingerprint: { type: 'string', required: true },
-    info: {
-      type: 'object',
-      additionalProperties: false,
-      required: true,
-      properties: {
-        sections: { type: 'number', required: true },
-        headers: { type: 'array', required: true, items: { type: 'string' } },
-        paragraphs: { type: 'number', required: true },
-        claims: { type: 'number', required: true },
-        numbering: { type: 'string', required: true },
-        tables: { type: 'number', required: true },
-        figures: { type: 'number', required: true },
-        layout: { type: 'array', required: true, items: SECTION_TALLY_SCHEMA },
-        template: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            sections: { type: 'number', required: true },
-            sizes_pt: { type: 'array', required: true, items: { type: 'number' } },
-            line_spacings: { type: 'array', required: true, items: { type: 'number' } },
-          },
-        },
-      },
-    },
-  },
-} as const
+const RESULT_SCHEMA = VERIFY_RESULT_SCHEMA
 
 /**
  * 把验收结果渲染为模型可读文本。

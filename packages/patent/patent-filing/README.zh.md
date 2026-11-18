@@ -26,7 +26,7 @@ kind: "package-reference"
 <a id="build_patent_filing-tool"></a>
 ## build_patent_filing 工具
 
-build_patent_filing 接收受控 `draft`（与 `render_patent_document` 的 claims-spec 模板同一份 `SpecDraft`，由 `dsh-patent-core` 的 `validateSpecDraft` 校验）、`outputName`，以及可选的 `caseId`/`outputDir`，写出一件五节的 DOCX。`outputDir` 按进程工作目录解析，真实位置落在工作目录之外时在写入之前即被拒绝。结果返回成品路径、真正入文的位图、各节承载的段落与图片数、段落编号总数、从源稿读到并核对过的编号数、从模板反解出的体例，以及模板的 SHA-256。旧的 `content` 参数已删除：调用方再传它会在执行器参数校验处被「missing required property \"draft\"」拒绝。
+build_patent_filing 接收受控 `draft`（与 `render_patent_document` 的 claims-spec 模板同一份 `SpecDraft`，由 `dsh-patent-core` 的 `validateSpecDraft` 校验）、`outputName`，以及可选的 `caseId`/`outputDir`，写出一件五节的 DOCX。`outputDir` 按进程工作目录解析，真实位置落在工作目录之外时在写入之前即被拒绝。结果返回成品路径、真正入文的位图、各节承载的段落与图片数、段落编号总数、从源稿读到并核对过的编号数、从模板反解出的体例、模板的 SHA-256，以及成品一落盘就自动跑出的验收结论。这次验收用的是 `verify_patent_filing` 的同一套断言，因此静默缺陷——某节没承载内容、页眉、编号断档、图序错位——在成文这一步就暴露，不必等模型记得再调一次。断言不通过是成功的领域结果：调用正常返回，`verification.passed` 为 false，成品留在盘上供调用方修正。只有验收根本产不出报告时调用才失败，且错误里点名已经写出的路径。旧的 `content` 参数已删除：调用方再传它会在执行器参数校验处被「missing required property \"draft\"」拒绝。
 
 五节即法定节序：说明书摘要、摘要附图、权利要求书、说明书、说明书附图。附图按 `draft.figureFiles` 给定的图序入文——第 1 张进摘要附图节，全部进说明书附图节且每图独占一页。`.svg` 源件先经 headless Chrome 栅格化，`.png`/`.jpg`/`.jpeg` 直接使用。
 
@@ -82,11 +82,11 @@ Schemastery 配置，全部字段可选。
 
 #### What the model sees
 
-一个名为 `build_patent_filing` 的注册工具，必填 `draft` 对象（共享的 `SpecDraft`：`meta`、不带项号的 `claims`、`abstract`、`figureFiles`、`abstractFigure`（哪幅附图进「摘要附图」节，缺省 1），以及按五部分组织的 `paragraph`/`list`/`table` 块（附图说明部分每幅附图一条列表项，每项只写图名与描述文字，不含图号前缀与句末标点））与 `outputName`，可选 `caseId` 与 `outputDir`。结果渲染为 Markdown 散文：成品路径、反解出的体例、各节段落与图片数、段落编号总数与其核对过的源稿编号、附图张数，以及截断的模板指纹。schema 本身见[工具目录](../../../docs/tool-catalog.zh.md#deepseek-aidsh-patent-filing)。
+一个名为 `build_patent_filing` 的注册工具，必填 `draft` 对象（共享的 `SpecDraft`：`meta`、不带项号的 `claims`、`abstract`、`figureFiles`、`abstractFigure`（哪幅附图进「摘要附图」节，缺省 1），以及按五部分组织的 `paragraph`/`list`/`table` 块（附图说明部分每幅附图一条列表项，每项只写图名与描述文字，不含图号前缀与句末标点））与 `outputName`，可选 `caseId` 与 `outputDir`。结果渲染为 Markdown 散文：成品路径、验收结论、反解出的体例、各节段落与图片数、段落编号总数与其核对过的源稿编号、附图张数，以及截断的模板指纹。验收不通过时，结论行点名成品已在盘上，下面逐条列出未通过的断言。schema 本身见[工具目录](../../../docs/tool-catalog.zh.md#deepseek-aidsh-patent-filing)。
 
 #### Token effect
 
-工具启用期间每个请求都有固定的定义成本；每次结果是约六行短文本，只在压缩之前重发。
+工具启用期间每个请求都有固定的定义成本；每次结果约六行短文本、外加每个未通过断言一行，只在压缩之前重发。
 
 #### KV Cache effect
 

@@ -6,11 +6,11 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { SPEC_DRAFT_SCHEMA, validateSpecDraft } from '@deepseek-ai/dsh-patent-core'
-import type { FilingBuildResult } from '../types.ts'
+import type { FilingBuildResult, FilingVerifyResult } from '../types.ts'
 import { buildFiling } from '../filing/engine.ts'
 import type { BuildEngineOptions } from '../filing/engine.ts'
 import { contentFromDraft } from '../filing/fromDraft.ts'
-import { SECTION_TALLY_SCHEMA } from './schemas.ts'
+import { SECTION_TALLY_SCHEMA, VERIFY_RESULT_SCHEMA } from './schemas.ts'
 
 const DESCRIPTION = [
   '把受控草案按本部署的申请文件模板体例成文为一件 CNIPA 专利申请文件（有附图时 5 节：说明书摘要 / 摘要附图 / 权利要求书 / 说明书 / 说明书附图；无附图发明省略摘要附图与说明书附图两节，为 3 节），并与成品一并给出体例实测与模板指纹。',
@@ -18,6 +18,7 @@ const DESCRIPTION = [
   '正文体例（字体、字号、行距、首行缩进、分节与页眉）由模板决定，调用方只提供内容，不要自己排格式。',
   '说明书是否写 `[NNNN]` 段落编号由 spec 的 numbering 声明决定：声明 paragraph 时按 spec 顺序写入，正文里已带编号的先剥后写、与段落顺序不一致会报错而不是静默覆盖；随包 spec 声明 none，说明书不写段落编号——没有法条要求它。',
   '附图按图序传入 draft.figureFiles，其中 draft.abstractFigure 指定的那张（缺省第 1 张）进「摘要附图」节，全部进「说明书附图」节且每图独占一页；`.svg` 源件先栅格化为位图再入文。无附图发明（指南第二部分第二章 2.3）传 figureFiles: []、drawingDescriptions: []，且不要给 abstractFigure。',
+  '成品写好后立即按 verify_patent_filing 的同一套断言验收，结论在 verification 里：分节是否承载内容、页眉、编号连续性、图序这些模型看不出的静默缺陷在成文这一步就暴露。verification.passed 为 false 表示成品已在盘上但未通过断言，修正草案后重新成文，不必再单独调用 verify_patent_filing。',
 ].join(' ')
 
 /** 模板反解体例的 JSON schema。 */
@@ -49,6 +50,7 @@ const RESULT_SCHEMA = {
     upstreamNumberingSeen: { type: 'number', required: true },
     templateStyle: { ...TEMPLATE_STYLE_SCHEMA, required: true },
     templateFingerprint: { type: 'string', required: true },
+    verification: { ...VERIFY_RESULT_SCHEMA, required: true },
   },
 } as const
 
@@ -64,6 +66,7 @@ export function renderBuildResult(value: FilingBuildResult): string {
   const style = value.templateStyle
   const lines = [
     `成品：${value.docxPath}`,
+    ...renderVerification(value.verification),
     `体例（模板反解）：${style.eastAsia} / ${style.ascii} ${style.sizePt}pt 行距 ${style.lineSpacing} 首行缩进 ${style.firstLineIndent}pt`,
     `分节：${value.sections.map(tally => `${tally.key} ${tally.paragraphs} 段/${tally.figures} 图`).join(' · ')}`,
     `段落编号：${value.numberingTotal} 条（源件已带编号 ${value.upstreamNumberingSeen} 条）`,
@@ -73,7 +76,25 @@ export function renderBuildResult(value: FilingBuildResult): string {
   return lines.join('\n')
 }
 
-/** 工具工厂依赖：subprocess 服务与引擎覆盖。 */
+/**
+ * 把成文后自动验收的结论渲染为模型可读行。
+ *
+ * 未通过时写明成品已在盘上：调用方既要知道该修正哪几条断言，也要知道盘上已有一份
+ * 待替换的成品，不必把它当成成文失败。
+ * @param verification - 成文后立刻跑出的验收结论。
+ * @returns 一行结论，或结论加逐条未通过断言。
+ */
+function renderVerification(verification: FilingVerifyResult): string[] {
+  const { info } = verification
+  if (verification.passed) {
+    return [`验收：✅ 断言全部通过（分节 ${info.sections} · 权项 ${info.claims} · 附图 ${info.figures}）`]
+  }
+  return [
+    `验收：❌ ${verification.errors.length} 项未通过——成品已写出，修正草案后重新成文：`,
+    ...verification.errors.map(error => `  - ${error}`),
+  ]
+}
+
 /** 工具工厂依赖：与成文引擎的调用参数同形。 */
 export type BuildPatentFilingToolOptions = BuildEngineOptions
 

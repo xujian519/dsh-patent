@@ -89,12 +89,19 @@ function answering(byScript: Record<string, string | (() => string)>): {
 } {
   return fakeSubprocess((spec) => {
     // argv = [python, 脚本, ...]；脚本是第二项。
-    const script = argvOf(spec)[1] ?? ''
+    const argv = argvOf(spec)
+    const script = argv[1] ?? ''
     for (const [name, answer] of Object.entries(byScript)) {
       if (script.endsWith(name)) {
+        // 成文成功后立刻验收，验收读的是 build.py 写出的文件。
+        if (name === 'build.py') {
+          const out = argv[argv.indexOf('--out') + 1]
+          if (out !== undefined) writeFileSync(out, 'docx')
+        }
         return stdoutHandle(typeof answer === 'function' ? answer() : answer)
       }
     }
+    if (script.endsWith('verify.py')) return stdoutHandle(verifyReport())
     throw new Error(`unexpected engine script: ${script}`)
   })
 }
@@ -159,6 +166,8 @@ describe('buildFiling', () => {
       expect(result.templateStyle.sizePt).toBe(12)
       expect(result.figures).toEqual([figure])
       expect(result.templateFingerprint).toMatch(/^[0-9a-f]{64}$/)
+      expect(result.verification.passed).toBe(true)
+      expect(result.verification.docxPath).toBe(result.docxPath)
       expect(existsSync(outDir)).toBe(true)
 
       const argv = argvOf(calls[0] as SubprocessSpawnSpec)
@@ -171,6 +180,40 @@ describe('buildFiling', () => {
       const contentPath = argv[argv.indexOf('--content') + 1] ?? ''
       expect(contentPath).toMatch(/content\.json$/)
       expect(existsSync(contentPath)).toBe(false)
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps the written filing and reports a failing acceptance run as its result', async () => {
+    const { spawner } = answering({
+      'build.py': buildReport(),
+      'verify.py': verifyReport({ passed: false, errors: ['分节数 4 ≠ 期望 5'] }),
+    })
+    const outDir = mkdtempSync(join(tmpdir(), 'dsh-filing-verify-fail-'))
+    const figure = join(outDir, 'fig1.png')
+    writeFileSync(figure, 'png')
+    const input = { content: { ...CONTENT, figures: [figure] }, outputName: 'failed', outputDir: outDir }
+    try {
+      // 断言不通过是成功的领域结果：成品留在盘上，结论随结果返回，不抛错。
+      const result = await buildFiling(input, buildOptions(spawner), outDir, new AbortController().signal)
+      expect(result.verification.passed).toBe(false)
+      expect(result.verification.errors).toEqual(['分节数 4 ≠ 期望 5'])
+      expect(existsSync(result.docxPath)).toBe(true)
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  it('names the written filing when the acceptance run cannot produce a report', async () => {
+    const { spawner } = answering({ 'build.py': buildReport(), 'verify.py': 'not json' })
+    const outDir = mkdtempSync(join(tmpdir(), 'dsh-filing-verify-broken-'))
+    const figure = join(outDir, 'fig1.png')
+    writeFileSync(figure, 'png')
+    const input = { content: { ...CONTENT, figures: [figure] }, outputName: 'broken', outputDir: outDir }
+    try {
+      await expect(buildFiling(input, buildOptions(spawner), outDir, new AbortController().signal))
+        .rejects.toThrow(/成品已写出（.*broken\.docx），但验收无法完成：/)
     } finally {
       rmSync(outDir, { recursive: true, force: true })
     }

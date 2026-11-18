@@ -1,6 +1,7 @@
 // Proves the plugin is a real, Loader-composed config: booting a cordis.yml
 // registers both filing tools, and a dispatch through the tool runtime reaches
 // the packaged engine assets and comes back as model-facing prose.
+import { writeFileSync } from 'node:fs'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -108,8 +109,13 @@ async function boot(): Promise<Context> {
   const ctx = new Context()
   context = ctx
   ctx.provide('subprocess', fakeSubprocess((spec: SubprocessSpawnSpec) => {
-    const script = argvOf(spec)[1] ?? ''
-    return stdoutHandle(script.endsWith('verify.py') ? VERIFY_REPORT : BUILD_REPORT)
+    const argv = argvOf(spec)
+    const script = argv[1] ?? ''
+    if (script.endsWith('verify.py')) return stdoutHandle(VERIFY_REPORT)
+    // 成文成功后立刻验收：验收读的是 build.py 按 --out 写出的文件。
+    const out = argv[argv.indexOf('--out') + 1]
+    if (out !== undefined) writeFileSync(out, 'docx')
+    return stdoutHandle(BUILD_REPORT)
   }).spawner)
   ctx.baseUrl = pathToFileURL(root).href + '/'
   await ctx.plugin(Loader)
@@ -168,6 +174,8 @@ describe('patent-filing real Loader composition through cordis.yml', () => {
     const text = result.content.map(block => (block.type === 'text' ? block.text : '')).join('\n')
     expect(text).toContain(`成品：${join(outDir ?? '', '案卷_申请文件.docx')}`)
     expect(text).toContain('段落编号：3 条')
+    // 成文后自动验收：结论随成品一起回到模型面前，不依赖模型再调一次 verify。
+    expect(text).toContain('验收：✅ 断言全部通过（分节 5 · 权项 1 · 附图 2）')
   }, 30_000)
 })
 

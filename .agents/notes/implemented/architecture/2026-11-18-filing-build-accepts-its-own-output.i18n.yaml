@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-18-filing-build-accepts-its-own-output.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-18-filing-build-accepts-its-own-output.md
+/agent-note-the-filing-build-accepts-its-own-output:
+  en: 463392fac025963e
+  zh: 7cc5b3077b14bb33
+/agent-note-the-filing-build-accepts-its-own-output/problem:
+  en: eb6f94e82e2c0795
+  zh: 622c6f1af3dc9837
+/agent-note-the-filing-build-accepts-its-own-output/decision:
+  en: a5632adecdf2af20
+  zh: 4707eb2cccf93876
+/agent-note-the-filing-build-accepts-its-own-output/alternatives-considered:
+  en: 187f7233efe6b4bd
+  zh: ec8aa58fc7543c6d
+/agent-note-the-filing-build-accepts-its-own-output/consequences:
+  en: 80b6eb208b558858
+  zh: f540f2a4efce9dd7
+/agent-note-the-filing-build-accepts-its-own-output/testing:
+  en: cda01ec1c3908414
+  zh: 859f4d94eae263ff

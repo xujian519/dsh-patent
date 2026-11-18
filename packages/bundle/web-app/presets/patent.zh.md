@@ -23,7 +23,7 @@
 - `@deepseek-ai/dsh-tool-literature` — paper_search / paper_list_sources。
 - `@deepseek-ai/dsh-methodology` — `triz` 矛盾矩阵查表工具，用于已明确给出改善/恶化参数编号的场景。从交底书识别矛盾与参数缺口仍由 `triz_contradiction_analysis` 负责。
 
-相对 `standard` 携带的行集，本 preset 有意省略三行——`tool-plugin-market`、`present` 与 `tool-plugin-manager`。三者都属部署面或 UI 面，不是办案的一步：交付物由 `render_patent_document` / `build_patent_filing` 声明，交付前置门禁把它们扣在规则检查、法条核验与本轮留档（`matter_log_append`）上，另开一条声明通道就会落在那道门禁之外。提交格式的申请文件另要一次 `passed` 为 true 的 `validate_specification`：合规规则库不判正式审查据以退案的形式项——章节标题集合与顺序、附图标记括号、图号空格、摘要篇幅。门禁同时核对前置结果：`rule_check` 必须报告它实际读过的文本，引用型交付件必须来自一次识别到引用的 `law_verify`，分析类收口必须由模板对应的 manifest 成功运行。`scripts/preset-mode-baseline.json` 逐条记下理由，并把每个交付型模式扣在同一份共享行集上。
+相对 `standard` 携带的行集，本 preset 有意省略三行——`tool-plugin-market`、`present` 与 `tool-plugin-manager`。三者都属部署面或 UI 面，不是办案的一步：交付物由 `render_patent_document` / `build_patent_filing` 声明，交付前置门禁把它们扣在规则检查、法条核验与本轮留档（`matter_log_append`）上，另开一条声明通道就会落在那道门禁之外。提交格式的申请文件另要一次报告了所读文本的 `validate_specification`：合规规则库不判正式审查据以退案的形式项——附图标记括号、图号空格、摘要篇幅；命中这些形式项的 draft 由 patent-tools 在写出 DOCX 之前按同一份映射拦下，门禁因此证明的是模型读过完整的形式报告，而不是报告通过。门禁同时核对前置结果：`rule_check` 必须报告它实际读过的文本，引用型交付件必须来自一次识别到引用的 `law_verify`，分析类收口必须由模板对应的 manifest 成功运行。`scripts/preset-mode-baseline.json` 逐条记下理由，并把每个交付型模式扣在同一份共享行集上。
 
 专利服务放在 isolate 领域（patentData / patentKnowledge / patentWorkflow / patentTeams）内，与 patent-tools 共享该领域，使后者的 ctx.get('patentData') / ctx.get('patentKnowledge') 解析到本 preset 的实例而非宿主实例。省略 tool-ralph（一个案子用 goal / todo / workflow，而非 fresh-agent 迭代）；tool-web 开启 fetch，因为所有发货组合都挂载 http fetch provider（`dsh-base` 以 `fetchProvider: http` 组合 `dsh-web-fetch-http`，且没有任何 bundle 禁用它），先验证后引用因此可以打开来源页核验，而不是只信摘要。
 

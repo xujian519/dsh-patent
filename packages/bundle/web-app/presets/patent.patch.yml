@@ -380,14 +380,14 @@
                         rule_check:
                           - field: evaluated
                             minItems: 1
-                    # 申请文件还要过形式审查：rule_check 判的是合规规则库，不覆盖《专利法
-                    # 实施细则》第二十条的章节标题集合与顺序、附图标记括号、图号空格、
-                    # 摘要篇幅这些体例项——正式稿的形式错误正是从这里漏出去的。要求
-                    # validate_specification 在本会话内成功跑过一次且结论为 passed
-                    # （passed 为 errors === 0，不含 warning）。
-                    # 同源由 patent-tools 的 tools.guard 保证：成文前它用 docx 通道同一份
-                    # contentFromDraft 重建文本并跑形式规则，不合规的 draft 在这里就被拒，
-                    # 写不出 docx。门禁这一条再保证模型看过完整报告（含 warning 与未评估项）。
+                    # 申请文件还要过形式审查：rule_check 判的是合规规则库，不覆盖附图标记
+                    # 括号、图号空格、摘要篇幅这些体例项。形式项的阻断由 patent-tools 的
+                    # tools.guard 同源保证：成文前它用 docx 通道同一份 contentFromDraft 重建
+                    # 文本并跑形式规则，不合规的 draft 在这里就被拒，写不出 docx。
+                    # 门禁只要求 validate_specification 在本会话内成功跑过一次并读过正文
+                    # （与 rule_check 的「跑过」语义一致），不要求 passed：passed 为
+                    # errors === 0，而完整报告的 description 与 claims 族是实质撰写质量项，
+                    # 一份形式合格的申请文件也会命中。门禁保证的是模型看过完整报告。
                     - tool: build_patent_filing
                       requires: [rule_check, law_verify, matter_log_append, validate_specification]
                       evidence:
@@ -395,8 +395,8 @@
                           - field: evaluated
                             minItems: 1
                         validate_specification:
-                          - field: passed
-                            equals: true
+                          - field: evaluated
+                            minItems: 1
                     # 成文类交付（意见、答复、报告）以法条论证为主体：law_verify 必须真的
                     # 识别到引用，空文本之外的「无引用可查」同样不满足前置。申请文件、
                     # 检索报告表格、侵权比对与补正件不在此列，它们可以合法地不引用法条。

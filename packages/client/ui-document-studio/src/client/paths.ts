@@ -4,7 +4,7 @@
  */
 
 /** Extensions the document workline delivers. */
-export const DELIVERABLE_EXTENSIONS = ['.md', '.html', '.htm', '.pdf', '.docx', '.pptx'] as const
+const DELIVERABLE_EXTENSIONS = ['.md', '.html', '.htm', '.pdf', '.docx', '.pptx'] as const
 
 /**
  * Whether a path carries a deliverable extension.

@@ -49,13 +49,20 @@ interface ProducedFile {
   }
   checksWithdrawn?: true
   briefRef?: string
+  verifiedStyle?: string
+  registrationWarnings?: string[]
 }
 
-function session(produced: Array<ProducedFile>) {
+function session(
+  produced: Array<ProducedFile>,
+  rejection?: { seq: number; paths: string[]; message: string },
+) {
   const views: ConversationSnapshot['views'] = {
     // The target check makes this assertion exact for the one registered target.
     get: <Target extends Extract<keyof ConversationViewSnapshotMap, string>>(target: Target) =>
-      (target === DOCUMENT_DELIVERABLES_TARGET ? { produced } : undefined) as
+      (target === DOCUMENT_DELIVERABLES_TARGET
+        ? { produced, ...rejection === undefined ? {} : { rejection } }
+        : undefined) as
         ConversationViewSnapshotMap[Target] | undefined,
     grouped: () => undefined,
   }
@@ -107,8 +114,9 @@ function studioProps(
   produced: Array<ProducedFile>,
   overrides: Partial<StudioViewInjected> = {},
   preset: string | null = 'document',
+  rejection?: { seq: number; paths: string[]; message: string },
 ): StudioViewProps {
-  const s = session(produced)
+  const s = session(produced, rejection)
   // The full session-scope standard kit the outlet would bake; members the
   // studio does not read are stubbed inert (the trajectory spec pattern).
   return {
@@ -254,6 +262,34 @@ describe('StudioView', () => {
     fireEvent.click(screen.getAllByText('long.html')[0]!)
     expect(screen.getAllByText('P0-3 无占位残留').length).toBeGreaterThan(0)
     expect(screen.getAllByText('P0-4 断链').length).toBeGreaterThan(0)
+  })
+
+  it('reports a refused registration above the list it left without a gate record', () => {
+    const { container } = render(
+      <StudioView {...studioProps(
+        [{ seq: 1, path: 'out/report.md' }],
+        {},
+        'document',
+        { seq: 9, paths: ['out/report.md', 'out/deck.html'], message: 'P0 门未通过：命名规范' },
+      )} />,
+    )
+    // 拒绝说明是多行文本，用属性定位后逐段核对。
+    const banner = container.querySelector('[data-document-registration-rejected]')
+    expect(banner?.textContent).toContain('out/report.md, out/deck.html')
+    expect(banner?.textContent).toContain('P0 门未通过：命名规范')
+  })
+
+  it('shows the check style and the registration notes beside the claim', () => {
+    render(
+      <StudioView {...studioProps([{
+        seq: 1, path: 'out/report.md', format: 'markdown', gate: { p0: ['命名规范'], p1: [] },
+        verifiedStyle: 'assistant-neutral',
+        registrationWarnings: ['P0 项 "自查" 不是已知的质量门 id'],
+      }])} />,
+    )
+    expect(screen.getByText(t('studio.file.checkStyle', { style: 'assistant-neutral' }))).toBeTruthy()
+    expect(screen.getByText(t('studio.file.registrationWarnings', { count: 1 }))).toBeTruthy()
+    expect(screen.getByText('P0 项 "自查" 不是已知的质量门 id')).toBeTruthy()
   })
 
   it('keeps the missing-gate badge for document sessions only', () => {
@@ -505,22 +541,6 @@ describe('StudioView', () => {
     expect(openFile).toHaveBeenCalled()
   })
 
-  it('honors a one-shot focus request naming a produced file', async () => {
-    const completeViewRequest = vi.fn()
-    const props = {
-      ...studioProps([{ seq: 1, path: 'out/b.md' }, { seq: 2, path: 'a.html' }]),
-      completeViewRequest,
-    }
-    const { rerender } = render(<StudioView {...props} />)
-    expect(await screen.findByTitle('a.html')).toBeTruthy()
-    rerender(<StudioView {...{
-      ...props,
-      viewRequest: { view: 'documentDeliverables', focus: 'out/b.md' },
-    }} />)
-    expect(await screen.findByText('<h1>out/b.md</h1>')).toBeTruthy()
-    expect(completeViewRequest).toHaveBeenCalledTimes(1)
-  })
-
   it('follows a newly produced file, pauses on a manual pick, and resumes on request', async () => {
     const { rerender } = render(<StudioView {...studioProps([{ seq: 1, path: 'out/a.md' }])} />)
     expect(await screen.findByText('<h1>out/a.md</h1>')).toBeTruthy()
@@ -559,27 +579,6 @@ describe('StudioView', () => {
     }))
     render(<StudioView {...props} useConversation={bindSnapshotSelector(store)} />)
     expect(await screen.findByText(t('studio.empty'))).toBeTruthy()
-  })
-
-  it('holds a focus request until the list resolves it, and acknowledges one that names no listed file', async () => {
-    const completeViewRequest = vi.fn()
-    const request = { view: 'documentDeliverables', focus: 'out/a.md' }
-    const { rerender } = render(
-      <StudioView {...studioProps([])} viewRequest={request} completeViewRequest={completeViewRequest} />,
-    )
-    expect(await screen.findByText(t('studio.empty'))).toBeTruthy()
-    // An empty list cannot resolve the request, so the request survives.
-    expect(completeViewRequest).not.toHaveBeenCalled()
-    // A list that does not hold the named file still settles the request.
-    rerender(
-      <StudioView
-        {...studioProps([{ seq: 1, path: 'out/b.md' }])}
-        viewRequest={{ view: 'documentDeliverables', focus: 'out/gone.md' }}
-        completeViewRequest={completeViewRequest}
-      />,
-    )
-    expect(await screen.findByText('<h1>out/b.md</h1>')).toBeTruthy()
-    expect(completeViewRequest).toHaveBeenCalledTimes(1)
   })
 
   it('drops a read that settles after the selection moved on', async () => {

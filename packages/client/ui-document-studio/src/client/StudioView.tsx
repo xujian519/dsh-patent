@@ -242,6 +242,37 @@ function GateClaim({ file, t }: { file: DocumentDeliverable | null; t: StudioVie
 }
 
 /**
+ * The registration facts recorded beside the model's claim: the writing style
+ * the deterministic checks ran against, and what the registration declaration
+ * itself got wrong. A row whose verdict was withdrawn by a later rewrite
+ * carries neither, because both describe the registration those bytes came
+ * from.
+ */
+function RegistrationNotes({ file, t }: {
+  file: DocumentDeliverable | null
+  t: StudioViewProps['t']
+}): ReactNode {
+  if (file === null) return null
+  const warnings = file.registrationWarnings ?? []
+  if (file.verifiedStyle === undefined && warnings.length === 0) return null
+  return (
+    <div>
+      {file.verifiedStyle !== undefined && (
+        <p className={css.note}>{t('studio.file.checkStyle', { style: file.verifiedStyle })}</p>
+      )}
+      {warnings.length > 0 && (
+        <>
+          <p className={css.note}>{t('studio.file.registrationWarnings', { count: warnings.length })}</p>
+          <ul className={css.claimList}>
+            {warnings.map(warning => <li key={warning}>{warning}</li>)}
+          </ul>
+        </>
+      )}
+    </div>
+  )
+}
+
+/**
  * Renders the session deliverable list and preview pane.
  * @param props - session runtime share, injected callbacks, locale share.
  * @returns the studio view.
@@ -251,8 +282,6 @@ export function StudioView({
   useSessions,
   useResource,
   sessionId,
-  viewRequest,
-  completeViewRequest,
   isLoopback,
   canOpenInSidebar,
   openFile,
@@ -268,6 +297,11 @@ export function StudioView({
   t,
 }: StudioViewProps): ReactNode {
   const produced = useConversation(snapshot => snapshot.views.get(DOCUMENT_DELIVERABLES_TARGET)?.produced ?? EMPTY_PRODUCED)
+  // A refused registration explains why a delivered file still reads "no gate
+  // record"; the fold settles it once a later registration is accepted.
+  const rejection = useConversation(
+    snapshot => snapshot.views.get(DOCUMENT_DELIVERABLES_TARGET)?.rejection ?? null,
+  )
   // The gate badge is document-mode vocabulary: another preset's session lists
   // its touched files here too, and those carry no gate to be missing.
   const documentSession = useSessions(snapshot =>
@@ -310,21 +344,6 @@ export function StudioView({
     const fallback = follow ? produced.at(-1) : produced[0]
     setSelectedPath(fallback?.path ?? null)
   }, [produced, follow, selectedPath])
-
-  // Honor a one-shot focus request naming one produced file. The shell knows
-  // no file identity, so the request carries the produced path.
-  useEffect(() => {
-    if (viewRequest === null || viewRequest.view !== DOCUMENT_DELIVERABLES_TARGET) return
-    // Wait for the list rather than acknowledging a request this console cannot
-    // resolve yet; the request survives until it can.
-    if (produced.length === 0) return
-    if (produced.some(file => file.path === viewRequest.focus)) {
-      // A focus request is a deliberate jump to one file, like a manual pick.
-      setFollow(false)
-      setSelectedPath(viewRequest.focus)
-    }
-    completeViewRequest()
-  }, [viewRequest, produced, completeViewRequest])
 
   // Compare each checked entry's current freshness token with the one captured
   // when this console first saw it. Runs when the produced list changes, never
@@ -461,6 +480,14 @@ export function StudioView({
 
   return (
     <div className={css.studio} data-session-id={sessionId}>
+      {rejection !== null && (
+        <p className={`${css.error} ${css.rejection}`} data-document-registration-rejected>
+          {t('studio.registration.rejected', {
+            paths: rejection.paths.join(', '),
+            message: rejection.message,
+          })}
+        </p>
+      )}
       {produced.length === 0
         ? (
           <div className={css.empty}>
@@ -598,6 +625,7 @@ export function StudioView({
               )}
               {reviseNotice && <p className={css.note}>{t('studio.revise.inserted')}</p>}
               <GateClaim file={selected} t={t} />
+              <RegistrationNotes file={selected} t={t} />
               {selectedPath === null || selectedAddress === null
                 ? <div className={css.note}>{t('studio.preview.hint')}</div>
                 : (

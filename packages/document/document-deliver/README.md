@@ -24,6 +24,8 @@ Function plugin for the [document agent preset](../../bundle/web-app/presets/doc
 
   Each check report names its file twice: `path` is the declared spelling, kept verbatim because it is what a reader recognises, and `identity` is the Host-resolved canonical absolute path that every spelling of the same file shares. A consumer keys a deliverable on `identity` and displays `path`, so `out/report.html` written and `/work/out/report.html` registered are one deliverable rather than two. `identity` is absent on results recorded before it existed; a consumer then falls back to the declared path, which is what the delivery studio does. `unreadable_ack` entries match a file by that same canonical identity, so a reason written in one spelling explains a file declared in the other.
 
+  Beside the per-file reports, the result's `meta` carries the registration-level facts a consumer shows alongside them: `style`, the style the deterministic checks ran against, and `warnings`, one line per thing the declaration itself got wrong. Each is written only when it has content, and results recorded before either existed simply lack the key.
+
 <a id="deterministic-checks"></a>
 ## Deterministic checks
 

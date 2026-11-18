@@ -13,7 +13,7 @@ import type {
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
 import {
   DOCUMENT_DELIVER_TOOL, documentDeliverablesDefinition, documentDeliverablesViewDefinition,
-  parseCheckReports, parseDeliverRegistration,
+  parseCheckReports, parseDeliverRegistration, parseRegistrationFacts,
   type DocumentDeliverablesSnapshot, type DocumentTurnDeliverables,
 } from '../src/client/document-deliverables.ts'
 
@@ -430,6 +430,207 @@ describe('document_deliver registrations', () => {
     expect([...(parseCheckReports({
       checks: [{ path: 'a.html', format: 'html', status: 'checked', findings: [] }],
     }) ?? new Map()).keys()]).toEqual(['a.html'])
+  })
+})
+
+describe('registration facts and refused registrations', () => {
+  /** A `document_deliver` call declaring one file under one P0 item. */
+  function deliver(seq: number, callId: string, path = 'out/a.md', turn = 1): SessionLiveEventEntry {
+    return rawCall(seq, callId, DOCUMENT_DELIVER_TOOL, JSON.stringify({
+      files: [{ path, format: 'markdown' }], gate: { p0: ['命名规范'] },
+    }), turn)
+  }
+
+  /** A failed `tool/result` carrying the given error and message content. */
+  function failed(
+    seq: number, callId: string, error?: unknown, content: readonly unknown[] = [], turn = 1,
+  ): SessionLiveEventEntry {
+    return at(seq, 'tool/result', {
+      turn,
+      step: 1,
+      message: { source: { kind: 'tool', callId }, content, isError: true },
+      ...error === undefined ? {} : { error },
+    })
+  }
+
+  function foldOf(entries: readonly SessionLiveEventEntry[]): DocumentDeliverablesSnapshot {
+    return documentDeliverablesViewDefinition.create().replace({ nodes: [], timeline: timelineOf(assembler(entries)) })
+  }
+
+  it('reads each registration fact on its own, ignoring an unreadable one', () => {
+    expect(parseRegistrationFacts(undefined)).toEqual({})
+    expect(parseRegistrationFacts('nope')).toEqual({})
+    // A blank style names no style; a non-string one is not read as text.
+    expect(parseRegistrationFacts({ style: '   ' })).toEqual({})
+    expect(parseRegistrationFacts({ style: 7 })).toEqual({})
+    expect(parseRegistrationFacts({ style: 'assistant-neutral' })).toEqual({ style: 'assistant-neutral' })
+    // Warnings survive only as a non-empty list of strings.
+    expect(parseRegistrationFacts({ warnings: [] })).toEqual({})
+    expect(parseRegistrationFacts({ warnings: 'nope' })).toEqual({})
+    expect(parseRegistrationFacts({ warnings: ['a', 7] })).toEqual({})
+    expect(parseRegistrationFacts({ style: 'assistant-neutral', warnings: ['a'] }))
+      .toEqual({ style: 'assistant-neutral', warnings: ['a'] })
+  })
+
+  it('attaches the style and the declaration warnings the registration recorded', () => {
+    const value = assembler([
+      at(1, 'turn/start', { turn: 1 }),
+      deliver(2, 'reg'),
+      result(3, 'reg', false, 1, {
+        style: 'assistant-neutral',
+        warnings: ['P0 项 "自查" 不是已知的质量门 id'],
+      }),
+    ])
+
+    expect(turnDataOf(value)?.produced).toEqual([{
+      seq: 3, path: 'out/a.md', format: 'markdown', gate: { p0: ['命名规范'], p1: [] },
+      verifiedStyle: 'assistant-neutral',
+      registrationWarnings: ['P0 项 "自查" 不是已知的质量门 id'],
+    }])
+  })
+
+  it('replaces both facts with the newest registration\'s, dropping the ones it omits', () => {
+    const value = assembler([
+      at(1, 'turn/start', { turn: 1 }),
+      deliver(2, 'reg-1'),
+      result(3, 'reg-1', false, 1, { style: 'assistant-neutral', warnings: ['第一条'] }),
+      at(4, 'turn/start', { turn: 2 }),
+      deliver(5, 'reg-2', 'out/a.md', 2),
+      result(6, 'reg-2', false, 2, { style: 'legal-formal' }),
+    ])
+
+    const fold = documentDeliverablesViewDefinition.create().replace({ nodes: [], timeline: timelineOf(value) })
+    expect(fold.produced).toEqual([{
+      seq: 3, path: 'out/a.md', format: 'markdown', gate: { p0: ['命名规范'], p1: [] },
+      verifiedStyle: 'legal-formal',
+    }])
+  })
+
+  it('adopts the warnings a later registration adds to an earlier one', () => {
+    const value = assembler([
+      at(1, 'turn/start', { turn: 1 }),
+      deliver(2, 'reg-1'),
+      result(3, 'reg-1', false, 1, { style: 'assistant-neutral' }),
+      at(4, 'turn/start', { turn: 2 }),
+      deliver(5, 'reg-2', 'out/a.md', 2),
+      result(6, 'reg-2', false, 2, { warnings: ['第二条'] }),
+    ])
+
+    const fold = documentDeliverablesViewDefinition.create().replace({ nodes: [], timeline: timelineOf(value) })
+    expect(fold.produced).toEqual([{
+      seq: 3, path: 'out/a.md', format: 'markdown', gate: { p0: ['命名规范'], p1: [] },
+      registrationWarnings: ['第二条'],
+    }])
+  })
+
+  it('reports a refusal with the reason the result recorded, for every named file', () => {
+    const entries = [
+      at(1, 'turn/start', { turn: 1 }),
+      deliver(2, 'reg'),
+      failed(3, 'reg', { name: 'HarnessError', code: 'document-deliver/blocked', reason: ' P0 门未通过 ' }),
+    ]
+
+    const rejection = { seq: 3, paths: ['out/a.md'], message: 'P0 门未通过' }
+    expect(turnDataOf(assembler(entries))).toEqual({ produced: [], rejected: rejection })
+    expect(foldOf(entries)).toEqual({ produced: [], rejection })
+  })
+
+  it('falls back to the result text when the failure recorded no usable reason', () => {
+    for (const error of [undefined, { reason: '   ' }]) {
+      const value = assembler([
+        at(1, 'turn/start', { turn: 1 }),
+        deliver(2, 'reg'),
+        failed(3, 'reg', error, [{ type: 'text', text: '  第一行\n第二行  ' }, { type: 'image' }]),
+      ])
+      expect(turnDataOf(value)?.rejected?.message).toBe('第一行\n第二行')
+    }
+  })
+
+  it('ignores a failure that names no file, and one whose result carries no text', () => {
+    const mutation = assembler([
+      at(1, 'turn/start', { turn: 1 }),
+      call(2, 'w', 'write', { file_path: 'out/a.md', content: 'x' }),
+      failed(3, 'w', { reason: '磁盘已满' }),
+    ])
+    expect(turnDataOf(mutation)?.rejected).toBeUndefined()
+
+    // A registration result with neither a reason nor text blocks records no
+    // refusal, because there would be nothing to show.
+    const silent = assembler([
+      at(1, 'turn/start', { turn: 1 }),
+      deliver(2, 'reg'),
+      failed(3, 'reg', undefined, [{ type: 'text', text: '   ' }]),
+    ])
+    expect(turnDataOf(silent)?.rejected).toBeUndefined()
+  })
+
+  it('settles a refusal once a later registration in the turn is accepted', () => {
+    const value = assembler([
+      at(1, 'turn/start', { turn: 1 }),
+      deliver(2, 'bad'),
+      failed(3, 'bad', { reason: 'P0 门未通过' }),
+      deliver(4, 'good'),
+      result(5, 'good'),
+    ])
+
+    expect(turnDataOf(value)?.rejected).toBeUndefined()
+    expect(turnDataOf(value)?.produced).toEqual([{
+      seq: 5, path: 'out/a.md', format: 'markdown', gate: { p0: ['命名规范'], p1: [] },
+    }])
+  })
+
+  it('settles a refusal with an accepted registration that declares no file', () => {
+    const value = assembler([
+      at(1, 'turn/start', { turn: 1 }),
+      deliver(2, 'bad'),
+      failed(3, 'bad', { reason: 'P0 门未通过' }),
+      rawCall(4, 'empty', DOCUMENT_DELIVER_TOOL, JSON.stringify({ files: [], gate: { p0: [] } })),
+      result(5, 'empty'),
+    ])
+
+    expect(turnDataOf(value)).toEqual({ produced: [] })
+  })
+
+  it('keeps a refusal in the turn after a later mutation settles', () => {
+    const value = assembler([
+      at(1, 'turn/start', { turn: 1 }),
+      deliver(2, 'bad'),
+      failed(3, 'bad', { reason: 'P0 门未通过' }),
+      call(4, 'w', 'write', { file_path: 'out/a.md', content: 'x' }),
+      result(5, 'w'),
+    ])
+
+    expect(turnDataOf(value)).toEqual({
+      produced: [{ seq: 5, path: 'out/a.md' }],
+      rejected: { seq: 3, paths: ['out/a.md'], message: 'P0 门未通过' },
+    })
+  })
+
+  it('keeps a refusal standing across turns until a registration is accepted', () => {
+    const refused = [
+      at(1, 'turn/start', { turn: 1 }),
+      deliver(2, 'bad'),
+      failed(3, 'bad', { reason: 'P0 门未通过' }),
+    ]
+    expect(foldOf(refused).rejection?.message).toBe('P0 门未通过')
+
+    // A turn that only rewrote a file neither repeats nor settles the refusal.
+    const rewritten = foldOf([
+      ...refused,
+      at(4, 'turn/start', { turn: 2 }),
+      call(5, 'w', 'write', { file_path: 'out/a.md', content: 'x' }, 2),
+      result(6, 'w', false, 2),
+    ])
+    expect(rewritten.rejection?.message).toBe('P0 门未通过')
+    expect(rewritten.produced).toEqual([{ seq: 6, path: 'out/a.md' }])
+
+    const settled = foldOf([
+      ...refused,
+      at(4, 'turn/start', { turn: 2 }),
+      deliver(5, 'good', 'out/a.md', 2),
+      result(6, 'good', false, 2),
+    ])
+    expect(settled.rejection).toBeUndefined()
   })
 })
 

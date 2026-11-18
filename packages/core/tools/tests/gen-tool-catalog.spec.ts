@@ -2,6 +2,9 @@
  * Guarantee tests for the tool-schema catalog generator (`scripts/gen-tool-catalog.ts`).
  */
 
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import ScheduleService from '@deepseek-ai/dsh-schedule'
 import {
@@ -31,7 +34,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
       'claim_lint', 'compare_patent_figure_analysis', 'cordis_inspect_list', 'cordis_inspect_query', 'create_goal', 'create_worktree', 'document_deliver', 'domain_check',
       'draft_claims', 'draft_specification', 'edit', 'evaluate_evidence', 'evaluate_legal_evidence', 'exit_plan_mode', 'flexible_plan', 'generate_patent_figure',
       'generate_structure_figure', 'get_goal', 'glob', 'grep', 'interrupt_agent', 'job_kill', 'job_list', 'job_output',
-      'knowledge_note_save', 'law_search', 'law_verify', 'legal_law_verify', 'list_agents', 'list_doc_templates', 'list_mcp_resource_templates', 'list_mcp_resources',
+      'knowledge_note_save', 'law_search', 'law_verify', 'legal_knowledge_search', 'legal_law_verify', 'list_agents', 'list_doc_templates', 'list_mcp_resource_templates', 'list_mcp_resources',
       'list_subagent_models', 'load_workspace_dependencies', 'lsp', 'macos_app', 'macos_clipboard_get', 'macos_clipboard_set', 'macos_notify', 'macos_open_path',
       'macos_open_url', 'macos_speak', 'market_plugin_preview', 'market_plugin_search', 'market_source_list', 'matter_log_append', 'media', 'office_convert',
       'office_recalculate', 'office_render', 'paper_download', 'paper_list_sources', 'paper_search', 'parse_office_action', 'patent_analysis_report', 'patent_case_search',
@@ -135,6 +138,33 @@ describe('gen-tool-catalog assertManifestComplete', () => {
     // is unlisted, so the guard must fire and name them.
     expect(() => { assertManifestComplete([]) }).toThrow(/not in the boot manifest/)
     expect(() => { assertManifestComplete([]) }).toThrow(/tool-bash/)
+  })
+
+  it('covers a package whose tool lives behind a ./tool subpath export', () => {
+    // `legal-knowledge` ships its tool from a companion plugin, so the directory
+    // has no `tool-` prefix and the glob alone would leave it undocumented.
+    const scanRoot = mkdtempSync(join(tmpdir(), 'dsh-tool-catalog-'))
+    try {
+      const subpath = join(scanRoot, 'packages/legal/legal-knowledge')
+      mkdirSync(subpath, { recursive: true })
+      writeFileSync(join(subpath, 'package.json'), JSON.stringify({
+        exports: { '.': './lib/index.js', './tool': './lib/tool.js' },
+      }))
+      expect(() => { assertManifestComplete([], scanRoot) }).toThrow(/legal-knowledge/)
+      const plain = join(scanRoot, 'packages/legal/legal-plain')
+      mkdirSync(plain, { recursive: true })
+      writeFileSync(join(plain, 'package.json'), JSON.stringify({ exports: { '.': './lib/index.js' } }))
+      let message = ''
+      try {
+        assertManifestComplete([], scanRoot)
+      } catch (error) {
+        message = String(error)
+      }
+      expect(message).toContain('legal-knowledge')
+      expect(message).not.toContain('legal-plain')
+    } finally {
+      rmSync(scanRoot, { recursive: true, force: true })
+    }
   })
 })
 

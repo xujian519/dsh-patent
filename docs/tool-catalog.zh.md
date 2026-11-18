@@ -7,9 +7,9 @@
 
 已发布插件向 `ctx.tools` 提供的所有面向模型的工具：模型通过系统提示词组装获得的 `name`、`description` 和 JSON Schema `parameters`。本目录是[子系统页面](subsystems/core.zh.md)（类型及每页生成的 `cordis-surface` 接线区域）的补充；本页列出的是向 agent（智能体）提供的*工具*。
 
-英文源文件由系统**生成**，并通过 `pnpm run verify-tool-catalog`（`doc-sync`（文档同步门禁）的一部分）验证新鲜度；本中文文件作为经评审对侧通过双语配对维护。与 Cordis 目录（纯源码 AST 处理）不同，英文生成器会在真实上下文中**启动**每个工具插件并读取 `ctx.tools.schemas()`，因为工具 schema 无法通过静态分析完全确定，例如运行时展开的枚举、拼接的描述、由配置决定的名称以及使用原始 JSON Schema 的 MCP 工具。完整性守卫会 glob 匹配 `packages/*/tool-*`；如果生成器的启动 manifest（元数据清单）遗漏任何包，检查就会失败，因此新工具不会在无人察觉的情况下缺少文档。
+英文源文件由系统**生成**，并通过 `pnpm run verify-tool-catalog`（`doc-sync`（文档同步门禁）的一部分）验证新鲜度；本中文文件作为经评审对侧通过双语配对维护。与 Cordis 目录（纯源码 AST 处理）不同，英文生成器会在真实上下文中**启动**每个工具插件并读取 `ctx.tools.schemas()`，因为工具 schema 无法通过静态分析完全确定，例如运行时展开的枚举、拼接的描述、由配置决定的名称以及使用原始 JSON Schema 的 MCP 工具。完整性守卫会检查 `packages/*/tool-*` 以及每个导出 `./tool` 子路径插件的包；如果生成器的启动 manifest（元数据清单）遗漏任何包，检查就会失败，因此新工具不会在无人察觉的情况下缺少文档。
 
-范围：`packages/*/tool-*` 下已发布的产品工具，加上直接注册工具的领域包（`patent-*`、`writing-patterns`、`methodology`、`document-deliver` 与 `legal-*`），每个工具均使用其**默认**配置启动；但如果某个 Config 字段是**必填项**且没有默认值，生成器就必须作出选择，对应包的说明会记录本页展示的是哪个分支。完整性守卫会 glob 匹配 `packages/*/tool-*`；不带该前缀而注册工具的领域包由启动 manifest 手工登记。注册的工具**名称**可以是加载时配置，例如 `tool-subagent` 的 `toolName`，因此部署可能以不同名称或额外名称提供某个包；如果存在随产品发布的别名，对应包的说明会予以记录。`examples/` 中的演示工具（例如 `echo`）不在范围内，这与 Cordis 目录仅涵盖包的范围一致。
+范围：`packages/*/tool-*` 下已发布的产品工具，加上直接注册工具的领域包（`patent-*`、`writing-patterns`、`methodology`、`document-deliver` 与 `legal-*`），每个工具均使用其**默认**配置启动；但如果某个 Config 字段是**必填项**且没有默认值，生成器就必须作出选择，对应包的说明会记录本页展示的是哪个分支。完整性守卫覆盖 `packages/*/tool-*` 与导出 `./tool` 子路径插件的包（`legal-knowledge`）；两者都不带而注册工具的领域包由启动 manifest 手工登记。注册的工具**名称**可以是加载时配置，例如 `tool-subagent` 的 `toolName`，因此部署可能以不同名称或额外名称提供某个包；如果存在随产品发布的别名，对应包的说明会予以记录。`examples/` 中的演示工具（例如 `echo`）不在范围内，这与 Cordis 目录仅涵盖包的范围一致。
 
 <a id="tool-package-map"></a>
 
@@ -65,6 +65,7 @@
 | `@deepseek-ai/dsh-patent-law` | `law_verify` | `ctx.tools` | `tool/call`、`tool/result` | - | law_verify 读取一段文本中的法条引用（或直接传入的引用），逐条对照本包随包的法规索引判定：《专利法》《专利法实施细则》按条（及款），《专利审查指南》按归一化节路径。每条判定为 已核验 / 与所引命题不符 / 未与条文对应（未判定）/ 条号超出有效范围 / 索引中不存在 / 条文未转录（未核验）；已索引但条文未转录的条目报「未核验」而不是放行，没有任何条目承载的命题报「未判定」而不是「不符」。指南引用按整节判定：命题由所引节的子节承载即成立，只登记到部分或章一级的条目由其下各节判定。 |
 | `@deepseek-ai/dsh-legal-law` | `legal_law_verify` | `ctx.tools` | `tool/call`、`tool/result` | - | legal_law_verify 读取一段文本中的法条引用（或直接传入的引用），逐条对照本包随包的法律索引判定：《民法典》《民事诉讼法》《劳动合同法》《公司法》及其他 `assets/legal-law/` 下的法律，按条（及款）。每条判定为 已核验 / 与所引命题不符 / 未与条文对应（未判定）/ 条号超出有效范围 / 索引中不存在 / 条文未转录（未核验）；已索引但条文未转录的条目报「未核验」而不是放行，没有任何条目承载的命题报「未判定」而不是「不符」。目录采集在空基线映射上注册工具，因为 schema 不依赖索引。 |
 | `@deepseek-ai/dsh-legal-evidence` | `evaluate_legal_evidence` | `ctx.tools` | `tool/call`、`tool/result` | - | evaluate_legal_evidence 按《民事诉讼法》第 66 条八类法定证据，为单条证据记录的三性（关联性、合法性、真实性）评分。评分是确定性的，不发起模型请求；权重来自随包 YAML 规则资产，记录缺少规则询问的字段时按未回答处理，而不是推断。 |
+| `@deepseek-ai/dsh-legal-knowledge/tool` | `legal_knowledge_search` | `ctx.tools`、`ctx.legalKnowledge` | `tool/call`、`tool/result` | - | legal_knowledge_search 检索本部署的法律知识库，覆盖 case_law、regulation、judicial_interpretation、guiding_case 四类记录，后端为 SQLite FTS5，缺少数据库时回退内存存储；服务本身不提供 schema，因此这个 /tool 子路径插件是面向模型的一半。空结果表示本部署没有匹配记录，而不是不存在该规范或案例。 |
 | `@deepseek-ai/dsh-writing-patterns` | `query_writing_patterns` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | query_writing_patterns selects drafting and office-action patterns from the packaged corpus by category, keyword, or case features, and returns the matched patterns with the compiled `<writing_skills>` block; the same block is injected as a system-prompt section so the drafting discipline is present without a call. |
 | `@deepseek-ai/dsh-doc-template` | `list_doc_templates`, `render_doc_template` | `ctx.tools`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | list_doc_templates 列出随包的文档模板及其变量与支持的格式；render_doc_template 用给定变量把其中一个渲染为 Markdown、HTML 或 DOCX，并返回文档、残余占位符与变量警告。部署还可在 `styleGuide` 中指定已加载的书写风格名，把该风格指南作为系统提示段落注入。 |
 | `@deepseek-ai/dsh-patent-teams` | `patent_teams_add_member`, `patent_teams_archive`, `patent_teams_claim_task`, `patent_teams_create`, `patent_teams_create_task`, `patent_teams_delete`, `patent_teams_reassign_task`, `patent_teams_remove_member`, `patent_teams_send_message`, `patent_teams_status`, `patent_teams_update_task`, `patent_teams_wait` | `ctx.tools`, `ctx.subagents`, `ctx.systemPrompt`, `a calling Agent as captain (member spawn/follow-up)` | `tool/call`, `tool/result`, `patent-teams/* session events` | - | The durable multi-agent team service for the patent domain: create a team (you become captain), add continuable subagent members by role, break the goal into dependency-aware tasks, and let the shared-task scheduler wake idle members. Member spawn and messaging use the captain as the direct parent, so a team survives harness restarts. |
@@ -9090,6 +9091,95 @@ legal_law_verify 读取一段文本中的法条引用（或直接传入的引用
 来源：[`packages/legal/legal-evidence/src/index.ts`](../packages/legal/legal-evidence/src/index.ts)
 
 evaluate_legal_evidence 按《民事诉讼法》第 66 条八类法定证据，为单条证据记录的三性（关联性、合法性、真实性）评分。评分是确定性的，不发起模型请求；权重来自随包 YAML 规则资产，记录缺少规则询问的字段时按未回答处理，而不是推断。
+
+<a id="deepseek-aidsh-legal-knowledgetool"></a>
+
+## `@deepseek-ai/dsh-legal-knowledge/tool`
+
+### `legal_knowledge_search`
+
+- 检索本部署的法律知识库，覆盖法规条文、裁判文书、司法解释与指导性案例四类记录。
+- 法规与司法解释结果带 `validity`（in-force/expired/not-yet-effective/unverified），可用 `asOf` 按指定日期判断有效性。
+- 检索结果是部署数据：空结果表示本部署的知识库未命中，不证明该规范或案例不存在；引用前仍需回到官方法源核验原文。
+- `via` 说明命中通道（fts 全文、like 降级匹配、memory 内存记录）；`relevanceScore` 越小越相关。
+
+使用说明：
+  - 先用法条检索确定现行有效条文，再用案例检索补充适用方式；不要颠倒。
+  - 逐条引用时同时给出条目 id（regulationId/caseId/interpretationId）与条文或案号。
+  - 单次最多返回 20 条；需要更多时缩小查询范围，而不是重复同一查询。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "检索关键词或短语"
+    },
+    "scope": {
+      "type": "string",
+      "description": "检索的记录类别（默认 regulation）",
+      "enum": [
+        "case_law",
+        "regulation",
+        "judicial_interpretation",
+        "guiding_case"
+      ]
+    },
+    "limit": {
+      "type": "number",
+      "description": "返回条数上限（1-20，默认 5）"
+    },
+    "asOf": {
+      "type": "string",
+      "description": "有效性判断日期 YYYY-MM-DD（仅法规与司法解释）"
+    },
+    "level": {
+      "type": "string",
+      "description": "法规层级过滤（仅 regulation）",
+      "enum": [
+        "法律",
+        "行政法规",
+        "司法解释",
+        "地方性法规",
+        "部门规章",
+        "其他"
+      ]
+    },
+    "docType": {
+      "type": "string",
+      "description": "文书类型过滤（仅 case_law）",
+      "enum": [
+        "judgment",
+        "guiding"
+      ]
+    },
+    "court": {
+      "type": "string",
+      "description": "法院名称片段（仅 case_law）"
+    },
+    "caseType": {
+      "type": "string",
+      "description": "案件类型片段（仅 case_law）"
+    },
+    "interpretationType": {
+      "type": "string",
+      "description": "司法解释类型过滤（仅 judicial_interpretation）",
+      "enum": [
+        "judicial-interpretation",
+        "guiding-case"
+      ]
+    }
+  },
+  "required": [
+    "query"
+  ]
+}
+```
+
+来源：[`packages/legal/legal-knowledge/src/tool.ts`](../packages/legal/legal-knowledge/src/tool.ts)
+
+legal_knowledge_search 检索本部署的法律知识库，覆盖 case_law、regulation、judicial_interpretation、guiding_case 四类记录，后端为 SQLite FTS5，缺少数据库时回退内存存储；服务本身不提供 schema，因此这个 /tool 子路径插件是面向模型的一半。空结果表示本部署没有匹配记录，而不是不存在该规范或案例。
 
 <a id="deepseek-aidsh-writing-patterns"></a>
 

@@ -5,9 +5,9 @@
 
 Every model-facing tool a shipped plugin contributes to `ctx.tools`: the `name`, `description`, and JSON-Schema `parameters` the model receives via the system-prompt assembly. It complements the [subsystem pages](subsystems/core.md) (the types plus each page's generated Cordis API region) — this page is the *tools* the agent is offered.
 
-This file is GENERATED and verified fresh by `pnpm run verify-tool-catalog` (part of `doc-sync`) — do not edit it by hand. Unlike the cordis catalog (a pure source-AST pass), this generator BOOTS each tool plugin on a real context and reads `ctx.tools.schemas()`, because a tool schema is not statically knowable (runtime-spread enums, concatenated descriptions, config-driven names, raw-JSON-Schema MCP tools). A completeness guard globs `packages/*/tool-*` and fails if any package is missing from the generator's boot manifest, so a new tool cannot be silently undocumented.
+This file is GENERATED and verified fresh by `pnpm run verify-tool-catalog` (part of `doc-sync`) — do not edit it by hand. Unlike the cordis catalog (a pure source-AST pass), this generator BOOTS each tool plugin on a real context and reads `ctx.tools.schemas()`, because a tool schema is not statically knowable (runtime-spread enums, concatenated descriptions, config-driven names, raw-JSON-Schema MCP tools). A completeness guard scans `packages/*/tool-*` plus every package that exports a `./tool` subpath plugin, and fails if any is missing from the generator's boot manifest, so a new tool cannot be silently undocumented.
 
-Scope: shipped product tools under `packages/*/tool-*`, plus the domain packages that register tools directly (`patent-*`, `writing-patterns`, `methodology`, `document-deliver`, and `legal-*`), each booted with its DEFAULT config, except where a Config field is REQUIRED with no default — there the generator must choose, and the per-package note records which branch this page shows. The completeness guard globs `packages/*/tool-*`; a domain package that registers tools without that prefix is listed in the boot manifest by hand. The registered tool NAME can be a load-time config (e.g. `tool-subagent`'s `toolName`), so a deployment may expose a package under a different or additional name — a per-package note records those shipped aliases where they exist. The `examples/` demo tools (e.g. `echo`) are excluded, matching the cordis catalog's packages-only scope.
+Scope: shipped product tools under `packages/*/tool-*`, plus the domain packages that register tools directly (`patent-*`, `writing-patterns`, `methodology`, `document-deliver`, and `legal-*`), each booted with its DEFAULT config, except where a Config field is REQUIRED with no default — there the generator must choose, and the per-package note records which branch this page shows. The completeness guard covers `packages/*/tool-*` and packages that export a `./tool` subpath plugin (`legal-knowledge`); a domain package that registers tools with neither marker is listed in the boot manifest by hand. The registered tool NAME can be a load-time config (e.g. `tool-subagent`'s `toolName`), so a deployment may expose a package under a different or additional name — a per-package note records those shipped aliases where they exist. The `examples/` demo tools (e.g. `echo`) are excluded, matching the cordis catalog's packages-only scope.
 
 ## Tool Package Map
 
@@ -61,6 +61,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-patent-law` | `law_verify` | `ctx.tools` | `tool/call`, `tool/result` | - | law_verify reads the law citations of a text, or the references passed directly, and decides each against the law index shipped in the package: 《专利法》 and 《专利法实施细则》 by article (and paragraph), 《专利审查指南》 by normalized section path. Each finding is 已核验 / 与所引命题不符 / 未与条文对应（未判定）/ 条号超出有效范围 / 索引中不存在 / 条文未转录（未核验）; an indexed entry whose text has not been transcribed is reported as 未核验 rather than accepted, and a proposition no entry carries is reported as 未判定 rather than as a contradiction. A guideline citation is decided against the whole section, so a proposal a subsection carries supports it, and a row that names only a part or a chapter is decided by the sections under it. |
 | `@deepseek-ai/dsh-legal-law` | `legal_law_verify` | `ctx.tools` | `tool/call`, `tool/result` | - | legal_law_verify reads the law citations of a text, or the references passed directly, and decides each against the law index shipped in the package (《民法典》《民事诉讼法》《劳动合同法》《公司法》 and the other laws under assets/legal-law/) by article and paragraph. Each finding is 已核验 / 与所引命题不符 / 未与条文对应（未判定）/ 条号超出有效范围 / 索引中不存在 / 条文未转录（未核验）; an indexed article whose text has not been transcribed is reported as 未核验 rather than accepted, and a proposition no entry carries is reported as 未判定 rather than as a contradiction. The catalog harvest registers the tool over an empty baseline map because the schema does not depend on the index. |
 | `@deepseek-ai/dsh-legal-evidence` | `evaluate_legal_evidence` | `ctx.tools` | `tool/call`, `tool/result` | - | evaluate_legal_evidence scores the triple attributes (关联性、合法性、真实性) of one evidence record for the eight statutory evidence types under 《民事诉讼法》第 66 条. The scoring is deterministic and makes no model request; the weights come from the shipped YAML rules asset, and a record that omits a field the rules ask about reads as unanswered rather than inferred. |
+| `@deepseek-ai/dsh-legal-knowledge/tool` | `legal_knowledge_search` | `ctx.tools`, `ctx.legalKnowledge` | `tool/call`, `tool/result` | - | legal_knowledge_search queries the deployment's legal knowledge base in four families (case_law, regulation, judicial_interpretation, guiding_case) over SQLite FTS5 with an in-memory fallback; the service owns no schema, so this /tool subpath plugin is the model-facing half. An empty result states that this deployment has no matching record rather than that no such authority exists. |
 | `@deepseek-ai/dsh-writing-patterns` | `query_writing_patterns` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | query_writing_patterns selects drafting and office-action patterns from the packaged corpus by category, keyword, or case features, and returns the matched patterns with the compiled `<writing_skills>` block; the same block is injected as a system-prompt section so the drafting discipline is present without a call. |
 | `@deepseek-ai/dsh-doc-template` | `list_doc_templates`, `render_doc_template` | `ctx.tools`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | list_doc_templates reports the packaged document templates with their variables and supported formats, and render_doc_template renders one with supplied variables to Markdown, HTML, or DOCX, returning the document plus the residual placeholders and variable warnings. A deployment may also name a loaded writing style in `styleGuide`, which injects that style guide as a system-prompt section. |
 | `@deepseek-ai/dsh-patent-teams` | `patent_teams_add_member`, `patent_teams_archive`, `patent_teams_claim_task`, `patent_teams_create`, `patent_teams_create_task`, `patent_teams_delete`, `patent_teams_reassign_task`, `patent_teams_remove_member`, `patent_teams_send_message`, `patent_teams_status`, `patent_teams_update_task`, `patent_teams_wait` | `ctx.tools`, `ctx.subagents`, `ctx.systemPrompt`, `a calling Agent as captain (member spawn/follow-up)` | `tool/call`, `tool/result`, `patent-teams/* session events` | - | The durable multi-agent team service for the patent domain: create a team (you become captain), add continuable subagent members by role, break the goal into dependency-aware tasks, and let the shared-task scheduler wake idle members. Member spawn and messaging use the captain as the direct parent, so a team survives harness restarts. |
@@ -9082,6 +9083,95 @@ Usage notes:
 Source: [`packages/legal/legal-evidence/src/index.ts`](../packages/legal/legal-evidence/src/index.ts)
 
 evaluate_legal_evidence scores the triple attributes (关联性、合法性、真实性) of one evidence record for the eight statutory evidence types under 《民事诉讼法》第 66 条. The scoring is deterministic and makes no model request; the weights come from the shipped YAML rules asset, and a record that omits a field the rules ask about reads as unanswered rather than inferred.
+
+<a id="deepseek-aidsh-legal-knowledgetool"></a>
+
+## `@deepseek-ai/dsh-legal-knowledge/tool`
+
+### `legal_knowledge_search`
+
+- 检索本部署的法律知识库，覆盖法规条文、裁判文书、司法解释与指导性案例四类记录。
+- 法规与司法解释结果带 `validity`（in-force/expired/not-yet-effective/unverified），可用 `asOf` 按指定日期判断有效性。
+- 检索结果是部署数据：空结果表示本部署的知识库未命中，不证明该规范或案例不存在；引用前仍需回到官方法源核验原文。
+- `via` 说明命中通道（fts 全文、like 降级匹配、memory 内存记录）；`relevanceScore` 越小越相关。
+
+Usage notes:
+  - 先用法条检索确定现行有效条文，再用案例检索补充适用方式；不要颠倒。
+  - 逐条引用时同时给出条目 id（regulationId/caseId/interpretationId）与条文或案号。
+  - 单次最多返回 20 条；需要更多时缩小查询范围，而不是重复同一查询。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "检索关键词或短语"
+    },
+    "scope": {
+      "type": "string",
+      "description": "检索的记录类别（默认 regulation）",
+      "enum": [
+        "case_law",
+        "regulation",
+        "judicial_interpretation",
+        "guiding_case"
+      ]
+    },
+    "limit": {
+      "type": "number",
+      "description": "返回条数上限（1-20，默认 5）"
+    },
+    "asOf": {
+      "type": "string",
+      "description": "有效性判断日期 YYYY-MM-DD（仅法规与司法解释）"
+    },
+    "level": {
+      "type": "string",
+      "description": "法规层级过滤（仅 regulation）",
+      "enum": [
+        "法律",
+        "行政法规",
+        "司法解释",
+        "地方性法规",
+        "部门规章",
+        "其他"
+      ]
+    },
+    "docType": {
+      "type": "string",
+      "description": "文书类型过滤（仅 case_law）",
+      "enum": [
+        "judgment",
+        "guiding"
+      ]
+    },
+    "court": {
+      "type": "string",
+      "description": "法院名称片段（仅 case_law）"
+    },
+    "caseType": {
+      "type": "string",
+      "description": "案件类型片段（仅 case_law）"
+    },
+    "interpretationType": {
+      "type": "string",
+      "description": "司法解释类型过滤（仅 judicial_interpretation）",
+      "enum": [
+        "judicial-interpretation",
+        "guiding-case"
+      ]
+    }
+  },
+  "required": [
+    "query"
+  ]
+}
+```
+
+Source: [`packages/legal/legal-knowledge/src/tool.ts`](../packages/legal/legal-knowledge/src/tool.ts)
+
+legal_knowledge_search queries the deployment's legal knowledge base in four families (case_law, regulation, judicial_interpretation, guiding_case) over SQLite FTS5 with an in-memory fallback; the service owns no schema, so this /tool subpath plugin is the model-facing half. An empty result states that this deployment has no matching record rather than that no such authority exists.
 
 <a id="deepseek-aidsh-writing-patterns"></a>
 

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 const calls = vi.hoisted(() => ({
   create: [] as { options: Record<string, unknown> }[],
   fetch: [] as { dispatcher?: unknown }[],
-  closed: 0,
+  destroyed: 0,
   /** What the dispatcher factory answered for one proxy name the environment carries and one it does not. */
   proxyLookups: [] as ({ value: string } | undefined)[][],
 }))
@@ -13,7 +13,12 @@ vi.mock('@deepseek-ai/dsh-http-proxy', () => ({
   createRouteDispatcher: async (env: { get(name: string): { value: string } | undefined }, options: Record<string, unknown>) => {
     calls.create.push({ options })
     calls.proxyLookups.push([env.get('HTTPS_PROXY'), env.get('DSH_RELAY_FETCH_TEST_UNSET')])
-    return { close: async () => { calls.closed += 1 } }
+    return {
+      // A graceful close waits for every dispatched request, which is the unload stall this transport
+      // must not expose: refuse it loudly instead of letting a test wait for one.
+      close: () => { throw new Error('close() waits for in-flight Relay requests') },
+      destroy: async () => { calls.destroyed += 1 },
+    }
   },
 }))
 
@@ -35,12 +40,12 @@ describe('relayFetch', () => {
     expect(calls.fetch[0]?.dispatcher).toBeDefined()
   })
 
-  it('closes the dispatcher when the host unloads', async () => {
+  it('aborts in-flight Relay requests when the host unloads', async () => {
     await relayFetch('https://relay.test/__liveshare/share')
     await closeRelayFetch()
-    expect(calls.closed).toBe(1)
+    expect(calls.destroyed).toBe(1)
     await closeRelayFetch()
-    expect(calls.closed).toBe(1)
+    expect(calls.destroyed).toBe(1)
   })
 
   it('does not fall back to a replaced global fetch in production', async () => {

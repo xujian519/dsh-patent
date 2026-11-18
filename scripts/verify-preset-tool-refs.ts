@@ -799,7 +799,7 @@ export function loadPresetCorpus(root: string): PresetCorpus[] {
       presetFile,
       readmeFiles,
       skillFiles,
-      ...loadsSkills ? { hostSkillFiles } : {},
+      ...(loadsSkills ? { hostSkillFiles } : {}),
     }
   })
 }

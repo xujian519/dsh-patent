@@ -89,6 +89,22 @@ describe('rule_check', () => {
     expect(JSON.stringify(clean.value)).not.toContain('MECH-INV-001')
   })
 
+  it('patent-medical scope adds the medical-device domain pack on top of the full assets', async () => {
+    const tool = createRuleCheckTool()
+    const ctx = await ctxWith(tool)
+    // 语境锚点在（用途特征）、但缺「对产品本身的影响」→ MED-INV-001 命中
+    const hit = await execute(ctx, 'rule_check', { text: '区别特征仅在于用于治疗的用途特征。', scope: 'patent-medical' }, 'r-med-1')
+    expect(hit.isError).toBe(false)
+    if (hit.isError) throw new Error('expected success')
+    expect(JSON.stringify(hit.value)).toContain('MED-INV-001')
+
+    // 不含用途特征语境的文本不评估该规则
+    const clean = await execute(ctx, 'rule_check', { text: '所述壳体设置在底座上，起到支撑作用。', scope: 'patent-medical' }, 'r-med-2')
+    expect(clean.isError).toBe(false)
+    if (clean.isError) throw new Error('expected success')
+    expect(JSON.stringify(clean.value)).not.toContain('MED-INV-001')
+  })
+
   it('patent-software scope adds the software domain pack on top of the full assets', async () => {
     const tool = createRuleCheckTool()
     const ctx = await ctxWith(tool)

@@ -22,6 +22,12 @@ rules:
     action: warn
     legalBasis: 最高法院判例要旨：区别特征仅在于治疗用途且对产品本身没有影响的，不能因用途区别认定产品权利要求具备创造性
     basisKind: judgment
+    # 适用前提即语境锚点：不讨论用途特征的文本根本不评估，否则域内每篇文书都会命中。
+    premise:
+      - 用途特征
+      - 治疗用途
+      - 用于治疗
+      - 适用于治疗
     check:
       type: synonym_match
       minConfidence: 1

@@ -226,10 +226,12 @@ export function apply(ctx: Context, config: Config = Config({})): void {
         },
       })
     }
+    // Entry ids are unique, so the id comparison is already a total order: the
+    // comparator never needs an "equal" arm.
     return ranked
       .sort((left, right) => (left.priority - right.priority)
         || (left.order - right.order)
-        || (left.tab.id < right.tab.id ? -1 : left.tab.id > right.tab.id ? 1 : 0))
+        || (left.tab.id < right.tab.id ? -1 : 1))
       .map(entry => entry.tab)
   }
   const activateView = (sessionId: SessionId, preferred: string | null): void => {

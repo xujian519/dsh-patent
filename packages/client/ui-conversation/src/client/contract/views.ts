@@ -4,6 +4,10 @@ import type { DraftInput } from './draft-editor.ts'
 /**
  * One conversation view tab, projected from a 'conversation.view' slot
  * entry's registration options (label falls back to the entry id).
+ *
+ * The shell orders tabs by `priority`, then `order`, then entry id: two View
+ * packages that declare the same rank still yield one row, and that row does
+ * not follow plugin activation order.
  */
 export interface ViewTab { id: string; label: string }
 

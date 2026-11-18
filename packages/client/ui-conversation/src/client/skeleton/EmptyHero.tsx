@@ -131,6 +131,10 @@ function HeroFish({ hovering }: { hovering: boolean }) {
  * Brand headlines the blank home rotates through. Every line keeps the
  * 深则 … cadence and the fit the mark draws; the other locales repeat one
  * English line, so rotating changes what only a Chinese reader sees.
+ *
+ * The line belongs to a conversation: it follows the Session id, and a home
+ * without one shows the mark alone. Rendering a fallback line there would swap
+ * the headline when the Session id arrived after a cold start.
  */
 const HERO_HEADLINES = [
   'hero.headline',
@@ -143,13 +147,16 @@ const HERO_HEADLINES = [
  * Pick the line a blank home opens with. The Session carries the choice, so a
  * conversation keeps the line it started on while the next conversation moves
  * on; a home without a Session (cold start) stands on the first line.
- * @param sessionId - the blank conversation's Session identity, when it has one.
+ * @param sessionId - the blank conversation's Session identity.
  * @returns the locale key of the line to render.
  */
-function heroHeadlineOf(sessionId: SessionId | undefined): typeof HERO_HEADLINES[number] {
-  if (sessionId === undefined) return HERO_HEADLINES[0]
+function heroHeadlineOf(sessionId: SessionId): typeof HERO_HEADLINES[number] {
+  // A stable 16-bit fold: the id stays the same across reloads, so the line
+  // does too. Iterating code points while folding the first UTF-16 unit is
+  // deliberate — an astral character only has to hash consistently.
   let hash = 0
   for (const character of sessionId) hash = (hash * 31 + character.charCodeAt(0)) | 0
+  /* v8 ignore next -- the modulus keeps the index inside the tuple. */
   return HERO_HEADLINES[Math.abs(hash) % HERO_HEADLINES.length] ?? HERO_HEADLINES[0]
 }
 
@@ -160,6 +167,8 @@ function heroHeadlineOf(sessionId: SessionId | undefined): typeof HERO_HEADLINES
  */
 export function HeroShell({ t, sessionId, renderSlot, children }: HeroShellProps) {
   const [hovering, setHovering] = useState(false)
+  // No Session, no line: the mark alone stands until a conversation exists.
+  const headline = sessionId === undefined ? undefined : heroHeadlineOf(sessionId)
   return (
     <div className={css.root}>
       <div className={css.stack}>
@@ -181,8 +190,14 @@ export function HeroShell({ t, sessionId, renderSlot, children }: HeroShellProps
           </span>
           <span className={css.titleGroup}>
             {/* Own element: keeps the headline text addressable apart from the badge. */}
-            <span>{t(heroHeadlineOf(sessionId))}</span>
-            <span className={css.previewBadge}>{t('hero.preview')}</span>
+            {headline === undefined
+              ? null
+              : (
+                <>
+                  <span>{t(headline)}</span>
+                  <span className={css.previewBadge}>{t('hero.preview')}</span>
+                </>
+              )}
           </span>
         </div>
         <div className={css.body}>

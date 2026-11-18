@@ -440,6 +440,15 @@ describe('Hero chrome', () => {
     expect(BRAND_HEADLINES).toContain(shownHeadline(view))
   })
 
+  it('moves the line when the conversation changes', () => {
+    const renderSlot = vi.fn(() => null) as never
+    // `s3` draws the first line, `s1` a later one.
+    const view = render(<HeroShell t={t} sessionId={sid('s3')} renderSlot={renderSlot} />)
+    const opened = shownHeadline(view)
+    view.rerender(<HeroShell t={t} sessionId={SID} renderSlot={renderSlot} />)
+    expect(shownHeadline(view)).not.toBe(opened)
+  })
+
   it('keeps the line a conversation opened with', () => {
     const renderSlot = vi.fn(() => null) as never
     const view = render(<HeroShell t={t} sessionId={SID} renderSlot={renderSlot} />)
@@ -458,14 +467,19 @@ describe('Hero chrome', () => {
     expect(seen.size).toBeGreaterThan(1)
   })
 
-  it('stands on the opening line while no conversation exists', () => {
-    const view = render(<HeroShell t={t} renderSlot={vi.fn(() => null) as never} />)
-    expect(shownHeadline(view)).toBe(BRAND_HEADLINES[0])
+  it('stands with the mark alone until a conversation exists', () => {
+    const renderSlot = vi.fn(() => null) as never
+    const view = render(<HeroShell t={t} renderSlot={renderSlot} />)
+    expect(BRAND_HEADLINES.filter(line => view.queryByText(line) !== null)).toEqual([])
+    // The Session supplies the line the moment it exists, which is what keeps a
+    // cold start from swapping one headline for another.
+    view.rerender(<HeroShell t={t} sessionId={SID} renderSlot={renderSlot} />)
+    expect(BRAND_HEADLINES).toContain(shownHeadline(view))
   })
 
   it('renders the English preview badge through the hero locale seat', () => {
     const renderSlot = vi.fn<(key: string, owner: object, opts?: { fallback?: ReactNode }) => ReactNode>(() => null)
-    const view = render(<HeroShell t={makeTranslate(en, commonEn)} renderSlot={renderSlot as never} />)
+    const view = render(<HeroShell t={makeTranslate(en, commonEn)} sessionId={SID} renderSlot={renderSlot as never} />)
     expect(view.getByText('Deeper, and it fits')).toBeTruthy()
     expect(view.getByText('Preview')).toBeTruthy()
     expect(renderSlot).toHaveBeenCalledOnce()

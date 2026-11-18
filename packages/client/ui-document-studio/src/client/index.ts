@@ -123,7 +123,9 @@ export function apply(ctx: ClientContext): void {
     // The shell activates a selected view by its slot id, so the id must equal
     // the ConversationViewDefinition target the studio reads its snapshot from.
     id: DOCUMENT_DELIVERABLES_TARGET,
-    order: 20,
+    // Its own rank: sharing Board's would leave the pair's order to the
+    // projection's id fallback instead of stating it here.
+    order: 25,
     locale: NS,
     label: () => ctx.locale.bind(NS)('view.document'),
     inject: (sessionId: SessionId) => {

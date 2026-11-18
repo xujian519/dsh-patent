@@ -58,7 +58,7 @@ The slot declaration fixes two independent axes.
 | Axis | Value | Meaning |
 |---|---|---|
 | cardinality | `single` | One cell. The active priority winner renders. Use a child slot instead of treating this as an additive list. |
-| cardinality | `list` | Cells are addressed by required `id` and ordered by `order`, then registration order. |
+| cardinality | `list` | Cells are addressed by required `id` and ordered by `order`, then registration order. A projection that needs a row independent of activation order sorts by id after that rank, as the conversation tab row does. |
 | cardinality | `keyed` | The owner dispatches an `entryKey`; the matching cell renders with any key-specific props. |
 | cardinality | `chain` | Each entry supplies a pure `select(owner)` function. The first non-null result in priority order renders and receives that result as `matched`; otherwise the owner fallback renders. |
 | cardinality | `hoc` | Entries nest around the owner's `renderSlot(key, owner, { children })` content, lowest outermost; an optional `key` selects layers by the owner's `entryKey`. See [Hoc layers](#hoc-layers). |

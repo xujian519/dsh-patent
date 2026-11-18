@@ -27,6 +27,7 @@ interface LauncherPolicy {
 const MANIFEST_BIN_ALLOWLIST = new Map<string, ManifestBin>([
   ['apps/cli/package.json', { dsh: 'lib/bin.js' }],
   ['packages/experimental/webworker-packer/package.json', { 'dsh-pack-vfs-image': './bin.js' }],
+  ['packages/legal/legal-knowledge/package.json', { 'legal-knowledge-install': 'lib/bin.js' }],
   ['packages/patent/patent-knowledge/package.json', { 'patent-knowledge-install': 'lib/bin.js' }],
 ])
 
@@ -38,6 +39,7 @@ const EXECUTABLE_SOURCE_ALLOWLIST = new Map<string, string>([
   ['packages/context/time-context/tests/fixtures/driver.ts', 'test-only subprocess driver'],
   ['packages/experimental/webworker-packer/bin.js', 'build-only wrapper'],
   ['packages/experimental/webworker-packer/src/bin.ts', 'build-only implementation'],
+  ['packages/legal/legal-knowledge/src/bin.ts', 'legal knowledge data bootstrap CLI'],
   ['packages/patent/patent-knowledge/src/bin.ts', 'patent knowledge data bootstrap CLI'],
   ['packages/patent/patent-rule/tests/fixtures/warn-driver.ts', 'test-only subprocess driver'],
   ['packages/sdk/client/tests/fake-runtime.ts', 'test-only SDK runtime peer'],

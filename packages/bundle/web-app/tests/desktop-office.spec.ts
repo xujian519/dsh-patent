@@ -1,5 +1,6 @@
 /** Web application Office rows over a real Loader tree: skills, profile gating, Python, preset Office tools, and failure containment. */
 
+import { readdirSync } from 'node:fs'
 import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, sep } from 'node:path'
@@ -48,9 +49,15 @@ function presetPlugins(preset: string): { id: string; name: string }[] {
 
 it('mounts the Office tools in every preset that can load the host Office skills', () => {
   const office = (preset: string) => presetPlugins(preset).filter(row => row.id === 'tool-office').map(row => row.name)
-  // The host patch mounts `skill-office` for every web profile, so any preset that
-  // mounts `tool-skill` lists the Office skills; each must also mount their tools.
-  for (const preset of ['standard', 'ptc', 'document', 'legal', 'patent', 'cordis']) {
+  // The host patch mounts the Office skill provider for every web profile, so any
+  // preset that mounts the skill tool lists those skills; each must also mount the
+  // tools they activate. `minimal` mounts no skill tool, so it is the one exception.
+  const presets = readdirSync(fileURLToPath(new URL('../presets/', import.meta.url)))
+    .filter(file => file.endsWith('.patch.yml'))
+    .map(file => file.replace(/\.patch\.yml$/u, ''))
+    .filter(preset => preset !== 'minimal')
+  expect(presets.length).toBeGreaterThan(1)
+  for (const preset of presets) {
     expect(office(preset)).toEqual(['@deepseek-ai/dsh-tool-office'])
   }
   expect(office('minimal')).toEqual([])

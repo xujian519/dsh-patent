@@ -19,9 +19,15 @@ export type RelayFetch = (input: string | URL, init?: RequestInit) => Promise<Re
 /** Lookup shape the proxy policy resolves from. */
 export type RelayEnvironment = (name: string) => { readonly value: string } | undefined
 
-/** One host-owned Relay transport and the connection pool it must close. */
+/**
+ * One host-owned Relay transport and the connection pool it must release.
+ *
+ * Closing aborts requests still in flight: a host that unloads has nobody left to read their answers,
+ * and the saved address may be one that never answers.
+ */
 export interface RelayTransport {
   readonly fetch: RelayFetch
+  /** Release the pool, aborting every request still in flight. */
   close(): Promise<void>
 }
 
@@ -42,7 +48,8 @@ export function processRelayEnvironment(name: string): { readonly value: string 
 /**
  * Create one Relay transport with a dispatcher owned by the caller.
  * @param environment - proxy lookup; defaults to the process environment.
- * @returns the fetch function and the close operation that releases its pool.
+ * @returns the fetch function and the close operation that aborts in-flight requests and releases
+ *   the pool.
  */
 export function createRelayTransport(environment: RelayEnvironment = processRelayEnvironment): RelayTransport {
   let dispatcher: ReturnType<typeof createRouteDispatcher> | undefined
@@ -67,7 +74,10 @@ export function createRelayTransport(environment: RelayEnvironment = processRela
     async close() {
       const current = dispatcher
       dispatcher = undefined
-      if (current !== undefined) await (await current).close()
+      // A graceful close waits for every dispatched request, and a saved address may be one that does
+      // not answer: unloading would then wait for a transport attempt nothing reads once the host is
+      // gone. Restored shares keep their owed deletions in the owner state for the next start.
+      if (current !== undefined) await (await current).destroy()
     },
   }
 }

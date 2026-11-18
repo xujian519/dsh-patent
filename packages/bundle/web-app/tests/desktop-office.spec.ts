@@ -46,10 +46,11 @@ function presetPlugins(preset: string): { id: string; name: string }[] {
   return (row!.config as { plugins: { id: string; name: string }[] }).plugins
 }
 
-it('mounts the Office tools in the standard and PTC presets and omits it from the minimal preset', () => {
+it('declares the Office row in the standard, PTC, and document presets and omits it from the minimal preset', () => {
   const office = (preset: string) => presetPlugins(preset).filter(row => row.id === 'tool-office').map(row => row.name)
   expect(office('standard')).toEqual(['@deepseek-ai/dsh-tool-office'])
   expect(office('ptc')).toEqual(['@deepseek-ai/dsh-tool-office'])
+  expect(office('document')).toEqual(['@deepseek-ai/dsh-tool-office'])
   expect(office('minimal')).toEqual([])
   const host = loadOverlayPatches('desktop-office', fileURLToPath(new URL('../cordis.patch.yml', import.meta.url)))
     .flatMap(patch => patch.insert ?? []).map(row => row.id)

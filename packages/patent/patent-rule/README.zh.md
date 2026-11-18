@@ -52,7 +52,7 @@ kind: "package-reference"
 
 台账按调用方（agent）与调用声明的案卷键（`caseId`、`case_id`、`case_dir` 或 `caseDir`）归属。声明了案卷的前置调用只满足该案卷的交付；未声明案卷的前置调用属于会话级记录，只在交付的案卷没有该工具的专属记录时才被采用。没有 agent 的调用无法归属到任何会话，一律按未满足处理：无法归属的交付件同样拿不出本会话的记录。随包默认不声明任何条目——一次交付欠哪些闸门调用，是本部署的交付政策，不是本包的政策。
 
-生产消费者是 `render_patent_document` 与 `build_patent_filing`：`patent` 预置要求任何交付渲染或提交格式成文前已跑过 `rule_check`、`law_verify` 与 `matter_log_append`，凡按 manifest 收口的模板另要求 `patent_workflow_run`——分析类模板，以及 `claims-spec`（其 `patent_disclosure_v1` 的末段就是权利要求草稿）。收口条目写明模板对应的 manifest 并要求 `ok: true`，其他 manifest 的运行不能顶替。引用型模板另要求 `law_verify` 识别到引用，而申请文件与表格可以合法地不引用法条。随包模板中有两个不在收口条目内：`rectification-response` 无 manifest 入口，交付技能以逐项替换页核验记录替代该次运行；`right-evaluation-report` 作转制用时只是把行政机关已出具的报告排成模板版式，没有分析可收口。
+生产消费者是 `render_patent_document` 与 `build_patent_filing`：`patent` 预置要求任何交付渲染或提交格式成文前已跑过 `rule_check`、`law_verify` 与 `matter_log_append`，申请文件成文前另要求一次 `passed` 为 true 的 `validate_specification`，凡按 manifest 收口的模板另要求 `patent_workflow_run`——分析类模板，以及 `claims-spec`（其 `patent_disclosure_v1` 的末段就是权利要求草稿）。收口条目写明模板对应的 manifest 并要求 `ok: true`，其他 manifest 的运行不能顶替。引用型模板另要求 `law_verify` 识别到引用，而申请文件与表格可以合法地不引用法条。随包模板中有两个不在收口条目内：`rectification-response` 无 manifest 入口，交付技能以逐项替换页核验记录替代该次运行；`right-evaluation-report` 作转制用时只是把行政机关已出具的报告排成模板版式，没有分析可收口。
 
 <a id="evi-011-evidence-guards"></a>
 ## EVI-011 证据守卫

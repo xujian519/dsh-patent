@@ -376,9 +376,14 @@ describe('patent preset composition', () => {
     // The DOCX that goes to the office is a deliverable too, and it carries no argument
     // to narrow a gate on, so its entry applies to the tool unconditionally.
     const filing = gate.find(entry => entry.tool === 'build_patent_filing')
-    expect(filing?.requires).toEqual(['rule_check', 'law_verify', 'matter_log_append'])
+    expect(filing?.requires).toEqual(['rule_check', 'law_verify', 'matter_log_append', 'validate_specification'])
     expect(filing?.whenArgs).toBeUndefined()
     expect(filing?.evidence?.rule_check).toEqual([{ field: 'evaluated', minItems: 1 }])
+    // rule_check runs the compliance rule library, which does not judge the form items the
+    // office rejects a filing over (heading set and order, parenthesized figure marks, figure
+    // number spacing, abstract length). The form check must have returned `passed` — zero
+    // errors — before the DOCX may be written.
+    expect(filing?.evidence?.validate_specification).toEqual([{ field: 'passed', equals: true }])
 
     // Citation-bearing deliverables require a law_verify run that actually recognized
     // at least one citation; an application document or form may legitimately cite none.

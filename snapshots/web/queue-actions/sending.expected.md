@@ -6,6 +6,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Board"
+    - tab "Deliverables"
+    - tab "Teams"
   - button "More conversation views"
 - text: Reply with a one-sentence description of event sourcing, then stop. {{clock}}
 - button "Copy"

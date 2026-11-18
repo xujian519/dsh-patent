@@ -5,6 +5,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Board"
+    - tab "Deliverables"
+    - tab "Teams"
   - button "More conversation views"
 - text: Durable source phrase selected from an earlier message and preserved as structured quote metadata. {{clock}}
 - button "Copy"

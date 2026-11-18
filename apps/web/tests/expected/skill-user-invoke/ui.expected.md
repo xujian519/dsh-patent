@@ -6,6 +6,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Board"
+    - tab "Deliverables"
+    - tab "Teams"
   - button "More conversation views"
 - button "/user-invoke-demo"
 - button "meeting notes-this-is-a-very-long-filename-for-testing-user-message-file-references-and-preview-layout.md"

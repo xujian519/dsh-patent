@@ -6,8 +6,8 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-    - tab "Deliverables"
     - tab "Board"
+    - tab "Deliverables"
     - tab "Teams"
   - button "More conversation views"
 - text: Use read_image to inspect red.png. Then reply exactly MINIMAL_IMAGE_OK and stop. {{clock}}

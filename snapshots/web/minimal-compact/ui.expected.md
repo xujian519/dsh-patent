@@ -6,8 +6,8 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-    - tab "Deliverables"
     - tab "Board"
+    - tab "Deliverables"
     - tab "Teams"
   - button "More conversation views"
 - navigation "Turn navigation":

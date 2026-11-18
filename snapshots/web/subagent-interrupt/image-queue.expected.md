@@ -9,6 +9,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Board"
+    - tab "Deliverables"
+    - tab "Teams"
   - button "More conversation views"
 - navigation "Turn navigation":
   - button "Jump to turn 1"

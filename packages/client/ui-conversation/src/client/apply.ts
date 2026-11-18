@@ -207,18 +207,30 @@ export function apply(ctx: Context, config: Config = Config({})): void {
     }),
   }, EnterBehaviorRow))
 
+  // A list slot breaks equal ranks by registration, which follows plugin
+  // activation and moves between page loads when two View packages share an
+  // `order`. The tab row finishes the sort on the entry id, so equal ranks
+  // still produce one stable row instead of a row that reorders per load.
   const viewTabs = (): ViewTab[] => {
-    const tabs: ViewTab[] = []
+    const ranked: { priority: number; order: number; tab: ViewTab }[] = []
     for (const entry of slots.entries('conversation.view')) {
       /* v8 ignore next -- list registration validates id at load. */
       if (entry.options.id === undefined) continue
       if (!ctx.configForms.developerTools.enabled.getSnapshot() && entry.options.id === TRAJECTORY_VIEW_ID) continue
-      tabs.push({
-        id: entry.options.id,
-        label: resolveSlotLabel(entry.options.label) ?? entry.options.id,
+      ranked.push({
+        priority: entry.options.priority ?? 0,
+        order: entry.options.order ?? 0,
+        tab: {
+          id: entry.options.id,
+          label: resolveSlotLabel(entry.options.label) ?? entry.options.id,
+        },
       })
     }
-    return tabs
+    return ranked
+      .sort((left, right) => (left.priority - right.priority)
+        || (left.order - right.order)
+        || (left.tab.id < right.tab.id ? -1 : left.tab.id > right.tab.id ? 1 : 0))
+      .map(entry => entry.tab)
   }
   const activateView = (sessionId: SessionId, preferred: string | null): void => {
     const active = resolveActiveView(viewTabs(), preferred)

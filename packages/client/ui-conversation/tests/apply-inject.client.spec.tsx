@@ -808,4 +808,39 @@ describe('Conversation inject API', () => {
     unsubscribe()
     await b.runtime.dispose()
   })
+
+  it('orders equally ranked Views by id so the tab row survives activation order', async () => {
+    const b = await bench()
+    const source = b.viewSource(ROOT)
+    // Two packages may pick the same order; registration order then follows
+    // plugin activation, which is the race this projection has to end.
+    const removeLate = b.slots.register(
+      { name: 'conversation.view', id: 'zeta', order: 7, label: 'Zeta' },
+      (() => null) as never,
+    )
+    const removeEarly = b.slots.register(
+      { name: 'conversation.view', id: 'alpha', order: 7, label: 'Alpha' },
+      (() => null) as never,
+    )
+    await vi.waitFor(() => {
+      expect(source.getSnapshot().map(view => view.id)).toEqual(['alpha', 'zeta'])
+    })
+    removeEarly()
+    removeLate()
+    // Re-registering in the opposite order reproduces the same row.
+    const removeFirst = b.slots.register(
+      { name: 'conversation.view', id: 'alpha', order: 7, label: 'Alpha' },
+      (() => null) as never,
+    )
+    const removeSecond = b.slots.register(
+      { name: 'conversation.view', id: 'zeta', order: 7, label: 'Zeta' },
+      (() => null) as never,
+    )
+    await vi.waitFor(() => {
+      expect(source.getSnapshot().map(view => view.id)).toEqual(['alpha', 'zeta'])
+    })
+    removeFirst()
+    removeSecond()
+    await b.runtime.dispose()
+  })
 })

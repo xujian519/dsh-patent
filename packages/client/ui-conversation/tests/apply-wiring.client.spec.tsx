@@ -80,8 +80,9 @@ describe('target-neutral Conversation apply wiring', () => {
     const b = await bench()
     const header = b.runtime.slots.entries('conversation.session.header')[0]!
     const source = (header.inject!() as { hooks: { conversationViews: ObservableSnapshot<readonly ViewTab[]> } }).hooks.conversationViews
-    for (const id of ['chat', 'trajectory', 'probe']) {
-      b.runtime.slots.register({ name: 'conversation.view', id, label: id }, (() => null) as never)
+    // Distinct ranks: an equal rank would sort by id, which is not this case's subject.
+    for (const [id, order] of [['chat', 0], ['trajectory', 10], ['probe', 20]] as const) {
+      b.runtime.slots.register({ name: 'conversation.view', id, order, label: id }, (() => null) as never)
     }
     await vi.waitFor(() => { expect(source.getSnapshot().map(tab => tab.id)).toEqual(['chat', 'trajectory', 'probe']) })
     b.developerTools.set(false)

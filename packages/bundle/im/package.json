@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-im",
   "description": "Optional IM integration bundle: pins the @xmanrui/dsh-im row over any surface profile, connecting nine IM channels and a public AI Office to a local Harness",
-  "version": "0.2.2-rc.3",
+  "version": "0.2.2-rc.4",
   "publishConfig": {
     "access": "public"
   },

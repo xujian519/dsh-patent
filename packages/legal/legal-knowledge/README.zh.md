@@ -43,7 +43,15 @@ DeepSeek Harness 的法律知识库查询接缝：案例检索、法规检索、
 <a id="install-and-configuration"></a>
 ## 安装与配置
 
-`resolveLegalKnowledgePaths` 解析 `knowledgeDir`（默认 `~/.dsh/legal-knowledge`）与 `sourceDbPath`（默认 `~/.dsh/legal-knowledge/legal.db`），依次优先 `legal.db`、`legal-lite.db`，最后回退到源数据库。`installLegalKnowledgeDb` 从源库构建查询库。服务由 `knowledgeDir`、`sourceDbPath` 与 `useFts5` 配置；默认数据库缺失属于安装前状态，服务以内存模式启动，而不是对从未安装的文件做只读打开并失败。
+`resolveLegalKnowledgePaths` 解析 `knowledgeDir`（默认 `~/.dsh/legal-knowledge`）与 `sourceDbPath`（默认 `~/.dsh/legal-knowledge/legal.db`），依次优先 `legal.db`、`legal-lite.db`，最后回退到源数据库。`installLegalKnowledgeDb` 从源库构建查询库，本包以 `legal-knowledge-install` CLI 提供该安装步骤：
+
+```sh
+npx legal-knowledge-install --from /path/to/legal.db
+# --output <path>   default ~/.dsh/legal-knowledge/legal.db
+# --no-fts          drop the FTS5 indexes; full-text search degrades to LIKE
+```
+
+`--from` 为必填项：安装器的默认源路径就是它要写入的文件，不带该参数会以源库覆盖自身。运行时只读源库，在输出旁复制副本、裁剪后原子替换输出。服务由 `knowledgeDir`、`sourceDbPath` 与 `useFts5` 配置；默认数据库缺失属于安装前状态，服务以内存模式启动，而不是对从未安装的文件做只读打开并失败。
 
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与暂缓事项

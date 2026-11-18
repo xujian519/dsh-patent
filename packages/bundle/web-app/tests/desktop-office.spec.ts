@@ -46,10 +46,13 @@ function presetPlugins(preset: string): { id: string; name: string }[] {
   return (row!.config as { plugins: { id: string; name: string }[] }).plugins
 }
 
-it('mounts the Office tools in the standard and PTC presets and omits it from the minimal preset', () => {
+it('mounts the Office tools in every preset that can load the host Office skills', () => {
   const office = (preset: string) => presetPlugins(preset).filter(row => row.id === 'tool-office').map(row => row.name)
-  expect(office('standard')).toEqual(['@deepseek-ai/dsh-tool-office'])
-  expect(office('ptc')).toEqual(['@deepseek-ai/dsh-tool-office'])
+  // The host patch mounts `skill-office` for every web profile, so any preset that
+  // mounts `tool-skill` lists the Office skills; each must also mount their tools.
+  for (const preset of ['standard', 'ptc', 'document', 'legal', 'patent', 'cordis']) {
+    expect(office(preset)).toEqual(['@deepseek-ai/dsh-tool-office'])
+  }
   expect(office('minimal')).toEqual([])
   const host = loadOverlayPatches('desktop-office', fileURLToPath(new URL('../cordis.patch.yml', import.meta.url)))
     .flatMap(patch => patch.insert ?? []).map(row => row.id)

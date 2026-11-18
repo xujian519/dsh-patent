@@ -137,6 +137,14 @@
       "ptc.patch.yml": "c6b0f62bce",
       "standard.patch.yml": "c6b0f62bce"
     },
+    "tool-office": {
+      "cordis.patch.yml": "d302d2224e",
+      "document.patch.yml": "7cfcec00f8",
+      "legal.patch.yml": "658ae32b26",
+      "patent.patch.yml": "8d06e9c4d0",
+      "ptc.patch.yml": "d302d2224e",
+      "standard.patch.yml": "d302d2224e"
+    },
     "tool-plugin-manager": {
       "cordis.patch.yml": "689227cb3b",
       "ptc.patch.yml": "d66d1ee2d1",
@@ -205,9 +213,9 @@
     },
     "tool-todo": {
       "cordis.patch.yml": "b47093e288",
-      "document.patch.yml": "a5fad262cb",
-      "legal.patch.yml": "bc44fd4358",
-      "patent.patch.yml": "271ab73bdd",
+      "document.patch.yml": "d19c22aa34",
+      "legal.patch.yml": "d19c22aa34",
+      "patent.patch.yml": "d19c22aa34",
       "ptc.patch.yml": "b47093e288",
       "standard.patch.yml": "b47093e288"
     },
@@ -330,6 +338,7 @@
       "tool-goal",
       "tool-jobs",
       "tool-literature",
+      "tool-office",
       "tool-pwsh",
       "tool-result-pruner",
       "tool-schedule",

@@ -15,7 +15,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
 import { isAbsolute, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
-import { defineTool } from '@deepseek-ai/dsh-tools'
+import { defineTool, ToolContextUnavailableError } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-working-directory'
 
@@ -187,13 +187,14 @@ function pathText(located: LocatedPath, cwd: string): string {
  * @param ctx - plugin context. Absent only for a tool built without one.
  * @param exec - the current tool execution.
  * @returns the absolute directory.
- * @throws when the call has an Agent and no working-directory service is registered on `ctx`.
+ * @throws {@link ToolContextUnavailableError} `TOOL_CONTEXT_UNAVAILABLE` when the call
+ *   has an Agent and no working-directory service is registered on `ctx`.
  */
 export async function deliverableSessionDirectory(ctx: Context | undefined, exec: ToolRunContext): Promise<string> {
   if (exec.agent === undefined) return process.cwd()
   const working = ctx?.get('workingDirectory')
   if (working === undefined) {
-    throw new Error('verify_deliverable：当前会话没有 working-directory 服务，无法按会话目录解析相对路径')
+    throw new ToolContextUnavailableError('verify_deliverable：当前会话没有 working-directory 服务，无法按会话目录解析相对路径')
   }
   return working.ensure(exec.agent, exec.signal)
 }
@@ -402,9 +403,12 @@ const VIOLATION_SCHEMA = {
 
 /**
  * Build the `verify_deliverable` tool.
- * Reads are plain filesystem reads. When `ctx` is set, a call that has an Agent
- * resolves relative paths against that session's working directory.
- * @param ctx - plugin context carrying `workingDirectory`. Omit it only for a caller that passes absolute paths.
+ * Reads are plain filesystem reads. A call with an Agent resolves paths against
+ * that session's working directory, including when every path is absolute.
+ * A call without an Agent resolves relative paths against the process directory.
+ * @param ctx - plugin context. An Agent call requires `workingDirectory` on `ctx`
+ *   and fails with {@link ToolContextUnavailableError} when it is absent.
+ *   Omit `ctx` only for a call that has no Agent.
  * @returns a registry-ready tool definition.
  */
 export function createVerifyDeliverableTool(ctx?: Context): ToolDefinition {

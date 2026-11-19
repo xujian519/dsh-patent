@@ -2,6 +2,10 @@ import { mkdirSync, mkdtempSync, rmSync, truncateSync, utimesSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import ToolRuntime, { ToolContextUnavailableError } from '@deepseek-ai/dsh-tools'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import WorkingDirectory from '@deepseek-ai/dsh-working-directory'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
@@ -259,7 +263,40 @@ describe('deliverableSessionDirectory', () => {
     await expect(deliverableSessionDirectory(new Context(), {
       signal: new AbortController().signal,
       agent: {},
-    } as never)).rejects.toThrow(/working-directory/)
+    } as never)).rejects.toMatchObject({
+      name: 'ToolContextUnavailableError',
+      code: 'TOOL_CONTEXT_UNAVAILABLE',
+      message: expect.stringContaining('working-directory') as string,
+    })
+    await expect(deliverableSessionDirectory(new Context(), {
+      signal: new AbortController().signal,
+      agent: {},
+    } as never)).rejects.toBeInstanceOf(ToolContextUnavailableError)
+  })
+
+  it('records TOOL_CONTEXT_UNAVAILABLE on tool/result when an agent call has no working-directory service', async () => {
+    const ctx = new Context()
+    try {
+      await ctx.plugin(SystemPrompt)
+      await ctx.plugin(ToolRuntime)
+      ctx.tools.register(createVerifyDeliverableTool(ctx))
+      const result = await executeToolFixture(ctx, {
+        signal: new AbortController().signal,
+        callId: ToolCallId('verify-missing-directory'),
+        name: 'verify_deliverable',
+        arguments: {
+          artifacts: [{ role: '权利要求书', canonical_path: '/tmp/claims.md', delivered_path: '/tmp/claims.md' }],
+        },
+        agent: {} as never,
+      })
+      expect(result).toMatchObject({
+        isError: true,
+        error: { info: { name: 'ToolContextUnavailableError', code: 'TOOL_CONTEXT_UNAVAILABLE' } },
+      })
+      expect(result.error?.message).toContain('working-directory')
+    } finally {
+      await ctx.fiber.dispose()
+    }
   })
 
   it('resolves a relative deliverable against the session directory, not the process directory', async () => {

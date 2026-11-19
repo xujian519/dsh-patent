@@ -1,10 +1,17 @@
 import { mkdirSync, mkdtempSync, rmSync, truncateSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { Context } from '@deepseek-ai/cordis'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import ToolRuntime, { ToolContextUnavailableError } from '@deepseek-ai/dsh-tools'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
+import WorkingDirectory from '@deepseek-ai/dsh-working-directory'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
   MAX_DELIVERABLE_FILE_BYTES,
   createVerifyDeliverableTool,
+  deliverableSessionDirectory,
   renderDeliverableResult,
   verifyDeliverable,
 } from '../src/tool/verify-deliverable.ts'
@@ -151,6 +158,53 @@ describe('verifyDeliverable', () => {
     expect(cleanText).not.toContain('## 违规项')
   })
 
+  it('reads a relative path against the given session directory, including a path outside that directory when it is absolute', () => {
+    const sessionDir = join(ROOT, 'session-rel')
+    const outside = join(ROOT, 'outside-abs')
+    const relative = join('00_项目总览', '台账.md')
+    const canonical = write(join(sessionDir, relative), '台账。', 1_000)
+    const figure = write(join(sessionDir, 'fig1.svg'), '<svg/>', 1_000)
+    const rendered = write(join(sessionDir, 'out.pdf'), '%PDF-1.4', 2_000)
+    const evidence = write(join(sessionDir, 'check.log'), '通过', 1_000)
+    const absolute = write(join(outside, 'claims.md'), '绝对路径。', 1_000)
+    const out = verifyDeliverable({
+      artifacts: [
+        { role: '台账', canonical_path: relative, delivered_path: relative },
+        { role: '权利要求书', canonical_path: absolute, delivered_path: absolute },
+      ],
+      figures: ['fig1.svg'],
+      rendered: 'out.pdf',
+      requirements: [{ requirement: '台账已核对', evidence: ['check.log'] }],
+    }, sessionDir)
+    expect(out.passed).toBe(true)
+    expect(out.violations).toEqual([])
+    expect(out.manifest.map(record => record.path)).toEqual([canonical, absolute, figure, rendered, evidence])
+    expect(out.requirements?.[0]).toEqual({
+      requirement: '台账已核对',
+      evidence: ['check.log'],
+      satisfied: true,
+    })
+  })
+
+  it('names the session directory when a relative path cannot be read', () => {
+    const sessionDir = join(ROOT, 'session-miss')
+    mkdirSync(sessionDir, { recursive: true })
+    const out = verifyDeliverable({
+      artifacts: [{ role: '权利要求书', canonical_path: 'missing.md', delivered_path: 'missing.md' }],
+      requirements: [{ requirement: '有证据', evidence: ['nope.log'] }],
+    }, sessionDir)
+    expect(out.passed).toBe(false)
+    expect(out.manifest).toEqual([])
+    expect(out.violations.map(violation => violation.rule)).toEqual(['artifact_missing', 'requirement_evidence_missing'])
+    for (const violation of out.violations) {
+      expect(violation.message).toContain('会话目录')
+      expect(violation.message).toContain(sessionDir)
+    }
+    expect(out.violations[0]?.message).toContain('missing.md')
+    expect(out.violations[0]?.message).toContain(resolve(sessionDir, 'missing.md'))
+    expect(out.requirements?.[0]?.satisfied).toBe(false)
+  })
+
   it('renders a violation without a suggestion', () => {
     const text = renderDeliverableResult({
       passed: false,
@@ -190,6 +244,77 @@ describe('createVerifyDeliverableTool', () => {
     // vitest asymmetric matcher is typed any; the literal text field holds the matcher object
     const textMatcher = expect.stringContaining('交付件核对：通过') as string
     expect(blocks).toEqual([{ type: 'text', text: textMatcher }])
+  })
+})
+
+describe('deliverableSessionDirectory', () => {
+  /** Session directory that does not touch the filesystem service. */
+  class FixedDirectory extends WorkingDirectory {
+    override async ensure(): Promise<string> {
+      return this.defaultDirectory
+    }
+  }
+
+  it('uses the process directory when the call has no agent', async () => {
+    await expect(deliverableSessionDirectory(new Context(), { signal: new AbortController().signal } as never)).resolves.toBe(process.cwd())
+  })
+
+  it('rejects a session call when the working-directory service is absent', async () => {
+    await expect(deliverableSessionDirectory(new Context(), {
+      signal: new AbortController().signal,
+      agent: {},
+    } as never)).rejects.toMatchObject({
+      name: 'ToolContextUnavailableError',
+      code: 'TOOL_CONTEXT_UNAVAILABLE',
+      message: expect.stringContaining('working-directory') as string,
+    })
+    await expect(deliverableSessionDirectory(new Context(), {
+      signal: new AbortController().signal,
+      agent: {},
+    } as never)).rejects.toBeInstanceOf(ToolContextUnavailableError)
+  })
+
+  it('records TOOL_CONTEXT_UNAVAILABLE on tool/result when an agent call has no working-directory service', async () => {
+    const ctx = new Context()
+    try {
+      await ctx.plugin(SystemPrompt)
+      await ctx.plugin(ToolRuntime)
+      ctx.tools.register(createVerifyDeliverableTool(ctx))
+      const result = await executeToolFixture(ctx, {
+        signal: new AbortController().signal,
+        callId: ToolCallId('verify-missing-directory'),
+        name: 'verify_deliverable',
+        arguments: {
+          artifacts: [{ role: '权利要求书', canonical_path: '/tmp/claims.md', delivered_path: '/tmp/claims.md' }],
+        },
+        agent: {} as never,
+      })
+      expect(result).toMatchObject({
+        isError: true,
+        error: { info: { name: 'ToolContextUnavailableError', code: 'TOOL_CONTEXT_UNAVAILABLE' } },
+      })
+      expect(result.error?.message).toContain('working-directory')
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('resolves a relative deliverable against the session directory, not the process directory', async () => {
+    const sessionDir = join(ROOT, 'tool-session')
+    write(join(sessionDir, 'claims.md'), '权利要求书', 1_000)
+    const ctx = new Context()
+    try {
+      new FixedDirectory(ctx, { defaultDirectory: sessionDir })
+      const tool = createVerifyDeliverableTool(ctx)
+      const value = (await tool.execute(
+        { artifacts: [{ role: '权利要求书', canonical_path: 'claims.md', delivered_path: 'claims.md' }] },
+        { signal: new AbortController().signal, agent: {} } as never,
+      )) as VerifyDeliverableOutput
+      expect(value.passed).toBe(true)
+      expect(value.manifest[0]?.path).toBe(resolve(sessionDir, 'claims.md'))
+    } finally {
+      await ctx.fiber.dispose()
+    }
   })
 })
 

@@ -1161,6 +1161,7 @@ flowchart TD
   pkg_patent_document --> pkg_patent_core
   pkg_patent_document --> pkg_subprocess
   pkg_patent_document --> pkg_tools
+  pkg_patent_document --> pkg_working_directory
   pkg_patent_fees --> pkg_tools
   pkg_patent_filing --> pkg_home_paths
   pkg_patent_filing --> pkg_patent_core
@@ -2097,7 +2098,7 @@ flowchart TD
 | [`mcp-resources`](../packages/mcp/mcp-resources) | `mcp` | [`llm`](../packages/llm/llm), [`scope`](../packages/core/scope), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
 | [`methodology`](../packages/patent/methodology) | `patent` | [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
 | [`patent-deadline`](../packages/patent/patent-deadline) | `patent` | [`tools`](../packages/core/tools) |
-| [`patent-document`](../packages/patent/patent-document) | `patent` | [`patent-core`](../packages/patent/patent-core), [`subprocess`](../packages/subprocess/subprocess), [`tools`](../packages/core/tools) |
+| [`patent-document`](../packages/patent/patent-document) | `patent` | [`patent-core`](../packages/patent/patent-core), [`subprocess`](../packages/subprocess/subprocess), [`tools`](../packages/core/tools), [`working-directory`](../packages/session/working-directory) |
 | [`patent-fees`](../packages/patent/patent-fees) | `patent` | [`tools`](../packages/core/tools) |
 | [`patent-filing`](../packages/patent/patent-filing) | `patent` | [`home-paths`](../packages/util/home-paths), [`patent-core`](../packages/patent/patent-core), [`subprocess`](../packages/subprocess/subprocess), [`tools`](../packages/core/tools), [`util-values`](../packages/util/values) |
 | [`patent-law`](../packages/patent/patent-law) | `patent` | [`tools`](../packages/core/tools) |

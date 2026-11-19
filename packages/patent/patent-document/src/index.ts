@@ -45,6 +45,7 @@ export const Config: z<Config> = z.object({
 /**
  * Register the render_patent_document and verify_deliverable tools.
  * @param ctx - registrant context carrying the tool registry and subprocess service.
+ *   An Agent call to verify_deliverable reads `workingDirectory` from this context at execution time.
  * @param config - deployment's Chrome path override, default output directory, and print timeout.
  */
 export function apply(ctx: Context, config: Config): void {
@@ -54,5 +55,5 @@ export function apply(ctx: Context, config: Config): void {
     ...(config.outputRoot !== undefined ? { defaultOutputDir: config.outputRoot } : {}),
     pdfTimeoutMs: config.pdfTimeoutMs ?? DEFAULT_PDF_TIMEOUT_MS,
   }))
-  ctx.tools.register(createVerifyDeliverableTool())
+  ctx.tools.register(createVerifyDeliverableTool(ctx))
 }

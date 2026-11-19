@@ -830,11 +830,12 @@ const TOOL_PACKAGES: ToolPackage[] = [
     pkg: '@deepseek-ai/dsh-patent-document',
     dir: 'patent-document',
     source: 'packages/patent/patent-document/src/index.ts',
-    requires: ['ctx.tools', 'ctx.subprocess'],
+    requires: ['ctx.tools', 'ctx.subprocess', 'ctx.workingDirectory (Agent executions)'],
     writes: ['tool/call', 'tool/result'],
     async mount(ctx) {
-      // The plugin injects subprocess (headless-Chrome PDF rendering) and only
-      // registers render_patent_document once that seam is mounted.
+      // The plugin injects subprocess (headless-Chrome PDF rendering).
+      // verify_deliverable reads workingDirectory at execution time for Agent
+      // calls and does not list it in inject, so this boot does not mount it.
       await ctx.plugin(LocalSubprocessRuntime)
       await ctx.plugin(PatentDocument, {})
     },

@@ -63,6 +63,15 @@ function filterClause(
   return { sql: ` AND ${alias}.level = ?`, params: [options.level] }
 }
 
+/**
+ * The rows one name lookup reads per page.
+ *
+ * A name lookup pages until it has `limit` visible records, so a page of one
+ * row would cost one query per row. The size is independent of the caller's
+ * limit for that reason.
+ */
+const FIND_BY_NAME_PAGE_SIZE = 50
+
 /** The regulation table's SQL shape. */
 const REGULATION_TABLE: SqliteSearchShape<LegalSearchOptions, LegalRegulationHit> = {
   table: 'legal_regulations',
@@ -72,8 +81,6 @@ const REGULATION_TABLE: SqliteSearchShape<LegalSearchOptions, LegalRegulationHit
   label: '法规',
   toHit: rowToHit,
   filterClause,
-  // Over-fetch to account for validity filtering.
-  fetchFactor: 2,
   postFilter: (hits, options) => filterByValidity(hits, options),
 }
 
@@ -194,16 +201,29 @@ export class LegalRegulationSearchEngine extends SqliteBackedEngine<LegalSearchO
     this.records.push(...newRecords)
   }
 
-  /** 按名称包含匹配读取记录，并在 SQLite 侧完成时间效力过滤。 */
+  /**
+   * 按名称包含匹配读取记录，并在 SQLite 侧完成时间效力过滤。
+   *
+   * 效力过滤在前、分页在后：失效版本可能占满整页，只取固定行数会让现行
+   * 版本落在窗口之外，调用方读到的就是一次假的空结果。逐页取到凑满
+   * `limit` 条可见记录或行耗尽为止，与内存路径「先过滤、后截断」同口径。
+   */
   private findByNameFromSqlite(name: string, limit: number, asOf: string, includeUnverified: boolean): LegalRegulationRecord[] {
-    const rows = this.sqlite.findRowsLike('regulation_name', name, limit * 2)
     const results: LegalRegulationRecord[] = []
-    for (const row of rows) {
-      if (results.length >= limit) break
-      const record = rowToRecord(row)
-      const validity = resolveValidity(record, asOf)
-      if (!isVisible(validity, includeUnverified)) continue
-      results.push({ ...record, validity })
+    // The page size is independent of the result limit: a page of one row would
+    // cost one query per row, and a library may hold many versions of one name.
+    const pageSize = Math.max(limit, FIND_BY_NAME_PAGE_SIZE)
+    for (let offset = 0; ; offset += pageSize) {
+      const rows = this.sqlite.findRowsLikePage('regulation_name', name, pageSize, offset)
+      if (rows.length === 0) break
+      for (const row of rows) {
+        const record = rowToRecord(row)
+        const validity = resolveValidity(record, asOf)
+        if (!isVisible(validity, includeUnverified)) continue
+        results.push({ ...record, validity })
+        if (results.length >= limit) return results
+      }
+      if (rows.length < pageSize) break
     }
     return results
   }
@@ -212,7 +232,9 @@ export class LegalRegulationSearchEngine extends SqliteBackedEngine<LegalSearchO
 
   protected override searchInMemory(query: string, options: LegalSearchOptions, limit: number): LegalRegulationHit[] {
     const filtered = filterRecords(this.records, r => r.level, options.level, 'exact')
-    const hits = searchInMemory(filtered, query, extractSearchableText, limit * 2)
+    // 效力过滤在前、截断在后：取满命中记录再过滤，失效记录占满整页时
+    // 现行版本才会被丢掉，与 SQLite 后端的分页口径一致。
+    const hits = searchInMemory(filtered, query, extractSearchableText, filtered.length)
     return toVisibleMemoryHits(hits, options, limit)
   }
 }

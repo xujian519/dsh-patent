@@ -49,6 +49,64 @@ describe('checkDocumentText', () => {
     ])
   })
 
+  it('reports an HTML placeholder inside code, a comment, or an attribute instead of blocking it', () => {
+    const cases: readonly string[] = [
+      '<pre><code>{{case_id}}</code></pre>',
+      '<code>{{case_id}}</code>',
+      '<!-- {{case_id}} -->',
+      '<img src="x.png" alt="[TBD]">',
+    ]
+    for (const html of cases) {
+      const findings = checkDocumentText(html, { format: 'html' })
+        .filter(finding => finding.check === 'placeholder')
+      expect(findings.map(finding => finding.level), html).toEqual(['warn'])
+    }
+  })
+
+  it('gives the same placeholder verdict to the same content as Markdown and as HTML', () => {
+    const markdown = '```\n{{case_id}}\n```\n'
+    const html = '<pre><code>{{case_id}}</code></pre>\n'
+    const level = (text: string, options: { format?: 'markdown' | 'html' }): string | undefined =>
+      checkDocumentText(text, options).find(finding => finding.check === 'placeholder')?.level
+    expect(level(markdown, {})).toBe('warn')
+    expect(level(html, { format: 'html' })).toBe(level(markdown, {}))
+  })
+
+  it('reports an HTML placeholder in an attribute that follows a quoted value holding >', () => {
+    // A `>` inside one attribute value does not end the tag, so the attributes
+    // behind it are still attributes and not visible body text.
+    const html = '<img src="x.png" alt="a>b" title="{{title}}">'
+    const findings = checkDocumentText(html, { format: 'html' })
+      .filter(finding => finding.check === 'placeholder')
+    expect(findings.map(finding => finding.level)).toEqual(['warn'])
+  })
+
+  it('reports an HTML placeholder in a script or style body instead of blocking it', () => {
+    // The element list matches the one the body-text projection already uses:
+    // a reader sees neither a script body nor a stylesheet.
+    for (const html of ['<script>var x = "{{y}}";</script><p>正文</p>', '<style>.a{content:"{{z}}"}</style><p>正文</p>']) {
+      const findings = checkDocumentText(html, { format: 'html' })
+        .filter(finding => finding.check === 'placeholder')
+      expect(findings.map(finding => finding.level), html).toEqual(['warn'])
+    }
+  })
+
+  it('still blocks a placeholder after a stray closing tag', () => {
+    // A closing tag ends a range; it does not open one whose content runs to
+    // the end of the document.
+    for (const html of ['<p>正文</p></pre><p>{{visible}}</p>', '</code><p>{{visible}}</p>']) {
+      const findings = checkDocumentText(html, { format: 'html' })
+        .filter(finding => finding.check === 'placeholder')
+      expect(findings.map(finding => finding.level), html).toEqual(['block'])
+    }
+  })
+
+  it('still blocks an HTML placeholder that sits in visible body text', () => {
+    expect(checkDocumentText('<p>客户名称：{{client_name}}</p>', { format: 'html' })).toEqual([
+      { check: 'placeholder', level: 'block', detail: '第 1 行仍有残余占位符 "{{client_name}}"', line: 1 },
+    ])
+  })
+
   it('recognizes every marker form and reports the fenced occurrences after the unfenced ones', () => {
     const findings = checkDocumentText([
       '# 报告', '', 'Lorem ipsum 待补充。', '', '```', '[TBD] [REPLACE]', '```', '',

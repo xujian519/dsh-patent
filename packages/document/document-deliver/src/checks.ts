@@ -159,6 +159,29 @@ const NAMED_CHARACTER_REFERENCES: Readonly<Record<string, string>> = {
 /** Elements whose content is code for the renderer rather than document body text. */
 const NON_TEXT_ELEMENTS: readonly string[] = ['script', 'style']
 
+/**
+ * An HTML element whose content the document shows as code rather than asserts
+ * as prose. Its content is quoted text: a placeholder named inside it is a
+ * sample, not a residual placeholder.
+ */
+const QUOTED_ELEMENTS: readonly string[] = ['pre', 'code', 'kbd', 'samp']
+
+/** An HTML comment. */
+const HTML_COMMENT = /<!--[\s\S]*?(?:-->|$)/gu
+
+/**
+ * An HTML tag, with its attributes.
+ *
+ * A `>` inside a quoted attribute value does not end the tag, so the value is
+ * consumed whole. A tag cut at that `>` would leave the attributes behind it
+ * outside every range, and a placeholder named in one of them would read as
+ * visible body text.
+ */
+const HTML_TAG = /<[ \t]*\/?[ \t]*[a-z](?:[^"'>]|"[^"]*"|'[^']*')*>/giu
+
+/** The value of one quoted HTML attribute. */
+const HTML_ATTRIBUTE_VALUE = /=[ \t]*(?:"([^"]*)"|'([^']*)')/gu
+
 /** A character range of the checked text. */
 interface TextRange {
   readonly start: number
@@ -270,6 +293,109 @@ function quotedRanges(text: string): TextRange[] {
 }
 
 /**
+ * The closing tag of one element at or after an index.
+ * @param html - the document text.
+ * @param name - the element name, lowercased.
+ * @param from - the index to start the search at.
+ * @returns the match, or null when the element is never closed.
+ */
+function closingTag(html: string, name: string, from: number): RegExpExecArray | null {
+  const closing = new RegExp(`</${name}\\s*>`, 'giu')
+  closing.lastIndex = from
+  return closing.exec(html)
+}
+
+/**
+ * The contents of one HTML element, from just past its opening tag to just
+ * before its closing tag.
+ * @param html - the document text.
+ * @param name - the element name, lowercased.
+ * @param from - the index just past the element's opening tag.
+ * @returns the range of the element's content.
+ */
+function elementContentRange(html: string, name: string, from: number): TextRange {
+  const match = closingTag(html, name, from)
+  return { start: from, end: match === null ? html.length : match.index }
+}
+
+/**
+ * The element name one tag opens, lowercased.
+ *
+ * A closing tag names no element: it ends a range rather than opening one, and
+ * treating it as an opening tag would extend that element's content to the end
+ * of the document.
+ *
+ * @param tag - The matched tag text.
+ * @returns The element name, or undefined for a closing tag.
+ */
+function openedElementName(tag: string): string | undefined {
+  // The closing slash is read from the tag itself: the prefix that strips it
+  // would strip it from the name that follows too.
+  if (tag.includes('/')) return undefined
+  const opening = tag.replace(TAG_PREFIX, '').toLowerCase()
+  // A tag always names an element: the tag expression requires a letter here.
+  return opening.match(/^[a-z][a-z0-9-]*/u)?.[0]
+}
+
+/**
+ * Append the content ranges of the named elements.
+ * @param html - the document text.
+ * @param names - element names whose contents are recorded.
+ * @param ranges - the list to append to.
+ */
+function appendNamedContents(html: string, names: readonly string[], ranges: TextRange[]): void {
+  for (const tag of matches(html, HTML_TAG)) {
+    const name = openedElementName(tag.text)
+    if (name === undefined || !names.includes(name)) continue
+    ranges.push(elementContentRange(html, name, tag.index + tag.text.length))
+  }
+}
+
+/**
+ * The quoted ranges of an HTML document: the contents of the elements that show
+ * code or a keystroke rather than assert prose.
+ *
+ * An HTML delivery carries the same quoted text a Markdown delivery carries in
+ * a fenced block or an inline code span, so a placeholder named inside a
+ * `<pre>` or `<code>` element is a sample rather than a residual placeholder.
+ * Without this, the same content passes as Markdown and is refused as HTML,
+ * which makes the verdict depend on the export format instead of the document.
+ * @param html - the document text.
+ * @returns the ranges, in no particular order.
+ */
+function htmlQuotedRanges(html: string): TextRange[] {
+  const ranges: TextRange[] = []
+  appendNamedContents(html, QUOTED_ELEMENTS, ranges)
+  return ranges
+}
+
+/**
+ * The ranges of an HTML document that carry no visible text: comments, tags,
+ * the values of attributes, and the contents of the elements whose text is for
+ * the renderer rather than the reader.
+ *
+ * A reader sees none of it, so a placeholder named in an editing comment, in an
+ * attribute such as `alt`, or in a script body is not content the document still
+ * owes a reader. The element list is {@link NON_TEXT_ELEMENTS}, the same list
+ * {@link htmlBodyText} already treats this way.
+ * @param html - the document text.
+ * @returns the ranges, in no particular order.
+ */
+function htmlMarkupRanges(html: string): TextRange[] {
+  const ranges: TextRange[] = matches(html, HTML_COMMENT)
+    .map(match => ({ start: match.index, end: match.index + match.text.length }))
+  for (const tag of matches(html, HTML_TAG)) {
+    ranges.push({ start: tag.index, end: tag.index + tag.text.length })
+    for (const value of matches(tag.text, HTML_ATTRIBUTE_VALUE)) {
+      const valueStart = value.index + value.text.length - value.group.length
+      ranges.push({ start: tag.index + valueStart, end: tag.index + valueStart + value.group.length })
+    }
+  }
+  appendNamedContents(html, NON_TEXT_ELEMENTS, ranges)
+  return ranges
+}
+
+/**
  * The index just past the closing tag of one non-text element.
  * @param html - the document text.
  * @param from - the index just past the element's opening tag.
@@ -278,9 +404,7 @@ function quotedRanges(text: string): TextRange[] {
  * never closed, which is how a renderer treats the rest of such a document.
  */
 function endOfNonTextElement(html: string, from: number, name: string): number {
-  const closing = new RegExp(`</${name}\\s*>`, 'giu')
-  closing.lastIndex = from
-  const match = closing.exec(html)
+  const match = closingTag(html, name, from)
   return match === null ? html.length : match.index + match[0].length
 }
 
@@ -595,7 +719,10 @@ export function checkDocumentText(text: string, options: DocumentTextCheckOption
   const starts = lineStarts(text)
   const fences = fenceRanges(text)
   const headings = headingSpans(text, fences)
-  const quoted = quotedRanges(text)
+  const isHtml = options.format === 'html'
+  const quoted = isHtml
+    ? [...htmlQuotedRanges(text), ...htmlMarkupRanges(text)]
+    : quotedRanges(text)
   const findings: DocumentCheckFinding[] = []
   const maxFindings = options.maxFindingsPerCheck ?? DEFAULT_MAX_FINDINGS_PER_CHECK
   report(findings, 'placeholder', 'block', placeholderDrafts(text, starts, quoted), maxFindings)

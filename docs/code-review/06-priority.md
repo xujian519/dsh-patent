@@ -159,6 +159,25 @@ F-PAT-045、F-PAT-050、F-PAT-055、F-DOC-010、F-LEG-013、F-VID-014、F-VID-01
 
 D43–D45 已于 2026-11-18 完成：门禁裁定见 [07-ci-hardening.md](07-ci-hardening.md)，抽样复核见 [daily/day-44.md](daily/day-44.md)，复盘见 [08-retrospective.md](08-retrospective.md)。
 
+## 修复队列的跟踪载体
+
+修复队列在远程仓库由 [#916 [代码审阅] 修复队列（跟踪）：四域 45 天计划余下 38 条](https://github.com/xujian519/dsh-patent/issues/916) 承接。#849 是计划追踪 issue，审阅周期已于 2026-11-18 执行完毕，此后各批修复在 #916 上跟踪，直到未修条目处置完毕。
+
+首轮修复在 [#917](https://github.com/xujian519/dsh-patent/pull/917) 中。
+
+## 批次 R-F1 首轮修复（2026-11-19）
+
+收掉唯一 P0 与 G1–G4 三组中的三条可派发 P1：
+
+| 条目 | 原队列 | 改法 |
+|---|---|---|
+| F-PAT-045 | P0 | `parallel_lower_levels` 字段缺失按结构错误降级；显式空数组时按未通过处理 |
+| F-DOC-010 | P1 | `format: 'html'` 时占位符判定改用 HTML 引用范围（`<pre>`/`<code>` 等元素内容）与不可见文本范围（注释、标签、属性值） |
+| F-LEG-013 | P1 | 效力过滤前置到截断之前：SQLite 侧按页取行，内存侧取满命中再过滤，`fetchFactor` 删除 |
+| F-CROSS-002 | P1 | `patent-tools` 的 `dependencies` 补 `@deepseek-ai/dsh-value` 声明 |
+
+修后未修条目为 38 条：P0 0 / P1 6 / P2 26 / P3 6（其中 1 条 `F-PAT-047` 维持 `deferred`，不计入可派发项，故可派发 P1 为 5 条）。可派发的 P1 剩：F-PAT-024、F-PAT-027、F-PAT-028、F-VID-008（F-VID-014 为 P2）。
+
 ## 未修条目打分（Day 44，2026-11-18）
 
 对 42 条仍为 `new`、`confirmed`、`deferred` 的条目补打分，使验收条件「每个 P0/P1 条目可直接分派」成立。紧迫性取值：A 维度计「立即」，含 E 维度计「本周期」，其余计「可延后」。已修条目沿用首次打分的队列，本表不重打。

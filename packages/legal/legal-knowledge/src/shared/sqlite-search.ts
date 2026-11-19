@@ -253,24 +253,44 @@ export class SqliteFtsTable<TOptions, THit> {
     return this.searchFtsWithQuery(joinFtsOrTerms(keywords), options, limit)
   }
 
-  private searchFtsWithQuery(matchQuery: string, options: TOptions, limit: number): THit[] {
-    /* v8 ignore next -- the ladder reaches this method only after search() saw a connection */
-    if (this.db === null) return []
+  /**
+   * Read pages until a post-filter has enough hits, or one page when there is none.
+   * @param limit - the number of hits the caller asked for.
+   * @param options - the engine's search options, passed to the post-filter.
+   * @param via - which rung produced the rows.
+   * @param readPage - one page of raw rows for a page size and offset.
+   * @returns the hits after the post-filter, or the raw hits when none is declared.
+   */
+  private collectPaged(
+    limit: number,
+    options: TOptions,
+    via: 'fts' | 'like',
+    readPage: (pageSize: number, offset: number) => Array<Record<string, unknown>>,
+  ): THit[] {
     const pageSize = this.shape.postFilter === undefined ? limit : Math.max(limit, 1)
     const collected: THit[] = []
     for (let offset = 0; ; offset += pageSize) {
-      const { sql, params } = this.buildFtsQuery(options, pageSize, offset)
-      // A failed MATCH propagates to runFtsSearch, which degrades sticky and
-      // retries LIKE with the original query instead of an FTS expression.
-      const rows = this.db.prepare(sql).all(matchQuery, ...params) as Array<Record<string, unknown>>
+      const rows = readPage(pageSize, offset)
       if (rows.length === 0) break
-      collected.push(...rows.map(row => this.shape.toHit(row, 'fts')))
+      collected.push(...rows.map(row => this.shape.toHit(row, via)))
       if (this.shape.postFilter === undefined) break
       const visible = this.mapHits(collected, options)
       if (visible.length >= limit) return visible
       if (rows.length < pageSize) break
     }
     return this.mapHits(collected, options)
+  }
+
+  private searchFtsWithQuery(matchQuery: string, options: TOptions, limit: number): THit[] {
+    /* v8 ignore next -- the ladder reaches this method only after search() saw a connection */
+    if (this.db === null) return []
+    const db = this.db
+    return this.collectPaged(limit, options, 'fts', (pageSize, offset) => {
+      const { sql, params } = this.buildFtsQuery(options, pageSize, offset)
+      // A failed MATCH propagates to runFtsSearch, which degrades sticky and
+      // retries LIKE with the original query instead of an FTS expression.
+      return db.prepare(sql).all(matchQuery, ...params)
+    })
   }
 
   private buildFtsQuery(options: TOptions, limit: number, offset: number): { sql: string; params: Array<string | number> } {
@@ -314,27 +334,19 @@ export class SqliteFtsTable<TOptions, THit> {
       ORDER BY ${alias}.id
       LIMIT ? OFFSET ?
     `
-    const pageSize = this.shape.postFilter === undefined ? limit : Math.max(limit, 1)
-    const collected: THit[] = []
     try {
       /* v8 ignore next -- search() and the FTS catch reach this method only with a connection */
       if (this.db === null) return []
-      for (let offset = 0; ; offset += pageSize) {
+      const db = this.db
+      return this.collectPaged(limit, options, 'like', (pageSize, offset) => {
         const params: Array<string | number> = [
           ...terms.flatMap(term => this.shape.likeColumns.map(() => likePattern(term))),
           ...filterParams,
           pageSize,
           offset,
         ]
-        const rows = this.db.prepare(sql).all(...params) as Array<Record<string, unknown>>
-        if (rows.length === 0) break
-        collected.push(...rows.map(row => this.shape.toHit(row, 'like')))
-        if (this.shape.postFilter === undefined) break
-        const visible = this.mapHits(collected, options)
-        if (visible.length >= limit) return visible
-        if (rows.length < pageSize) break
-      }
-      return this.mapHits(collected, options)
+        return db.prepare(sql).all(...params)
+      })
     } catch (error) {
       this.warnQueryFailure('searchLike', error)
       return []

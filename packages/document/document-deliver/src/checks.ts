@@ -293,6 +293,19 @@ function quotedRanges(text: string): TextRange[] {
 }
 
 /**
+ * The closing tag of one element at or after an index.
+ * @param html - the document text.
+ * @param name - the element name, lowercased.
+ * @param from - the index to start the search at.
+ * @returns the match, or null when the element is never closed.
+ */
+function closingTag(html: string, name: string, from: number): RegExpExecArray | null {
+  const closing = new RegExp(`</${name}\\s*>`, 'giu')
+  closing.lastIndex = from
+  return closing.exec(html)
+}
+
+/**
  * The contents of one HTML element, from just past its opening tag to just
  * before its closing tag.
  * @param html - the document text.
@@ -301,12 +314,8 @@ function quotedRanges(text: string): TextRange[] {
  * @returns the range of the element's content.
  */
 function elementContentRange(html: string, name: string, from: number): TextRange {
-  const closing = new RegExp(`</${name}\\s*>`, 'giu')
-  closing.lastIndex = from
-  const match = closing.exec(html)
-  return match === null
-    ? { start: from, end: html.length }
-    : { start: from, end: match.index }
+  const match = closingTag(html, name, from)
+  return { start: from, end: match === null ? html.length : match.index }
 }
 
 /**
@@ -329,6 +338,20 @@ function openedElementName(tag: string): string | undefined {
 }
 
 /**
+ * Append the content ranges of the named elements.
+ * @param html - the document text.
+ * @param names - element names whose contents are recorded.
+ * @param ranges - the list to append to.
+ */
+function appendNamedContents(html: string, names: readonly string[], ranges: TextRange[]): void {
+  for (const tag of matches(html, HTML_TAG)) {
+    const name = openedElementName(tag.text)
+    if (name === undefined || !names.includes(name)) continue
+    ranges.push(elementContentRange(html, name, tag.index + tag.text.length))
+  }
+}
+
+/**
  * The quoted ranges of an HTML document: the contents of the elements that show
  * code or a keystroke rather than assert prose.
  *
@@ -342,13 +365,7 @@ function openedElementName(tag: string): string | undefined {
  */
 function htmlQuotedRanges(html: string): TextRange[] {
   const ranges: TextRange[] = []
-  for (const tag of matches(html, HTML_TAG)) {
-    const name = openedElementName(tag.text)
-    if (name === undefined || !QUOTED_ELEMENTS.includes(name)) continue
-    const contentStart = tag.index + tag.text.length
-    const content = elementContentRange(html, name, contentStart)
-    ranges.push(content)
-  }
+  appendNamedContents(html, QUOTED_ELEMENTS, ranges)
   return ranges
 }
 
@@ -373,12 +390,8 @@ function htmlMarkupRanges(html: string): TextRange[] {
       const valueStart = value.index + value.text.length - value.group.length
       ranges.push({ start: tag.index + valueStart, end: tag.index + valueStart + value.group.length })
     }
-    const name = openedElementName(tag.text)
-    if (name === undefined || !NON_TEXT_ELEMENTS.includes(name)) continue
-    const contentStart = tag.index + tag.text.length
-    const content = elementContentRange(html, name, contentStart)
-    ranges.push(content)
   }
+  appendNamedContents(html, NON_TEXT_ELEMENTS, ranges)
   return ranges
 }
 
@@ -391,9 +404,7 @@ function htmlMarkupRanges(html: string): TextRange[] {
  * never closed, which is how a renderer treats the rest of such a document.
  */
 function endOfNonTextElement(html: string, from: number, name: string): number {
-  const closing = new RegExp(`</${name}\\s*>`, 'giu')
-  closing.lastIndex = from
-  const match = closing.exec(html)
+  const match = closingTag(html, name, from)
   return match === null ? html.length : match.index + match[0].length
 }
 

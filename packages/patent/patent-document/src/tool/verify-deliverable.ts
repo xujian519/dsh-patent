@@ -13,8 +13,11 @@
 
 import { createHash } from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
+import { isAbsolute, resolve } from 'node:path'
+import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
+import type {} from '@deepseek-ai/dsh-working-directory'
 
 /** One artifact as it exists in two places: the case main path and the delivered copy. */
 export interface DeliverableArtifactInput {
@@ -54,7 +57,7 @@ export interface VerifyDeliverableInput {
 interface DeliverableFileRecord {
   /** Role of the artifact, or `附图`／`渲染件` for the auxiliary files. */
   role: string
-  /** Path this record was taken from. */
+  /** Absolute path this record was read from. */
   path: string
   /** SHA-256 of the file contents. */
   sha256: string
@@ -145,12 +148,63 @@ function short(sha256: string): string {
   return sha256.slice(0, 12)
 }
 
+/** One caller path and the absolute path it names under a session directory. */
+interface LocatedPath {
+  /** Path as the caller supplied it. */
+  given: string
+  /** Absolute path `given` names when resolved against the session directory. */
+  resolved: string
+}
+
+/**
+ * Resolve one caller path.
+ * A relative path uses `cwd`. An absolute path stays absolute: the check reads
+ * the files the caller named, including a copy that sits outside the session directory.
+ * @param given - the path as supplied.
+ * @param cwd - absolute directory relative paths resolve against.
+ * @returns the supplied path and its absolute location.
+ */
+function locate(given: string, cwd: string): LocatedPath {
+  return { given, resolved: resolve(cwd, given) }
+}
+
+/**
+ * Text of a path in a violation. A relative path names the directory it was
+ * resolved against, so a wrong session directory is not reported as a missing file.
+ * @param located - the supplied path and its absolute location.
+ * @param cwd - directory `located` was resolved against.
+ * @returns the path text for a violation message.
+ */
+function pathText(located: LocatedPath, cwd: string): string {
+  if (isAbsolute(located.given)) return located.given
+  return `${located.given}（按会话目录 ${cwd} 解析为 ${located.resolved}）`
+}
+
+/**
+ * Directory relative deliverable paths resolve against.
+ * A call with an Agent uses that session's working directory, the same directory
+ * `read` and `write` use. A call without an Agent uses the process directory.
+ * @param ctx - plugin context. Absent only for a tool built without one.
+ * @param exec - the current tool execution.
+ * @returns the absolute directory.
+ * @throws when the call has an Agent and no working-directory service is registered on `ctx`.
+ */
+export async function deliverableSessionDirectory(ctx: Context | undefined, exec: ToolRunContext): Promise<string> {
+  if (exec.agent === undefined) return process.cwd()
+  const working = ctx?.get('workingDirectory')
+  if (working === undefined) {
+    throw new Error('verify_deliverable：当前会话没有 working-directory 服务，无法按会话目录解析相对路径')
+  }
+  return working.ensure(exec.agent, exec.signal)
+}
+
 /**
  * Reconcile the artifacts, then order the rendered deliverable against its inputs.
  * @param input - the artifact pairs, drawings, and rendered deliverable to check.
+ * @param cwd - directory relative paths resolve against. Defaults to the process directory.
  * @returns whether the delivery is consistent, the file manifest, and the violations.
  */
-export function verifyDeliverable(input: VerifyDeliverableInput): VerifyDeliverableOutput {
+export function verifyDeliverable(input: VerifyDeliverableInput, cwd: string = process.cwd()): VerifyDeliverableOutput {
   const manifest: DeliverableFileRecord[] = []
   const violations: DeliverableViolation[] = []
   const inputs: Array<{ label: string; path: string; mtimeMs: number }> = []
@@ -165,25 +219,27 @@ export function verifyDeliverable(input: VerifyDeliverableInput): VerifyDelivera
   }
 
   for (const artifact of input.artifacts) {
-    const canonical = readFileRecord(artifact.canonical_path)
-    const delivered = readFileRecord(artifact.delivered_path)
-    const failArtifact = (fault: FileRecordFault, path: string): void => {
+    const canonicalPath = locate(artifact.canonical_path, cwd)
+    const deliveredPath = locate(artifact.delivered_path, cwd)
+    const canonical = readFileRecord(canonicalPath.resolved)
+    const delivered = readFileRecord(deliveredPath.resolved)
+    const failArtifact = (fault: FileRecordFault, located: LocatedPath): void => {
       violations.push({
         rule: 'artifact_missing',
         severity: 'error',
-        message: `${artifact.role}：${faultMessage(fault)} ${path}`,
+        message: `${artifact.role}：${faultMessage(fault)} ${pathText(located, cwd)}`,
         suggestion: '核对路径；被取代的旧版应先归档再移出主路径，不要留一个打不开的引用',
       })
     }
     if (!canonical.ok) {
-      failArtifact(canonical.fault, artifact.canonical_path)
+      failArtifact(canonical.fault, canonicalPath)
       continue
     }
     if (!delivered.ok) {
-      failArtifact(delivered.fault, artifact.delivered_path)
+      failArtifact(delivered.fault, deliveredPath)
       continue
     }
-    manifest.push({ role: artifact.role, path: artifact.delivered_path, sha256: delivered.sha256, mtimeMs: delivered.mtimeMs })
+    manifest.push({ role: artifact.role, path: deliveredPath.resolved, sha256: delivered.sha256, mtimeMs: delivered.mtimeMs })
     if (canonical.sha256 !== delivered.sha256) {
       violations.push({
         rule: 'artifact_mismatch',
@@ -192,35 +248,37 @@ export function verifyDeliverable(input: VerifyDeliverableInput): VerifyDelivera
         suggestion: '把交付版复制到主路径并归档旧版，使两处逐字节一致；不要只把新版写进子目录而让旧版留在主路径',
       })
     }
-    inputs.push({ label: artifact.role, path: artifact.delivered_path, mtimeMs: delivered.mtimeMs })
+    inputs.push({ label: artifact.role, path: deliveredPath.resolved, mtimeMs: delivered.mtimeMs })
   }
 
   for (const figure of input.figures ?? []) {
-    const record = readFileRecord(figure)
+    const located = locate(figure, cwd)
+    const record = readFileRecord(located.resolved)
     if (!record.ok) {
       violations.push({
         rule: 'figure_missing',
         severity: 'error',
-        message: `附图：${faultMessage(record.fault)} ${figure}`,
+        message: `附图：${faultMessage(record.fault)} ${pathText(located, cwd)}`,
         suggestion: '核对附图路径；附图是交付件的一部分，缺图按未完成交付处理',
       })
       continue
     }
-    manifest.push({ role: '附图', path: figure, sha256: record.sha256, mtimeMs: record.mtimeMs })
-    inputs.push({ label: '附图', path: figure, mtimeMs: record.mtimeMs })
+    manifest.push({ role: '附图', path: located.resolved, sha256: record.sha256, mtimeMs: record.mtimeMs })
+    inputs.push({ label: '附图', path: located.resolved, mtimeMs: record.mtimeMs })
   }
 
   if (input.rendered !== undefined) {
-    const rendered = readFileRecord(input.rendered)
+    const located = locate(input.rendered, cwd)
+    const rendered = readFileRecord(located.resolved)
     if (!rendered.ok) {
       violations.push({
         rule: 'rendered_missing',
         severity: 'error',
-        message: `渲染件：${faultMessage(rendered.fault)} ${input.rendered}`,
+        message: `渲染件：${faultMessage(rendered.fault)} ${pathText(located, cwd)}`,
         suggestion: '核对渲染输出路径；交付报告要引用渲染件的指纹，缺件无法核对',
       })
     } else {
-      manifest.push({ role: '渲染件', path: input.rendered, sha256: rendered.sha256, mtimeMs: rendered.mtimeMs })
+      manifest.push({ role: '渲染件', path: located.resolved, sha256: rendered.sha256, mtimeMs: rendered.mtimeMs })
       const newest = inputs.reduce<{ label: string; path: string; mtimeMs: number } | undefined>(
         (acc, entry) => (acc === undefined || entry.mtimeMs > acc.mtimeMs ? entry : acc),
         undefined,
@@ -236,7 +294,7 @@ export function verifyDeliverable(input: VerifyDeliverableInput): VerifyDelivera
     }
   }
 
-  const requirements = checkRequirements(input.requirements ?? [], manifest, violations)
+  const requirements = checkRequirements(input.requirements ?? [], manifest, violations, cwd)
   return {
     passed: violations.length === 0,
     manifest,
@@ -250,14 +308,16 @@ export function verifyDeliverable(input: VerifyDeliverableInput): VerifyDelivera
  * evidence file that does not exist, fails the delivery. The rows are what the
  * delivery report quotes, so the check reports them even when nothing is wrong.
  * @param given - the requirements as supplied.
- * @param manifest - the manifest to append the evidence files to (same path recorded once).
+ * @param manifest - the manifest to append the evidence files to (same resolved path recorded once).
  * @param violations - the violation list to append to.
+ * @param cwd - directory relative evidence paths resolve against.
  * @returns one row per requirement.
  */
 function checkRequirements(
   given: readonly DeliverableRequirementInput[],
   manifest: DeliverableFileRecord[],
   violations: DeliverableViolation[],
+  cwd: string,
 ): DeliverableRequirementResult[] {
   const recorded = new Set(manifest.map(record => record.path))
   return given.map((entry) => {
@@ -271,20 +331,21 @@ function checkRequirements(
       })
     }
     for (const path of entry.evidence) {
-      const record = readFileRecord(path)
+      const located = locate(path, cwd)
+      const record = readFileRecord(located.resolved)
       if (!record.ok) {
         satisfied = false
         violations.push({
           rule: 'requirement_evidence_missing',
           severity: 'error',
-          message: `要求「${entry.requirement}」的证据文件${faultMessage(record.fault)}：${path}`,
+          message: `要求「${entry.requirement}」的证据文件${faultMessage(record.fault)}：${pathText(located, cwd)}`,
           suggestion: '先产出该证据再交付；路径写错时改成实际文件',
         })
         continue
       }
-      if (recorded.has(path)) continue
-      recorded.add(path)
-      manifest.push({ role: '证据', path, sha256: record.sha256, mtimeMs: record.mtimeMs })
+      if (recorded.has(located.resolved)) continue
+      recorded.add(located.resolved)
+      manifest.push({ role: '证据', path: located.resolved, sha256: record.sha256, mtimeMs: record.mtimeMs })
     }
     return { requirement: entry.requirement, evidence: [...entry.evidence], satisfied }
   })
@@ -323,6 +384,7 @@ const DESCRIPTION = [
   '- 记录每件的 SHA-256 与 mtime，供交付报告引用',
   '- 给定渲染件时，核对渲染晚于全部输入件（文本与附图），交付时序倒挂即报错',
   '- 给定 requirements 时逐条核对：每条要求必须给出证据文件，缺证据或证据文件不存在即报错，并把核对表随结果返回（交付报告直接引用它，不要用「已按要求复核」这类概括句代替）',
+  '- 相对路径按当前会话工作目录解析（与 read、write 相同）；绝对路径按原样读取。相对路径读不到时，违规项写明本次使用的会话目录',
   '',
   '用法：交付前调用。传 artifacts（role + canonical_path + delivered_path 一组或多组），有附图传 figures，有渲染件传 rendered，有用户或案卷要求时传 requirements（requirement 用指令原话 + evidence 文件路径）；返回 passed、manifest、requirements 核对表与 violations，未通过不得交付。',
 ].join('\n')
@@ -339,10 +401,13 @@ const VIOLATION_SCHEMA = {
 } as const
 
 /**
- * Build the `verify_deliverable` tool (pure filesystem reads, no injected services).
+ * Build the `verify_deliverable` tool.
+ * Reads are plain filesystem reads. When `ctx` is set, a call that has an Agent
+ * resolves relative paths against that session's working directory.
+ * @param ctx - plugin context carrying `workingDirectory`. Omit it only for a caller that passes absolute paths.
  * @returns a registry-ready tool definition.
  */
-export function createVerifyDeliverableTool(): ToolDefinition {
+export function createVerifyDeliverableTool(ctx?: Context): ToolDefinition {
   return defineTool({
     name: 'verify_deliverable',
     description: DESCRIPTION,
@@ -413,9 +478,8 @@ export function createVerifyDeliverableTool(): ToolDefinition {
       },
       render: (_args, value) => [{ type: 'text', text: renderDeliverableResult(value) }],
     },
-    // oxlint-disable-next-line typescript/require-await -- tool contract requires async execute
-    async execute(args) {
-      return verifyDeliverable(args)
+    async execute(args, exec) {
+      return verifyDeliverable(args, await deliverableSessionDirectory(ctx, exec))
     },
   })
 }

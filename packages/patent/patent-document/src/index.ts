@@ -54,5 +54,5 @@ export function apply(ctx: Context, config: Config): void {
     ...(config.outputRoot !== undefined ? { defaultOutputDir: config.outputRoot } : {}),
     pdfTimeoutMs: config.pdfTimeoutMs ?? DEFAULT_PDF_TIMEOUT_MS,
   }))
-  ctx.tools.register(createVerifyDeliverableTool())
+  ctx.tools.register(createVerifyDeliverableTool(ctx))
 }

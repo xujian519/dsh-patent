@@ -25,6 +25,9 @@
     },
     {
       "path": "../../util/atomic-write"
+    },
+    {
+      "path": "../../session/working-directory"
     }
   ]
 }

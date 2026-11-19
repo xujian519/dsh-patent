@@ -7931,6 +7931,7 @@ Source: [`packages/patent/patent-document/src/index.ts`](../packages/patent/pate
 - 记录每件的 SHA-256 与 mtime，供交付报告引用
 - 给定渲染件时，核对渲染晚于全部输入件（文本与附图），交付时序倒挂即报错
 - 给定 requirements 时逐条核对：每条要求必须给出证据文件，缺证据或证据文件不存在即报错，并把核对表随结果返回（交付报告直接引用它，不要用「已按要求复核」这类概括句代替）
+- 相对路径按当前会话工作目录解析（与 read、write 相同）；绝对路径按原样读取。相对路径读不到时，违规项写明本次使用的会话目录
 
 用法：交付前调用。传 artifacts（role + canonical_path + delivered_path 一组或多组），有附图传 figures，有渲染件传 rendered，有用户或案卷要求时传 requirements（requirement 用指令原话 + evidence 文件路径）；返回 passed、manifest、requirements 核对表与 violations，未通过不得交付。
 

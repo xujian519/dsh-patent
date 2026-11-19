@@ -7,6 +7,7 @@
  * - 每条记录对应一个上位概括：权利要求项号、上位表达、支撑摘录、并列下位实施方式
  *   与判定；
  * - 摘录为空或未命中原文时按未通过处理，不允许降级成「通过但无依据」；
+ * - 并列下位实施方式必须给出：字段缺失按结构错误处理，显式空数组时不能判「效果一致」；
  * - 缺陷覆盖四类：无实施例支撑、并列下位之一效果不一致、功能性限定缺实施方式、
  *   权要用语与说明书术语不一致。
  *
@@ -18,7 +19,7 @@
 import { type AnchorRange, type AnchorReason, locateQuote } from '../../../anchor/index.ts'
 import { deriveClaimRefs } from '../../../claim-chart/runtime/claim-refs.ts'
 import { splitClaimSegments } from '../../../claim-chart/runtime/element-validator.ts'
-import { parseOptionalJsonStringArray, readJsonString } from '../../../llm-json.ts'
+import { parseJsonStringArray, readJsonString } from '../../../llm-json.ts'
 import { dataBlock, withStageWritingSkills } from '../../../prompt-hygiene.ts'
 import { type Atom } from '../../atom.ts'
 import { type PipelineState, type StageExecuteInput, type StageHandler } from '../../handler.ts'
@@ -214,7 +215,7 @@ function readModelRecord(
   if (generalization === undefined) return `${label}缺少非空 generalization`
   const quote = typeof record['quote'] === 'string' ? record['quote'] : undefined
   if (quote === undefined) return `${label}（C${String(claimNo)}）的 quote 不是字符串`
-  const parallel = parseOptionalJsonStringArray(record['parallel_lower_levels'], `${label}的 parallel_lower_levels`)
+  const parallel = parseJsonStringArray(record['parallel_lower_levels'], `${label}的 parallel_lower_levels`)
   if (!parallel.ok) return parallel.reason
   const allParallelSameEffect = record['all_parallel_same_effect']
   if (typeof allParallelSameEffect !== 'boolean') {
@@ -239,13 +240,19 @@ function readModelRecord(
 
 /**
  * 复核一条模型记录：缺陷类型、并列下位一致性与原文锚点必须同时成立。
+ *
+ * 并列下位为空时不能判「效果一致」：没有任何下位实施方式可比对，
+ * `all_parallel_same_effect` 为真只是模型的空断言。这类记录按未通过处理，
+ * 不允许降级成「通过但无依据」。
  * @param modelRecord - 模型记录。
  * @param specification - 说明书原文。
  * @returns 写入 `claim_breadth_records` 的记录。
  */
 function checkRecord(modelRecord: ModelRecord, specification: string): ClaimBreadthRecord {
   const anchor = locateQuote(modelRecord.quote, specification)
+  const hasParallelLevels = modelRecord.parallel_lower_levels.length > 0
   const passed = modelRecord.defect === 'none'
+    && hasParallelLevels
     && modelRecord.all_parallel_same_effect
     && anchor.matched
   return {
@@ -281,7 +288,9 @@ function renderClaimBreadthReport(records: readonly ClaimBreadthRecord[], notes:
     const lower = record.parallel_lower_levels.length === 0
       ? '未列出并列下位'
       : `并列下位 ${String(record.parallel_lower_levels.length)} 项（${record.parallel_lower_levels.join('、')}）`
-    const sameEffect = record.all_parallel_same_effect ? '是' : '否'
+    const sameEffect = record.parallel_lower_levels.length === 0
+      ? '无可比对下位'
+      : record.all_parallel_same_effect ? '是' : '否'
     lines.push(
       `- [${record.passed ? '通过' : '未通过'}] 权利要求 ${String(record.claim_no)}「${record.generalization}」：${lower}；效果一致：${sameEffect}；缺陷：${DEFECT_LABELS[record.defect]}；${anchor}；说明：${record.reason}`,
     )

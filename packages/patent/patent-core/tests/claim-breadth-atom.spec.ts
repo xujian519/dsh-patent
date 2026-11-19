@@ -171,6 +171,52 @@ describe('claim-breadth 原子', () => {
     expect(records[0]?.anchor_reason).toBe('empty')
   })
 
+  it('省略 parallel_lower_levels 时降级，不把缺失收成空数组后判通过', async () => {
+    const out = await handler.execute({
+      state: { specification: SPEC, claims_draft: CLAIMS },
+      provider: providerFor(JSON.stringify({
+        records: [
+          {
+            claim_no: 1,
+            generalization: '任意形状的加热通道',
+            quote: '加热通道为螺旋形通道',
+            all_parallel_same_effect: true,
+            defect: 'none',
+            reason: '实施例1 公开了螺旋形通道与进液口位置。',
+          },
+        ],
+      })),
+    })
+    expect(String(out._error)).toContain('parallel_lower_levels')
+    expect(out.claim_breadth_passed).toBeUndefined()
+    expect(out.claim_breadth_report).toBeUndefined()
+  })
+
+  it('显式空数组且判效果一致时按未通过处理，不放行无下位可比的概括', async () => {
+    const out = await handler.execute({
+      state: { specification: SPEC, claims_draft: CLAIMS },
+      provider: providerFor(JSON.stringify({
+        records: [
+          {
+            claim_no: 1,
+            generalization: '任意形状的加热通道',
+            quote: '加热通道为螺旋形通道',
+            parallel_lower_levels: [],
+            all_parallel_same_effect: true,
+            defect: 'none',
+            reason: '实施例1 公开了螺旋形通道与进液口位置。',
+          },
+        ],
+      })),
+    })
+    expect(out._error).toBeUndefined()
+    expect(out.claim_breadth_passed).toBe(false)
+    expect(out.claim_breadth_failed).toEqual(['C1「任意形状的加热通道」'])
+    const records = out.claim_breadth_records as Array<{ passed: boolean; parallel_lower_levels: string[] }>
+    expect(records[0]).toMatchObject({ passed: false, parallel_lower_levels: [] })
+    expect(String(out.claim_breadth_report)).toContain('无可比对下位')
+  })
+
   it('缺某条独立权利要求的记录时降级，不把漏判当通过', async () => {
     const claims = [
       '1. 一种加热装置，其特征在于，包括加热通道。',

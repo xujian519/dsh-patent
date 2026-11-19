@@ -116,8 +116,6 @@ const INTERPRETATION_TABLE: SqliteSearchShape<JudicialInterpretationSearchOption
   label: '司法解释',
   toHit: rowToHit,
   filterClause,
-  // Over-fetch to account for validity filtering.
-  fetchFactor: 2,
   postFilter: (hits, options) => filterByValidity(hits, options),
 }
 
@@ -274,7 +272,9 @@ export class JudicialInterpretationSearch extends SqliteBackedEngine<JudicialInt
     limit: number,
   ): JudicialInterpretationHit[] {
     const filtered = filterRecords(this.interpretations, r => r.interpretationType, options.interpretationType, 'exact')
-    const hits = searchInMemory(filtered, query, extractInterpretationText, limit * 2)
+    // 效力过滤在前、截断在后：取满命中记录再过滤，失效记录占满整页时
+    // 现行版本才会被丢掉，与 SQLite 后端的分页口径一致。
+    const hits = searchInMemory(filtered, query, extractInterpretationText, filtered.length)
     return toVisibleMemoryHits(hits, options, limit)
   }
 

@@ -46,9 +46,12 @@ export type SqliteSearchShape<TOptions, THit> = {
   toHit: (row: Record<string, unknown>, via: 'fts' | 'like') => THit
   /** 选项到额外 WHERE 子句的映射。 */
   filterClause: (options: TOptions, alias: string) => { sql: string; params: Array<string | number> }
-  /** 为有效性后过滤预留的超取倍数；缺省 1。 */
-  fetchFactor?: number
-  /** 结果后过滤（如按时间效力）；缺省不过滤。 */
+  /**
+   * 结果后过滤（如按时间效力）；缺省不过滤。
+   *
+   * 过滤会丢掉整页里的失效记录，所以带后过滤的形状按页取行，直到凑满
+   * 结果条数或行耗尽，不靠固定超取倍数截断。
+   */
   postFilter?: (hits: THit[], options: TOptions) => THit[]
 }
 
@@ -161,18 +164,23 @@ export class SqliteFtsTable<TOptions, THit> {
   }
 
   /**
-   * 按一列的包含匹配读取多行。
+   * 按一列的包含匹配读取一页行。
+   *
+   * 分页让调用方在过滤之后仍能凑满结果条数：效力过滤会丢掉整页里的
+   * 失效记录，只取一次固定行数会让现行版本落在窗口之外。行按主键排序，
+   * 否则翻页的行序未定义，翻页结果可能漏行或重行。
    * @param column - 匹配列名。
    * @param value - 包含匹配的文本。
-   * @param limit - 返回行数上限。
+   * @param limit - 本页行数上限。
+   * @param offset - 跳过的行数。
    * @returns 原始行列表；未连接或查询失败时为空。
    */
-  findRowsLike(column: string, value: string, limit: number): Array<Record<string, unknown>> {
+  findRowsLikePage(column: string, value: string, limit: number, offset: number): Array<Record<string, unknown>> {
     if (!this.db) return []
     try {
       return this.db
-        .prepare(`SELECT * FROM ${this.shape.table} WHERE ${column} LIKE ? ESCAPE '\\' LIMIT ?`)
-        .all(likePattern(value), limit)
+        .prepare(`SELECT * FROM ${this.shape.table} WHERE ${column} LIKE ? ESCAPE '\\' ORDER BY id LIMIT ? OFFSET ?`)
+        .all(likePattern(value), limit, offset)
     } catch (error) {
       this.warnQueryFailure('findRowsLike', error)
       return []
@@ -246,19 +254,29 @@ export class SqliteFtsTable<TOptions, THit> {
   }
 
   private searchFtsWithQuery(matchQuery: string, options: TOptions, limit: number): THit[] {
-    const { sql, params } = this.buildFtsQuery(options, limit)
     /* v8 ignore next -- the ladder reaches this method only after search() saw a connection */
     if (this.db === null) return []
-    // A failed MATCH propagates to runFtsSearch, which degrades sticky and
-    // retries LIKE with the original query instead of an FTS expression.
-    const rows = this.db.prepare(sql).all(matchQuery, ...params) as Array<Record<string, unknown>>
-    return this.mapHits(rows.map(row => this.shape.toHit(row, 'fts')), options)
+    const pageSize = this.shape.postFilter === undefined ? limit : Math.max(limit, 1)
+    const collected: THit[] = []
+    for (let offset = 0; ; offset += pageSize) {
+      const { sql, params } = this.buildFtsQuery(options, pageSize, offset)
+      // A failed MATCH propagates to runFtsSearch, which degrades sticky and
+      // retries LIKE with the original query instead of an FTS expression.
+      const rows = this.db.prepare(sql).all(matchQuery, ...params) as Array<Record<string, unknown>>
+      if (rows.length === 0) break
+      collected.push(...rows.map(row => this.shape.toHit(row, 'fts')))
+      if (this.shape.postFilter === undefined) break
+      const visible = this.mapHits(collected, options)
+      if (visible.length >= limit) return visible
+      if (rows.length < pageSize) break
+    }
+    return this.mapHits(collected, options)
   }
 
-  private buildFtsQuery(options: TOptions, limit: number): { sql: string; params: Array<string | number> } {
+  private buildFtsQuery(options: TOptions, limit: number, offset: number): { sql: string; params: Array<string | number> } {
     const { alias, ftsTable } = this.shape
     const { sql: filterSql, params: filterParams } = this.shape.filterClause(options, alias)
-    const params: Array<string | number> = [...filterParams, limit * (this.shape.fetchFactor ?? 1)]
+    const params: Array<string | number> = [...filterParams, limit, offset]
     return {
       sql: `
       SELECT ${alias}.*, bm25(${ftsTable}) AS fts_rank
@@ -266,7 +284,7 @@ export class SqliteFtsTable<TOptions, THit> {
       JOIN ${this.shape.table} ${alias} ON ${alias}.id = ${ftsTable}.rowid
       WHERE ${ftsTable} MATCH ?
       ${filterSql}
-      ORDER BY bm25(${ftsTable}) LIMIT ?
+      ORDER BY bm25(${ftsTable}), ${alias}.id LIMIT ? OFFSET ?
     `,
       params,
     }
@@ -293,18 +311,30 @@ export class SqliteFtsTable<TOptions, THit> {
       FROM ${table} ${alias}
       WHERE ${terms.map(() => `(${columnClause})`).join(' OR ')}
       ${filterSql}
-      LIMIT ?
+      ORDER BY ${alias}.id
+      LIMIT ? OFFSET ?
     `
-    const params: Array<string | number> = [
-      ...terms.flatMap(term => this.shape.likeColumns.map(() => likePattern(term))),
-      ...filterParams,
-      limit * (this.shape.fetchFactor ?? 1),
-    ]
+    const pageSize = this.shape.postFilter === undefined ? limit : Math.max(limit, 1)
+    const collected: THit[] = []
     try {
       /* v8 ignore next -- search() and the FTS catch reach this method only with a connection */
       if (this.db === null) return []
-      const rows = this.db.prepare(sql).all(...params) as Array<Record<string, unknown>>
-      return this.mapHits(rows.map(row => this.shape.toHit(row, 'like')), options)
+      for (let offset = 0; ; offset += pageSize) {
+        const params: Array<string | number> = [
+          ...terms.flatMap(term => this.shape.likeColumns.map(() => likePattern(term))),
+          ...filterParams,
+          pageSize,
+          offset,
+        ]
+        const rows = this.db.prepare(sql).all(...params) as Array<Record<string, unknown>>
+        if (rows.length === 0) break
+        collected.push(...rows.map(row => this.shape.toHit(row, 'like')))
+        if (this.shape.postFilter === undefined) break
+        const visible = this.mapHits(collected, options)
+        if (visible.length >= limit) return visible
+        if (rows.length < pageSize) break
+      }
+      return this.mapHits(collected, options)
     } catch (error) {
       this.warnQueryFailure('searchLike', error)
       return []

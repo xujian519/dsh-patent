@@ -38,6 +38,7 @@
     "@deepseek-ai/dsh-browser-backend": "workspace:*",
     "@deepseek-ai/dsh-tool-literature": "workspace:*",
     "@deepseek-ai/dsh-util-values": "workspace:*",
+    "@deepseek-ai/dsh-value": "workspace:*",
     "@viz-js/viz": "^3.29.0"
   },
   "peerDependencies": {

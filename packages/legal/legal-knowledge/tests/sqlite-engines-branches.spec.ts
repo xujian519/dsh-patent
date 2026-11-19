@@ -603,7 +603,7 @@ describe('SqliteFtsTable branches', () => {
     expect(table.ftsAvailable).toBe(false)
     expect(table.search('alpha', {}, 10)).toEqual([])
     expect(table.findRow('name', 'alpha')).toBeUndefined()
-    expect(table.findRowsLike('name', 'alpha', 10)).toEqual([])
+    expect(table.findRowsLikePage('name', 'alpha', 10, 0)).toEqual([])
     expect(table.findRowsLikeAny(['name'], 'alpha', 10)).toEqual([])
     expect(table.count()).toBe(0)
     table.close()
@@ -652,10 +652,10 @@ describe('SqliteFtsTable branches', () => {
       expect(table.findRow('name', 'alpha')).toMatchObject({ id: 1 })
       expect(table.findRow('name', 'alpha', 'items')).toMatchObject({ id: 1 })
       expect(table.findRow('missing_column', 'alpha')).toBeUndefined()
-      expect(table.findRowsLike('name', 'a', 10)).toHaveLength(2)
-      expect(table.findRowsLike('name', 'a%', 10)).toEqual([])
-      expect(table.findRowsLike('name', 'a_l\\pha', 10)).toEqual([])
-      expect(table.findRowsLike('missing_column', 'alpha', 10)).toEqual([])
+      expect(table.findRowsLikePage('name', 'a', 10, 0)).toHaveLength(2)
+      expect(table.findRowsLikePage('name', 'a%', 10, 0)).toEqual([])
+      expect(table.findRowsLikePage('name', 'a_l\\pha', 10, 0)).toEqual([])
+      expect(table.findRowsLikePage('missing_column', 'alpha', 10, 0)).toEqual([])
       expect(table.findRowsLikeAny(['name', 'text'], 'alpha', 10)).toHaveLength(1)
       expect(table.findRowsLikeAny(['name'], 'alpha', 10, 'items')).toHaveLength(1)
       expect(table.findRowsLikeAny(['missing_column'], 'alpha', 10)).toEqual([])
@@ -742,16 +742,43 @@ describe('SqliteFtsTable branches', () => {
     }
   })
 
-  it('applies fetchFactor and postFilter only when declared', () => {
+  it('applies postFilter only when declared, and keeps paging until it has enough', () => {
     const db = ftsDb()
     const filtered = new SqliteFtsTable<Options, Hit>({ db }, baseShape({
-      fetchFactor: 2,
       postFilter: hits => hits.slice(0, 1),
     }))
     const unfiltered = new SqliteFtsTable<Options, Hit>({ db }, baseShape())
     try {
       expect(filtered.search('alpha beta', {}, 10)).toHaveLength(1)
       expect(unfiltered.search('alpha beta', {}, 10).length).toBeGreaterThan(1)
+    } finally {
+      filtered.close()
+    }
+  })
+
+  it('pages rows in a stable order, so the pages do not overlap or skip', () => {
+    const db = ftsDb()
+    const table = new SqliteFtsTable<Options, Hit>({ db }, baseShape())
+    try {
+      // 行序由主键决定：没有次序键时翻页的行序未定义，会重行或漏行。
+      const first = table.findRowsLikePage('name', 'a', 1, 0)
+      const second = table.findRowsLikePage('name', 'a', 1, 1)
+      expect(first.map(row => row['id'])).toEqual([1])
+      expect(second.map(row => row['id'])).toEqual([2])
+      expect(table.findRowsLikePage('name', 'a', 10, 0).map(row => row['id'])).toEqual([1, 2])
+    } finally {
+      table.close()
+    }
+  })
+
+  it('keeps paging past the dropped rows when a postFilter discards them', () => {
+    const db = ftsDb()
+    // 第一行被丢掉，第二行才可见：只取一页就凑不满，必须翻页再取。
+    const filtered = new SqliteFtsTable<Options, Hit>({ db }, baseShape({
+      postFilter: hits => hits.filter(hit => hit.id === '2'),
+    }))
+    try {
+      expect(filtered.search('alpha beta', {}, 1).map(hit => hit.id)).toEqual(['2'])
     } finally {
       filtered.close()
     }

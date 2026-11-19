@@ -77,7 +77,7 @@
 | F-PAT-042 | 未提取到技术问题时，阻断级法条缺口记为通过 | PAT | E | High | 中 | fixed |
 | F-PAT-043 | 源文可读时空 pin-cite 被判格式非法 | PAT | E | Medium | 中 | fixed |
 | F-PAT-044 | 要素 claimNo 没有对应段落时用全文做子串校验 | PAT | E | Medium | 中 | fixed |
-| F-PAT-045 | 省略 `parallel_lower_levels` 仍判概括范围通过 | PAT | E | Medium | 高 | new |
+| F-PAT-045 | 省略 `parallel_lower_levels` 仍判概括范围通过 | PAT | E | Medium | 高 | fixed |
 | F-PAT-046 | 同一格同时 `literal` 与 `not-found` 时，缺口与全覆盖同时成立 | PAT | E | Medium | 中 | fixed |
 | F-PAT-047 | 审批门中断后的续跑从第一个阶段重跑，内置 manifest 的检索与模型阶段重复执行 | PAT | E | Medium | 中 | deferred |
 | F-PAT-048 | 通知书解析不出驳回理由时，两条双输入规则判为通过且无未评估标记 | PAT | E | Medium | 中 | fixed |
@@ -97,7 +97,7 @@
 | F-DOC-007 | Office 转换成功返回后不检查 abort 监听是否摘掉 | DOC | D | Medium | 中 | new |
 | F-DOC-008 | 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题 | DOC | E | Medium | 高 | fixed |
 | F-DOC-009 | DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃 | DOC | E | Medium | 中 | fixed |
-| F-DOC-010 | `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断 | DOC | E | Medium | 中 | new |
+| F-DOC-010 | `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断 | DOC | E | Medium | 中 | fixed |
 | F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | fixed |
 | F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | fixed |
 | F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | fixed |
@@ -110,7 +110,7 @@
 | F-LEG-010 | 未核验与未索引引用的工具结果没有锁住处置 | LEG | D | Medium | 中 | new |
 | F-LEG-011 | 证人利害关系未填写时，关键规则报「证人与案件无利害关系」通过 | LEG | E | High | 中 | fixed |
 | F-LEG-012 | 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略 | LEG | E | Medium | 中 | fixed |
-| F-LEG-013 | 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果 | LEG | E | Medium | 中 | new |
+| F-LEG-013 | 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果 | LEG | E | Medium | 中 | fixed |
 | F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | fixed |
 | F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | fixed |
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | fixed |
@@ -128,7 +128,7 @@
 | F-VID-014 | 项目身份取工具结果里的原始路径，绝对与相对写法会让同一工程出现两次 | VID | E | Low | 高 | new |
 | F-VID-015 | EDL 音频片段的 `inSec`/`outSec` 不校验顺序，校验晚到 ffmpeg | VID | E | Low | 中 | new |
 | F-CROSS-001 | 四域另有 4 份 `messageOf`/`errorText` 与 1 份可并的 `asRecord`，而 `dsh-value` 已有对应原语且 11 个域内包已依赖它 | CROSS | B | Low | 高 | new |
-| F-CROSS-002 | `patent-tools` 导入未声明的 workspace 依赖 `@deepseek-ai/dsh-value`，运行产物靠打包内联掩盖 | CROSS | B/E | Low | 高 | new |
+| F-CROSS-002 | `patent-tools` 导入未声明的 workspace 依赖 `@deepseek-ai/dsh-value`，运行产物靠打包内联掩盖 | CROSS | B/E | Low | 高 | fixed |
 | F-CROSS-003 | 知识库安装覆盖时先删输出，改名失败没有用例 | CROSS | D | High | 中 | fixed |
 | F-CROSS-004 | 专利、文档、法律三域的工具错误类没有接入 `HarnessError`，失败码在 `tool/result` 与会话界面丢失 | CROSS | E | Low | 高 | fixed |
 
@@ -742,7 +742,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：该字段缺失时降级，不把缺失收成空数组。明确给出 `[]` 时，`all_parallel_same_effect: true` 不得通过。
 - 预估工作量：S
 - 是否可自动化：是（省略字段时期望 `_error`；显式 `[]` 且 `all_parallel_same_effect: true` 时期望 `claim_breadth_passed: false`）
-- 状态：new
+- 状态：fixed（2026-11-19）
+- 修复记录：`parallel_lower_levels` 改用严格的 `parseJsonStringArray`，字段缺失不再收成空数组，而是按结构错误降级；`checkRecord` 的通过条件增加「并列下位非空」，显式空数组时按未通过处理，报告写「无可比对下位」而不是「效果一致：是」。回归用例见 `packages/patent/patent-core/tests/claim-breadth-atom.spec.ts`。
 
 ### F-PAT-046 同一格同时 `literal` 与 `not-found` 时，缺口与全覆盖同时成立
 
@@ -1046,7 +1047,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：`format: 'html'` 时先投影可见正文（`htmlBodyText` 已实现注释、标记与 script/style 的剥离），再从 `<pre>`/`<code>` 元素推导引用范围；保留行号映射，或在结果里注明行号对应投影文本。另一种做法是只剥离注释与属性值，并把 HTML 代码元素加入 `quotedRanges`。把上面五个输入补成用例。
 - 预估工作量：M
 - 是否可自动化：是（五条输入 + 一条 Markdown/HTML 同内容对照）
-- 状态：new
+- 状态：fixed（2026-11-19）
+- 修复记录：`format: 'html'` 时占位符判定改用 HTML 口径的引用范围：`<pre>`、`<code>`、`<kbd>`、`<samp>` 的内容按引用文本处理，注释、标签与属性值按不可见文本处理，两者都只报 `warn`。Markdown 路径不变。回归用例见 `packages/document/document-deliver/tests/checks.spec.ts`。
 
 ## 法律模式
 
@@ -1223,7 +1225,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把效力过滤放在截断之前：按页/按批读取直到凑满 `limit` 条可见记录或行耗尽，或在 SQL 里直接带效力条件；`searchInMemory` 与 `findByName` 的内存路径也按「先过滤、后截断」统一。新增一条超过窗口的 SQLite/内存 parity 用例（例如 3 条失效 + 1 条可见，`limit: 1`）。
 - 预估工作量：M
 - 是否可自动化：是（上述 parity 用例）
-- 状态：new
+- 状态：fixed（2026-11-19）
+- 修复记录：效力过滤前置到截断之前。SQLite 侧改为按页取行，凑满 `limit` 条可见记录或行耗尽为止（`findRowsLikePage` 与 FTS/LIKE 查询的 `LIMIT ? OFFSET ?`）；内存侧的 `searchInMemory` 改为取满命中记录再过滤。`fetchFactor` 随之删除。回归用例见 `packages/legal/legal-knowledge/tests/validity-window-parity.spec.ts`。
 
 ### F-LEG-014 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时
 
@@ -1484,7 +1487,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 净减少：0 行代码；收益是依赖声明、catalog 与 SBOM 与产物一致。若采纳反向校验，门禁范围从「104 个包」扩到「104 个包的导入图」。
 - 预估工作量：S
 - 是否可自动化：是（新增反向校验即可在 CI 拦住同类问题）
-- 状态：new
+- 状态：fixed（2026-11-19）
+- 修复记录：`packages/patent/patent-tools/package.json` 的 `dependencies` 补 `"@deepseek-ai/dsh-value": "workspace:*"`（与同域十个包的写法一致），`pnpm-lock.yaml` 同步。反向依赖声明校验仍未实现，属 `07-ci-hardening.md` 的落地顺序第 1 条，未随本次修复落地。
 
 ### F-CROSS-003 知识库安装覆盖时先删输出，改名失败没有用例
 
@@ -1841,6 +1845,23 @@ F-PAT-012。`patent-tools/src` 不再用 `as unknown as` 穿过工具 JSON。
 - 已否决：`knowledge-core` 根入口同时导出纯函数与 `node:fs` 的安装助手——`grep` 显示其消费者只有 `patent-core`、`patent-knowledge`、`legal-knowledge` 三个 Node 侧包，不进入客户端构建，不构成实际问题；仅作为包边界整洁度观察，不立发现。
 - 已否决：Day 3 提出的"资产定位不一致"。`patent-rule`/`law`/`fees`/`deadline`/`writing-patterns` 用单层 `../assets` 且在主进程内经 Electron fs 垫片读取；`patent-document`/`filing` 因模块嵌套更深或资产交给 Python 子进程，必须用双候选路径加 `unpackedFsPath`。两类都能在 ASAR 下命中，真正的差异是失败方向（见 F-PAT-002 与 F-PAT-004）。
 
+### 批次 R-F1：P0 与首轮 P1 修复（2026-11-19）
+
+收掉唯一 P0 与 G1–G4 中三条可派发 P1。四条都属「缺输入或缺声明被读成通过」，改动只影响这四条路径。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-045 | `parallel_lower_levels` 改用严格的 `parseJsonStringArray`：字段缺失按结构错误降级，不再收成空数组。`checkRecord` 的通过条件增加「并列下位非空」，显式空数组时按未通过处理，报告写「无可比对下位」而不是「效果一致：是」 | `patent-core/src/atoms/handlers/builtin/claim-breadth.ts` |
+| F-DOC-010 | `format: 'html'` 时占位符判定改用 HTML 口径：`<pre>`、`<code>`、`<kbd>`、`<samp>` 的内容按引用文本处理（只报 `warn`），注释、标签、属性值与 `<script>`/`<style>` 的内容按不可见文本处理；标签扫描不因属性值里的 `>` 提前结束，闭合标签不当作开标签；Markdown 路径不变 | `document-deliver/src/checks.ts` |
+| F-LEG-013 | 效力过滤前置到截断之前。SQLite 侧按页取行直到凑满 `limit` 条可见记录或行耗尽（`findRowsLikePage` 与 FTS/LIKE 查询的 `LIMIT ? OFFSET ?`，页内行按主键排序以保证翻页不重不漏）；内存侧 `searchInMemory` 改为取满命中记录再过滤。`fetchFactor` 随之删除 | `legal-knowledge/src/shared/sqlite-search.ts`、`legal-knowledge/src/legal/search.ts`、`legal-knowledge/src/judicial-interpretation/search.ts` |
+| F-CROSS-002 | `dependencies` 补 `"@deepseek-ai/dsh-value": "workspace:*"`，`pnpm-lock.yaml` 同步 | `patent-tools/package.json` |
+
+**行为变化**：模型漏给 `parallel_lower_levels` 时 `claim-breadth` 不再返回「通过」，而是按结构错误降级；显式给空数组且称效果一致时判未通过。HTML 交付件里的代码示例、编辑注释与属性占位符不再被 P0 门禁拒绝登记，与同一内容的 Markdown 交付件判定一致；正文里的残余占位符仍阻断。法规检索在失效版本占满召回窗口时仍返回现行版本，SQLite 与内存后端给出同一集合。`patent-tools` 的依赖图、catalog 与 SBOM 补回一条真实边。
+
+**既有测试行为**：`claim-breadth-atom.spec.ts` 的「空摘录按未通过处理」用例原本用空数组配 `all_parallel_same_effect: true`，该输入现在有第二条未通过理由，断言不变。`sqlite-engines-branches.spec.ts` 原「applies fetchFactor and postFilter only when declared」用例随 `fetchFactor` 删除改写为「applies postFilter only when declared」，并新增一条翻页用例。
+
+验证：`pnpm exec vitest run packages/patent/ packages/document/ packages/legal/ packages/law/` 通过（485 文件、8412 用例，4 skipped）；`pnpm run typecheck` 5/5；`pnpm run lint` 0 warnings 0 errors；`pnpm run test:docs` 30 passed；`pnpm run verify-package-dependencies` 104 package(s) match the published dependency policy；五个改动源码文件在聚焦 `--coverage.include` 下均为 100%（语句、分支、函数、行）。
+
 ### Day 44 抽样复核（2026-11-18）
 
 从 P0 全取、P1 按域各取，共 10 条回到源码逐点取证；明细与命令见 [daily/day-44.md](daily/day-44.md)。
@@ -1858,7 +1879,7 @@ F-PAT-012。`patent-tools/src` 不再用 `as unknown as` 穿过工具 JSON。
 | F-PAT-024 | 7（P1） | 七个专利包入口（`patent-teams/src/index.ts` 10 对 10；`patent-data/src/index.ts` 15 对 16） | 成立 |
 | F-PAT-047 | —（deferred） | `patent-core/src/workflow/types.ts:190`；`patent-workflow/src/workflow.ts:481` | 维持 deferred |
 
-抽样误报 0 条。截至本日，全部 98 条编号发现中没有任何一条被改判为 false-positive；此前否决的 2 条在编号前即被拦下（见本节前两条）。
+抽样误报 0 条。截至本日，全部 98 条编号发现中没有任何一条被改判为 false-positive；此前否决的 2 条在编号前即被拦下（见本节前两条）。其中 F-PAT-045、F-DOC-010、F-LEG-013、F-CROSS-002 四条于 2026-11-19 的批次 R-F1 修复，详见「批次 R-F1：P0 与首轮 P1 修复」。
 
 ## 观察列表
 

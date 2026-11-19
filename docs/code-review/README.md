@@ -75,7 +75,7 @@
 - Day 43 已完成（2026-11-18）：CI 门禁建议定稿。12 条建议逐条裁定——采纳 7 条、部分已落地 2 条、降级为可选观察 1 条、拒绝 2 条；拒绝依据是 H08、H09 已被推翻，降级依据是 H03 已被推翻且本机无 LibreOffice。`verify-patent-core-exports` 记为「导出面消费者校验」的部分落地。见 [07-ci-hardening.md](07-ci-hardening.md)。
 - Day 44 已完成（2026-11-18）：抽样 10 条回到源码取证（P0 全取、P1 按域各取、另取 1 条 deferred）。9 条仍成立、1 条维持 deferred、误报 0。见 [daily/day-44.md](daily/day-44.md) 与 [05-findings.md](05-findings.md) 的「Day 44 抽样复核」。
 - Day 45 已完成（2026-11-18）：复盘四张表填完。98 条发现、修复率 57%、误报 0、根因型 19 条；假设命中 1 条、部分命中 5 条、推翻 4 条。下一周期建议为专利域 30 天紧凑版、维度顺序改为先 E 后 B。见 [08-retrospective.md](08-retrospective.md)。
-- 当前进度：D1–D45 全部完成，共 98 条编号发现，56 条已修复、42 条未修。未修 42 条按 P0 1 / P1 9 / P2 26 / P3 6 分布，分派顺序见 [06-priority.md](06-priority.md) 的「未修条目打分（Day 44）」与 G1–G4 分组。下一周期的范围、天数与待确认事项见 [08-retrospective.md](08-retrospective.md)。
+- 当前进度：D1–D45 全部完成，共 98 条编号发现，60 条已修复、38 条未修。未修 38 条按 P0 0 / P1 6 / P2 26 / P3 6 分布，分派顺序见 [06-priority.md](06-priority.md) 的「未修条目打分（Day 44）」与「批次 R-F1 首轮修复」。下一周期的范围、天数与待确认事项见 [08-retrospective.md](08-retrospective.md)。
 - 已确认：45 天周期、包含 `packages/law`、视频按实验特性、在 Node 24 补跑构建与覆盖率基线。
 - 本目录的中文单语文档已加入 `scripts/translation-pairing.manifest.json` 的豁免清单；`verify-translation-pairing` 复跑通过。
 
@@ -91,6 +91,8 @@
 - P4 D 测试缺口（D27–D33）：[#846](https://github.com/xujian519/dsh-patent/issues/846)
 - P5 E 正确性与边界（D34–D40）：[#847](https://github.com/xujian519/dsh-patent/issues/847)
 - P6 收敛（D41–D45）：[#848](https://github.com/xujian519/dsh-patent/issues/848)
+
+修复队列另有跟踪 issue：[#916 [代码审阅] 修复队列（跟踪）：四域 45 天计划余下 38 条](https://github.com/xujian519/dsh-patent/issues/916)。审阅周期已于 2026-11-18 执行完毕，此后各批修复在 #916 上跟踪，直到未修条目处置完毕。
 
 每日执行记录仍以 `daily/` 为准；阶段 issue 只跟踪该阶段的范围、检查项与验收。
 

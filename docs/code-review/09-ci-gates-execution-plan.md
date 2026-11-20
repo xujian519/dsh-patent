@@ -276,7 +276,7 @@ ptc-runtime 的 worker 超时已由 `packages/ptc-runtime/ptc-runtime-node/tests
 - `tests/minimax.spec.ts:441` — 终态状态机断言
 - `tests/comfyui.spec.ts:478` — 空产物时 STOPPED 而非 FAILED
 
-**已补两项**（`tests/store.spec.ts` 的 `budget ledger` describe）：
+**已补三项**：
 
 ### 7a. 并发预算不变量
 
@@ -293,29 +293,19 @@ it('keeps every charge when many append at once', async () => {
 })
 ```
 
-### 7b. 跨进程账本一致性
+### 7b. 真实跨进程账本一致性
 
-两个 `Context` 各自持有 `LocalFileSystem` 指向同一目录，是在同进程内能构造的最接近双进程的形态。进程内 key 锁是模块级共享的，因此这一条实际固定的是"独立文件系统实例并发追加后账本不丢条目"；写入冲突后的重试分支由 7c 显式注入 stale 版本覆盖。
+`tests/store.two-process.e2e.ts` 启动两个独立 Node 子进程，经 built `lib/` 调用同一个 `appendLedgerEntry`。每个子进程完成首次读取后、首次 guarded create 前通过 IPC 报告就绪；父进程等两者都到达屏障再同时放行，因此必然有一个进程创建成功，另一个进程收到 `FS_NOT_OBSERVED` 并重试，而不是依赖调度概率产生冲突。
 
-```typescript
-it('keeps every charge two file-system contexts write concurrently', async () => {
-  const peer = new Context()
-  await peer.plugin(LocalFileSystem, { cwd: root }).await()
-  await Promise.all([
-    appendLedgerEntry(ctx, projectPath, entry({ taskId: 'local-a' }), ledgerDir, root),
-    appendLedgerEntry(peer, projectPath, entry({ taskId: 'peer-b' }), ledgerDir, root),
-    appendLedgerEntry(ctx, projectPath, entry({ taskId: 'local-c' }), ledgerDir, root),
-    appendLedgerEntry(peer, projectPath, entry({ taskId: 'peer-d' }), ledgerDir, root),
-  ])
-  const ledger = await readLedger(ctx, projectPath, ledgerDir, root)
-  expect(ledger.map(item => item.taskId).sort()).toEqual(['local-a', 'local-c', 'peer-b', 'peer-d'])
-  expect(ledgerCost(ledger)).toBe(8)
-})
-```
+- 不同 `taskId`：两个子进程都返回 `true`，外部读取宿主账本确认两条费用和总成本均未丢失。
+- 相同 `taskId`：恰好一个子进程返回 `true`，宿主账本只保留一条该任务的费用。
+- 每个用例禁用重试，分别断言子进程未超时、未被信号终止且退出码为 0；`finally` 终止仍存活的子进程并等待全部退出后才清理临时目录。
 
-### 7c. 重试后的去重（本轮补）
+`tests/store.spec.ts` 中两个同进程 `Context` 的用例继续固定独立文件系统实例的并发追加；模块级 key 锁仍由这些实例共享，不再把该用例作为跨进程证据。
 
-7a/7b 的竞态只写入了不同 `taskId`，`appendLedgerEntry` 在 stale 版本重试后命中"同 task 已结算"而返回 `false` 的分支一直没有断言——重试路径若丢掉去重检查，同一任务就会被重复计费。用注入 `FS_STALE_VERSION` 的 `writeText` 让"对端先结算了同一任务"必然发生：
+### 7c. 重试后的去重
+
+7b 固定 guarded create 冲突后的去重；已有账本的 `replaceIfVersion` stale 分支另由本项覆盖。注入 `FS_STALE_VERSION` 的 `writeText` 让"对端先结算了同一任务"必然发生，证明替换冲突后的重试也会命中"同 task 已结算"并返回 `false`：
 
 ```typescript
 it('settles a task once when a racing writer charged it first', async () => {
@@ -342,11 +332,16 @@ it('settles a task once when a racing writer charged it first', async () => {
 })
 ```
 
-**落地位置**：`packages/experimental/video-mode/tests/store.spec.ts`（复用既有 fixture，不新建文件）
+**落地位置**：`packages/experimental/video-mode/tests/store.spec.ts` 固定同进程分支；`tests/store.two-process.e2e.ts` 与 `tests/fixtures/ledger-writer.mjs` 固定真实跨进程发布。
 
-**CI**：已在 `node-coverage` lane
+**CI**：源码 spec 在 `node-coverage` lane；跨进程 e2e 由 built-artifact 发现器纳入构建后的 e2e family，未构建时跳过，不增加源码 unit lane 的 skip 数量。
 
-**验收（已达成）**：`vitest run tests/store.spec.ts` → 29 passed；去掉 `entries.some(...)` 去重后 7c 立即失败（`expected true to be false`），证明该用例钉住的是重试后的去重分支而非并发本身
+**验收（已达成）**：
+
+- `pnpm exec vitest run packages/experimental/video-mode/tests/store.spec.ts --retry=0` → 29 passed。
+- `pnpm exec vitest run --config vitest.e2e.config.ts packages/experimental/video-mode/tests/store.two-process.e2e.ts --retry=0` → 2 passed。
+- 在 built `lib/` 临时移除 `createIfAbsent` 后，7b 不同任务用例失败，账本只剩 `process-a`；恢复后临时移除重试路径的 `entries.some(...)`，7b 相同任务用例失败，两个进程都返回 `true`。两次 mutation 后均恢复产物。
+- 既有 7c mutation 保留：去掉 `entries.some(...)` 去重后同进程 stale 重试用例失败（`expected true to be false`）。
 
 ---
 

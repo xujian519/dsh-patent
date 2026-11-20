@@ -78,6 +78,7 @@
 - Day 44 已完成（2026-11-18）：抽样 10 条回到源码取证（P0 全取、P1 按域各取、另取 1 条 deferred）。9 条仍成立、1 条维持 deferred、误报 0。见 [daily/day-44.md](daily/day-44.md) 与 [05-findings.md](05-findings.md) 的「Day 44 抽样复核」。
 - Day 45 已完成（2026-11-18）：复盘四张表填完。98 条发现、修复率 57%、误报 0、根因型 19 条；假设命中 1 条、部分命中 5 条、推翻 4 条。下一周期建议为专利域 30 天紧凑版、维度顺序改为先 E 后 B。见 [08-retrospective.md](08-retrospective.md)。
 - 当前进度：D1–D45 全部完成，共 98 条编号发现，60 条已修复、38 条未修。未修 38 条按 P0 0 / P1 6 / P2 26 / P3 6 分布，分派顺序见 [06-priority.md](06-priority.md) 的「未修条目打分（Day 44）」与「批次 R-F1 首轮修复」。下一周期的范围、天数与待确认事项见 [08-retrospective.md](08-retrospective.md)。
+- 工具指标周期：P0 已完成；P2 脚本场景（D13–D22）已执行，14 题可测、10/14 闭环、12/12 恢复，另登记 F-PAT-056。基线见 [metrics/script-baseline.md](metrics/script-baseline.md)，执行记录从 [metrics/day-13.md](metrics/day-13.md) 起。
 - 已确认：45 天周期、包含 `packages/law`、视频按实验特性、在 Node 24 补跑构建与覆盖率基线。
 - 本目录的中文单语文档已加入 `scripts/translation-pairing.manifest.json` 的豁免清单；`verify-translation-pairing` 复跑通过。
 

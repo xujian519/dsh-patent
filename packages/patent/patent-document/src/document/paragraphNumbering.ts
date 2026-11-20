@@ -10,6 +10,8 @@
  * @module @deepseek-ai/dsh-patent-document/document/paragraphNumbering
  */
 
+import { escapeRegExp } from '@deepseek-ai/dsh-value'
+
 import { findMatchingCloseTag } from './htmlScan.ts'
 
 /** 声明「本节内逐段编号」的属性名；属性值同时给出编号形态。 */
@@ -50,15 +52,6 @@ export function parseNumberExemplar(value: string): NumberExemplar | undefined {
   if (match === null) return undefined
   const [, prefix = '', digits = '', suffix = ''] = match
   return { prefix, suffix, width: digits.length }
-}
-
-/**
- * 转义正则元字符，用于把模板给出的字面前缀与后缀拼进正则。
- * @param value - 字面文本。
- * @returns 可安全嵌入正则的字面文本。
- */
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 /**

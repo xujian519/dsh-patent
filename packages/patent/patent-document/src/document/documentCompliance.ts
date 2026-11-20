@@ -18,6 +18,8 @@
  * @module @deepseek-ai/dsh-patent-document/document/documentCompliance
  */
 
+import { escapeRegExp } from '@deepseek-ai/dsh-value'
+
 import { parseCnNumber } from '@deepseek-ai/dsh-patent-core'
 import { findMatchingCloseTag } from './htmlScan.ts'
 
@@ -213,11 +215,6 @@ const BLANK_ID_RE = /^_*$/
 
 /** 编号区间的最大跨度：`D1–D4` 按四条展开，跨度更大的写法按普通文字处理。 */
 const MAX_ID_RANGE_SPAN = 9
-
-/** 正则元字符转义：编号前缀取自文档内容，直接拼进正则会被当成元字符。 */
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
 
 /**
  * 取捕获组文本。捕获组由本模块各正则的必选分组保证存在，空值分支不可达，只为满足

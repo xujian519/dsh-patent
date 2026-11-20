@@ -61,7 +61,7 @@
 | F-PAT-026 | `patent-teams` 内部 5 处结构克隆，事件载荷与邮箱结算各有两个编码 | PAT | B | Low | 高 | new |
 | F-PAT-027 | 子进程超时/取消骨架 4 份，已抽好的 `subprocess-render` 未被其余 3 处复用 | PAT | B | Medium | 高 | fixed |
 | F-PAT-028 | 输出目录与安全文件名判定 4 种编码，中文案卷号在两个工具间接受集相反 | PAT | B | Medium | 高 | fixed |
-| F-PAT-029 | `escapeRegExp` 专利域内 4 份命名封装 + 6 处内联，仓内无共享实现 | PAT | B | Low | 高 | new |
+| F-PAT-029 | `escapeRegExp` 专利域内 4 份命名封装 + 6 处内联，仓内无共享实现 | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F5） |
 | F-PAT-030 | `patent-kg-adapter` 邻居扩展循环 3 份，两个检索引擎 `backfillContent` 近克隆 | PAT | B | Low | 高 | new |
 | F-PAT-031 | `templateDraft` 的 `openEnd` 是死字段，两处用 `indexOf` 重新定位已命中位置 | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F5） |
 | F-PAT-032 | 判例零命中检索整表解压 LIKE，约 4.6 秒 | PAT | C | Medium | 中 | new |

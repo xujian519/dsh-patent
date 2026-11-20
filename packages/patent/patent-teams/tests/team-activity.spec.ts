@@ -78,4 +78,15 @@ describe('TeamActivity', () => {
     // The entry is removed on settlement, so notifying afterwards is a no-op.
     expect(() => { activity.notify('team1') }).not.toThrow()
   })
+
+  it('removes internal waiter state after timeout (F-PAT-035)', async () => {
+    // 第一个 wait timeout 后，内部 waiters Map 应清空。第二个 wait 同 teamId，
+    // notify 只唤醒它——如果 finish() 漏了 waiters.delete，第一次 timeout 后
+    // 残留的 waiter 会在第二次 notify 时也 resolve，造成双唤醒。
+    const activity = new TeamActivity()
+    await activity.wait('team1', 5, new AbortController().signal)
+    const second = activity.wait('team1', 60_000, new AbortController().signal)
+    activity.notify('team1')
+    await expect(second).resolves.toEqual({ timedOut: false })
+  })
 })

@@ -64,4 +64,20 @@ describe('createNuoSearchProvider', () => {
     expect(await provider.search!('thermal')).toEqual([])
     expect(search).toHaveBeenCalledWith('thermal', { limit: 5 })
   })
+
+  it('propagates errors from the underlying search (F-PAT-038)', async () => {
+    const search = vi.fn(async (): Promise<PatentSearchResult> => {
+      throw new Error('nuo connection lost')
+    })
+    const provider = createNuoSearchProvider({ search })
+    await expect(provider.search!('thermal')).rejects.toThrow('nuo connection lost')
+  })
+
+  it('propagates timeouts from the underlying search (F-PAT-038)', async () => {
+    const search = vi.fn(async (): Promise<PatentSearchResult> => {
+      throw new Error('timeout')
+    })
+    const provider = createNuoSearchProvider({ search })
+    await expect(provider.search!('thermal')).rejects.toThrow('timeout')
+  })
 })

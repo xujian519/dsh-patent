@@ -136,6 +136,20 @@ describe('unsatisfiedDependencies', () => {
     expect(unsatisfiedDependencies(tasks, ['t2'])).toEqual(['t2'])
     expect(unsatisfiedDependencies(tasks, ['t1', 't2', 'ghost'])).toEqual(['t2', 'ghost'])
   })
+
+  it('treats every non-completed status as unsatisfied (F-PAT-036)', () => {
+    // unsatisfiedDependencies 的判定是 `status !== 'completed'`。
+    // 把五种非 completed status 都列一遍，确保调度器在"失败/取消/进行中"三种
+    // 语义下都不会错误认领依赖未闭合的任务。
+    const allStatuses = (['pending', 'claimed', 'in_progress', 'failed', 'cancelled'] as const)
+    for (const status of allStatuses) {
+      const oneTask = [makeTask({ id: 'd', status })]
+      expect(unsatisfiedDependencies(oneTask, ['d'])).toEqual(['d'])
+    }
+    // completed 单独应返回空。
+    const complete = [makeTask({ id: 'd', status: 'completed' })]
+    expect(unsatisfiedDependencies(complete, ['d'])).toEqual([])
+  })
 })
 
 describe('task transitions', () => {

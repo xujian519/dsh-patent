@@ -51,20 +51,20 @@
 | F-PAT-016 | ego-browser 子进程继承完整 `process.env` | PAT | A | Low | 中 | fixed |
 | F-PAT-017 | 交付前引用门禁只覆盖 `render_patent_document`，立案构建不经引用核验 | PAT | A/E | High | 低 | fixed |
 | F-PAT-018 | 后台运行接受模型自报的 `approveStageIds`，HITL 审批可绕过 | PAT | A | High | 中 | fixed |
-| F-PAT-019 | 同一管线状态的文本读取有 4 份实现，键列表解析已漂移 | PAT | B | Low | 高 | new |
+| F-PAT-019 | 同一管线状态的文本读取有 4 份实现，键列表解析已漂移 | PAT | B | Low | 高 | confirmed（2026-11-20，批次 R-F5） |
 | F-PAT-020 | 权项号派生两包各一份，无编号时的缺省语义相反 | PAT | B | Low | 中 | new |
 | F-PAT-021 | `workflow/types.ts` 两处 JSDoc 指向不存在的 `./workflow-store.js` | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F5） |
-| F-PAT-022 | `figure/` 几何与文本度量原语重复，`orientation` 同名异义 | PAT | B | Low | 高 | new |
-| F-PAT-023 | `freecad-structure-script.ts` 1233 行里 940 行是内嵌 Python | PAT | B | Low | 高 | new |
+| F-PAT-022 | `figure/` 几何与文本度量原语重复，`orientation` 同名异义 | PAT | B | Low | 高 | confirmed（2026-11-20，批次 R-F5） |
+| F-PAT-023 | `freecad-structure-script.ts` 1233 行里 940 行是内嵌 Python | PAT | B | Low | 高 | confirmed（2026-11-20，批次 R-F9） |
 | F-PAT-024 | 插件默认值两份来源：七个专利包 42 对 `??` 重述、2 处同义重述、1 处第三种缺省 | PAT | B | Medium | 高 | fixed |
-| F-PAT-025 | 规则资产 YAML 失败处理惯用法重复 5 处，顶层对象校验两种写法 | PAT | B | Low | 高 | new |
-| F-PAT-026 | `patent-teams` 内部 5 处结构克隆，事件载荷与邮箱结算各有两个编码 | PAT | B | Low | 高 | new |
+| F-PAT-025 | 规则资产 YAML 失败处理惯用法重复 5 处，顶层对象校验两种写法 | PAT | B | Low | 高 | confirmed（2026-11-20，批次 R-F5） |
+| F-PAT-026 | `patent-teams` 内部 5 处结构克隆，事件载荷与邮箱结算各有两个编码 | PAT | B | Low | 高 | confirmed（2026-11-20，批次 R-F8） |
 | F-PAT-027 | 子进程超时/取消骨架 4 份，已抽好的 `subprocess-render` 未被其余 3 处复用 | PAT | B | Medium | 高 | fixed |
 | F-PAT-028 | 输出目录与安全文件名判定 4 种编码，中文案卷号在两个工具间接受集相反 | PAT | B | Medium | 高 | fixed |
 | F-PAT-029 | `escapeRegExp` 专利域内 4 份命名封装 + 6 处内联，仓内无共享实现 | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F5） |
-| F-PAT-030 | `patent-kg-adapter` 邻居扩展循环 3 份，两个检索引擎 `backfillContent` 近克隆 | PAT | B | Low | 高 | new |
+| F-PAT-030 | `patent-kg-adapter` 邻居扩展循环 3 份，两个检索引擎 `backfillContent` 近克隆 | PAT | B | Low | 高 | confirmed（2026-11-20，批次 R-F8） |
 | F-PAT-031 | `templateDraft` 的 `openEnd` 是死字段，两处用 `indexOf` 重新定位已命中位置 | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F5） |
-| F-PAT-032 | 判例零命中检索整表解压 LIKE，约 4.6 秒 | PAT | C | Medium | 中 | new |
+| F-PAT-032 | 判例零命中检索整表解压 LIKE，约 4.6 秒 | PAT | C | Medium | 中 | confirmed（2026-11-20，批次 R-F8） |
 | F-PAT-033 | 附图渲染截止期的 `dispose` 没有用例锁住监听清理 | PAT | D | Medium | 中 | confirmed（2026-11-20，批次 R-D1） |
 | F-PAT-034 | `patent_pdf_download` 成功落盘后不检查清单里的 sha1 | PAT | D | Medium | 低 | new |
 | F-PAT-035 | 团队等待结束后不检查 abort 监听是否摘掉 | PAT | D | Medium | 中 | fixed（2026-11-20，批次 R-D1） |

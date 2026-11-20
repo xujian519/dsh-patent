@@ -46,7 +46,7 @@
 - 补全声明后退出 0：`104 package(s) match the published dependency policy`
 - 全仓扫描耗时远低于 lane 预算
 
-**遗留**：`scripts/verify-package-dependencies.spec.ts` 的自动化 case 未补，当前靠真实反例与 CI step 双重把关。
+**测试**：`scripts/verify-package-dependencies.spec.ts` 的 `reverse import declarations` describe 覆盖三条路径——未声明导入报 violation、任一节声明即通过、自引用/非 workspace/vendored manifest 不报。
 
 ---
 

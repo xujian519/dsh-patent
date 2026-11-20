@@ -178,6 +178,20 @@ D43–D45 已于 2026-11-18 完成：门禁裁定见 [07-ci-hardening.md](07-ci-
 
 修后未修条目为 38 条：P0 0 / P1 6 / P2 26 / P3 6（其中 1 条 `F-PAT-047` 维持 `deferred`，不计入可派发项，故可派发 P1 为 5 条）。可派发的 P1 剩：F-PAT-024、F-PAT-027、F-PAT-028、F-VID-008（F-VID-014 为 P2）。
 
+## 批次 R-F2 配置单源与视频路径（2026-11-20）
+
+与结构复用批次同为 R-F2，按改动面拆成独立 PR。本批收掉两条、延期一条：
+
+| 条目 | 原队列 | 改法 | 结果 |
+|---|---|---|---|
+| F-PAT-024 | P1 | 七个专利包的 `Config` 收敛为单源：六个包套用 F-DOC-004 的 (a)（字段必填 + `z<Partial<Config>, Config>` + 删消费侧 `??`），`patent-knowledge` 走 (b)（schema 只校验，缺省在 `resolveKnowledgePaths` 落定一次） | fixed |
+| F-VID-014 | P1 | `video_project` 五个动作统一发布 `ctx.fs.processPath(target)` 的解析路径，`mutateProject` 随工程返回同一个值 | fixed |
+| F-VID-008 | P1 | 文法单源需要非实验共享包或迁移 studio 客户端；试做的实现被 client bundle 输入隔离门禁拒绝（非实验 client 输出不得内联 `packages/experimental/` 源码） | deferred |
+
+F-PAT-024 的对外可见变化（七个包导出的 `Config` 中带缺省值的字段由可选变必填）已记录在[升级指南](../upgrade-guide/v0.2.2-rc.5/patent-plugin-config-defaults/guide.md)。
+
+与同批的 R-F2 结构复用批次（[#923](https://github.com/xujian519/dsh-patent/pull/923)，F-PAT-027、F-PAT-028）合并计，修后未修条目为 34 条：P0 0 / P1 2 / P2 26 / P3 6。可派发 P1 为 0：剩下的 F-VID-008 与 F-PAT-047 均为 `deferred`，前者等结构 PR，后者等真实续接立项。
+
 ## 未修条目打分（Day 44，2026-11-18）
 
 对 42 条仍为 `new`、`confirmed`、`deferred` 的条目补打分，使验收条件「每个 P0/P1 条目可直接分派」成立。紧迫性取值：A 维度计「立即」，含 E 维度计「本周期」，其余计「可延后」。已修条目沿用首次打分的队列，本表不重打。

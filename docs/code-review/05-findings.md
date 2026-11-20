@@ -56,7 +56,7 @@
 | F-PAT-021 | `workflow/types.ts` 两处 JSDoc 指向不存在的 `./workflow-store.js` | PAT | B | Low | 高 | new |
 | F-PAT-022 | `figure/` 几何与文本度量原语重复，`orientation` 同名异义 | PAT | B | Low | 高 | new |
 | F-PAT-023 | `freecad-structure-script.ts` 1233 行里 940 行是内嵌 Python | PAT | B | Low | 高 | new |
-| F-PAT-024 | 插件默认值两份来源：七个专利包 42 对 `??` 重述、2 处同义重述、1 处第三种缺省 | PAT | B | Medium | 高 | new |
+| F-PAT-024 | 插件默认值两份来源：七个专利包 42 对 `??` 重述、2 处同义重述、1 处第三种缺省 | PAT | B | Medium | 高 | fixed |
 | F-PAT-025 | 规则资产 YAML 失败处理惯用法重复 5 处，顶层对象校验两种写法 | PAT | B | Low | 高 | new |
 | F-PAT-026 | `patent-teams` 内部 5 处结构克隆，事件载荷与邮箱结算各有两个编码 | PAT | B | Low | 高 | new |
 | F-PAT-027 | 子进程超时/取消骨架 4 份，已抽好的 `subprocess-render` 未被其余 3 处复用 | PAT | B | Medium | 高 | new |
@@ -119,13 +119,13 @@
 | F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | fixed |
 | F-VID-006 | `StrictRequest` 与 `MediaTaskRequest` 字段完全重复 | VID | B | Low | 高 | fixed |
 | F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | fixed |
-| F-VID-008 | `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份 | VID | B | Medium | 高 | confirmed |
+| F-VID-008 | `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份 | VID | B | Medium | 高 | deferred |
 | F-VID-009 | 云 provider 的 submit/poll 与图片编码骨架各写一遍，拷贝已漂移 | VID | B | Low | 高 | confirmed |
 | F-VID-010 | store 的「锁 + 读 + 改 + 写」骨架三处各写一遍 | VID | B | Low | 高 | confirmed |
 | F-VID-011 | 预算检查是 check-then-act，同一工程的并发生成可以超额 | VID | E | Medium | 中 | fixed |
 | F-VID-012 | 失效的 journal 记录没有工具侧清理路径 | VID | E | Medium | 中 | fixed |
 | F-VID-013 | `status` 对 `artifacts: []` 的成功任务照常结算并清 journal | VID | E | Low | 中 | fixed |
-| F-VID-014 | 项目身份取工具结果里的原始路径，绝对与相对写法会让同一工程出现两次 | VID | E | Low | 高 | new |
+| F-VID-014 | 项目身份取工具结果里的原始路径，绝对与相对写法会让同一工程出现两次 | VID | E | Low | 高 | fixed |
 | F-VID-015 | EDL 音频片段的 `inSec`/`outSec` 不校验顺序，校验晚到 ffmpeg | VID | E | Low | 中 | new |
 | F-CROSS-001 | 四域另有 4 份 `messageOf`/`errorText` 与 1 份可并的 `asRecord`，而 `dsh-value` 已有对应原语且 11 个域内包已依赖它 | CROSS | B | Low | 高 | new |
 | F-CROSS-002 | `patent-tools` 导入未声明的 workspace 依赖 `@deepseek-ai/dsh-value`，运行产物靠打包内联掩盖 | CROSS | B/E | Low | 高 | fixed |
@@ -460,7 +460,27 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：二选一，唯一要求是每个字段的默认值只有一处。(a) 套用 F-DOC-004 已落地的修法：`Config` 接口字段改必填 + `z<Partial<Config>, Config>`，删掉 `apply()` 里的 `??`；(b) 反向对齐 `patent-workflow`：schema 只校验、不写 `.default`，由显式 `resolveXxxConfig(config)` 落缺省。`patent-knowledge` 与 `patent-document` 的 `??` 兼作库级兜底（调用方可以完全不给 `config`），改为必填时需保留一条「无 Loader 调用」的入口，否则 standalone 用法断掉。两者都是对外可见的 `Config` 类型变化，需按 `dsh-create-upgrade-guide` 记录。净减少：42 行重复默认 + 2 处同义判定 + 1 处第三种缺省消失，且「半解析配置」状态随之消失；上表可直接作为按包勾选的修改清单。
 - 预估工作量：M（七个包，逐包同形改法）
 - 是否可自动化：部分（可加一条门禁：同包内同一字段同时出现 schema `.default` 与 `config.X ?? 默认值` 即报错）
-- 状态：new
+- 状态：fixed（2026-11-20，批次 R-F2）
+
+**修复记录（2026-11-20，批次 R-F2）**
+
+七个包按上表逐包收敛为单源，逐包选择：
+
+| 包 | 修法 | 落地 |
+|---|---|---|
+| `patent-teams` | (a) | 接口 10 个字段去 `?`（`memberModel?` 保留）、`export const Config: z<Partial<Config>, Config>`、`apply()` 直接读字段，`memberModel` 用条件展开保持「未配置即不传」 |
+| `patent-rule` | (a) | 顶层 7 个字段去 `?`（`rulesDir?`/`manifestPath?` 保留）；`approvalDisabled` 直接读布尔、`gateToolNames` 直接构造 `Set` |
+| `patent-data` | (a) | 15 个字段去 `?`；`static Config: z<Partial<Config>, Config>`；构造器签名 `config: Config = PatentData.Config({})` 保住无 Loader 调用入口，`positiveInteger(...)` 校验与报错文案不变 |
+| `patent-filing` | (a) | `outputRoot`/`figureScale`/`timeoutMs` 去 `?`；`templatePath?`/`specPath?` 保留 |
+| `writing-patterns` | (a) | `matchLimit`/`registerSection`/`sectionCategories`/`sectionOrder`/`stagePatterns` 去 `?`；`stagePatterns` 的 3–5 条约束由 `z.dict(z.array(...).min(3).max(5))` 前移到 schema，重复/未知 id 校验仍留在服务构造函数（公开库入口可绕过 schema） |
+| `patent-knowledge` | (b) | schema 只校验不写 `.default`；`resolveKnowledgePaths(config = {})` 是唯一缺省来源，`new PatentKnowledge(ctx)` 的无配置入口与 `nodeCacheMaxEntries` 缺省均保留 |
+| `patent-document` | (a) | `outputRoot`/`pdfTimeoutMs` 去 `?`；`outputRoot` 的 schema 缺省改为引用 `DEFAULT_OUTPUT_DIR`，`.dsh/documents` 字面量只剩一处；`apply()` 不再条件展开 |
+
+对外可见变化：七个包导出的 `Config` 接口中带缺省值的字段由可选变必填，以裸局部对象调用 `apply()` 或构造器的 TypeScript 消费者需先过该包的 `Config(...)`；`cordis.yml` 无需改动。已按 `dsh-create-upgrade-guide` 记录于 [patent-plugin-config-defaults](../upgrade-guide/v0.2.2-rc.5/patent-plugin-config-defaults/guide.md)。
+
+行为不变项：`patent-knowledge` 的 `PatentKnowledge.Config({})` 不再填充 `knowledgeDir`/`sourceDbPath`/`nodeCacheMaxEntries`（解析值改读 `resolveKnowledgePaths()`）；`patent-data`/`patent-document` 的无 Loader 调用入口缺省值与修前一致；`writing-patterns` 的 `stagePatterns` 越界错误改为在 schema 层抛出，重复/未知 id 的域名报错文案不变。
+
+验证：`pnpm exec vitest run packages/patent packages/experimental/video-mode` 全绿（421 文件 / 7430 passed）、聚焦覆盖率 100%、`pnpm run typecheck` 与 `pnpm run lint` 通过。
 
 ### F-PAT-025 规则资产 YAML 失败处理惯用法重复 5 处，顶层对象校验两种写法
 
@@ -1352,7 +1372,21 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 净减少：客户端约 130 行解析/校验代码换成约 50 行投影加共享调用，净 **−60~−80 行**；Host 两处 `max` 合并 **−1 行**；主要收益是文法单源与校验强度回归。
 - 预估工作量：M（新增 browser-safe 入口要登记 `tsconfig` files 并重跑 `gen-module-graph`）
 - 是否可自动化：部分。可加一条对照测试：同一 fixture 分别过 Host `projectSchema` 与客户端 `parseProjectDocument`，断言接受/拒绝一致；根治做法是客户端直接复用 schema。
-- 状态：confirmed
+- 状态：deferred（2026-11-20，批次 R-F2）
+
+**延期记录（2026-11-20，批次 R-F2）**
+
+本批试做了「把文法抽成浏览器安全叶子模块、Host 与客户端共用」的最小版本，被 client bundle 的输入隔离门禁阻断，故改为延期并按结构问题另开 PR，本批不落这部分代码。
+
+阻断证据：`packages/experimental/video-mode` 是实验包（`scripts/experimental-package-policy.ts` 的 `EXPERIMENTAL_PACKAGE_NAME_EXCEPTIONS`），而消费方 `packages/client/ui-video-studio` 不是实验包。非实验 client 输出只允许内联 `packages/client/tsdown.client.ts:85` 的 `INLINE_SAFE` 名单，`clientInputIsolation` 对非实验包执行 `BundleInputIsolation.assertInput`（`scripts/bundle-input-isolation.ts:40`、`:46`、`:59`），一旦打包图里出现 `packages/experimental/` 的物理或归属输入即抛错（`packages/client/tsdown.client.ts:957`、`:964`、`:989`）。`video-mode` 本身引 `node:fs`，也不能作为 client 依赖。
+
+后续路径（择一，需独立 PR 并重跑 `gen-module-graph`）：
+
+1. 把 studio 客户端从 `packages/client/ui-video-studio` 迁到 `packages/experimental/`，与 `video-mode` 同 plane 后共用文法（改动面最大，但最彻底）。
+2. 新建非实验的共享文法包（如 `packages/video/video-schema` 或并入现有 browser-safe util 包），由 `video-mode` 与 studio 客户端同时依赖；`video-mode` 保留 Node 侧 I/O。
+3. 在现状下补一条对照测试（同一 fixture 过 Host `projectSchema` 与客户端 `parseProjectDocument`，断言接受/拒绝一致），先把校验强度分叉挡在门禁上，文法单源另做。
+
+状态口径：本条在修复队列中记为**未修**，可派发项保留。
 
 ### F-VID-009 云 provider 的 submit/poll 与图片编码骨架各写一遍，拷贝已漂移
 
@@ -1435,7 +1469,15 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：每个动作都返回 `ctx.fs.processPath(target)`；`read` 先 `resolve` 再 `processPath`，`mutateProject` 已有 `target`，直接复用。`presentationMeta` 只发布解析后的路径。
 - 预估工作量：S
 - 是否可自动化：是（Host 侧断言 `read`/`upsert_shot` 的 meta 为绝对路径；客户端加一条「同一文件的相对与绝对路径只产生一项」）
-- 状态：new
+- 状态：fixed（2026-11-20，批次 R-F2）
+
+**修复记录（2026-11-20，批次 R-F2）**
+
+`video_project` 的五个动作现在都发布解析后的绝对路径：`mutateProject` 把已算出的 `target` 过 `ctx.fs.processPath` 后随工程一起返回（`packages/experimental/video-mode/src/tools/project.ts:69`、`:78`），`init`/`read`/`upsert_shot`/`remove_shot`/`record_render` 的 `path` 与 `presentationMeta.projectPath` 全部取它，`read` 也不再原样回传调用方的相对写法。`processPath` 与 `withProjectLock` 用同一个解析值，工程身份与锁键因此一致。
+
+客户端无需改动：`video-projects.ts` 按路径字符串去重，Host 侧统一为绝对路径后，同一文件的相对与绝对写法只产生一项。
+
+验证：新增用例 `returns the resolved project path from every action, including a relative project_path`（`packages/experimental/video-mode/tests/tools.spec.ts:625`）以 `init` 的绝对路径为基准，断言其余四个动作传相对 `project_path` 时 `path` 逐字等于该绝对路径。
 
 ### F-VID-015 EDL 音频片段的 `inSec`/`outSec` 不校验顺序，校验晚到 ffmpeg
 

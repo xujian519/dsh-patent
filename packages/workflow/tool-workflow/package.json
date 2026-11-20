@@ -65,6 +65,7 @@
     "@deepseek-ai/dsh-tool-testkit": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*",
     "@deepseek-ai/dsh-workflow": "workspace:*",
-    "@deepseek-ai/dsh-workflow-ptc": "workspace:*"
+    "@deepseek-ai/dsh-workflow-ptc": "workspace:*",
+    "@deepseek-ai/dsh-util-values": "workspace:*"
   }
 }

@@ -72,7 +72,8 @@
     "zod": "4.6.6",
     "@deepseek-ai/dsh-typert-protocol": "workspace:*",
     "@deepseek-ai/dsh-storage-domain": "workspace:*",
-    "picomatch": "^4.0.7"
+    "picomatch": "^4.0.7",
+    "@deepseek-ai/dsh-value": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",

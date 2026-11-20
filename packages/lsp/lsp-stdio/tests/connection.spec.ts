@@ -323,6 +323,22 @@ describe('LspConnection edge behavior', () => {
     const conn = connectScript(script)
     await expect(conn.request('initialize', {})).resolves.toEqual({ ok: true })
   })
+
+  it('keeps serving requests after the child closes stderr and retains the tail for exit diagnostics', async () => {
+    // stderr is a bounded diagnostic tail, not a fatal transport: closing it
+    // mid-session must neither fail the connection nor drop what was already
+    // written, so a later exit still surfaces the server's own diagnosis.
+    const script = 'process.stderr.write("inkscape missing");process.stderr.end();'
+      + 'let b=Buffer.alloc(0);'
+      + 'const fr=(s)=>{const x=Buffer.from(s);return Buffer.concat([Buffer.from(`Content-Length: ${x.length}\\r\\n\\r\\n`),x]);};'
+      + 'process.stdin.on("data",c=>{b=Buffer.concat([b,c]);const s=b.indexOf("\\r\\n\\r\\n");if(s<0)return;const len=Number(/(\\d+)/.exec(b.toString("ascii",0,s))[1]);const body=JSON.parse(b.toString("utf8",s+4,s+4+len));process.stdout.write(fr(JSON.stringify({jsonrpc:"2.0",id:body.id,result:{ok:true}})));});'
+    const conn = connectScript(script)
+    await expect(conn.request('initialize', {})).resolves.toEqual({ ok: true })
+    expect(conn.failed).toBe(false)
+    conn.terminate()
+    await conn.closed
+    expect(conn.stderrTail).toContain('inkscape missing')
+  })
 })
 
 /** Poll a predicate until it holds or a deadline elapses. */

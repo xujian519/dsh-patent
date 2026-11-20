@@ -443,6 +443,38 @@ describe('outlineSvgText', () => {
     expect(outcome).toMatchObject({ ok: false, code: 'render_failed' })
     expect(outcome.ok ? '' : outcome.error).toContain('spawn 不可用')
   })
+
+  it('渲染超时（内部计时器）分类为 render_failed', async () => {
+    // Inkscape 在 spawn 前有 await readFile / mkdtemp（真实异步 fs），fake clock 无法
+    // 可靠推进到 spawn 之后再触发 deadline，故用真实时钟：超时自 deadline 注册时起算，
+    // 等待量远大于超时，留出余量让 fs 与 spawn 先完成。
+    mockFs.existing.add('/opt/homebrew/bin/inkscape')
+    const path = figureFile()
+    let signal: AbortSignal | undefined
+    const { runtime } = fakeSubprocess((spawnSpec) => {
+      signal = spawnSpec.signal
+      return {
+        stdin: undefined,
+        stdout: undefined,
+        stderr: undefined,
+        control: undefined,
+        collected: {
+          stdout: { readFrom: () => ({ text: '', nextOffset: 0, lossy: false }) },
+          stderr: { readFrom: () => ({ text: '', nextOffset: 0, lossy: false }) },
+        },
+        done: new Promise<{ exitCode: number | null; signal: NodeJS.Signals | null }>((resolve) => {
+          signal?.addEventListener('abort', () => { resolve({ exitCode: null, signal: 'SIGTERM' }) }, { once: true })
+        }),
+        terminate() {},
+        waitForExit: () => Promise.resolve(true),
+      }
+    })
+    const pending = outlineSvgText(runtime, { path }, { renderTimeoutMs: 30 })
+    await new Promise<void>(resolve => setTimeout(resolve, 150))
+    const outcome = await pending
+    expect(outcome).toMatchObject({ ok: false, code: 'render_failed' })
+    expect(outcome.ok ? '' : outcome.error).toContain('渲染超时')
+  })
 })
 
 describe('exportWithInkscape', () => {

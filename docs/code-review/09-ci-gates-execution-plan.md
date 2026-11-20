@@ -206,9 +206,24 @@ gitleaks detect --source . --report-path /tmp/gitleaks-history.json --log-opts="
 
 timeout 与 cancel 已由既有 `minimax.spec.ts`（stub fetch）覆盖，未重复。
 
-### Patent tools / LSP / PTC（未开工）
+### Patent tools / LSP / PTC（已落地）
 
-二进制不存在、渲染超时、损坏输入、stdio 断开、worker 超时五条路径仍无 contract spec。
+原计划称五条失败路径"仍无 contract spec"系误判：master 已覆盖其中大部分，真正缺口仅两处，本轮补齐。覆盖矩阵：
+
+| 失败路径 | patent-tools | lsp-stdio | ptc-runtime |
+|---|---|---|---|
+| 二进制缺失 | ✅ FreeCAD / Inkscape / Graphviz `not_installed` | — | — |
+| 渲染超时 | ✅ FreeCAD / Graphviz 既有；**本轮补 Inkscape** | — | — |
+| 损坏输入 | ✅ Inkscape 既有 | — | — |
+| stdio 断开 | — | ✅ stdin 既有；**本轮补 stderr** | — |
+| worker 超时 | — | — | ✅ `timeout.spec.ts` 完整覆盖（注入 fake child） |
+
+新增断言（均不依赖真实外部资源）：
+
+- `figure-inkscape-renderer.spec.ts`「渲染超时（内部计时器）分类为 render_failed」：fake subprocess 的 `done` 在 signal abort 时 settle，`renderTimeoutMs: 30` 触发 deadline，断言 `render_failed` 且错误含「渲染超时」。Inkscape 在 spawn 前有真实异步 fs（`readFile`/`mkdtemp`），故用真实时钟等待，而非 fake clock。
+- `connection.spec.ts`「keeps serving requests after the child closes stderr…」：子进程先 `stderr.write` + `stderr.end()` 再正常响应，断言 `conn.failed === false`，退出后 `stderrTail` 保留已写内容——固定 stderr 是诊断尾、非致命传输的契约。
+
+ptc-runtime 的 worker 超时已由 `packages/ptc-runtime/ptc-runtime-node/tests/timeout.spec.ts` 用注入的 fake child 完整覆盖，无需新增。
 
 **CI**：`node-coverage` lane 已跑 vitest，无需新 lane
 **验收（已达成）**：`vitest run tests/minimax.contract.spec.ts` → 6 passed；全量 video-mode 套件除既有 `loader-composition.spec.ts` 失败外无回归

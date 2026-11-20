@@ -163,8 +163,8 @@ describe('resolveLegalCitationPolicy', () => {
       unverified: 'warn',
     }
     const mk = (decision: LegalCitationDecision): LegalCitationFinding => ({
-      raw: 'mock',
-      reference: { law: '民法典', lawId: 'civil-code', article: 1 },
+      raw: '民法典第1条',
+      reference: { kind: 'law-article', law: '民法典', article: 1, raw: '民法典第1条' },
       decision,
       reason: '测试',
     })

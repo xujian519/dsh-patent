@@ -778,7 +778,7 @@ describe('claim_chart_build success paths', () => {
     }, 'cc-case-id')
     expect(result.isError).toBe(true)
     expect(text(result)).toContain('case_id')
-    expect(text(result)).toContain('single path segment')
+    expect(text(result)).toContain('单段路径名')
   })
 
   it('rejects null and incomplete targets with a field-level input error', async () => {

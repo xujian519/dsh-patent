@@ -2,7 +2,6 @@
  * 持久化共享工具（workflow-store / flexible-plan-store 共用）。
  *
  * - assertSafeId：文件路径安全字符校验（防 `..` / 路径分隔符 / 隐藏文件写入）
- * - assertSafePathSegment：单个路径段的校验（允许中文案卷名，仍拒绝分隔符与 `..`）
  * - atomicWriteJson：原子写（先写同目录临时文件再 rename，避免中断/并发产生半写 JSON）
  * - StoredRecordError / parseStoredJsonRecord：磁盘记录的结构错误与顶层对象解析
  * - JsonFileStore：每 id 一个 JSON 文件（`<dir>/<id>.json`）的通用单文件存储——
@@ -67,31 +66,6 @@ export function assertSafeId(id: string, what: string): void {
   if (!SAFE_ID_PATTERN.test(id)) {
     throw new RangeError(
       `Invalid ${what} ${JSON.stringify(id)}: only [A-Za-z0-9._-] allowed and must not start with "."`,
-    )
-  }
-}
-
-/**
- * 校验一个值可直接作为单段路径名：非空、不是 `.`/`..`、不以空格或点结尾、
- * 不含路径分隔符或 NUL。
- *
- * 与 {@link assertSafeId} 的差别是允许中文等非 ASCII 字符：案卷号常写作
- * `CN2024-0001` 或中文案卷名，但仍不得越出 `data/cases/<caseId>/`。
- * 尾部空格和点在 Windows 上会被文件系统忽略，`".. "` 因而可能解析为父目录。
- * @param value - 待校验的路径段。
- * @param what - 错误消息中的对象名（如 "caseId"）。
- */
-export function assertSafePathSegment(value: string, what: string): void {
-  if (
-    value.trim() === '' ||
-    value !== value.trim() ||
-    value.endsWith('.') ||
-    value.includes('/') ||
-    value.includes('\\') ||
-    value.includes('\0')
-  ) {
-    throw new RangeError(
-      `Invalid ${what} ${JSON.stringify(value)}: must be a single path segment without ".." or trailing dots/spaces`,
     )
   }
 }

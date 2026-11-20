@@ -128,8 +128,13 @@ describe('resolveOutputDir', () => {
     expect(resolveOutputDir({ caseId: 'A-1' }, '/cwd', DEFAULT_OUTPUT_DIR)).toBe(resolve('/cwd', 'data/cases/A-1/outputs'))
   })
 
+  it('accepts a Chinese caseId like the document tools do', () => {
+    expect(resolveOutputDir({ caseId: '①张三_无效案' }, '/cwd', DEFAULT_OUTPUT_DIR))
+      .toBe(resolve('/cwd', 'data/cases/①张三_无效案/outputs'))
+  })
+
   it('rejects an unsafe caseId instead of escaping the case directory', () => {
-    expect(() => resolveOutputDir({ caseId: '../escape' }, '/cwd', DEFAULT_OUTPUT_DIR)).toThrow(/Invalid 案卷号/)
+    expect(() => resolveOutputDir({ caseId: '../escape' }, '/cwd', DEFAULT_OUTPUT_DIR)).toThrow(/案卷号 .* 不可用/)
   })
 
   it('falls back to the deployment default directory', () => {
@@ -616,6 +621,31 @@ describe('engine invocation edge branches', () => {
     try {
       await expect(verifyFiling({ docxPath: stub.path }, optionsWith(fakeSubprocess(() => handle).spawner),
         new AbortController().signal)).rejects.toThrow(/被信号 未知 终止/)
+    } finally {
+      rmSync(stub.dir, { recursive: true, force: true })
+    }
+  })
+
+  it('names the internal timeout when the deadline elapsed before the unparsable output', async () => {
+    const stub = docxStub()
+    const handle = stdoutHandle('boom', { exitCode: 0, signal: null, delayMs: 30 })
+    try {
+      await expect(verifyFiling({ docxPath: stub.path },
+        { ...optionsWith(fakeSubprocess(() => handle).spawner), timeoutMs: 1 },
+        new AbortController().signal)).rejects.toThrow(/未输出可解析的 JSON（超时）/)
+    } finally {
+      rmSync(stub.dir, { recursive: true, force: true })
+    }
+  })
+
+  it('names the caller cancellation when it aborted before the unparsable output', async () => {
+    const stub = docxStub()
+    const handle = stdoutHandle('boom', { exitCode: 0, signal: null, delayMs: 30 })
+    const controller = new AbortController()
+    try {
+      const pending = verifyFiling({ docxPath: stub.path }, optionsWith(fakeSubprocess(() => handle).spawner), controller.signal)
+      controller.abort()
+      await expect(pending).rejects.toThrow(/未输出可解析的 JSON（被调用方取消）/)
     } finally {
       rmSync(stub.dir, { recursive: true, force: true })
     }

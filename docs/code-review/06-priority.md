@@ -178,6 +178,17 @@ D43–D45 已于 2026-11-18 完成：门禁裁定见 [07-ci-hardening.md](07-ci-
 
 修后未修条目为 38 条：P0 0 / P1 6 / P2 26 / P3 6（其中 1 条 `F-PAT-047` 维持 `deferred`，不计入可派发项，故可派发 P1 为 5 条）。可派发的 P1 剩：F-PAT-024、F-PAT-027、F-PAT-028、F-VID-008（F-VID-014 为 P2）。
 
+## 批次 R-F2 结构复用（2026-11-20）
+
+收掉 G3 组的前两条，一条改动面覆盖所有专利包子进程调用，一条覆盖两处名字校验：
+
+| 条目 | 原队列 | 改法 |
+|---|---|---|
+| F-PAT-027 | P1 | 四处子进程超时/取消骨架合并为 `patent-core` 的 `startSpawnDeadline`；`pdfRenderer` 与 Python 引擎补上超时与取消的原因归类 |
+| F-PAT-028 | P1 | `patent-core/src/safe-path.ts` 立路径段与交付名两个判定；两份 `resolveOutputDir` 合并为 `resolvePatentOutputDir`；`caseId` 接受集按交付名 allowlist 统一 |
+
+修后未修条目为 36 条：P0 0 / P1 4 / P2 26 / P3 6。可派发的 P1 剩：F-PAT-024、F-VID-008、F-VID-014（F-PAT-047 维持 `deferred`）。
+
 ## 未修条目打分（Day 44，2026-11-18）
 
 对 42 条仍为 `new`、`confirmed`、`deferred` 的条目补打分，使验收条件「每个 P0/P1 条目可直接分派」成立。紧迫性取值：A 维度计「立即」，含 E 维度计「本周期」，其余计「可延后」。已修条目沿用首次打分的队列，本表不重打。

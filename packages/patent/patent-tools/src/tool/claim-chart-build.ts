@@ -23,7 +23,7 @@ import { toJsonValue } from './internal/json-value.ts'
 import {
   ClaimChartHandler,
   DEGRADED_CODE_KEY,
-  assertSafePathSegment,
+  assertPathSegment,
   deriveInfringementConclusion,
   renderInvalidityConclusion,
   type AllElementsOutcome,
@@ -329,16 +329,11 @@ export function createClaimChartBuildTool(deps: ClaimChartBuildDeps = {}): ToolD
         throw new PatentToolError('invalid_tool_input', 'claim_text 为空', { tool: 'claim_chart_build' })
       }
       if (args.case_id !== undefined) {
-        try {
-          assertSafePathSegment(args.case_id, 'case_id')
-        } catch (error) {
-          throw new PatentToolError(
-            'invalid_tool_input',
-            /* v8 ignore next -- assertSafePathSegment only throws RangeError */
-            error instanceof Error ? error.message : String(error),
-            { tool: 'claim_chart_build' },
-          )
-        }
+        assertPathSegment(
+          args.case_id,
+          'case_id',
+          message => new PatentToolError('invalid_tool_input', message, { tool: 'claim_chart_build' }),
+        )
       }
       const model = loggedToolModel(exec, deps.model, { callSite: 'claim_chart_build' })
       if (model === undefined) {

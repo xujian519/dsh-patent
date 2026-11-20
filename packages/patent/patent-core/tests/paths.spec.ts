@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { resolveConfinedPath } from '@deepseek-ai/dsh-patent-core'
+import { resolveConfinedPath, resolvePatentOutputDir } from '@deepseek-ai/dsh-patent-core'
 
 const created: string[] = []
 
@@ -56,5 +56,32 @@ describe('resolveConfinedPath', () => {
     const root = tempDir('dsh-confine-root-')
     // The target does not exist yet, so containment reads the deepest existing ancestor.
     expect(() => resolveConfinedPath(join(outside, 'deep', 'new'), root, '输出目录', fail)).toThrow(/越出工作目录/)
+  })
+})
+
+describe('resolvePatentOutputDir', () => {
+  it('prefers an explicit directory and keeps it confined to cwd', () => {
+    const root = tempDir('dsh-output-root-')
+    expect(resolvePatentOutputDir({ outputDir: 'out/docs', caseId: 'ignored' }, root, '.dsh/documents', fail))
+      .toBe(join(root, 'out/docs'))
+    expect(() => resolvePatentOutputDir({ outputDir: join('..', 'outside') }, root, '.dsh/documents', fail))
+      .toThrow(/输出目录 越出工作目录/)
+  })
+
+  it('maps a delivery-name caseId onto the case outputs directory', () => {
+    const root = tempDir('dsh-output-root-')
+    expect(resolvePatentOutputDir({ caseId: '①张三_无效案' }, root, '.dsh/documents', fail))
+      .toBe(join(root, 'data/cases/①张三_无效案/outputs'))
+  })
+
+  it('rejects a caseId that is not a delivery name', () => {
+    const root = tempDir('dsh-output-root-')
+    expect(() => resolvePatentOutputDir({ caseId: '../escape' }, root, '.dsh/documents', fail))
+      .toThrow(/案卷号 .* 不可用/)
+  })
+
+  it('falls back to the deployment default directory', () => {
+    const root = tempDir('dsh-output-root-')
+    expect(resolvePatentOutputDir({}, root, 'out/docs', fail)).toBe(join(root, 'out/docs'))
   })
 })

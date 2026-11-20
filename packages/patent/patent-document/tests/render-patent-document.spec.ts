@@ -203,7 +203,7 @@ describe('renderPatentDocument', () => {
           dir,
           { subprocess: unusedSubprocess() },
         ),
-      ).rejects.toThrow(/非法输出文件名/)
+      ).rejects.toThrow(/输出文件名 .* 不可用/)
     } finally {
       cleanup(dir)
     }
@@ -265,7 +265,7 @@ describe('renderPatentDocument', () => {
           dir,
           { subprocess: unusedSubprocess() },
         ),
-      ).rejects.toThrow(/非法输出文件名/)
+      ).rejects.toThrow(/输出文件名 .* 不可用/)
     } finally {
       cleanup(dir)
     }
@@ -468,7 +468,7 @@ describe('renderPatentDocument', () => {
           dir,
           { subprocess: unusedSubprocess() },
         ),
-      ).rejects.toThrow(/非法案卷号/)
+      ).rejects.toThrow(/案卷号 .* 不可用/)
     } finally {
       cleanup(dir)
     }

@@ -376,10 +376,13 @@ export {
   SAFE_ID_PATTERN,
   StoredRecordError,
   assertSafeId,
-  assertSafePathSegment,
   atomicWriteJson,
   parseStoredJsonRecord,
 } from './persist-utils.ts'
+
+// Safety-name checks for path segments and deliverable file stems (single home).
+export { assertDeliverableName, assertPathSegment } from './safe-path.ts'
+
 export {
   CASE_OUTPUTS_REL,
   CASE_ROOT_REL,
@@ -387,7 +390,12 @@ export {
   caseOutputsDir,
   caseWorkflowRunsDir,
   resolveConfinedPath,
+  resolvePatentOutputDir,
 } from './paths.ts'
+
+// Subprocess deadline shared by the domain's four spawn sites.
+export { startSpawnDeadline } from './subprocess-deadline.ts'
+export type { SpawnDeadline } from './subprocess-deadline.ts'
 
 // Shared conventions of the two PDF download tools (body verification + dated output dir).
 export {

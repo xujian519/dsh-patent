@@ -5,6 +5,7 @@
  * @module @deepseek-ai/dsh-patent-data/subprocess-runner
  */
 
+import { startSpawnDeadline } from '@deepseek-ai/dsh-patent-core'
 import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import type { EgoSpawnResult, EgoSpawnRunner, EgoSpawnSpec } from './types.ts'
 
@@ -39,16 +40,7 @@ export class SubprocessEgoSpawnRunner implements EgoSpawnRunner {
    */
   async spawn(spec: EgoSpawnSpec): Promise<EgoSpawnResult> {
     const startedAt = Date.now()
-    const controller = new AbortController()
-    let timedOut = false
-    const timer = setTimeout(() => {
-      timedOut = true
-      controller.abort()
-    }, spec.timeoutMs)
-    timer.unref()
-    const onCallerAbort = (): void => { controller.abort() }
-    spec.signal?.addEventListener('abort', onCallerAbort, { once: true })
-    if (spec.signal?.aborted === true) controller.abort()
+    const deadline = startSpawnDeadline(spec.timeoutMs, spec.signal)
     try {
       const handle = this.subprocess.spawn({
         argv: spec.argv,
@@ -59,7 +51,7 @@ export class SubprocessEgoSpawnRunner implements EgoSpawnRunner {
           stderr: { maxBytes: this.maxOutputBytes },
         },
         graceMs: this.graceMs,
-        signal: controller.signal,
+        signal: deadline.signal,
         ...spec.env !== undefined ? { env: spec.env } : {},
       })
       const outcome = await handle.done
@@ -69,12 +61,11 @@ export class SubprocessEgoSpawnRunner implements EgoSpawnRunner {
         exitCode: outcome.exitCode,
         stdout,
         stderr,
-        timedOut,
+        timedOut: deadline.timedOut(),
         durationMs: Date.now() - startedAt,
       }
     } finally {
-      clearTimeout(timer)
-      spec.signal?.removeEventListener('abort', onCallerAbort)
+      deadline.dispose()
     }
   }
 }

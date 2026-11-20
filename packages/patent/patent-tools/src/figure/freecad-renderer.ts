@@ -19,6 +19,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { startSpawnDeadline } from '@deepseek-ai/dsh-patent-core'
 import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import {
   HatchGeometryError,
@@ -51,7 +52,6 @@ import {
   renderStderr,
   spawnRenderProcess,
   spawnVersionProbe,
-  startRenderDeadline,
 } from './subprocess-render.ts'
 
 /**
@@ -265,7 +265,7 @@ async function runFreeCadScript(
   } catch (error) {
     return { ok: false, code: 'render_failed', error: `准备 FreeCAD 脚本失败：${errorText(error)}` }
   }
-  const deadline = startRenderDeadline(options.renderTimeoutMs, request.signal)
+  const deadline = startSpawnDeadline(options.renderTimeoutMs, request.signal)
   try {
     const { handle, outcome } = await spawnRenderProcess(subprocess, deadline, {
       argv: [executable, scriptPath],

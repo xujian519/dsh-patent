@@ -30,7 +30,7 @@ describe('findCompetingEntries', () => {
       entry('第 2 条', [], '甲乙丙'),
       entry('第 3 条', [], '甲乙丙丁'),
     ]
-    const carriers = findCompetingEntries(entries, indexOf(entries), '甲乙丙丁', 0.5, '第 1 条')
+    const carriers = findCompetingEntries(entries, indexOf(entries), '甲乙丙丁', 0.5, '第 1 条', 0)
     expect(carriers.map(carrier => carrier.label)).toEqual(['第 3 条', '第 2 条'])
     expect(carriers.map(carrier => carrier.textBacked)).toEqual([true, true])
     expect(carriers[1]?.evidence).toContain('字面重合 57%')
@@ -41,7 +41,7 @@ describe('findCompetingEntries', () => {
       entry('第 1 条', [], null),
       entry('第 2 条', [], '第一句无关。第二句提到目标主题。'),
     ]
-    const [carrier] = findCompetingEntries(entries, indexOf(entries), '目标主题', 0.75, '第 1 条')
+    const [carrier] = findCompetingEntries(entries, indexOf(entries), '目标主题', 0.75, '第 1 条', 0)
     expect(carrier?.evidence).toContain('第二句提到目标主题')
     expect(carrier?.evidence).not.toContain('第一句无关')
   })
@@ -51,7 +51,7 @@ describe('findCompetingEntries', () => {
       entry('第 1 条', [], null),
       entry('第 2 条', [], '甲乙。\n\n丙丁'),
     ]
-    const [carrier] = findCompetingEntries(entries, indexOf(entries), '乙丙', 0.75, '第 1 条')
+    const [carrier] = findCompetingEntries(entries, indexOf(entries), '乙丙', 0.75, '第 1 条', 0)
     expect(carrier?.textBacked).toBe(true)
     expect(carrier?.evidence).toContain('甲乙。 丙丁')
     expect(carrier?.evidence).not.toContain('\n')
@@ -63,7 +63,7 @@ describe('findCompetingEntries', () => {
       entry('第 2 条', ['分案申请'], '原申请不得改变类别。'),
       entry('第 3 条', ['复审请求书的撰写'], null),
     ]
-    const carriers = findCompetingEntries(entries, indexOf(entries), '分案申请；复审请求书的撰写', 0.75, '第 1 条')
+    const carriers = findCompetingEntries(entries, indexOf(entries), '分案申请；复审请求书的撰写', 0.75, '第 1 条', 0)
     expect(carriers.map(carrier => carrier.label)).toEqual(['第 3 条', '第 2 条'])
     expect(carriers[0]?.evidence).toBe('主题词「复审请求书的撰写」')
     expect(carriers[1]?.evidence).toContain('主题词「分案申请」；原文「')
@@ -75,8 +75,21 @@ describe('findCompetingEntries', () => {
       entry('第 1 条', [], null),
       entry('第 2 条', ['创造性判断方法'], null),
     ]
-    expect(findCompetingEntries(entries, indexOf(entries), '创造性', 0.75, '第 1 条'))
+    expect(findCompetingEntries(entries, indexOf(entries), '创造性', 0.75, '第 1 条', 0))
       .toEqual([{ label: '第 2 条', textBacked: false, evidence: '主题词「创造性判断方法」' }])
+  })
+
+  it('accepts a short topic when the competing text is closer than the cited text', () => {
+    const entries = [
+      entry('第 1 条', [], null),
+      entry('第 2 条', ['目标'], '目标主题正文'),
+    ]
+    // 目标 只占 11 字命题的约六分之一；但第 2 条的文本比所引条目更接近命题时，
+    // 它仍是更强的归宿。
+    expect(findCompetingEntries(entries, indexOf(entries), '目标主题的其他要求与说明', 0.75, '第 1 条', 0.1)
+      .map(carrier => carrier.label)).toEqual(['第 2 条'])
+    expect(findCompetingEntries(entries, indexOf(entries), '目标主题的其他要求与说明', 0.75, '第 1 条', 0.9))
+      .toEqual([])
   })
 
   it('rejects a topic that is only a shared word inside a longer claim', () => {
@@ -84,14 +97,15 @@ describe('findCompetingEntries', () => {
       entry('第 1 条', [], null),
       entry('第 2 条', ['申请日'], '申请日另有定义。'),
     ]
-    // 申请日 在 24 字命题里只占八分之一，不能据此指认第 2 条更贴近。
-    expect(findCompetingEntries(entries, indexOf(entries), '申请人主动修改申请文件的时机为自申请日起2个月内', 0.75, '第 1 条'))
+    // 申请日 在 24 字命题里只占八分之一，且所引条目的文本重合更高，
+    // 不能据此指认第 2 条更贴近。
+    expect(findCompetingEntries(entries, indexOf(entries), '申请人主动修改申请文件的时机为自申请日起2个月内', 0.75, '第 1 条', 0.2))
       .toEqual([])
   })
 
   it('reports no competing entry for a blank proposition', () => {
     const entries = [entry('第 1 条', [], null), entry('第 2 条', ['目标主题'], '目标主题正文')]
-    expect(findCompetingEntries(entries, indexOf(entries), '   ', 0.75, '第 1 条')).toEqual([])
+    expect(findCompetingEntries(entries, indexOf(entries), '   ', 0.75, '第 1 条', 0)).toEqual([])
   })
 
   it('skips the cited entry and the labels the citation already covers', () => {
@@ -99,7 +113,7 @@ describe('findCompetingEntries', () => {
       entry('第 1 条', ['目标主题'], null),
       entry('第 2 条', [], '目标主题正文'),
     ]
-    expect(findCompetingEntries(entries, indexOf(entries), '目标主题', 0.75, '第 1 条', label => label === '第 2 条'))
+    expect(findCompetingEntries(entries, indexOf(entries), '目标主题', 0.75, '第 1 条', 0, label => label === '第 2 条'))
       .toEqual([])
   })
 })

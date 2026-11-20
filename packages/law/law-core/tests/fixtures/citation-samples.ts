@@ -137,12 +137,20 @@ export const CONFORMANCE_SAMPLES: ConformanceSample[] = [
     note: '命题就是另一条的主题「适用范围」，主题词点到全部命题，判为不符。',
   },
   {
-    name: 'unmatched: a topic word inside a longer claim does not move the citation',
+    name: 'mismatch: a short topic with closer text moves the citation',
     article: 1,
     proposition: '本法的适用范围不包括涉外民事法律关系的登记与备案要求',
     ceiling: 'verified',
+    expected: 'mismatch',
+    note: '「适用范围」只占长命题的六分之一，但第 2 条的文本比所引第 1 条更接近命题，仍判为不符。',
+  },
+  {
+    name: 'unmatched: a topic word inside a longer claim does not move a closer citation',
+    article: 1,
+    proposition: '为了规范社会关系和保护当事人的合法权益，本法的适用范围由本法规定',
+    ceiling: 'verified',
     expected: 'unmatched',
-    note: '「适用范围」只占长命题的六分之一，不能据此把第 2 条指为命题的归宿。',
+    note: '所引第 1 条的文本明显更接近命题；「适用范围」这个主题词不能把更远的第 2 条指为归宿。',
   },
   {
     name: 'mismatch: cited paragraph absent from the entry',

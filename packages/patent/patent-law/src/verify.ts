@@ -417,18 +417,19 @@ function decideSection(
       entry,
     )
   }
+  const best = Math.max(0, ...scored.map(candidate => candidate.score))
   const elsewhere = findCompetingEntries(
     comparableEntries(baseline),
     index,
     proposition,
     threshold,
     reference.path,
+    best,
     label => coversSection(reference.path, label),
   )
   if (elsewhere.length > 0) {
     return finding(reference, 'mismatch', supportMismatchReason(baseline.law, proposition, elsewhere), entry)
   }
-  const best = Math.max(0, ...scored.map(candidate => candidate.score))
   return finding(
     reference,
     'unmatched',

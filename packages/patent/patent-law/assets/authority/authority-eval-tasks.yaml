@@ -70,7 +70,9 @@ tasks:
         paragraph: 3
         proposition: 说明书可以省略实施方式
         role: refusal
-        expect: mismatch
+        # 该否定命题不在任何条目中；按字面对比它是 unmatched，
+        # 不能靠「实施」这类泛主题词指认另一条承载。
+        expect: unmatched
 
   - id: drafting-05
     caseType: drafting

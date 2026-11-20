@@ -35,7 +35,7 @@ DeepSeek Harness 的随包中国法条索引：法条引用解析、逐法记录
 <a id="citation-decision"></a>
 ## 引用判定
 
-`parseLegalLawReference` 解析单独成文的引用，`extractLegalLawReferences` 提取一段文本中的全部引用（含 `第 143 条、第 144 条` 与 `第 2 款、第 3 款` 这类续指），`formatLegalLawReference` 渲染正式写法，`scanUnrecognizedLegalCitations` 列出解析器无法识别的疑似引用片段。`verifyLegalCitation` 把一条引用判定为 `valid`、`mismatch`、`unmatched`、`out-of-range`、`not-indexed` 或 `unverified`；命题先按主题词、再按加权字符对重合度与已转录条文比对。另一条文要成为命题的归宿，须由其转录文本承载，或由点到命题实质部分的主题词承载；mismatch 的理由会点出该条并引用证据，仅在较长命题里出现的一个主语词不能据此指认正确的引用有误。一条引用只配一条命题并贴所引原文措辞：概述式释义、或一条复合命题配多条引用，报 `unmatched`。`resolveLegalCitationPolicy` 按部署的策略集映射判定，`renderLegalCitationRows` 渲染工具返回的判定表。随包默认拦截 `not-indexed` 与 `unverified`，patent-law 的默认对这两类告警。两套默认记在 law-core 的 `CONFORMANCE_POLICIES`。
+`parseLegalLawReference` 解析单独成文的引用，`extractLegalLawReferences` 提取一段文本中的全部引用（含 `第 143 条、第 144 条` 与 `第 2 款、第 3 款` 这类续指），`formatLegalLawReference` 渲染正式写法，`scanUnrecognizedLegalCitations` 列出解析器无法识别的疑似引用片段。`verifyLegalCitation` 把一条引用判定为 `valid`、`mismatch`、`unmatched`、`out-of-range`、`not-indexed` 或 `unverified`；命题先按主题词、再按加权字符对重合度与已转录条文比对。另一条文要成为命题的归宿，须由其转录文本承载，或由点到命题实质部分、或正文承载命题比例至少是所引条文两倍的主题词承载；mismatch 的理由会点出该条并引用证据，仅在较长命题里出现的一个主语词不能据此指认正确的引用有误。一条引用只配一条命题并贴所引原文措辞：概述式释义、或一条复合命题配多条引用，报 `unmatched`。`resolveLegalCitationPolicy` 按部署的策略集映射判定，`renderLegalCitationRows` 渲染工具返回的判定表。随包默认拦截 `not-indexed` 与 `unverified`，patent-law 的默认对这两类告警。两套默认记在 law-core 的 `CONFORMANCE_POLICIES`。
 
 <a id="tool"></a>
 ## 工具

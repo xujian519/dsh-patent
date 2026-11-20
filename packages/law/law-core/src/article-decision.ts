@@ -70,9 +70,23 @@ export type PropositionCarrier = {
  * 申请文件, each of which is a topic of several others. Requiring the topic to
  * name a substantial part of the proposition keeps those words from accusing a
  * correct citation while still letting a short claim that names an entry's
- * subject point at that entry.
+ * subject point at that entry. A short topic also counts when its entry's text
+ * is at least twice as close to the proposition as the cited entry's own text:
+ * the citation is then the weaker home even though the topic carries only a
+ * small part.
  */
 const COMPETING_TOPIC_SHARE = 0.25
+
+/**
+ * How much closer a competing entry's text must be than the cited entry's own
+ * text before a short topic keyword can make that entry a competing home.
+ *
+ * The comparison is relative because the two overlaps share the same scale: at
+ * twice the cited share, the other entry is the stronger home even for a short
+ * proposition; a compound claim that merely leans a little towards another entry
+ * stays undecided instead of being blocked.
+ */
+const COMPETING_OVERLAP_RATIO = 2
 
 /** Decisions an article citation can reach. */
 export type ArticleDecision =
@@ -177,15 +191,17 @@ function articleIndex(baseline: object, entries: readonly ComparableEntry[]): Ov
  *
  * Transcribed text is the stronger evidence: the share of the proposition's
  * weighted character pairs an entry carries must reach the support threshold.
- * A topic keyword is the weaker evidence, and only a topic that names a
- * substantial part of the proposition can make its entry a competing home;
- * see {@link COMPETING_TOPIC_SHARE}. Together these keep a shared subject word
- * from accusing a citation whose wording merely restates the cited entry.
+ * A topic keyword is the weaker evidence; it counts when it names a substantial
+ * part of the proposition (see {@link COMPETING_TOPIC_SHARE}) or when its entry's
+ * text is at least twice as close to the proposition as the cited entry's own
+ * text. Together these keep a shared subject word from accusing a citation whose
+ * wording merely restates the cited entry.
  * @param entries - the law's entries as proposition candidates.
  * @param index - the overlap index of those entries.
  * @param proposition - the claim the citation is offered in support of.
  * @param threshold - overlap at which transcribed text counts as support.
  * @param cited - the cited entry's label, which is excluded.
+ * @param citedOverlap - the share of the proposition the cited entry's own text carries.
  * @param covered - labels the citation already covers, e.g. the subsections of a cited section.
  * @returns the strongest carrying entries, with their evidence, at most three; empty when none.
  */
@@ -195,6 +211,7 @@ export function findCompetingEntries(
   proposition: string,
   threshold: number,
   cited: string,
+  citedOverlap: number,
   covered?: (label: string) => boolean,
 ): PropositionCarrier[] {
   const needle = proposition.trim()
@@ -211,7 +228,12 @@ export function findCompetingEntries(
       continue
     }
     const topic = matchingTopic(entry.topics, needle)
-    if (topic !== null && topicShare(topic, needle) >= COMPETING_TOPIC_SHARE) {
+    // A short topic is still evidence when this entry's text is clearly closer
+    // to the proposition than the cited entry's text: the citation is then the
+    // weaker home even though the topic alone would not carry a quarter of the claim.
+    const namesEnough = topic !== null && topicShare(topic, needle) >= COMPETING_TOPIC_SHARE
+    const clearlyCloser = topic !== null && overlap > citedOverlap * COMPETING_OVERLAP_RATIO
+    if (namesEnough || clearlyCloser) {
       topicCarriers.push({ entry, topic, text })
     }
   }
@@ -450,8 +472,9 @@ function checkNarrowing(reference: { article: number; paragraph?: number }, entr
  *
  * The entry itself must carry the proposition first, by its topic keywords or by
  * its own transcribed wording. Only when it does not, and another entry carries
- * it by its transcribed text or by a topic that names a substantial part of the
- * proposition, is the citation reported as a mismatch — so a proposition
+ * it by its transcribed text, or by a topic that names a substantial part of the
+ * proposition or whose entry's text is closer, is the citation reported as a
+ * mismatch — so a proposition
  * reworded around a synonym this index cannot see is reported as undecided
  * rather than as a contradiction, and a shared subject word alone never accuses
  * the citation of naming the wrong entry. A citation narrowed to a paragraph or
@@ -503,7 +526,7 @@ function decideTranscribed<TEntry extends DecisionArticle>(
       entry,
     }
   }
-  const elsewhere = findCompetingEntries(entries, index, proposition, threshold, `第 ${entry.article} 条`)
+  const elsewhere = findCompetingEntries(entries, index, proposition, threshold, `第 ${entry.article} 条`, overlap)
   // A paragraph- or item-level citation is decided by that text alone; an
   // entry's topic keywords describe its whole article, so they cannot prove
   // another paragraph or article is the intended home.

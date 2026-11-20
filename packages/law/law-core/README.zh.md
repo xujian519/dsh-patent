@@ -40,7 +40,7 @@ kind: "package-reference"
 <a id="proposition-overlap"></a>
 ## 命题重合度
 
-`textOverlap` 度量命题的加权字对中被条目转录文本承载的比例，`topicOverlap` 把命题与条目主题词匹配；两路信号刻意保持词面，改写过的命题报"无法判定"而非"矛盾"。主题词对所引条目从宽、对竞争条目从严：`findCompetingEntries` 只认承载命题的转录文本，或点到命题实质部分的主题词，不认较长命题里共享的一个主语词。`createOverlapIndex` 为每条基线只建一次字对频率，`PROPOSITION_SUPPORT_DEFAULT` 是默认支撑阈值。
+`textOverlap` 度量命题的加权字对中被条目转录文本承载的比例，`topicOverlap` 把命题与条目主题词匹配；两路信号刻意保持词面，改写过的命题报"无法判定"而非"矛盾"。主题词对所引条目从宽、对竞争条目从严：`findCompetingEntries` 认承载命题的转录文本，或点到命题实质部分、或正文承载命题比例至少是所引条目两倍的主题词；较长命题里共享的一个主语词本身不够。`createOverlapIndex` 为每条基线只建一次字对频率，`PROPOSITION_SUPPORT_DEFAULT` 是默认支撑阈值。
 
 <a id="article-decision"></a>
 ## 逐条判定

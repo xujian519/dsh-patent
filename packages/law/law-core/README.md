@@ -40,7 +40,7 @@ A legal-domain citation of 《民法典》第 143 条 and a patent-domain citati
 <a id="proposition-overlap"></a>
 ## Proposition overlap
 
-`textOverlap` scores the share of a proposition's weighted character pairs an entry's transcribed text carries, and `topicOverlap` matches a proposition against an entry's topic keywords; both signals are deliberately lexical, so a reworded proposition reports as undecided rather than as a contradiction. Topic support is lenient toward the cited entry and strict toward a competing home: `findCompetingEntries` counts an entry's transcribed text, or a topic that names a substantial part of the proposition, never a shared subject word inside a longer claim. `createOverlapIndex` builds the per-baseline frequencies once, and `PROPOSITION_SUPPORT_DEFAULT` is the default support threshold.
+`textOverlap` scores the share of a proposition's weighted character pairs an entry's transcribed text carries, and `topicOverlap` matches a proposition against an entry's topic keywords; both signals are deliberately lexical, so a reworded proposition reports as undecided rather than as a contradiction. Topic support is lenient toward the cited entry and strict toward a competing home: `findCompetingEntries` counts an entry's transcribed text, or a topic that names a substantial part of the proposition or whose entry's text is at least twice as close as the cited entry's; a shared subject word inside a longer claim is not enough by itself. `createOverlapIndex` builds the per-baseline frequencies once, and `PROPOSITION_SUPPORT_DEFAULT` is the default support threshold.
 
 <a id="article-decision"></a>
 ## Article decision

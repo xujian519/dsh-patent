@@ -79,7 +79,7 @@
 | F-PAT-044 | 要素 claimNo 没有对应段落时用全文做子串校验 | PAT | E | Medium | 中 | fixed |
 | F-PAT-045 | 省略 `parallel_lower_levels` 仍判概括范围通过 | PAT | E | Medium | 高 | fixed |
 | F-PAT-046 | 同一格同时 `literal` 与 `not-found` 时，缺口与全覆盖同时成立 | PAT | E | Medium | 中 | fixed |
-| F-PAT-047 | 审批门中断后的续跑从第一个阶段重跑，内置 manifest 的检索与模型阶段重复执行 | PAT | E | Medium | 中 | deferred |
+| F-PAT-047 | 审批门中断后的续跑从第一个阶段重跑，内置 manifest 的检索与模型阶段重复执行 | PAT | E | Medium | 中 | fixed（2026-11-20，批次 R-F10） |
 | F-PAT-048 | 通知书解析不出驳回理由时，两条双输入规则判为通过且无未评估标记 | PAT | E | Medium | 中 | fixed |
 | F-PAT-049 | 结构门禁与引用门禁不核对 `textArgs`，声明写错即静默放行 | PAT | E | Medium | 低 | fixed |
 | F-PAT-050 | 重规划按哈希保留已完成步骤，重复步骤全部判为已完成 | PAT | E | Medium | 低 | fixed（2026-11-20，批次 R-F3） |
@@ -119,7 +119,7 @@
 | F-VID-005 | `resolveMediaConfig` 的 13 个默认值与 schema 默认值重复 | VID | B | Low | 中 | fixed |
 | F-VID-006 | `StrictRequest` 与 `MediaTaskRequest` 字段完全重复 | VID | B | Low | 高 | fixed |
 | F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | fixed |
-| F-VID-008 | `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份 | VID | B | Medium | 高 | deferred |
+| F-VID-008 | `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份 | VID | B | Medium | 高 | partial（2026-11-20，批次 R-F10） |
 | F-VID-009 | 云 provider 的 submit/poll 与图片编码骨架各写一遍，拷贝已漂移 | VID | B | Low | 高 | fixed（2026-11-20，批次 R-F7） |
 | F-VID-010 | store 的「锁 + 读 + 改 + 写」骨架三处各写一遍 | VID | B | Low | 高 | fixed（2026-11-20，批次 R-F7） |
 | F-VID-011 | 预算检查是 check-then-act，同一工程的并发生成可以超额 | VID | E | Medium | 中 | fixed |
@@ -829,7 +829,9 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：沿用 R-77 的方向——给 manifest 路径加恢复点，例如 `WorkflowRunOptions.resumeFrom` 从指定阶段开始，或让 `persist` 逐阶段保存产出并在续跑时复用；在那之前，后台续跑说明应写明前置阶段会重跑，并让续跑使用新的 runId 以保留中断记录。
 - 预估工作量：M
 - 是否可自动化：是（中断后带 grants 重跑，断言前置 executor 只被调用一次；或断言续跑从 `resumeFrom` 开始）
-- 状态：deferred
+- 修复：中断结果持久化 `recovery`（下一阶段下标、执行态、回退次数与待处理留痕）；`runWorkflow` 通过 `resumeFrom` 校验并恢复阶段前缀，从审批门继续，异常恢复点在任何阶段执行前拒绝。工具层在带 `approveStageIds` 且同案卷/manifest 有可恢复记录时自动续跑，使用 `<base>__resume-<n>` 新 runId 并保留原中断记录；旧记录无恢复点时整次重跑，模型可见结果明确区分两条路径。
+- 验证：续跑、冷启动持久化与工具层共 102 项测试通过，覆盖门前阶段不重复、下游读取首次产出、原记录保留、连续续跑 id 分配及旧记录回退。四组 mutation 均按预期转红并还原：强制从 0 开始导致门前阶段重复；不恢复执行态导致下游缺失首次 `draft`；复用原 runId 导致未分配 `__resume-1`；持久化解析丢弃 `recovery` 导致冷启动续跑与 roundtrip 用例失败。对应 `patent-oa-response` keyless 快照已刷新并回放通过。
+- 状态：fixed（2026-11-20，批次 R-F10）
 
 ### F-PAT-048 通知书解析不出驳回理由时，两条双输入规则判为通过
 
@@ -1438,7 +1440,7 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 净减少：客户端约 130 行解析/校验代码换成约 50 行投影加共享调用，净 **−60~−80 行**；Host 两处 `max` 合并 **−1 行**；主要收益是文法单源与校验强度回归。
 - 预估工作量：M（新增 browser-safe 入口要登记 `tsconfig` files 并重跑 `gen-module-graph`）
 - 是否可自动化：部分。可加一条对照测试：同一 fixture 分别过 Host `projectSchema` 与客户端 `parseProjectDocument`，断言接受/拒绝一致；根治做法是客户端直接复用 schema。
-- 状态：deferred（2026-11-20，批次 R-F2）
+- 状态：partial（2026-11-20，批次 R-F10）
 
 **延期记录（2026-11-20，批次 R-F2）**
 
@@ -1452,7 +1454,13 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 2. 新建非实验的共享文法包（如 `packages/video/video-schema` 或并入现有 browser-safe util 包），由 `video-mode` 与 studio 客户端同时依赖；`video-mode` 保留 Node 侧 I/O。
 3. 在现状下补一条对照测试（同一 fixture 过 Host `projectSchema` 与客户端 `parseProjectDocument`，断言接受/拒绝一致），先把校验强度分叉挡在门禁上，文法单源另做。
 
-状态口径：本条在修复队列中记为**未修**，可派发项保留。
+**部分修复记录（2026-11-20，批次 R-F10）**
+
+采用上述第 3 条：客户端项目解析补齐 Host 的完整字段、枚举、数值边界、id 正则与 `.strict()` 等价校验，非法文档仍抛 `StudioReadError`。新增 Host↔client 对照测试，覆盖 20 组项目接受/拒绝用例、存储文件名、状态表、pending 过滤与已提交预算；Host 运行时代码未改，实验包只进入客户端的 `devDependencies`，不进入浏览器产物。
+
+验证：视频 Host 与 Studio 共 19 个测试文件、386 项测试通过。四组 mutation 均按预期转红并还原：未知字段检查固定返回 true 时项目/shot/render 三条用例失败；删除镜头 60 秒上限、项目 3600 秒上限或项目 id 正则时，各自由对应用例失败。最终对照套件 25 项通过。
+
+状态口径：校验强度分叉与回归监测已缓解，但项目/账本/journal 文法与预算口径仍有多个所有者，本条保持 **partial** 并计入未修 P1；不宣称原估净减行数已经实现。
 
 ### F-VID-009 云 provider 的 submit/poll 与图片编码骨架各写一遍，拷贝已漂移
 

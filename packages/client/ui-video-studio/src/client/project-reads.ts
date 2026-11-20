@@ -9,17 +9,28 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { WorkspaceByteReadOptions, WorkspaceFileBytes, WorkspaceFileStat } from '@deepseek-ai/dsh-api-workspace-files/types'
 import { isRecord } from '@deepseek-ai/dsh-value'
 
-/** Journal file beside the project document; mirrors the Host's constant. */
+/** Journal file beside the project document; mirrors `TASK_JOURNAL_FILE` in Host `store.ts`. */
 export const TASKS_FILE = 'tasks.json'
 
-/** Ledger file beside the project document; mirrors the Host's constant. */
+/** Legacy ledger file beside the project document; mirrors `BUDGET_LEDGER_FILE` in Host `store.ts`. */
 export const LEDGER_FILE = 'budget.json'
 
-/** Shot states the Host stores. */
-const SHOT_STATUSES = ['draft', 'ready', 'generating', 'failed'] as const
+/** Shot states accepted by `shotSchema` in Host `project.ts`. */
+export const SHOT_STATUSES = ['draft', 'ready', 'generating', 'failed'] as const
 
-/** In-flight task states the journal keeps. */
-const PENDING_STATUSES = ['queued', 'submitted', 'running'] as const
+/** In-flight task states accepted by `pendingTaskSchema` in Host `store.ts`. */
+export const PENDING_STATUSES = ['queued', 'submitted', 'running'] as const
+
+const ASPECT_RATIOS = ['9:16', '16:9', '1:1'] as const
+const PROJECT_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/
+const PROJECT_FIELDS = [
+  'schemaVersion', 'id', 'title', 'aspect', 'targetSeconds', 'budgetCny',
+  'shots', 'renders', 'createdAt', 'updatedAt',
+] as const
+const SHOT_FIELDS = [
+  'id', 'index', 'prompt', 'durationSec', 'status', 'keyframePath', 'clipPath', 'provider', 'model', 'costCny',
+] as const
+const RENDER_FIELDS = ['id', 'path', 'durationSec', 'costCny', 'createdAt'] as const
 
 /** One shot as the studio displays it. */
 export interface StudioShot {
@@ -187,20 +198,40 @@ function nonnegative(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
 }
 
+function nonemptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
 function optionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function memberOf<T extends string>(value: unknown, choices: readonly T[]): value is T {
+  return typeof value === 'string' && choices.some(choice => choice === value)
+}
+
+function hasOnlyFields(value: object, fields: readonly string[]): boolean {
+  return Object.keys(value).every(field => fields.includes(field))
 }
 
 function shotOf(value: unknown): StudioShot {
   if (!isRecord(value)) throw new StudioReadError('shot entry is not an object', 'invalid')
   const status = value.status
-  if (!SHOT_STATUSES.some(candidate => candidate === status)) {
+  if (!memberOf(status, SHOT_STATUSES)) {
     throw new StudioReadError(`unknown shot status ${String(status)}`, 'invalid')
   }
-  if (typeof value.id !== 'string' || value.id.length === 0 || typeof value.prompt !== 'string'
-    || typeof value.index !== 'number' || !Number.isInteger(value.index)
-    || !positive(value.durationSec)) {
+  if (!hasOnlyFields(value, SHOT_FIELDS) || !nonemptyString(value.id) || !nonemptyString(value.prompt)
+    || typeof value.index !== 'number' || !Number.isInteger(value.index) || value.index <= 0
+    || !positive(value.durationSec) || value.durationSec > 60) {
     throw new StudioReadError('shot entry is missing required fields', 'invalid')
+  }
+  for (const field of ['keyframePath', 'clipPath', 'provider', 'model'] as const) {
+    if (value[field] !== undefined && !nonemptyString(value[field])) {
+      throw new StudioReadError(`shot field ${field} is not a non-empty string`, 'invalid')
+    }
+  }
+  if (value.costCny !== undefined && !nonnegative(value.costCny)) {
+    throw new StudioReadError('shot cost is not a nonnegative number', 'invalid')
   }
   const keyframePath = optionalString(value.keyframePath)
   const clipPath = optionalString(value.clipPath)
@@ -211,7 +242,7 @@ function shotOf(value: unknown): StudioShot {
     index: value.index,
     prompt: value.prompt,
     durationSec: value.durationSec,
-    status: status as StudioShot['status'],
+    status,
     ...keyframePath === undefined ? {} : { keyframePath },
     ...clipPath === undefined ? {} : { clipPath },
     ...provider === undefined ? {} : { provider },
@@ -222,8 +253,10 @@ function shotOf(value: unknown): StudioShot {
 
 function renderOf(value: unknown): StudioRender {
   if (!isRecord(value)) throw new StudioReadError('render entry is not an object', 'invalid')
-  if (typeof value.id !== 'string' || value.id.length === 0 || typeof value.path !== 'string'
-    || value.path.length === 0 || typeof value.createdAt !== 'string' || value.createdAt.length === 0) {
+  if (!hasOnlyFields(value, RENDER_FIELDS) || !nonemptyString(value.id) || !nonemptyString(value.path)
+    || !nonemptyString(value.createdAt)
+    || (value.durationSec !== undefined && !positive(value.durationSec))
+    || (value.costCny !== undefined && !nonnegative(value.costCny))) {
     throw new StudioReadError('render entry is missing required fields', 'invalid')
   }
   return {
@@ -248,16 +281,18 @@ interface ParsedProject {
 }
 
 /**
- * Validate the project document fields the board renders.
+ * Validate the project document against the Host grammar and return the fields the board renders.
  * @param value - parsed JSON.
- * @returns the display fields in document order.
- * @throws {@link StudioReadError} `invalid` when a rendered field is malformed.
+ * @returns the display fields, with shots sorted by index.
+ * @throws {@link StudioReadError} `invalid` when the document is malformed.
  */
 export function parseProjectDocument(value: unknown): ParsedProject {
   if (!isRecord(value)) throw new StudioReadError('project document is not an object', 'invalid')
-  if (typeof value.id !== 'string' || value.id.length === 0 || typeof value.title !== 'string'
-    || typeof value.aspect !== 'string' || !positive(value.targetSeconds)
-    || !nonnegative(value.budgetCny) || typeof value.updatedAt !== 'string'
+  if (!hasOnlyFields(value, PROJECT_FIELDS) || value.schemaVersion !== 1
+    || !nonemptyString(value.id) || !PROJECT_ID_PATTERN.test(value.id)
+    || !nonemptyString(value.title) || !memberOf(value.aspect, ASPECT_RATIOS)
+    || !positive(value.targetSeconds) || value.targetSeconds > 3600
+    || !nonnegative(value.budgetCny) || !nonemptyString(value.createdAt) || !nonemptyString(value.updatedAt)
     || !Array.isArray(value.shots) || !Array.isArray(value.renders)) {
     throw new StudioReadError('project document is missing required fields', 'invalid')
   }

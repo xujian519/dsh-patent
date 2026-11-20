@@ -49,7 +49,7 @@ The preview plays video through `api/file?path=…&v=<version>` with native cont
 
 `video-projects.ts` registers a turn-scoped `ConversationNodeDefinition` and its session view target. A `tool/call` records the call name; a successful, append-surface `tool/result` carrying `meta.projectPath` publishes that resolved path, and any settled `video_project` or `media` result advances a revision counter. The view builder folds every turn in the window into one first-seen path list plus the highest revision. The studio reads that snapshot through `useConversation` and owns no store, subscription, or event listener.
 
-The tab registers through `ctx.slots.inject('conversation.view')` under the same id as the view target. Its inject face resolves the session working directory once and supplies `loadProject` (three `workspaceFiles.readBytes` calls plus one `stat` per previewable media path), the media URL builder, and the three file actions. File parsing is local and strict about the fields the board renders: a malformed document fails as a whole rather than showing a partial production, while a malformed ledger or journal degrades to an empty total or list so a hand edit cannot hide the document.
+The tab registers through `ctx.slots.inject('conversation.view')` under the same id as the view target. Its inject face resolves the session working directory once and supplies `loadProject` (three `workspaceFiles.readBytes` calls plus one `stat` per previewable media path), the media URL builder, and the three file actions. File parsing is local and applies the Host's complete project grammar, including rejection of unknown fields: a malformed document fails as a whole rather than showing a partial production, while a malformed ledger or journal degrades to an empty total or list so a hand edit cannot hide the document.
 
 The board re-reads when the discovery revision moves or the user presses Refresh; a project whose title or budget changed outside the tool set needs that gesture. Columns stack on a 720px container width rather than a viewport width, so a conversation column squeezed by both sidebars still gets the one-column layout.
 
@@ -93,6 +93,6 @@ None; this package neither assembles nor sends a provider request.
 <details>
 <summary>Working context for maintainers — click to expand</summary>
 
-`tests/project-reads.client.spec.ts` owns the parser and read contract, `tests/video-projects.client.spec.ts` the fold and revision semantics, and `tests/StudioView.client.spec.tsx` the board behavior. The project document schema lives in `dsh-video-mode`; keep these parsers aligned with the fields the board displays rather than duplicating the Host's complete validator.
+`tests/project-reads.client.spec.ts` owns the parser and read contract, `tests/project-grammar-parity.client.spec.ts` compares the grammar, store file names, status tables, and committed spend with `dsh-video-mode`, `tests/video-projects.client.spec.ts` the fold and revision semantics, and `tests/StudioView.client.spec.tsx` the board behavior. The project document schema lives in `dsh-video-mode`; keep the client parser aligned with its complete validation rules.
 
 </details>

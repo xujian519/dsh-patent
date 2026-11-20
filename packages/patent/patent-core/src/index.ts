@@ -520,6 +520,7 @@ export type {
   WorkflowInterrupt,
   WorkflowManifest,
   WorkflowRunOptions,
+  WorkflowRunRecovery,
   WorkflowRunResult,
   WorkflowRunStore,
   WorkflowStage,

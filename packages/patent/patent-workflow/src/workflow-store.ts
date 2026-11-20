@@ -6,9 +6,8 @@
  * - JsonFileWorkflowRunStore：每 run 一个 JSON 文件（<dir>/<runId>.json），
  *   底层复用 JsonFileStore
  *
- * runId 缺省用 manifestId（中断后同 runId 重跑即覆盖上次记录，是恢复路径的
- * 有意语义）；同一 manifest 的多次独立运行请显式传不同 runId，否则后写覆盖
- * 前写。
+ * runId 缺省用 manifestId；同一 manifest 的多次独立运行或中断续跑请显式传
+ * 不同 runId，否则后写覆盖前写。工具层续跑会派生新 runId，保留中断记录。
  */
 
 import {
@@ -29,6 +28,7 @@ import type {
   WorkflowEvidenceLedger,
   WorkflowEvidenceReceipt,
   WorkflowInterrupt,
+  WorkflowRunRecovery,
   WorkflowRunResult,
   WorkflowRunStore,
   WorkflowStageResult,
@@ -162,6 +162,25 @@ function parseEvidenceLedger(value: unknown, invalid: Invalid): WorkflowEvidence
   return { receipts, digest, ...(incomplete !== undefined ? { incomplete } : {}) }
 }
 
+/** 校验并构造中断恢复点。 */
+function parseRecovery(value: unknown, invalid: Invalid): WorkflowRunRecovery {
+  if (!isJsonRecord(value)) throw invalid('recovery must be a JSON object')
+  const nextStageIndex = value['nextStageIndex']
+  if (!isNonNegativeInteger(nextStageIndex)) throw invalid('recovery.nextStageIndex must be a non-negative integer')
+  const state = value['state']
+  if (!isJsonRecord(state)) throw invalid('recovery.state must be a JSON object')
+  const rawRewindCounts = value['rewindCounts']
+  if (!isJsonRecord(rawRewindCounts)) throw invalid('recovery.rewindCounts must be a JSON object')
+  const rewindCounts: Record<string, number> = {}
+  for (const [stageId, count] of Object.entries(rawRewindCounts)) {
+    if (!isNonNegativeInteger(count)) throw invalid('recovery.rewindCounts values must be non-negative integers')
+    rewindCounts[stageId] = count
+  }
+  const pending = validateRevisionLog(value['pendingRevisions'])
+  if (!pending.ok) throw invalid(`recovery.pendingRevisions: ${pending.reason}`)
+  return { nextStageIndex, state, rewindCounts, pendingRevisions: pending.value }
+}
+
 /**
  * 解析并校验一份持久化的运行结果记录。
  *
@@ -194,6 +213,8 @@ export function parseWorkflowRunResult(raw: string, file: string): WorkflowRunRe
 
   const rawInterrupted = record['interrupted']
   const interrupted = rawInterrupted === undefined ? undefined : parseInterrupt(rawInterrupted, invalid)
+  const rawRecovery = record['recovery']
+  const recovery = rawRecovery === undefined ? undefined : parseRecovery(rawRecovery, invalid)
 
   const persistWarning = readOptionalNonEmptyString(record, 'persistWarning')
   if (persistWarning === null) throw invalid('persistWarning must be a non-empty string')
@@ -221,6 +242,7 @@ export function parseWorkflowRunResult(raw: string, file: string): WorkflowRunRe
     degradedSteps,
     summary,
     ...(interrupted !== undefined ? { interrupted } : {}),
+    ...(recovery !== undefined ? { recovery } : {}),
     ...(persistWarning !== undefined ? { persistWarning } : {}),
     ...(evidenceLedger !== undefined ? { evidenceLedger } : {}),
     ...(revisions !== undefined ? { revisions } : {}),

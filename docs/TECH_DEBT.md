@@ -358,10 +358,10 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- tech-debt-counters:start -->
 | 计数 | 值 |
 | --- | --- |
-| `structure.long-functions` | 191 |
+| `structure.long-functions` | 192 |
 | `structure.large-files` | 95 |
 | `structure.patent-large-files` | 9 |
-| `lint.v8-ignore` | 1333 |
+| `lint.v8-ignore` | 1334 |
 | `lint.ts-expect-error` | 202 |
 | `packages.patent-directories` | 16 |
 <!-- tech-debt-counters:end -->
@@ -380,7 +380,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-tools/src/figure/render-check-findings.ts` | 接受 | 988 | 纯几何判据：30+ 个小谓词 + 109 行编排，无 I/O，无第二消费方。2026-11-08 版面利用率判据（`sheet-underfill`，内容包围盒占该图画布比）加了 37 行，判据本身只读已量测的墨迹包围盒与画布尺寸 |
 | `packages/patent/patent-tools/src/figure/section-diagram.ts` | 接受 | 918 | 纯几何绘制：146 行主绘制 + 小工具，与 `leader-line` 同类 |
 | `packages/patent/patent-tools/src/figure/leader-line.ts` | 接受 | 908 | 纯几何：稳定在 906→908，无状态、无 I/O |
-| `packages/patent/patent-tools/src/tool/patent-workflow-run.ts` | 接受 | 1056 | 单一工具入口同时承载 manifest 与领域图两条执行路径，输入 schema、恢复/审批接线与解析器共享同一输出契约；文件内无 >150 行函数，拆分会把 schema 与分派分离而不减少分支。2026-11-04 新增审批门现场决策接线（运行级 handler 注册、`approveStageIds` 拒绝与中断文案）约 85 行，仍无新的长函数；2026-11-18 新增 `ctx.patentWorkflow` 运行入口与「服务记录会话事件」分流约 17 行，仍无新的长函数 |
+| `packages/patent/patent-tools/src/tool/patent-workflow-run.ts` | 接受 | 1070 | 单一工具入口同时承载 manifest 与领域图两条执行路径，输入 schema、恢复/审批接线与解析器共享同一输出契约；拆分会把 schema 与分派分离而不减少分支。2026-11-04 新增审批门现场决策接线（运行级 handler 注册、`approveStageIds` 拒绝与中断文案）约 85 行；2026-11-18 新增 `ctx.patentWorkflow` 运行入口与「服务记录会话事件」分流约 17 行；2026-11-20 自动续跑新增 `runId`/`resumeNote` 输出字段与恢复说明，`createPatentWorkflowRunTool` 因两个 schema 字段达到 152 行，仅超阈值 2 行 |
 | `packages/patent/patent-workflow/src/workflow/manifests.ts` | 接受 | 960 | 内置 manifest 目录：每个阶段是一行数据（id/策略/描述/参数），答复链 15 阶段把文件从 782 推到 852、投影消耗说明再推 3 行，披露链的充分公开与概括范围阶段再推 12 行、权利要求策略阶段再推 7 行、撰写链换位审查阶段再推 20 行、审批门的 `review_keys` 再推 5 行；2026-11-15 带特征编号的实施例块可见字符预算常量再推 7 行（953 → 960），阶段说明仍各占一行。切分只是把数据挪到别处，不降复杂度 |
 | `packages/patent/patent-core/src/atoms/handlers/builtin/evidence-check.ts` | 接受 | 842 | 单个 atom handler 的五阶段，最大函数 123 行，仅超阈值 5% |
 | `packages/patent/patent-tools/src/figure/dot-builder.ts` | 接受 | 839 | 单一 DOT 词汇表：五个 builder 各 <60 行，共享头部/标号/转义契约 |
@@ -405,8 +405,9 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-20 R-F10 工作流恢复点与视频文法对照**:`patent-workflow-run.ts` 由 1056 升至 **1070** 行并同步重定接受上限;新增 `runId`/`resumeNote` 输出 schema 使 `createPatentWorkflowRunTool` 达到 152 行,`structure.long-functions` 由 191 升至 **192**;本批未改覆盖率豁免,`lint.v8-ignore` 按当前树复测为 **1334**;其余计数不变。
 - **2026-11-20 R-F9 FreeCAD 脚本模板外置**:`freecad-structure-script.ts` 的 940 行内嵌 Python 模板抽为同目录 `freecad-structure-script.py` 资产,构建时首次读入并缓存,TS 文件由 1233 降至 **319** 行;`structure.large-files` 由 96 降至 **95**、`structure.patent-large-files` 由 10 降至 **9**,该文件在结构裁定表里的接受行随之删除。资产随 `files` 的 `src` 发布并被 Desktop 原样复制进 asar,Node 直接读取;`structure.long-functions`、`lint.v8-ignore` 与 `lint.ts-expect-error` 不变。
-- **2026-11-20 R-F5 状态读取与 YAML 资产收口**:`patent-rule` 四处 `parseDocument` 失败惯用法收进 `runtime/yaml-asset.ts`,`v8 ignore` 从 5 处并为 1 处;`patent-tools` 新增 `figure/geometry.ts` 合并交线判定与点线距,删除 `slop-gate` 的 `resolveTextKeys` 与 `readStateText` 的数组分支,`plot-diagram` 改用 `glyph-box.textWidthMm`;这些改动不新增豁免,`lint.v8-ignore` 由 1338 降至 **1333**;新增的 `geometry.ts` 与 `yaml-asset.ts` 均不足 150 行与 800 行,结构债三项不变;其余计数不变。
+- **2026-11-20 R-F5 状态读取与 YAML 资产收口**:`patent-rule` 五处 `parseDocument` 失败惯用法收进 `runtime/yaml-asset.ts`,`v8 ignore` 从 5 处并为 1 处;`patent-tools` 新增 `figure/geometry.ts` 合并交线判定与点线距,删除 `slop-gate` 的 `resolveTextKeys` 与 `readStateText` 的数组分支,`plot-diagram` 改用 `glyph-box.textWidthMm`;这些改动不新增豁免,`lint.v8-ignore` 由 1338 降至 **1334**;新增的 `geometry.ts` 与 `yaml-asset.ts` 均不足 150 行与 800 行,结构债三项不变;其余计数不变。
 - **2026-11-20 R-F2 安全名与子进程骨架收口**:`claim-chart-build.ts` 改经 `patent-core` 的 `assertPathSegment` 注入 `PatentToolError`,原先包住 `assertSafePathSegment` 的 `try`/`catch` 与那行带豁免的 `error instanceof Error` 兜底一并删除,`lint.v8-ignore` 由 1339 降至 **1338**;新增的 `safe-path.ts` 与 `subprocess-deadline.ts` 均不足 150 行与 800 行,结构债三项不变;其余计数不变。
 - **2026-11-18 专利域死代码收口**:`wiring.ts` 的 wiki 与知识图谱工具改为经 `ctx.patentKnowledge` 查询,删除自建 `KgStore` 的关闭守卫(服务持有唯一句柄),`lint.v8-ignore` 由 1340 降至 **1339**;`patent-workflow-run.ts` 由 1039 升至 **1056** 行并同步重定接受上限(manifest 运行改经 `ctx.patentWorkflow`,服务路径自行记录会话事件);不可达的 `response/reexamination.ts` 及其 barrel 与用例删除,不影响计数;其余计数不变。
 - **2026-11-18 成文形式预检**:`filing-form-audit.ts` 摊平 `contentFromDraft` 的节点时,`SpecificationNode.text` 是可选字段而映射对 `h3` 与 `p` 节点必定写了文本,两处空串兜底补带理由的豁免,`lint.v8-ignore` 由 1338 升至 **1340**;其余计数不变。

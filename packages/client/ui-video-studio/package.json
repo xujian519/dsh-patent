@@ -66,6 +66,7 @@
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-util-workspace-path": "workspace:*",
     "@deepseek-ai/dsh-value": "workspace:*",
+    "@deepseek-ai/dsh-video-mode": "workspace:*",
     "@testing-library/react": "^16.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

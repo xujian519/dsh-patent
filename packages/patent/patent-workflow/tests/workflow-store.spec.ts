@@ -151,6 +151,12 @@ describe('JsonFileWorkflowRunStore：磁盘记录结构校验', () => {
     rationale: '缺口',
     outcome: 'applied',
   }
+  const recovery = {
+    nextStageIndex: 1,
+    state: { input: '交底书', s1: 'ok' },
+    rewindCounts: { s1: 1 },
+    pendingRevisions: [revision],
+  }
 
   async function writeRun(dir: string, runId: string, content: unknown): Promise<string> {
     const file = join(dir, `${runId}.json`)
@@ -241,6 +247,12 @@ describe('JsonFileWorkflowRunStore：磁盘记录结构校验', () => {
         ['revision.outcome 非法', 'outcome', { revisions: [{ ...revision, outcome: 'skipped' }] }],
         ['revision.round 非正整数', 'round', { revisions: [{ ...revision, round: 0 }] }],
         ['revisionsTruncated 非布尔', 'revisionsTruncated', { revisionsTruncated: 'yes' }],
+        ['recovery 非对象', 'recovery', { recovery: 'paused' }],
+        ['recovery.nextStageIndex 为负', 'nextStageIndex', { recovery: { ...recovery, nextStageIndex: -1 } }],
+        ['recovery.state 非对象', 'state', { recovery: { ...recovery, state: [] } }],
+        ['recovery.rewindCounts 非对象', 'rewindCounts', { recovery: { ...recovery, rewindCounts: [] } }],
+        ['recovery.rewindCounts 计数为负', 'rewindCounts', { recovery: { ...recovery, rewindCounts: { s1: -1 } } }],
+        ['recovery.pendingRevisions 非数组', 'pendingRevisions', { recovery: { ...recovery, pendingRevisions: 'log' } }],
       ]
       for (const [index, [label, field, patch]] of cases.entries()) {
         const runId = `bad-${index}`
@@ -296,6 +308,7 @@ describe('JsonFileWorkflowRunStore：磁盘记录结构校验', () => {
         evidenceLedger: { receipts: [fullReceipt, receipt], digest: 'sha256:abc', incomplete: true },
         revisions: [revision],
         revisionsTruncated: true,
+        recovery,
       })
       await writeRun(dir, 'full', full)
       expect(await store.loadRun('full')).toEqual(full)

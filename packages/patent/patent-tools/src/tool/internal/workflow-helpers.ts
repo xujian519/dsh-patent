@@ -196,7 +196,7 @@ interface RunWorkflowWithPersistOptions {
   caseId: string | undefined
   /** Working directory the relative run paths resolve against. */
   cwd: string
-  /** Already-approved approval-gate stage ids (skipped on rerun). */
+  /** Already-approved approval-gate stage ids; a persisted pause resumes automatically. */
   approvalGrants?: string[]
   /** Executor to use instead of the library function; the service path also records session events. */
   run?: ManifestRunner
@@ -204,11 +204,34 @@ interface RunWorkflowWithPersistOptions {
   agent?: PatentAgent
 }
 
+/** Automatic resume source for a persisted workflow run. */
+type WorkflowRunResume = {
+  /** Interrupted run whose recovery point was reused. */
+  fromRunId: string
+  /** Zero-based stage index at which execution continued. */
+  nextStageIndex: number
+}
+
 /** Result of a persisted workflow run (the persist target feeds the artifact writes). */
 type PersistedWorkflowRun = {
   result: WorkflowRunResult
   /** Resolved persistence target; undefined when caseId is absent. */
   persistTarget: WorkflowRunPersistTarget | undefined
+  /** Present only when this call continued a persisted interruption. */
+  resume?: WorkflowRunResume
+}
+
+/**
+ * Allocate the first unused resume id without overwriting the paused record.
+ * @param store - run store containing earlier attempts.
+ * @param baseRunId - deterministic case-and-manifest run id.
+ * @returns an unused `<base>__resume-<n>` id.
+ */
+async function allocateResumeRunId(store: JsonFileWorkflowRunStore, baseRunId: string): Promise<string> {
+  const occupied = new Set(await store.listRuns())
+  let sequence = 1
+  while (occupied.has(`${baseRunId}__resume-${sequence}`)) sequence += 1
+  return `${baseRunId}__resume-${sequence}`
 }
 
 /**
@@ -219,7 +242,7 @@ type PersistedWorkflowRun = {
  * @param ctx - the workflow context.
  * @param executor - the chain-stage executor for atom-less stages.
  * @param opts - the run options.
- * @returns the run result plus the resolved persistence target.
+ * @returns the run result plus the resolved persistence target and resume source.
  */
 export async function runWorkflowWithPersist(
   manifest: WorkflowManifest,
@@ -227,7 +250,19 @@ export async function runWorkflowWithPersist(
   executor: StageExecutor,
   opts: RunWorkflowWithPersistOptions,
 ): Promise<PersistedWorkflowRun> {
-  const persistTarget = resolveRunPersistTarget(opts.caseId, manifest.id, opts.cwd)
+  const baseTarget = resolveRunPersistTarget(opts.caseId, manifest.id, opts.cwd)
+  const store = baseTarget === undefined ? undefined : new JsonFileWorkflowRunStore(baseTarget.runsDir)
+  let persistTarget = baseTarget
+  let resumeFrom: WorkflowRunResult | undefined
+  let resume: WorkflowRunResume | undefined
+  if (baseTarget !== undefined && store !== undefined && opts.approvalGrants !== undefined && opts.approvalGrants.length > 0) {
+    const previous = await store.loadRun(baseTarget.runId)
+    if (previous?.interrupted !== undefined && previous.recovery !== undefined) {
+      resumeFrom = previous
+      resume = { fromRunId: baseTarget.runId, nextStageIndex: previous.recovery.nextStageIndex }
+      persistTarget = { ...baseTarget, runId: await allocateResumeRunId(store, baseTarget.runId) }
+    }
+  }
   const options: WorkflowRunOptions = {
     handlers: opts.handlers,
     atoms: opts.atoms,
@@ -235,17 +270,18 @@ export async function runWorkflowWithPersist(
     /* v8 ignore next -- every caller passes an AbortSignal through. */
     ...(opts.signal !== undefined ? { signal: opts.signal } : {}),
     ...(opts.onStage !== undefined ? { onStage: opts.onStage } : {}),
-    ...(persistTarget !== undefined
-      ? { persist: new JsonFileWorkflowRunStore(persistTarget.runsDir), runId: persistTarget.runId }
+    ...(persistTarget !== undefined && store !== undefined
+      ? { persist: store, runId: persistTarget.runId }
       : {}),
     ...(opts.approvalGrants !== undefined && opts.approvalGrants.length > 0
       ? { approvalGrants: opts.approvalGrants }
       : {}),
+    ...(resumeFrom !== undefined ? { resumeFrom } : {}),
   }
   const result = opts.run === undefined
     ? await runWorkflow(manifest, ctx, executor, options)
     : await opts.run(manifest, ctx, executor, options, opts.agent)
-  return { result, persistTarget }
+  return { result, persistTarget, ...(resume !== undefined ? { resume } : {}) }
 }
 
 /** Options for assembling the tail text of a workflow-run result. */
@@ -258,6 +294,8 @@ interface RenderWorkflowResultTextOptions {
   stageLines: string[]
   /** Persistence note line. */
   persistNote: string
+  /** Resume or full-rerun explanation after approveStageIds was supplied. */
+  resumeNote?: string
   /** Deterministic rule-gate section (kept empty in this port). */
   checkSection: string
   /** Optional approval-gate interrupt note. */
@@ -278,6 +316,7 @@ export function renderWorkflowResultText(opts: RenderWorkflowResultTextOptions):
     `${opts.toolName}(${opts.result.manifestId}): ${opts.result.summary}`,
     ...opts.stageLines,
     ...(opts.interruptNote !== undefined ? [opts.interruptNote] : []),
+    ...(opts.resumeNote !== undefined ? [opts.resumeNote] : []),
     `完成状态: ${completion}`,
     opts.persistNote,
     ...checkLines,

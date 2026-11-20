@@ -54,7 +54,7 @@ kind: "package-reference"
 | `recognize_chemical_structure` | 分析 | 可选（rdkit 未随包）；索引写入已接线（Config.chemistryIndexFile） |
 | `flexible_plan` | 工作流 | `@deepseek-ai/dsh-patent-workflow` flexible-plan |
 | `patent_workflow` | 工作流 | `@deepseek-ai/dsh-patent-workflow` 收口 |
-| `patent_workflow_run` | 工作流 | `@deepseek-ai/dsh-patent-workflow` + ModelPort |
+| `patent_workflow_run` | 工作流 | `@deepseek-ai/dsh-patent-workflow` + ModelPort；`approveStageIds` 对同一案卷与 manifest 的中断记录按持久化恢复点续跑，使用新的 runId 并保留原中断记录；没有可用恢复点时从第一阶段整次重跑，结果会说明实际走了哪条路径 |
 | `patent_plan_task` | 工作流 | `@deepseek-ai/dsh-patent-workflow` plantask 状态机；`transition` 接受案卷条目（`issues` + 规划轮次 `round`），用随包处置表补全默认值、回显解析后的条目并交给阻塞/终态/轮次上限守卫 |
 | `patent_worker_validate` | 质量 | `@deepseek-ai/dsh-patent-workflow` worker 契约 |
 | `knowledge_note_save` | 知识 | Config.noteDir 下的文件写入器（默认 `<workspace>/99-知识库`） |

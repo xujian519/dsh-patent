@@ -187,10 +187,18 @@ export type WorkflowRunOptions = {
   /**
    * 已人工批准的审批门阶段 id 列表：命中时把放行标记注入该门的执行态，由审批门
    * handler 放行并写出 "APPROVED" 占位；未命中的审批门照常中断。人工批准后重跑时
-   * 传入（重跑从第一个阶段开始）。名单里出现非审批门阶段时，运行在开始前抛
+   * 传入；同时给出 {@link WorkflowRunOptions.resumeFrom} 时从恢复点继续，否则整次
+   * 重跑（从第一个阶段开始）。名单里出现非审批门阶段时，运行在开始前抛
    * WorkflowError。
    */
   approvalGrants?: string[]
+  /**
+   * 上一次中断的运行结果（含 {@link WorkflowRunResult.recovery}）：给出时从
+   * `recovery.nextStageIndex` 继续执行，复用其阶段结果前缀、执行态、回退计数与
+   * 留痕，门前阶段不重复执行。缺 `recovery`、manifest/caseType 不符、下标或阶段
+   * 前缀对不上时，在任何阶段执行前抛 WorkflowError——不静默回退成整次重跑。
+   */
+  resumeFrom?: WorkflowRunResult
   /**
    * 结果持久化存储：执行结束时调用 saveRun（可选）。
    * 实现见 `@deepseek-ai/dsh-patent-workflow` 的 workflow-store.ts
@@ -245,6 +253,23 @@ export type WorkflowInterrupt = {
   data: Record<string, unknown>
 }
 
+/**
+ * 中断时的恢复点：续跑所需的执行态快照。
+ *
+ * 阶段结果前缀、回退留痕与截断标记已在 {@link WorkflowRunResult} 上，这里只补
+ * 主循环的游标与执行态。它随运行结果持久化，不属于模型可见输出。
+ */
+export type WorkflowRunRecovery = {
+  /** 续跑起始阶段下标（0 基）；等于已记录的阶段结果前缀长度。 */
+  nextStageIndex: number
+  /** 中断时的完整执行态（含运行上下文与各阶段产出），按 JSON 值持久化。 */
+  state: PipelineState
+  /** 阶段 id → 已回退次数；续跑继续计入同一上限。 */
+  rewindCounts: Record<string, number>
+  /** 等待回退目标重新产出后补 `after` 的留痕记录。 */
+  pendingRevisions: RevisionRecord[]
+}
+
 /** 一次工作流运行结果：完成状态、各阶段结果、降级步骤、摘要与可选中断/告警。 */
 export type WorkflowRunResult = {
   manifestId: string
@@ -272,6 +297,11 @@ export type WorkflowRunResult = {
   revisions?: RevisionRecord[]
   /** True when the revision log hit its record cap and later rewinds were not recorded. */
   revisionsTruncated?: boolean
+  /**
+   * 中断时的恢复点：仅当中断可续跑时写入，供 {@link WorkflowRunOptions.resumeFrom}
+   * 从暂停阶段继续。持久化专用，渲染与模型可见输出不读它。
+   */
+  recovery?: WorkflowRunRecovery
 }
 
 /**

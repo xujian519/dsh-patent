@@ -5,7 +5,7 @@ import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as PatentRule from '@deepseek-ai/dsh-patent-rule'
 import { loadPatentComplianceRuleSet, resolveRuleAsset } from '@deepseek-ai/dsh-patent-rule'
 
-async function mount(config: PatentRule.Config): Promise<Context> {
+async function mount(config: Partial<PatentRule.Config>): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)

@@ -404,7 +404,7 @@ describe('Config.deliveryGate', () => {
 })
 
 describe('tools/guard 交付前置门禁', () => {
-  async function mount(config: PatentRule.Config): Promise<Context> {
+  async function mount(config: Partial<PatentRule.Config>): Promise<Context> {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)

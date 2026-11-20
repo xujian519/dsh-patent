@@ -116,10 +116,11 @@ export type { KgEdge, KgNode, KgNodeType } from './patent/types.ts'
  * reference; code with a package import uses the same-named pure exports.
  */
 export class PatentKnowledge extends Service {
+  /** Schema validates field types and bounds; {@link resolveKnowledgePaths} materializes every default once. */
   static Config: z<Config> = z.object({
-    knowledgeDir: z.string().default(resolveKnowledgePaths().dataDir),
-    sourceDbPath: z.string().default(resolveKnowledgePaths().sourceDbPath),
-    nodeCacheMaxEntries: z.number().min(1).default(DEFAULT_NODE_CACHE_MAX_ENTRIES),
+    knowledgeDir: z.string(),
+    sourceDbPath: z.string(),
+    nodeCacheMaxEntries: z.number().min(1),
   })
 
   /** Resolved on-disk paths (query db, wiki dir, install source). */

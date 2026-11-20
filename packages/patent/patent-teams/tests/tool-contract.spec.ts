@@ -87,7 +87,7 @@ async function mount(): Promise<Context> {
     name,
     inject,
     Config,
-    apply: (c: Context) => { apply(c, { stateDir: '.patent-teams' }) },
+    apply: (c: Context) => { apply(c, Config({ stateDir: '.patent-teams' })) },
   })
   return ctx
 }

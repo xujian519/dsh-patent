@@ -56,7 +56,7 @@ function summarize(project: VideoProject, path: string): string {
  * @param cwd - Session working directory.
  * @param signal - caller cancellation.
  * @param apply - pure mutation.
- * @returns the written project.
+ * @returns the written project and the absolute path the Host resolved for it.
  */
 async function mutateProject(
   ctx: Context,
@@ -64,15 +64,17 @@ async function mutateProject(
   cwd: string,
   signal: AbortSignal,
   apply: (project: VideoProject) => VideoProject,
-): Promise<VideoProject> {
+): Promise<{ readonly project: VideoProject; readonly path: string }> {
   const target = await ctx.fs.resolve(path, { cwd })
-  return withProjectLock(ctx.fs.processPath(target), () => mutateProjectFile({
+  const resolved = ctx.fs.processPath(target)
+  const project = await withProjectLock(resolved, () => mutateProjectFile({
     path,
     read: () => readProjectSnapshot(ctx, path, cwd, signal),
     write: async (text, version) => {
       await ctx.fs.writeText(target, text, { kind: 'replaceIfVersion', version }, signal)
     },
   }, apply))
+  return { project, path: resolved }
 }
 
 /**
@@ -191,22 +193,24 @@ export function createProjectTool(ctx: Context): ToolDefinition {
         }
         case 'read': {
           const path = requirePath(args.project_path)
+          const target = await ctx.fs.resolve(path, { cwd })
           const project = await readProject(ctx, path, cwd, exec.signal)
-          return { action: 'read', path, message: JSON.stringify(project, null, 2) }
+          const resolved = ctx.fs.processPath(target)
+          return { action: 'read', path: resolved, message: JSON.stringify(project, null, 2) }
         }
         case 'upsert_shot': {
           const path = requirePath(args.project_path)
           if (args.shot === undefined) throw new MediaFailure('video_project upsert_shot requires `shot`', 'MEDIA_PROJECT_INVALID')
           const shot = shotFrom(args.shot)
           const updated = await mutateProject(ctx, path, cwd, exec.signal, project => upsertShot(project, shot))
-          return { action: 'upsert_shot', path, message: summarize(updated, path) }
+          return { action: 'upsert_shot', path: updated.path, message: summarize(updated.project, updated.path) }
         }
         case 'remove_shot': {
           const path = requirePath(args.project_path)
           const shotId = args.shot_id
           if (shotId === undefined) throw new MediaFailure('video_project remove_shot requires `shot_id`', 'MEDIA_PROJECT_INVALID')
           const updated = await mutateProject(ctx, path, cwd, exec.signal, project => removeShot(project, shotId))
-          return { action: 'remove_shot', path, message: summarize(updated, path) }
+          return { action: 'remove_shot', path: updated.path, message: summarize(updated.project, updated.path) }
         }
         case 'record_render': {
           const path = requirePath(args.project_path)
@@ -219,7 +223,7 @@ export function createProjectTool(ctx: Context): ToolDefinition {
             ...args.render.cost_cny === undefined ? {} : { costCny: args.render.cost_cny },
           }
           const updated = await mutateProject(ctx, path, cwd, exec.signal, project => recordRender(project, render))
-          return { action: 'record_render', path, message: summarize(updated, path) }
+          return { action: 'record_render', path: updated.path, message: summarize(updated.project, updated.path) }
         }
       }
     },

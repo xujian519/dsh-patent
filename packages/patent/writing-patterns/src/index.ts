@@ -77,29 +77,29 @@ export interface Config {
    * Result cap applied when a search, feature-match, or category call omits its
    * own limit. An argument-free listing always returns the whole library.
    */
-  matchLimit?: number
+  matchLimit: number
   /** Register the always-on writing-patterns system-prompt section. Defaults to true. */
-  registerSection?: boolean
+  registerSection: boolean
   /** Categories whose patterns the section indexes; an empty list injects the guidance alone. */
-  sectionCategories?: PatternCategory[]
+  sectionCategories: PatternCategory[]
   /** Position of the injected section in the assembled system prompt. */
-  sectionOrder?: number
+  sectionOrder: number
   /**
    * Pattern ids each workflow stage's prompt receives, keyed by stage id. Every
    * stage lists 3 to 5 pattern ids that exist in the loaded corpus; an atom
    * reads its stage's patterns through the `writingPatterns` service.
    */
-  stagePatterns?: Record<string, string[]>
+  stagePatterns: Record<string, string[]>
 }
 
 /** Schemastery configuration: corpus override, result cap, and section policy. */
-export const Config: z<Config> = z.object({
+export const Config: z<Partial<Config>, Config> = z.object({
   patternDir: z.string(),
   matchLimit: z.natural().min(1).default(DEFAULT_MATCH_LIMIT),
   registerSection: z.boolean().default(true),
   sectionCategories: z.array(z.union(PATTERN_CATEGORIES)).default([...PATTERN_CATEGORIES]),
   sectionOrder: z.natural().default(DEFAULT_SECTION_ORDER),
-  stagePatterns: z.dict(z.array(z.string().min(1)).min(3).max(5)),
+  stagePatterns: z.dict(z.array(z.string().min(1)).min(3).max(5)).default({}),
 })
 
 /**
@@ -197,16 +197,16 @@ function resolveStagePatterns(
  */
 export function apply(ctx: Context, config: Config): void {
   const store = loadPatternStore(config.patternDir)
-  new WritingPatternsService(ctx, store, config.stagePatterns ?? {})
+  new WritingPatternsService(ctx, store, config.stagePatterns)
   ctx.tools.register(createQueryWritingPatternsTool({
     store,
-    matchLimit: config.matchLimit ?? DEFAULT_MATCH_LIMIT,
+    matchLimit: config.matchLimit,
   }))
-  if (config.registerSection === false) return
-  const patterns = sectionPatterns(store, config.sectionCategories ?? PATTERN_CATEGORIES)
+  if (!config.registerSection) return
+  const patterns = sectionPatterns(store, config.sectionCategories)
   ctx.systemPrompt.section({
     name: WRITING_PATTERNS_SECTION_NAME,
-    order: config.sectionOrder ?? DEFAULT_SECTION_ORDER,
+    order: config.sectionOrder,
     text: renderWritingSkillsSection(compileWritingPatternIndex(patterns)),
   })
 }

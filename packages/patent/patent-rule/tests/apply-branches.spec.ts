@@ -21,7 +21,7 @@ afterEach(() => {
 
 const MECHANICAL_DOMAIN = join(import.meta.dirname, '..', 'assets', 'rules', 'domains', 'mechanical')
 
-async function mount(config: PatentRule.Config): Promise<Context> {
+async function mount(config: Partial<PatentRule.Config>): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)

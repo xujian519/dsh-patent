@@ -137,15 +137,15 @@ export type {
  */
 export interface Config {
   /** ego-browser CLI command name (default `ego-browser`). */
-  commandName?: string
+  commandName: string
   /** Connection-probe timeout in milliseconds (default 8000). */
-  probeTimeoutMs?: number
+  probeTimeoutMs: number
   /** Default ego-browser run timeout in milliseconds (default 90000). */
-  defaultTimeoutMs?: number
+  defaultTimeoutMs: number
   /** Hard cap applied to a per-run timeout in milliseconds (default 300000). */
-  maxTimeoutMs?: number
+  maxTimeoutMs: number
   /** Soft cap in bytes for the merged run output (default 500000). */
-  maxOutputBytes?: number
+  maxOutputBytes: number
   /**
    * Channel the nuo engine's requests travel over (default `auto`). `native`
    * forces the plain fetch, `browser` the ego-browser path, and `fallback` keeps
@@ -154,36 +154,35 @@ export interface Config {
    * explicit value writes `NUO_PATENT_EGO_BROWSER` for the whole process — every
    * consumer of the vendored engine in it, not just this service.
    */
-  nuoRequestChannel?: NuoRequestChannel
+  nuoRequestChannel: NuoRequestChannel
   /**
    * 是否让本部署经 CNIPR（search.cnipr.com）取中国专利全文与法律状态（默认 false）。
    * 通道复用 ego lite 的 CNIPR 登录态，因此没有该登录态的部署打开它只会得到
    * `login_required`；关闭时 {@link PatentData.createCniprChannel} 返回 undefined，
    * 消费方据此按号回退到 nuo 引擎，并在结果里点名实际服务的通道。
    */
-  cniprEnabled?: boolean
+  cniprEnabled: boolean
   /** CNIPR 登录态轮询间隔（毫秒，默认 1000）。 */
-  cniprLoginPollMs?: number
+  cniprLoginPollMs: number
   /** 每轮 CNIPR 登录态轮询次数（默认 10）。 */
-  cniprLoginAttempts?: number
+  cniprLoginAttempts: number
   /** CNIPR 登录态轮询轮数；除最后一轮外每轮结束 reload 首页（默认 2）。 */
-  cniprLoginRounds?: number
+  cniprLoginRounds: number
   /** CNIPR 页面导航期限（毫秒，默认 45000）：首页 goto/reload 与检索结果页 URL。 */
-  cniprNavigationTimeoutMs?: number
+  cniprNavigationTimeoutMs: number
   /** CNIPR 点击与表单提交期限（毫秒，默认 15000）。 */
-  cniprActionTimeoutMs?: number
+  cniprActionTimeoutMs: number
   /** CNIPR 结果页结构出现期限（毫秒，默认 30000）：详情表单、法律状态表单与结果 URL、翻页标记。 */
-  cniprResultTimeoutMs?: number
+  cniprResultTimeoutMs: number
   /** CNIPR 结果内容渲染期限（毫秒，默认 20000）：结果行、申请号、法律状态结果标题。 */
-  cniprRenderTimeoutMs?: number
+  cniprRenderTimeoutMs: number
   /** CNIPR 详情检索接口的响应期限（毫秒，默认 20000）。 */
-  cniprDetailTimeoutMs?: number
+  cniprDetailTimeoutMs: number
 }
 
 /**
- * The ego-browser defaults one deployment resolved: every field filled, from
- * the Config the schema defaulted or from the seam's own default when the
- * service is constructed without one.
+ * The ego-browser defaults one deployment resolved: every field filled by
+ * {@link PatentData.Config}, which materializes each default once.
  */
 type ResolvedEgoDefaults = Required<Pick<EgoSessionOptions, 'commandName' | 'probeTimeoutMs' | 'defaultTimeoutMs' | 'maxTimeoutMs' | 'maxOutputBytes'>>
 
@@ -196,7 +195,7 @@ export class PatentData extends Service {
   static inject = ['subprocess']
 
   /** Schemastery configuration for the sessions and runners this service builds. */
-  static Config: z<Config> = z.object({
+  static Config: z<Partial<Config>, Config> = z.object({
     commandName: z.string().min(1).default(DEFAULT_EGO_COMMAND_NAME),
     probeTimeoutMs: z.natural().min(1).default(DEFAULT_EGO_PROBE_TIMEOUT_MS),
     defaultTimeoutMs: z.natural().min(1).default(DEFAULT_EGO_TIMEOUT_MS),
@@ -219,7 +218,7 @@ export class PatentData extends Service {
   private readonly cniprRuns = new SerialQueue()
   private readonly cniprEnabled: boolean
 
-  constructor(ctx: Context, config: Config = {}) {
+  constructor(ctx: Context, config: Config = PatentData.Config({})) {
     // Resolve and validate before super() registers the service: an invalid
     // mount must fail without leaving a half-registered ctx.patentData behind.
     const egoDefaults = resolveEgoDefaults(config)
@@ -227,8 +226,8 @@ export class PatentData extends Service {
     super(ctx, 'patentData')
     this.egoDefaults = egoDefaults
     this.cniprBudgets = cniprBudgets
-    this.cniprEnabled = config.cniprEnabled ?? false
-    const restoreNuoChannel = applyNuoRequestChannel(config.nuoRequestChannel ?? 'auto')
+    this.cniprEnabled = config.cniprEnabled
+    const restoreNuoChannel = applyNuoRequestChannel(config.nuoRequestChannel)
     if (restoreNuoChannel !== undefined) {
       ctx.effect(() => restoreNuoChannel, 'patent-data: nuo request channel')
     }
@@ -278,23 +277,22 @@ export class PatentData extends Service {
 }
 
 /**
- * Resolve the ego-browser defaults: the validated Config fields, each falling
- * back to the value the seam shipped before it was configurable.
+ * Resolve the ego-browser defaults from the validated Config fields.
  *
- * The checks repeat the schema's constraints because a direct constructor call
- * bypasses cordis' validation; a zero or inverted deadline would otherwise turn
- * every run into an immediate timeout instead of failing at load.
+ * The checks repeat the schema's constraints because a caller may construct the
+ * service directly with a hand-built Config; a zero or inverted deadline would
+ * otherwise turn every run into an immediate timeout instead of failing at load.
  * @param config - the service's validated configuration.
  * @returns the ego-browser defaults the service builds every session over.
  * @throws when a value is not a positive integer or the run default exceeds its cap.
  */
 function resolveEgoDefaults(config: Config): ResolvedEgoDefaults {
   const resolved: ResolvedEgoDefaults = {
-    commandName: config.commandName ?? DEFAULT_EGO_COMMAND_NAME,
-    probeTimeoutMs: positiveInteger('probeTimeoutMs', config.probeTimeoutMs ?? DEFAULT_EGO_PROBE_TIMEOUT_MS),
-    defaultTimeoutMs: positiveInteger('defaultTimeoutMs', config.defaultTimeoutMs ?? DEFAULT_EGO_TIMEOUT_MS),
-    maxTimeoutMs: positiveInteger('maxTimeoutMs', config.maxTimeoutMs ?? DEFAULT_EGO_MAX_TIMEOUT_MS),
-    maxOutputBytes: positiveInteger('maxOutputBytes', config.maxOutputBytes ?? DEFAULT_EGO_MAX_OUTPUT_BYTES),
+    commandName: config.commandName,
+    probeTimeoutMs: positiveInteger('probeTimeoutMs', config.probeTimeoutMs),
+    defaultTimeoutMs: positiveInteger('defaultTimeoutMs', config.defaultTimeoutMs),
+    maxTimeoutMs: positiveInteger('maxTimeoutMs', config.maxTimeoutMs),
+    maxOutputBytes: positiveInteger('maxOutputBytes', config.maxOutputBytes),
   }
   if (resolved.commandName.length === 0) {
     throw new Error('patent-data Config: commandName must not be empty')
@@ -308,29 +306,28 @@ function resolveEgoDefaults(config: Config): ResolvedEgoDefaults {
 }
 
 /**
- * Resolve the CNIPR page budgets: the validated Config fields, each falling
- * back to the value the generated scripts shipped before it was configurable.
+ * Resolve the CNIPR page budgets from the validated Config fields.
  *
- * The checks repeat the schema's constraints because a direct constructor call
- * bypasses cordis' validation; a zero deadline would otherwise turn every page
- * wait into an immediate timeout instead of failing at load.
+ * The checks repeat the schema's constraints because a caller may construct the
+ * service directly with a hand-built Config; a zero deadline would otherwise turn
+ * every page wait into an immediate timeout instead of failing at load.
  * @param config - the service's validated configuration.
  * @returns the page budgets every channel the service creates starts from.
  * @throws when a value is not a positive integer.
  */
 function resolveCniprBudgets(config: Config): CniprPageBudgets {
   return {
-    loginPollMs: positiveInteger('cniprLoginPollMs', config.cniprLoginPollMs ?? DEFAULT_CNIPR_PAGE_BUDGETS.loginPollMs),
-    loginAttempts: positiveInteger('cniprLoginAttempts', config.cniprLoginAttempts ?? DEFAULT_CNIPR_PAGE_BUDGETS.loginAttempts),
-    loginRounds: positiveInteger('cniprLoginRounds', config.cniprLoginRounds ?? DEFAULT_CNIPR_PAGE_BUDGETS.loginRounds),
+    loginPollMs: positiveInteger('cniprLoginPollMs', config.cniprLoginPollMs),
+    loginAttempts: positiveInteger('cniprLoginAttempts', config.cniprLoginAttempts),
+    loginRounds: positiveInteger('cniprLoginRounds', config.cniprLoginRounds),
     navigationTimeoutMs: positiveInteger(
       'cniprNavigationTimeoutMs',
-      config.cniprNavigationTimeoutMs ?? DEFAULT_CNIPR_PAGE_BUDGETS.navigationTimeoutMs,
+      config.cniprNavigationTimeoutMs,
     ),
-    actionTimeoutMs: positiveInteger('cniprActionTimeoutMs', config.cniprActionTimeoutMs ?? DEFAULT_CNIPR_PAGE_BUDGETS.actionTimeoutMs),
-    resultTimeoutMs: positiveInteger('cniprResultTimeoutMs', config.cniprResultTimeoutMs ?? DEFAULT_CNIPR_PAGE_BUDGETS.resultTimeoutMs),
-    renderTimeoutMs: positiveInteger('cniprRenderTimeoutMs', config.cniprRenderTimeoutMs ?? DEFAULT_CNIPR_PAGE_BUDGETS.renderTimeoutMs),
-    detailTimeoutMs: positiveInteger('cniprDetailTimeoutMs', config.cniprDetailTimeoutMs ?? DEFAULT_CNIPR_PAGE_BUDGETS.detailTimeoutMs),
+    actionTimeoutMs: positiveInteger('cniprActionTimeoutMs', config.cniprActionTimeoutMs),
+    resultTimeoutMs: positiveInteger('cniprResultTimeoutMs', config.cniprResultTimeoutMs),
+    renderTimeoutMs: positiveInteger('cniprRenderTimeoutMs', config.cniprRenderTimeoutMs),
+    detailTimeoutMs: positiveInteger('cniprDetailTimeoutMs', config.cniprDetailTimeoutMs),
   }
 }
 

@@ -106,8 +106,8 @@ describe('@deepseek-ai/dsh-patent-filing plugin surface', () => {
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime)
       ctx.provide('subprocess', fakeSubprocess(() => stdoutHandle(BUILD_REPORT)).spawner)
-      // 直接调用 apply（绕开 Config 的缺省填充），覆盖 outputRoot/figureScale/timeoutMs 的缺省分支。
-      Pkg.apply(ctx, { pythonPath: python.path, chromePath: '/usr/bin/chrome' })
+      // 只给可选字段：outputRoot/figureScale/timeoutMs 由 Config 填充后再交给 apply。
+      Pkg.apply(ctx, Pkg.Config({ pythonPath: python.path, chromePath: '/usr/bin/chrome' }))
       expect(ctx.tools.schemas().some(schema => schema.name === 'build_patent_filing')).toBe(true)
     } finally {
       python.cleanup()
@@ -135,7 +135,7 @@ describe('@deepseek-ai/dsh-patent-filing plugin surface', () => {
 
       // 缺解释器是主机能力问题，不是部署配置错误：整份组合仍要挂得上，缺解释器只挡调用。
       const registered: string[] = []
-      Pkg.apply({ tools: { register: (tool: { name: string }) => { registered.push(tool.name) } } } as never, {})
+      Pkg.apply({ tools: { register: (tool: { name: string }) => { registered.push(tool.name) } } } as never, Pkg.Config({}))
       expect(registered).toEqual(['build_patent_filing', 'verify_patent_filing'])
     } finally {
       if (saved.home !== undefined) process.env.HOME = saved.home
@@ -193,7 +193,7 @@ describe('verify report is a domain result, not an infrastructure failure', () =
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime)
       ctx.provide('subprocess', fakeSubprocess(() => stdoutHandle(VERIFY_REPORT)).spawner)
-      Pkg.apply(ctx, { pythonPath: python.path })
+      Pkg.apply(ctx, Pkg.Config({ pythonPath: python.path }))
       expect(ctx.tools.schemas().some(schema => schema.name === 'verify_patent_filing')).toBe(true)
     } finally {
       python.cleanup()

@@ -113,33 +113,6 @@ describe('apply', () => {
     expect(sections[0]!.order).toBe(117)
   })
 
-  it('applies every fallback when apply receives a partial raw config', async () => {
-    const ctx = new Context()
-    const sections: Array<{ name: string; order: number; text: string }> = []
-    ctx.provide('tools', { register: () => () => {} } as never)
-    ctx.provide('systemPrompt', { section: (section: { name: string; order: number; text: string }) => { sections.push(section); return () => {} } } as never)
-    ctx.provide('llm', { resolveCallConfig: async (c: unknown) => c } as never)
-    ctx.provide('agents', { get: () => undefined } as never)
-    ctx.provide('subagents', {
-      listChildren: async () => [],
-      listDescendants: async () => [],
-      sendMessage: async () => 'msg',
-    } as never)
-    // A raw partial config bypasses the schema defaults.
-    apply(ctx, {})
-    expect(sections[0]!.order).toBe(117)
-    await vi.waitFor(() => {
-      expect(ctx.patentTeams).toBeDefined()
-    })
-    const serviceConfig = (ctx.patentTeams as unknown as {
-      config: { stateDir: string; memberProvider: string; memberMaxDepth: number; maxMembers: number }
-    }).config
-    expect(serviceConfig.stateDir).toBe('.patent-teams')
-    expect(serviceConfig.memberProvider).toBe('spawn')
-    expect(serviceConfig.memberMaxDepth).toBe(1)
-    expect(serviceConfig.maxMembers).toBe(8)
-  })
-
   it('honors the configured member cap and model default', async () => {
     const { ctx } = harness({ maxMembers: 1, memberModel: 'model-x' })
     await vi.waitFor(() => {

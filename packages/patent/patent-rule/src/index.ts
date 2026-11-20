@@ -257,9 +257,9 @@ export interface Config {
    * already-loaded id replaces it and draws a load warning, so a collision between a
    * domain pack and the base set stays visible.
    */
-  additionalRuleDomains?: string[]
+  additionalRuleDomains: string[]
   /** Tool names whose results run through the output gate. Defaults to the delivery tools. */
-  gateToolNames?: string[]
+  gateToolNames: string[]
   /**
    * Check families the result gate keeps. Defaults to `keyword_blocklist`
    * (incident: a hit is a violation). Widening to
@@ -270,7 +270,7 @@ export interface Config {
    * {@link Config.structuralGate} instead. Widening adds log lines only while
    * the shipped incident-family rules are `action: warn`.
    */
-  gateCheckTypes?: string[]
+  gateCheckTypes: string[]
   /**
    * Artifact structural gate: entries naming a tool, the arguments holding its
    * artifact text, and the absence-based rule ids to judge it by. A block-level
@@ -283,7 +283,7 @@ export interface Config {
    * {@link StructuralGateConfigError} instead of a warning that drops it; shipped
    * presets set it so a renamed rule asset cannot silently disarm the gate.
    */
-  structuralGate?: StructuralGateEntry[]
+  structuralGate: StructuralGateEntry[]
   /**
    * Delivery gate: entries naming a delivery tool and the tools that must have
    * succeeded earlier in the same session before it may run. An unsatisfied
@@ -296,7 +296,7 @@ export interface Config {
    * ships: the prerequisites a deployment requires are its delivery policy, not
    * this package's.
    */
-  deliveryGate?: DeliveryGateEntry[]
+  deliveryGate: DeliveryGateEntry[]
   /**
    * Citation gate: before a listed delivery tool runs, every citation in its
    * text arguments must pass the shipped patent index and, for 民法典 and
@@ -304,12 +304,12 @@ export interface Config {
    * from the index, unverified, or narrowed to a missing paragraph or item
    * denies the call.
    */
-  citationGate?: CitationGateEntry[]
+  citationGate: CitationGateEntry[]
   /** When true, review-level violations block without an approval round-trip (unattended fail-closed). */
-  approvalDisabled?: boolean
+  approvalDisabled: boolean
 }
 
-export const Config: z<Config> = z.object({
+export const Config: z<Partial<Config>, Config> = z.object({
   rulesDir: z.string(),
   manifestPath: z.string(),
   additionalRuleDomains: z.array(z.string()).default([]),
@@ -439,8 +439,8 @@ function isBlockedResult(value: unknown): boolean {
 }
 
 export function apply(ctx: Context, config: Config): void {
-  const gateToolNames = new Set(config.gateToolNames ?? DEFAULT_GATE_TOOL_NAMES)
-  const approvalDisabled = config.approvalDisabled === true
+  const gateToolNames = new Set(config.gateToolNames)
+  const approvalDisabled = config.approvalDisabled
 
   // Rule loading strategy:
   // 1. manifestPath → full loadRulePack (layered base+domains+overrides)
@@ -459,7 +459,7 @@ export function apply(ctx: Context, config: Config): void {
     const base = loadPatentFullRuleSet(config.rulesDir)
     ruleSet = base.ruleSet
     warnings = base.warnings
-    for (const domain of config.additionalRuleDomains ?? []) {
+    for (const domain of config.additionalRuleDomains) {
       const domainDir = resolvePackDir(domain, config.rulesDir)
       if (domainDir === null) {
         warnings.push(`附加规则域 "${domain}" 未找到，跳过`)
@@ -475,18 +475,18 @@ export function apply(ctx: Context, config: Config): void {
       }
     }
   }
-  const gateCheckTypes = resolveGateCheckTypes(config.gateCheckTypes ?? DEFAULT_GATE_CHECK_TYPES, warnings)
+  const gateCheckTypes = resolveGateCheckTypes(config.gateCheckTypes, warnings)
   // 门禁声明与工具入参的核对在加载期完成；工具尚未注册时留给运行期（调用前必有一份
   // 已注册的定义），避免插件加载顺序决定 strict 是否误报。
   const toolParameters = (tool: string): Record<string, unknown> | undefined =>
     ctx.tools.get(tool)?.parameters
-  const structuralGate: StructuralGatePlan = resolveStructuralGate(ruleSet, config.structuralGate ?? [], toolParameters)
+  const structuralGate: StructuralGatePlan = resolveStructuralGate(ruleSet, config.structuralGate, toolParameters)
   warnings.push(...structuralGate.warnings)
-  const citationGate = config.citationGate ?? []
+  const citationGate = config.citationGate
   for (const issue of textArgDeclarationIssues(citationGate, toolParameters)) {
     warnings.push(`交付物引用门禁: ${issue}`)
   }
-  const deliveryGate: DeliveryGatePlan = resolveDeliveryGate(config.deliveryGate ?? [])
+  const deliveryGate: DeliveryGatePlan = resolveDeliveryGate(config.deliveryGate)
   warnings.push(...deliveryGate.warnings)
   const synonyms = loadSynonymsAsset(config.rulesDir)
   warnings.push(...synonyms.warnings)

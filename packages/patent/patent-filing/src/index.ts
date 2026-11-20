@@ -45,15 +45,15 @@ export interface Config {
   /** 结构与断言定义（spec JSON）的绝对路径；缺省用随包 spec。换模板时必须一并核对。 */
   specPath?: string
   /** 缺省输出目录（相对进程工作目录）；既未给 outputDir 也未给 caseId 时使用。 */
-  outputRoot?: string
+  outputRoot: string
   /** `.svg` 附图栅格化倍率。 */
-  figureScale?: number
+  figureScale: number
   /** 单次引擎调用超时（毫秒）。 */
-  timeoutMs?: number
+  timeoutMs: number
 }
 
 /** Schemastery configuration: interpreter, template identity, output location, and engine bounds. */
-export const Config: z<Config> = z.object({
+export const Config: z<Partial<Config>, Config> = z.object({
   pythonPath: z.string(),
   chromePath: z.string(),
   templatePath: z.string(),
@@ -79,9 +79,9 @@ export function apply(ctx: Context, config: Config): void {
     : undefined
   const templatePath = config.templatePath ?? defaultTemplatePath()
   const specPath = config.specPath ?? defaultSpecPath()
-  const outputRoot = config.outputRoot ?? DEFAULT_OUTPUT_DIR
-  const figureScale = config.figureScale ?? 3
-  const timeoutMs = config.timeoutMs ?? DEFAULT_ENGINE_TIMEOUT_MS
+  const outputRoot = config.outputRoot
+  const figureScale = config.figureScale
+  const timeoutMs = config.timeoutMs
   ctx.tools.register(createBuildPatentFilingTool({
     subprocess: ctx.subprocess,
     ...(pythonPath !== undefined ? { pythonPath } : {}),

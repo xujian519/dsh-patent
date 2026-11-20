@@ -38,55 +38,58 @@ export const name = 'patent-teams'
 // member activity falls back to "unknown" without the agent registry.
 export const inject = ['tools', 'systemPrompt', 'subagents']
 
-/** Plugin configuration. */
+/**
+ * Plugin configuration, as the schema resolves it: every default below is
+ * materialized once, in {@link Config}, and consumers read the fields directly.
+ */
 export interface Config {
   /**
    * State directory name under the captain's workspace; team state lives at
    * `<workspace>/<stateDir>/<teamId>/` (default `.patent-teams`).
    */
-  stateDir?: string
+  stateDir: string
   /** `ctx.subagents` provider used to spawn members; must support continuable children and personas (default `spawn`). */
-  memberProvider?: string
-  /** Optional model override applied to every member. */
+  memberProvider: string
+  /** Optional model override applied to every member; absent means the member inherits its route's default. */
   memberModel?: string
   /** Member delegation depth cap (default `1`; `0` forbids delegation entirely). */
-  memberMaxDepth?: number
+  memberMaxDepth: number
   /** Team size cap in members (default `8`). */
-  maxMembers?: number
+  maxMembers: number
   /** Prompt-section order for the usage policy (default `117`, after delegation policy). */
-  promptSectionOrder?: number
+  promptSectionOrder: number
   /** Run the composite quality gate on contract-backed task completion (deployment choice; default `false`). */
-  qualityGate?: boolean
+  qualityGate: boolean
   /**
    * Comprehensive-eval score below which the gate calls out the composite score
    * as advisory feedback (0..1; default `0.7`). The bounce decision itself is
    * made by contract fields, content sufficiency, expression quality, and the
    * rule gate — never by the composite score alone.
    */
-  passThreshold?: number
+  passThreshold: number
   /**
    * How long a live-delivery claim stays exclusive before the message becomes
    * retryable, in milliseconds (positive integer; default 60000).
    */
-  mailboxDeliveryLeaseMs?: number
+  mailboxDeliveryLeaseMs: number
   /**
    * Ask the deployment's approval answerers for a decision on the team plan before
    * `patent_teams_create` creates the team (deployment choice; default `false`). A
    * deployment that turns it on without an answerer refuses the create instead of
    * creating an unapproved team.
    */
-  approveCreation?: boolean
+  approveCreation: boolean
   /**
    * Ask for a decision before `patent_teams_delete` archives the team: the captain
    * leads a case but does not close it alone (default `false`).
    */
-  approveClosure?: boolean
+  approveClosure: boolean
 }
 
-export const Config: z<Config> = z.object({
+export const Config: z<Partial<Config>, Config> = z.object({
   stateDir: z.string().default('.patent-teams'),
   memberProvider: z.string().default('spawn'),
-  memberModel: z.string(),
+  memberModel: z.string().required(false),
   memberMaxDepth: z.natural().default(1),
   maxMembers: z.natural().min(1).default(8),
   promptSectionOrder: z.natural().default(117),
@@ -113,14 +116,14 @@ Tools: ${toolNames}`
 
 export function apply(ctx: Context, config: Config): void {
   const resolved: PatentTeamsConfig = {
-    stateDir: config.stateDir ?? '.patent-teams',
-    memberProvider: config.memberProvider ?? 'spawn',
+    stateDir: config.stateDir,
+    memberProvider: config.memberProvider,
     ...config.memberModel === undefined ? {} : { memberModel: config.memberModel },
-    memberMaxDepth: config.memberMaxDepth ?? 1,
-    maxMembers: config.maxMembers ?? 8,
-    qualityGate: config.qualityGate ?? false,
-    passThreshold: config.passThreshold ?? 0.7,
-    mailboxDeliveryLeaseMs: config.mailboxDeliveryLeaseMs ?? DEFAULT_MAILBOX_DELIVERY_LEASE_MS,
+    memberMaxDepth: config.memberMaxDepth,
+    maxMembers: config.maxMembers,
+    qualityGate: config.qualityGate,
+    passThreshold: config.passThreshold,
+    mailboxDeliveryLeaseMs: config.mailboxDeliveryLeaseMs,
   }
 
   // Provider registration is a sibling plugin's effect (`subagent-spawn` /
@@ -143,12 +146,12 @@ export function apply(ctx: Context, config: Config): void {
   const toolNames = PATENT_TEAMS_TOOL_NAMES.join(', ')
   ctx.systemPrompt.section({
     name: 'patent-teams:usage',
-    order: config.promptSectionOrder ?? 117,
+    order: config.promptSectionOrder,
     text: usageSectionText(toolNames),
   })
 
   registerPatentTeamsTools(ctx, {
-    approveCreation: config.approveCreation ?? false,
-    approveClosure: config.approveClosure ?? false,
+    approveCreation: config.approveCreation,
+    approveClosure: config.approveClosure,
   })
 }

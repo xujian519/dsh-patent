@@ -622,6 +622,32 @@ describe('remaining tool branches', () => {
     expect(String(rendered.message)).toContain('1 renders')
   })
 
+  it('returns the resolved project path from every action, including a relative project_path', async () => {
+    const created = await boot()
+    const absolute = String(valueOf(await call(created, 'video_project', { action: 'init', title: 'Resolved' })).path)
+    expect(isAbsolute(absolute)).toBe(true)
+    const relative = absolute.slice(root.length + 1)
+
+    const read = valueOf(await call(created, 'video_project', { action: 'read', project_path: relative }))
+    expect(read.path).toBe(absolute)
+
+    const upserted = valueOf(await call(created, 'video_project', {
+      action: 'upsert_shot', project_path: relative,
+      shot: { id: 's1', index: 1, prompt: 'x', duration_sec: 1, status: 'draft' },
+    }))
+    expect(upserted.path).toBe(absolute)
+
+    const removed = valueOf(await call(created, 'video_project', {
+      action: 'remove_shot', project_path: relative, shot_id: 's1',
+    }))
+    expect(removed.path).toBe(absolute)
+
+    const recorded = valueOf(await call(created, 'video_project', {
+      action: 'record_render', project_path: relative, render: { id: 'r1', path: 'out/final.mp4' },
+    }))
+    expect(recorded.path).toBe(absolute)
+  })
+
   it('renders an estimate duration, a failed status, progress, and a cost-free artifact message', async () => {
     const created = await boot()
     const estimate = valueOf(await call(created, 'media', {

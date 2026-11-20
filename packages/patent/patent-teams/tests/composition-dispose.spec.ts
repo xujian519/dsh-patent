@@ -115,7 +115,7 @@ async function mount(options: MountOptions = {}): Promise<Context> {
     inject,
     Config,
     apply: (c: Context) => {
-      apply(c, options.stateDir === undefined ? {} : { stateDir: options.stateDir })
+      apply(c, Config(options.stateDir === undefined ? {} : { stateDir: options.stateDir }))
     },
   })
   return ctx

@@ -69,7 +69,7 @@ function makeRulesFixture(): string {
   return root
 }
 
-async function mount(config: PatentRule.Config): Promise<Context> {
+async function mount(config: Partial<PatentRule.Config>): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
@@ -347,7 +347,7 @@ describe('tools/post-execute output gate', () => {
       name: 'patent-rule-raw-apply',
       inject: ['tools'],
       apply(fiber: Context, config: { rulesDir?: string }): void {
-        PatentRule.apply(fiber, config)
+        PatentRule.apply(fiber, PatentRule.Config(config))
       },
     }, { rulesDir: makeRulesFixture() })
     ctx.tools.register(deliveryTool('render_patent_document', '包含 BLOCKWORD 的文档'))

@@ -8,6 +8,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { DEFAULT_OUTPUT_DIR } from './document/renderPatentDocument.ts'
 import { DEFAULT_PDF_TIMEOUT_MS } from './document/pdfRenderer.ts'
 import { createRenderPatentDocumentTool } from './tool/render-patent-document.ts'
 import { createVerifyDeliverableTool } from './tool/verify-deliverable.ts'
@@ -30,15 +31,15 @@ export interface Config {
   /** Absolute Chrome executable used for PDF; overrides DSH_CHROME_PATH/CHROME_PATH discovery. */
   chromePath?: string
   /** Default output directory (relative to the process working directory) when neither outputDir nor caseId is given. */
-  outputRoot?: string
+  outputRoot: string
   /** Headless-Chrome print timeout in milliseconds; defaults to the renderer's exported default (120000). */
-  pdfTimeoutMs?: number
+  pdfTimeoutMs: number
 }
 
 /** Schemastery configuration: optional Chrome override, default output directory, and print timeout. */
-export const Config: z<Config> = z.object({
+export const Config: z<Partial<Config>, Config> = z.object({
   chromePath: z.string(),
-  outputRoot: z.string().default('.dsh/documents'),
+  outputRoot: z.string().default(DEFAULT_OUTPUT_DIR),
   pdfTimeoutMs: z.number().step(1).min(1).default(DEFAULT_PDF_TIMEOUT_MS),
 })
 
@@ -52,8 +53,8 @@ export function apply(ctx: Context, config: Config): void {
   ctx.tools.register(createRenderPatentDocumentTool({
     subprocess: ctx.subprocess,
     ...(config.chromePath !== undefined ? { chromePath: config.chromePath } : {}),
-    ...(config.outputRoot !== undefined ? { defaultOutputDir: config.outputRoot } : {}),
-    pdfTimeoutMs: config.pdfTimeoutMs ?? DEFAULT_PDF_TIMEOUT_MS,
+    defaultOutputDir: config.outputRoot,
+    pdfTimeoutMs: config.pdfTimeoutMs,
   }))
   ctx.tools.register(createVerifyDeliverableTool(ctx))
 }

@@ -456,7 +456,7 @@ describe('tools/pre-execute 制品结构门禁', () => {
     })
   }
 
-  async function mount(config: PatentRule.Config): Promise<Context> {
+  async function mount(config: Partial<PatentRule.Config>): Promise<Context> {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)

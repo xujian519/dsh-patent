@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, describe, expect, it } from 'vitest'
-import { resolveKnowledgePaths } from '@deepseek-ai/dsh-patent-knowledge'
+import { DEFAULT_KNOWLEDGE_DIR, DEFAULT_SOURCE_DB_PATH, resolveKnowledgePaths } from '@deepseek-ai/dsh-patent-knowledge'
 
 const cleanups: Array<() => void> = []
 afterEach(() => {
@@ -30,6 +30,13 @@ describe('resolveKnowledgePaths', () => {
     new DatabaseSync(sourceDbPath).close()
     const paths = resolveKnowledgePaths({ knowledgeDir: dir, sourceDbPath })
     expect(paths.queryDbPath).toBe(sourceDbPath)
+  })
+
+  it('takes the shipped data directory and source db when no config is given', () => {
+    const paths = resolveKnowledgePaths()
+    expect(paths.dataDir).toBe(DEFAULT_KNOWLEDGE_DIR)
+    expect(paths.sourceDbPath).toBe(DEFAULT_SOURCE_DB_PATH)
+    expect(paths.wikiDir).toBe(join(DEFAULT_KNOWLEDGE_DIR, 'wiki'))
   })
 
   it('falls back to knowledge.db when nothing at all exists', () => {

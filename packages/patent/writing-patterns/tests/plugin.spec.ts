@@ -89,7 +89,7 @@ describe('@deepseek-ai/dsh-writing-patterns plugin surface', () => {
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(NativeToolExecutor)
-    Pkg.apply(ctx, {})
+    Pkg.apply(ctx, Pkg.Config({}))
     expect(ctx.tools.schemas().some(schema => schema.name === 'query_writing_patterns')).toBe(true)
     expect((await ctx.systemPrompt.assemble()).sections.map(section => section.name))
       .toContain(WRITING_PATTERNS_SECTION_NAME)
@@ -215,16 +215,21 @@ describe('@deepseek-ai/dsh-writing-patterns plugin surface', () => {
     expect(() => ctx.writingPatterns.patternsForStage('spec_check')).toThrow(/未声明阶段 "spec_check"/)
   })
 
-  it('fails loud on an invalid stage map', async () => {
+  it('rejects a stage map outside 3 to 5 patterns at the config schema', () => {
+    expect(() => Pkg.Config({ stagePatterns: { s: ['a', 'b'] } })).toThrow()
+    expect(() => Pkg.Config({ stagePatterns: { s: ['a', 'b', 'c', 'd', 'e', 'f'] } })).toThrow()
+  })
+
+  it('fails loud on an invalid stage map that the schema cannot judge', () => {
+    // 直接构造服务（公开库入口）不经过 Config，未知与重复的 id 由服务自己的检查拒绝。
     const ctx = new Context()
-    await ctx.plugin(SystemPrompt)
-    await ctx.plugin(ToolRuntime)
-    await ctx.plugin(NativeToolExecutor)
-    expect(() => { Pkg.apply(ctx, { stagePatterns: { s: ['a', 'b'] } }) })
+    const store = Pkg.loadPatternStore()
+    expect(() => new Pkg.WritingPatternsService(ctx, store, { s: ['a', 'b'] }))
       .toThrow(/应为 3 到 5 条/)
-    expect(() => { Pkg.apply(ctx, { stagePatterns: { s: ['wp-claim-utility-model', 'wp-claim-utility-model', 'wp-claim-dependent-layering'] } }) })
-      .toThrow(/重复声明写作模式 "wp-claim-utility-model"/)
-    expect(() => { Pkg.apply(ctx, { stagePatterns: { s: ['a', 'b', 'c'] } }) })
+    expect(() => new Pkg.WritingPatternsService(ctx, store, {
+      s: ['wp-claim-utility-model', 'wp-claim-utility-model', 'wp-claim-dependent-layering'],
+    })).toThrow(/重复声明写作模式 "wp-claim-utility-model"/)
+    expect(() => new Pkg.WritingPatternsService(ctx, store, { s: ['a', 'b', 'c'] }))
       .toThrow(/不存在的写作模式/)
   })
 })

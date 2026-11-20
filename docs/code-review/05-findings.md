@@ -65,12 +65,12 @@
 | F-PAT-030 | `patent-kg-adapter` 邻居扩展循环 3 份，两个检索引擎 `backfillContent` 近克隆 | PAT | B | Low | 高 | new |
 | F-PAT-031 | `templateDraft` 的 `openEnd` 是死字段，两处用 `indexOf` 重新定位已命中位置 | PAT | B | Low | 高 | new |
 | F-PAT-032 | 判例零命中检索整表解压 LIKE，约 4.6 秒 | PAT | C | Medium | 中 | new |
-| F-PAT-033 | 附图渲染截止期的 `dispose` 没有用例锁住监听清理 | PAT | D | Medium | 中 | new |
+| F-PAT-033 | 附图渲染截止期的 `dispose` 没有用例锁住监听清理 | PAT | D | Medium | 中 | confirmed（2026-11-20，批次 R-D1） |
 | F-PAT-034 | `patent_pdf_download` 成功落盘后不检查清单里的 sha1 | PAT | D | Medium | 低 | new |
-| F-PAT-035 | 团队等待结束后不检查 abort 监听是否摘掉 | PAT | D | Medium | 中 | new |
-| F-PAT-036 | 未完成依赖的判定没有锁住失败、取消和进行中 | PAT | D | Medium | 中 | new |
-| F-PAT-037 | PDF 渲染的宽限和 abort 监听没有用例 | PAT | D | Medium | 中 | new |
-| F-PAT-038 | nuo 检索 provider 的抛错和超时告警没有用例 | PAT | D | Medium | 中 | new |
+| F-PAT-035 | 团队等待结束后不检查 abort 监听是否摘掉 | PAT | D | Medium | 中 | fixed（2026-11-20，批次 R-D1） |
+| F-PAT-036 | 未完成依赖的判定没有锁住失败、取消和进行中 | PAT | D | Medium | 中 | fixed（2026-11-20，批次 R-D1） |
+| F-PAT-037 | PDF 渲染的宽限和 abort 监听没有用例 | PAT | D | Medium | 中 | confirmed（2026-11-20，批次 R-D1） |
+| F-PAT-038 | nuo 检索 provider 的抛错和超时告警没有用例 | PAT | D | Medium | 中 | fixed（2026-11-20，批次 R-D1） |
 | F-PAT-039 | 同一句权利要求在两套解析里独立／从属结论相反 | PAT | E | High | 高 | fixed |
 | F-PAT-040 | 空 quote 的覆盖类映射仍判单篇全覆盖 | PAT | E | High | 中 | fixed |
 | F-PAT-041 | 所引权项没有要素时仍报告已并入其全部要素 | PAT | E | High | 中 | fixed |
@@ -82,7 +82,7 @@
 | F-PAT-047 | 审批门中断后的续跑从第一个阶段重跑，内置 manifest 的检索与模型阶段重复执行 | PAT | E | Medium | 中 | deferred |
 | F-PAT-048 | 通知书解析不出驳回理由时，两条双输入规则判为通过且无未评估标记 | PAT | E | Medium | 中 | fixed |
 | F-PAT-049 | 结构门禁与引用门禁不核对 `textArgs`，声明写错即静默放行 | PAT | E | Medium | 低 | fixed |
-| F-PAT-050 | 重规划按哈希保留已完成步骤，重复步骤全部判为已完成 | PAT | E | Medium | 低 | new |
+| F-PAT-050 | 重规划按哈希保留已完成步骤，重复步骤全部判为已完成 | PAT | E | Medium | 低 | fixed（2026-11-20，批次 R-F3） |
 | F-PAT-051 | 沿革快照按条号跨法套用，实施细则条文取到专利法同号条的生效日与状态 | PAT | E | Medium | 高 | fixed |
 | F-PAT-052 | 指南未修改的节在 rule-lock 判「已修订/已失效」，law_verify 判「已核验」 | PAT | E | High | 高 | fixed |
 | F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | fixed |
@@ -94,7 +94,7 @@
 | F-DOC-004 | 插件默认值出现两个来源（schema default 与 `??`） | DOC | B | Medium | 中 | fixed（文档域） |
 | F-DOC-005 | `tool-office` 用 9 处 `as` 断言担保跨模块不变量 | DOC | B | Low | 低 | confirmed |
 | F-DOC-006 | 跨模块请求类型按字段重写而非组合（`RenderRequest`、`OfficeImagesRequest`） | DOC | B | Low | 高 | confirmed |
-| F-DOC-007 | Office 转换成功返回后不检查 abort 监听是否摘掉 | DOC | D | Medium | 中 | new |
+| F-DOC-007 | Office 转换成功返回后不检查 abort 监听是否摘掉 | DOC | D | Medium | 中 | confirmed（2026-11-20，批次 R-D1） |
 | F-DOC-008 | 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题 | DOC | E | Medium | 高 | fixed |
 | F-DOC-009 | DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃 | DOC | E | Medium | 中 | fixed |
 | F-DOC-010 | `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断 | DOC | E | Medium | 中 | fixed |
@@ -107,7 +107,7 @@
 | F-LEG-007 | `getById` 在 `legal` 与 `judicial-interpretation` 逐字相同 | LEG | B | Low | 高 | confirmed |
 | F-LEG-008 | `evaluate_legal_evidence` 输出 schema 把维度判定对象写三份 | LEG | B | Low | 高 | confirmed |
 | F-LEG-009 | `rule-set.ts` 手写 `asRecord` 与同名 `hasText`，未用共享工具 | LEG | B | Low | 中 | confirmed |
-| F-LEG-010 | 未核验与未索引引用的工具结果没有锁住处置 | LEG | D | Medium | 中 | new |
+| F-LEG-010 | 未核验与未索引引用的工具结果没有锁住处置 | LEG | D | Medium | 中 | fixed（2026-11-20，批次 R-D1） |
 | F-LEG-011 | 证人利害关系未填写时，关键规则报「证人与案件无利害关系」通过 | LEG | E | High | 中 | fixed |
 | F-LEG-012 | 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略 | LEG | E | Medium | 中 | fixed |
 | F-LEG-013 | 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果 | LEG | E | Medium | 中 | fixed |
@@ -126,7 +126,7 @@
 | F-VID-012 | 失效的 journal 记录没有工具侧清理路径 | VID | E | Medium | 中 | fixed |
 | F-VID-013 | `status` 对 `artifacts: []` 的成功任务照常结算并清 journal | VID | E | Low | 中 | fixed |
 | F-VID-014 | 项目身份取工具结果里的原始路径，绝对与相对写法会让同一工程出现两次 | VID | E | Low | 高 | fixed |
-| F-VID-015 | EDL 音频片段的 `inSec`/`outSec` 不校验顺序，校验晚到 ffmpeg | VID | E | Low | 中 | new |
+| F-VID-015 | EDL 音频片段的 `inSec`/`outSec` 不校验顺序，校验晚到 ffmpeg | VID | E | Low | 中 | fixed（2026-11-20，批次 R-F3） |
 | F-CROSS-001 | 四域另有 4 份 `messageOf`/`errorText` 与 1 份可并的 `asRecord`，而 `dsh-value` 已有对应原语且 11 个域内包已依赖它 | CROSS | B | Low | 高 | new |
 | F-CROSS-002 | `patent-tools` 导入未声明的 workspace 依赖 `@deepseek-ai/dsh-value`，运行产物靠打包内联掩盖 | CROSS | B/E | Low | 高 | fixed |
 | F-CROSS-003 | 知识库安装覆盖时先删输出，改名失败没有用例 | CROSS | D | High | 中 | fixed |

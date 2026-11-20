@@ -9,7 +9,7 @@ import {
   verifyLegalCitation,
   verifyLegalCitations,
 } from '../src/verify.ts'
-import type { LegalArticleEntry, LegalCitationPolicySet, LegalLawBaseline, LegalLawName, LegalLawReference } from '../src/types.ts'
+import type { LegalArticleEntry, LegalCitationDecision, LegalCitationFinding, LegalCitationPolicySet, LegalLawBaseline, LegalLawName, LegalLawReference } from '../src/types.ts'
 
 const VERIFIED_ARTICLE: LegalArticleEntry = {
   article: 143,

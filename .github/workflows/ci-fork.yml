@@ -45,6 +45,11 @@ jobs:
       - name: Duplication
         run: pnpm run duplication
 
+      - name: Shared primitive redefinitions
+        # F-CROSS-001 blocker: messageOf / errorText / escapeRegExp / asRecord
+        # must all import from @deepseek-ai/dsh-value, not redefine locally.
+        run: pnpm exec tsx scripts/verify-no-shared-primitive-redefs.ts
+
       - name: Patent OAS gold gate
         # The gate refuses to pass while the repository carries no recorded
         # baseline, so only a lane that runs it separates a passing regression
@@ -456,6 +461,33 @@ jobs:
         # through Node — so a preset fixture must name a file, never a
         # workspace package whose exports point at an unbuilt lib/.
         run: pnpm run check:ci:coverage
+
+  secret-scan:
+    # OBS-004: the fork ran no key-scanning. gitleaks in PR mode scans only
+    # the diff, so the 530 historical false positives in docs/*.i18n.yaml and
+    # .agents/notes/ stay invisible — only new leaks in the PR payload fail.
+    # Master pushes scan HEAD only.
+    if: github.repository_owner == 'xujian519'
+    runs-on: ubuntu-latest
+    name: secret scan (gitleaks)
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Install and run gitleaks
+        env:
+          GITLEAKS_VERSION: '8.19.2'
+        run: |
+          curl -sL https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz \
+            | tar -xz -C /usr/local/bin gitleaks
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin "pull/${{ github.event.pull_request.number }}/head:pr-head" "origin/${{ github.event.pull_request.base.ref }}:pr-base"
+            gitleaks detect --source . --log-opts="pr-base..pr-head" --verbose
+          else
+            gitleaks detect --source . --log-opts="-1 HEAD" --verbose
+          fi
 
   benchmarks:
     # Wall-clock budgets need an otherwise idle runner, so the lane runs alone

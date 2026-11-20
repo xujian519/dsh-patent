@@ -50,6 +50,11 @@ jobs:
         # must all import from @deepseek-ai/dsh-value, not redefine locally.
         run: pnpm exec tsx scripts/verify-no-shared-primitive-redefs.ts
 
+      - name: Duplicated plugin defaults
+        # F-PAT-024 gate: report mode while the recorded baseline of literal
+        # config fallbacks is reviewed. Flip to blocking once it reaches zero.
+        run: pnpm exec tsx scripts/verify-plugin-defaults.ts --report
+
       - name: Patent OAS gold gate
         # The gate refuses to pass while the repository carries no recorded
         # baseline, so only a lane that runs it separates a passing regression

@@ -12,11 +12,11 @@
 |---|---|---|---|---|---|
 | **G1** | #1 反向依赖声明校验（扩展） | P0 | 0.5d | ✅ 已落地 | F-CROSS-002：patent-tools 导入 dsh-value 未声明 |
 | **G2** | #3 密钥扫描 | P0 | 0.5d | ✅ 已落地 | OBS-004：当前无任何密钥扫描 |
-| **G3** | #4 默认值双源检测 | P1 | 1d | 待开工 | F-PAT-024：42 对 schema.default 与 ?? 同值字面量 |
+| **G3** | #4 默认值双源检测（脚本门禁，report 期） | P1 | 1d | ✅ 已落地 | F-PAT-024：62 对字面量双源仍在仓内 |
 | **G4** | #2 同形本地助手检测（脚本门禁） | P1 | 0.5d | ✅ 已落地 | F-CROSS-001 已删；19 处残留已清理并防空档 |
 | **G5** | #6 外部 provider 契约测试 | P2 | 3d | 待开工 | H04/H06：provider 失败路径无断言 |
 | **G6** | #5 SAST | P3 | 2d | 待开工 | 先跑 Semgrep 四域，记录基线 |
-| **G7** | #7 视频账本一致性补完 | P2 | 2d | 待开工 | 并发预算不变量 + 跨进程账本一致性 |
+| **G7** | #7 视频账本一致性补完 | P2 | 2d | ✅ 已落地 | 并发 8 条 + 双上下文并发追加 |
 
 ---
 
@@ -105,40 +105,35 @@ gitleaks detect --source . --report-path /tmp/gitleaks-history.json --log-opts="
 
 ---
 
-## G3 · 默认值双源检测
+## G3 · 默认值双源检测（已落地：脚本门禁，report 期）
 
-**目标**：同包内同一字段同时出现 schema `.default(...)` 和 config 侧 `?? 同值字面量` 即失败——防止 F-PAT-024 重复。
+**目标**：同包内同一字段同时出现 schema `.default(<字面量>)` 和 config 侧 `?? 同字面量` 即报——防止 F-PAT-024 重复。
 
-**真实反例**：F-PAT-024 修前——七包 42 对：schema `schema.number().default(30)` 配合 config 代码 `pageSize = options.pageSize ?? 30`。任一处改默认值另一处会静默漂移。
+**真实反例**：F-PAT-024 修前——七包 42 对。落地复扫发现**仍存 62 对**（例如 `agent-team` 的 `cookieMaxAgeDays` 与 `defaultEnabled`、`client/connection` 的 `maxTasks`），说明原修复只覆盖了登记过的七包。
 
-**实现**：
+**实现（已落地）**：`scripts/verify-plugin-defaults.ts`
 
-新建 `scripts/verify-plugin-defaults.ts`：
+正则版，两步提取、同包比对：
 
-```
-1. Glob packages/*/src/**/*.tsx?
-2. 对每个文件，提取所有 schema 定义：
-   - 匹配 `schema.<type>(...).default(<literal>)` 或 `Schema.<type>(...).default(...)`
-   - 记录包名 + 字段名 + default 值
-3. 对同一文件（或同包其他文件），提取 config 使用：
-   - 匹配 `<identifier> ?? <literal>` 和 `<identifier> || <literal>`
-   - 字段名通过 Identifier 猜测（或 ts-morph 更精确）
-4. 同包内、同字段名、同值字面量 → 报 violation
-5. 输出 JSON 报告 + 退出码
-```
+1. schema 默认：`<field>: <expr>.default(<literal>)` → 记录字段名与字面量
+2. config 兜底：`.<field> ?? <literal>`（含 `)`、`,`、`;`、换行边界）→ 同字段、同字面量即命中
+3. 按包目录（`packages/<group>/<pkg>`、`apps/<name>`）聚合，**跨文件**比对，因此 `config.ts` 声明、`index.ts` 兜底的组合也能抓到
 
-**工具选型**：
-- **简单正则版**（0.5d）：grep schema pattern + ?? pattern，跨文件比对。足够抓 80% 情况
-- **ts-morph 版**（1d）：精确到 Schema 节点的 `.default()` 调用和 Identifier → 字面量。推荐——因为 schema 可能链式 `.optional().default(30)` 或 `.default('foo').optional()`
+字面量限定为数字、单/双引号字符串、`true`/`false`。共用常量（`.default(DEFAULT_X)` 配合 `?? DEFAULT_X`）不计入——那是单一来源，不是双源。
 
 **落地位置**：
-- 脚本：`scripts/verify-plugin-defaults.ts`（新建）
-- CI：`node-checks` lane，lint 之后追加 step
-- 测试：`scripts/verify-plugin-defaults.spec.ts`（新建，用 fixture 文件）
+- 脚本：`scripts/verify-plugin-defaults.ts`
+- 测试：`scripts/verify-plugin-defaults.spec.ts`（纯函数 fixture，5 case：提取行号、跨文件命中、字面量不同不报、共用常量不报、跨包同名字段不报）
+- CI：`node-checks` lane，`Shared primitive redefinitions` 之后，`--report` 模式
 
-**验收**：
-- 用 git log 找到 F-PAT-024 修前的一个 commit，cherry-pick 回来 → 脚本应报 42 条 violation
-- 当前 master 应报 0 条（F-PAT-024 已全修）
+**为什么先 report**：62 条基线中有一部分是刻意兜底（`client/connection` 注释说明手写测试上下文可能绕过 schema）。逐条审完再转阻塞，避免逼着代码为过门禁而删掉合法防御。
+
+**验收（已达成）**：
+- 脚本对当前分支报 62 条，退出 0（report 模式）
+- spec 5 case 全过
+- 两条真双源已人工确认（`agent-team` 的 `cookieMaxAgeDays ?? 30`、`defaultEnabled ?? false`）
+
+**后续**：审完 62 条基线 → 去掉 `--report` 转阻塞。
 
 ---
 
@@ -299,7 +294,7 @@ node-sast:
 
 ---
 
-## G7 · 视频账本一致性补完
+## G7 · 视频账本一致性补完（已落地）
 
 **目标**：在 R-E2 终态断言基础上，补并发预算不变量和跨进程账本一致性用例。
 
@@ -307,55 +302,46 @@ node-sast:
 - `tests/minimax.spec.ts:441` — 终态状态机断言
 - `tests/comfyui.spec.ts:478` — 空产物时 STOPPED 而非 FAILED
 
-**剩余两项**：
+**已补两项**（`tests/store.spec.ts` 的 `budget ledger` describe）：
 
 ### 7a. 并发预算不变量
 
+计划中的 `VideoJournal.consumeBudget` API 在仓内不存在——`budgetCny` 只是项目文档字段，没有强制逻辑。因此不变量落在账本层：并发追加不得丢条目、不得重复计费。
+
 ```typescript
-// packages/experimental/video-mode/tests/budget-invariant.spec.ts
-it('两个并发任务总预算不超过 provider 限额', async () => {
-  const journal = new VideoJournal()
-  const task1 = journal.startTask({ budget: 100 })
-  const task2 = journal.startTask({ budget: 100 })
-
-  // 模拟 2 个并发请求各消耗 80
-  await Promise.all([
-    task1.consumeBudget(80),
-    task2.consumeBudget(80),
-  ])
-
-  // 不变量：journal.totalConsumed <= provider.totalBudget
-  expect(journal.totalConsumed).toBeLessThanOrEqual(PROVIDER_LIMIT)
-
-  // 每个 task 内部不变量
-  expect(task1.remaining).toBe(20)
-  expect(task2.remaining).toBe(20)
+it('keeps every charge when many append at once', async () => {
+  const charges = Array.from({ length: 8 }, (_, i) => entry({ taskId: `task-${i}`, costCny: 0.5 }))
+  const results = await Promise.all(
+    charges.map(charge => appendLedgerEntry(ctx, projectPath, charge, ledgerDir, root)),
+  )
+  expect(results).toEqual(Array<boolean>(8).fill(true))
+  expect(ledgerCost(await readLedger(ctx, projectPath, ledgerDir, root))).toBe(4)
 })
 ```
 
 ### 7b. 跨进程账本一致性
 
-```typescript
-// packages/experimental/video-mode/tests/journal-consistency.spec.ts
-it('进程重启后 journal 状态一致', async () => {
-  const journal = new PersistedJournal({ path: '/tmp/video-journal.json' })
-  journal.startTask({ budget: 100 })
-  await journal.consumeBudget(30)
-  await journal.save()
+两个 `Context` 各自持有 `LocalFileSystem` 指向同一目录，共享文件但不共享进程内 key 锁，等价于两个进程同时计费：
 
-  // 模拟崩溃：新进程从磁盘加载
-  const reloaded = await PersistedJournal.load('/tmp/video-journal.json')
-  expect(reloaded.totalConsumed).toBe(30)
-  expect(reloaded.tasks[0].status).toBe('RUNNING')
-  expect(reloaded.tasks[0].remaining).toBe(70)
+```typescript
+it('keeps every charge two file-system contexts write concurrently', async () => {
+  const peer = new Context()
+  await peer.plugin(LocalFileSystem, { cwd: root }).await()
+  await Promise.all([
+    appendLedgerEntry(ctx, projectPath, entry({ taskId: 'local-a' }), ledgerDir, root),
+    appendLedgerEntry(peer, projectPath, entry({ taskId: 'peer-b' }), ledgerDir, root),
+    appendLedgerEntry(ctx, projectPath, entry({ taskId: 'local-c' }), ledgerDir, root),
+    appendLedgerEntry(peer, projectPath, entry({ taskId: 'peer-d' }), ledgerDir, root),
+  ])
+  const ledger = await readLedger(ctx, projectPath, ledgerDir, root)
+  expect(ledger.map(item => item.taskId).sort()).toEqual(['local-a', 'local-c', 'peer-b', 'peer-d'])
+  expect(ledgerCost(ledger)).toBe(8)
 })
 ```
 
-**落地位置**：`packages/experimental/video-mode/tests/` 新建 2 个 spec 文件
+**落地位置**：`packages/experimental/video-mode/tests/store.spec.ts`（复用既有 fixture，不新建文件）
 **CI**：已在 `node-coverage` lane
-**验收**：
-- 用例全部通过
-- 临时注释掉 journal 的 save()，7b 应失败
+**验收（已达成）**：`vitest run tests/store.spec.ts` → 28 passed；版本号重试机制在两个上下文并发时未丢任何条目
 
 ---
 

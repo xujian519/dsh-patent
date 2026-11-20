@@ -164,6 +164,10 @@ export interface MiniMaxConfig {
   readonly maxDurationSec?: number
   /** Aspect ratio used for text-to-video when the request omits one. */
   readonly aspectRatio?: string
+  /** Attempts after a `429` whose retry-after fits {@link maxRetryAfterMs}. */
+  readonly maxRetries?: number
+  /** Longest retry-after the provider may ask for; a longer wait fails immediately. */
+  readonly maxRetryAfterMs?: number
   /** Speech synthesis overrides; omitted leaves the speech provider unregistered. */
   readonly speech?: MiniMaxSpeechConfig
 }
@@ -248,6 +252,8 @@ const MINIMAX_DEFAULTS = {
   defaultDurationSec: 5,
   maxDurationSec: 15,
   aspectRatio: '9:16',
+  maxRetries: 2,
+  maxRetryAfterMs: 5_000,
 } as const
 
 /** MiniMax speech defaults; the turbo model keeps voiceover cost low. */
@@ -463,6 +469,8 @@ export function resolveMiniMax(config: MiniMaxConfig, maxArtifactBytes: number):
     defaultDurationSec: config.defaultDurationSec ?? MINIMAX_DEFAULTS.defaultDurationSec,
     maxDurationSec: config.maxDurationSec ?? MINIMAX_DEFAULTS.maxDurationSec,
     aspectRatio: config.aspectRatio ?? MINIMAX_DEFAULTS.aspectRatio,
+    maxRetries: config.maxRetries ?? MINIMAX_DEFAULTS.maxRetries,
+    maxRetryAfterMs: config.maxRetryAfterMs ?? MINIMAX_DEFAULTS.maxRetryAfterMs,
   }
   if (settings.baseUrl.length === 0) throw new Error('video mode: minimax.baseUrl must not be empty')
   if (settings.model !== MINIMAX_VIDEO_MODEL) {
@@ -473,6 +481,12 @@ export function resolveMiniMax(config: MiniMaxConfig, maxArtifactBytes: number):
   }
   if (!Number.isSafeInteger(settings.timeoutMs) || settings.timeoutMs <= 0) {
     throw new Error('video mode: minimax.timeoutMs must be a positive integer')
+  }
+  if (!Number.isInteger(settings.maxRetries) || settings.maxRetries < 0) {
+    throw new Error('video mode: minimax.maxRetries must be a non-negative integer')
+  }
+  if (!Number.isSafeInteger(settings.maxRetryAfterMs) || settings.maxRetryAfterMs < 0) {
+    throw new Error('video mode: minimax.maxRetryAfterMs must be a non-negative integer')
   }
   if (!Number.isInteger(settings.defaultDurationSec) || settings.defaultDurationSec < 4 || settings.defaultDurationSec > 15) {
     throw new Error('video mode: minimax.defaultDurationSec must be an integer from 4 to 15')
@@ -644,6 +658,8 @@ export const Config: z<MediaRuntimeConfig, MediaRuntimeConfig & { readonly ledge
     defaultDurationSec: z.natural().min(1).default(MINIMAX_DEFAULTS.defaultDurationSec),
     maxDurationSec: z.natural().min(1).default(MINIMAX_DEFAULTS.maxDurationSec),
     aspectRatio: z.string().default(MINIMAX_DEFAULTS.aspectRatio),
+    maxRetries: z.natural().default(MINIMAX_DEFAULTS.maxRetries),
+    maxRetryAfterMs: z.natural().default(MINIMAX_DEFAULTS.maxRetryAfterMs),
     speech: z.object({
       enabled: z.boolean().default(false),
       model: z.string().default(MINIMAX_SPEECH_DEFAULTS.model),

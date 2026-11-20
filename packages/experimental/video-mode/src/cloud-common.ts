@@ -101,6 +101,71 @@ export function failureCodeFor(status: number): 'MEDIA_REQUEST_INVALID' | 'MEDIA
 }
 
 /**
+ * Wait before a retry.
+ * @param ms - milliseconds to wait.
+ * @returns a promise resolved after the wait.
+ */
+export function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/** Retry policy applied to a rate-limited provider response. */
+export interface CloudRetryPolicy {
+  /** Attempts after the first response; 0 disables retrying. */
+  readonly retries: number
+  /** Longest retry-after the provider may ask for; a longer wait fails instead. */
+  readonly maxRetryAfterMs: number
+  /** Waits between attempts; tests inject an immediate stub. */
+  readonly sleep: (ms: number) => Promise<void>
+}
+
+/**
+ * Read the wait a `Retry-After` header asks for, in either of its two forms.
+ * @param response - rate-limited response.
+ * @returns milliseconds to wait, or undefined when the header is absent or unparsable.
+ */
+export function retryAfterOf(response: Response): number | undefined {
+  const header = response.headers.get('retry-after')
+  if (header === null) return undefined
+  const seconds = Number(header)
+  if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000
+  const at = Date.parse(header)
+  if (Number.isNaN(at)) return undefined
+  return Math.max(0, at - Date.now())
+}
+
+/**
+ * Send one request, retrying a `429` whose `Retry-After` fits the policy.
+ * @param fetchImpl - fetch implementation.
+ * @param url - request URL.
+ * @param init - request options.
+ * @param policy - retry budget, wait ceiling, and sleep implementation.
+ * @returns the last response; a `429` the policy declines to retry is returned as is.
+ */
+export async function fetchWithRetry(
+  fetchImpl: CloudFetchLike,
+  url: string,
+  init: RequestInit | undefined,
+  policy: CloudRetryPolicy,
+): Promise<Response> {
+  let response = await fetchImpl(url, init)
+  for (let attempt = 0; attempt < policy.retries; attempt += 1) {
+    if (response.status !== 429) return response
+    const wait = retryAfterOf(response)
+    if (wait === undefined || wait > policy.maxRetryAfterMs) return response
+    try {
+      await response.body?.cancel()
+    } catch (cancelled) {
+      // A body that already failed leaves no buffered data to release.
+      void cancelled
+    }
+    await policy.sleep(wait)
+    response = await fetchImpl(url, init)
+  }
+  return response
+}
+
+/**
  * Read the provider's error message from an OpenAI-style or legacy body.
  * @param text - response text.
  * @param fallback - message used when the body carries none.

@@ -11,7 +11,7 @@
 
 import { readFile } from 'node:fs/promises'
 import { extname } from 'node:path'
-import { downloadVideo, failedTask as failed, submittedVideoTask, supportedImageMediaType, untrackedTask } from './cloud-common.ts'
+import { delay, downloadVideo, failedTask as failed, fetchWithRetry, submittedVideoTask, supportedImageMediaType, untrackedTask, type CloudRetryPolicy } from './cloud-common.ts'
 import {
   KeyedMiniMaxProvider,
   failureCodeFor,
@@ -94,6 +94,10 @@ export interface MiniMaxSettings {
   readonly maxDurationSec: number
   /** Aspect ratio used for text-to-video when the request omits one. */
   readonly aspectRatio: string
+  /** Attempts after a `429` whose retry-after fits the wait ceiling. */
+  readonly maxRetries: number
+  /** Longest retry-after the provider may ask for; a longer wait fails immediately. */
+  readonly maxRetryAfterMs: number
 }
 
 /** One content item in a MiniMax video request. */
@@ -130,15 +134,26 @@ export class MiniMaxMediaProvider extends KeyedMiniMaxProvider {
 
   private readonly pending = new Map<string, PendingTask>()
 
+  /** Retry policy shared by the submit and status endpoints. */
+  private get retryPolicy(): CloudRetryPolicy {
+    return {
+      retries: this.settings.maxRetries,
+      maxRetryAfterMs: this.settings.maxRetryAfterMs,
+      sleep: this.sleep,
+    }
+  }
+
   /**
    * @param settings - resolved provider settings.
    * @param fetchImpl - fetch implementation; tests inject a stub.
    * @param resolveApiKey - credential resolver for `apiKeyEnv`; omitted reads the process environment.
+   * @param sleep - wait between rate-limit retries; tests inject an immediate stub.
    */
   constructor(
     private readonly settings: MiniMaxSettings,
     private readonly fetchImpl: MiniMaxFetchLike = fetch,
     private readonly resolveApiKey?: MiniMaxKeyResolver,
+    private readonly sleep: (ms: number) => Promise<void> = delay,
   ) {
     super(settings, [{
       id: settings.model,
@@ -198,12 +213,12 @@ export class MiniMaxMediaProvider extends KeyedMiniMaxProvider {
       resolution,
       ratio: hasFrame ? 'adaptive' : this.aspectRatioOf(request.aspectRatio),
     }
-    const response = await this.fetchImpl(`${this.settings.baseUrl}/v2/video_generation`, {
+    const response = await fetchWithRetry(this.fetchImpl, `${this.settings.baseUrl}/v2/video_generation`, {
       method: 'POST',
       headers: minimaxJsonHeaders(await this.key()),
       body: JSON.stringify(body),
       signal,
-    })
+    }, this.retryPolicy)
     const text = await response.text()
     if (!response.ok) {
       throw new MediaFailure(
@@ -243,9 +258,11 @@ export class MiniMaxMediaProvider extends KeyedMiniMaxProvider {
     /* jscpd:ignore-end */
     pending.lastPollAt = now
 
-    const response = await this.fetchImpl(
+    const response = await fetchWithRetry(
+      this.fetchImpl,
       `${this.settings.baseUrl}/v2/query/video_generation/${encodeURIComponent(pending.remoteId)}`,
       { headers: minimaxJsonHeaders(await this.key()), signal },
+      this.retryPolicy,
     )
     const text = await response.text()
     if (!response.ok) {

@@ -59,8 +59,8 @@
 | F-PAT-024 | 插件默认值两份来源：七个专利包 42 对 `??` 重述、2 处同义重述、1 处第三种缺省 | PAT | B | Medium | 高 | fixed |
 | F-PAT-025 | 规则资产 YAML 失败处理惯用法重复 5 处，顶层对象校验两种写法 | PAT | B | Low | 高 | new |
 | F-PAT-026 | `patent-teams` 内部 5 处结构克隆，事件载荷与邮箱结算各有两个编码 | PAT | B | Low | 高 | new |
-| F-PAT-027 | 子进程超时/取消骨架 4 份，已抽好的 `subprocess-render` 未被其余 3 处复用 | PAT | B | Medium | 高 | new |
-| F-PAT-028 | 输出目录与安全文件名判定 4 种编码，中文案卷号在两个工具间接受集相反 | PAT | B | Medium | 高 | new |
+| F-PAT-027 | 子进程超时/取消骨架 4 份，已抽好的 `subprocess-render` 未被其余 3 处复用 | PAT | B | Medium | 高 | fixed |
+| F-PAT-028 | 输出目录与安全文件名判定 4 种编码，中文案卷号在两个工具间接受集相反 | PAT | B | Medium | 高 | fixed |
 | F-PAT-029 | `escapeRegExp` 专利域内 4 份命名封装 + 6 处内联，仓内无共享实现 | PAT | B | Low | 高 | new |
 | F-PAT-030 | `patent-kg-adapter` 邻居扩展循环 3 份，两个检索引擎 `backfillContent` 近克隆 | PAT | B | Low | 高 | new |
 | F-PAT-031 | `templateDraft` 的 `openEnd` 是死字段，两处用 `indexOf` 重新定位已命中位置 | PAT | B | Low | 高 | new |
@@ -519,7 +519,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把 `subprocess-render.ts` 的 `startRenderDeadline`（含 `timedOut()` 与 `dispose()`）移到 `patent-core/src/subprocess/deadline.ts`——它是纯 helper，不引入 `@deepseek-ai/dsh-subprocess` 依赖，符合 H01 已确认的 core 边界；`subprocess-render.ts` 改为从 core 导入。其余三处替换骨架并保留各自的 `spawn` 选项与错误类型（`DocumentRenderResult` 的错误串、`PatentFilingError`、`EgoSpawnResult`），同时让两处补上超时与取消的区分。净减少：约 −40~−45 行（骨架四份降为一份 + 三处各删 12–18 行），并把「超时/取消/信号/退出码」四种语义收敛为同一处判定。
 - 预估工作量：M（四处调用点，三种错误类型各自保留）
 - 是否可自动化：部分（`jscpd` 在默认阈值下抓不到，需降阈或按符号名比对）
-- 状态：new
+- 状态：fixed（2026-11-20，批次 R-F2）
+- 修复记录：骨架移到 `patent-core/src/subprocess-deadline.ts` 的 `startSpawnDeadline`，返回 `SpawnDeadline`（`signal`、`timedOut()`、`dispose()`）。`subprocess-render` 只保留 `SubprocessSpawner` 类型并改用 core 的截止期；`patent-data`、`pdfRenderer`、`engine.ts` 三处替换自写骨架，各自保留错误类型与 `spawn` 选项。`pdfRenderer` 与 `engine.ts` 补上「内部超时 → 调用方取消 → 信号终止 → 退出码」的原因归类；`pdfRenderer` 在起进程前检查调用方已取消，不再为已取消的调用 spawn Chrome。截止期本身的可终止、`timedOut()` 与监听清理由 `patent-core/tests/subprocess-deadline.spec.ts` 直接锁住；三个附图渲染器的 `finally { dispose() }` 仍缺监听数断言，见 F-PAT-033。回归用例另见 `pdf-renderer.spec.ts` 的「打印超时」「被调用方取消」与 `engine.spec.ts` 的「未输出可解析的 JSON（超时／被调用方取消）」。
 
 ### F-PAT-028 输出目录与安全文件名判定 4 种编码，中文案卷号在两个工具间接受集相反
 
@@ -541,7 +542,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：在 `patent-core` 立一个 `safe-path.ts`，只保留两个具名判定——`assertPathSegment`（路径段：允许非 ASCII，拒空、`.`/`..`、分隔符、NUL、首尾空白与尾点，即现有 `assertSafePathSegment`）与 `assertDeliverableName`（交付文件名：在路径段之上再加允许字符集、长度与 `..` 排除）。`document` 与 `filing` 各自保留一层薄包装把错误映射成 `DocumentRenderError`/`PatentFilingError`，`filing` 的 `caseId` 改用 `assertPathSegment` 与 `document` 对齐；`resolveOutputDir` 只留 document 一份，filing 注入错误构造。接受集的取舍需要一次确认：案卷号到底允不允许空格（当前三处拒绝、一处接受），建议统一为拒绝并在工具描述里写明。净减少：约 −15~−20 行，接受集由 4 种降为 2 种（路径段 / 交付文件名）。
 - 预估工作量：M（改接受集是对外可见行为变化，需 `dsh-create-upgrade-guide` 记录并补两侧一致性用例）
 - 是否可自动化：部分（可加门禁：同一概念的安全名判定只允许出现在 `patent-core`）
-- 状态：new
+- 状态：fixed（2026-11-20，批次 R-F2）
+- 修复记录：`patent-core/src/safe-path.ts` 立两个判定——`assertPathSegment`（单段路径名）与 `assertDeliverableName`（在路径段约束之上再加字符集、长度与 `..` 排除）。`renderPatentDocument` 删除两份逐字相同的正则与本地 `assertSafe`，`buildFiling` 的 `assertSafeOutputName` 改为薄包装，两者都只把错误映射成各自的域错误。`resolveOutputDir` 只留 `patent-core` 的 `resolvePatentOutputDir`，`filing` 注入 `PatentFilingError`、`document` 注入 `DocumentRenderError`。`persist-utils` 的 `assertSafePathSegment` 删除；`SAFE_ID_PATTERN`/`assertSafeId` 保留，它服务的是 `JsonFileStore` 的记录 id（`listIds` 必须与写入侧同一字符集），不是用户给出的案卷名。接受集按用户确认统一为交付名 allowlist：`buildFiling` 的 `caseId` 由 ASCII allowlist 放宽到与 `document` 一致（中文、圈码 ①–⑳、常用中文标点接受；空格、`..`、尾点拒绝），两处对同一 `caseId` 给出同一答案。该变化已写入 [`docs/upgrade-guide/v0.2.2-rc.5/patent-deliverable-name/`](../upgrade-guide/v0.2.2-rc.5/patent-deliverable-name/guide.md)。回归用例见 `patent-core/tests/safe-path.spec.ts`、`paths.spec.ts`、`patent-filing/tests/engine.spec.ts` 的中文案卷号用例、`patent-document/tests/render-patent-document.spec.ts` 的非法名用例。
 
 ### F-PAT-029 `escapeRegExp` 专利域内 4 份命名封装 + 6 处内联，仓内无共享实现
 
@@ -1903,6 +1905,21 @@ F-PAT-012。`patent-tools/src` 不再用 `as unknown as` 穿过工具 JSON。
 **既有测试行为**：`claim-breadth-atom.spec.ts` 的「空摘录按未通过处理」用例原本用空数组配 `all_parallel_same_effect: true`，该输入现在有第二条未通过理由，断言不变。`sqlite-engines-branches.spec.ts` 原「applies fetchFactor and postFilter only when declared」用例随 `fetchFactor` 删除改写为「applies postFilter only when declared」，并新增一条翻页用例。
 
 验证：`pnpm exec vitest run packages/patent/ packages/document/ packages/legal/ packages/law/` 通过（485 文件、8412 用例，4 skipped）；`pnpm run typecheck` 5/5；`pnpm run lint` 0 warnings 0 errors；`pnpm run test:docs` 30 passed；`pnpm run verify-package-dependencies` 104 package(s) match the published dependency policy；五个改动源码文件在聚焦 `--coverage.include` 下均为 100%（语句、分支、函数、行）。
+
+### 批次 R-F2：结构复用 · 子进程骨架与安全名判定（2026-11-20）
+
+收掉 G3 结构复用组的前两条。两条都属「同一判定多份编码」，改动只涉及四处子进程调用与两处名字校验。
+
+| 发现 | 处理 | 文件 |
+|---|---|---|
+| F-PAT-027 | 四处骨架（附图渲染、ego-browser、Chrome 打印、Python 引擎）合并为 `patent-core` 的 `startSpawnDeadline`，返回 `SpawnDeadline`：`signal`、`timedOut()`、`dispose()`。`pdfRenderer` 与 `engine.ts` 补齐「内部超时 → 调用方取消 → 信号终止 → 退出码」的原因归类；`pdfRenderer` 起进程前拒绝已取消的调用 | `patent-core/src/subprocess-deadline.ts`（新增）、`patent-tools/src/figure/subprocess-render.ts`、`graphviz-renderer.ts`、`freecad-renderer.ts`、`inkscape-renderer.ts`、`patent-data/src/subprocess-runner.ts`、`patent-document/src/document/pdfRenderer.ts`、`patent-filing/src/filing/engine.ts` |
+| F-PAT-028 | `patent-core/src/safe-path.ts` 立 `assertPathSegment` 与 `assertDeliverableName` 两个判定；`renderPatentDocument` 与 `buildFiling` 删掉各自的本地判定并改走薄包装，两份 `resolveOutputDir` 合并为 `resolvePatentOutputDir`；`assertSafePathSegment` 删除 | `patent-core/src/safe-path.ts`（新增）、`patent-core/src/paths.ts`、`patent-core/src/persist-utils.ts`、`patent-core/src/index.ts`、`patent-core/src/claim-chart/runtime/store.ts`、`patent-tools/src/tool/claim-chart-build.ts`、`patent-document/src/document/renderPatentDocument.ts`、`patent-filing/src/filing/engine.ts` |
+
+**行为变化**：`pdfRenderer` 已取消时不再 spawn Chrome，直接返回「已取消：未启动 Chrome」；Chrome 打印与 Python 引擎的失败文案把「打印超时／超时」与「被调用方取消」单列，不再一律写成「被信号 SIGTERM 终止」。`build_patent_filing` 的 `caseId` 接受中文、圈码与常用中文标点（与 `render_patent_document` 一致），空格、`..`、尾点仍拒绝；两个工具的交付名都额外拒绝 `.` 与尾点。`patent-core` 不再导出 `assertSafePathSegment`，导出面新增 `safe-path`、`subprocess-deadline` 与 `resolvePatentOutputDir`。两项对外可见的接受集变化已写入 [`docs/upgrade-guide/v0.2.2-rc.5/patent-deliverable-name/`](../upgrade-guide/v0.2.2-rc.5/patent-deliverable-name/guide.md)（含导出面替换与迁移步骤）。
+
+**既有测试行为**：`pdf-renderer.spec.ts` 原「pre-aborted signal 仍交给子进程」用例锁住的正是本条缺陷（已取消仍起进程），改为断言不 spawn 且返回取消文案；`render-patent-document.spec.ts`、`engine.spec.ts`、`claim-chart/store.spec.ts`、`drafting-engine.spec.ts` 的错误文案断言随新文案更新，另有中文案卷号一致性用例新增。
+
+验证：`pnpm exec vitest run packages/patent` 通过（410 文件、7141 用例，4 skipped）；`pnpm run typecheck` 5/5；`pnpm run lint` 0 errors；改动源码文件在 `packages/patent --coverage` 下无 uncovered 行；`pnpm run test:docs` 30 passed（含 `verify-upgrade-guides`、`verify-tech-debt-counters`，后者随 `claim-chart-build.ts` 删除一行 `v8 ignore` 由 1339 降至 1338）。
 
 ### Day 44 抽样复核（2026-11-18）
 

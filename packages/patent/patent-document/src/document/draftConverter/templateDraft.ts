@@ -29,9 +29,7 @@ interface SlotElementHit {
   openTag: string
   /** 元素标签名。 */
   name: string
-  /** 开标签结束下标（内容起始）。 */
-  openEnd: number
-  /** 内容起始下标（同 openEnd）。 */
+  /** 内容起始下标。 */
   contentStart: number
   /** 配对闭合标签起始下标。 */
   closeStart: number
@@ -49,15 +47,14 @@ function findSlotElement(html: string, slotRef: string): SlotElementHit | undefi
   if (match === null) return undefined
   const openTag = match[0]
   const start = match.index
-  const openEnd = start + openTag.length
-  const closeStart = findMatchingCloseTag(html, openEnd)
+  const contentStart = start + openTag.length
+  const closeStart = findMatchingCloseTag(html, contentStart)
   if (closeStart === undefined) return undefined
   return {
     start,
     openTag,
     name: match[1] as string,
-    openEnd,
-    contentStart: openEnd,
+    contentStart,
     closeStart,
     // findMatchingCloseTag 的合同保证 closeStart 处即配对闭合标签起始。
     end: closeStart + html.slice(closeStart).indexOf('>') + 1,
@@ -120,7 +117,7 @@ function injectBlocksSlot(html: string, slotId: string, blocks: readonly DraftBl
   const wrapperOpen = stripSlotAttr(first.openTag)
   const wrapperClose = `</${first.name}>`
   const lines = blocks.map(block => renderBlockLine(wrapperOpen, wrapperClose, fillOpen, block)).join('')
-  let result = html.slice(0, html.indexOf(first.openTag)) + lines + html.slice(first.end)
+  let result = html.slice(0, first.start) + lines + html.slice(first.end)
   // 移除其余同名空占位元素（连同所在行的缩进一并吞掉，不留空白尾巴）。
   for (let guard = 0; guard < 100; guard += 1) {
     const extra = findSlotElement(result, slotId)
@@ -165,7 +162,7 @@ function injectRowsSlot(html: string, slotId: string, rows: readonly (readonly s
     }
     return fillRowTemplate(rowTemplate, cells)
   }).join('')
-  const start = html.indexOf(hit.openTag)
+  const start = hit.start
   return html.slice(0, start) + rendered + html.slice(hit.end)
 }
 

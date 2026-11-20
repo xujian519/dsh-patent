@@ -228,6 +228,8 @@ timeout 与 cancel 已由既有 `minimax.spec.ts`（stub fetch）覆盖，未重
   - `dsh-no-shell-string`：`exec` / `execSync` 的命令参数以引号或模板开头（argv 形式放行）
   - `dsh-no-hardcoded-credential`：名为 apiKey/secret/token/password 的赋值携带 16 位以上字面量
 - CI：`ci-fork.yml` 新增独立 `node-sast` job，用 `semgrep/semgrep:latest` 镜像，不拖慢 `node-checks`
+- 规则自检：`scripts/fixtures/semgrep/violations/` 每条规则一个必须命中的样本，`scripts/fixtures/semgrep/clean/` 提供应当放行的对照（argv 形式、运行时凭据、注册表查表）。`node-sast` 在扫描 shipped 源码后跑同一 job 内的两步断言：clean 目录必须退出 0，violations 目录必须非零。规则失效与源码干净在 CI 输出上无法区分，自检把前者变成红灯
+- 自检不放进 vitest：`node-coverage` lane 没有 semgrep，spec 只能长期 skip，而跳过读起来是绿的；用 fallback 语言重写规则同样测不到真实规则
 - 本地运行需重定向 HOME（semgrep 写 `~/.semgrep/semgrep.log`，沙箱下被拒）：
   `HOME=/tmp/sg-home semgrep --config .semgrep.yml packages apps --exclude '**/tests/**'`
 
@@ -237,7 +239,11 @@ timeout 与 cancel 已由既有 `minimax.spec.ts`（stub fetch）覆盖，未重
 - `extensions/cordis-client-runner/src/client/evaluator.ts`（求值定义体的浏览器半边）
 - `extensions/cordis-host-runner/src/sandbox.ts`（仅编译的解析闸门）
 
-**验收（已达成）**：`Ran 3 rules on 4314 files: 0 findings`。
+**验收（已达成）**：
+
+- `Ran 3 rules on 4314 files: 0 findings`
+- `semgrep --config .semgrep.yml --error --quiet scripts/fixtures/semgrep/clean` → 退出 0
+- `semgrep --config .semgrep.yml --error --quiet scripts/fixtures/semgrep/violations` → 退出 1，三条规则各至少一次命中
 
 **后续**：CI job 现为 report 模式（不带 `--error`）。基线既已是 0，下一次改动即可加 `--error` 转阻塞。
 

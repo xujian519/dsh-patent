@@ -511,6 +511,18 @@ jobs:
           docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:latest \
             semgrep --config .semgrep.yml packages apps --exclude '**/tests/**'
 
+      - name: Rule self-check
+        # A rule that stops matching reads exactly like clean code, so the fixtures
+        # pin one finding per rule and an accepted counterpart for each.
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:latest \
+            semgrep --config .semgrep.yml --error --quiet scripts/fixtures/semgrep/clean
+          if docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:latest \
+              semgrep --config .semgrep.yml --error --quiet scripts/fixtures/semgrep/violations; then
+            echo "::error::the semgrep rule set no longer reports its violation fixtures"
+            exit 1
+          fi
+
   benchmarks:
     # Wall-clock budgets need an otherwise idle runner, so the lane runs alone
     # instead of joining a concurrent gate aggregate. The fork had no performance

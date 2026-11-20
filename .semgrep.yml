@@ -36,13 +36,12 @@ rules:
       literal here leaks through the published package and the session log.
     patterns:
       - pattern-either:
-          - pattern: const $NAME = "$VALUE"
-          - pattern: readonly $NAME = "$VALUE"
-          - pattern: $NAME = "$VALUE"
+          - pattern: const $NAME = $VALUE
+          - pattern: let $NAME = $VALUE
+          - pattern: $NAME = $VALUE
       - metavariable-regex:
           metavariable: $NAME
           regex: (?i)^(api[_-]?key|secret|token|password|access[_-]?key|auth[_-]?token)$
       - metavariable-regex:
           metavariable: $VALUE
-          regex: ^[A-Za-z0-9_\-/+=]{16,}$
-      - pattern-not: $NAME = ""
+          regex: ^['"][A-Za-z0-9_\-/+=]{16,}['"]$

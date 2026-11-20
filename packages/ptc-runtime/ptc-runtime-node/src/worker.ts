@@ -17,8 +17,7 @@ import { decodePtcJsonWire } from './json-wire.ts'
 import { OutputLedger } from './output-ledger.ts'
 import { drainOutput, terminateProcess } from './output-stream.ts'
 import { readProgramResult, PROGRAM_PROTOCOL_VERSION, type ProgramBootData, type ProgramMethods, type HostMethods } from './protocol.ts'
-
-const messageOf = (error: unknown): string => error instanceof Error ? error.message : String(error)
+import { errorMessage } from '@deepseek-ai/dsh-value'
 
 /** Time allowed for a managed process to report its exit status after its control pipe closes. */
 const CONTROL_CLOSE_EXIT_SETTLE_MS = 100
@@ -117,7 +116,7 @@ export class ProgramWorker {
         ? { kind: 'abort', message: this.message('execution canceled') }
         : { kind: 'worker-exit', message: this.message(this.exitMessage(this.exitOutcome)) }
       try { await this.terminate() } catch (error: unknown) {
-        return output.failure([], { kind: 'worker-exit', message: `managed process cleanup failed: ${messageOf(error)}` })
+        return output.failure([], { kind: 'worker-exit', message: `managed process cleanup failed: ${errorMessage(error)}` })
       }
       return output.failure([], failure)
     }
@@ -132,7 +131,7 @@ export class ProgramWorker {
       evaluation.finish({ kind: 'timeout', message }, undefined, evaluation.completion === undefined)
     }, spec.timeoutMs)
     const onAbort = (): void => {
-      evaluation.finish({ kind: 'abort', message: this.retainsState ? 'execution canceled' : messageOf(spec.signal?.reason) }, undefined, evaluation.completion === undefined)
+      evaluation.finish({ kind: 'abort', message: this.retainsState ? 'execution canceled' : errorMessage(spec.signal?.reason) }, undefined, evaluation.completion === undefined)
     }
     const evaluation: Evaluation = {
       settled: false,
@@ -180,7 +179,7 @@ export class ProgramWorker {
           result.resolve(completed)
         }, (failure: unknown) => {
           this.active = undefined
-          result.resolve(output.failure(logs, { kind: 'worker-exit', message: `managed process cleanup failed: ${messageOf(failure)}` }))
+          result.resolve(output.failure(logs, { kind: 'worker-exit', message: `managed process cleanup failed: ${errorMessage(failure)}` }))
         })
       },
     }
@@ -190,13 +189,13 @@ export class ProgramWorker {
     else {
       try { evaluation.data.code = this.mode.stripTypes(spec.program) } catch (error: unknown) {
         // A parse failure before startup has no process state or authority to retain.
-        evaluation.finish({ kind: 'exception', message: messageOf(error) }, undefined, !this.ready)
+        evaluation.finish({ kind: 'exception', message: errorMessage(error) }, undefined, !this.ready)
         return await result.promise
       }
       if (this.ready) this.dispatch(evaluation)
       else {
         this.starting = this.start(spec.cwd)
-        void this.starting.catch((error: unknown) => { this.fail(error instanceof SandboxUnavailableError || (this.confined !== undefined && isRunnerSpawnFailure(error, this.confined.argv[0], spec.cwd)) ? 'sandbox-unavailable' : 'worker-exit', messageOf(error)) })
+        void this.starting.catch((error: unknown) => { this.fail(error instanceof SandboxUnavailableError || (this.confined !== undefined && isRunnerSpawnFailure(error, this.confined.argv[0], spec.cwd)) ? 'sandbox-unavailable' : 'worker-exit', errorMessage(error)) })
       }
     }
     return await result.promise
@@ -255,7 +254,7 @@ export class ProgramWorker {
     if (this.active) this.active.finish({ kind, message: this.message(message) }, undefined, true)
     else {
       if (!this.closed) this.ctx.logger.warn(message)
-      void this.terminate().catch((error: unknown) => { this.ctx.logger.warn(messageOf(error)) })
+      void this.terminate().catch((error: unknown) => { this.ctx.logger.warn(errorMessage(error)) })
     }
   }
 
@@ -267,7 +266,7 @@ export class ProgramWorker {
       // Raw stdio can be queued beside the RPC result on separate pipes.
       setImmediate(() => { evaluation.finish(error, value) })
     }).catch((error: unknown) => {
-      if (this.active === evaluation && !evaluation.settled && !this.channel?.$closed) this.fail('protocol', messageOf(error))
+      if (this.active === evaluation && !evaluation.settled && !this.channel?.$closed) this.fail('protocol', errorMessage(error))
     })
   }
 
@@ -382,7 +381,7 @@ export class ProgramWorker {
       })
     }, (error: unknown) => {
       this.fail(this.confined !== undefined && isRunnerSpawnFailure(error, this.confined.argv[0], cwd)
-        ? 'sandbox-unavailable' : 'worker-exit', this.withControlFailure(messageOf(error)))
+        ? 'sandbox-unavailable' : 'worker-exit', this.withControlFailure(errorMessage(error)))
     })
   }
 

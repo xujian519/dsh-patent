@@ -8,6 +8,8 @@
  * @module @deepseek-ai/dsh-legal-law/reference
  */
 
+import { escapeRegExp } from '@deepseek-ai/dsh-value'
+
 import {
   articleReferenceIdentity,
   collectReferences,
@@ -115,11 +117,6 @@ function buildStatutePatterns(
     patterns.push(buildStatutePattern(sorted.slice(index, index + NAMES_PER_PATTERN)))
   }
   return patterns
-}
-
-/** Escape special regex characters in a string. */
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 /** The initial set of law names used before baselines are loaded. */

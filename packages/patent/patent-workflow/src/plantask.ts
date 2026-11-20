@@ -199,17 +199,26 @@ export function syncPlanToTasks(planSteps: string[]): PlanTaskSyncResult {
  * @returns 重规划后的任务同步结果。
  */
 export function replanTasks(previous: PlanTask[], newPlanSteps: string[]): PlanTaskSyncResult {
-  const prevByHash = new Map(previous.map(t => [t.hash, t]))
+  // 旧计划里每个 hash 的已完成个数。同一 hash 的已完成旧任务只能认领一个同文本
+  // 新步骤——若新计划把同一动作写了两次，第二次要重新执行（F-PAT-050）。
+  const completedCounts = new Map<string, number>()
+  for (const t of previous) {
+    if (t.status === 'completed') {
+      completedCounts.set(t.hash, (completedCounts.get(t.hash) ?? 0) + 1)
+    }
+  }
+
   const tasks: PlanTask[] = []
   const preserved: string[] = []
   const toRun: string[] = []
 
   newPlanSteps.forEach((step, idx) => {
     const hash = hashStep(step.trim())
-    const prev = prevByHash.get(hash)
     const id = `task-${idx + 1}`
-    const wasCompleted = prev?.status === 'completed'
-    if (wasCompleted) {
+    const remaining = completedCounts.get(hash) ?? 0
+    const canReuse = remaining > 0
+    if (canReuse) {
+      completedCounts.set(hash, remaining - 1)
       preserved.push(id)
     } else {
       toRun.push(id)
@@ -218,7 +227,7 @@ export function replanTasks(previous: PlanTask[], newPlanSteps: string[]): PlanT
       id,
       description: step,
       hash,
-      status: wasCompleted ? 'completed' : 'pending',
+      status: canReuse ? 'completed' : 'pending',
       ...(idx === 0 ? {} : { blockedBy: [`task-${idx}`] }),
     })
   })

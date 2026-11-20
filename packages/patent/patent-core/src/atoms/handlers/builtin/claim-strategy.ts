@@ -16,6 +16,8 @@
  * `review_gate` 人工复核。
  */
 
+import { escapeRegExp } from '@deepseek-ai/dsh-value'
+
 import { type AnchorRange, type AnchorReason, locateQuote } from '../../../anchor/index.ts'
 import type { TechDomain } from '../../../claim-draft/index.ts'
 import { PARENT_SCHEMA, resolveDomain } from '../../../claim-draft/index.ts'
@@ -213,15 +215,6 @@ const CLAIM_STRATEGY_SCHEMA = {
   },
   required: ['essential_features', 'optional_features', 'dependent_tree', 'prior_art_ref'],
 } as const
-
-/**
- * 转义正则元字符。
- * @param text - 原文。
- * @returns 可安全嵌入正则的字面量。
- */
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
 
 /**
  * 判断编号是否在文本中被点名；D 类编号要求词边界，避免 `D1` 命中 `D10`。

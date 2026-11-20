@@ -229,3 +229,14 @@ export function toError(value: unknown): Error {
   }
   return new Error(errorMessage(value))
 }
+
+/**
+ * Escape special regex metacharacters in a literal string so it can be
+ * safely interpolated into a regex source. Matches the TC39 proposal for
+ * `RegExp.escape`.
+ * @param value - The literal text.
+ * @returns A string safe to drop into a regex source.
+ */
+export function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}

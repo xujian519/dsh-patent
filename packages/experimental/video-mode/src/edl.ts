@@ -122,6 +122,11 @@ export function validateEdl(value: unknown): Edl {
       throw new MediaFailure(`EDL clip ${index}: outSec must be greater than inSec`, 'MEDIA_EDL_INVALID')
     }
   }
+  for (const [index, clip] of (parsed.data.audio ?? []).entries()) {
+    if (clip.inSec !== undefined && clip.outSec !== undefined && clip.outSec <= clip.inSec) {
+      throw new MediaFailure(`EDL audio ${index}: outSec must be greater than inSec`, 'MEDIA_EDL_INVALID')
+    }
+  }
   return parsed.data
 }
 

@@ -9,7 +9,7 @@ import {
   verifyLegalCitation,
   verifyLegalCitations,
 } from '../src/verify.ts'
-import type { LegalArticleEntry, LegalCitationPolicySet, LegalLawBaseline, LegalLawName, LegalLawReference } from '../src/types.ts'
+import type { LegalArticleEntry, LegalCitationDecision, LegalCitationFinding, LegalCitationPolicySet, LegalLawBaseline, LegalLawName, LegalLawReference } from '../src/types.ts'
 
 const VERIFIED_ARTICLE: LegalArticleEntry = {
   article: 143,
@@ -150,6 +150,31 @@ describe('resolveLegalCitationPolicy', () => {
   it('blocks citations it cannot check by default', () => {
     expect(DEFAULT_LEGAL_CITATION_POLICY.unverified).toBe('block')
     expect(DEFAULT_LEGAL_CITATION_POLICY.notIndexed).toBe('block')
+  })
+
+  it('maps every decision to its policy slot (F-LEG-010)', () => {
+    // 锁死 resolveCitationDecisionPolicy 的五决策→五策略映射。
+    // 任意换 policies 字段值，每个 decision 应走到各自的槽。
+    const policies: LegalCitationPolicySet = {
+      mismatch: 'allow',
+      unmatched: 'warn',
+      outOfRange: 'block',
+      notIndexed: 'allow',
+      unverified: 'warn',
+    }
+    const mk = (decision: LegalCitationDecision): LegalCitationFinding => ({
+      raw: '民法典第1条',
+      reference: { kind: 'law-article', law: '民法典', article: 1, raw: '民法典第1条' },
+      decision,
+      reason: '测试',
+    })
+    expect(resolveLegalCitationPolicy(mk('mismatch'), policies)).toBe('allow')
+    expect(resolveLegalCitationPolicy(mk('unmatched'), policies)).toBe('warn')
+    expect(resolveLegalCitationPolicy(mk('out-of-range'), policies)).toBe('block')
+    expect(resolveLegalCitationPolicy(mk('not-indexed'), policies)).toBe('allow')
+    expect(resolveLegalCitationPolicy(mk('unverified'), policies)).toBe('warn')
+    // valid 永远 allow，不受 policies 影响。
+    expect(resolveLegalCitationPolicy(mk('valid'), policies)).toBe('allow')
   })
 })
 

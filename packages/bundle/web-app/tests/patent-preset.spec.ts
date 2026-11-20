@@ -676,6 +676,51 @@ describe('patent work-mode routing', () => {
 })
 
 /**
+ * Delegation and delivery tools depend on the composition, not only on the
+ * preset file: the 2026-11-19 session called `subagent_fork` and `present` and
+ * got "unknown tool" although the preset declares the fork row. The gate and
+ * team skills therefore carry a capability table and require a missing gate
+ * item to reach the delivery report. No recorded session replays these skills,
+ * so these anchors keep the fallback from being edited away.
+ */
+describe('patent tool-availability fallbacks', () => {
+  it('degrades the independent review and reports the item it could not run', () => {
+    const gate = readFileSync(join(PATENT_SKILLS, 'patent-quality-gate', 'SKILL.md'), 'utf8')
+    expect(gate).toContain('## 工具能力探测与降级')
+    expect(gate).toContain('| `subagent_fork` |')
+    expect(gate).toContain('`subagent`')
+    expect(gate).toContain('### 工具缺失申报')
+    expect(gate).toContain('未做：第二人独立复核')
+    expect(gate).toContain('依赖第二人复核的纪律')
+    expect(gate).toContain('不得记为已复核')
+    expect(gate).toContain('| `present` |')
+    expect(gate).toContain('在答复里直接给交付件路径')
+  })
+
+  it('falls back from the team flow to the tools the session actually has', () => {
+    const skill = readFileSync(join(PATENT_SKILLS, 'patent-team-composition', 'SKILL.md'), 'utf8')
+    const precondition = skill.split('\n').find(line => line.includes('先探测本会话工具清单')) ?? ''
+    expect(precondition, 'the team skill must gate the team flow on a capability probe').not.toBe('')
+    expect(precondition).toContain('`subagent_fork` → `subagent`')
+    expect(precondition).toContain('不得调用不存在的团队工具')
+  })
+
+  it('keeps the persona pointing at the fallback table instead of an unconditional fork', async () => {
+    const persona = await patentPersona()
+    expect(persona).toContain('工具降级表')
+    expect(persona).toContain('降级表登记未复核')
+    expect(persona).not.toContain('必要时 fork 子代理互评')
+    expect(persona).not.toContain('仅当插件被禁用时回退单会话 + subagent_fork')
+  })
+
+  it('mounts the two delegation tools the fallback chain names', async () => {
+    const ids = new Set((await patentRows()).flatMap(row => (typeof row.id === 'string' ? [row.id] : [])))
+    expect(ids.has('tool-subagent')).toBe(true)
+    expect(ids.has('tool-subagent-fork')).toBe(true)
+  })
+})
+
+/**
  * A patent case is date-bound: the deadlines, the annual-fee year, and the
  * renewal dates in a search report all follow from the filing and notice dates,
  * so the mode needs the clock row, and the reminders that follow those dates

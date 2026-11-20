@@ -126,7 +126,7 @@ describe('verifyCitation on statutes', () => {
     const unmatched = verifyCitation(articleRef(22), baselines(), { proposition: '说明书充分公开' })
     expect(unmatched.decision).toBe('unmatched')
     expect(unmatched.reason).toContain('低于支撑阈值')
-    expect(unmatched.reason).toContain('没有条目支撑')
+    expect(unmatched.reason).toContain('没有其他条目承载')
   })
 
   it('reports a proposition another article carries as a mismatch and names it', () => {
@@ -759,6 +759,8 @@ describe('the packaged index', () => {
     const finding = verifyCitation(referencing, shipped, { proposition })
     expect(finding.decision).toBe('mismatch')
     expect(finding.reason).toContain('第 64 条')
+    // 理由回传承载命题的原文片段，使「措辞不贴原文」与「引错条」可区分。
+    expect(finding.reason).toContain('原文「')
   })
 
   it('moves a paraphrase between undecided and supported with the support threshold', () => {
@@ -833,6 +835,39 @@ describe('the packaged index', () => {
     for (const [article, proposition, decision] of cases) {
       expect(verifyCitation(articleRef(article, undefined, '专利法实施细则'), shipped, { proposition }).decision)
         .toBe(decision)
+    }
+  })
+
+  it('does not block a paraphrase of the cited article, and reports it as undecided', () => {
+    const shipped = loadLawBaselines()
+    // issue #919: the article number is right, but the proposition paraphrases 第 57 条第 2 款.
+    const paraphrase = verifyCitation(articleRef(57, 2, '专利法实施细则'), shipped, {
+      proposition: '申请人主动修改申请文件的时机为自申请日起2个月内',
+    })
+    expect(paraphrase.decision).toBe('unmatched')
+    expect(paraphrase.reason).toContain('释义式措辞')
+    // 申请日、申请文件 是另外几条的主题词；它们出现在命题里，不足以指认那些条更贴近命题。
+    expect(paraphrase.reason).not.toContain('更贴近命题')
+    // 短命题同样不能被「主动修改」这一主题词引流到别的条：窄化到款时只看该款正文。
+    expect(verifyCitation(articleRef(57, 2, '专利法实施细则'), shipped, { proposition: '主动修改的时机' }).decision)
+      .toBe('unmatched')
+    // 逐字引用同一款才是本工具设计来放行的情形。
+    expect(verifyCitation(articleRef(57, 2, '专利法实施细则'), shipped, {
+      proposition: '实用新型或者外观设计专利申请人自申请日起2个月内，可以对实用新型或者外观设计专利申请主动提出修改',
+    }).decision).toBe('valid')
+  })
+
+  it('does not attribute one compound proposition to each citation', () => {
+    const shipped = loadLawBaselines()
+    const proposition = '当事人因不可抗拒的事由延误期限的，可以自障碍消除之日起2个月内请求顺延；要求优先权的，应当在申请日起12个月内提出；发明专利权的期限为20年'
+    // 第 5 条的「期限」主题词点到复合命题的一部分，仍可放行；第 29 条第 1 款与
+    // 第 42 条第 1 款只覆盖复合命题的一句，不能被复合命题单独判定为「不符」。
+    expect(verifyCitation(articleRef(5, undefined, '专利法实施细则'), shipped, { proposition }).decision)
+      .toBe('valid')
+    for (const reference of [articleRef(29, 1), articleRef(42, 1)]) {
+      const finding = verifyCitation(reference, shipped, { proposition })
+      expect(finding.decision).toBe('unmatched')
+      expect(finding.reason).toContain('一条引用只配一条命题')
     }
   })
 
@@ -1019,7 +1054,7 @@ describe('the packaged index', () => {
     expect(supported.decision).toBe('valid')
     expect(supported.reason).toContain('第二部分第二章2.2.2')
     const unrelated = verifyCitation(sectionRef('第二部分第二章'), shipped, {
-      proposition: '本章规定了基因序列的保藏要求',
+      proposition: '本章规定了生物材料的保藏',
     })
     expect(unrelated.decision).toBe('mismatch')
     expect(unrelated.reason).toContain('第二部分第十章')
@@ -1075,7 +1110,9 @@ describe('the packaged index', () => {
     const moved = verifyCitation(sectionRef('第五部分第二章4.2.1.2'), shipped, {
       proposition: '下列情形一经核实，专利局应当主动退款',
     })
-    expect(moved.decision).toBe('mismatch')
+    // 2026 年版删除了原 4.2.1.2 整节；现行索引不再有承载该命题的条目，
+    // 因此是「未判定」而不是「与所引命题不符」。
+    expect(moved.decision).toBe('unmatched')
   })
 
   it('attaches each guideline topic list to the section it indexes', () => {

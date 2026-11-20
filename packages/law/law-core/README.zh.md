@@ -40,12 +40,12 @@ kind: "package-reference"
 <a id="proposition-overlap"></a>
 ## 命题重合度
 
-`textOverlap` 度量命题的加权字对中被条目转录文本承载的比例，`topicOverlap` 把命题与条目主题词匹配；两路信号刻意保持词面，改写过的命题报"无法判定"而非"矛盾"。`createOverlapIndex` 为每条基线只建一次字对频率，`PROPOSITION_SUPPORT_DEFAULT` 是默认支撑阈值。
+`textOverlap` 度量命题的加权字对中被条目转录文本承载的比例，`topicOverlap` 把命题与条目主题词匹配；两路信号刻意保持词面，改写过的命题报"无法判定"而非"矛盾"。主题词对所引条目从宽、对竞争条目从严：`findCompetingEntries` 认承载命题的转录文本，或点到命题实质部分、或正文承载命题比例至少是所引条目两倍的主题词；较长命题里共享的一个主语词本身不够。`createOverlapIndex` 为每条基线只建一次字对频率，`PROPOSITION_SUPPORT_DEFAULT` 是默认支撑阈值。
 
 <a id="article-decision"></a>
 ## 逐条判定
 
-`decideArticleCitation` 把一条引用对法条基线判定为 `valid`、`mismatch`、`unmatched`、`out-of-range`、`not-indexed` 或 `unverified`，理由文案使用模型语言；`articleComparableEntries`、`findCompetingLabels`、`supportMismatchReason`、`transcribedText`、`truncateProposition` 与 `formatPercent` 是各领域 verify 路径围绕它组装的助手。
+`decideArticleCitation` 把一条引用对法条基线判定为 `valid`、`mismatch`、`unmatched`、`out-of-range`、`not-indexed` 或 `unverified`，理由文案使用模型语言；`articleComparableEntries`、`findCompetingEntries`、`PropositionCarrier`、`supportMismatchReason`、`transcribedText`、`truncateProposition` 与 `formatPercent` 是各领域 verify 路径围绕它组装的助手。`mismatch` 的理由点出承载命题的条目，并引用承载它的原文或主题词。
 
 <a id="tool-scaffolding"></a>
 ## 工具脚手架

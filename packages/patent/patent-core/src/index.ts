@@ -107,7 +107,7 @@ export {
   collectReferences,
   createOverlapIndex,
   decideArticleCitation,
-  findCompetingLabels,
+  findCompetingEntries,
   formatArticleCitation,
   formatCnNumber,
   formatPercent,

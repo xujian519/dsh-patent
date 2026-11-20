@@ -11,7 +11,7 @@
 
 import {
   decideArticleCitation,
-  findCompetingLabels,
+  findCompetingEntries,
   formatPercent,
   missingIndexReason,
   renderCitationDecisionRows,
@@ -417,24 +417,25 @@ function decideSection(
       entry,
     )
   }
-  const elsewhere = findCompetingLabels(
+  const best = Math.max(0, ...scored.map(candidate => candidate.score))
+  const elsewhere = findCompetingEntries(
     comparableEntries(baseline),
     index,
     proposition,
     threshold,
     reference.path,
+    best,
     label => coversSection(reference.path, label),
   )
   if (elsewhere.length > 0) {
     return finding(reference, 'mismatch', supportMismatchReason(baseline.law, proposition, elsewhere), entry)
   }
-  const best = Math.max(0, ...scored.map(candidate => candidate.score))
   return finding(
     reference,
     'unmatched',
     hasOwn
-      ? `本节及其子节的文本与命题「${truncateProposition(proposition)}」的字面重合 ${formatPercent(best)}，低于支撑阈值 ${formatPercent(threshold)}，且本索引中没有条目支撑该命题——请核对节号或改写命题`
-      : `《专利审查指南》${reference.path} 的节正文未转录，其下已转录的各节与命题「${truncateProposition(proposition)}」都不相符——请核对节号或改写命题`,
+      ? `本节及其子节的文本与命题「${truncateProposition(proposition)}」的字面重合 ${formatPercent(best)}，低于支撑阈值 ${formatPercent(threshold)}，且本索引中没有其他节承载该命题——释义式措辞或覆盖多条引用的复合命题会落在此判定：请核对节号，或按节正文改写命题、一条引用只配一条命题`
+      : `《专利审查指南》${reference.path} 的节正文未转录，其下已转录的各节与命题「${truncateProposition(proposition)}」都不相符——请核对节号或按节正文改写命题`,
     entry,
   )
 }

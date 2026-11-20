@@ -35,7 +35,7 @@ DeepSeek Harness 的随包中国法条索引：法条引用解析、逐法记录
 <a id="citation-decision"></a>
 ## 引用判定
 
-`parseLegalLawReference` 解析单独成文的引用，`extractLegalLawReferences` 提取一段文本中的全部引用（含 `第 143 条、第 144 条` 与 `第 2 款、第 3 款` 这类续指），`formatLegalLawReference` 渲染正式写法，`scanUnrecognizedLegalCitations` 列出解析器无法识别的疑似引用片段。`verifyLegalCitation` 把一条引用判定为 `valid`、`mismatch`、`unmatched`、`out-of-range`、`not-indexed` 或 `unverified`；命题先按主题词、再按加权字符对重合度与已转录条文比对，若命题由另一条文承载，则报告为 mismatch 并点出该条文。`resolveLegalCitationPolicy` 按部署的策略集映射判定，`renderLegalCitationRows` 渲染工具返回的判定表。随包默认拦截 `not-indexed` 与 `unverified`，patent-law 的默认对这两类告警。两套默认记在 law-core 的 `CONFORMANCE_POLICIES`。
+`parseLegalLawReference` 解析单独成文的引用，`extractLegalLawReferences` 提取一段文本中的全部引用（含 `第 143 条、第 144 条` 与 `第 2 款、第 3 款` 这类续指），`formatLegalLawReference` 渲染正式写法，`scanUnrecognizedLegalCitations` 列出解析器无法识别的疑似引用片段。`verifyLegalCitation` 把一条引用判定为 `valid`、`mismatch`、`unmatched`、`out-of-range`、`not-indexed` 或 `unverified`；命题先按主题词、再按加权字符对重合度与已转录条文比对。另一条文要成为命题的归宿，须由其转录文本承载，或由点到命题实质部分、或正文承载命题比例至少是所引条文两倍的主题词承载；mismatch 的理由会点出该条并引用证据，仅在较长命题里出现的一个主语词不能据此指认正确的引用有误。一条引用只配一条命题并贴所引原文措辞：概述式释义、或一条复合命题配多条引用，报 `unmatched`。`resolveLegalCitationPolicy` 按部署的策略集映射判定，`renderLegalCitationRows` 渲染工具返回的判定表。随包默认拦截 `not-indexed` 与 `unverified`，patent-law 的默认对这两类告警。两套默认记在 law-core 的 `CONFORMANCE_POLICIES`。
 
 <a id="tool"></a>
 ## 工具
@@ -64,7 +64,7 @@ DeepSeek Harness 的随包中国法条索引：法条引用解析、逐法记录
 
 - **只转录了十七部核心法律。** 民法典、刑法、公司法、劳动法、劳动合同法、民事诉讼法、刑事诉讼法、行政诉讼法、专利法、商标法、著作权法、反不正当竞争法、个人信息保护法、行政处罚法、行政许可法、行政复议法与仲裁法带有条文正文、来源文件与转录日期；其余自动生成的文件仍是 `text: null`，引用它们会返回 `unverified`。转录日期记录的是从该来源文件的机械抄录，不代表有资质的人读过回稿。默认策略拦截 `unverified` 与 `not-indexed` 引用；语料更窄的部署可通过 `Config` 放宽。
 - **覆盖范围是生成语料，不是经审阅的纲要。** `assets/legal-law` 持有数千个按法拆分的文件，主题词由脚本推导；生成器漏掉的法律或条文会报告 `not-indexed`，即使该规定确实存在。两个已知的源语料缺口影响已转录集合：语料缺刑事诉讼法第 128 条；以 `第 N 条之一` 写成的修正案条文被并入基础条，而非单独索引。因此 `unverified` 或 `not-indexed` 只说明本索引收了什么，不说明中国法律有什么。
-- **命题比对是字面的。** 主题词与加权字符对只比较字符；换用同义表述的命题会报告 `unmatched`，必须由人工阅读；多部条文共有的套话会降低但不能消除错误匹配。
+- **命题比对是字面的。** 主题词与加权字符对只比较字符；换用同义表述的命题会报告 `unmatched`，必须由人工阅读；多部条文共有的套话会降低但不能消除错误匹配。只与所引条文共享一个主语词的释义不会变成 mismatch：只有转录文本或点到命题实质部分的主题词才能把另一条指认为命题的归宿。一条引用应配一条贴该条原文措辞的命题。
 - **项号只回显、不核验，缺款列表也不做窄化。** 随包法律索引不登记任何 `paragraphs` 列表，因此点名某一款的引用不会按款数核对。点名某一项的引用按条判定，项号只随结果回显。共享判定器在 `paragraphs` 缺失时跳过窄化，不报 `unverified`，因为本部署的默认策略会拦截该判定。
 - **未识别的片段是警告，不是拦截。** `unrecognized` 列出未参与判定的片段，本身不会置 `blocked`。解析器读不了的款或项（`第十十款`、`第十十项`、`第（十十）项`）会拒绝整条引用：写在 `text` 里时片段列在这里，写在 `references` 里时改为输入错误。片段只有落在已解析引用的跨度内，才会从列表去掉。
 - **基线正确性由内容负责。** 任何运行时观察都无法证明某个条目的正文就是现行官方文本；只有记录的来源与日期可以，门禁检查引用与索引成员关系，不检查法律正确性。

@@ -262,6 +262,33 @@ export async function claimMailboxDelivery(
 }
 
 /**
+ * Settle one delivery attempt: acknowledge the messages when the recipient took
+ * them, otherwise release the lease so the scheduler can retry.
+ *
+ * Delivery paths differ in how they decide acceptance (a live steer, a live
+ * wake, a fallback kick), but the durable consequence is always this pair of
+ * writes. Keeping the pair here prevents the two existing degradations:
+ * an accepted message left leased for retry, and a rejected one acknowledged as
+ * read.
+ * @param stateRoot - resolved absolute state root directory.
+ * @param teamId - the team id.
+ * @param agentKey - `captain` or a member name.
+ * @param messageIds - the message ids this attempt covered.
+ * @param accepted - whether the recipient accepted the messages.
+ */
+export async function settleMailboxDelivery(
+  stateRoot: string,
+  teamId: string,
+  agentKey: string,
+  messageIds: readonly string[],
+  accepted: boolean,
+): Promise<void> {
+  await withMailboxLease(stateRoot, teamId, agentKey, key => (accepted
+    ? acknowledgeMailbox(stateRoot, teamId, key, messageIds)
+    : releaseMailboxDelivery(stateRoot, teamId, key, messageIds)))
+}
+
+/**
  * Release a failed delivery lease so the scheduler can retry it later.
  * @param stateRoot - resolved absolute state root directory.
  * @param teamId - the team id.

@@ -1133,7 +1133,7 @@ export interface StagehandModelConfig {
 ## `@deepseek-ai/dsh-experimental-claude-code-mods`
 
 - `inject`: `workingDirectory` · `agents`
-- `source`: [`packages/experimental/claude-code-mods/src/index.ts:53`](../packages/experimental/claude-code-mods/src/index.ts)
+- `source`: [`packages/experimental/claude-code-mods/src/index.ts:54`](../packages/experimental/claude-code-mods/src/index.ts)
 
 ```ts config-catalog
 /** Plugin config: the limits mod hooks run under. */
@@ -3034,15 +3034,15 @@ export interface AutoCommitConfig {
  */
 export interface Config {
   /** ego-browser CLI command name (default `ego-browser`). */
-  commandName?: string
+  commandName: string
   /** Connection-probe timeout in milliseconds (default 8000). */
-  probeTimeoutMs?: number
+  probeTimeoutMs: number
   /** Default ego-browser run timeout in milliseconds (default 90000). */
-  defaultTimeoutMs?: number
+  defaultTimeoutMs: number
   /** Hard cap applied to a per-run timeout in milliseconds (default 300000). */
-  maxTimeoutMs?: number
+  maxTimeoutMs: number
   /** Soft cap in bytes for the merged run output (default 500000). */
-  maxOutputBytes?: number
+  maxOutputBytes: number
   /**
    * Channel the nuo engine's requests travel over (default `auto`). `native`
    * forces the plain fetch, `browser` the ego-browser path, and `fallback` keeps
@@ -3051,30 +3051,30 @@ export interface Config {
    * explicit value writes `NUO_PATENT_EGO_BROWSER` for the whole process — every
    * consumer of the vendored engine in it, not just this service.
    */
-  nuoRequestChannel?: NuoRequestChannel
+  nuoRequestChannel: NuoRequestChannel
   /**
    * 是否让本部署经 CNIPR（search.cnipr.com）取中国专利全文与法律状态（默认 false）。
    * 通道复用 ego lite 的 CNIPR 登录态，因此没有该登录态的部署打开它只会得到
    * `login_required`；关闭时 {@link PatentData.createCniprChannel} 返回 undefined，
    * 消费方据此按号回退到 nuo 引擎，并在结果里点名实际服务的通道。
    */
-  cniprEnabled?: boolean
+  cniprEnabled: boolean
   /** CNIPR 登录态轮询间隔（毫秒，默认 1000）。 */
-  cniprLoginPollMs?: number
+  cniprLoginPollMs: number
   /** 每轮 CNIPR 登录态轮询次数（默认 10）。 */
-  cniprLoginAttempts?: number
+  cniprLoginAttempts: number
   /** CNIPR 登录态轮询轮数；除最后一轮外每轮结束 reload 首页（默认 2）。 */
-  cniprLoginRounds?: number
+  cniprLoginRounds: number
   /** CNIPR 页面导航期限（毫秒，默认 45000）：首页 goto/reload 与检索结果页 URL。 */
-  cniprNavigationTimeoutMs?: number
+  cniprNavigationTimeoutMs: number
   /** CNIPR 点击与表单提交期限（毫秒，默认 15000）。 */
-  cniprActionTimeoutMs?: number
+  cniprActionTimeoutMs: number
   /** CNIPR 结果页结构出现期限（毫秒，默认 30000）：详情表单、法律状态表单与结果 URL、翻页标记。 */
-  cniprResultTimeoutMs?: number
+  cniprResultTimeoutMs: number
   /** CNIPR 结果内容渲染期限（毫秒，默认 20000）：结果行、申请号、法律状态结果标题。 */
-  cniprRenderTimeoutMs?: number
+  cniprRenderTimeoutMs: number
   /** CNIPR 详情检索接口的响应期限（毫秒，默认 20000）。 */
-  cniprDetailTimeoutMs?: number
+  cniprDetailTimeoutMs: number
 }
 
 /** One nuo request channel: see {@link NUO_REQUEST_CHANNELS}. */
@@ -3118,7 +3118,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-patent-document`
 
 - `inject`: `tools` · `subprocess`
-- `source`: [`packages/patent/patent-document/src/index.ts:29`](../packages/patent/patent-document/src/index.ts)
+- `source`: [`packages/patent/patent-document/src/index.ts:30`](../packages/patent/patent-document/src/index.ts)
 
 ```ts config-catalog
 /** Model-facing patent-document plugin configuration. */
@@ -3126,9 +3126,9 @@ export interface Config {
   /** Absolute Chrome executable used for PDF; overrides DSH_CHROME_PATH/CHROME_PATH discovery. */
   chromePath?: string
   /** Default output directory (relative to the process working directory) when neither outputDir nor caseId is given. */
-  outputRoot?: string
+  outputRoot: string
   /** Headless-Chrome print timeout in milliseconds; defaults to the renderer's exported default (120000). */
-  pdfTimeoutMs?: number
+  pdfTimeoutMs: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-patent-document -->
@@ -3175,11 +3175,11 @@ export interface Config {
   /** 结构与断言定义（spec JSON）的绝对路径；缺省用随包 spec。换模板时必须一并核对。 */
   specPath?: string
   /** 缺省输出目录（相对进程工作目录）；既未给 outputDir 也未给 caseId 时使用。 */
-  outputRoot?: string
+  outputRoot: string
   /** `.svg` 附图栅格化倍率。 */
-  figureScale?: number
+  figureScale: number
   /** 单次引擎调用超时（毫秒）。 */
-  timeoutMs?: number
+  timeoutMs: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-patent-filing -->
@@ -3289,9 +3289,9 @@ export interface Config {
    * already-loaded id replaces it and draws a load warning, so a collision between a
    * domain pack and the base set stays visible.
    */
-  additionalRuleDomains?: string[]
+  additionalRuleDomains: string[]
   /** Tool names whose results run through the output gate. Defaults to the delivery tools. */
-  gateToolNames?: string[]
+  gateToolNames: string[]
   /**
    * Check families the result gate keeps. Defaults to `keyword_blocklist`
    * (incident: a hit is a violation). Widening to
@@ -3302,7 +3302,7 @@ export interface Config {
    * {@link Config.structuralGate} instead. Widening adds log lines only while
    * the shipped incident-family rules are `action: warn`.
    */
-  gateCheckTypes?: string[]
+  gateCheckTypes: string[]
   /**
    * Artifact structural gate: entries naming a tool, the arguments holding its
    * artifact text, and the absence-based rule ids to judge it by. A block-level
@@ -3315,7 +3315,7 @@ export interface Config {
    * {@link StructuralGateConfigError} instead of a warning that drops it; shipped
    * presets set it so a renamed rule asset cannot silently disarm the gate.
    */
-  structuralGate?: StructuralGateEntry[]
+  structuralGate: StructuralGateEntry[]
   /**
    * Delivery gate: entries naming a delivery tool and the tools that must have
    * succeeded earlier in the same session before it may run. An unsatisfied
@@ -3328,7 +3328,7 @@ export interface Config {
    * ships: the prerequisites a deployment requires are its delivery policy, not
    * this package's.
    */
-  deliveryGate?: DeliveryGateEntry[]
+  deliveryGate: DeliveryGateEntry[]
   /**
    * Citation gate: before a listed delivery tool runs, every citation in its
    * text arguments must pass the shipped patent index and, for 民法典 and
@@ -3336,9 +3336,9 @@ export interface Config {
    * from the index, unverified, or narrowed to a missing paragraph or item
    * denies the call.
    */
-  citationGate?: CitationGateEntry[]
+  citationGate: CitationGateEntry[]
   /** When true, review-level violations block without an approval round-trip (unattended fail-closed). */
-  approvalDisabled?: boolean
+  approvalDisabled: boolean
 }
 
 /** 一条制品结构门禁声明。 */
@@ -3419,52 +3419,55 @@ export type DeliveryEvidenceRequirement = {
 ## `@deepseek-ai/dsh-patent-teams`
 
 - `inject`: `tools` · `systemPrompt` · `subagents`
-- `source`: [`packages/patent/patent-teams/src/index.ts:42`](../packages/patent/patent-teams/src/index.ts)
+- `source`: [`packages/patent/patent-teams/src/index.ts:45`](../packages/patent/patent-teams/src/index.ts)
 
 ```ts config-catalog
-/** Plugin configuration. */
+/**
+ * Plugin configuration, as the schema resolves it: every default below is
+ * materialized once, in {@link Config}, and consumers read the fields directly.
+ */
 export interface Config {
   /**
    * State directory name under the captain's workspace; team state lives at
    * `<workspace>/<stateDir>/<teamId>/` (default `.patent-teams`).
    */
-  stateDir?: string
+  stateDir: string
   /** `ctx.subagents` provider used to spawn members; must support continuable children and personas (default `spawn`). */
-  memberProvider?: string
-  /** Optional model override applied to every member. */
+  memberProvider: string
+  /** Optional model override applied to every member; absent means the member inherits its route's default. */
   memberModel?: string
   /** Member delegation depth cap (default `1`; `0` forbids delegation entirely). */
-  memberMaxDepth?: number
+  memberMaxDepth: number
   /** Team size cap in members (default `8`). */
-  maxMembers?: number
+  maxMembers: number
   /** Prompt-section order for the usage policy (default `117`, after delegation policy). */
-  promptSectionOrder?: number
+  promptSectionOrder: number
   /** Run the composite quality gate on contract-backed task completion (deployment choice; default `false`). */
-  qualityGate?: boolean
+  qualityGate: boolean
   /**
    * Comprehensive-eval score below which the gate calls out the composite score
    * as advisory feedback (0..1; default `0.7`). The bounce decision itself is
    * made by contract fields, content sufficiency, expression quality, and the
    * rule gate — never by the composite score alone.
    */
-  passThreshold?: number
+  passThreshold: number
   /**
    * How long a live-delivery claim stays exclusive before the message becomes
    * retryable, in milliseconds (positive integer; default 60000).
    */
-  mailboxDeliveryLeaseMs?: number
+  mailboxDeliveryLeaseMs: number
   /**
    * Ask the deployment's approval answerers for a decision on the team plan before
    * `patent_teams_create` creates the team (deployment choice; default `false`). A
    * deployment that turns it on without an answerer refuses the create instead of
    * creating an unapproved team.
    */
-  approveCreation?: boolean
+  approveCreation: boolean
   /**
    * Ask for a decision before `patent_teams_delete` archives the team: the captain
    * leads a case but does not close it alone (default `false`).
    */
-  approveClosure?: boolean
+  approveClosure: boolean
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-patent-teams -->
@@ -3736,7 +3739,7 @@ export interface PlanModeConfig {
 
 - `inject`: `loader` · `profileContext`
 - `refs`: [`NpmFileSource`](subsystems/boot.zh.md)
-- `source`: [`packages/boot/plugin-manager/src/index.ts:54`](../packages/boot/plugin-manager/src/index.ts)
+- `source`: [`packages/boot/plugin-manager/src/index.ts:55`](../packages/boot/plugin-manager/src/index.ts)
 
 ```ts config-catalog
 /** The pnpm executable, registries, and limits for diagnostics, lookups and connection checks. */
@@ -3786,7 +3789,7 @@ export interface Config {
 
 - `inject`: `pluginManager`
 - `refs`: [`NpmFileSource`](subsystems/boot.zh.md) · `Volatile` (`@deepseek-ai/cordis`)
-- `source`: [`packages/boot/plugin-market/src/index.ts:43`](../packages/boot/plugin-market/src/index.ts)
+- `source`: [`packages/boot/plugin-market/src/index.ts:44`](../packages/boot/plugin-market/src/index.ts)
 
 ```ts config-catalog
 /** Index sources and fetch limits. */
@@ -6082,7 +6085,7 @@ export type ApprovalPolicy = 'ask' | 'never'
 
 ## `@deepseek-ai/dsh-video-mode`
 
-- `source`: [`packages/experimental/video-mode/src/media.ts:273`](../packages/experimental/video-mode/src/media.ts)
+- `source`: [`packages/experimental/video-mode/src/media.ts:280`](../packages/experimental/video-mode/src/media.ts)
 
 ```ts config-catalog
 /** Deployment configuration of the media runtime and the video tools. */
@@ -6169,6 +6172,10 @@ export interface MiniMaxConfig {
   readonly maxDurationSec?: number
   /** Aspect ratio used for text-to-video when the request omits one. */
   readonly aspectRatio?: string
+  /** Attempts after a `429` whose retry-after fits {@link maxRetryAfterMs}. */
+  readonly maxRetries?: number
+  /** Longest retry-after the provider may ask for; a longer wait fails immediately. */
+  readonly maxRetryAfterMs?: number
   /** Speech synthesis overrides; omitted leaves the speech provider unregistered. */
   readonly speech?: MiniMaxSpeechConfig
 }
@@ -6539,19 +6546,19 @@ export interface Config {
    * Result cap applied when a search, feature-match, or category call omits its
    * own limit. An argument-free listing always returns the whole library.
    */
-  matchLimit?: number
+  matchLimit: number
   /** Register the always-on writing-patterns system-prompt section. Defaults to true. */
-  registerSection?: boolean
+  registerSection: boolean
   /** Categories whose patterns the section indexes; an empty list injects the guidance alone. */
-  sectionCategories?: PatternCategory[]
+  sectionCategories: PatternCategory[]
   /** Position of the injected section in the assembled system prompt. */
-  sectionOrder?: number
+  sectionOrder: number
   /**
    * Pattern ids each workflow stage's prompt receives, keyed by stage id. Every
    * stage lists 3 to 5 pattern ids that exist in the loaded corpus; an atom
    * reads its stage's patterns through the `writingPatterns` service.
    */
-  stagePatterns?: Record<string, string[]>
+  stagePatterns: Record<string, string[]>
 }
 
 /** One category of the closed {@link PATTERN_CATEGORIES} set. */

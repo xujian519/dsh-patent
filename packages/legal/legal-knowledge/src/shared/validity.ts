@@ -59,6 +59,21 @@ export type ValidityDated = {
 }
 
 /**
+ * Resolve one found record's validity and drop it when the requested date makes it invisible.
+ * @param record - the record found by the caller, or undefined.
+ * @param options - as-of date and unverified visibility.
+ * @returns the record with its validity, or undefined when absent or invisible.
+ */
+export function withVisibility<T extends ValidityDated>(
+  record: T | undefined,
+  options: ValidityFilterOptions,
+): (T & { validity: LegalRegulationValidity }) | undefined {
+  if (record === undefined) return undefined
+  const validity = resolveValidity(record, resolveAsOf(options.asOf))
+  return isLawVisible(validity, options.includeUnverified ?? true) ? { ...record, validity } : undefined
+}
+
+/**
  * Resolve each hit's validity at the requested date and drop the invisible ones.
  * Hits keep their input order, capped at the option limit.
  * @param hits - the raw hits, in relevance order.

@@ -18,7 +18,7 @@ import { type DatabaseSync } from 'node:sqlite'
 import { resolveResultLimit } from '@deepseek-ai/dsh-knowledge-core'
 import { searchInMemory, filterRecords, toVisibleMemoryHits } from '../shared/memory-store.ts'
 import { columnText, articleRowColumns, assignDatedColumns } from '../shared/row-text.ts'
-import { filterByValidity, isVisible, resolveAsOf, resolveValidity } from '../shared/validity.ts'
+import { filterByValidity, isVisible, resolveAsOf, resolveValidity, withVisibility } from '../shared/validity.ts'
 import { prepareSearchText, SqliteBackedEngine, type SqliteSearchShape } from '../shared/sqlite-search.ts'
 import type { LegalRegulationHit, LegalRegulationRecord, LegalSearchOptions } from '../types.ts'
 
@@ -165,22 +165,11 @@ export class LegalRegulationSearchEngine extends SqliteBackedEngine<LegalSearchO
    * @returns the record, or undefined when not found or not visible.
    */
   getById(regulationId: string, options: LegalSearchOptions = {}): LegalRegulationRecord | undefined {
-    const asOf = resolveAsOf(options.asOf)
-    const includeUnverified = options.includeUnverified ?? true
-    if (this.sqlite.connected) {
-      const row = this.sqlite.findRow('regulation_id', regulationId)
-      if (row === undefined) return undefined
-      const record = rowToRecord(row)
-      const validity = resolveValidity(record, asOf)
-      return isVisible(validity, includeUnverified) ? { ...record, validity } : undefined
-    }
-    const record = this.records.find(r => r.regulationId === regulationId)
-    if (record === undefined) return undefined
-    const validity = resolveValidity(
-      { effectiveDate: record.effectiveDate, expiryDate: record.expiryDate, expired: record.expired },
-      asOf,
-    )
-    return isVisible(validity, includeUnverified) ? { ...record, validity } : undefined
+    const row = this.sqlite.findRow('regulation_id', regulationId)
+    const record = row !== undefined
+      ? rowToRecord(row)
+      : this.sqlite.connected ? undefined : this.records.find(r => r.regulationId === regulationId)
+    return withVisibility(record, options)
   }
 
   /**

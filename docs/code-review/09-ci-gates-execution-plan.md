@@ -1,7 +1,9 @@
 # CI 门禁补完计划
 
 **起草**: 2026-11-20
+
 **关联**: docs/code-review/07-ci-hardening.md（Day 43 定稿）、issue #916
+
 **前置**: PR #927 合入 master（R-F3/R-D1/R-F4/R-F5）
 
 ## 摘要
@@ -226,6 +228,7 @@ timeout 与 cancel 已由既有 `minimax.spec.ts`（stub fetch）覆盖，未重
 ptc-runtime 的 worker 超时已由 `packages/ptc-runtime/ptc-runtime-node/tests/timeout.spec.ts` 用注入的 fake child 完整覆盖，无需新增。
 
 **CI**：`node-coverage` lane 已跑 vitest，无需新 lane
+
 **验收（已达成）**：`vitest run tests/minimax.contract.spec.ts` → 6 passed；全量 video-mode 套件除既有 `loader-composition.spec.ts` 失败外无回归
 
 ---
@@ -246,8 +249,7 @@ ptc-runtime 的 worker 超时已由 `packages/ptc-runtime/ptc-runtime-node/tests
 - 规则自检：`scripts/fixtures/semgrep/violations/` 每条规则一个必须命中的样本，`scripts/fixtures/semgrep/clean/` 提供应当放行的对照（argv 形式、运行时凭据、注册表查表）。`node-sast` 在扫描 shipped 源码后跑同一 job 内的两步断言：clean 目录必须退出 0，violations 目录必须非零。规则失效与源码干净在 CI 输出上无法区分，自检把前者变成红灯
 - 自检不放进 vitest：`node-coverage` lane 没有 semgrep，spec 只能长期 skip，而跳过读起来是绿的；用 fallback 语言重写规则同样测不到真实规则
 - 静态 spec 固定自检的覆盖与接线（不运行 semgrep，因此在 `node-coverage` lane 正常执行）：`scripts/ci-workflow.spec.ts` 断言 `.semgrep.yml` 的规则 id 集合与两个 fixture 目录各自声明的规则 id 集合相等（新增规则无样本、规则改名留下孤儿样本都会失败），以及 `node-sast` 的 shipped 扫描覆盖 `packages apps`、排除 `**/tests/**`、不含 `scripts/fixtures`，自检步骤对 clean 直接跑 `--error`、对 violations 走 `if ...; then` 反转退出码
-- 本地运行需重定向 HOME（semgrep 写 `~/.semgrep/semgrep.log`，沙箱下被拒）：
-  `HOME=/tmp/sg-home semgrep --config .semgrep.yml packages apps --exclude '**/tests/**'`
+- 本地运行需重定向 HOME（semgrep 写 `~/.semgrep/semgrep.log`，沙箱下被拒）：`HOME=/tmp/sg-home semgrep --config .semgrep.yml packages apps --exclude '**/tests/**'`
 
 **基线**：3 条，全部是设计所需的动态执行，已就地加 `// nosemgrep: dsh-no-dynamic-code` 并保留原有理由注释：
 
@@ -341,7 +343,9 @@ it('settles a task once when a racing writer charged it first', async () => {
 ```
 
 **落地位置**：`packages/experimental/video-mode/tests/store.spec.ts`（复用既有 fixture，不新建文件）
+
 **CI**：已在 `node-coverage` lane
+
 **验收（已达成）**：`vitest run tests/store.spec.ts` → 29 passed；去掉 `entries.some(...)` 去重后 7c 立即失败（`expected true to be false`），证明该用例钉住的是重试后的去重分支而非并发本身
 
 ---
@@ -367,7 +371,7 @@ Week 3-4（并行）
 
 | 反例 | 发现 | 关联 PR/commit |
 |---|---|---|
-| F-CROSS-001 | R-F4 F-CROSS-001 修复（PR #927，commit 6da7b84） | 已修复，门禁防回潮 |
+| F-CROSS-001 | R-F4 F-CROSS-001 修复（PR #927） | 已修复，门禁防回潮 |
 | F-CROSS-002 | patent-tools/law-search.ts:16 导入 dsh-value 未声明 | 真实反例，G1 直接抓 |
 | F-PAT-024 | 七包 42 对 schema.default 与 ?? 同值字面量 | 已在历史 commit 修 |
 | F-PAT-038 | Nuo search error/timeout 无测试 | R-D1 补了单测，G5 补 provider 级 |

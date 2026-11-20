@@ -5,7 +5,7 @@
  */
 
 import type { LegalEvidenceFinding, LegalEvidenceInput } from '../types.ts'
-import { createEvaluator, hasText, levelFor, TRIPLE_ATTRIBUTE_BASE, type LegalEvidenceEvaluator } from './base.ts'
+import { createEvaluator, dimensionJudgment, hasText, TRIPLE_ATTRIBUTE_BASE, type LegalEvidenceEvaluator } from './base.ts'
 
 /** 当事人陈述判定器。 */
 export const partyStatementEvaluator: LegalEvidenceEvaluator = createEvaluator({
@@ -27,13 +27,7 @@ export const partyStatementEvaluator: LegalEvidenceEvaluator = createEvaluator({
       reasons.push('缺乏其他证据佐证')
     }
 
-    score = Math.max(0, Math.min(score, 1.0))
-    return {
-      dimension: 'authenticity',
-      score,
-      level: levelFor(score),
-      reasoning: reasons.length > 0 ? `当事人陈述真实性评估：${reasons.join('；')}` : '当事人陈述真实性评估：基础评分',
-    }
+    return dimensionJudgment('authenticity', score, reasons, '当事人陈述真实性')
   },
 
   checkFindings(input: LegalEvidenceInput): LegalEvidenceFinding[] {
@@ -74,13 +68,7 @@ export const physicalEvaluator: LegalEvidenceEvaluator = createEvaluator({
       reasons.push('物证保管链完整')
     }
 
-    score = Math.max(0, Math.min(score, 1.0))
-    return {
-      dimension: 'authenticity',
-      score,
-      level: levelFor(score),
-      reasoning: reasons.length > 0 ? `物证真实性评估：${reasons.join('；')}` : '物证真实性评估：基础评分',
-    }
+    return dimensionJudgment('authenticity', score, reasons, '物证真实性')
   },
 
   checkFindings(input: LegalEvidenceInput): LegalEvidenceFinding[] {
@@ -122,13 +110,7 @@ export const audioVisualEvaluator: LegalEvidenceEvaluator = createEvaluator({
       reasons.push('已记录时间信息')
     }
 
-    score = Math.max(0, Math.min(score, 1.0))
-    return {
-      dimension: 'authenticity',
-      score,
-      level: levelFor(score),
-      reasoning: reasons.length > 0 ? `视听资料真实性评估：${reasons.join('；')}` : '视听资料真实性评估：基础评分',
-    }
+    return dimensionJudgment('authenticity', score, reasons, '视听资料真实性')
   },
 
   checkFindings(input: LegalEvidenceInput): LegalEvidenceFinding[] {
@@ -167,13 +149,7 @@ export const inspectionRecordEvaluator: LegalEvidenceEvaluator = createEvaluator
       reasons.push('勘验记录不完整')
     }
 
-    score = Math.max(0, Math.min(score, 1.0))
-    return {
-      dimension: 'authenticity',
-      score,
-      level: levelFor(score),
-      reasoning: reasons.length > 0 ? `勘验笔录真实性评估：${reasons.join('；')}` : '勘验笔录真实性评估：基础评分',
-    }
+    return dimensionJudgment('authenticity', score, reasons, '勘验笔录真实性')
   },
 
   checkFindings(input: LegalEvidenceInput): LegalEvidenceFinding[] {

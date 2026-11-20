@@ -10,22 +10,18 @@
  * @module @deepseek-ai/dsh-video-mode/siliconflow
  */
 
-import { readFile } from 'node:fs/promises'
-import { errorMessage } from '@deepseek-ai/dsh-value'
-import { extname } from 'node:path'
 import {
   KeyedCloudProvider,
   cloudJsonHeaders,
   downloadVideo,
   failedTask,
-  failureCodeFor,
+  imageDataUri,
   isRecord,
   parseJson,
   rejectionMessage,
   resolveCloudKey,
-  submittedVideoTask,
-  supportedImageMediaType,
-  untrackedTask,
+  settledVideoTask,
+  submitResponse,
   type CloudFetchLike,
   type CloudKeyResolver,
   type CloudProviderIdentity,
@@ -35,7 +31,6 @@ import {
   type MediaCurrency,
   type MediaEstimate,
   type MediaKind,
-  type MediaReference,
   type MediaRequest,
   type MediaTask,
   type MediaTaskRecord,
@@ -189,24 +184,17 @@ export class SiliconFlowMediaProvider extends KeyedCloudProvider {
       body: JSON.stringify(body),
       signal,
     })
-    const text = await response.text()
-    if (!response.ok) {
-      throw new MediaFailure(
-        `SiliconFlow rejected the video request: ${rejectionMessage(text, response.statusText)}`,
-        failureCodeFor(response.status),
-      )
-    }
+    const text = await submitResponse(response, 'SiliconFlow')
     const parsed = parseJson(text)
     const remoteId = isRecord(parsed) && typeof parsed.requestId === 'string' ? parsed.requestId : undefined
     if (remoteId === undefined || remoteId.length === 0) {
       throw new MediaFailure('SiliconFlow accepted the request without returning a requestId', 'MEDIA_TASK_FAILED')
     }
-    const id = localIdOf(remoteId)
-    this.pending.set(id, { remoteId, submittedAt: Date.now(), lastPollAt: 0 })
-    return submittedVideoTask(id, this.id, this.settings.model)
+    return this.trackSubmission(this.pending, remoteId, submittedAt => ({
+      remoteId, submittedAt, lastPollAt: 0,
+    }), this.settings.model)
   }
 
-  /* jscpd:ignore-start -- sibling cloud providers share the poll throttle and timeout preamble */
   /**
    * Read one SiliconFlow job and download its settled video.
    * @param task - current task.
@@ -214,18 +202,8 @@ export class SiliconFlowMediaProvider extends KeyedCloudProvider {
    * @returns the latest task.
    */
   override async poll(task: MediaTask, signal: AbortSignal): Promise<MediaTask> {
-    const pending = this.pending.get(task.id)
-    if (pending === undefined) {
-      return untrackedTask(task)
-    }
-    const now = Date.now()
-    if (now - pending.submittedAt > this.settings.timeoutMs) {
-      this.pending.delete(task.id)
-      return failedTask(task, `task did not settle within ${this.settings.timeoutMs} ms`, 'MEDIA_TASK_TIMEOUT')
-    }
-    if (now - pending.lastPollAt < this.settings.pollMs) return task
-    pending.lastPollAt = now
-    /* jscpd:ignore-end */
+    const pending = await this.beginPoll(this.pending, task, this.settings)
+    if ('status' in pending) return pending
 
     const response = await this.fetchImpl(`${this.settings.baseUrl}/video/status`, {
       method: 'POST',
@@ -265,20 +243,16 @@ export class SiliconFlowMediaProvider extends KeyedCloudProvider {
           this.pending.delete(task.id)
           return failedTask(task, 'SiliconFlow succeeded without a video URL')
         }
-        try {
-          const artifact = await downloadVideo(this.fetchImpl, url, {
+        return settledVideoTask(
+          task,
+          () => downloadVideo(this.fetchImpl, url, {
             label: 'SiliconFlow',
             durationSec: SILICONFLOW_DURATION_SEC,
             maxBytes: this.settings.maxArtifactBytes,
             signal,
-          })
-          this.pending.delete(task.id)
-          return { ...task, status: 'succeeded', progress: 1, artifacts: [artifact] }
-        } catch (error) {
-          this.pending.delete(task.id)
-          if (error instanceof MediaFailure) return failedTask(task, error.message, error.code)
-          return failedTask(task, errorMessage(error))
-        }
+          }),
+          () => this.pending.delete(task.id),
+        )
       }
       default:
         this.pending.delete(task.id)
@@ -293,10 +267,8 @@ export class SiliconFlowMediaProvider extends KeyedCloudProvider {
    * @returns the resumed task, or undefined when the record belongs to another provider.
    */
   resume(record: MediaTaskRecord): MediaTask | undefined {
-    if (record.task.provider !== this.id || record.task.kind !== 'video') return undefined
-    if (!record.task.id.startsWith(`${SILICONFLOW_PROVIDER_ID}-`)) return undefined
-    const remoteId = record.task.id.slice(`${SILICONFLOW_PROVIDER_ID}-`.length)
-    if (remoteId.length === 0) return undefined
+    const remoteId = this.resumedRemoteId(record)
+    if (remoteId === undefined) return undefined
     this.pending.set(record.task.id, { remoteId, submittedAt: record.submittedAt, lastPollAt: 0 })
     return record.task
   }
@@ -362,17 +334,8 @@ export class SiliconFlowMediaProvider extends KeyedCloudProvider {
         'MEDIA_REQUEST_INVALID',
       )
     }
-    return imageDataUri(reference)
+    return imageDataUri(reference, { label: 'SiliconFlow', maxBytes: MAX_IMAGE_BYTES })
   }
-}
-
-/**
- * Prefix a remote request id for the runtime's task table.
- * @param remoteId - id returned by the submit endpoint.
- * @returns the runtime task id.
- */
-function localIdOf(remoteId: string): string {
-  return `${SILICONFLOW_PROVIDER_ID}-${remoteId}`
 }
 
 /**
@@ -417,47 +380,4 @@ function videoUrlOf(value: Record<string, unknown>): string | undefined {
   const first = videos[0]
   if (!isRecord(first) || typeof first.url !== 'string' || first.url.length === 0) return undefined
   return first.url
-}
-
-/**
- * Read one image file and encode it as a data URI.
- * @param reference - request reference.
- * @returns a `data:` URI SiliconFlow accepts in `image`.
- * @throws {@link MediaFailure} for an unreadable, unsupported, or oversized image.
- */
-async function imageDataUri(reference: MediaReference): Promise<string> {
-  const mediaType = imageMediaTypeOf(reference.path)
-  let bytes: Buffer
-  try {
-    bytes = await readFile(reference.path)
-  } catch (error) {
-    throw new MediaFailure(`cannot read the SiliconFlow reference image ${reference.path}: ${errorMessage(error)}`, 'MEDIA_REQUEST_INVALID', { cause: error })
-  }
-  if (bytes.byteLength === 0) {
-    throw new MediaFailure(`SiliconFlow reference image ${reference.path} is empty`, 'MEDIA_REQUEST_INVALID')
-  }
-  if (bytes.byteLength > MAX_IMAGE_BYTES) {
-    throw new MediaFailure(
-      `SiliconFlow reference images are capped at ${MAX_IMAGE_BYTES} bytes; ${reference.path} is ${bytes.byteLength}`,
-      'MEDIA_REQUEST_INVALID',
-    )
-  }
-  return `data:${mediaType};base64,${bytes.toString('base64')}`
-}
-
-/**
- * Pick the MIME type from an image file extension.
- * @param path - image path.
- * @returns the MIME type.
- * @throws {@link MediaFailure} for an extension SiliconFlow does not accept.
- */
-function imageMediaTypeOf(path: string): string {
-  const mediaType = supportedImageMediaType(path)
-  if (mediaType === undefined) {
-    throw new MediaFailure(
-      `SiliconFlow accepts png, jpeg, and webp images, not ${JSON.stringify(extname(path))}`,
-      'MEDIA_REQUEST_INVALID',
-    )
-  }
-  return mediaType
 }

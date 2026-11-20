@@ -13,11 +13,9 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent, AgentStatus } from '@deepseek-ai/dsh-agent'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import {
-  acknowledgeMailbox,
   claimMailboxDelivery,
   readUnreadMailbox,
-  releaseMailboxDelivery,
-  withMailboxLease,
+  settleMailboxDelivery,
 } from './mailbox.ts'
 import { deliverToMember } from './members.ts'
 import {
@@ -226,15 +224,7 @@ async function deliverMailboxFallback(ctx: Context, args: {
     fallbackMailboxPrompt(messages),
     signal,
   )
-  if (accepted) {
-    await withMailboxLease(stateRoot, teamId, member.name, key => (
-      acknowledgeMailbox(stateRoot, teamId, key, claimedIds)
-    ))
-  } else {
-    await withMailboxLease(stateRoot, teamId, member.name, key => (
-      releaseMailboxDelivery(stateRoot, teamId, key, claimedIds)
-    ))
-  }
+  await settleMailboxDelivery(stateRoot, teamId, member.name, claimedIds, accepted)
   return true
 }
 

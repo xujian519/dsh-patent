@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename } from 'node:path'
 import { z } from 'zod'
+import { failedTask } from './cloud-common.ts'
 import { WAN22_TI2V_WORKFLOW, Z_IMAGE_WORKFLOW, type ComfyWorkflow, type ComfyWorkflowNode } from './comfyui-workflows.ts'
 import { requestOfTask } from './store.ts'
 import {
@@ -504,12 +505,12 @@ export class ComfyUiMediaProvider implements MediaProvider {
     const promptId = promptIdOf(task.id)
     const pending = this.pending.get(promptId)
     if (pending === undefined) {
-      return this.failed(task, 'MEDIA_TASK_FAILED', `task ${task.id} is not tracked; the provider process restarted`)
+      return failedTask(task, `task ${task.id} is not tracked; the provider process restarted`)
     }
     const now = Date.now()
     if (now - pending.submittedAt > this.settings.timeoutMs) {
       await this.cancel(task)
-      return this.failed(task, 'MEDIA_TASK_TIMEOUT', `task ${task.id} did not settle within ${this.settings.timeoutMs} ms`)
+      return failedTask(task, `task ${task.id} did not settle within ${this.settings.timeoutMs} ms`, 'MEDIA_TASK_TIMEOUT')
     }
     if (now - pending.lastPollAt < this.settings.pollMs) return task
     pending.lastPollAt = now
@@ -522,7 +523,7 @@ export class ComfyUiMediaProvider implements MediaProvider {
     const state = queueState(queue, promptId)
     if (state === undefined) {
       this.pending.delete(promptId)
-      return this.failed(task, 'MEDIA_TASK_FAILED', `ComfyUI no longer reports task ${promptId}; it may have restarted`)
+      return failedTask(task, `ComfyUI no longer reports task ${promptId}; it may have restarted`)
     }
     return { ...task, status: state }
   }
@@ -665,12 +666,12 @@ export class ComfyUiMediaProvider implements MediaProvider {
   private async settle(task: MediaTask, pending: PendingTask, entry: unknown, signal: AbortSignal): Promise<MediaTask> {
     if (!isRecord(entry)) {
       this.pending.delete(pending.promptId)
-      return this.failed(task, 'MEDIA_TASK_FAILED', 'ComfyUI returned a malformed history entry')
+      return failedTask(task, 'ComfyUI returned a malformed history entry')
     }
     const status = isRecord(entry.status) ? entry.status : undefined
     if (status?.status_str === 'error') {
       this.pending.delete(pending.promptId)
-      return this.failed(task, 'MEDIA_TASK_FAILED', executionError(status) ?? 'ComfyUI reported a workflow error')
+      return failedTask(task, executionError(status) ?? 'ComfyUI reported a workflow error')
     }
     if (status?.completed !== true) {
       return { ...task, status: 'running' }
@@ -679,15 +680,15 @@ export class ComfyUiMediaProvider implements MediaProvider {
     const file = files.find(candidate => isPreferred(candidate.filename, pending.kind))
     if (file === undefined) {
       this.pending.delete(pending.promptId)
-      return this.failed(task, 'MEDIA_ARTIFACT_INVALID', `ComfyUI finished ${pending.promptId} without a ${pending.kind} file`)
+      return failedTask(task, `ComfyUI finished ${pending.promptId} without a ${pending.kind} file`, 'MEDIA_ARTIFACT_INVALID')
     }
     let artifact: MediaArtifact
     try {
       artifact = await this.download(file, pending, signal)
     } catch (error) {
       this.pending.delete(pending.promptId)
-      if (error instanceof MediaFailure) return this.failed(task, error.code, error.message)
-      return this.failed(task, 'MEDIA_TASK_FAILED', errorMessage(error))
+      if (error instanceof MediaFailure) return failedTask(task, error.message, error.code)
+      return failedTask(task, errorMessage(error))
     }
     this.pending.delete(pending.promptId)
     return {
@@ -793,17 +794,6 @@ export class ComfyUiMediaProvider implements MediaProvider {
       // the server already dropped it or is unreachable.
       void error
     }
-  }
-
-  /**
-   * Build a failed task snapshot.
-   * @param task - current task.
-   * @param code - failure code.
-   * @param message - explanation.
-   * @returns the failed task.
-   */
-  private failed(task: MediaTask, code: MediaFailure['code'], message: string): MediaTask {
-    return { ...task, status: 'failed', error: { code, message } }
   }
 }
 

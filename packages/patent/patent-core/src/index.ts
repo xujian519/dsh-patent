@@ -487,6 +487,15 @@ export {
 // publishes the atoms copies.
 export { getStateString, getStateArray } from './atoms/handler.ts'
 
+// Stage-state text and key-list readers: the single home for how a handler reads
+// another stage's text. Packages that register their own atoms import these
+// instead of restating the semantics.
+export {
+  readStateText,
+  resolveKeyList,
+  resolveTrimmedKey,
+} from './atoms/handlers/builtin/state-keys.ts'
+
 // Knowledge-search primitives live in dsh-knowledge-core. This entry re-exports
 // only resolveResultLimit, the helper a patent package imports.
 export {

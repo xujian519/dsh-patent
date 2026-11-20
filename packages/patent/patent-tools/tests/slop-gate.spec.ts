@@ -169,6 +169,18 @@ describe('SlopGateHandler', () => {
     expect(both.slop_score).toBe(analyzeSlop(CLEAN_DRAFT).score.total)
   })
 
+  it('uses each declared key verbatim instead of trimming it into another key', async () => {
+    const verbatim = await handler.execute({
+      state: { text_keys: [' draft '], ' draft ': CLEAN_DRAFT },
+    })
+    expect(verbatim.slop_report).toMatch(/通过/)
+    // 带空格的键不会被裁剪成 `draft`：与 patent-core 的键列表语义保持一致。
+    const padded = await handler.execute({
+      state: { text_keys: [' draft '], draft: CLEAN_DRAFT },
+    })
+    expect(String(padded._error)).toMatch(/输入为空/)
+  })
+
   it('degrades on invalid text_keys or char_budget instead of guessing', async () => {
     for (const state of [
       { claims_draft: CLEAN_DRAFT, text_keys: [] },

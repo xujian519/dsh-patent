@@ -51,20 +51,20 @@
 | F-PAT-016 | ego-browser 子进程继承完整 `process.env` | PAT | A | Low | 中 | fixed |
 | F-PAT-017 | 交付前引用门禁只覆盖 `render_patent_document`，立案构建不经引用核验 | PAT | A/E | High | 低 | fixed |
 | F-PAT-018 | 后台运行接受模型自报的 `approveStageIds`，HITL 审批可绕过 | PAT | A | High | 中 | fixed |
-| F-PAT-019 | 同一管线状态的文本读取有 4 份实现，键列表解析已漂移 | PAT | B | Low | 高 | confirmed（2026-11-20，批次 R-F5） |
+| F-PAT-019 | 同一管线状态的文本读取有 4 份实现，键列表解析已漂移 | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F5） |
 | F-PAT-020 | 权项号派生两包各一份，无编号时的缺省语义相反 | PAT | B | Low | 中 | new |
 | F-PAT-021 | `workflow/types.ts` 两处 JSDoc 指向不存在的 `./workflow-store.js` | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F5） |
-| F-PAT-022 | `figure/` 几何与文本度量原语重复，`orientation` 同名异义 | PAT | B | Low | 高 | confirmed（2026-11-20，批次 R-F5） |
-| F-PAT-023 | `freecad-structure-script.ts` 1233 行里 940 行是内嵌 Python | PAT | B | Low | 高 | confirmed（2026-11-20，批次 R-F9） |
+| F-PAT-022 | `figure/` 几何与文本度量原语重复，`orientation` 同名异义 | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F5） |
+| F-PAT-023 | `freecad-structure-script.ts` 1233 行里 940 行是内嵌 Python | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F9） |
 | F-PAT-024 | 插件默认值两份来源：七个专利包 42 对 `??` 重述、2 处同义重述、1 处第三种缺省 | PAT | B | Medium | 高 | fixed |
-| F-PAT-025 | 规则资产 YAML 失败处理惯用法重复 5 处，顶层对象校验两种写法 | PAT | B | Low | 高 | confirmed（2026-11-20，批次 R-F5） |
-| F-PAT-026 | `patent-teams` 内部 5 处结构克隆，事件载荷与邮箱结算各有两个编码 | PAT | B | Low | 高 | confirmed（2026-11-20，批次 R-F8） |
+| F-PAT-025 | 规则资产 YAML 失败处理惯用法重复 5 处，顶层对象校验两种写法 | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F5） |
+| F-PAT-026 | `patent-teams` 内部 5 处结构克隆，事件载荷与邮箱结算各有两个编码 | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F8） |
 | F-PAT-027 | 子进程超时/取消骨架 4 份，已抽好的 `subprocess-render` 未被其余 3 处复用 | PAT | B | Medium | 高 | fixed |
 | F-PAT-028 | 输出目录与安全文件名判定 4 种编码，中文案卷号在两个工具间接受集相反 | PAT | B | Medium | 高 | fixed |
 | F-PAT-029 | `escapeRegExp` 专利域内 4 份命名封装 + 6 处内联，仓内无共享实现 | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F5） |
-| F-PAT-030 | `patent-kg-adapter` 邻居扩展循环 3 份，两个检索引擎 `backfillContent` 近克隆 | PAT | B | Low | 高 | confirmed（2026-11-20，批次 R-F8） |
+| F-PAT-030 | `patent-kg-adapter` 邻居扩展循环 3 份，两个检索引擎 `backfillContent` 近克隆 | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F8） |
 | F-PAT-031 | `templateDraft` 的 `openEnd` 是死字段，两处用 `indexOf` 重新定位已命中位置 | PAT | B | Low | 高 | fixed（2026-11-20，批次 R-F5） |
-| F-PAT-032 | 判例零命中检索整表解压 LIKE，约 4.6 秒 | PAT | C | Medium | 中 | confirmed（2026-11-20，批次 R-F8） |
+| F-PAT-032 | 判例零命中检索整表解压 LIKE，约 4.6 秒 | PAT | C | Medium | 中 | fixed（2026-11-20，批次 R-F8） |
 | F-PAT-033 | 附图渲染截止期的 `dispose` 没有用例锁住监听清理 | PAT | D | Medium | 中 | confirmed（2026-11-20，批次 R-D1） |
 | F-PAT-034 | `patent_pdf_download` 成功落盘后不检查清单里的 sha1 | PAT | D | Medium | 低 | new |
 | F-PAT-035 | 团队等待结束后不检查 abort 监听是否摘掉 | PAT | D | Medium | 中 | fixed（2026-11-20，批次 R-D1） |
@@ -93,7 +93,7 @@
 | F-DOC-003 | OOXML 读取限额两包各写一份字面量 | DOC | B | Low | 高 | fixed |
 | F-DOC-004 | 插件默认值出现两个来源（schema default 与 `??`） | DOC | B | Medium | 中 | fixed（文档域） |
 | F-DOC-005 | `tool-office` 用 9 处 `as` 断言担保跨模块不变量 | DOC | B | Low | 低 | confirmed |
-| F-DOC-006 | 跨模块请求类型按字段重写而非组合（`RenderRequest`、`OfficeImagesRequest`） | DOC | B | Low | 高 | confirmed（2026-11-20，批次 R-F6） |
+| F-DOC-006 | 跨模块请求类型按字段重写而非组合（`RenderRequest`、`OfficeImagesRequest`） | DOC | B | Low | 高 | fixed（2026-11-20，批次 R-F6） |
 | F-DOC-007 | Office 转换成功返回后不检查 abort 监听是否摘掉 | DOC | D | Medium | 中 | confirmed（2026-11-20，批次 R-D1） |
 | F-DOC-008 | 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题 | DOC | E | Medium | 高 | fixed |
 | F-DOC-009 | DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃 | DOC | E | Medium | 中 | fixed |
@@ -103,9 +103,9 @@
 | F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | fixed |
 | F-LEG-004 | 两域默认引用策略分叉，缺对照说明与回归护栏 | LEG | E | Low | 中 | fixed |
 | F-LEG-005 | 专利知识库降级日志写死 `[sati]` 前缀 | LEG | B | Low | 高 | fixed |
-| F-LEG-006 | 三性判定器把「打分 + 结论对象」手写 13 份，布尔三元打分块 18 处 | LEG | B | Low | 高 | confirmed（2026-11-20，批次 R-F6） |
-| F-LEG-007 | `getById` 在 `legal` 与 `judicial-interpretation` 逐字相同 | LEG | B | Low | 高 | confirmed（2026-11-20，批次 R-F6） |
-| F-LEG-008 | `evaluate_legal_evidence` 输出 schema 把维度判定对象写三份 | LEG | B | Low | 高 | confirmed（2026-11-20，批次 R-F6） |
+| F-LEG-006 | 三性判定器把「打分 + 结论对象」手写 13 份，布尔三元打分块 18 处 | LEG | B | Low | 高 | fixed（2026-11-20，批次 R-F6） |
+| F-LEG-007 | `getById` 在 `legal` 与 `judicial-interpretation` 逐字相同 | LEG | B | Low | 高 | fixed（2026-11-20，批次 R-F6） |
+| F-LEG-008 | `evaluate_legal_evidence` 输出 schema 把维度判定对象写三份 | LEG | B | Low | 高 | fixed（2026-11-20，批次 R-F6） |
 | F-LEG-009 | `rule-set.ts` 手写 `asRecord` 与同名 `hasText`，未用共享工具 | LEG | B | Low | 中 | confirmed |
 | F-LEG-010 | 未核验与未索引引用的工具结果没有锁住处置 | LEG | D | Medium | 中 | fixed（2026-11-20，批次 R-D1） |
 | F-LEG-011 | 证人利害关系未填写时，关键规则报「证人与案件无利害关系」通过 | LEG | E | High | 中 | fixed |
@@ -120,8 +120,8 @@
 | F-VID-006 | `StrictRequest` 与 `MediaTaskRequest` 字段完全重复 | VID | B | Low | 高 | fixed |
 | F-VID-007 | 成本账本无完整性保护，模型可改写 `budget.json` 绕过预算 | VID | A | Medium | 中 | fixed |
 | F-VID-008 | `ui-video-studio` 手写第二份项目/账本/journal 文法，预算口径出现第三份 | VID | B | Medium | 高 | deferred |
-| F-VID-009 | 云 provider 的 submit/poll 与图片编码骨架各写一遍，拷贝已漂移 | VID | B | Low | 高 | confirmed（2026-11-20，批次 R-F7） |
-| F-VID-010 | store 的「锁 + 读 + 改 + 写」骨架三处各写一遍 | VID | B | Low | 高 | confirmed（2026-11-20，批次 R-F7） |
+| F-VID-009 | 云 provider 的 submit/poll 与图片编码骨架各写一遍，拷贝已漂移 | VID | B | Low | 高 | fixed（2026-11-20，批次 R-F7） |
+| F-VID-010 | store 的「锁 + 读 + 改 + 写」骨架三处各写一遍 | VID | B | Low | 高 | fixed（2026-11-20，批次 R-F7） |
 | F-VID-011 | 预算检查是 check-then-act，同一工程的并发生成可以超额 | VID | E | Medium | 中 | fixed |
 | F-VID-012 | 失效的 journal 记录没有工具侧清理路径 | VID | E | Medium | 中 | fixed |
 | F-VID-013 | `status` 对 `artifacts: []` 的成功任务照常结算并清 journal | VID | E | Low | 中 | fixed |
@@ -383,7 +383,16 @@
 - 最小修复建议：把 `readStateText`/`resolveKeyList`/`resolveTrimmedKey` 从 `patent-core` 公开面导出（它们本就声明为状态读取的唯一语义家），`patent-tools` 改为导入；删除 `slop-gate.resolveTextKeys`（18 行）与 `firstStateString`（12 行），`state-text.ts` 缩为基于共享读取器的薄适配；`readStateText` 的数组分支二选一：补写入方与用例，或删除并同步 JSDoc。**假设**：仓外自定义原子可能向文本键写数组，删除前需确认。净减少：约 35–40 行，并消掉 trim 与数组两种语义分歧。
 - 预估工作量：S
 - 是否可自动化：部分（`typecheck` 加 `atoms` 既有用例回归；trim 语义需补一条「两键各带首尾空格」的用例）
-- 状态：new
+- 状态：fixed（2026-11-20，批次 R-F5）
+
+**修复记录（2026-11-20，批次 R-F5）**
+
+- 公开面：`patent-core` 入口导出 `readStateText`、`resolveKeyList`、`resolveTrimmedKey`，状态读取语义回到 `state-keys.ts` 一处。
+- `patent-tools`：`readFirstStateText` 缩为薄适配，只保留「键存在但非字符串即报错」的差异语义，文本内容取自 `readStateText`；`firstStateString` 改调 `readStateText`；删除 `slop-gate` 的 `resolveTextKeys`，改用 `resolveKeyList`。
+- trim 漂移：`text_keys` 条目按原样读取，与 `patent-core` 其余键列表参数一致。仓内 manifest 全部使用干净键名，无配置受影响。
+- 数组分支：`readStateText` 只接受字符串。`specification`、`claims_draft`、`source_text`、`claim_strategy` 的写入方均为字符串，原数组分支无写入方，已删除并同步 JSDoc。
+- 用例：新增 `packages/patent/patent-core/tests/state-keys.spec.ts`（3 条，含数组值按缺失处理）；`slop-gate.spec.ts` 新增「键按原样读取」一条。两条新增路径均以 mutation 验证可拒绝回退：恢复 trim 与恢复数组拼接分别使对应用例失败。
+- 净减少：约 20 行。
 
 ### F-PAT-020 权项号派生两包各一份，无编号时的缺省语义相反
 
@@ -422,7 +431,16 @@
 - 最小修复建议：新建 `figure/geometry.ts` 集中 `sideOf`/`onSegment`/`segmentsIntersect`/`pointSegmentDistance`/`boundsOfPoints`，`leader-line.ts` 与 `render-check-findings.ts` 改为导入；`render-check-findings.ts:200` 的 `orientation` 改名 `segmentAngleDeg`；`plot-diagram.ts` 的 `textWidthMm` 改用 `glyph-box.textWidthMm(text, FONT_MM)`，删掉本地的两个比例常量。净减少：约 50 行（两份重复块约 24+35 行收成一份约 25 行，包围盒 2 份合 1，`textWidthMm` 与常量 −10 行），外加消除 1 处同名异义。
 - 预估工作量：M
 - 是否可自动化：是（`jscpd` 抓不到这类短函数——`.jscpd.json` 的 60 token 阈值高于它们；靠 `figure/` 既有用例，并为 `geometry.ts` 补单测）
-- 状态：new
+- 状态：fixed（2026-11-20，批次 R-F5）
+
+**修复记录（2026-11-20，批次 R-F5）**
+
+- 新建 `figure/geometry.ts`，集中 `sideOf`、`onSegment`、`segmentsIntersect`、`pointSegmentDistance`（`GeoPoint`/`GeoSegment`）。`leader-line.ts` 与 `render-check-findings.ts` 删除各自副本并改为导入，两份约 57 行的交线与点线距判定收成一份。
+- 包围盒：`render-check-findings.polyBounds` 改为 `boundsOfPoints` 的薄包装，`leader-line.polygonBBox` 解析出点集后同样复用 `boundsOfPoints`；`mm-primitives.ts` 仍是包围盒的唯一实现（不搬家，避免类型二次改名）。
+- 同名异义：`render-check-findings.ts:202` 的 `orientation` 改名 `segmentAngleDeg`，与 `geometry.sideOf` 的有向面积彻底分开。
+- 文本度量：`plot-diagram.ts` 删除本地 CJK/ASCII 二值估宽与两个比例常量，改用 `glyph-box.textWidthMm(text, FONT_MM)`。
+- 用例：新增 `packages/patent/patent-tools/tests/figure-geometry.spec.ts`（4 条）。mutation 验证：把 `segmentsIntersect` 的共线回退改为恒 false、把 `pointSegmentDistance` 的 `Math.min(1, …)` 去掉，分别使对应用例失败。
+- 回归：`figure-leader-line`、`figure-render-check`、`figure-plot-diagram`、`figure-mm-primitives`、`figure-glyph-box` 与新增用例共 184 条全绿；`typecheck`、`lint` 通过。净减少约 50 行。
 
 ### F-PAT-023 `freecad-structure-script.ts` 1233 行里 940 行是内嵌 Python
 
@@ -435,7 +453,16 @@
 - 最小修复建议：模板移为 `src/figure/freecad-structure-script.py`，运行时读入后做 `replace('__PAYLOAD_LITERAL__', …)`，读取路径沿用仓内资产的打包/ASAR 双候选写法。**假设**：`build:artifacts` 会把该 `.py` 带进发布产物，迁移前需用 `ELECTRON_RUN_AS_NODE` 探针确认 asar 内可见；若不带，退回生成期内联。净减少：TS 文件从 1233 行降到约 300 行，Python 侧获得独立的语法检查位。
 - 预估工作量：M
 - 是否可自动化：是（`build:check` 加 `figure-freecad-real-render.spec.ts` 的 CAD lane 回归）
-- 状态：new
+- 状态：fixed（2026-11-20，批次 R-F9）
+
+**修复记录（2026-11-20，批次 R-F9）**
+
+- 改法：939 行脚本正文抽为同目录 `packages/patent/patent-tools/src/figure/freecad-structure-script.py`，`buildStructureScript` 首次调用时经新导出的 `readStructureScriptTemplate(import.meta.url)` 读入并缓存，再 `replace('__PAYLOAD_LITERAL__', …)`。候选路径两条：`./freecad-structure-script.py`（源码运行）与 `../src/figure/freecad-structure-script.py`（打包成 `lib/index.js` 后运行）；两条都不存在时抛出带候选路径的错误，不回退到空脚本。Python 侧由此获得独立语法检查位（`python3 -m py_compile` 通过）。
+- 打包证据（原建议的假设，已逐条落实）：`package.json` 的 `files` 含 `src`，`npm pack --dry-run --json` 的 628 项含 `src/figure/freecad-structure-script.py`；`apps/desktop/scripts/runtime-file-policy.ts` 的 `desktopRuntimeFileExclusion` 只排除 map/d.ts/tsbuildinfo 等，`src/**` 原样复制进 asar，而现有 `asarUnpack` 只针对 Python 子进程读取的 `dsh-patent-filing/assets/**`，Node 侧 `readFileSync` 直接读 asar 内路径，故**不需要**新增 unpack 规则。`build:artifacts` 后 `lib/index.js` 含 3 处资产引用，Node 探针从 `lib/index.js` 调 `buildStructureScript` 得到 35714 字符脚本、无未替换占位符、`TechDraw.viewPartAsSvg` 在位。
+- 用例：新增 `readStructureScriptTemplate` 两例——以 `new URL('../lib/index.js', import.meta.url)` 为基准命中第二条候选；以临时空目录为基准断言抛出 `/template asset is missing; looked for .*freecad-structure-script\.py/`。mutation 验证：删第二条候选 → 打包例失败；把 `throw` 改为 `return ''` → 缺失例失败；均按预期转红后还原。
+- 未采纳项：原建议的「`build:check` 加 CAD lane 真实渲染回归」未做——FreeCAD 门控用例在无 CAD 的环境仍跳过，模板文本级回归沿用既有 `figure-freecad-structure-script.spec.ts` 与 `figure-render-regression.spec.ts`。
+- 实测：该 TS 文件 1233 → **319** 物理行；非注释行 974 → **930**（TS 135 + 新 `.py` 795），净减 **44** 行——大头是 Python 正文换了文件归属而非消失。`structure.large-files` 96 → 95、`structure.patent-large-files` 10 → 9，`docs/TECH_DEBT.md` 的对应接受行与计数同步。
+- 回归：`packages/patent/patent-tools/tests` 119 文件 / 2273 用例全绿（4 skipped）；`typecheck`、`lint`、`build:artifacts`、`build:check`、`duplication` 均通过。
 
 ### F-PAT-024 插件默认值两份来源：七个专利包 42 对 `??` 重述、2 处同义重述、1 处第三种缺省
 
@@ -493,7 +520,15 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：新增 `runtime/yaml-asset.ts`，导出 `parseYamlRecord(text, source): { record: Record<string, unknown> } | { error: string }`（内部用 `asRecord`），四处只保留各自的出口映射。净减少：约 5–8 行，`v8 ignore` 从 4 处并为 1 处，顶层对象守卫只剩一份。
 - 预估工作量：S
 - 是否可自动化：是（现有 `RuleLoader`、`rule-pack`、`patent-compliance` 的单测覆盖四个出口）
-- 状态：new
+- 状态：fixed（2026-11-20，批次 R-F5）
+
+**修复记录（2026-11-20，批次 R-F5）**
+
+- 新增 `patent-rule/src/runtime/yaml-asset.ts`：`readYamlRecord(text)` 返回 `record` / `parse-error`（带解析器消息）/ `not-record`（带原始值）三种结果，`asRecord` 与 `/* v8 ignore next */` 只剩一处。
+- 五个调用点改为读取该结果后各自映射出口：`parseRuleSetFromYaml` 返回 issues，`parseRulePackManifest` 抛错，`checkPackManifest` 与 `loadActivationOverrides` 记 warning，`parseSynonyms` 记 warning。`checkPackManifest` 把 `not-record` 的原始值交给 `validatePackManifest`，保留原有 `pack.yaml 顶层必须是对象` 报告。
+- 手写的 `typeof root !== 'object' || root === null || Array.isArray(root)` 两处（`rule-pack`、`synonym-engine`）随 `asRecord` 一并删除。
+- 文案不变：四个出口的既有断言（`解析失败`、`顶层必须是对象`）全部原样通过，`patent-rule` 533 条用例全绿；`typecheck`、`lint` 通过。
+- 净减少约 8 行。
 
 ### F-PAT-026 `patent-teams` 内部 5 处结构克隆，事件载荷与邮箱结算各有两个编码
 
@@ -506,7 +541,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：`emitTaskUpdated(host, fresh, task, sessionId, extra)`（sessionId 由调用方给，保留队长/成员差异在调用点可见）、`settleMailboxDelivery(stateRoot, teamId, holder, key, delivered, ids)`（内部按 `delivered` 做 ack/release 二选一）、`renderTaskLine(task)` 共享 `deps`/`output` 截断片段。`tools.ts:300`–`311`/`:338`–`347` 的输出 schema 字段表与 `:315`/`:351` 的 render 文案建议保持显式——它们对应两个不同工具的对外输出契约，抽公共片段会让契约变得需要跳读。净减少：约 18–22 行，事件载荷与结算语义由 3 处 + 2 处降到各 1 处。
 - 预估工作量：S
 - 是否可自动化：部分（`jscpd` 降阈可复现 5 组克隆；语义分叉需人工判断）
-- 状态：new
+- 状态：fixed（2026-11-20，批次 R-F8）
+- 修复记录：`task-ops.ts` 新增 `emitTaskUpdated(host, fresh, task, session, output?)`，三处 `patent-teams/task-updated` 统一走它；`task-created`/`task-gated`/`task-validated` 与三处更新共用 `recordSessionOf(host, fresh, agent)`，队长会话解析只剩一处。`mailbox.ts` 新增 `settleMailboxDelivery(stateRoot, teamId, agentKey, messageIds, accepted)`，`service.ts` 的队长/成员两条路径与 `scheduler.ts` 的兜底投递都改为调用它，`accepted` 由调用点决定；`status-view.ts` 的「读取即确认」保持原样，它不是投递结算。`tools.ts` 的 `taskDetailSuffixes` 共享 `deps`/`output` 截断片段；输出 schema 字段表与 render 文案按建议保持显式。未采纳「`renderTaskLine` 整行共享」：归档行没有 attempt/worker/validation 字段，整行共享会让两段文案互相牵制。mutation 证据：把 `settleMailboxDelivery` 的 `accepted` 取反，`scheduler.spec.ts` 与 `service.spec.ts` 的投递用例转红；从 `emitTaskUpdated` 删掉 `...attemptFields(task)`，`service.spec.ts` 的两条事件载荷断言转红；把截断从 300 改为 30，`tools.spec.ts` 的输出用例转红（均已还原）。实测非注释行变化：`mailbox.ts` +12、`scheduler.ts` +2/−12、`service.ts` +11/−23、`task-ops.ts` +27/−24、`tools.ts` +12/−4，合计净 +1 行；事件载荷由 3 处降为 1 处，邮箱结算判定由 4 处降为 1 处（另 1 处只读确认不属于投递）。
 
 ### F-PAT-027 子进程超时/取消骨架 4 份，已抽好的 `subprocess-render` 未被其余 3 处复用
 
@@ -569,7 +605,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：抽 `expandNeighbors(db, ids, edgeKind): KgNeighbor[]` 供三处调用；`backfillContent` 抽到 `shared/`，把结果字段名作为参数（或让两侧共用同一字段名）。**不合并**两侧的 `dedupeByDocument`——`case-law-search.ts:415`–`428` 先取最小 `bm25` 再排序，`knowledge-law-search.ts:435`–`445` 保序截断，语义不同，合并会改变排序语义。净减少：约 −20~−25 行，邻居组装与内容回填各降到 1 处。
 - 预估工作量：S
 - 是否可自动化：部分（`jscpd` 降阈可复现，语义差异需人工判断）
-- 状态：new
+- 状态：fixed（2026-11-20，批次 R-F8）
+- 修复记录：`patent-kg-adapter.ts` 新增模块级 `expandNeighbors(store, nodeId, relations, limit, seen)`，三处邻居扩展（similar、cites、`getSimilarNodes`）共用；`seen` 仍由调用方持有并就地追加，因此跨关系、跨命中的去重顺序不变。`chunk-compression.ts` 新增 `backfillChunkContent(rows, options)`，判例与法规两份 `backfillContent` 改为传入 `locate`/`hasContent`/`attach`：判例用 `documentId`/`chunkIndex` 与 `snippet !== ''`，法规用下划线列名与 `content !== null`，两侧的字段名差异留在调用点。`dedupeByDocument` 按建议未合并。mutation 证据：去掉 `seen.has` 的跳过分支，`patent-kg-adapter.spec.ts` 的「关键词扩展去重」与「相似节点」两例转红；让 `hasContent` 恒为假（强制回源），判例与法规的正文回填用例转红（均已还原）。实测非注释行变化：`patent-kg-adapter.ts` +25/−28、`chunk-compression.ts` +27/−0、`case-law-search.ts` +7/−5、`knowledge-law-search.ts` +6/−5，合计净 +27 行——收益是重复份数从 3+2 降为 1+1，不是行数下降。
 
 ### F-PAT-031 `templateDraft` 的 `openEnd` 是死字段，两处用 `indexOf` 重新定位已命中位置
 
@@ -595,7 +632,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：三字及以上的 FTS 未命中时，不要对全部文档调用 `sati_uncompress`。修改只放在判例引擎。共享阶梯同时服务法律域。Day 21 在已安装法规库上的零命中是 4.18ms。Day 24 把法律域合成库的 LIKE 记为可选观察，法规零命中中位数 8.47ms，判例 18.73ms。不足三字的全文子串仍会扫表；要消掉这 4.8 秒，使用已有的 `--search-prefix`。该开关把召回限制在每篇最长 chunk 的前 512 个码点，`searchPrefix` 保持默认关闭。
 - 预估工作量：S
 - 是否可自动化：是（小型夹具断言三字零命中不再执行 `stmtSearchLike`。本机 4.6 秒的数字不写进单测）
-- 状态：new
+- 状态：fixed（2026-11-20，批次 R-F8）
+- 修复记录：`knowledge-core` 的 `FtsSearchLadder` 新增可选 `likeOnFtsMiss`（缺省 true），`runFtsSearch` 只在它为真时执行第三步的 LIKE；`KnowledgeFtsSearchBase` 透传该值，`CaseLawSearchEngine` 覆写为 false。因此短查询、无 FTS 索引、FTS 抛错三条路径仍走 LIKE，只有「FTS 正常执行且整句与切词都无命中」直接返回空。法律域的阶梯保持缺省值，行为不变。`README`/`README.zh` 的 `caseLawSearch` 段与「已知限制」补上新口径：三码点以上未命中不再整表解压，`docs_fts` 缺行的 chunk 只能靠短查询或 `--search-prefix` 命中，并建议安装后重建索引。旧用例 `falls back to LIKE when FTS returns no hits` 实际由 FTS 命中（`via === 'fts'`），从未覆盖该分支，已替换为「三码点 FTS 未命中跳过 LIKE、两码点仍走 LIKE」的双向用例。mutation 证据：删掉 `likeOnFtsMiss = false` 覆写，新用例因返回 `d5` 且 `likeFallbacks` 为 1 而转红（已还原）。实测非注释行变化：`fts-search.ts` +8/−3、`knowledge-fts.ts` +3/−1、`case-law-search.ts` +7/−5、测试 +27/−0。
 
 ### F-PAT-033 附图渲染截止期的 `dispose` 没有用例锁住监听清理
 
@@ -1017,7 +1055,14 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 净减少：约 −30 行——两处共 15 个重复字段的声明与其 JSDoc 只留一份，换成 4 行组合声明。
 - 预估工作量：S
 - 是否可自动化：部分。默认阈值的 `duplication` 门禁抓不到；可把文档域加入 40/4 的诊断清单，或在 `tests/` 里加一条「工具入参字段是 `RenderRequest` 的超集」的类型级断言（`type Assert<T extends RenderRequest> = T`）。
-- 状态：confirmed
+- 状态：fixed（2026-11-20，批次 R-F6）
+
+**修复记录（2026-11-20，批次 R-F6）**
+
+- `render-doc-template.ts`：`RenderDocTemplateInput` 改为 `extends RenderRequest`，只补 `outputPath`；`renderDocTemplate` 里的 `MutableRenderRequest` 映射类型保持不变。
+- `queue.ts`：`OfficeOperation` 的 `images` 成员改为 `{ readonly kind: 'images' } & Omit<OfficeImagesRequest, 'extension' | 'source'>`。`extension`/`source` 属准入输入，仍留在 `QueueRequest`，不进操作身份，缓存键字段集合不变。
+- 组合形式仍保留 `readonly` 与 `exactOptionalPropertyTypes` 语义；`pnpm run typecheck` 通过，文档域 728 条用例全绿。
+- 净减少：约 15 行字段声明与 JSDoc。
 
 ### F-DOC-007 Office 转换成功返回后不检查 abort 监听是否摘掉
 
@@ -1153,7 +1198,14 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 净减少：(a) 13 处 × 7 行 = 91 行 → 13 行调用 + 约 12 行 helper，**净 −65 行**；(b) 18 处 × 5 行 = 90 行 → 18 行调用 + 约 10 行 helper，**再净 −62 行**。
 - 预估工作量：(a) S；(b) M
 - 是否可自动化：部分。jscpd 默认阈值抓不到 8 行尾（15 行以下的重复），需按 40/4 诊断；覆盖率门禁是 (b) 的必要回归护栏——`evaluators/*.ts` 在 per-file 100% 名单内。
-- 状态：confirmed
+- 状态：fixed（2026-11-20，批次 R-F6）
+
+**修复记录（2026-11-20，批次 R-F6）**
+
+- `evaluators/base.ts` 新增并导出 `dimensionJudgment(dimension, score, reasons, label)`：夹紧到 `[0, 1]`、调用 `levelFor`、拼「基础评分」兜底文案。
+- 13 处判定尾（`base`、`documentary`、`electronic`、`expert-opinion`、`other-types`、`witness-testimony`）各缩为一行调用，各文件 import 由 `levelFor` 改为 `dimensionJudgment`；`levelFor` 仍导出，`tests/branches.spec.ts` 继续直接使用。
+- (b) 布尔三元打分 helper 未采纳：把权重挪进参数会牺牲可读性，finding 本身要求先人工确认。18 处打分块保持原样。
+- 净减少：约 65 行。`packages/legal/legal-evidence/tests` 176 条全绿。
 
 ### F-LEG-007 `getById` 在 `legal` 与 `judicial-interpretation` 逐字相同
 
@@ -1167,7 +1219,13 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 净减少：38 行 → 约 10 行方法体 + 18 行 helper，**净 −10~−20 行**，并把效力可见性收敛成一个判定点。
 - 预估工作量：S
 - 是否可自动化：部分。可在 `dual-backend-parity.spec.ts` 里加一条「两个引擎对同一 `asOf`/`includeUnverified` 组合给出同样的可见性」的断言。
-- 状态：confirmed
+- 状态：fixed（2026-11-20，批次 R-F6）
+
+**修复记录（2026-11-20，批次 R-F6）**
+
+- `shared/validity.ts` 新增 `withVisibility(record | undefined, options)`：`undefined` 原样返回，否则算效力并按 `includeUnverified ?? true` 过滤，可见时返回 `{ ...record, validity }`。
+- 两个 `getById` 缩为「读行或查内存数组，再交给 `withVisibility`」的 4 行方法体，效力可见性只剩一个判定点。SQLite 分支的 `findRow` 仍由各自引擎持有，没有为 15 行重复再造一层表抽象。
+- 净减少：约 15 行。`packages/legal/legal-knowledge/tests` 135 条全绿。
 
 ### F-LEG-008 `evaluate_legal_evidence` 输出 schema 把维度判定对象写三份
 
@@ -1181,7 +1239,13 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 净减少：30 行 → 13 行，**净 −17 行**。
 - 预估工作量：S
 - 是否可自动化：是（`tools.spec.ts` 的快照会同时锁住三处）
-- 状态：confirmed
+- 状态：fixed（2026-11-20，批次 R-F6）
+
+**修复记录（2026-11-20，批次 R-F6）**
+
+- `tool/evaluate-evidence.ts` 定义一次模块级 `DIMENSION_JUDGMENT_SCHEMA`，`dimensions.properties` 的 `relevance`/`legality`/`authenticity` 三处改为引用同一份常量。
+- 常量以 `as const` 声明，字段器仍按原 JSON 输出，模型可见 schema 不变；三处不再可能各自加字段。
+- 净减少：约 17 行。
 
 ### F-LEG-009 `rule-set.ts` 手写 `asRecord` 与同名 `hasText`，未用共享工具
 
@@ -1402,7 +1466,17 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 净减少：`imageDataUri` + `imageMediaTypeOf` 合一份 **−30 行**；submit/settle 尾合一份约 **−15 行**；`messageOf` 删两份 **−12 行**；合计约 **−55 行**（保守 −40~−55），并把节流与超时收到一处。
 - 预估工作量：S~M
 - 是否可自动化：部分。抽取后 jscpd 的 5 组应归零；空文件策略统一后补一条 spec 断言两个 provider 都拒绝空图片。
-- 状态：confirmed
+- 状态：fixed（2026-11-20，批次 R-F7）
+
+**修复记录（2026-11-20，批次 R-F7）**
+
+- `cloud-common.ts`：补 `submitResponse(response, label)`（submit 尾一份）、`settledVideoTask(task, fetchArtifact, forget)`（settle 尾一份，成功与失败都释放 pending）、`imageDataUri(reference, { label, maxBytes })`（合并 `imageDataUri` + `imageMediaTypeOf`，空文件统一拒绝）。
+- `KeyedCloudProvider`：补 `beginPoll`（未跟踪 + 超时 + 节流，超时经自身的 `cancel` 释放）、`trackSubmission`（统一 `<provider>-<remote>` 运行时 id 与提交时间）、`resumedRemoteId`（`resume` 的 provider/kind/前缀复检）。
+- `minimax.ts` / `siliconflow.ts`：两处 `jscpd:ignore` 标记与 `localIdOf` 两份删除，`poll` 前导由 8 行收为 3 行；`siliconflow.ts` 的拒收消息改为实际接受的 png/jpeg/webp/heic/heif 集合（此前消息只列三种而代码已接受五种）。
+- `comfyui.ts`：私有 `failed(task, code, message)` 删除，改调 `failedTask(task, message, code)`，参数顺序与共享件一致。
+- `messageOf` 的三份（`media.ts`、`cloud-common.ts`、`comfyui.ts`）已在 R-F4 换成 `@deepseek-ai/dsh-value` 的 `errorMessage`，本条不再处理。
+- 验证：40/4 的 provider 组 5 → 1，残留 1 组为 3 行 `poll` 前导（59 token，低于仓库 60 token 阈值）；`pnpm run duplication` 0 克隆。mutation：删掉共享空文件检查后 minimax 与 siliconflow 的空图片用例同时转红；把 `beginPoll` 的超时判据改成 `timeoutMs * 1000` 后两家的超时用例转红。
+- 净减少：`minimax.ts` −54 行、`siliconflow.ts` −58 行、`comfyui.ts` −2 行（非注释行）；两个共享件的 `cloud-common.ts` 同期 +102 行，仓库内非注释行净 −12 行。收益主要在 5 组拷贝降到 1 组，以及空文件策略、超时口径、运行时 id 各只有一个所有者。
 
 ### F-VID-010 store 的「锁 + 读 + 改 + 写」骨架三处各写一遍
 
@@ -1416,7 +1490,15 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 净减少：**−8~−12 行**，锁键与 schema 复检各一个所有者。
 - 预估工作量：S
 - 是否可自动化：是（现有 store spec 覆盖三条路径，抽取后重跑即证）
-- 状态：confirmed
+- 状态：fixed（2026-11-20，批次 R-F7）
+
+**修复记录（2026-11-20，批次 R-F7）**
+
+- journal 侧：`recordTask` / `forgetTask` 已共用私有 `mutateJournal`（锁 + 读 + 应用 + schema 复检 + 写），本次补 `journalLockKey(path)`，两处不再各自拼写 `store:${path}`。
+- 账本侧：补私有 `readLedgerEntries`（host 账本优先、legacy `budget.json` 一次性导入）与 `writeLedger`（schema 复检 + 发布），`readLedger` 与 `appendLedgerEntry` 都缩成「锁 + 读 + 改 + 写」四行；`appendLedgerEntry` 不再内联 `ledgerSchema.safeParse` / `issuesOf` / `writeStoreDocument`。
+- 未采纳「让 `recordTask` 也短路空变化」：替换记录的列表长度不变也可能改状态，判断无变化需要深比较，收益不抵复杂度；`forgetTask` 用长度即可判定，保留其短路。
+- 验证：`store.spec.ts` 29 条全绿；mutation 删掉 `writeLedger` 的 schema 复检后「拒绝非法新账目」用例转红。
+- 净减少：重复的读前置与内联 schema 复检各收成一个所有者；`store.ts` 非注释行净 +19（新增 `journalLockKey`、`readLedgerEntries`、`writeLedger` 三个带契约的私有件）。
 
 ### F-VID-011 预算检查是 check-then-act，同一工程的并发生成可以超额
 

@@ -8,7 +8,7 @@
  */
 
 import type { LegalEvidenceFinding, LegalEvidenceInput } from '../types.ts'
-import { createEvaluator, hasText, levelFor, TRIPLE_ATTRIBUTE_BASE, type LegalEvidenceEvaluator } from './base.ts'
+import { createEvaluator, dimensionJudgment, hasText, TRIPLE_ATTRIBUTE_BASE, type LegalEvidenceEvaluator } from './base.ts'
 
 /** 证人证言判定器实现。 */
 export const witnessTestimonyEvaluator: LegalEvidenceEvaluator = createEvaluator({
@@ -37,13 +37,7 @@ export const witnessTestimonyEvaluator: LegalEvidenceEvaluator = createEvaluator
       reasons.push('已记录证人身份')
     }
 
-    score = Math.max(0, Math.min(score, 1.0))
-    return {
-      dimension: 'legality',
-      score,
-      level: levelFor(score),
-      reasoning: reasons.length > 0 ? `证人证言合法性评估：${reasons.join('；')}` : '证人证言合法性评估：基础评分',
-    }
+    return dimensionJudgment('legality', score, reasons, '证人证言合法性')
   },
 
   assessAuthenticity(input) {
@@ -79,13 +73,7 @@ export const witnessTestimonyEvaluator: LegalEvidenceEvaluator = createEvaluator
       reasons.push('已记录证言内容')
     }
 
-    score = Math.max(0, Math.min(score, 1.0))
-    return {
-      dimension: 'authenticity',
-      score,
-      level: levelFor(score),
-      reasoning: reasons.length > 0 ? `证人证言真实性评估：${reasons.join('；')}` : '证人证言真实性评估：基础评分',
-    }
+    return dimensionJudgment('authenticity', score, reasons, '证人证言真实性')
   },
 
   checkFindings(input: LegalEvidenceInput): LegalEvidenceFinding[] {

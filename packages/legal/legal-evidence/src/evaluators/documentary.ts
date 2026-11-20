@@ -8,7 +8,7 @@
  */
 
 import type { LegalEvidenceFinding, LegalEvidenceInput } from '../types.ts'
-import { createEvaluator, hasText, levelFor, TRIPLE_ATTRIBUTE_BASE, type LegalEvidenceEvaluator } from './base.ts'
+import { createEvaluator, dimensionJudgment, hasText, TRIPLE_ATTRIBUTE_BASE, type LegalEvidenceEvaluator } from './base.ts'
 
 /** 书证判定器实现。 */
 export const documentaryEvaluator: LegalEvidenceEvaluator = createEvaluator({
@@ -48,13 +48,7 @@ export const documentaryEvaluator: LegalEvidenceEvaluator = createEvaluator({
       reasons.push('形成时间不明确')
     }
 
-    score = Math.max(0, Math.min(score, 1.0))
-    return {
-      dimension: 'authenticity',
-      score,
-      level: levelFor(score),
-      reasoning: reasons.length > 0 ? `书证真实性评估：${reasons.join('；')}` : '书证真实性评估：基础评分',
-    }
+    return dimensionJudgment('authenticity', score, reasons, '书证真实性')
   },
 
   checkFindings(input: LegalEvidenceInput): LegalEvidenceFinding[] {

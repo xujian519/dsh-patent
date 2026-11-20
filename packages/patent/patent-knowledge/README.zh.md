@@ -26,7 +26,7 @@ knowledge.db 查询接缝的服务定义（`ctx.patentKnowledge`）：判例全�
 
 ### caseLawSearch(query, options?)
 
-对 `documents`/`chunks`/`docs_fts` 表做全文检索（FTS5 BM25 优先，短查询或缺失 FTS 索引时降级 LIKE）。返回 `CaseLawHit[]`；options 支持按 `docType`、`court`、`excludeSource` 过滤。当 `documents.search_prefix` 存在（install 以 `--search-prefix` 写入）时，LIKE 降级只扫标题与明文前缀，不再解压全部 chunks；缺该列的库保留整表解压路径。
+对 `documents`/`chunks`/`docs_fts` 表做全文检索（FTS5 BM25 优先，短查询、缺失 FTS 索引或 FTS 抛错时降级 LIKE）。三码点及以上的查询若 trigram 索引已正常执行且无命中，直接返回空，不再整表解压扫 LIKE。返回 `CaseLawHit[]`；options 支持按 `docType`、`court`、`excludeSource` 过滤。当 `documents.search_prefix` 存在（install 以 `--search-prefix` 写入）时，LIKE 降级只扫标题与明文前缀，不再解压全部 chunks；缺该列的库对这些查询保留整表解压路径。
 
 ### legalSearch(query, options?)
 
@@ -94,6 +94,7 @@ Independent; the knowledge seam registers no prompt, tool schema, or result of i
 
 - **P1 无向量/语义检索** — embedding/向量路径（`knowledge-embeddings`、`wiki-card-vector-index`、三个 memory provider）未移植；wiki 卡片查询仅关键词路径，判例/法规/知识图谱检索仅 FTS5/LIKE。
 - **知识图谱索引新鲜度由数据管道保证** — trigram 快速路径把行数一致的 `kg_nodes_fts` 视为完整并跳过 LIKE 兜底；原地修改节点正文后必须重建索引。
+- **判例 LIKE 兜底止于 FTS 未命中** — 三码点及以上的查询在 trigram 索引未命中时不再触发整表解压的 LIKE 扫描（当前语料约 4.6 秒），因此未进 `docs_fts` 的 chunk 只能通过更短的查询或 `--search-prefix` 命中；安装内容后应重建索引。
 - **判例前缀召回有界（启用时）** — 使用 `--search-prefix` 时，短查询 LIKE 只匹配每个文档最长 chunk 的前 `searchPrefixChars` 个码点；更靠后的正文匹配不会返回。默认安装保留全文匹配。
 - **源数据库不随包分发** — 数据须经 `patent-knowledge:install` 本地准备，或经 `sourceDbPath`/`knowledgeDir` 直接指向；不提供任何公共下载点。
 - **`node:sqlite` 处于实验阶段** — 引擎运行在 Node 内置 SQLite 上，该模块在支持的 Node 版本线中仍为实验特性，可能随版本变更。

@@ -18,6 +18,7 @@
  */
 
 import { assertNever } from '@deepseek-ai/dsh-util-values'
+import { textWidthMm } from './glyph-box.ts'
 import { escapeXmlText } from './svg-annotate.ts'
 import { VectorFigureError, fmt } from './vector-figure.ts'
 import type { VectorFigureSpec } from './vector-figure.ts'
@@ -122,13 +123,6 @@ const TRIANGLE_HALF_WIDTH_RATIO = 1.1
 /** 文本基线相对几何中心的垂直微调（字号比例）。 */
 const BASELINE_MID_RATIO = 0.35
 
-/** 文本宽度估算的字宽比例（毫米/字号）：CJK 满宽、其余半宽。 */
-const CJK_WIDTH_RATIO = 1
-const ASCII_WIDTH_RATIO = 0.55
-
-/** CJK 字符（含全角标点）判定，用于估算文本宽度。 */
-const CJK_CHAR_PATTERN = /[\u3000-\u9fff\uff00-\uffef]/
-
 /**
  * 取全部数据点在某一维上的最小/最大值。
  * @param series - 数据序列（已校验非空，且每条序列至少 1 个有限数点）。
@@ -190,17 +184,6 @@ function tickValues(range: readonly [number, number], count: number): number[] {
     values.push(index === count - 1 ? range[1] : range[0] + step * index)
   }
   return values
-}
-
-/**
- * 估算文本宽度（毫米）：CJK 按满宽、其余按半宽。
- * @param text - 文本原文。
- * @returns 估算宽度（毫米）。
- */
-function textWidthMm(text: string): number {
-  let width = 0
-  for (const char of text) width += FONT_MM * (CJK_CHAR_PATTERN.test(char) ? CJK_WIDTH_RATIO : ASCII_WIDTH_RATIO)
-  return width
 }
 
 /**
@@ -274,7 +257,7 @@ function legendRows(entries: readonly LegendEntry[], availableMm: number): Legen
   let row: LegendEntry[] = []
   let cursor = 0
   for (const entry of entries) {
-    const entryWidth = LEGEND_SWATCH_MM + textWidthMm(entry.name)
+    const entryWidth = LEGEND_SWATCH_MM + textWidthMm(entry.name, FONT_MM)
     if (row.length > 0 && cursor + LEGEND_GAP_MM + entryWidth > availableMm) {
       rows.push(row)
       row = []
@@ -392,7 +375,7 @@ export function buildPlotDiagram(input: PlotDiagramInput): VectorFigureSpec {
         ? svgLine(cursor, centerY, cursor + LEGEND_SWATCH_MM, centerY, SERIES_STROKE_MM)
         : markerFragment(entry.marker, cursor + LEGEND_SWATCH_MM / 2, centerY))
       parts.push(svgText(cursor + LEGEND_SWATCH_MM, baseline, entry.name, 'start', false))
-      cursor += LEGEND_SWATCH_MM + textWidthMm(entry.name) + LEGEND_GAP_MM
+      cursor += LEGEND_SWATCH_MM + textWidthMm(entry.name, FONT_MM) + LEGEND_GAP_MM
     }
   }
 

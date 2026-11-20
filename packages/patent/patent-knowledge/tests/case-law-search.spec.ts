@@ -17,7 +17,11 @@ afterEach(() => {
   while (cleanups.length > 0) cleanups.pop()!()
 })
 
-function createEngine(includeFts = true, includePrefix = false): { engine: CaseLawSearchEngine; dir: string } {
+function createEngine(
+  includeFts = true,
+  includePrefix = false,
+  stats?: KnowledgeRuntimeStats,
+): { engine: CaseLawSearchEngine; dir: string } {
   const dir = mkdtempSync(join(tmpdir(), 'case-law-test-'))
   const dbPath = join(dir, 'test.db')
   const db = new DatabaseSync(dbPath)
@@ -81,7 +85,7 @@ function createEngine(includeFts = true, includePrefix = false): { engine: CaseL
     insertFts.run(5, '创造性-审查标准-磨削抛光', '创造性审查标准：技术启示的判断应当结合本领域技术人员认知。')
   }
   db.close()
-  return { engine: new CaseLawSearchEngine(dbPath), dir }
+  return { engine: new CaseLawSearchEngine(dbPath, stats === undefined ? undefined : { stats }), dir }
 }
 
 function withEngine(includeFts = true, includePrefix = false): CaseLawSearchEngine {
@@ -155,10 +159,33 @@ describe('CaseLawSearchEngine', () => {
     expect(hits.every(h => h.via === 'like')).toBe(true)
   })
 
-  it('falls back to LIKE when FTS returns no hits', () => {
-    const engine = withEngine()
-    const hits = engine.search('预料不到的技术效果')
-    expect(hits.some(h => h.documentId === 'd1')).toBe(true)
+  it('skips the whole-table LIKE scan when a 3+ rune FTS query misses', () => {
+    const stats = new KnowledgeRuntimeStats()
+    const { engine, dir } = createEngine(true, false, stats)
+    cleanups.push(() => {
+      engine.close()
+      rmSync(dir, { recursive: true, force: true })
+    })
+    // Installations can leave docs_fts behind chunks; this row is reachable
+    // only through the decompressing LIKE scan.
+    const db = new DatabaseSync(join(dir, 'test.db'))
+    db.prepare(
+      `INSERT INTO documents (id, source, doc_type, domain, title, char_count, chunk_count, indexed_at)
+       VALUES ('d5', 'raw', 'case', 'patent', '未入索引的决定', 20, 1, '2026-07-01T00:00:00.000Z')`,
+    ).run()
+    db.prepare(
+      `INSERT INTO chunks (document_id, chunk_index, chunk_type, content, char_count)
+       VALUES ('d5', 0, 'paragraph', '锆钚合金的耐磨性', 8)`,
+    ).run()
+    db.close()
+
+    expect(engine.search('锆钚合金')).toEqual([])
+    expect(stats.snapshot().likeFallbacks).toBe(0)
+    // Short queries keep the LIKE path: trigram FTS cannot match under 3 runes.
+    const short = engine.search('锆钚')
+    expect(short.map(hit => hit.documentId)).toEqual(['d5'])
+    expect(short.every(hit => hit.via === 'like')).toBe(true)
+    expect(stats.snapshot().likeFallbacks).toBe(1)
   })
 
   it('getById returns chunks ordered by chunk_index', () => {

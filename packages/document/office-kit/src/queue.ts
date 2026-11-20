@@ -3,24 +3,17 @@ import { createHash } from 'node:crypto'
 import { OfficeKitError } from './errors.ts'
 import { OfficeKitKey, type OfficeKitGeneration } from './identity.ts'
 import type {
-  OfficeConversionFormat, OfficeImage, OfficeKitPriority, OfficeKitSource, OfficeRecalculationFormat,
+  OfficeConversionFormat, OfficeImage, OfficeImagesRequest, OfficeKitPriority, OfficeKitSource,
+  OfficeRecalculationFormat,
 } from './types.ts'
 import type { Config } from './index.ts'
 
 /** Engine operation applied to one admitted source; its JSON form distinguishes cached outputs. */
 export type OfficeOperation =
   | { readonly kind: 'pdf' }
-  | {
+  | ({
     readonly kind: 'images'
-    readonly pages?: readonly number[]
-    readonly sheet?: string
-    readonly range?: string
-    readonly dpi?: number
-    readonly maxImages: number
-    readonly maxPixels: number
-    readonly maxDimension: number
-    readonly maxBytes: number
-  }
+  } & Omit<OfficeImagesRequest, 'extension' | 'source'>)
   | { readonly kind: 'convert'; readonly format: OfficeConversionFormat; readonly sheet?: string }
   | { readonly kind: 'recalculate'; readonly format: OfficeRecalculationFormat }
 

@@ -18,7 +18,7 @@ import { type DatabaseSync } from 'node:sqlite'
 import { resolveResultLimit } from '@deepseek-ai/dsh-knowledge-core'
 import { searchInMemory, filterRecords, toVisibleMemoryHits } from '../shared/memory-store.ts'
 import { columnText, articleRowColumns, assignDatedColumns } from '../shared/row-text.ts'
-import { filterByValidity, isVisible, resolveAsOf, resolveValidity } from '../shared/validity.ts'
+import { filterByValidity, withVisibility } from '../shared/validity.ts'
 import { prepareSearchText, SqliteBackedEngine, type SqliteSearchShape } from '../shared/sqlite-search.ts'
 import type {
   GuidingCaseHit,
@@ -185,22 +185,11 @@ export class JudicialInterpretationSearch extends SqliteBackedEngine<JudicialInt
     interpretationId: string,
     options: JudicialInterpretationSearchOptions = {},
   ): JudicialInterpretationRecord | undefined {
-    const asOf = resolveAsOf(options.asOf)
-    const includeUnverified = options.includeUnverified ?? true
-    if (this.sqlite.connected) {
-      const row = this.sqlite.findRow('interpretation_id', interpretationId)
-      if (row === undefined) return undefined
-      const record = rowToRecord(row)
-      const validity = resolveValidity(record, asOf)
-      return isVisible(validity, includeUnverified) ? { ...record, validity } : undefined
-    }
-    const record = this.interpretations.find(r => r.interpretationId === interpretationId)
-    if (record === undefined) return undefined
-    const validity = resolveValidity(
-      { effectiveDate: record.effectiveDate, expiryDate: record.expiryDate, expired: record.expired },
-      asOf,
-    )
-    return isVisible(validity, includeUnverified) ? { ...record, validity } : undefined
+    const row = this.sqlite.findRow('interpretation_id', interpretationId)
+    const record = row !== undefined
+      ? rowToRecord(row)
+      : this.sqlite.connected ? undefined : this.interpretations.find(r => r.interpretationId === interpretationId)
+    return withVisibility(record, options)
   }
 
   /**

@@ -32,6 +32,18 @@ export type EvaluateLegalEvidenceOutput = {
   summary: string
 }
 
+/** 单个维度判定的输出 schema：三性各引用同一份，避免字段集漂移。 */
+const DIMENSION_JUDGMENT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    dimension: { type: 'string' },
+    score: { type: 'number' },
+    level: { type: 'string' },
+    reasoning: { type: 'string' },
+  },
+} as const
+
 const DESCRIPTION = [
   '- 评估法律证据的三性（关联性、合法性、真实性），按《民事诉讼法》第 66 条八类法定证据分别判定。',
   '- 输入证据 id、证据类型与相关属性，输出三性评分（0-1）、各维度判定详情与规则检查发现。',
@@ -110,36 +122,9 @@ export function createEvaluateLegalEvidenceTool(engine: LegalEvidenceEngine): To
                 type: 'object',
                 additionalProperties: false,
                 properties: {
-                  relevance: {
-                    type: 'object',
-                    additionalProperties: false,
-                    properties: {
-                      dimension: { type: 'string' },
-                      score: { type: 'number' },
-                      level: { type: 'string' },
-                      reasoning: { type: 'string' },
-                    },
-                  },
-                  legality: {
-                    type: 'object',
-                    additionalProperties: false,
-                    properties: {
-                      dimension: { type: 'string' },
-                      score: { type: 'number' },
-                      level: { type: 'string' },
-                      reasoning: { type: 'string' },
-                    },
-                  },
-                  authenticity: {
-                    type: 'object',
-                    additionalProperties: false,
-                    properties: {
-                      dimension: { type: 'string' },
-                      score: { type: 'number' },
-                      level: { type: 'string' },
-                      reasoning: { type: 'string' },
-                    },
-                  },
+                  relevance: DIMENSION_JUDGMENT_SCHEMA,
+                  legality: DIMENSION_JUDGMENT_SCHEMA,
+                  authenticity: DIMENSION_JUDGMENT_SCHEMA,
                 },
               },
               findings: {

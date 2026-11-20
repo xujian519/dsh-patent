@@ -76,18 +76,14 @@ export function resolveKeyList(
 }
 
 /**
- * Read one state key as text: a string or a string array joined by newlines.
+ * Read one state key as text.
  * @param state - stage state.
  * @param key - key to read.
- * @returns trimmed text, or undefined when the key is absent, mistyped, or empty.
+ * @returns trimmed text, or undefined when the key is absent, not a string, or blank.
  */
 export function readStateText(state: PipelineState, key: string): string | undefined {
   const raw = state[key]
-  if (typeof raw === 'string') {
-    const text = raw.trim()
-    return text.length > 0 ? text : undefined
-  }
-  if (!Array.isArray(raw)) return undefined
-  const parts = raw.filter(isNonEmptyString).map(part => part.trim())
-  return parts.length > 0 ? parts.join('\n') : undefined
+  if (typeof raw !== 'string') return undefined
+  const text = raw.trim()
+  return text.length > 0 ? text : undefined
 }

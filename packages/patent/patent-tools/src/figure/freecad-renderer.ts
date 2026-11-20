@@ -20,6 +20,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { startSpawnDeadline } from '@deepseek-ai/dsh-patent-core'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import {
   HatchGeometryError,
@@ -181,20 +182,12 @@ export async function probeFreeCad(
     const version = text.match(/(\d+\.\d+\.\d+)/)?.[1]
     return { ready: true, executable, ...(version === undefined ? {} : { version }) }
   } catch (error) {
-    return { ready: false, executable, message: `freecadcmd --version 调用失败：${errorText(error)}` }
+    return { ready: false, executable, message: `freecadcmd --version 调用失败：${errorMessage(error)}` }
   } finally {
     clearTimeout(timer)
   }
 }
 
-/**
- * 取可读的错误文本（非 Error 抛出也给出文本）。
- * @param error - 捕获到的值。
- * @returns 错误消息或该值的字符串形式。
- */
-function errorText(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
 
 /** freecadcmd 解析结果：就绪时的绝对路径，或未安装时的诊断文案。 */
 type FreeCadCommandResolution = { ok: true; executable: string } | { ok: false; error: string }
@@ -263,7 +256,7 @@ async function runFreeCadScript(
     // 子进程启动之间无 await，保证 abort 能命中已启动的子进程。
     writeFileSync(scriptPath, script, 'utf8')
   } catch (error) {
-    return { ok: false, code: 'render_failed', error: `准备 FreeCAD 脚本失败：${errorText(error)}` }
+    return { ok: false, code: 'render_failed', error: `准备 FreeCAD 脚本失败：${errorMessage(error)}` }
   }
   const deadline = startSpawnDeadline(options.renderTimeoutMs, request.signal)
   try {
@@ -398,7 +391,7 @@ export async function renderSectionGeometry(
       outputDir: spec.outputDir,
     })
   } catch (error) {
-    return { ok: false, code: 'geometry_failed', error: errorText(error) }
+    return { ok: false, code: 'geometry_failed', error: errorMessage(error) }
   }
   const result = await runFreeCadScript(subprocess, command.executable, {
     tool: 'FreeCAD 剖切几何',
@@ -415,7 +408,7 @@ export async function renderSectionGeometry(
     return { ok: true, geometry: parseSectionGeometry(readFileSync(geometryPath, 'utf8')) }
   } catch (error) {
     if (error instanceof SectionGeometryError) return { ok: false, code: 'geometry_failed', error: error.message }
-    return { ok: false, code: 'geometry_failed', error: `剖切几何产物不可用（${geometryPath}）：${errorText(error)}` }
+    return { ok: false, code: 'geometry_failed', error: `剖切几何产物不可用（${geometryPath}）：${errorMessage(error)}` }
   }
 }
 
@@ -479,7 +472,7 @@ export async function renderSectionHatch(
       outputDir: spec.outputDir,
     })
   } catch (error) {
-    return { ok: false, code: 'hatch_failed', error: errorText(error) }
+    return { ok: false, code: 'hatch_failed', error: errorMessage(error) }
   }
   const result = await runFreeCadScript(subprocess, command.executable, {
     tool: 'FreeCAD 剖面线',
@@ -496,6 +489,6 @@ export async function renderSectionHatch(
     return { ok: true, geometry: parseHatchGeometry(readFileSync(hatchPath, 'utf8'), request) }
   } catch (error) {
     if (error instanceof HatchGeometryError) return { ok: false, code: 'hatch_failed', error: error.message }
-    return { ok: false, code: 'hatch_failed', error: `剖面线产物不可用（${hatchPath}）：${errorText(error)}` }
+    return { ok: false, code: 'hatch_failed', error: `剖面线产物不可用（${hatchPath}）：${errorMessage(error)}` }
   }
 }

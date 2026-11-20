@@ -21,7 +21,7 @@ import type {
   LspQueryResult,
 } from '@deepseek-ai/dsh-lsp'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
-import { assertPositiveInteger } from '@deepseek-ai/dsh-value'
+import { assertPositiveInteger, errorMessage } from '@deepseek-ai/dsh-value'
 import { abortable, abortError } from './abort.ts'
 import { canonicalizeWorkspace, readHostSource } from './host.ts'
 import type { HostWorkspace } from './host.ts'
@@ -125,7 +125,7 @@ function throwTeardownFailures(results: readonly PromiseSettledResult<void>[], m
  */
 class LspQueryTeardownError extends HarnessError {
   constructor(query: HarnessError, teardown: unknown, cause: AggregateError) {
-    super(`${query.message}; language server teardown also failed: ${messageOf(teardown)}`, query.code, { cause })
+    super(`${query.message}; language server teardown also failed: ${errorMessage(teardown)}`, query.code, { cause })
     this.name = query.name
   }
 }
@@ -140,10 +140,6 @@ function queryAndTeardownFailure(query: unknown, teardown: unknown): Error {
   return query instanceof HarnessError ? new LspQueryTeardownError(query, teardown, both) : both
 }
 
-/** Read a thrown value's message for a combined failure report. */
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
 
 /**
  * Register the configured stdio LSP providers. Resolves every executable at load (after credential

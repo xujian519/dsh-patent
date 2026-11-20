@@ -4,9 +4,9 @@
  */
 
 import { mkdir } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
-import { caseOutputsDir, resolveConfinedPath } from '@deepseek-ai/dsh-patent-core'
+import { assertDeliverableName, resolveConfinedPath, resolvePatentOutputDir } from '@deepseek-ai/dsh-patent-core'
 import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import { buildBrandStyle, loadBrandFromPath, mergeBrand } from './brandInjector.ts'
 import { checkDocumentCompliance } from './documentCompliance.ts'
@@ -25,19 +25,6 @@ import { injectTemplateDraft, renderGenericTemplateSections, renderSpecDraftSect
 export const DEFAULT_OUTPUT_DIR = '.dsh/documents'
 
 /**
- * 安全文件名与案卷号允许的字符：ASCII 字母数字与 `.` `_` `-` `()`、中文汉字、
- * 圈码 ①–⑳（案卷常用「①件/②件」前缀），以及草稿名常用的中文标点
- * （、。《》「」【】（），：；！？·——…“”‘’）。空格不入列，落盘路径在 shell 与 URL 中仍可直接使用。
- */
-const SAFE_NAME_CHARS = 'A-Za-z0-9._\\-()\\u4e00-\\u9fa5\\u2460-\\u2473\\u3001-\\u303F\\uFF01\\uFF08\\uFF09\\uFF0C\\uFF1A\\uFF1B\\uFF1F\\uFF5E\\u00B7\\u2013\\u2014\\u2018-\\u201D\\u2026'
-
-/** 安全输出文件名：允许字符集内 1–120 字符，且不含 `..` 段。 */
-const SAFE_NAME_PATTERN = new RegExp(`^(?!.*\\.\\.)[${SAFE_NAME_CHARS}]{1,120}$`, 'u')
-
-/** 安全案卷号：与输出文件名同一字符集（案卷号同样来自模型输入，同样不得穿越目录）。 */
-const SAFE_CASE_ID_PATTERN = new RegExp(`^(?!.*\\.\\.)[${SAFE_NAME_CHARS}]{1,120}$`, 'u')
-
-/**
  * 渲染专利文书所需的运行期依赖与缺省目录。
  */
 export interface RenderPatentDocumentOptions {
@@ -54,40 +41,14 @@ export interface RenderPatentDocumentOptions {
 }
 
 /**
- * 校验输入字符串匹配安全模式，否则抛出 DocumentRenderError。
+ * 校验输入字符串是合法的交付名，否则抛出 DocumentRenderError。
  * @param value - 待校验字符串。
- * @param pattern - 安全模式。
  * @param label - 错误消息中的字段名（输出文件名 / 案卷号）。
  * @returns 通过校验的字符串。
  */
-function assertSafe(value: string, pattern: RegExp, label: string): string {
-  if (!pattern.test(value)) {
-    throw new DocumentRenderError(`非法${label}: ${JSON.stringify(value)}`)
-  }
+function assertSafeName(value: string, label: string): string {
+  assertDeliverableName(value, label, message => new DocumentRenderError(message))
   return value
-}
-
-/**
- * 解析输出目录：显式 outputDir > caseId 约定目录 > 缺省目录。
- *
- * 显式 outputDir 的真实位置必须留在 cwd 内：模型控制的工具参数若允许绝对路径
- * 或 `../` 串联，会把文件写到 cwd 之外进程有权限的任意位置（数据污染/安全风险）。
- * cwd 内的绝对路径照常接受；caseId 已走 assertSafe 校验，不会带出 `..` 段；
- * defaultOutputDir 是本包固定常量。
- * @param input - 渲染输入。
- * @param cwd - 相对路径基准目录。
- * @param defaultOutputDir - 缺省输出目录。
- * @returns 输出目录绝对路径。
- * @throws DocumentRenderError 当 outputDir 解析后的真实路径落在 cwd 之外。
- */
-function resolveOutputDir(input: DocumentRenderInput, cwd: string, defaultOutputDir: string): string {
-  if (input.outputDir !== undefined) {
-    return resolveConfinedPath(input.outputDir, cwd, '输出目录', message => new DocumentRenderError(message))
-  }
-  if (input.caseId !== undefined) {
-    return resolve(cwd, caseOutputsDir(assertSafe(input.caseId, SAFE_CASE_ID_PATTERN, '案卷号')))
-  }
-  return resolve(cwd, defaultOutputDir)
 }
 
 /**
@@ -228,10 +189,15 @@ export async function renderPatentDocument(
 ): Promise<DocumentRenderResult> {
   const warnings: string[] = []
 
-  const outputDir = resolveOutputDir(input, cwd, options.defaultOutputDir ?? DEFAULT_OUTPUT_DIR)
+  const outputDir = resolvePatentOutputDir(
+    input,
+    cwd,
+    options.defaultOutputDir ?? DEFAULT_OUTPUT_DIR,
+    message => new DocumentRenderError(message),
+  )
   await mkdir(outputDir, { recursive: true })
 
-  const name = assertSafe(input.outputName, SAFE_NAME_PATTERN, '输出文件名')
+  const name = assertSafeName(input.outputName, '输出文件名')
   const htmlPath = join(outputDir, `${name}.html`)
   const pdfPath = join(outputDir, `${name}.pdf`)
 

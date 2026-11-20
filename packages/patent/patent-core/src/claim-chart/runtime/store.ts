@@ -6,8 +6,9 @@
 
 import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { atomicWriteJson, assertSafeId, assertSafePathSegment } from '../../persist-utils.ts'
+import { atomicWriteJson, assertSafeId } from '../../persist-utils.ts'
 import { caseOutputsDir } from '../../paths.ts'
+import { assertPathSegment } from '../../safe-path.ts'
 import type { ClaimChart, GapKind } from '../protocol/types.ts'
 
 /**
@@ -18,7 +19,7 @@ import type { ClaimChart, GapKind } from '../protocol/types.ts'
  */
 export function chartFileBase(caseId: string, chartId: string): string {
   // 防御路径注入：caseId 与 chartId 都直接拼入路径，必须各自校验。
-  assertSafePathSegment(caseId, 'caseId')
+  assertPathSegment(caseId, 'caseId', message => new RangeError(message))
   assertSafeId(chartId, 'chartId')
   return join(caseOutputsDir(caseId), `claim-chart-${chartId}`)
 }

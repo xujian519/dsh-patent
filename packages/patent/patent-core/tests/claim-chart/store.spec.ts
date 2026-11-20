@@ -121,7 +121,7 @@ it('chartFileBase 拒绝不安全 chartId（防路径注入）', () => {
 it('chartFileBase 拒绝穿越目录的 caseId，同时保留中文案卷名', () => {
   for (const bad of ['../../escape', 'a/b', '..', '.', 'a\\b', 'a\0b', '.. ', 'foo ', 'foo.', ' foo']) {
     expect(() => chartFileBase(bad, 't1')).toThrow(RangeError)
-    expect(() => chartFileBase(bad, 't1')).toThrow(/^Invalid caseId /)
+    expect(() => chartFileBase(bad, 't1')).toThrow(/^caseId .* 不可用/)
   }
   expect(() => chartFileBase('CN2024-0001', 't1')).not.toThrow()
   expect(() => chartFileBase('中文案卷', 't1')).not.toThrow()

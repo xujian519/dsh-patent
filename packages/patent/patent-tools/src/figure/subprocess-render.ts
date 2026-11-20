@@ -1,6 +1,7 @@
 /**
  * 附图外部渲染器（Graphviz / FreeCAD / Inkscape）共用的子进程样板：可执行文件解析、
- * stdio 上限、版本探测 spawn、渲染截止期与失败原因归类。
+ * stdio 上限、版本探测 spawn 与失败原因归类。渲染截止期由 patent-core 的
+ * `startSpawnDeadline` 提供，与专利域其余三处子进程调用共用同一骨架。
  *
  * 三个渲染器只在候选路径表、PATH 里的文件名、环境变量名与 argv / 产物校验上不同，
  * 共用部分必须保持同一条判定语义：探测与渲染共用同一 graceMs 与单流内存上限；渲染
@@ -12,6 +13,7 @@
 
 import { existsSync } from 'node:fs'
 import { delimiter, dirname, join } from 'node:path'
+import type { SpawnDeadline } from '@deepseek-ai/dsh-patent-core'
 import type {
   SubprocessHandle,
   SubprocessOutcome,
@@ -138,7 +140,7 @@ export async function spawnVersionProbe(
  */
 export async function spawnRenderProcess(
   subprocess: SubprocessSpawner,
-  deadline: RenderDeadline,
+  deadline: SpawnDeadline,
   spec: {
     readonly argv: readonly string[]
     readonly cwd: string
@@ -174,43 +176,6 @@ export function describeRenderThrow(
   return {
     code: callerSignal?.aborted === true ? 'aborted' : 'render_failed',
     error: `${tool}调用失败：${message}`,
-  }
-}
-
-/** 渲染截止期：内部超时与调用方取消终止同一信号。 */
-export type RenderDeadline = {
-  /** 交给 spawn 的终止信号。 */
-  readonly signal: AbortSignal
-  /** 内部超时是否触发。 */
-  readonly timedOut: () => boolean
-  /** 清理计时器与调用方监听；必须与创建成对调用。 */
-  readonly dispose: () => void
-}
-
-/**
- * 启动渲染截止期。
- * @param timeoutMs - 内部超时（毫秒）。
- * @param callerSignal - 调用方取消信号（可缺省）。
- * @returns 截止期句柄：交给 spawn 的信号、超时查询与清理函数。
- */
-export function startRenderDeadline(timeoutMs: number, callerSignal?: AbortSignal): RenderDeadline {
-  const controller = new AbortController()
-  let timedOut = false
-  const timer = setTimeout(() => {
-    timedOut = true
-    controller.abort()
-  }, timeoutMs)
-  timer.unref()
-  const onCallerAbort = (): void => { controller.abort() }
-  callerSignal?.addEventListener('abort', onCallerAbort, { once: true })
-  if (callerSignal?.aborted === true) controller.abort()
-  return {
-    signal: controller.signal,
-    timedOut: () => timedOut,
-    dispose: () => {
-      clearTimeout(timer)
-      callerSignal?.removeEventListener('abort', onCallerAbort)
-    },
   }
 }
 

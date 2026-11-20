@@ -9,6 +9,7 @@
 import { existsSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { startSpawnDeadline } from '@deepseek-ai/dsh-patent-core'
 import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 
 /** 候选 Chrome 可执行路径（macOS / Linux / Windows）。 */
@@ -94,14 +95,17 @@ export async function renderPdf(
     pathToFileURL(htmlPath).href,
   ]
 
+  // 已取消的调用不起进程：Chrome 启动成本高，且信号已中止时 spawn 只会抛一条
+  // 与本包无关的 AbortError。用函数读取而不是直读，避免类型收窄让下方的
+  // 「调用方取消」分支被判成不可达。
+  const callerCancelled = (): boolean => options.signal?.aborted === true
+  if (callerCancelled()) {
+    return { ok: false, error: '已取消：未启动 Chrome' }
+  }
+
   // Chrome 在 Windows 上返回的是 chrome.exe 而非目录，dirname 可能为空。
   const cwd = dirname(chrome) || process.cwd()
-  const controller = new AbortController()
-  const timer = setTimeout(() => { controller.abort() }, options.pdfTimeoutMs)
-  timer.unref()
-  const onCallerAbort = (): void => { controller.abort() }
-  options.signal?.addEventListener('abort', onCallerAbort, { once: true })
-  if (options.signal?.aborted === true) controller.abort()
+  const deadline = startSpawnDeadline(options.pdfTimeoutMs, options.signal)
   try {
     const handle = subprocess.spawn({
       argv: [chrome, ...args],
@@ -112,14 +116,18 @@ export async function renderPdf(
         stderr: { maxBytes: MAX_OUTPUT_BYTES },
       },
       graceMs: GRACE_MS,
-      signal: controller.signal,
+      signal: deadline.signal,
     })
     const outcome = await handle.done
     if (outcome.exitCode !== 0) {
       const stderr = (handle.collected.stderr?.readFrom(0).text ?? '').trim()
-      const cause = outcome.exitCode === null
-        ? `被信号 ${outcome.signal ?? '未知'} 终止`
-        : `退出码 ${outcome.exitCode}`
+      const cause = deadline.timedOut()
+        ? '打印超时'
+        : callerCancelled()
+          ? '被调用方取消'
+          : outcome.exitCode === null
+            ? `被信号 ${outcome.signal ?? '未知'} 终止`
+            : `退出码 ${outcome.exitCode}`
       return { ok: false, error: `Chrome PDF 打印失败（${cause}）: ${stderr || '无 stderr 输出'}` }
     }
     if (!existsSync(pdfPath)) {
@@ -130,7 +138,6 @@ export async function renderPdf(
     const message = err instanceof Error ? err.message : String(err)
     return { ok: false, error: `Chrome PDF 打印失败: ${message}` }
   } finally {
-    clearTimeout(timer)
-    options.signal?.removeEventListener('abort', onCallerAbort)
+    deadline.dispose()
   }
 }

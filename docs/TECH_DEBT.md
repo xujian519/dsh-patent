@@ -361,7 +361,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `structure.long-functions` | 191 |
 | `structure.large-files` | 96 |
 | `structure.patent-large-files` | 10 |
-| `lint.v8-ignore` | 1339 |
+| `lint.v8-ignore` | 1338 |
 | `lint.ts-expect-error` | 202 |
 | `packages.patent-directories` | 16 |
 <!-- tech-debt-counters:end -->
@@ -406,6 +406,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-20 R-F2 安全名与子进程骨架收口**:`claim-chart-build.ts` 改经 `patent-core` 的 `assertPathSegment` 注入 `PatentToolError`,原先包住 `assertSafePathSegment` 的 `try`/`catch` 与那行带豁免的 `error instanceof Error` 兜底一并删除,`lint.v8-ignore` 由 1339 降至 **1338**;新增的 `safe-path.ts` 与 `subprocess-deadline.ts` 均不足 150 行与 800 行,结构债三项不变;其余计数不变。
 - **2026-11-18 专利域死代码收口**:`wiring.ts` 的 wiki 与知识图谱工具改为经 `ctx.patentKnowledge` 查询,删除自建 `KgStore` 的关闭守卫(服务持有唯一句柄),`lint.v8-ignore` 由 1340 降至 **1339**;`patent-workflow-run.ts` 由 1039 升至 **1056** 行并同步重定接受上限(manifest 运行改经 `ctx.patentWorkflow`,服务路径自行记录会话事件);不可达的 `response/reexamination.ts` 及其 barrel 与用例删除,不影响计数;其余计数不变。
 - **2026-11-18 成文形式预检**:`filing-form-audit.ts` 摊平 `contentFromDraft` 的节点时,`SpecificationNode.text` 是可选字段而映射对 `h3` 与 `p` 节点必定写了文本,两处空串兜底补带理由的豁免,`lint.v8-ignore` 由 1338 升至 **1340**;其余计数不变。
 - **2026-11-18 R-E2 视频终态收口**:`tools/media.ts` 的 `execute` 把预算检查、终态结算与任务恢复拆为 `assertBudget`、`settleSucceeded` 与 `refreshTask` 后回落到 150 行以下,`structure.long-functions` 由 192 降至 **191**;其余计数不变。

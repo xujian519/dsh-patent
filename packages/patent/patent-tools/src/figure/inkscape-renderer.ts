@@ -37,9 +37,10 @@ import {
   quietStdio,
   renderStderr,
   spawnRenderProcess,
-  startRenderDeadline,
 } from './subprocess-render.ts'
-import type { RenderDeadline, SubprocessSpawner } from './subprocess-render.ts'
+import type { SubprocessSpawner } from './subprocess-render.ts'
+import { startSpawnDeadline } from '@deepseek-ai/dsh-patent-core'
+import type { SpawnDeadline } from '@deepseek-ai/dsh-patent-core'
 import type { SubprocessHandle, SubprocessOutcome } from '@deepseek-ai/dsh-subprocess'
 import { DEFAULT_SVG_MAX_BYTES, SvgAnnotateError, assertSafeSvg } from './svg-annotate.ts'
 
@@ -210,7 +211,7 @@ function resolveInkscape(options: InkscapeOutlineOptions): { ok: true; executabl
  */
 function inkscapeExitFailure(args: {
   outcome: SubprocessOutcome
-  deadline: RenderDeadline
+  deadline: SpawnDeadline
   signal: AbortSignal | undefined
   handle: SubprocessHandle
   label: string
@@ -250,12 +251,12 @@ export async function outlineSvgText(
     return { ok: false, code: 'render_failed', error: `读取待转换的 SVG 失败：${error instanceof Error ? error.message : String(error)}` }
   }
   let workDir: string | undefined
-  let deadline: RenderDeadline | undefined
+  let deadline: SpawnDeadline | undefined
   try {
     // 期限自子进程启动前开始计，不含建临时目录的时间（与 freecad-renderer 同序）：
     // 预算极小时报的应是「渲染超时」，而不是建目录失败式的「调用失败」。
     workDir = await mkdtemp(join(tmpdir(), 'dsh-outline-'))
-    const started = startRenderDeadline(options.renderTimeoutMs, spec.signal)
+    const started = startSpawnDeadline(options.renderTimeoutMs, spec.signal)
     deadline = started
     const outputPath = join(workDir, 'outlined.svg')
     const { handle, outcome } = await spawnRenderProcess(subprocess, started, {
@@ -325,9 +326,9 @@ export async function exportWithInkscape(
 ): Promise<InkscapeOutlineOutcome> {
   const resolved = resolveInkscape(options)
   if (!resolved.ok) return resolved
-  let deadline: RenderDeadline | undefined
+  let deadline: SpawnDeadline | undefined
   try {
-    const started = startRenderDeadline(options.renderTimeoutMs, spec.signal)
+    const started = startSpawnDeadline(options.renderTimeoutMs, spec.signal)
     deadline = started
     const { handle, outcome } = await spawnRenderProcess(subprocess, started, {
       argv: [

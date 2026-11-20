@@ -291,7 +291,7 @@ describe('renderPdf process handling', () => {
     }
   })
 
-  it('propagates a caller abort during the render and a pre-aborted signal to the subprocess', async () => {
+  it('propagates a caller abort during the render and skips spawn for a pre-aborted signal', async () => {
     const dir = makeTempDir()
     try {
       const chromePath = join(dir, 'chrome')
@@ -317,8 +317,12 @@ describe('renderPdf process handling', () => {
         preSpawn = spec.signal
         return successHandle()
       })
-      await renderPdf(runtime2, htmlPath, pdfPath, { chromePath, signal: preAborted.signal, pdfTimeoutMs: TEST_PDF_TIMEOUT_MS })
-      expect(preSpawn?.aborted).toBe(true)
+      const result = await renderPdf(
+        runtime2, htmlPath, pdfPath,
+        { chromePath, signal: preAborted.signal, pdfTimeoutMs: TEST_PDF_TIMEOUT_MS },
+      )
+      expect(preSpawn).toBeUndefined()
+      expect(result).toEqual({ ok: false, error: '已取消：未启动 Chrome' })
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -341,6 +345,61 @@ describe('renderPdf process handling', () => {
       const result = await renderPdf(runtime, htmlPath, pdfPath, { chromePath, pdfTimeoutMs: TEST_PDF_TIMEOUT_MS })
       expect(result.ok).toBe(false)
       if (!result.ok) expect(result.error).toContain('被信号 SIGKILL 终止')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('names the internal print timeout when Chrome is killed by the deadline', async () => {
+    vi.useFakeTimers()
+    const dir = makeTempDir()
+    try {
+      const chromePath = join(dir, 'chrome')
+      const htmlPath = join(dir, 'doc.html')
+      const pdfPath = join(dir, 'doc.pdf')
+      writeFileSync(chromePath, '')
+      writeFileSync(htmlPath, '<html></html>')
+
+      const { runtime } = fakeSubprocess(spec => ({
+        ...successHandle(),
+        done: new Promise((resolve) => {
+          spec.signal?.addEventListener('abort', () => { resolve({ exitCode: 1, signal: null }) }, { once: true })
+        }),
+      }))
+
+      const pending = renderPdf(runtime, htmlPath, pdfPath, { chromePath, pdfTimeoutMs: INJECTED_PDF_TIMEOUT_MS })
+      vi.advanceTimersByTime(INJECTED_PDF_TIMEOUT_MS)
+      const result = await pending
+      expect(result.ok).toBe(false)
+      if (!result.ok) expect(result.error).toContain('打印超时')
+    } finally {
+      vi.useRealTimers()
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('names the caller cancellation when it ends the print', async () => {
+    const dir = makeTempDir()
+    try {
+      const chromePath = join(dir, 'chrome')
+      const htmlPath = join(dir, 'doc.html')
+      const pdfPath = join(dir, 'doc.pdf')
+      writeFileSync(chromePath, '')
+      writeFileSync(htmlPath, '<html></html>')
+
+      const caller = new AbortController()
+      const { runtime } = fakeSubprocess(spec => ({
+        ...successHandle(),
+        done: new Promise((resolve) => {
+          spec.signal?.addEventListener('abort', () => { resolve({ exitCode: 1, signal: null }) }, { once: true })
+        }),
+      }))
+
+      const pending = renderPdf(runtime, htmlPath, pdfPath, { chromePath, signal: caller.signal, pdfTimeoutMs: TEST_PDF_TIMEOUT_MS })
+      caller.abort()
+      const result = await pending
+      expect(result.ok).toBe(false)
+      if (!result.ok) expect(result.error).toContain('被调用方取消')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

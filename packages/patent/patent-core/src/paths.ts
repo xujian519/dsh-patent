@@ -10,6 +10,7 @@
 
 import { isAbsolute, relative, resolve, sep } from 'node:path'
 import { resolveRealPath } from '@deepseek-ai/dsh-knowledge-core'
+import { assertDeliverableName } from './safe-path.ts'
 
 /** 案例根目录（相对 cwd）。 */
 export const CASE_ROOT_REL = 'data/cases'
@@ -65,4 +66,32 @@ export function resolveConfinedPath(
     throw createError(`${label} 越出工作目录: ${JSON.stringify(path)} 解析为 ${resolved}，工作目录 ${root}`)
   }
   return resolved
+}
+
+/**
+ * 解析文书工具的产出目录：显式 outputDir > caseId 约定目录 > 缺省目录。
+ *
+ * 显式 outputDir 的真实位置必须留在 cwd 内（模型可控参数），caseId 走交付名判定后
+ * 拼入 `data/cases/<caseId>/outputs`；缺省目录由调用方给出。
+ * @param input - 目录相关字段。
+ * @param cwd - 相对路径基准目录。
+ * @param defaultOutputDir - 既无 outputDir 也无 caseId 时的缺省目录。
+ * @param createError - 校验失败或越界时构造领域错误。
+ * @returns 输出目录绝对路径。
+ * @throws 当 outputDir 越出 cwd 或 caseId 不是合法交付名时，抛出 `createError` 构造的错误。
+ */
+export function resolvePatentOutputDir(
+  input: { readonly outputDir?: string; readonly caseId?: string },
+  cwd: string,
+  defaultOutputDir: string,
+  createError: (message: string) => Error,
+): string {
+  if (input.outputDir !== undefined) {
+    return resolveConfinedPath(input.outputDir, cwd, '输出目录', createError)
+  }
+  if (input.caseId !== undefined) {
+    assertDeliverableName(input.caseId, '案卷号', createError)
+    return resolve(cwd, caseOutputsDir(input.caseId))
+  }
+  return resolve(cwd, defaultOutputDir)
 }

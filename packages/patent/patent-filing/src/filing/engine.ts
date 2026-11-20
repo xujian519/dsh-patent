@@ -12,7 +12,12 @@ import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { extname, join, resolve } from 'node:path'
-import { assertSafeId, caseOutputsDir, isJsonRecord, resolveConfinedPath } from '@deepseek-ai/dsh-patent-core'
+import {
+  assertDeliverableName,
+  isJsonRecord,
+  resolvePatentOutputDir,
+  startSpawnDeadline,
+} from '@deepseek-ai/dsh-patent-core'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { PatentFilingError } from '../types.ts'
 import type { FilingBuildResult, FilingContent, FilingVerifyResult, SectionTally, SubprocessSpawner, TemplateStyle } from '../types.ts'
@@ -98,16 +103,7 @@ export interface VerifyFilingInput {
  * @returns 通过校验的名字。
  */
 export function assertSafeOutputName(name: string): string {
-  const bad = name.trim() !== name || name === ''
-    || name.length > 120
-    || name.includes('..')
-    || /[/\\]/.test(name)
-    || /[\u0000-\u001f\u007f]/.test(name)
-  if (bad) {
-    throw new PatentFilingError(
-      `输出文件名 ${JSON.stringify(name)} 不可用：不得含路径分隔符、\`..\`、控制字符或首尾空白，长度 1–120`,
-    )
-  }
+  assertDeliverableName(name, '输出文件名', message => new PatentFilingError(message))
   return name
 }
 
@@ -129,14 +125,7 @@ export function resolveOutputDir(
   cwd: string,
   defaultOutputDir: string,
 ): string {
-  if (input.outputDir !== undefined) {
-    return resolveConfinedPath(input.outputDir, cwd, '输出目录', message => new PatentFilingError(message))
-  }
-  if (input.caseId !== undefined) {
-    assertSafeId(input.caseId, '案卷号')
-    return resolve(cwd, caseOutputsDir(input.caseId))
-  }
-  return resolve(cwd, defaultOutputDir)
+  return resolvePatentOutputDir(input, cwd, defaultOutputDir, message => new PatentFilingError(message))
 }
 
 /**
@@ -184,11 +173,9 @@ async function runEngine(
     throw new PatentFilingError(`${script} 未启动：调用方在起进程前已取消`)
   }
   const pythonPath = options.pythonPath ?? requirePython()
-  const controller = new AbortController()
-  const timer = setTimeout(() => { controller.abort() }, options.timeoutMs)
-  timer.unref()
-  const onAbort = (): void => { controller.abort() }
-  signal.addEventListener('abort', onAbort, { once: true })
+  // 用函数读取取消状态，避免上面的前置判断把类型收窄成「永不为真」。
+  const callerCancelled = (): boolean => signal.aborted
+  const deadline = startSpawnDeadline(options.timeoutMs, signal)
   try {
     const handle = options.subprocess.spawn({
       argv: [pythonPath, script, ...args],
@@ -199,7 +186,7 @@ async function runEngine(
         stderr: { maxBytes: MAX_OUTPUT_BYTES },
       },
       graceMs: GRACE_MS,
-      signal: controller.signal,
+      signal: deadline.signal,
     })
     const outcome = await handle.done
     const stdout = (handle.collected.stdout?.readFrom(0).text ?? '').trim()
@@ -207,9 +194,13 @@ async function runEngine(
     try {
       return JSON.parse(stdout) as JsonValue
     } catch (cause) {
-      const why = outcome.exitCode === null
-        ? `被信号 ${outcome.signal ?? '未知'} 终止`
-        : `退出码 ${outcome.exitCode}`
+      const why = deadline.timedOut()
+        ? '超时'
+        : callerCancelled()
+          ? '被调用方取消'
+          : outcome.exitCode === null
+            ? `被信号 ${outcome.signal ?? '未知'} 终止`
+            : `退出码 ${outcome.exitCode}`
       throw new PatentFilingError(
         `${script} 未输出可解析的 JSON（${why}）：${stderr || stdout || '无输出'}`
         + missingModuleHint(stderr, pythonPath),
@@ -217,8 +208,7 @@ async function runEngine(
       )
     }
   } finally {
-    clearTimeout(timer)
-    signal.removeEventListener('abort', onAbort)
+    deadline.dispose()
   }
 }
 

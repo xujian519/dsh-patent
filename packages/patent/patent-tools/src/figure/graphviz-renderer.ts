@@ -14,6 +14,7 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { startSpawnDeadline } from '@deepseek-ai/dsh-patent-core'
 import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import type { DotEngine, DotFormat } from './dot-builder.ts'
 import {
@@ -23,7 +24,6 @@ import {
   renderStderr,
   spawnRenderProcess,
   spawnVersionProbe,
-  startRenderDeadline,
   stdinStdio,
 } from './subprocess-render.ts'
 import { DEFAULT_SVG_MAX_BYTES, SvgAnnotateError, assertSafeSvg } from './svg-annotate.ts'
@@ -226,7 +226,7 @@ export async function renderWithGraphviz(
   }
   const filename = sanitizeDotFilename(spec.filename)
   const outputPath = join(spec.outputDir, `${filename}.${spec.format}`)
-  const deadline = startRenderDeadline(options.renderTimeoutMs, spec.signal)
+  const deadline = startSpawnDeadline(options.renderTimeoutMs, spec.signal)
   try {
     // graphviz >= 15 rejects a trailing '-' as an unknown option; stdin input needs no file argument.
     const { handle, outcome } = await spawnRenderProcess(subprocess, deadline, {

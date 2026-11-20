@@ -293,7 +293,7 @@ it('keeps every charge when many append at once', async () => {
 
 ### 7b. 跨进程账本一致性
 
-两个 `Context` 各自持有 `LocalFileSystem` 指向同一目录，共享文件但不共享进程内 key 锁，等价于两个进程同时计费：
+两个 `Context` 各自持有 `LocalFileSystem` 指向同一目录，是在同进程内能构造的最接近双进程的形态。进程内 key 锁是模块级共享的，因此这一条实际固定的是"独立文件系统实例并发追加后账本不丢条目"；写入冲突后的重试分支由 7c 显式注入 stale 版本覆盖。
 
 ```typescript
 it('keeps every charge two file-system contexts write concurrently', async () => {
@@ -311,9 +311,38 @@ it('keeps every charge two file-system contexts write concurrently', async () =>
 })
 ```
 
+### 7c. 重试后的去重（本轮补）
+
+7a/7b 的竞态只写入了不同 `taskId`，`appendLedgerEntry` 在 stale 版本重试后命中"同 task 已结算"而返回 `false` 的分支一直没有断言——重试路径若丢掉去重检查，同一任务就会被重复计费。用注入 `FS_STALE_VERSION` 的 `writeText` 让"对端先结算了同一任务"必然发生：
+
+```typescript
+it('settles a task once when a racing writer charged it first', async () => {
+  await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'seed' }), ledgerDir, root)
+  const original = ctx.fs.writeText.bind(ctx.fs)
+  let raced = false
+  ctx.fs.writeText = async (target, content, expected, signal, policy) => {
+    if (!raced && expected?.kind === 'replaceIfVersion') {
+      raced = true
+      // 对端在自己的写窗口里结算了同一个任务，版本因此过期
+      const current = JSON.parse(await ctx.fs.readText(target)) as { entries: MediaLedgerEntry[] }
+      await original(target, `${JSON.stringify({
+        schemaVersion: 1,
+        entries: [...current.entries, entry({ taskId: 'shared' })],
+      }, null, 2)}\n`)
+      throw new FsError('stale', 'FS_STALE_VERSION')
+    }
+    return original(target, content, expected, signal, policy)
+  }
+  expect(await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'shared' }), ledgerDir, root)).toBe(false)
+  const ledger = await readLedger(ctx, projectPath, ledgerDir, root)
+  expect(ledger.map(item => item.taskId)).toEqual(['seed', 'shared'])
+  expect(ledgerCost(ledger)).toBe(4)
+})
+```
+
 **落地位置**：`packages/experimental/video-mode/tests/store.spec.ts`（复用既有 fixture，不新建文件）
 **CI**：已在 `node-coverage` lane
-**验收（已达成）**：`vitest run tests/store.spec.ts` → 28 passed；版本号重试机制在两个上下文并发时未丢任何条目
+**验收（已达成）**：`vitest run tests/store.spec.ts` → 29 passed；去掉 `entries.some(...)` 去重后 7c 立即失败（`expected true to be false`），证明该用例钉住的是重试后的去重分支而非并发本身
 
 ---
 

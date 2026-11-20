@@ -48,19 +48,25 @@ export function readDefaultDeclarations(input: SourceInput): SourceDeclarations 
   const defaults: DefaultDeclaration[] = []
   const fallbacks: DefaultDeclaration[] = []
   for (const match of input.source.matchAll(SCHEMA_DEFAULT)) {
+    const field = match[1]
+    const value = match[2]
+    if (field === undefined || value === undefined) continue
     defaults.push({
       path: input.path,
       line: lineOf(input.source, match.index),
-      field: match[1],
-      value: match[2],
+      field,
+      value,
     })
   }
   for (const match of input.source.matchAll(FALLBACK)) {
+    const field = match[1]
+    const value = match[2]
+    if (field === undefined || value === undefined) continue
     fallbacks.push({
       path: input.path,
       line: lineOf(input.source, match.index),
-      field: match[1],
-      value: match[2],
+      field,
+      value,
     })
   }
   return { defaults, fallbacks }

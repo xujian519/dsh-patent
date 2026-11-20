@@ -271,6 +271,40 @@ describe('budget ledger', () => {
     expect(ledgerCost(await readLedger(ctx, projectPath, ledgerDir, root))).toBe(2)
   })
 
+  it('keeps every charge when many append at once', async () => {
+    const charges = Array.from({ length: 8 }, (_, index) => entry({ taskId: `task-${index}`, costCny: 0.5 }))
+
+    const results = await Promise.all(
+      charges.map(charge => appendLedgerEntry(ctx, projectPath, charge, ledgerDir, root)),
+    )
+
+    expect(results).toEqual(Array<boolean>(8).fill(true))
+    const ledger = await readLedger(ctx, projectPath, ledgerDir, root)
+    expect(ledger.map(item => item.taskId).sort()).toEqual(charges.map(item => item.taskId).sort())
+    expect(ledgerCost(ledger)).toBe(4)
+  })
+
+  it('keeps every charge two file-system contexts write concurrently', async () => {
+    // Two contexts share the file but not the in-process key lock, standing in
+    // for two processes charging the same production at once.
+    const peer = new Context()
+    await peer.plugin(LocalFileSystem, { cwd: root }).await()
+    try {
+      await Promise.all([
+        appendLedgerEntry(ctx, projectPath, entry({ taskId: 'local-a' }), ledgerDir, root),
+        appendLedgerEntry(peer, projectPath, entry({ taskId: 'peer-b' }), ledgerDir, root),
+        appendLedgerEntry(ctx, projectPath, entry({ taskId: 'local-c' }), ledgerDir, root),
+        appendLedgerEntry(peer, projectPath, entry({ taskId: 'peer-d' }), ledgerDir, root),
+      ])
+
+      const ledger = await readLedger(ctx, projectPath, ledgerDir, root)
+      expect(ledger.map(item => item.taskId).sort()).toEqual(['local-a', 'local-c', 'peer-b', 'peer-d'])
+      expect(ledgerCost(ledger)).toBe(8)
+    } finally {
+      await peer.fiber.dispose()
+    }
+  })
+
   it('keeps a charge another writer appended while the ledger write raced', async () => {
     await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'a' }), ledgerDir, root)
     const original = ctx.fs.writeText.bind(ctx.fs)

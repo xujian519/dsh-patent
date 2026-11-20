@@ -36,7 +36,7 @@ export {
   articleCitationFocus,
   articleComparableEntries,
   decideArticleCitation,
-  findCompetingLabels,
+  findCompetingEntries,
   formatPercent,
   supportMismatchReason,
   transcribedText,
@@ -49,6 +49,7 @@ export type {
   ArticleProposition,
   ArticleVerdict,
   DecisionArticle,
+  PropositionCarrier,
 } from './article-decision.ts'
 export {
   CITATION_FINDING_DECISION_PROPERTIES,

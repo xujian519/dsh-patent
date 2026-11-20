@@ -129,6 +129,22 @@ export const CONFORMANCE_SAMPLES: ConformanceSample[] = [
     note: '所引第 1 条与命题无共同字对，第 3 条主题命中命题。',
   },
   {
+    name: 'mismatch: a topic naming a substantial part of the claim',
+    article: 1,
+    proposition: '适用范围',
+    ceiling: 'verified',
+    expected: 'mismatch',
+    note: '命题就是另一条的主题「适用范围」，主题词点到全部命题，判为不符。',
+  },
+  {
+    name: 'unmatched: a topic word inside a longer claim does not move the citation',
+    article: 1,
+    proposition: '本法的适用范围不包括涉外民事法律关系的登记与备案要求',
+    ceiling: 'verified',
+    expected: 'unmatched',
+    note: '「适用范围」只占长命题的六分之一，不能据此把第 2 条指为命题的归宿。',
+  },
+  {
     name: 'mismatch: cited paragraph absent from the entry',
     article: 5,
     paragraph: 3,

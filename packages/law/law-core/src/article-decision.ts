@@ -51,6 +51,29 @@ export type ArticleProposition = {
   supportThreshold?: number
 }
 
+/** Another entry that carries the proposition instead of the cited one. */
+export type PropositionCarrier = {
+  /** How the reason names the entry, e.g. `第 30 条`. */
+  label: string
+  /** True when the entry's transcribed text carries the proposition; false when only a topic keyword does. */
+  textBacked: boolean
+  /** The evidence that makes the entry the proposition's home, quoted in the reason. */
+  evidence: string
+}
+
+/**
+ * Share of a proposition a matching topic keyword must account for before that
+ * topic can make its entry a competing home.
+ *
+ * A topic that appears inside a longer proposition is often just a shared
+ * subject word: a claim about one article commonly contains 申请日, 申请人, or
+ * 申请文件, each of which is a topic of several others. Requiring the topic to
+ * name a substantial part of the proposition keeps those words from accusing a
+ * correct citation while still letting a short claim that names an entry's
+ * subject point at that entry.
+ */
+const COMPETING_TOPIC_SHARE = 0.25
+
 /** Decisions an article citation can reach. */
 export type ArticleDecision =
   | 'valid'
@@ -104,14 +127,19 @@ export function truncateProposition(value: string): string {
 }
 
 /**
- * The reason a citation reports when another entry of the law carries the proposition.
+ * The reason a citation reports when another entry carries the proposition.
  * @param law - the cited law name.
  * @param proposition - the proposition the citation supports.
- * @param elsewhere - the law entries that carry the proposition instead.
- * @returns the mismatch reason line.
+ * @param elsewhere - the entries that carry the proposition instead.
+ * @returns the mismatch reason line, quoting each entry's carrying evidence.
  */
-export function supportMismatchReason(law: string, proposition: string, elsewhere: readonly string[]): string {
-  return `所引条目未被该命题支撑：《${law}》${elsewhere.join('、')}更贴近命题「${truncateProposition(proposition)}」`
+export function supportMismatchReason(
+  law: string,
+  proposition: string,
+  elsewhere: readonly PropositionCarrier[],
+): string {
+  const named = elsewhere.map(entry => `${entry.label}（${entry.evidence}）`).join('、')
+  return `所引条目未被该命题支撑：《${law}》${named}更贴近命题「${truncateProposition(proposition)}」`
 }
 
 /**
@@ -146,29 +174,141 @@ function articleIndex(baseline: object, entries: readonly ComparableEntry[]): Ov
 
 /**
  * Find the entries of the cited entry's law that carry the proposition instead.
+ *
+ * Transcribed text is the stronger evidence: the share of the proposition's
+ * weighted character pairs an entry carries must reach the support threshold.
+ * A topic keyword is the weaker evidence, and only a topic that names a
+ * substantial part of the proposition can make its entry a competing home;
+ * see {@link COMPETING_TOPIC_SHARE}. Together these keep a shared subject word
+ * from accusing a citation whose wording merely restates the cited entry.
  * @param entries - the law's entries as proposition candidates.
  * @param index - the overlap index of those entries.
  * @param proposition - the claim the citation is offered in support of.
  * @param threshold - overlap at which transcribed text counts as support.
  * @param cited - the cited entry's label, which is excluded.
  * @param covered - labels the citation already covers, e.g. the subsections of a cited section.
- * @returns the labels of the entries that carry the proposition, at most three.
+ * @returns the strongest carrying entries, with their evidence, at most three; empty when none.
  */
-export function findCompetingLabels(
+export function findCompetingEntries(
   entries: readonly ComparableEntry[],
   index: OverlapIndex,
   proposition: string,
   threshold: number,
   cited: string,
   covered?: (label: string) => boolean,
-): string[] {
-  return entries
-    .filter(entry => entry.label !== cited)
-    .filter(entry => covered === undefined || !covered(entry.label))
-    .filter(entry => topicOverlap(entry.topics, proposition)
-      || (entry.text !== null && textOverlap(index, proposition, entry.text) >= threshold))
-    .map(entry => entry.label)
-    .slice(0, 3)
+): PropositionCarrier[] {
+  const needle = proposition.trim()
+  if (needle === '') return []
+  const textCarriers: Array<{ entry: ComparableEntry; text: string; overlap: number }> = []
+  const topicCarriers: Array<{ entry: ComparableEntry; topic: string; text: string | null }> = []
+  for (const entry of entries) {
+    if (entry.label === cited) continue
+    if (covered !== undefined && covered(entry.label)) continue
+    const text = entry.text
+    const overlap = text === null ? 0 : textOverlap(index, proposition, text)
+    if (text !== null && overlap >= threshold) {
+      textCarriers.push({ entry, text, overlap })
+      continue
+    }
+    const topic = matchingTopic(entry.topics, needle)
+    if (topic !== null && topicShare(topic, needle) >= COMPETING_TOPIC_SHARE) {
+      topicCarriers.push({ entry, topic, text })
+    }
+  }
+  textCarriers.sort((left, right) => right.overlap - left.overlap)
+  topicCarriers.sort((left, right) => topicShare(right.topic, needle) - topicShare(left.topic, needle))
+  return [
+    ...textCarriers.map(carrier => ({
+      label: carrier.entry.label,
+      textBacked: true,
+      evidence: carrierTextEvidence(index, proposition, carrier.text, carrier.overlap),
+    })),
+    ...topicCarriers.map(carrier => ({
+      label: carrier.entry.label,
+      textBacked: false,
+      evidence: carrierTopicEvidence(index, proposition, carrier.topic, carrier.text),
+    })),
+  ].slice(0, 3)
+}
+
+/**
+ * The longest declared topic that names the proposition.
+ * @param topics - the entry's declared topics.
+ * @param proposition - the claim the citation is offered in support of.
+ * @returns the matching topic, or null when none names the proposition.
+ */
+function matchingTopic(topics: readonly string[], proposition: string): string | null {
+  return topics
+    .filter(topic => proposition.includes(topic) || topic.includes(proposition))
+    .sort((left, right) => right.length - left.length)
+    .at(0) ?? null
+}
+
+/**
+ * The share of a proposition a topic names.
+ * @param topic - a declared topic that matches the proposition.
+ * @param proposition - the claim the citation is offered in support of.
+ * @returns the topic length over the longer of the two, so a topic containing the whole proposition counts as one.
+ */
+function topicShare(topic: string, proposition: string): number {
+  return topic.length / Math.max(topic.length, proposition.length)
+}
+
+/**
+ * The evidence a text-backed carrier reports.
+ * @param index - the overlap index of the entry's law.
+ * @param proposition - the claim the citation is offered in support of.
+ * @param text - the entry's transcribed text.
+ * @param overlap - the share of the proposition the text carries.
+ * @returns the carrying excerpt and overlap, for a reason line.
+ */
+function carrierTextEvidence(
+  index: OverlapIndex,
+  proposition: string,
+  text: string,
+  overlap: number,
+): string {
+  return `原文「${carrierExcerpt(index, proposition, text)}」；字面重合 ${formatPercent(overlap)}`
+}
+
+/**
+ * The evidence a topic-backed carrier reports.
+ * @param index - the overlap index of the entry's law.
+ * @param proposition - the claim the citation is offered in support of.
+ * @param topic - the declared topic that names the proposition.
+ * @param text - the entry's transcribed text, when it has one.
+ * @returns the topic keyword and, when transcribed, an excerpt, for a reason line.
+ */
+function carrierTopicEvidence(
+  index: OverlapIndex,
+  proposition: string,
+  topic: string,
+  text: string | null,
+): string {
+  return text === null
+    ? `主题词「${topic}」`
+    : `主题词「${topic}」；原文「${carrierExcerpt(index, proposition, text)}」`
+}
+
+/**
+ * The sentence of an entry that carries the most of a proposition.
+ * @param index - the overlap index of the entry's law.
+ * @param proposition - the claim the citation is offered in support of.
+ * @param text - the entry's transcribed text.
+ * @returns the carrying sentence, or the single-line text itself, truncated for a reason line.
+ */
+function carrierExcerpt(index: OverlapIndex, proposition: string, text: string): string {
+  const sentences = text.split(/(?<=[。；！？\n])/u).map(sentence => sentence.trim()).filter(sentence => sentence !== '')
+  let best = text
+  let bestScore = -1
+  for (const sentence of sentences) {
+    const score = textOverlap(index, proposition, sentence)
+    if (score > bestScore) {
+      best = sentence
+      bestScore = score
+    }
+  }
+  return truncateProposition(bestScore > 0 ? best : text.replace(/\s+/gu, ' '))
 }
 
 /** One paragraph of an article, with the item lines that belong to it. */
@@ -309,10 +449,14 @@ function checkNarrowing(reference: { article: number; paragraph?: number }, entr
  * citation is offered in support of.
  *
  * The entry itself must carry the proposition first, by its topic keywords or by
- * its own transcribed wording. Only when it does not, and another entry of the
- * same law does, is the citation reported as a mismatch — so a proposition
+ * its own transcribed wording. Only when it does not, and another entry carries
+ * it by its transcribed text or by a topic that names a substantial part of the
+ * proposition, is the citation reported as a mismatch — so a proposition
  * reworded around a synonym this index cannot see is reported as undecided
- * rather than as a contradiction.
+ * rather than as a contradiction, and a shared subject word alone never accuses
+ * the citation of naming the wrong entry. A citation narrowed to a paragraph or
+ * item is contradicted only by another entry's transcribed text: topic keywords
+ * describe a whole article and cannot decide one paragraph.
  * @param reference - the parsed reference.
  * @param entry - the indexed entry the reference resolved to.
  * @param text - the entry's transcribed text, which the caller has established is present.
@@ -345,17 +489,31 @@ function decideTranscribed<TEntry extends DecisionArticle>(
   if ((!focus.narrowed && topicOverlap(entry.topics, proposition)) || overlap >= threshold) {
     return { decision: 'valid', reason: validReason, entry }
   }
-  const sibling = focus.siblings.find(candidate => textOverlap(index, proposition, candidate.text) >= threshold)
+  const sibling = focus.siblings
+    .map(candidate => ({ candidate, overlap: textOverlap(index, proposition, candidate.text) }))
+    .find(scored => scored.overlap >= threshold)
   if (sibling !== undefined) {
-    return { decision: 'mismatch', reason: supportMismatchReason(baseline.law, proposition, [sibling.label]), entry }
+    return {
+      decision: 'mismatch',
+      reason: supportMismatchReason(baseline.law, proposition, [{
+        label: sibling.candidate.label,
+        textBacked: true,
+        evidence: `原文「${truncateProposition(sibling.candidate.text)}」；字面重合 ${formatPercent(sibling.overlap)}`,
+      }]),
+      entry,
+    }
   }
-  const elsewhere = findCompetingLabels(entries, index, proposition, threshold, `第 ${entry.article} 条`)
-  if (elsewhere.length > 0) {
-    return { decision: 'mismatch', reason: supportMismatchReason(baseline.law, proposition, elsewhere), entry }
+  const elsewhere = findCompetingEntries(entries, index, proposition, threshold, `第 ${entry.article} 条`)
+  // A paragraph- or item-level citation is decided by that text alone; an
+  // entry's topic keywords describe its whole article, so they cannot prove
+  // another paragraph or article is the intended home.
+  const competing = focus.narrowed ? elsewhere.filter(carrier => carrier.textBacked) : elsewhere
+  if (competing.length > 0) {
+    return { decision: 'mismatch', reason: supportMismatchReason(baseline.law, proposition, competing), entry }
   }
   return {
     decision: 'unmatched',
-    reason: `所引条目的文本与命题「${truncateProposition(proposition)}」的字面重合 ${formatPercent(overlap)}，低于支撑阈值 ${formatPercent(threshold)}，且本索引中没有条目支撑该命题——请核对条号或改写命题`,
+    reason: `所引条目的文本与命题「${truncateProposition(proposition)}」的字面重合 ${formatPercent(overlap)}，低于支撑阈值 ${formatPercent(threshold)}，且本索引中没有其他条目承载该命题——释义式措辞或覆盖多条引用的复合命题会落在此判定：请核对条号，或按条文原文改写命题、一条引用只配一条命题`,
     entry,
   }
 }

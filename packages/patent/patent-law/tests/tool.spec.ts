@@ -140,6 +140,30 @@ describe('law_verify tool', () => {
     expect(value.counts.unmatched).toBe(1)
   })
 
+  it('warns instead of blocking when the cited article is right but the proposition paraphrases it', async () => {
+    // issue #919: 第 57 条第 2 款的条号正确，命题只是释义；申请日、申请文件 等
+    // 出现在命题里的主题词不得把别的条指认为「更贴近」。
+    const value = await run(await host(), {
+      references: ['专利法实施细则第57条第2款'],
+      proposition: '申请人主动修改申请文件的时机为自申请日起2个月内',
+    })
+    expect(value.findings[0]).toMatchObject({ decision: 'unmatched', policy: 'warn' })
+    expect(value.findings[0]?.reason).not.toContain('更贴近命题')
+    expect(value.blocked).toBe(false)
+  })
+
+  it('does not attribute one compound proposition to each of several citations', async () => {
+    const value = await run(await host(), {
+      references: ['专利法实施细则第5条', '专利法第29条第1款', '专利法第42条第1款'],
+      proposition: '当事人因不可抗拒的事由延误期限的，可以自障碍消除之日起2个月内请求顺延；要求优先权的，应当在申请日起12个月内提出；发明专利权的期限为20年',
+    })
+    // 第 5 条的主题词「期限」点到复合命题的一部分；第 29 条第 1 款与第 42 条
+    // 第 1 款只承载其中一句，不能因此被拦成「与所引命题不符」。
+    expect(value.findings.map(finding => finding.decision)).toEqual(['valid', 'unmatched', 'unmatched'])
+    expect(value.blocked).toBe(false)
+    expect(value.counts.unmatched).toBe(2)
+  })
+
   it('blocks a proposition another verified article carries, and names it', async () => {
     const value = await run(await host(twoArticleIndex), {
       references: ['专利法第22条第3款'],

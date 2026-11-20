@@ -107,7 +107,7 @@ export {
   collectReferences,
   createOverlapIndex,
   decideArticleCitation,
-  findCompetingLabels,
+  findCompetingEntries,
   formatArticleCitation,
   formatCnNumber,
   formatPercent,
@@ -133,6 +133,7 @@ export type {
   ComparableEntry,
   DecisionArticle,
   OverlapIndex,
+  PropositionCarrier,
 } from '@deepseek-ai/dsh-law-core'
 
 // Atoms: the StageProvider/StageHandler vocabulary and the builtin handlers.

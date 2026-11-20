@@ -1,4 +1,4 @@
-/** Fixture: the argv form of a child process must not be reported. */
+/** Fixture for `dsh-no-shell-string`: the argv form of a child process must not be reported. */
 
 import { execFile } from 'node:child_process'
 

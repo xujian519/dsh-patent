@@ -1,4 +1,4 @@
-/** Fixture: a registration table must not be reported as dynamic code. */
+/** Fixture for `dsh-no-dynamic-code`: a registration table must not be reported. */
 
 /** Entry of the fixture handler table. */
 export interface Handler {

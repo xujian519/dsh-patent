@@ -245,6 +245,7 @@ ptc-runtime 的 worker 超时已由 `packages/ptc-runtime/ptc-runtime-node/tests
 - CI：`ci-fork.yml` 新增独立 `node-sast` job，用 `semgrep/semgrep:latest` 镜像，不拖慢 `node-checks`
 - 规则自检：`scripts/fixtures/semgrep/violations/` 每条规则一个必须命中的样本，`scripts/fixtures/semgrep/clean/` 提供应当放行的对照（argv 形式、运行时凭据、注册表查表）。`node-sast` 在扫描 shipped 源码后跑同一 job 内的两步断言：clean 目录必须退出 0，violations 目录必须非零。规则失效与源码干净在 CI 输出上无法区分，自检把前者变成红灯
 - 自检不放进 vitest：`node-coverage` lane 没有 semgrep，spec 只能长期 skip，而跳过读起来是绿的；用 fallback 语言重写规则同样测不到真实规则
+- 静态 spec 固定自检的覆盖与接线（不运行 semgrep，因此在 `node-coverage` lane 正常执行）：`scripts/ci-workflow.spec.ts` 断言 `.semgrep.yml` 的规则 id 集合与两个 fixture 目录各自声明的规则 id 集合相等（新增规则无样本、规则改名留下孤儿样本都会失败），以及 `node-sast` 的 shipped 扫描覆盖 `packages apps`、排除 `**/tests/**`、不含 `scripts/fixtures`，自检步骤对 clean 直接跑 `--error`、对 violations 走 `if ...; then` 反转退出码
 - 本地运行需重定向 HOME（semgrep 写 `~/.semgrep/semgrep.log`，沙箱下被拒）：
   `HOME=/tmp/sg-home semgrep --config .semgrep.yml packages apps --exclude '**/tests/**'`
 
@@ -259,6 +260,7 @@ ptc-runtime 的 worker 超时已由 `packages/ptc-runtime/ptc-runtime-node/tests
 - `Ran 3 rules on 4314 files: 0 findings`
 - `semgrep --config .semgrep.yml --error --quiet scripts/fixtures/semgrep/clean` → 退出 0
 - `semgrep --config .semgrep.yml --error --quiet scripts/fixtures/semgrep/violations` → 退出 1，三条规则各至少一次命中
+- `pnpm exec vitest run scripts/ci-workflow.spec.ts` → 87 passed（含两条 G6 静态 spec）
 
 **后续**：CI job 现为 report 模式（不带 `--error`）。基线既已是 0，下一次改动即可加 `--error` 转阻塞。
 

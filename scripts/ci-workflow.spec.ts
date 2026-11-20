@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { runInNewContext } from 'node:vm'
 import * as yaml from 'js-yaml'
@@ -1207,6 +1207,48 @@ describe('fork CI workflow', () => {
       run: 'pnpm run test:web:built snapshot',
     })
   })
+
+  // The rule set and its fixtures move together: a rule added without a sample is
+  // never exercised, and a renamed rule leaves a sample only its own header still
+  // names. Semgrep runs in the SAST job alone, so this check is static — it pins
+  // fixture coverage, not rule behavior.
+  it('pins every semgrep rule to a violating sample and an accepted counterpart', () => {
+    const ruleIds = semgrepRuleIds()
+    expect(ruleIds).toEqual(expect.arrayContaining([
+      'dsh-no-dynamic-code',
+      'dsh-no-hardcoded-credential',
+      'dsh-no-shell-string',
+    ]))
+    expect(fixtureRuleIds('violations')).toEqual(ruleIds)
+    expect(fixtureRuleIds('clean')).toEqual(ruleIds)
+  })
+
+  // The self-check is the only signal that a rule still matches: a rule that
+  // stopped matching reports nothing, which reads exactly like clean code. Both
+  // directions must stay wired, and the shipped scan must never absorb the
+  // deliberately unsafe fixtures into its own baseline.
+  it('runs the semgrep self-check against both fixture trees', () => {
+    const job = workflowJob(loadWorkflow('.github/workflows/ci-fork.yml'), 'node-sast')
+    if (!Array.isArray(job.steps)) throw new TypeError('node-sast must define steps')
+    const steps = job.steps.filter(isRecord)
+    const scan = steps.find(step => String(step.run).includes('packages apps'))
+    const selfCheck = steps.find(step => step.name === 'Rule self-check')
+    if (scan === undefined
+      || selfCheck === undefined
+      || typeof scan.run !== 'string'
+      || typeof selfCheck.run !== 'string') {
+      throw new TypeError('node-sast must scan the shipped sources and run the rule self-check')
+    }
+
+    expect(scan.run).toContain('semgrep --config .semgrep.yml packages apps')
+    expect(scan.run).toContain("--exclude '**/tests/**'")
+    expect(scan.run).not.toContain('scripts/fixtures')
+
+    expect(selfCheck.run).toContain('semgrep --config .semgrep.yml --error --quiet scripts/fixtures/semgrep/clean')
+    expect(selfCheck.run).toMatch(/if[\s\S]*scripts\/fixtures\/semgrep\/violations[\s\S]*; then/u)
+    expect(selfCheck.run).toContain('::error::')
+    expect(job['continue-on-error']).not.toBe(true)
+  })
 })
 
 describe('Runtime and LLM e2e Blacksmith routing', () => {
@@ -1972,6 +2014,41 @@ function loadWorkflow(path: string): Record<string, unknown> {
  */
 function loadArchivedWorkflow(path: string): Record<string, unknown> {
   return parseWorkflow(path.replace('.github/workflows/', '.github/workflows-disabled/'))
+}
+
+/** Rule ids declared by the repository semgrep rule set, sorted. */
+function semgrepRuleIds(): string[] {
+  const config: unknown = yaml.load(readFileSync(resolve(root, '.semgrep.yml'), 'utf8'))
+  if (!isRecord(config) || !Array.isArray(config.rules)) {
+    throw new TypeError('.semgrep.yml must define rules')
+  }
+  return config.rules.map((rule) => {
+    if (!isRecord(rule) || typeof rule.id !== 'string') {
+      throw new TypeError('every semgrep rule must declare an id')
+    }
+    return rule.id
+  }).sort()
+}
+
+/**
+ * Rule ids named by the fixture headers in one self-check tree, sorted.
+ * Every fixture must name at least one rule, so a sample left behind by a renamed
+ * rule fails instead of silently pinning nothing.
+ */
+function fixtureRuleIds(tree: 'clean' | 'violations'): string[] {
+  const directory = resolve(root, 'scripts/fixtures/semgrep', tree)
+  const ids = new Set<string>()
+  for (const file of readdirSync(directory).filter(name => name.endsWith('.ts')).sort()) {
+    const source = readFileSync(resolve(directory, file), 'utf8')
+    const named = [...source.matchAll(/`(dsh-[a-z-]+)`/gu)]
+    if (named.length === 0) throw new TypeError(`${tree}/${file} must name the rule it pins`)
+    for (const match of named) {
+      const [, id] = match
+      if (id === undefined) throw new TypeError(`${tree}/${file} must name the rule it pins`)
+      ids.add(id)
+    }
+  }
+  return [...ids].sort()
 }
 
 function nodeStepSource(job: Record<string, unknown>, id: string): string {

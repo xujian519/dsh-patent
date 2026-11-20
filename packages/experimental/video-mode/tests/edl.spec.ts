@@ -92,6 +92,39 @@ describe('EDL validation', () => {
     expect(() => validateEdl({})).toThrow(/invalid EDL/)
   })
 
+  it('rejects audio clips where outSec is not greater than inSec (F-VID-015)', () => {
+    const base = {
+      version: 1,
+      canvas: { width: 64, height: 96, fps: 12 },
+      clips: [{ kind: 'color' as const, color: '000000', durationSec: 1 }],
+      output: 'out.mp4',
+    }
+    // outSec == inSec → rejected
+    expect(() => validateEdl({
+      ...base,
+      audio: [{ source: 'voice.wav', inSec: 2, outSec: 2 }],
+    })).toThrow(/audio 0: outSec must be greater than inSec/)
+    // outSec < inSec → rejected
+    expect(() => validateEdl({
+      ...base,
+      audio: [{ source: 'voice.wav', inSec: 5, outSec: 3 }],
+    })).toThrow(/audio 0: outSec must be greater than inSec/)
+    // 只有 inSec 或只有 outSec → 合法（schema 允许 optional）
+    expect(() => validateEdl({
+      ...base,
+      audio: [{ source: 'voice.wav', inSec: 1 }],
+    })).not.toThrow()
+    expect(() => validateEdl({
+      ...base,
+      audio: [{ source: 'voice.wav', outSec: 3 }],
+    })).not.toThrow()
+    // outSec > inSec → 合法
+    expect(() => validateEdl({
+      ...base,
+      audio: [{ source: 'voice.wav', inSec: 1, outSec: 3 }],
+    })).not.toThrow()
+  })
+
   it('computes clip and timeline durations', () => {
     const edl: Edl = {
       version: 1,

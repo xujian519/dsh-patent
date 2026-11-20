@@ -164,4 +164,26 @@ describe('plantask state machine', () => {
     expect(replanned.tasks[1]!.status).toBe('pending')
     expect(replanned.tasks[2]!.status).toBe('pending')
   })
+
+  it('replanTasks only reuses completed slots once per hash (F-PAT-050)', () => {
+    // 旧计划里只有一条已完成的「检索现有技术」。
+    const done = syncPlanToTasks(['检索现有技术'])
+    done.tasks[0]!.status = 'completed'
+    // 新计划把同一步写了两次——第一次认领旧的已完成槽位，第二次要重新执行。
+    const replanned = replanTasks(done.tasks, ['检索现有技术', '检索现有技术'])
+    expect(replanned.preserved).toEqual(['task-1'])
+    expect(replanned.toRun).toEqual(['task-2'])
+    expect(replanned.tasks[0]!.status).toBe('completed')
+    expect(replanned.tasks[1]!.status).toBe('pending')
+  })
+
+  it('replanTasks reuses one slot per prior completed occurrence of the same hash', () => {
+    // 旧计划两条同文本且都已完成，新计划三条同文本——前两条各认领一个，第三条重跑。
+    const bothDone = syncPlanToTasks(['步骤X', '步骤X'])
+    bothDone.tasks[0]!.status = 'completed'
+    bothDone.tasks[1]!.status = 'completed'
+    const replanned = replanTasks(bothDone.tasks, ['步骤X', '步骤X', '步骤X'])
+    expect(replanned.preserved).toEqual(['task-1', 'task-2'])
+    expect(replanned.toRun).toEqual(['task-3'])
+  })
 })

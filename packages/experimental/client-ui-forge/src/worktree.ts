@@ -1,6 +1,7 @@
 /** The worktree a Session requests before it starts: its record, its projection, and its creation. */
 
 import { isAbsolute, relative, sep } from 'node:path'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent, PreStepDecision } from '@deepseek-ai/dsh-agent'
 import { CREATED_RECORD, createdWorktreeSchema, generatedWorktreeName } from '@deepseek-ai/dsh-experimental-worktree'
@@ -80,15 +81,6 @@ export function within(root: string, path: string): boolean {
   return rest === '' || (rest !== '..' && !rest.startsWith(`..${sep}`) && !isAbsolute(rest))
 }
 
-/**
- * The text of a failure: an Error's message, or else the thrown value as a string.
- * @param error - what was thrown.
- * @returns the text.
- */
-export function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
-
 function apply(state: ForgeWorktreeState, event: SessionEvent): ForgeWorktreeState {
   switch (event.type) {
     case 'turn/start':
@@ -155,7 +147,7 @@ export class CreationFailure extends Error {
 function failureOf(error: unknown, from: string | null): ForgeWorktreeFailure {
   return error instanceof CreationFailure
     ? { branch: error.branch, from, phase: error.phase, message: error.reason }
-    : { branch: null, from, phase: 'prepare', message: messageOf(error) }
+    : { branch: null, from, phase: 'prepare', message: errorMessage(error) }
 }
 
 /** Work on a Session's checkout that runs as maintenance of its Agent. */
@@ -427,7 +419,7 @@ export class WorktreeCreations {
         })
       } catch (error) {
         signal.throwIfAborted()
-        throw new CreationFailure(status.branch, status.phase, messageOf(error), error)
+        throw new CreationFailure(status.branch, status.phase, errorMessage(error), error)
       }
       signal.throwIfAborted()
       return created

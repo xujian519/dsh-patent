@@ -10,6 +10,7 @@ import {
   decodeSeqRanges,
 } from '@deepseek-ai/dsh-session'
 import { prepareSessionSnapshotFixtureForComparison } from '@deepseek-ai/dsh-llm-replay'
+import { escapeRegExp } from '@deepseek-ai/dsh-value'
 import { redactSessionSnapshotIds } from './identity.ts'
 import { sessionHeaderVersion } from './session-files.ts'
 
@@ -238,11 +239,6 @@ function scrubValue(
     return out
   }
   return value
-}
-
-/** Escape one literal path segment for use in a regular expression. */
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 /** Replace any absolute spelling whose final segment is the generated cwd basename. */

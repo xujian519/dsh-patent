@@ -11,6 +11,7 @@
  */
 
 import { readFile } from 'node:fs/promises'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { extname } from 'node:path'
 import {
   KeyedCloudProvider,
@@ -19,7 +20,6 @@ import {
   failedTask,
   failureCodeFor,
   isRecord,
-  messageOf,
   parseJson,
   rejectionMessage,
   resolveCloudKey,
@@ -277,7 +277,7 @@ export class SiliconFlowMediaProvider extends KeyedCloudProvider {
         } catch (error) {
           this.pending.delete(task.id)
           if (error instanceof MediaFailure) return failedTask(task, error.message, error.code)
-          return failedTask(task, messageOf(error))
+          return failedTask(task, errorMessage(error))
         }
       }
       default:
@@ -431,7 +431,7 @@ async function imageDataUri(reference: MediaReference): Promise<string> {
   try {
     bytes = await readFile(reference.path)
   } catch (error) {
-    throw new MediaFailure(`cannot read the SiliconFlow reference image ${reference.path}: ${messageOf(error)}`, 'MEDIA_REQUEST_INVALID', { cause: error })
+    throw new MediaFailure(`cannot read the SiliconFlow reference image ${reference.path}: ${errorMessage(error)}`, 'MEDIA_REQUEST_INVALID', { cause: error })
   }
   if (bytes.byteLength === 0) {
     throw new MediaFailure(`SiliconFlow reference image ${reference.path} is empty`, 'MEDIA_REQUEST_INVALID')

@@ -5,7 +5,7 @@
  */
 
 import type { LoadedMod, RegisteredHook } from './chain.ts'
-import { messageOf } from './values.ts'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { describeMatcher, ENGINE_EVENTS, eventMatches, isEventPattern } from './matcher.ts'
 import type { AnyHook, HookMatcher, ModDefinition, ModOn, HookRegistration } from './types.ts'
 
@@ -155,7 +155,7 @@ export async function registerMod(definition: ModDefinition, order: number): Pro
   try {
     await definition.register(on, mod.options)
   } catch (error: unknown) {
-    throw new Error(`${definition.name}: hooks module did not load: register threw ${messageOf(error)}`, { cause: error })
+    throw new Error(`${definition.name}: hooks module did not load: register threw ${errorMessage(error)}`, { cause: error })
   }
   return { mod, hooks }
 }

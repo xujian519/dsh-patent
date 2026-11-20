@@ -7,10 +7,11 @@
  */
 
 import type { BudgetClock, LoadedMod, RegisteredHook } from './chain.ts'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { dispatch, ENGINE_ORIGIN } from './chain.ts'
 import { createModsApi } from './api.ts'
 import type { TimerHost } from './api.ts'
-import { messageOf, record } from './values.ts'
+import { record } from './values.ts'
 import { HookRegistry, registerMod } from './module.ts'
 import type { ModDefinition, ModsApi, OpResult, ModTimer } from './types.ts'
 
@@ -98,7 +99,7 @@ function sleepUnless(ms: number, signal: AbortSignal): Promise<void> {
 
 function abortReasonOf(signal: AbortSignal): Error {
   const reason: unknown = signal.reason
-  return reason instanceof Error ? reason : new Error(`$.clock.sleep cancelled: ${messageOf(reason)}`)
+  return reason instanceof Error ? reason : new Error(`$.clock.sleep cancelled: ${errorMessage(reason)}`)
 }
 
 /** One named `$.state` slot: `<plugin>\u0000<key>`. */
@@ -151,7 +152,7 @@ class TimerSet implements TimerHost {
 
   private run(fn: () => unknown): void {
     const settled = Promise.resolve().then(fn).then(() => undefined, (error: unknown) => {
-      this.report(`${this.owner}: timer callback failed: ${messageOf(error)}`)
+      this.report(`${this.owner}: timer callback failed: ${errorMessage(error)}`)
     })
     this.running.add(settled)
     void settled.finally(() => { this.running.delete(settled) })

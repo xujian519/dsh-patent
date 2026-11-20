@@ -9,6 +9,7 @@
  */
 
 import { stat } from 'node:fs/promises'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { extname } from 'node:path'
 import type { ImageAttachmentRef, ImageMediaType, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
 import { Session, SESSION_FORMAT_VERSION, SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
@@ -208,7 +209,7 @@ export async function importDeepseekChatExport(
       await attachSession(workspace, id)
     } catch (error) {
       signal.throwIfAborted()
-      report({ conversationId, title, reason: errorText(error) })
+      report({ conversationId, title, reason: errorMessage(error) })
       return false
     }
     imported.push({ id, rank })
@@ -229,7 +230,7 @@ export async function importDeepseekChatExport(
     } catch (error) {
       signal.throwIfAborted()
       outstanding += 1
-      report({ conversationId, title: file?.title ?? null, reason: errorText(error) })
+      report({ conversationId, title: file?.title ?? null, reason: errorMessage(error) })
       return
     }
     if (!await write(conversion, rank, conversationId, file.title)) outstanding += 1
@@ -304,7 +305,7 @@ export async function importDeepseekChatExport(
       conversion = convertWithStoredImages(deps, file, images, options)
     } catch (error) {
       signal.throwIfAborted()
-      report({ conversationId: row.id, title: file?.title ?? null, reason: errorText(error) })
+      report({ conversationId: row.id, title: file?.title ?? null, reason: errorMessage(error) })
       return false
     }
     return write(conversion, rank, row.id, file.title)
@@ -356,7 +357,7 @@ async function storeImages(
         stored.set(entry.name, { stored: true, ref })
       } catch (error) {
         signal.throwIfAborted()
-        stored.set(entry.name, { stored: false, reason: errorText(error) })
+        stored.set(entry.name, { stored: false, reason: errorMessage(error) })
       }
     },
   }
@@ -548,7 +549,7 @@ async function attachSession(workspace: DeepseekChatImportWorkspace, id: Session
     await workspace.attachSession(id)
   } catch (error) {
     // SessionPersistence offers no removal, so the stored Session stays outside the Workspace.
-    throw new Error(`stored as Session ${id} but not added to the workspace: ${errorText(error)}`, { cause: error })
+    throw new Error(`stored as Session ${id} but not added to the workspace: ${errorMessage(error)}`, { cause: error })
   }
 }
 
@@ -591,8 +592,4 @@ function parseJson(bytes: Uint8Array): unknown {
     // The caller reports the file as invalid.
     return undefined
   }
-}
-
-function errorText(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }

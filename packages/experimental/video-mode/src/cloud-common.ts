@@ -129,15 +129,6 @@ export function parseJson(text: string): unknown {
   }
 }
 
-/**
- * Read an error message from an unknown thrown value.
- * @param error - caught value.
- * @returns a diagnostic string.
- */
-export function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
-
 /** Fields one video download needs. */
 interface DownloadVideoOptions {
   /** Provider name used in failure messages. */

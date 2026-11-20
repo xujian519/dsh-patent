@@ -16,7 +16,6 @@ import {
   KeyedMiniMaxProvider,
   failureCodeFor,
   isRecord,
-  messageOf,
   minimaxJsonHeaders,
   parseJson,
   rejectionMessage,
@@ -34,6 +33,7 @@ import {
   type MediaTask,
   type MediaTaskRecord,
 } from './types.ts'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 
 export type { MiniMaxFetchLike } from './minimax-common.ts'
 
@@ -283,7 +283,7 @@ export class MiniMaxMediaProvider extends KeyedMiniMaxProvider {
         } catch (error) {
           this.pending.delete(task.id)
           if (error instanceof MediaFailure) return failed(task, error.message, error.code)
-          return failed(task, messageOf(error))
+          return failed(task, errorMessage(error))
         }
       }
       default:
@@ -498,7 +498,7 @@ async function imageDataUri(reference: MediaReference): Promise<string> {
   try {
     bytes = await readFile(reference.path)
   } catch (error) {
-    throw new MediaFailure(`cannot read the MiniMax reference image ${reference.path}: ${messageOf(error)}`, 'MEDIA_REQUEST_INVALID', { cause: error })
+    throw new MediaFailure(`cannot read the MiniMax reference image ${reference.path}: ${errorMessage(error)}`, 'MEDIA_REQUEST_INVALID', { cause: error })
   }
   if (bytes.byteLength > MAX_IMAGE_BYTES) {
     throw new MediaFailure(

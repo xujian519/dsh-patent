@@ -1,4 +1,5 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { realpath } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -18,7 +19,7 @@ import { createHostOps, FS_MAX_BYTES, STORE_MAX_BYTES, toolCallResultOf } from '
 import type { AgentBinding } from '../src/host-ops.ts'
 import type { LoadedMod } from '../src/chain.ts'
 import { createToolNameAliases } from '../src/tool-names.ts'
-import { messageOf, record, requireString, stringify } from '../src/values.ts'
+import { record, requireString, stringify } from '../src/values.ts'
 
 /**
  * The host op table against bare and partially composed contexts: the error a
@@ -96,8 +97,8 @@ describe('values', () => {
     expect(record(null)).toEqual({})
     expect(requireString('ok', 'f')).toBe('ok')
     expect(() => requireString(1, 'the field')).toThrow('the field must be a string')
-    expect(messageOf(new Error('e'))).toBe('e')
-    expect(messageOf('plain')).toBe('plain')
+    expect(errorMessage(new Error('e'))).toBe('e')
+    expect(errorMessage('plain')).toBe('plain')
     expect(stringify({ a: 1 })).toBe('{"a":1}')
     expect(stringify(undefined)).toBeUndefined()
     expect(toolCallResultOf({ isError: false, value: null, content: [{ type: 'text', text: 'a' }, { type: 'text', text: 'b' }] })).toEqual({ result: 'ab' })

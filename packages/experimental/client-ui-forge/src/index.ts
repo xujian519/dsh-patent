@@ -20,6 +20,7 @@ import type {} from '@deepseek-ai/dsh-session-query'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { gitIn, inspectCheckout, listBranches } from './git.ts'
 import type { Inspection } from './git.ts'
 import { parseDiff } from './diff.ts'
@@ -38,7 +39,7 @@ import type {
   Config, ForgeBaseBranches, ForgeBranches, ForgeChangeRequestDiff, ForgeChangeRequestStatesFrame, ForgeCommitRange, ForgeLocalCommits,
   ForgeLocalDiff, ForgeLocalScope, ForgeMissingWorktree, ForgePanelState, ForgeSessionWorktree, ForgeWorktreeState,
 } from './types.ts'
-import { forgeWorktreeProjection, messageOf, within, WORKTREE_RECORD, WorktreeCreations } from './worktree.ts'
+import { forgeWorktreeProjection, within, WORKTREE_RECORD, WorktreeCreations } from './worktree.ts'
 import type { HeldWork } from './worktree.ts'
 
 export type * from './types.ts'
@@ -808,7 +809,7 @@ export class ForgePanelController extends TypertRemoteService {
           async check => await missingWorktree(this.home, this.config, session, this.worktreeState(session), created.path, check) === null)
       } catch (error) {
         operation.throwIfAborted()
-        throw new RemoteError('forgePanel/restore-failed', messageOf(error), {}, { cause: error })
+        throw new RemoteError('forgePanel/restore-failed', errorMessage(error), {}, { cause: error })
       }
     })
     this.panels.get(session)?.reinspect()

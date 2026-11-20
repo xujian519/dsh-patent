@@ -26,7 +26,7 @@ import {
   type MediaTask,
   type MediaTaskRecord,
 } from './types.ts'
-import { isRecord } from '@deepseek-ai/dsh-value'
+import { isRecord, errorMessage } from '@deepseek-ai/dsh-value'
 
 /** Registered provider id of the local ComfyUI backend. */
 export const COMFYUI_PROVIDER_ID = 'comfyui'
@@ -217,13 +217,13 @@ export function loadWorkflow(path: string, bundled: ComfyWorkflow): ComfyWorkflo
   try {
     text = readFileSync(path, 'utf8')
   } catch (error) {
-    throw new Error(`video mode: cannot read the ComfyUI workflow ${path}: ${messageOf(error)}`, { cause: error })
+    throw new Error(`video mode: cannot read the ComfyUI workflow ${path}: ${errorMessage(error)}`, { cause: error })
   }
   let parsed: unknown
   try {
     parsed = JSON.parse(text)
   } catch (error) {
-    throw new Error(`video mode: the ComfyUI workflow ${path} is not JSON: ${messageOf(error)}`, { cause: error })
+    throw new Error(`video mode: the ComfyUI workflow ${path} is not JSON: ${errorMessage(error)}`, { cause: error })
   }
   const result = workflowFileSchema.safeParse(parsed)
   if (!result.success) {
@@ -632,7 +632,7 @@ export class ComfyUiMediaProvider implements MediaProvider {
     try {
       bytes = new Uint8Array(await readFile(path))
     } catch (error) {
-      throw new MediaFailure(`cannot read the first-frame image ${path}: ${messageOf(error)}`, 'MEDIA_REQUEST_INVALID', { cause: error })
+      throw new MediaFailure(`cannot read the first-frame image ${path}: ${errorMessage(error)}`, 'MEDIA_REQUEST_INVALID', { cause: error })
     }
     const form = new FormData()
     const buffer = new ArrayBuffer(bytes.length)
@@ -687,7 +687,7 @@ export class ComfyUiMediaProvider implements MediaProvider {
     } catch (error) {
       this.pending.delete(pending.promptId)
       if (error instanceof MediaFailure) return this.failed(task, error.code, error.message)
-      return this.failed(task, 'MEDIA_TASK_FAILED', messageOf(error))
+      return this.failed(task, 'MEDIA_TASK_FAILED', errorMessage(error))
     }
     this.pending.delete(pending.promptId)
     return {
@@ -751,7 +751,7 @@ export class ComfyUiMediaProvider implements MediaProvider {
     try {
       return await this.fetchImpl(`${this.settings.baseUrl}${path}`, init)
     } catch (error) {
-      throw new MediaFailure(`cannot reach ComfyUI at ${this.settings.baseUrl}: ${messageOf(error)}`, 'MEDIA_PROVIDER_UNAVAILABLE', { cause: error })
+      throw new MediaFailure(`cannot reach ComfyUI at ${this.settings.baseUrl}: ${errorMessage(error)}`, 'MEDIA_PROVIDER_UNAVAILABLE', { cause: error })
     }
   }
 
@@ -770,7 +770,7 @@ export class ComfyUiMediaProvider implements MediaProvider {
     try {
       return await response.json()
     } catch (error) {
-      throw new MediaFailure(`ComfyUI ${path} returned invalid JSON: ${messageOf(error)}`, 'MEDIA_PROVIDER_UNAVAILABLE', { cause: error })
+      throw new MediaFailure(`ComfyUI ${path} returned invalid JSON: ${errorMessage(error)}`, 'MEDIA_PROVIDER_UNAVAILABLE', { cause: error })
     }
   }
 
@@ -921,11 +921,6 @@ function rejectionMessage(body: unknown): string {
     }
   }
   return parts.length === 0 ? 'no diagnostic returned' : parts.join('; ')
-}
-
-/** Read a thrown value's message. */
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }
 
 /** Parse a JSON body, returning `undefined` for an empty or non-JSON body. */

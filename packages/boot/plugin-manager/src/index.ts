@@ -1,5 +1,6 @@
 /** Current-profile plugin and bundle management over shared dsh plugin operations. */
 import { randomUUID } from 'node:crypto'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { existsSync, readFileSync } from 'node:fs'
 import { readFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -104,12 +105,11 @@ const INSPECT_FIELDS = ['name', 'version', 'description', 'dsh'] as const
 const ANSI_SEQUENCE = /\x1b\[[0-9;]*m/g
 
 /** Preserve the exact observed diagnostic, including non-Error failures. */
-function messageOf(error: unknown): string { return error instanceof Error ? error.message : String(error) }
 
 /** An expected refusal keeps its code; anything else becomes an operation error carrying its exact diagnostic. */
 function managementError(error: unknown): ManagementError {
   if (error instanceof UnsupportedBundlePlatformError) return { code: 'unsupported-platform' }
-  if (!(error instanceof ManagementFailure)) return { code: 'operation-error', diagnostic: messageOf(error) }
+  if (!(error instanceof ManagementFailure)) return { code: 'operation-error', diagnostic: errorMessage(error) }
   return { code: error.code, ...error.incompatible === undefined ? {} : { incompatible: error.incompatible } }
 }
 
@@ -644,7 +644,7 @@ export class PluginManager extends TypertRemoteService {
         try {
           read = JSON.parse(await readFile(join(parsed.path, 'package.json'), 'utf8')) as object
         } catch (error) {
-          return refused('not-a-package', `no readable package.json at the path: ${messageOf(error)}`)
+          return refused('not-a-package', `no readable package.json at the path: ${errorMessage(error)}`)
         }
         const inspection = inspectionOf('path', read, registry)
         if (inspection.name === undefined) return refused('not-a-package', 'the package.json names no package')
@@ -686,7 +686,7 @@ export class PluginManager extends TypertRemoteService {
     if (listing.status === 'refused') return listing
     let newer
     try { newer = newerVersions(listing.answer, target.installed) }
-    catch (error) { return { status: 'refused', problem: 'unknown', reason: messageOf(error), attempts: listing.attempts } }
+    catch (error) { return { status: 'refused', problem: 'unknown', reason: errorMessage(error), attempts: listing.attempts } }
     const listed = newer.slice(0, this.versionListLimit)
     const exemptions = readProfileVersionExemptions(this.profile.dir)
     const looked = await mapConcurrent(listed, this.versionLookupConcurrency, async (published) => {
@@ -696,7 +696,7 @@ export class PluginManager extends TypertRemoteService {
       const facts = versionFacts(answer.answer, name, published.version)
       let compatibility
       try { compatibility = evaluatePluginCompatibility(facts.manifest, exemptions) }
-      catch (error) { return { status: 'refused' as const, problem: 'unknown' as const, reason: messageOf(error), attempts: answer.attempts } }
+      catch (error) { return { status: 'refused' as const, problem: 'unknown' as const, reason: errorMessage(error), attempts: answer.attempts } }
       const version: PluginVersion = {
         ...published, bundle: facts.bundle, ...facts.deprecated === undefined ? {} : { deprecated: facts.deprecated },
         ...compatibility === undefined || compatibility.exempted ? {} : { incompatible: incompatiblePlugin(compatibility) },
@@ -861,7 +861,7 @@ export class PluginManager extends TypertRemoteService {
     if (!facts.bundle) return { code: 'not-bundle' }
     let compatibility
     try { compatibility = evaluatePluginCompatibility(facts.manifest, readProfileVersionExemptions(this.profile.dir)) }
-    catch (error) { return { code: 'operation-error', diagnostic: messageOf(error) } }
+    catch (error) { return { code: 'operation-error', diagnostic: errorMessage(error) } }
     if (compatibility !== undefined && !compatibility.exempted) return { code: 'incompatible-version', incompatible: [incompatiblePlugin(compatibility)] }
     return { spec, registry: checked.registry, saveExact: true }
   }
@@ -898,7 +898,7 @@ export class PluginManager extends TypertRemoteService {
       const printed = view.stdout.replace(ANSI_SEQUENCE, '').trim()
       if (view.exitCode !== 0 || view.cause !== undefined || view.timedOut) {
         // pnpm prints a refusal as `{ error: { code, message } }` on stdout, with nothing on stderr.
-        const log = [view.stderr.trim(), printedError(printed), view.cause === undefined ? '' : messageOf(view.cause)].filter(Boolean).join('\n')
+        const log = [view.stderr.trim(), printedError(printed), view.cause === undefined ? '' : errorMessage(view.cause)].filter(Boolean).join('\n')
         const kind = classifyInstallFailure({ log, timedOut: view.timedOut, ...view.cause === undefined ? {} : { cause: view.cause } })
         const reason = view.timedOut ? `pnpm view timed out after ${String(this.inspectTimeoutMs)}ms` : log || printed || `pnpm view exited with ${String(view.exitCode)}`
         const problem = kind === 'not-found' || kind === 'no-matching-version' ? 'not-found' : kind === 'network' || kind === 'timeout' ? 'network' : 'unknown'
@@ -911,7 +911,7 @@ export class PluginManager extends TypertRemoteService {
         attempts.push({ registry })
         return { status: 'answered', answer, registry, attempts }
       } catch (error) {
-        const reason = `unreadable pnpm view output: ${messageOf(error)}`
+        const reason = `unreadable pnpm view output: ${errorMessage(error)}`
         attempts.push({ registry, problem: 'unknown', reason })
         return { status: 'refused', problem: 'unknown', reason, attempts }
       }
@@ -1242,7 +1242,7 @@ export class PluginManager extends TypertRemoteService {
         kind: classifyInstallFailure({ log: result.output, ...result.timedOut === true ? { timedOut: true } : {} }),
       }
     } catch (error) {
-      this.ownerContext.emit('plugin-manager/install-log', { ...identity, jobId, argv, cwd, stream: 'stderr', text: messageOf(error), exitCode: null })
+      this.ownerContext.emit('plugin-manager/install-log', { ...identity, jobId, argv, cwd, stream: 'stderr', text: errorMessage(error), exitCode: null })
       throw error
     } finally {
       this.packageOperations.delete(task)

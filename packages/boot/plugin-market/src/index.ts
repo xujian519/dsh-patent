@@ -1,6 +1,7 @@
 /** Host reader of configured plugin market indexes for the Discover page and the `plugin_market` tool. */
 
 import { isAbsolute, join, resolve } from 'node:path'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { Context, Volatile } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import semver from 'semver'
@@ -67,10 +68,6 @@ export interface Config {
   detailGitlabHosts: string[]
 }
 
-/** The exact diagnostic of a failure, including a non-Error rejection. */
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
 
 /** Causes followed below a rejection; a deeper or cyclic chain is cut there. */
 const MAX_CAUSES = 4
@@ -79,7 +76,7 @@ const MAX_CAUSES = 4
 function causeChainOf(error: unknown, depth = 0): string {
   return error instanceof Error && error.cause !== undefined && depth < MAX_CAUSES
     ? `${error.message}: ${causeChainOf(error.cause, depth + 1)}`
-    : messageOf(error)
+    : errorMessage(error)
 }
 
 /** The Fetch route serving images beside detail documents. */
@@ -317,7 +314,7 @@ export default class PluginMarket extends TypertRemoteService {
     try {
       return languageChain(language)
     } catch (error) {
-      throw new RemoteError('plugin-market/invalid-query', messageOf(error), { field: 'language', reason: 'format' }, { cause: error })
+      throw new RemoteError('plugin-market/invalid-query', errorMessage(error), { field: 'language', reason: 'format' }, { cause: error })
     }
   }
 
@@ -391,7 +388,7 @@ export default class PluginMarket extends TypertRemoteService {
       try {
         return normalizeIndexUrl(url) === url ? [{ url }] : [{ url, error: `Index URL is not in canonical form; use ${normalizeIndexUrl(url)}` }]
       } catch (error) {
-        return [{ url, error: messageOf(error) }]
+        return [{ url, error: errorMessage(error) }]
       }
     })
   }
@@ -413,7 +410,7 @@ export default class PluginMarket extends TypertRemoteService {
         }
         return document
       }, (error: unknown) => {
-        if (this.configured(url)) this.errors.set(url, messageOf(error))
+        if (this.configured(url)) this.errors.set(url, errorMessage(error))
         throw error
       }).finally(() => { this.pending.delete(url) })
       this.pending.set(url, pending)
@@ -437,7 +434,7 @@ export default class PluginMarket extends TypertRemoteService {
     }
     const bytes = await this.readBody(response, failed)
     const result = await parseIndexInWorker(bytes, url, this.lifetime.signal).catch((error: unknown) => {
-      throw failed(messageOf(error), error)
+      throw failed(errorMessage(error), error)
     })
     if (result.ok) return result.index
     throw new RemoteError('plugin-market/invalid-index', `${url}: ${result.message}`, { url, path: result.path, reason: result.reason })
@@ -461,7 +458,7 @@ export default class PluginMarket extends TypertRemoteService {
       }
     } catch (error) {
       if (error instanceof RemoteError) throw error
-      throw failed(messageOf(error), error)
+      throw failed(errorMessage(error), error)
     }
     const body = new Uint8Array(size)
     let offset = 0

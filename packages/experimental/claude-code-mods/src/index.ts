@@ -11,6 +11,7 @@
  */
 
 import { FiberState, type Context } from '@deepseek-ai/cordis'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type {} from '@deepseek-ai/dsh-working-directory'
 import z from '@deepseek-ai/schemastery'
 import type { Agent, PreStepDecision } from '@deepseek-ai/dsh-agent'
@@ -29,7 +30,7 @@ import type { AgentBinding } from './host-ops.ts'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { SurfaceTable } from './surfaces.ts'
 import { createToolNameAliases } from './tool-names.ts'
-import { messageOf, record, stringify } from './values.ts'
+import { record, stringify } from './values.ts'
 import type {
   ModDefinition, PromptSubmitInput, PromptSubmitResult, SessionEndInput, SessionEndResult, SessionStartInput,
   SessionStartResult, ToolCallInput, ToolCallResult, TurnCompleteInput, TurnCompleteResult, TurnStartInput,
@@ -161,7 +162,7 @@ class DetachedRuns {
 
   track(label: string, run: Promise<unknown>): void {
     /* v8 ignore next -- the engine behaviors beneath these runs are total; the report guards a future rejecting one */
-    const settled = run.then(() => undefined, (error: unknown) => { this.report(`${label} failed: ${messageOf(error)}`) })
+    const settled = run.then(() => undefined, (error: unknown) => { this.report(`${label} failed: ${errorMessage(error)}`) })
     this.pending.add(settled)
     void settled.finally(() => { this.pending.delete(settled) })
   }
@@ -246,7 +247,7 @@ export class ClaudeCodeMods extends TypertRemoteService {
         try {
           await callback()
         } catch (error: unknown) {
-          report(`a button's onPress failed: ${messageOf(error)}`)
+          report(`a button's onPress failed: ${errorMessage(error)}`)
         }
       },
       report,

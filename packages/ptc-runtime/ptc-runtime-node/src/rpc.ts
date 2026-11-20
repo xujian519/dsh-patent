@@ -1,11 +1,11 @@
 /** birpc over newline-delimited JSON on the bounded private process channel. */
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { Buffer } from 'node:buffer'
 import type { Duplex } from 'node:stream'
 import { createBirpc, type BirpcReturn } from 'birpc'
 
 const stringify = JSON.stringify
 const parse = JSON.parse
-const messageOf = (error: unknown): string => error instanceof Error ? error.message : String(error)
 
 /**
  * Connect typed methods over one control endpoint; execution owns all deadlines.
@@ -36,7 +36,7 @@ export function createProcessRpc<Remote extends object, Local extends object>(
     on: (listener) => { receive = listener },
     off: () => { receive = undefined; stream.destroy() },
     // JSON drops Error fields; the peer receives only the diagnostic.
-    serialize: (message: { e?: unknown }) => `${stringify(message.e === undefined ? message : { ...message, e: { message: messageOf(message.e) } })}\n`,
+    serialize: (message: { e?: unknown }) => `${stringify(message.e === undefined ? message : { ...message, e: { message: errorMessage(message.e) } })}\n`,
     post: (line: string) => {
       // A binding can settle after the endpoint closes; the Writable owns already queued bytes.
       if (rpc.$closed) return

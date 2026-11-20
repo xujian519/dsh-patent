@@ -1,6 +1,7 @@
 /** Source-safe browser registration of the mods band: the Remote stream behind a store, the dock entry, the press. */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-api-session-controller/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
@@ -22,10 +23,6 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
 /** Required browser services: the Remote namespace, slots, and localized copy. */
 export const inject = ['remote', 'slots', 'locale']
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
 
 /** A minimal observable the slot renderer turns into `useBand`. */
 class BandStore {
@@ -60,7 +57,7 @@ function watchSession(ctx: Context, sessionId: SessionId, onEnd: () => void): { 
     try {
       for await (const snapshot of handle) store.set(snapshot)
     } catch (error: unknown) {
-      if (!controller.signal.aborted) ctx.logger.warn(`claude-code-mods band: watch of ${sessionId} ended: ${messageOf(error)}`)
+      if (!controller.signal.aborted) ctx.logger.warn(`claude-code-mods band: watch of ${sessionId} ended: ${errorMessage(error)}`)
     } finally {
       onEnd()
     }

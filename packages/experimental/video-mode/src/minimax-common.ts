@@ -20,7 +20,8 @@ import {
   type MediaModel,
 } from './types.ts'
 
-export { failureCodeFor, isRecord, messageOf, parseJson, rejectionMessage } from './cloud-common.ts'
+export { failureCodeFor, isRecord, parseJson, rejectionMessage } from './cloud-common.ts'
+export { errorMessage } from '@deepseek-ai/dsh-value'
 
 /** Minimal fetch surface both MiniMax providers need; tests inject a stub. */
 export type MiniMaxFetchLike = CloudFetchLike

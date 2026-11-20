@@ -6,15 +6,6 @@
  */
 
 /**
- * The message of a thrown value: an Error's `message`, anything else as text.
- * @param error - the thrown value.
- * @returns the message text.
- */
-export function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
-
-/**
  * A mod's call input as a field record; anything that is not an object reads as empty.
  * @param input - the value a mod passed.
  * @returns the fields, or an empty record.

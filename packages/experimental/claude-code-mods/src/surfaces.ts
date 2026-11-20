@@ -7,8 +7,8 @@
  */
 
 import { serializeTree, treeProblem } from './elements.ts'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { UiNode } from './elements.ts'
-import { messageOf } from './values.ts'
 import type { SerializedNode, SurfaceSnapshot, UiRenderInput } from './types.ts'
 
 export type { SurfaceSnapshot } from './types.ts'
@@ -212,7 +212,7 @@ export class SurfaceTable {
     try {
       tree = await this.host.render(sessionId, input)
     } catch (error: unknown) {
-      this.host.report(`band render failed: ${messageOf(error)}`)
+      this.host.report(`band render failed: ${errorMessage(error)}`)
       tree = null
     }
     band.subscribed.clear()

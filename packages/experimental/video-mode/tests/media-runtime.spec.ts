@@ -25,7 +25,7 @@ import VideoMode, {
   type MediaTask,
   type MediaTaskRecord,
 } from '../src/index.ts'
-import { messageOf } from '../src/media.ts'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { MediaFailure } from '../src/types.ts'
 
 /** A model table for a stub provider. */
@@ -207,8 +207,8 @@ describe('submission and generation', () => {
     media.register(stubProvider({ id: 'broken', submit: async () => { throw 'offline' } }))
     await expect(media.submit({ kind: 'video', prompt: 'x', model: 'broken/video' }, new AbortController().signal))
       .rejects.toThrow(/media provider broken failed to submit: offline/)
-    expect(messageOf(new Error('boom'))).toBe('boom')
-    expect(messageOf('plain')).toBe('plain')
+    expect(errorMessage(new Error('boom'))).toBe('boom')
+    expect(errorMessage('plain')).toBe('plain')
     await ctx.fiber.dispose()
   })
 

@@ -11,6 +11,7 @@
  */
 
 import { homedir } from 'node:os'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { isAbsolute, join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { Service, type Context } from '@deepseek-ai/cordis'
@@ -806,7 +807,7 @@ export class MediaRuntime extends Service {
       task = await selection.provider.submit(normalized, signal)
     } catch (error) {
       if (error instanceof MediaFailure) throw error
-      throw new MediaFailure(`media provider ${selection.provider.id} failed to submit: ${messageOf(error)}`, 'MEDIA_TASK_FAILED', { cause: error })
+      throw new MediaFailure(`media provider ${selection.provider.id} failed to submit: ${errorMessage(error)}`, 'MEDIA_TASK_FAILED', { cause: error })
     }
     if (cost !== undefined) this.costs.set(task.id, cost)
     return this.remember(task)
@@ -1099,15 +1100,6 @@ export function estimateCost(model: MediaModel, request: MediaRequest): MediaCos
     case '1000-chars':
       return costOf(Math.max(1, Math.ceil(request.prompt.length / 1000)) * price.amountMinor, price.currency)
   }
-}
-
-/**
- * Read a thrown value's message without assuming an Error.
- * @param error - caught value.
- * @returns a diagnostic string.
- */
-export function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }
 
 /**

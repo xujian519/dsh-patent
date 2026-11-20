@@ -15,6 +15,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {
   FsEditOutcome,
@@ -533,15 +534,6 @@ function serviceOf(ctx: Context, name: string): unknown {
   return ctx.get(name)
 }
 
-/**
- * Read one caught value's message for a refusal this host reports.
- * @param error - Value a dependency threw.
- * @returns The error's message, or the value's own string form.
- */
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
-
 /** Optional Session observation the child preflight reads; absent leaves the child to activation. */
 interface SessionObservationLookup {
   readonly observeSession?: (sessionId: string) => Promise<{ readonly header: { readonly cwd?: string } } & Disposable>
@@ -571,7 +563,7 @@ export async function preflightForkChild(ctx: Context, childSessionId: string): 
     using observed = await query.observeSession(childSessionId)
     cwd = observed.header.cwd
   } catch (error: unknown) {
-    throw new Error(`fork ${childSessionId} preflight failed: ${messageOf(error)}`, { cause: error })
+    throw new Error(`fork ${childSessionId} preflight failed: ${errorMessage(error)}`, { cause: error })
   }
   if (cwd === undefined) {
     throw new Error(`fork ${childSessionId} has no workspace to confine`)

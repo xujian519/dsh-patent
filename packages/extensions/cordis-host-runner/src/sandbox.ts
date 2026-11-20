@@ -186,7 +186,7 @@ export function precheckCode(code: string, half: 'code.host' | 'code.client'): v
   try {
     // Compile-only: constructing the function parses the source and runs nothing.
     // oxlint-disable-next-line typescript/no-implied-eval -- parse gate over model-written code; nothing is invoked
-    new Function(wrapped)
+    new Function(wrapped) // nosemgrep: dsh-no-dynamic-code
   } catch (error) {
     if (!isSyntaxError(error)) throw error
     throw new Error(parseErrorMessage(half, prettyParseContext(wrapped, half, error)))

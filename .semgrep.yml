@@ -1,0 +1,48 @@
+# Repository SAST rules. Run with:
+#   semgrep --config .semgrep.yml --error packages apps --exclude '**/tests/**'
+# The CI job starts in report mode; see docs/code-review/09-ci-gates-execution-plan.md.
+rules:
+  - id: dsh-no-dynamic-code
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Dynamic code execution bypasses the type checker and every static gate.
+      Use an explicit parser or a registration table instead.
+    patterns:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: new Function(...)
+
+  - id: dsh-no-shell-string
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Passing a command string to a shell allows injection through any
+      interpolated value. Use the argv form of execFile or spawn.
+    patterns:
+      - pattern-either:
+          - pattern: exec($CMD, ...)
+          - pattern: execSync($CMD, ...)
+      - metavariable-pattern:
+          metavariable: $CMD
+          language: generic
+          pattern-regex: ^['"`]
+
+  - id: dsh-no-hardcoded-credential
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Credentials come from the environment or the credential registry. A
+      literal here leaks through the published package and the session log.
+    patterns:
+      - pattern-either:
+          - pattern: const $NAME = "$VALUE"
+          - pattern: readonly $NAME = "$VALUE"
+          - pattern: $NAME = "$VALUE"
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i)^(api[_-]?key|secret|token|password|access[_-]?key|auth[_-]?token)$
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: ^[A-Za-z0-9_\-/+=]{16,}$
+      - pattern-not: $NAME = ""

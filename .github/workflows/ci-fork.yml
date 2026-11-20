@@ -494,6 +494,23 @@ jobs:
             gitleaks detect --source . --log-opts="-1 HEAD" --verbose
           fi
 
+  node-sast:
+    # G6: Semgrep over the shipped sources with the repository rule set.
+    # Report mode for one release while false-positive triage runs; the local
+    # baseline is already zero, so flipping to --error needs no code changes.
+    if: github.repository_owner == 'xujian519'
+    runs-on: ubuntu-latest
+    name: sast (semgrep)
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Semgrep
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:latest \
+            semgrep --config .semgrep.yml packages apps --exclude '**/tests/**'
+
   benchmarks:
     # Wall-clock budgets need an otherwise idle runner, so the lane runs alone
     # instead of joining a concurrent gate aggregate. The fork had no performance

@@ -95,6 +95,25 @@ function resolveClaimTextKeys(state: PipelineState): string[] | undefined {
 }
 
 /**
+ * 读取一段权利要求侧文本。字符串按共享读者裁剪；字符串数组只保留非空字符串并按行拼接，
+ * 非字符串项忽略，供 `features` 这类特征列表使用。
+ * @param state - 阶段执行态。
+ * @param key - 状态键。
+ * @returns 可比对文本；缺失、空数组或没有有效项时返回 undefined。
+ */
+function readClaimText(state: PipelineState, key: string): string | undefined {
+  const raw = state[key]
+  if (typeof raw === 'string') return readStateText(state, key)
+  if (!Array.isArray(raw)) return undefined
+  const text = raw
+    .filter((item): item is string => typeof item === 'string')
+    .map(item => item.trim())
+    .filter(item => item.length > 0)
+    .join('\n')
+  return text.length > 0 ? text : undefined
+}
+
+/**
  * 汇总权利要求侧文本；相同文本只保留首次出现的键，避免 claim/claim_text
  * 指向同一材料时重复计数。
  * @param state - 阶段执行态。
@@ -105,14 +124,14 @@ function collectClaimSegments(state: PipelineState, keys: readonly string[]): Cl
   const segments: ClaimTextSegment[] = []
   const seen = new Set<string>()
   for (const key of keys) {
-    const text = readStateText(state, key)
+    const text = readClaimText(state, key)
     if (text === undefined || seen.has(text)) continue
     seen.add(text)
     segments.push({ id: key, text })
   }
   if (segments.length > 0) return segments
   for (const key of DEFAULT_NUMERIC_RANGE_FALLBACK_TEXT_KEYS) {
-    const text = readStateText(state, key)
+    const text = readClaimText(state, key)
     if (text !== undefined) return [{ id: key, text }]
   }
   return []

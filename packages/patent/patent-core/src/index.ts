@@ -493,6 +493,7 @@ export { getStateString, getStateArray } from './atoms/handler.ts'
 export {
   readStateText,
   resolveKeyList,
+  /** @public */
   resolveTrimmedKey,
 } from './atoms/handlers/builtin/state-keys.ts'
 

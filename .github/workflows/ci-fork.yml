@@ -488,7 +488,7 @@ jobs:
           curl -sL https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz \
             | tar -xz -C /usr/local/bin gitleaks
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch origin "pull/${{ github.event.pull_request.number }}/head:pr-head" "origin/${{ github.event.pull_request.base.ref }}:pr-base"
+            git fetch origin "pull/${{ github.event.pull_request.number }}/head:pr-head" "${{ github.event.pull_request.base.ref }}:pr-base"
             gitleaks detect --source . --log-opts="pr-base..pr-head" --verbose
           else
             gitleaks detect --source . --log-opts="-1 HEAD" --verbose

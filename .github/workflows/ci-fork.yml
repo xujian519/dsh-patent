@@ -471,7 +471,8 @@ jobs:
     # OBS-004: the fork ran no key-scanning. gitleaks in PR mode scans only
     # the diff, so the 530 historical false positives in docs/*.i18n.yaml and
     # .agents/notes/ stay invisible — only new leaks in the PR payload fail.
-    # Master pushes scan HEAD only.
+    # Master pushes scan HEAD only. .gitleaksignore lists the synthetic Semgrep
+    # credential fixture; that string is not a live key.
     if: github.repository_owner == 'xujian519'
     runs-on: ubuntu-latest
     name: secret scan (gitleaks)

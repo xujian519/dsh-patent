@@ -43,7 +43,7 @@ pnpm exec vitest run packages/patent/patent-tools/tests/claim-lint-tool.spec.ts 
 
 ## 冻结状态
 
-五题均为「待人工冻结」。冻结人重点看 P-CLM-01 的长权利要求 fixture 是否保留全文、P-CLM-03 的附加特征是否要改成显式 `dependent_tree`。未冻结前不进 D9。
+五题于 2026-11-21 冻结，题面锁定为起草文本。清单在 [pilot-questions.md](pilot-questions.md)。
 
 ## 明日第一件事
 

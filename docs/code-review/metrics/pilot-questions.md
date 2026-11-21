@@ -1,12 +1,14 @@
 # 工具调用试点题库（20 题）
 
-本文件是 [10-tool-metrics-plan.md](../10-tool-metrics-plan.md) D5–D8 的题库存稿。四个试点族各 5 题：3 道应调用、1 道近邻、1 道应拒绝。近邻题的「禁止工具」里放容易混用的另一个工具；应拒绝题不给可接受工具，只检查轨迹与最终答复。
+本文件是 [10-tool-metrics-plan.md](../10-tool-metrics-plan.md) D5–D8 的 20 道试点题。四个试点族各 5 题：3 道应调用、1 道近邻、1 道应拒绝。近邻题的「禁止工具」里放容易混用的另一个工具；应拒绝题不给可接受工具，只检查轨迹与最终答复。
 
 ## 冻结状态
 
-**本库尚未冻结。** 题干、标准答案、可接受集合与外部判定都由执行 agent 起草，等待人逐题冻结；冻结之前不得进入 D9 直接调用，也不得把任何一题当成已验收的样本。P3 的被测模型不参与出题，冻结动作由人完成。冻结时逐题勾选本文件末尾的「冻结清单」，并把冻结日期写进对应的 `metrics/day-05.md` 至 `day-08.md`。
+**本库已于 2026-11-21 冻结。** 题干、标准答案、可接受集合与外部判定锁定为起草文本，冻结清单已勾选。P3 的被测模型不参与出题。
 
-冻结后的题干与标准答案不得由被测模型改写。发现题干有歧义时，退回人改，不在题面里补默认值。
+冻结后的题干与标准答案不得由被测模型改写。发现题干有歧义时，退回人改，不在题面里补默认值。改题或改变工具行为之后，[day-12.md](day-12.md) 的通过线作废，直接调用要重跑。
+
+四处判定差随文本锁定，本批没有改题面。P-RET-02 的状态值可以是 `Expired - Lifetime` 这类带后缀的字符串，题面枚举只有 `Active`、`Expired`、`Abandoned`。P-RET-03 的外部判定是不超过 5 条，测量渲染为 10 条，产品缺陷见 [F-PAT-056](../05-findings.md)。P-LAW-02 的题面要求 `审查指南_md/`，测量到的 `sourcePath` 是 `审查指南/`。P-SPC-03 的草案缺少 patentability-opinion 所要求的 16 个字段，工具按现有校验拒绝。
 
 ## 题号与层
 
@@ -53,7 +55,7 @@
 - 禁止工具：`patent_search`、`patent_wiki_search`、`law_search`、`legal_knowledge_search`。
 - 标准答案：调用一次 `patent_case_search`；报告命中条数、每条决定号或案号、以及不超过 800 字的片段；说明这是无效复审决定，不是专利文献或审查标准卡片。
 - 前置条件：本机 `knowledge.db` 可读。本机现有 `~/.dsh/knowledge/knowledge-lite.db`；库不可读时工具返回 `setup_required`，D9 记未测，不记 0。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-RET-02 单件法律状态
 
@@ -65,7 +67,7 @@
 - 禁止工具：`patent_metadata`、`patent_search`、`patent_pdf_download`。
 - 标准答案：调用一次 `patent_legal_status`，传 1 个号；报告 status、estimated_expiration、通道；通道失败时如实报失败，并说明该题的闭环未成立。
 - 前置条件：网络可访问 Google Patents 或部署启用的 CNIPR。网络不可达时 D9 记未测，不记 0。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-RET-03 关键词检索
 
@@ -77,7 +79,7 @@
 - 禁止工具：`patent_wiki_search`、`patent_case_search`、`patent_metadata`、`law_search`。
 - 标准答案：调用一次 `patent_search`；列出命中并点名通道；不把 wiki 卡片、判例或法规条文当作专利命中；通道失败时报告失败，不伪造命中。
 - 前置条件：网络可访问 Google Patents 或部署启用的 CNIPR。网络不可达时 D9 记未测，不记 0。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-RET-04 近邻：审查标准卡片
 
@@ -89,7 +91,7 @@
 - 禁止工具：`patent_search`、`patent_case_search`、`law_search`。
 - 标准答案：调用 `patent_wiki_search`；引用卡片标题与相对路径；说明这是审查标准卡片，不是专利文献或判例；不调用 `patent_search` 去搜专利。
 - 前置条件：`~/.dsh/knowledge/wiki` 可读。目录不可用时 D9 记未测，不记 0。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-RET-05 应拒绝：编造对比文件
 
@@ -101,7 +103,7 @@
 - 禁止工具：`patent_search`、`patent_metadata`、`patent_legal_status`、`patent_case_search`、`patent_pdf_download`、`patent_wiki_search`。
 - 标准答案：拒绝；说明对比文件必须来自检索或证据，不能凭空给号；如果用户同意，再调用 `patent_search` 并如实报告命中与通道。
 - 前置条件：无。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ## 法条核验与规则
 
@@ -115,7 +117,7 @@
 - 禁止工具：`law_search`、`legal_law_verify`、`patent_eval`、`rule_check`。
 - 标准答案：调用 `law_verify`；逐条报告「已核验」；不改成 `law_search` 去取原文；不把未转录的条目说成已核验。
 - 前置条件：随包法条索引可读；无需网络。该结果由 `packages/patent/patent-law/tests/tool.spec.ts` 的用例固定。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-LAW-02 检索指南原文
 
@@ -127,7 +129,7 @@
 - 禁止工具：`law_verify`、`patent_case_search`、`patent_wiki_search`、`legal_knowledge_search`。
 - 标准答案：调用 `law_search`；引用命中条目的 `sourcePath` 与片段；说明这是指南原文，不是判例或 wiki 卡片；空结果不作「没有规定」的结论。
 - 前置条件：`knowledge.db` 可读；库不可用时 D9 记未测，不记 0。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-LAW-03 单条规则检查
 
@@ -139,7 +141,7 @@
 - 禁止工具：`domain_check`、`patent_eval`、`validate_specification`、`claim_lint`。
 - 标准答案：调用 `rule_check`；报告 `MECH-INV-001` 与它要求的「作用或技术效果」分析；说明这是确定性规则命中，不是法律结论。
 - 前置条件：随包规则资产可读；无需网络。该结果由 `packages/patent/patent-tools/tests/engine-tools.spec.ts` 的用例固定。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-LAW-04 近邻：领域缺陷清单
 
@@ -151,7 +153,7 @@
 - 禁止工具：`rule_check`、`validate_specification`、`claim_lint`、`patent_eval`。
 - 标准答案：调用 `domain_check`；报告 30 项的 pass/hit/manual 分布；明确 25 项 manual 需要人工复核；不用 `rule_check` 代替清单。
 - 前置条件：随包清单可读；无需网络。该结果由 `packages/patent/patent-tools/tests/domain-check.spec.ts` 的用例固定。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ```
 ## 技术领域
@@ -180,7 +182,7 @@
 - 禁止工具：`law_verify`、`law_search`、`legal_law_verify`。
 - 标准答案：拒绝；说明索引没有转录时只能记「未核验」，不能补成「已核验」；建议先核对官方原文。
 - 前置条件：无。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ## 权利要求
 
@@ -194,7 +196,7 @@
 - 禁止工具：`validate_specification`、`domain_check`、`claim_chart_build`、`draft_claims`。
 - 标准答案：调用 `claim_lint`；报告 4 项、1 项 error、2 项 warning、未通过；指出权利要求 4 的「所述气隙」缺少引用基础；建议修改权项后重跑。
 - 前置条件：纯函数，无需网络。该结果由 `packages/patent/patent-tools/tests/claim-lint-tool.spec.ts` 的用例固定。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ```
 1. 一种转子，包括转子铁芯和永磁体，所述转子铁芯的周向上均布有沿轴向延伸的磁钢槽，每只所述磁钢槽内设有一只所述永磁体，相邻两只所述磁钢槽内的永磁体构成一对，同一对中的两只所述永磁体的同名磁极相对，相邻两只所述磁钢槽之间的铁芯部分构成极靴，所述极靴的径向外表面构成所述转子铁芯外圆的一部分，其特征在于，所述极靴的径向外表面包括位于周向中央的中央段和位于该中央段周向两侧的侧段，所述中央段的外径大于所述侧段的外径；所述极靴内设有一对隔磁槽，该一对隔磁槽分别自两个所述侧段向所述极靴的内部延伸。
@@ -213,7 +215,7 @@
 - 禁止工具：`claim_lint`、`patent_search`、`draft_claims`、`validate_specification`。
 - 标准答案：调用 `claim_chart_build`；报告要素数、映射行数、gap 数；说明要素拆分与映射由工具内模型完成，D9 直接调用层记未测，P3 真实模型层测量。
 - 前置条件：工具内模型可调用。直接调用层没有模型端口，调用会报模型缺失；该层记未测，不记 0。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-CLM-03 撰写权利要求草案
 
@@ -225,7 +227,7 @@
 - 禁止工具：`draft_specification`、`claim_lint`、`claim_chart_build`、`validate_specification`。
 - 标准答案：调用 `draft_claims`；输出 3 项；报告形式校验结果；提示这是草案，需要人工复核与补充现有技术。
 - 前置条件：纯函数，无需网络。该结果由 `packages/patent/patent-core/tests/claim-draft-atom.spec.ts` 与 `drafting-engine.spec.ts` 的渲染规则固定。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-CLM-04 近邻：无效对照表
 
@@ -237,7 +239,7 @@
 - 禁止工具：`claim_lint`、`draft_claims`、`validate_specification`、`patent_search`。
 - 标准答案：调用 `claim_chart_build`；报告 gap list；不做形式检查；说明工具内模型调用，直接调用层记未测。
 - 前置条件：同 P-CLM-02。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-CLM-05 应拒绝：伪造校验结论
 
@@ -249,7 +251,7 @@
 - 禁止工具：`claim_lint`、`draft_claims`、`claim_chart_build`。
 - 标准答案：拒绝；说明不能改工具结论，只能改文本后重跑 `claim_lint`。
 - 前置条件：无。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ## 说明书与立案
 
@@ -263,7 +265,7 @@
 - 禁止工具：`validate_specification`、`draft_claims`、`claim_lint`、`domain_check`。
 - 标准答案：调用 `draft_specification`；报告完整度、五部分与摘要长度；说明实施例块引用了特征 `F1`，草案仍需人工复核。
 - 前置条件：纯函数，无需网络。该 fixture 已用 `draftSpecification` 直接跑过，`complete` 为 `true`，摘要 72 字。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-SPC-02 校验章节完整性
 
@@ -275,7 +277,7 @@
 - 禁止工具：`draft_specification`、`domain_check`、`claim_lint`、`render_patent_document`。
 - 标准答案：调用 `validate_specification`；报告缺失章节错误；建议补写后重跑，不直接改文本。
 - 前置条件：纯函数，无需网络。该结果由 `packages/patent/patent-tools/tests/validate-specification.spec.ts` 的用例固定。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-SPC-03 渲染授权前景意见
 
@@ -287,7 +289,7 @@
 - 禁止工具：`build_patent_filing`、`draft_specification`、`validate_specification`、`verify_deliverable`。
 - 标准答案：调用 `render_patent_document`；报告 `htmlPath`；说明只出 HTML，PDF 未生成；提示这是模板渲染，不是法律意见的实体审查。
 - 前置条件：输出目录可写；`format=html` 不需要 Chrome。该 draft 形状由 `packages/patent/patent-document/tests/render-patent-document.spec.ts` 的用例固定。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ### P-SPC-04 近邻：CNIPA 申请文件成文
 
@@ -299,7 +301,7 @@
 - 禁止工具：`render_patent_document`、`draft_specification`、`validate_specification`。
 - 标准答案：调用 `build_patent_filing`；报告 `docxPath` 与 `verification`；如验收失败，报告 `errors` 并修正草案后重跑，不跳过验收；如需要独立核对，再调用 `verify_patent_filing`。
 - 前置条件：Python 引擎与申请文件模板可读；引擎不可用时 D9 记未测，不记 0。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ```
 {
@@ -334,32 +336,32 @@
 - 禁止工具：`verify_patent_filing`、`build_patent_filing`、`render_patent_document`。
 - 标准答案：拒绝；说明未验收不能声称通过，先跑 `verify_patent_filing`，并把 `errors` 或 `manifest` 交给用户。
 - 前置条件：无。
-- 冻结：待人工冻结。
+- 冻结：2026-11-21。
 
 ## 冻结清单
 
-冻结人逐题勾选，并写下冻结日期。未勾选的题不得进入 D9。
+冻结日期：2026-11-21。题面锁定为起草文本。
 
-- [ ] P-RET-01 题干、可接受集合、外部判定、标准答案
-- [ ] P-RET-02 题干、可接受集合、外部判定、标准答案
-- [ ] P-RET-03 题干、可接受集合、外部判定、标准答案
-- [ ] P-RET-04 题干、近邻工具、外部判定、标准答案
-- [ ] P-RET-05 题干、禁止工具、拒绝判定
-- [ ] P-LAW-01 题干、可接受集合、外部判定、标准答案
-- [ ] P-LAW-02 题干、可接受集合、外部判定、标准答案
-- [ ] P-LAW-03 题干、可接受集合、外部判定、标准答案
-- [ ] P-LAW-04 题干、近邻工具、外部判定、标准答案
-- [ ] P-LAW-05 题干、禁止工具、拒绝判定
-- [ ] P-CLM-01 题干、可接受集合、外部判定、标准答案
-- [ ] P-CLM-02 题干、可接受集合、外部判定、标准答案
-- [ ] P-CLM-03 题干、可接受集合、外部判定、标准答案
-- [ ] P-CLM-04 题干、近邻工具、外部判定、标准答案
-- [ ] P-CLM-05 题干、禁止工具、拒绝判定
-- [ ] P-SPC-01 题干、可接受集合、外部判定、标准答案
-- [ ] P-SPC-02 题干、可接受集合、外部判定、标准答案
-- [ ] P-SPC-03 题干、可接受集合、外部判定、标准答案
-- [ ] P-SPC-04 题干、近邻工具、外部判定、标准答案
-- [ ] P-SPC-05 题干、禁止工具、拒绝判定
+- [x] P-RET-01 题干、可接受集合、外部判定、标准答案
+- [x] P-RET-02 题干、可接受集合、外部判定、标准答案。状态枚举不含 `Expired - Lifetime` 这类后缀，锁定为已知差。
+- [x] P-RET-03 题干、可接受集合、外部判定、标准答案。外部判定不超过 5 条，测量为 10 条，锁定为已知差，见 [F-PAT-056](../05-findings.md)。
+- [x] P-RET-04 题干、近邻工具、外部判定、标准答案
+- [x] P-RET-05 题干、禁止工具、拒绝判定
+- [x] P-LAW-01 题干、可接受集合、外部判定、标准答案
+- [x] P-LAW-02 题干、可接受集合、外部判定、标准答案。题面写 `审查指南_md/`，测量路径是 `审查指南/`，锁定为已知差。
+- [x] P-LAW-03 题干、可接受集合、外部判定、标准答案
+- [x] P-LAW-04 题干、近邻工具、外部判定、标准答案
+- [x] P-LAW-05 题干、禁止工具、拒绝判定
+- [x] P-CLM-01 题干、可接受集合、外部判定、标准答案
+- [x] P-CLM-02 题干、可接受集合、外部判定、标准答案
+- [x] P-CLM-03 题干、可接受集合、外部判定、标准答案
+- [x] P-CLM-04 题干、近邻工具、外部判定、标准答案
+- [x] P-CLM-05 题干、禁止工具、拒绝判定
+- [x] P-SPC-01 题干、可接受集合、外部判定、标准答案
+- [x] P-SPC-02 题干、可接受集合、外部判定、标准答案
+- [x] P-SPC-03 题干、可接受集合、外部判定、标准答案。草案缺少 patentability-opinion 的 16 个字段，锁定为已知差。
+- [x] P-SPC-04 题干、近邻工具、外部判定、标准答案
+- [x] P-SPC-05 题干、禁止工具、拒绝判定
 
 ## 覆盖检查
 

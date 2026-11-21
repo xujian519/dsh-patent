@@ -101,7 +101,7 @@
 
 ## 下一周期：工具调用指标
 
-工具调用指标的 45 天计划以 [10-tool-metrics-plan.md](10-tool-metrics-plan.md) 为准，总跟踪是 [#931](https://github.com/xujian519/dsh-patent/issues/931)，P0 契约与题库是 [#932](https://github.com/xujian519/dsh-patent/issues/932)，P1 直接调用记录是 [#933](https://github.com/xujian519/dsh-patent/issues/933)。执行记录写 `metrics/`，与源码审阅的 `daily/` 不互相替代；`daily/` 在本周期不改。通过线仍留在 [metrics/day-12.md](metrics/day-12.md)，不回填计划文件里的空位。
+工具调用指标的 45 天计划以 [10-tool-metrics-plan.md](10-tool-metrics-plan.md) 为准，总跟踪是 [#931](https://github.com/xujian519/dsh-patent/issues/931)，P0 契约与题库是 [#932](https://github.com/xujian519/dsh-patent/issues/932)，P1 直接调用记录是 [#933](https://github.com/xujian519/dsh-patent/issues/933)。执行记录写 `metrics/`，与源码审阅的 `daily/` 不互相替代；`daily/` 在本周期不改。通过线写在 [metrics/day-12.md](metrics/day-12.md)，不回填计划文件里的空位。
 
 ## 写作约束
 

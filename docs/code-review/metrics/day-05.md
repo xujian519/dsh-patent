@@ -30,7 +30,7 @@ P-RET-01、P-RET-04 依赖本机 `~/.dsh/knowledge/knowledge-lite.db` 与 `~/.ds
 
 ## 冻结状态
 
-五题均为「待人工冻结」。冻结人要逐题确认题干没有歧义、可接受集合没有漏掉合法工具、外部判定能独立复核、标准答案没有把草案说成定稿。冻结清单在 [pilot-questions.md](pilot-questions.md) 的「冻结清单」。未冻结前不进 D9。
+五题于 2026-11-21 冻结，题面锁定为起草文本。P-RET-02 的状态枚举与 P-RET-03 的条数上限没有改写。清单在 [pilot-questions.md](pilot-questions.md)。
 
 ## 明日第一件事
 

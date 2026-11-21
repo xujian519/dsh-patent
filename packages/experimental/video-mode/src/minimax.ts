@@ -9,14 +9,10 @@
  * @module @deepseek-ai/dsh-video-mode/minimax
  */
 
-import { readFile } from 'node:fs/promises'
-import { extname } from 'node:path'
-import { downloadVideo, failedTask as failed, submittedVideoTask, supportedImageMediaType, untrackedTask } from './cloud-common.ts'
+import { delay, downloadVideo, failedTask as failed, fetchWithRetry, imageDataUri, settledVideoTask, submitResponse, type CloudRetryPolicy } from './cloud-common.ts'
 import {
   KeyedMiniMaxProvider,
-  failureCodeFor,
   isRecord,
-  messageOf,
   minimaxJsonHeaders,
   parseJson,
   rejectionMessage,
@@ -94,6 +90,10 @@ export interface MiniMaxSettings {
   readonly maxDurationSec: number
   /** Aspect ratio used for text-to-video when the request omits one. */
   readonly aspectRatio: string
+  /** Attempts after a `429` whose retry-after fits the wait ceiling. */
+  readonly maxRetries: number
+  /** Longest retry-after the provider may ask for; a longer wait fails immediately. */
+  readonly maxRetryAfterMs: number
 }
 
 /** One content item in a MiniMax video request. */
@@ -130,15 +130,26 @@ export class MiniMaxMediaProvider extends KeyedMiniMaxProvider {
 
   private readonly pending = new Map<string, PendingTask>()
 
+  /** Retry policy shared by the submit and status endpoints. */
+  private get retryPolicy(): CloudRetryPolicy {
+    return {
+      retries: this.settings.maxRetries,
+      maxRetryAfterMs: this.settings.maxRetryAfterMs,
+      sleep: this.sleep,
+    }
+  }
+
   /**
    * @param settings - resolved provider settings.
    * @param fetchImpl - fetch implementation; tests inject a stub.
    * @param resolveApiKey - credential resolver for `apiKeyEnv`; omitted reads the process environment.
+   * @param sleep - wait between rate-limit retries; tests inject an immediate stub.
    */
   constructor(
     private readonly settings: MiniMaxSettings,
     private readonly fetchImpl: MiniMaxFetchLike = fetch,
     private readonly resolveApiKey?: MiniMaxKeyResolver,
+    private readonly sleep: (ms: number) => Promise<void> = delay,
   ) {
     super(settings, [{
       id: settings.model,
@@ -198,30 +209,23 @@ export class MiniMaxMediaProvider extends KeyedMiniMaxProvider {
       resolution,
       ratio: hasFrame ? 'adaptive' : this.aspectRatioOf(request.aspectRatio),
     }
-    const response = await this.fetchImpl(`${this.settings.baseUrl}/v2/video_generation`, {
+    const response = await fetchWithRetry(this.fetchImpl, `${this.settings.baseUrl}/v2/video_generation`, {
       method: 'POST',
       headers: minimaxJsonHeaders(await this.key()),
       body: JSON.stringify(body),
       signal,
-    })
-    const text = await response.text()
-    if (!response.ok) {
-      throw new MediaFailure(
-        `MiniMax rejected the video request: ${rejectionMessage(text, response.statusText)}`,
-        failureCodeFor(response.status),
-      )
-    }
+    }, this.retryPolicy)
+    const text = await submitResponse(response, 'MiniMax')
     const parsed = parseJson(text)
     const remoteId = isRecord(parsed) && typeof parsed.task_id === 'string' ? parsed.task_id : undefined
     if (remoteId === undefined) {
       throw new MediaFailure('MiniMax accepted the request without returning a task_id', 'MEDIA_TASK_FAILED')
     }
-    const id = localIdOf(remoteId)
-    this.pending.set(id, { remoteId, submittedAt: Date.now(), lastPollAt: 0, durationSec: duration })
-    return submittedVideoTask(id, this.id, this.settings.model)
+    return this.trackSubmission(this.pending, remoteId, submittedAt => ({
+      remoteId, submittedAt, lastPollAt: 0, durationSec: duration,
+    }), this.settings.model)
   }
 
-  /* jscpd:ignore-start -- sibling cloud providers share the poll throttle and timeout preamble */
   /**
    * Read one MiniMax task and download its settled video.
    * @param task - current task.
@@ -230,22 +234,14 @@ export class MiniMaxMediaProvider extends KeyedMiniMaxProvider {
    * @throws {@link MediaFailure} for transport failures.
    */
   override async poll(task: MediaTask, signal: AbortSignal): Promise<MediaTask> {
-    const pending = this.pending.get(task.id)
-    if (pending === undefined) {
-      return untrackedTask(task)
-    }
-    const now = Date.now()
-    if (now - pending.submittedAt > this.settings.timeoutMs) {
-      await this.cancel(task)
-      return failed(task, `task did not settle within ${this.settings.timeoutMs} ms`, 'MEDIA_TASK_TIMEOUT')
-    }
-    if (now - pending.lastPollAt < this.settings.pollMs) return task
-    /* jscpd:ignore-end */
-    pending.lastPollAt = now
+    const pending = await this.beginPoll(this.pending, task, this.settings)
+    if ('status' in pending) return pending
 
-    const response = await this.fetchImpl(
+    const response = await fetchWithRetry(
+      this.fetchImpl,
       `${this.settings.baseUrl}/v2/query/video_generation/${encodeURIComponent(pending.remoteId)}`,
       { headers: minimaxJsonHeaders(await this.key()), signal },
+      this.retryPolicy,
     )
     const text = await response.text()
     if (!response.ok) {
@@ -276,15 +272,11 @@ export class MiniMaxMediaProvider extends KeyedMiniMaxProvider {
           this.pending.delete(task.id)
           return failed(task, 'MiniMax succeeded without a download URL')
         }
-        try {
-          const artifact = await this.download(url, pending.durationSec, signal)
-          this.pending.delete(task.id)
-          return { ...task, status: 'succeeded', progress: 1, artifacts: [artifact] }
-        } catch (error) {
-          this.pending.delete(task.id)
-          if (error instanceof MediaFailure) return failed(task, error.message, error.code)
-          return failed(task, messageOf(error))
-        }
+        return settledVideoTask(
+          task,
+          () => this.download(url, pending.durationSec, signal),
+          () => this.pending.delete(task.id),
+        )
       }
       default:
         this.pending.delete(task.id)
@@ -299,10 +291,8 @@ export class MiniMaxMediaProvider extends KeyedMiniMaxProvider {
    * @returns the resumed task, or undefined when the record belongs to another provider.
    */
   resume(record: MediaTaskRecord): MediaTask | undefined {
-    if (record.task.provider !== this.id || record.task.kind !== 'video') return undefined
-    if (!record.task.id.startsWith(`${MINIMAX_PROVIDER_ID}-`)) return undefined
-    const remoteId = remoteIdOf(record.task.id)
-    if (remoteId.length === 0 || remoteId === record.task.id) return undefined
+    const remoteId = this.resumedRemoteId(record)
+    if (remoteId === undefined) return undefined
     const durationSec = this.durationOf({
       kind: 'video',
       prompt: record.request.prompt,
@@ -373,7 +363,7 @@ export class MiniMaxMediaProvider extends KeyedMiniMaxProvider {
       if (reference.kind !== 'image') {
         throw new MediaFailure(`MiniMax image references must be images, not ${reference.kind}`, 'MEDIA_REQUEST_INVALID')
       }
-      const url = await imageDataUri(reference)
+      const url = await imageDataUri(reference, { label: 'MiniMax', maxBytes: MAX_IMAGE_BYTES })
       bytes += Buffer.byteLength(url, 'utf8')
       if (bytes > MAX_REQUEST_BYTES) {
         throw new MediaFailure(
@@ -456,15 +446,6 @@ export class MiniMaxMediaProvider extends KeyedMiniMaxProvider {
 }
 
 /**
- * Prefix a remote task id for the runtime's task table.
- * @param remoteId - id returned by the create endpoint.
- * @returns the runtime task id.
- */
-function localIdOf(remoteId: string): string {
-  return `${MINIMAX_PROVIDER_ID}-${remoteId}`
-}
-
-/**
  * Recover a remote task id from a runtime task id.
  * @param id - runtime task id.
  * @returns the remote id, or the input when it has no provider prefix.
@@ -484,46 +465,6 @@ function roleOf(reference: MediaReference): 'first_frame' | 'last_frame' | 'refe
   if (reference.role === 'last-frame') return 'last_frame'
   if (reference.role === 'style' || reference.role === 'character') return 'reference_image'
   return 'first_frame'
-}
-
-/**
- * Read one image file and encode it as a data URI.
- * @param reference - request reference.
- * @returns a `data:` URI MiniMax accepts in `image_url.url`.
- * @throws {@link MediaFailure} for an unreadable, unsupported, or oversized image.
- */
-async function imageDataUri(reference: MediaReference): Promise<string> {
-  const mediaType = imageMediaTypeOf(reference.path)
-  let bytes: Buffer
-  try {
-    bytes = await readFile(reference.path)
-  } catch (error) {
-    throw new MediaFailure(`cannot read the MiniMax reference image ${reference.path}: ${messageOf(error)}`, 'MEDIA_REQUEST_INVALID', { cause: error })
-  }
-  if (bytes.byteLength > MAX_IMAGE_BYTES) {
-    throw new MediaFailure(
-      `MiniMax reference images are capped at ${MAX_IMAGE_BYTES} bytes; ${reference.path} is ${bytes.byteLength}`,
-      'MEDIA_REQUEST_INVALID',
-    )
-  }
-  return `data:${mediaType};base64,${bytes.toString('base64')}`
-}
-
-/**
- * Pick the MIME type from an image file extension.
- * @param path - image path.
- * @returns the MIME type.
- * @throws {@link MediaFailure} for an extension MiniMax does not accept.
- */
-function imageMediaTypeOf(path: string): string {
-  const mediaType = supportedImageMediaType(path)
-  if (mediaType === undefined) {
-    throw new MediaFailure(
-      `MiniMax accepts png, jpeg, webp, heic, and heif images, not ${JSON.stringify(extname(path))}`,
-      'MEDIA_REQUEST_INVALID',
-    )
-  }
-  return mediaType
 }
 
 /**

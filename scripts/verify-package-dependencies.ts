@@ -919,6 +919,40 @@ export function collectPackageDependencyViolations(state: PackageDependencyState
 }
 
 /**
+ * Reverse import check: every workspace package whose `src/` imports another workspace package must
+ * declare that package in one of its dependency sections. This catches undeclared cross-package
+ * imports that only resolve through pnpm hoisting (e.g. `pkg-a/src/x.ts` imports `@deepseek-ai/dsh-b`
+ * while `pkg-a/package.json` carries no entry for it). Self-imports are skipped.
+ */
+export function collectReverseImportViolations(
+  root: string,
+  allPackages: readonly WorkspacePackageManifest[],
+  workspaceNames: ReadonlySet<string>,
+): string[] {
+  const violations: string[] = []
+  for (const pkg of allPackages) {
+    // vendor/ carries vendored Cordis source whose manifests intentionally skip
+    // workspace dependency declarations; they resolve through pnpm hoisting and
+    // do not publish to npm on their own.
+    if (pkg.dir.startsWith('vendor/')) continue
+    if (!existsSync(resolve(root, pkg.dir, 'src'))) continue
+    const uses = readAllSourceUses(root, pkg)
+    for (const [packageName, sourceFiles] of uses) {
+      if (!workspaceNames.has(packageName)) continue
+      if (packageName === pkg.name) continue
+      const sections = declaredSections(pkg.manifest, packageName)
+      if (sections.length === 0) {
+        violations.push(
+          `${pkg.manifestPath}: src imports ${packageName} (${sourceFiles.length} file(s))`
+          + ' but no dependency section declares it',
+        )
+      }
+    }
+  }
+  return [...new Set(violations)].sort()
+}
+
+/**
  * Require each root-provided type package in the root devDependencies and in no workspace manifest.
  * `--fix` does not remove these declarations.
  * @param rootManifest - Repository root `package.json`.
@@ -1077,11 +1111,14 @@ async function main(): Promise<void> {
       state = await readPackageDependencyState(root)
     }
   }
+  const allManifests = readWorkspacePackageManifests(root)
+  const workspaceNames = new Set(allManifests.all.map(pkg => pkg.name))
   const violations = [
     ...collectPackageDependencyViolations(state),
+    ...collectReverseImportViolations(root, allManifests.all, workspaceNames),
     ...collectRootTypePackageViolations(
       JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) as PackageDependencyManifest,
-      readWorkspacePackageManifests(root).all,
+      allManifests.all,
     ),
   ].sort()
   if (violations.length > 0) {

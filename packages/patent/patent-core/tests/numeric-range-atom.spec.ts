@@ -110,6 +110,15 @@ describe('numeric-range atom', () => {
     expect(out.numeric_range_report).toContain('state.claim / claim_text / features')
   })
 
+  it('空白的 features 数组不充当权利要求文本', async () => {
+    const out = await handler.execute({
+      state: { features: ['  ', ''], prior_art: [{ text: 'D1 公开温度为 60-90℃。' }] },
+    })
+    expect(out._error).toBeUndefined()
+    expect(out.numeric_range_verdict).toBe('inconclusive')
+    expect(out.numeric_range_report).toContain('缺少权利要求文本')
+  })
+
   it('features 数组可作为权利要求侧文本来源', async () => {
     const out = await handler.execute({
       state: {

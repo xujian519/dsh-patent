@@ -12,10 +12,10 @@
 
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
-import { parseDocument } from 'yaml'
 import type { RuleSet, RuleSetValidationIssue } from '@deepseek-ai/dsh-patent-core'
 import { assetRulesRoot, candidatePackDirs } from '../asset-location.ts'
 import { loadRuleSetDir, mergeRuleSets } from './RuleLoader.ts'
+import { readYamlRecord } from './yaml-asset.ts'
 
 const PACK_MANIFEST_FILE = 'pack.yaml'
 
@@ -64,16 +64,10 @@ export function resolveRulePackManifestPath(explicitPath?: string): string | nul
  * @returns 解析出的清单。
  */
 export function parseRulePackManifest(yamlText: string): RulePackManifest {
-  const doc = parseDocument(yamlText)
-  if (doc.errors.length > 0) {
-    /* v8 ignore next -- yaml parse errors always carry a message. */
-    throw new Error(`清单 YAML 解析失败: ${doc.errors[0]?.message ?? 'unknown'}`)
-  }
-  const root: unknown = doc.toJS()
-  if (typeof root !== 'object' || root === null || Array.isArray(root)) {
-    throw new Error('清单顶层必须是对象')
-  }
-  const record = root as Record<string, unknown>
+  const parsed = readYamlRecord(yamlText)
+  if (parsed.kind === 'parse-error') throw new Error(`清单 YAML 解析失败: ${parsed.message}`)
+  if (parsed.kind === 'not-record') throw new Error('清单顶层必须是对象')
+  const record = parsed.record
   const base = typeof record.base === 'string' && record.base.trim() !== '' ? record.base.trim() : null
   if (base === null) throw new Error('清单缺少 base 字段（内置包名或绝对路径）')
   let domains: string[] = []
@@ -149,15 +143,17 @@ function checkPackManifest(dir: string, layerName: string, warnings: string[]): 
     return
   }
   try {
-    const doc = parseDocument(readFileSync(manifestPath, 'utf8'))
-    if (doc.errors.length > 0) {
-      /* v8 ignore next -- yaml parse errors always carry a message. */
-      warnings.push(`规则包 ${layerName} 清单解析失败: ${doc.errors[0]?.message ?? 'unknown'}`)
+    const parsed = readYamlRecord(readFileSync(manifestPath, 'utf8'))
+    if (parsed.kind === 'parse-error') {
+      warnings.push(`规则包 ${layerName} 清单解析失败: ${parsed.message}`)
       return
     }
     // 领域包须声明 domain（按层语义判断，而非目录路径）
     const isDomainPack = layerName.startsWith('domain:')
-    const issues = validatePackManifest(doc.toJS(), { requireDomain: isDomainPack })
+    const issues = validatePackManifest(
+      parsed.kind === 'record' ? parsed.record : parsed.value,
+      { requireDomain: isDomainPack },
+    )
     for (const issue of issues) {
       warnings.push(`规则包 ${layerName} 清单非法（${issue.field}）: ${issue.message}`)
     }

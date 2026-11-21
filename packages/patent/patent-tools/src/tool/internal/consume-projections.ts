@@ -14,6 +14,7 @@
  */
 
 import type { PipelineState } from '@deepseek-ai/dsh-patent-core'
+import { asRecord } from '@deepseek-ai/dsh-value'
 import { WorkflowError, getStateString, parseConsumeRef } from '@deepseek-ai/dsh-patent-core'
 
 /**
@@ -53,13 +54,6 @@ export function projectConsumedOutput(entry: string, text: string, state: Pipeli
   return projector(text, state)
 }
 
-/** 宽松读取：阶段产出是外部文本，任何字段都可能缺失或类型不对。 */
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined
-}
-
 /** 宽松读取数组字段。 */
 function asArray(value: unknown): readonly unknown[] {
   return Array.isArray(value) ? value : []
@@ -93,7 +87,7 @@ function projectChartRows(text: string): string {
     return `（claim-chart 产出不是可解析的对照表 JSON，以下为原文）\n${text}`
   }
   const chart = asRecord(parsed)
-  if (chart === undefined) return `（claim-chart 产出不是对照表对象，以下为原文）\n${text}`
+  if (chart == null) return `（claim-chart 产出不是对照表对象，以下为原文）\n${text}`
   const elements = asArray(chart.elements)
   const targets = asArray(chart.targets)
   const rows = asArray(chart.rows)
@@ -104,7 +98,7 @@ function projectChartRows(text: string): string {
   const elementById = new Map<string, { claimNo: string; text: string }>()
   for (const item of elements) {
     const element = asRecord(item)
-    if (element === undefined) continue
+    if (element == null) continue
     const id = asText(element.id)
     const claimNo = element.claimNo
     elementById.set(id, {
@@ -120,7 +114,7 @@ function projectChartRows(text: string): string {
   ]
   for (const item of rows) {
     const row = asRecord(item)
-    if (row === undefined) continue
+    if (row == null) continue
     const elementId = asText(row.elementId)
     const element = elementById.get(elementId)
     lines.push(
@@ -148,7 +142,7 @@ function groupGaps(gaps: readonly unknown[]): string {
   const byKind = new Map<string, string[]>()
   for (const item of gaps) {
     const gap = asRecord(item)
-    if (gap === undefined) continue
+    if (gap == null) continue
     const kind = asText(gap.kind)
     if (kind.length === 0) continue
     const ids = byKind.get(kind) ?? []

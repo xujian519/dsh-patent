@@ -24,6 +24,13 @@ export type FtsSearchLadder<T> = {
   searchFtsKeywords: (keywords: string[]) => T[]
   /** LIKE 兜底查询。 */
   searchLike: (keyword: string) => T[]
+  /**
+   * FTS 已执行但无命中时，是否再用 LIKE 兜底。缺省为 true。
+   *
+   * 关闭后，短查询（码点不足 FTS 下限）、FTS 不可用与 FTS 抛异常仍走 LIKE；
+   * 只有「FTS 正常执行且返回空」这一种情况直接返回空。
+   */
+  likeOnFtsMiss?: boolean
   /** 降级回调（入参为异常消息）。 */
   degrade: (reason: string) => void
 }
@@ -34,7 +41,9 @@ export type FtsSearchLadder<T> = {
  * @returns 检索结果列表（行或命中，由调用方映射）。
  */
 export function runFtsSearch<T>(ladder: FtsSearchLadder<T>): T[] {
-  const { keyword, hasFts, ftsDegraded, searchFts, searchFtsKeywords, searchLike, degrade } = ladder
+  const {
+    keyword, hasFts, ftsDegraded, searchFts, searchFtsKeywords, searchLike, degrade, likeOnFtsMiss = true,
+  } = ladder
   const runes = Array.from(keyword)
   if (!hasFts || ftsDegraded || runes.length < FTS_MIN_RUNES) {
     return searchLike(keyword)
@@ -50,8 +59,8 @@ export function runFtsSearch<T>(ladder: FtsSearchLadder<T>): T[] {
         result = searchFtsKeywords(keywords)
       }
     }
-    // 3. FTS 仍无命中时降级 LIKE
-    if (result.length === 0) {
+    // 3. FTS 仍无命中时降级 LIKE（引擎声明 FTS 覆盖充分时可关闭）
+    if (result.length === 0 && likeOnFtsMiss) {
       result = searchLike(keyword)
     }
   } catch (error) {
@@ -85,7 +94,7 @@ export type FtsSearchOps<TOptions, THit> = {
  * @returns 可直接交给 {@link runFtsSearch} 的阶梯。
  */
 export function createFtsLadder<TOptions, THit>(
-  state: { keyword: string; hasFts: boolean; ftsDegraded: boolean },
+  state: { keyword: string; hasFts: boolean; ftsDegraded: boolean; likeOnFtsMiss?: boolean },
   options: TOptions,
   limit: number,
   ops: FtsSearchOps<TOptions, THit>,
@@ -94,6 +103,7 @@ export function createFtsLadder<TOptions, THit>(
     keyword: state.keyword,
     hasFts: state.hasFts,
     ftsDegraded: state.ftsDegraded,
+    ...state.likeOnFtsMiss === undefined ? {} : { likeOnFtsMiss: state.likeOnFtsMiss },
     searchFts: keyword => ops.searchFts(keyword, options, limit),
     searchFtsKeywords: keywords => ops.searchFtsKeywords(keywords, options, limit),
     searchLike: keyword => ops.searchLike(keyword, options, limit),

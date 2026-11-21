@@ -10,7 +10,6 @@
 
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { parseDocument } from 'yaml'
 import { asRecord } from '@deepseek-ai/dsh-value'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 import type {
@@ -24,6 +23,7 @@ import type {
   RuleSet,
   RuleSetValidationIssue,
 } from '@deepseek-ai/dsh-patent-core'
+import { readYamlRecord } from './yaml-asset.ts'
 
 const SEVERITIES: readonly RuleSeverity[] = ['critical', 'major', 'minor']
 const ACTIONS: readonly RuleAction[] = ['block', 'warn', 'review', 'log']
@@ -540,19 +540,15 @@ export function parseRuleSetFromYaml(
   yamlText: string,
   source = '<inline>',
 ): { ruleSet: RuleSet; issues: RuleSetValidationIssue[] } {
-  const doc = parseDocument(yamlText)
-  if (doc.errors.length > 0) {
-    return {
-      ruleSet: { rules: [] },
-      /* v8 ignore next -- yaml parse errors always carry a message. */
-      issues: [{ source, message: `YAML 解析失败: ${doc.errors[0]?.message ?? 'unknown'}` }],
-    }
+  const parsed = readYamlRecord(yamlText)
+  if (parsed.kind === 'parse-error') {
+    return { ruleSet: { rules: [] }, issues: [{ source, message: `YAML 解析失败: ${parsed.message}` }] }
   }
-  const root = asRecord(doc.toJS())
   const issues: RuleSetValidationIssue[] = []
-  if (root === null) {
+  if (parsed.kind === 'not-record') {
     return { ruleSet: { rules: [] }, issues: [{ source, message: '规则文件顶层必须是对象' }] }
   }
+  const root = parsed.record
   const rulesRaw = root.rules
   const rules: ConstitutionalRule[] = []
   // 同一文件内 id 重复时保留后出现的规则，与 mergeRuleSets 的覆盖方向一致。

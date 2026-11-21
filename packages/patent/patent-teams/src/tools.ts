@@ -33,6 +33,24 @@ export const PATENT_TEAMS_TOOL_NAMES = [
   'patent_teams_delete',
 ] as const
 
+/**
+ * Dependency and output suffixes shared by the live and archived task lines.
+ *
+ * Both lines truncate stored output the same way, so one precedence rule and
+ * one length cap cover the model-facing rendering of either.
+ * @param task - the task to describe.
+ * @returns the `deps` and `output` suffixes.
+ */
+function taskDetailSuffixes(task: { readonly dependencies: readonly string[]; readonly output?: string }): {
+  deps: string
+  output: string
+} {
+  return {
+    deps: task.dependencies.length > 0 ? ` (deps: ${task.dependencies.join(',')})` : '',
+    output: task.output !== undefined ? `\n      output: ${task.output.slice(0, 300)}` : '',
+  }
+}
+
 /** Render the status snapshot as compact text for the model. */
 function renderStatus(team: PatentTeamsStatus): string {
   const lines: string[] = [
@@ -49,8 +67,7 @@ function renderStatus(team: PatentTeamsStatus): string {
     }),
     `Tasks (${team.tasks.length}):`,
     ...team.tasks.map((task) => {
-      const deps = task.dependencies.length > 0 ? ` (deps: ${task.dependencies.join(',')})` : ''
-      const output = task.output !== undefined ? `\n      output: ${task.output.slice(0, 300)}` : ''
+      const { deps, output } = taskDetailSuffixes(task)
       const handoff = task.reassigning ? ' (reassigning)' : ''
       const worker = task.worker ? ` · worker: ${task.worker}` : ''
       const validation = task.contract_validation
@@ -105,8 +122,7 @@ function renderArchive(archive: PatentTeamsArchive): string {
         ...team.members.map(member => `  - ${member.name}${member.role === '' ? '' : ` [${member.role}]`}`),
         `Tasks (${team.tasks.length}):`,
         ...team.tasks.map((task) => {
-          const deps = task.dependencies.length > 0 ? ` (deps: ${task.dependencies.join(',')})` : ''
-          const output = task.output !== undefined ? `\n      output: ${task.output.slice(0, 300)}` : ''
+          const { deps, output } = taskDetailSuffixes(task)
           return `  - ${task.id} [${task.status}] ${task.subject} → ${task.assignee || 'unassigned'}${deps}${output}`
         }),
       ].join('\n')

@@ -227,7 +227,7 @@ export function parsePatternFile(path: string): readonly WritingPattern[] {
   } catch (error) {
     throw new PatternAssetError(path, `YAML 解析失败：${errorMessage(error)}`)
   }
-  const root = asRecord(document, path, '根节点')
+  const root = assertRecord(document, path, '根节点')
   const listed = root['patterns']
   if (listed === undefined) return [parsePattern(root, path, '根节点')]
   rejectUnknownFields(root, ROOT_FIELDS, path, '根节点')
@@ -245,7 +245,7 @@ export function parsePatternFile(path: string): readonly WritingPattern[] {
  * @throws PatternAssetError on any missing or mistyped field.
  */
 function parsePattern(raw: unknown, source: string, field: string): WritingPattern {
-  const record = asRecord(raw, source, field)
+  const record = assertRecord(raw, source, field)
   rejectUnknownFields(record, PATTERN_FIELDS, source, field)
   const id = requiredString(record, 'id', source, field)
   const category = requiredString(record, 'category', source, field)
@@ -428,7 +428,7 @@ function rejectUnknownFields(
 }
 
 /** A YAML mapping. */
-function asRecord(value: unknown, source: string, field: string): Record<string, unknown> {
+function assertRecord(value: unknown, source: string, field: string): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new PatternAssetError(source, `${field} 必须是映射（YAML 对象）`)
   }
@@ -463,7 +463,7 @@ function optionalList(value: unknown, source: string, field: string): readonly u
 function parseSteps(value: unknown, source: string, field: string): readonly PatternStep[] {
   const steps = optionalList(value, source, field).map((entry, index) => {
     const at = `${field}[${index}]`
-    const record = asRecord(entry, source, at)
+    const record = assertRecord(entry, source, at)
     rejectUnknownFields(record, STEP_FIELDS, source, at)
     const order = record['order']
     if (typeof order !== 'number' || !Number.isInteger(order) || order < 1) {
@@ -504,7 +504,7 @@ function parseKeywords(value: unknown, source: string, field: string): readonly 
 function parseExamples(value: unknown, source: string, field: string): readonly PatternExample[] {
   return optionalList(value, source, field).map((entry, index) => {
     const at = `${field}[${index}]`
-    const record = asRecord(entry, source, at)
+    const record = assertRecord(entry, source, at)
     rejectUnknownFields(record, EXAMPLE_FIELDS, source, at)
     const context = optionalString(record, 'context', source, at)
     const note = optionalString(record, 'note', source, at)
@@ -520,7 +520,7 @@ function parseExamples(value: unknown, source: string, field: string): readonly 
 function parsePrinciples(value: unknown, source: string, field: string): readonly PatternPrinciple[] {
   return optionalList(value, source, field).map((entry, index) => {
     const at = `${field}[${index}]`
-    const record = asRecord(entry, source, at)
+    const record = assertRecord(entry, source, at)
     rejectUnknownFields(record, PRINCIPLE_FIELDS, source, at)
     const example = optionalString(record, 'example', source, at)
     return {

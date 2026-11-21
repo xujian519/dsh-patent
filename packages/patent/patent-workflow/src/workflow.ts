@@ -45,6 +45,7 @@ export type {
   WorkflowInterrupt,
   WorkflowManifest,
   WorkflowRunOptions,
+  WorkflowRunRecovery,
   WorkflowRunResult,
   WorkflowRunStore,
   WorkflowStage,
@@ -91,10 +92,11 @@ export async function runWorkflow(
   assertApprovalGrants(manifest, options.approvalGrants)
   const atoms = options.atoms ?? globalAtomRegistry
   assertKnownAtoms(manifest, atoms)
+  const resumed = options.resumeFrom === undefined ? undefined : restoreRun(manifest, options.resumeFrom)
   const run: StageRun = {
     manifest,
     options,
-    state: { ...ctx },
+    state: resumed === undefined ? { ...ctx } : { ...resumed.state, ...ctx },
     stageOptions: {
       handlers: options.handlers ?? globalStageHandlerRegistry,
       atoms,
@@ -109,16 +111,72 @@ export async function runWorkflow(
     requireAll: manifest.validation?.requireAllSteps ?? true,
     maxParallelStages: options.maxParallelStages ?? 4,
     stageIds: new Map(manifest.stages.map((s, i) => [s.id, i])),
-    rewindCounts: new Map(),
+    rewindCounts: resumed?.rewindCounts ?? new Map<string, number>(),
     signalCache: new Map(),
-    results: [],
-    revisions: [],
-    pendingRevisions: [],
-    revisionsTruncated: false,
+    results: resumed?.stages ?? [],
+    revisions: resumed?.revisions ?? [],
+    pendingRevisions: resumed?.pendingRevisions ?? [],
+    revisionsTruncated: resumed?.revisionsTruncated ?? false,
+    resumeIndex: 0,
     now: options.now,
   }
-  const interrupted = await runStages(run)
+  const interrupted = await runStages(run, resumed?.nextStageIndex ?? 0)
   return await assembleRunResult(run, interrupted)
+}
+
+/**
+ * 校验并展开一次中断运行的恢复点。
+ *
+ * 任何不符都在阶段执行前抛出：续跑拿不到正确的上游产出时，静默回退成整次重跑会
+ * 让调用方以为「续跑成功」却重复计费。
+ * @param manifest - 本次要运行的清单。
+ * @param resume - 上一次中断的运行结果。
+ * @returns 恢复主循环所需的游标、结果前缀与执行态。
+ * @throws WorkflowError 缺恢复点、非中断运行、manifest 不符或阶段前缀对不上。
+ */
+function restoreRun(manifest: WorkflowManifest, resume: WorkflowRunResult): {
+  nextStageIndex: number
+  stages: WorkflowStageResult[]
+  state: PipelineState
+  revisions: RevisionRecord[]
+  pendingRevisions: RevisionRecord[]
+  revisionsTruncated: boolean
+  rewindCounts: Map<string, number>
+} {
+  const recovery = resume.recovery
+  if (recovery === undefined) {
+    throw new WorkflowError(`运行 ${resume.manifestId} 的记录不含恢复点，无法续跑；请不带 resumeFrom 整次重跑`)
+  }
+  if (resume.interrupted === undefined) {
+    throw new WorkflowError(`运行 ${resume.manifestId} 未处于中断状态，只能续跑审批门暂停的运行`)
+  }
+  if (resume.manifestId !== manifest.id || resume.caseType !== manifest.caseType) {
+    throw new WorkflowError(`续跑记录 ${resume.manifestId}（${resume.caseType}）与 manifest ${manifest.id}（${manifest.caseType}）不符`)
+  }
+  const next = recovery.nextStageIndex
+  if (!Number.isInteger(next) || next < 0 || next >= manifest.stages.length) {
+    throw new WorkflowError(`恢复点下一阶段下标 ${next} 超出 manifest ${manifest.id} 的阶段范围`)
+  }
+  if (resume.stages.length !== next) {
+    throw new WorkflowError(`恢复点要求 ${next} 条阶段结果前缀，记录里只有 ${resume.stages.length} 条`)
+  }
+  for (let index = 0; index < next; index += 1) {
+    if (resume.stages[index]?.stageId !== manifest.stages[index]?.id) {
+      throw new WorkflowError(`续跑记录的第 ${index + 1} 个阶段与 manifest ${manifest.id} 不一致（清单可能已修改）`)
+    }
+  }
+  if (manifest.stages[next]?.id !== resume.interrupted.stageId) {
+    throw new WorkflowError(`恢复点指向阶段 ${manifest.stages[next]?.id}，与中断阶段 ${resume.interrupted.stageId} 不符`)
+  }
+  return {
+    nextStageIndex: next,
+    stages: [...resume.stages],
+    state: recovery.state,
+    revisions: [...resume.revisions ?? []],
+    pendingRevisions: [...recovery.pendingRevisions],
+    revisionsTruncated: resume.revisionsTruncated ?? false,
+    rewindCounts: new Map(Object.entries(recovery.rewindCounts)),
+  }
 }
 
 /** atom 契约注册表（执行配置的 atoms 字段，缺省取全局注册表）。 */
@@ -147,6 +205,8 @@ type StageRun = {
   pendingRevisions: RevisionRecord[]
   /** 留痕达到上限后置 true，后续回退仍执行但不记录。 */
   revisionsTruncated: boolean
+  /** 中断发生的阶段下标（0 基）；恢复点的游标，未中断时无意义。 */
+  resumeIndex: number
   /** 可注入时钟；缺省时 RevisionRecord 不写 `at`。 */
   now: (() => string) | undefined
 }
@@ -316,7 +376,11 @@ async function runParallelGroup(
     const outcome = outcomes[gi]
     const groupStage = group[gi]
     if (outcome === undefined || groupStage === undefined) break
-    if (outcome.interrupted) return outcome.interrupted
+    if (outcome.interrupted) {
+      // 并行窗口内已落地的结果前缀即恢复点游标：中断阶段自身不产生结果。
+      run.resumeIndex = startIndex + gi
+      return outcome.interrupted
+    }
     pushStageResult(run, groupStage, outcome)
   }
   return undefined
@@ -475,10 +539,11 @@ function appendRevision(run: StageRun, record: RevisionRecord): void {
 /**
  * 主循环：按并行窗口推进阶段。
  * @param run - 执行态。
+ * @param startIndex - 起始阶段下标；续跑时取恢复点游标，门前阶段不重复执行。
  * @returns 中断（审批门暂停）；无中断时为 undefined。
  */
-async function runStages(run: StageRun): Promise<WorkflowInterrupt | undefined> {
-  for (let index = 0; index < run.manifest.stages.length; ) {
+async function runStages(run: StageRun, startIndex: number): Promise<WorkflowInterrupt | undefined> {
+  for (let index = startIndex; index < run.manifest.stages.length; ) {
     assertNotAborted(run.options.signal)
     const window = stageWindow(run.manifest, index, run.maxParallelStages)
     if (window > 1) {
@@ -489,7 +554,10 @@ async function runStages(run: StageRun): Promise<WorkflowInterrupt | undefined> 
       continue
     }
     const step = await runSingleStage(run, index)
-    if (step.interrupted !== undefined) return step.interrupted
+    if (step.interrupted !== undefined) {
+      run.resumeIndex = index
+      return step.interrupted
+    }
     if (step.nextIndex === null) break
     index = step.nextIndex
   }
@@ -532,7 +600,17 @@ async function assembleRunResult(run: StageRun, interrupted: WorkflowInterrupt |
     ...(evidenceLedger.receipts.length > 0 ? { evidenceLedger } : {}),
     ...(run.revisions.length > 0 ? { revisions: run.revisions } : {}),
     ...(run.revisionsTruncated ? { revisionsTruncated: true } : {}),
-    ...(interrupted ? { interrupted } : {}),
+    ...(interrupted
+      ? {
+        interrupted,
+        recovery: {
+          nextStageIndex: run.resumeIndex,
+          state: run.state,
+          rewindCounts: Object.fromEntries(run.rewindCounts),
+          pendingRevisions: run.pendingRevisions,
+        },
+      }
+      : {}),
   }
   // 持久化失败不阻断执行结果，仅把告警带回结果供调用方展示。
   try {

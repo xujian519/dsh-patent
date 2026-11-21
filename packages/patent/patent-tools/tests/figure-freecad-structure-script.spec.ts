@@ -1,3 +1,7 @@
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_STRUCTURE_VIEWS,
@@ -9,16 +13,35 @@ import {
   STRUCTURE_VIEW_DIRECTIONS,
   STRUCTURE_VIEWS,
   buildStructureScript,
+  readStructureScriptTemplate,
   structureDetailSvgFilename,
   structureSvgFilename,
   type StructureScriptParams,
 } from '../src/figure/freecad-structure-script.ts'
 
 /**
- * buildStructureScript 是纯函数：断言它把请求渲染成一段自包含 Python 源码，
- * 只使用本机 FreeCAD 1.1 实测存在的 API，并把参数以双重序列化 JSON 内嵌。
- * 全程不接触 FreeCAD、不做 IO。
+ * buildStructureScript 把请求渲染成一段自包含 Python 源码，只使用本机 FreeCAD 1.1
+ * 实测存在的 API，并把参数以双重序列化 JSON 内嵌。脚本正文来自同目录的 `.py` 资产，
+ * 首次构建时读入；全程不接触 FreeCAD。
  */
+
+describe('readStructureScriptTemplate', () => {
+  it('打包运行（模块位于 lib/index.js）时按 ../src/figure 找到同一份模板', () => {
+    const bundled = readStructureScriptTemplate(new URL('../lib/index.js', import.meta.url))
+    expect(bundled).toContain('import FreeCAD as App')
+    expect(bundled).toContain('PARAMS = json.loads(__PAYLOAD_LITERAL__)')
+  })
+
+  it('资产缺失时抛出带候选路径的错误，不回退到空脚本', () => {
+    const scratch = mkdtempSync(join(tmpdir(), 'dsh-freecad-template-'))
+    try {
+      expect(() => readStructureScriptTemplate(pathToFileURL(`${scratch}/`)))
+        .toThrow(/template asset is missing; looked for .*freecad-structure-script\.py/)
+    } finally {
+      rmSync(scratch, { recursive: true, force: true })
+    }
+  })
+})
 
 function params(overrides: Partial<StructureScriptParams> = {}): StructureScriptParams {
   return {

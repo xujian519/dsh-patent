@@ -18,7 +18,7 @@ import {
   type RuleEvaluator,
   type WorkflowStageResult,
 } from '@deepseek-ai/dsh-patent-core'
-import { runWorkflow } from '@deepseek-ai/dsh-patent-workflow'
+import { JsonFileWorkflowRunStore, runWorkflow } from '@deepseek-ai/dsh-patent-workflow'
 import { JobId } from '@deepseek-ai/dsh-jobs'
 import type { JobHooks, JobSpec, JobView } from '@deepseek-ai/dsh-jobs'
 import type { ApprovalRequest } from '@deepseek-ai/dsh-user-approval'
@@ -1598,6 +1598,80 @@ describe('patent_workflow_run', () => {
     expect(JSON.stringify(granted.graphDegraded)).toContain('node_failed')
   })
 
+  it('resumes a persisted approval pause without rerunning upstream model stages', async () => {
+    temp = await mkdtemp(join(tmpdir(), 'dsh-patent-wf-'))
+    let modelCalls = 0
+    const baseModel = fakeModel()
+    const model: PatentModelPort = {
+      stream: (request) => {
+        modelCalls += 1
+        return baseModel.stream(request)
+      },
+    }
+    const tool = createPatentWorkflowRunTool({ model, search: fakeSearch, cwd: temp })
+    const args = { manifestId: 'patent_disclosure_v1', input: 'technical disclosure', caseId: 'case-resume' }
+    const baseRunId = 'case-resume__patent_disclosure_v1'
+
+    const paused = (await tool.execute(args, exec)) as PatentWorkflowRunOutput
+    expect(paused.interruptNote).toContain('审批门暂停')
+    expect(paused.runId).toBe(baseRunId)
+    const callsAfterPause = modelCalls
+    expect(callsAfterPause).toBeGreaterThan(0)
+
+    const resumed = (await tool.execute(
+      { ...args, approveStageIds: ['review_gate'] },
+      exec,
+    )) as PatentWorkflowRunOutput
+    expect(resumed.interruptNote).toBeUndefined()
+    expect(resumed.runId).toBe(`${baseRunId}__resume-1`)
+    expect(resumed.resumeNote).toContain(`复用 ${baseRunId} 的门前产出`)
+    expect(resumed.persistNote).toContain(`${baseRunId}__resume-1.json`)
+    expect(resumed.stages?.slice(0, paused.stages?.length)).toEqual(paused.stages)
+    expect(modelCalls).toBe(callsAfterPause)
+    expect(renderWorkflowRun(resumed)).toContain(resumed.resumeNote)
+
+    // 原中断记录保持可读；再次续跑分配下一个空闲 runId，不覆盖任何已有记录。
+    const again = (await tool.execute(
+      { ...args, approveStageIds: ['review_gate'] },
+      exec,
+    )) as PatentWorkflowRunOutput
+    expect(again.runId).toBe(`${baseRunId}__resume-2`)
+    expect(modelCalls).toBe(callsAfterPause)
+    const store = new JsonFileWorkflowRunStore(join(temp, caseWorkflowRunsDir('case-resume')))
+    expect((await store.loadRun(baseRunId))?.interrupted?.stageId).toBe('review_gate')
+    expect((await store.loadRun(`${baseRunId}__resume-1`))?.interrupted).toBeUndefined()
+    expect(new Set(await store.listRuns())).toEqual(new Set([baseRunId, `${baseRunId}__resume-1`, `${baseRunId}__resume-2`]))
+  })
+
+  it('reports a full rerun when an old paused record has no recovery point', async () => {
+    temp = await mkdtemp(join(tmpdir(), 'dsh-patent-wf-'))
+    let modelCalls = 0
+    const baseModel = fakeModel()
+    const model: PatentModelPort = {
+      stream: (request) => {
+        modelCalls += 1
+        return baseModel.stream(request)
+      },
+    }
+    const tool = createPatentWorkflowRunTool({ model, search: fakeSearch, cwd: temp })
+    const args = { manifestId: 'patent_disclosure_v1', input: 'technical disclosure', caseId: 'case-legacy-resume' }
+    const baseRunId = 'case-legacy-resume__patent_disclosure_v1'
+    await tool.execute(args, exec)
+    const callsAfterPause = modelCalls
+    const store = new JsonFileWorkflowRunStore(join(temp, caseWorkflowRunsDir('case-legacy-resume')))
+    const legacy = (await store.loadRun(baseRunId))!
+    delete legacy.recovery
+    await store.saveRun(legacy, baseRunId)
+
+    const rerun = (await tool.execute(
+      { ...args, approveStageIds: ['review_gate'] },
+      exec,
+    )) as PatentWorkflowRunOutput
+    expect(rerun.runId).toBe(baseRunId)
+    expect(rerun.resumeNote).toBe('续跑: 未找到可恢复的中断记录，本次整次重跑')
+    expect(modelCalls).toBeGreaterThan(callsAfterPause)
+  })
+
   it('runs the manifest to completion with approved gates and persistence', async () => {
     temp = await mkdtemp(join(tmpdir(), 'dsh-patent-wf-'))
     const tool = createPatentWorkflowRunTool({ model: fakeModel(), search: fakeSearch, cwd: temp })
@@ -1616,6 +1690,8 @@ describe('patent_workflow_run', () => {
     // 审批门被放行且在回退范围之外：不中断，继续执行到收口。
     expect(value.interruptNote).toBeUndefined()
     expect(value.persistNote).toContain('持久化:')
+    expect(value.runId).toBe('case-2__patent_disclosure_v1')
+    expect(value.resumeNote).toBe('续跑: 未找到可恢复的中断记录，本次整次重跑')
     expect((value.degradedSteps ?? []).length).toBeGreaterThan(0)
   })
 

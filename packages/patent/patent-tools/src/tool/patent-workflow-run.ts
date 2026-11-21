@@ -88,7 +88,7 @@ export type PatentWorkflowRunInput = SpecificationRunOptions & {
   resumeCheckpointId?: string
   /** Graph-mode approval: grants the gate at this checkpoint then resumes past it. */
   approveCheckpointId?: string
-  /** Manifest-mode stage ids of already-approved approval gates (skipped on rerun). */
+  /** Manifest-mode approved gates; a persisted interruption resumes from its recovery point. */
   approveStageIds?: string[]
   /** Optional case id enabling run/checkpoint persistence. */
   caseId?: string
@@ -178,6 +178,10 @@ export type PatentWorkflowRunOutput = {
   degradedSteps?: string[]
   /** Persistence note (or the "not enabled" marker without a caseId). */
   persistNote?: string
+  /** Persisted run id (manifest mode with caseId). */
+  runId?: string
+  /** Whether approveStageIds continued a recovery point or reran the whole manifest. */
+  resumeNote?: string
   /** Persistence failure warning, when present. */
   persistWarning?: string
   /** Evidence sources the run consumed (manifest mode), one receipt per source. */
@@ -260,7 +264,7 @@ const DESCRIPTION = [
   'Pass conflictingApplications (a JSON array) to run the A22.2 second-sentence conflicting-application check; entries need filingDate/publicationDate and a caller-judged sameInvention boolean. Conflicting applications are filed before but published on or after the target date, so the prior-art search cannot find them.',
   'Pass evidence (a JSON array) and evidenceDeadline to run the invalidation/reexamination evidence-check stage; it reports form defects, late submissions without a justification, prior-art dates at or after the cutoff, and evidence not linked to a ground or claim.',
   'Pass rejectionDecisionDate and requestDate to run the reexamination admissibility period check, recoveryRequested when a right-recovery procedure was filed, requester and patentee to run its party check, and priorInvalidationDecision (`{grounds, evidenceIds}`) to run the res-judicata check on an invalidation manifest.',
-  'A manifest approval gate either asks the deployment\'s approval service and continues when the user allows it (deployments with approveStageGates on; approveStageIds is refused there on every run, including a background one, so the decision cannot be self-declared), or — with the switch off — pauses the run for a later re-invoke with approveStageIds; a refusal pauses the run with the decision named. With the switch on, a background run pauses at the gate because the approval service only answers inside an open turn; rerun it in the foreground so the gate can ask. Graph runs pause at their checkpoint and continue with resumeCheckpointId. When caseId is provided, run results, the Mermaid diagram, and graph checkpoints are persisted under `<caseDir>/workflow-runs/`. Requires a model port.',
+  'A manifest approval gate either asks the deployment\'s approval service and continues when the user allows it (deployments with approveStageGates on; approveStageIds is refused there on every run, including a background one, so the decision cannot be self-declared), or — with the switch off — pauses the run for a later re-invoke with approveStageIds (with caseId and a saved recovery point, execution resumes at the gate and reuses earlier stages; otherwise the whole manifest reruns); a refusal pauses the run with the decision named. With the switch on, a background run pauses at the gate because the approval service only answers inside an open turn; rerun it in the foreground so the gate can ask. Graph runs pause at their checkpoint and continue with resumeCheckpointId. When caseId is provided, run results, the Mermaid diagram, and graph checkpoints are persisted under `<caseDir>/workflow-runs/`. Requires a model port.',
   'A manifest run holds the turn until it finishes or pauses at an approval gate, so pass run_in_background: true to get a job id at once and keep working (collect with job_output; job_kill stops it at the next stage boundary); graph runs are foreground-only.',
 ].join(' ')
 /** Rule-gate status from the structured `rule_gate` state entry. */
@@ -322,6 +326,7 @@ export function renderWorkflowRun(value: PatentWorkflowRunOutput): string {
     persistNote: value.persistNote ?? '',
     checkSection: '',
     ...(value.interruptNote !== undefined ? { interruptNote: value.interruptNote } : {}),
+    ...(value.resumeNote !== undefined ? { resumeNote: value.resumeNote } : {}),
   })
 }
 
@@ -362,7 +367,7 @@ export function createPatentWorkflowRunTool(deps: PatentWorkflowRunDeps = {}): T
       approveStageIds: {
         type: 'array',
         items: { type: 'string' },
-        description: "Manifest stage ids of already-approved approval gates (e.g. ['review_gate']); skipped on rerun. Refused on a foreground call when this deployment's approveStageGates is on, because the gate asks the approval service instead.",
+        description: "Manifest stage ids of already-approved approval gates (e.g. ['review_gate']). With caseId and a saved interruption, resumes at the gate and reuses earlier outputs; otherwise reruns the whole manifest. Refused when this deployment's approveStageGates is on, because the gate asks the approval service instead.",
       },
       caseId: { type: 'string', description: 'Optional case id enabling run/checkpoint persistence.' },
       input: { type: 'string', required: true, description: 'Initial material consumed by the extract atoms.' },
@@ -402,6 +407,8 @@ export function createPatentWorkflowRunTool(deps: PatentWorkflowRunDeps = {}): T
           stages: { type: 'array' },
           degradedSteps: { type: 'array', items: { type: 'string' } },
           persistNote: { type: 'string' },
+          runId: { type: 'string' },
+          resumeNote: { type: 'string' },
           persistWarning: { type: 'string' },
           evidenceLedger: { type: 'json' },
           interruptNote: { type: 'string' },
@@ -616,7 +623,7 @@ async function runManifest(
   const { manifest, provider, ctx: workflowCtx, input, cwd } = run
   const executor = createChainStageExecutor(provider, 'patent_workflow_run')
   const workflow = run.deps.workflow?.()
-  const { result, persistTarget } = await runWorkflowWithPersist(manifest, workflowCtx, executor, {
+  const { result, persistTarget, resume } = await runWorkflowWithPersist(manifest, workflowCtx, executor, {
     handlers: runHandlerRegistry(run, signal),
     atoms: globalAtomRegistry,
     provider,
@@ -638,12 +645,17 @@ async function runManifest(
   const persistNote = persistTarget
     ? await writeRunArtifacts(persistTarget, manifest, result)
     : '持久化: 未启用（未提供 caseId）'
+  const resumeNote = input.approveStageIds === undefined || input.approveStageIds.length === 0
+    ? undefined
+    : resume === undefined
+      ? '续跑: 未找到可恢复的中断记录，本次整次重跑'
+      : `续跑: 复用 ${resume.fromRunId} 的门前产出，从第 ${resume.nextStageIndex + 1} 个阶段继续；原中断记录保留`
   const liveOutcome = result.interrupted?.data['outcome']
   const interruptNote = result.interrupted === undefined
     ? undefined
     : typeof liveOutcome === 'string'
       ? `⏸ 审批门未放行（${liveOutcome}）: "${result.interrupted.stageId}"（${result.interrupted.message}）——后续阶段未执行；不要用 approveStageIds 绕过本次决定`
-      : `⏸ 审批门暂停: "${result.interrupted.stageId}"（${result.interrupted.message}）——等待人工确认；带 approveStageIds 重跑可继续`
+      : `⏸ 审批门暂停: "${result.interrupted.stageId}"（${result.interrupted.message}）——等待人工确认；带 approveStageIds 重跑可继续（有恢复记录时从本阶段续跑，否则整次重跑）`
   // The service records the run's events on its own path; the library path has
   // no session side effect, so the tool appends them there.
   if (workflow === undefined) appendWorkflowRunEvents(run.agent, result, persistTarget?.runId)
@@ -657,6 +669,8 @@ async function runManifest(
     stages: toJsonArray(result.stages),
     degradedSteps: result.degradedSteps,
     persistNote,
+    ...(persistTarget !== undefined ? { runId: persistTarget.runId } : {}),
+    ...(resumeNote !== undefined ? { resumeNote } : {}),
     /* v8 ignore next -- the run always records its non-empty input as a MATERIAL receipt */
     ...(result.evidenceLedger !== undefined ? { evidenceLedger: result.evidenceLedger } : {}),
     ...(interruptNote !== undefined ? { interruptNote } : {}),

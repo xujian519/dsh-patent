@@ -19,7 +19,7 @@ import { type StatementSync } from 'node:sqlite'
 import { KnowledgeFtsSearchBase, type KnowledgeSearchEngineOptions } from '../shared/knowledge-fts.ts'
 import { escapeFtsPhrase, joinFtsOrTerms } from '../shared/fts.ts'
 import { resolveResultLimit } from '@deepseek-ai/dsh-knowledge-core'
-import { decompressChunk } from '../shared/chunk-compression.ts'
+import { backfillChunkContent, decompressChunk } from '../shared/chunk-compression.ts'
 import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { CaseLawChunk, CaseLawHit, CaseLawSearchOptions } from './types.ts'
 
@@ -204,6 +204,9 @@ export class CaseLawSearchEngine extends KnowledgeFtsSearchBase<CaseLawSearchOpt
   }
 
   protected readonly degradeLabel = 'case-law'
+  // 判例库的 LIKE 兜底要解压全表 chunk（整库约 4.6 秒），而 docs_fts 已覆盖
+  // 标题与正文，三码点以上的未命中意味着检索词不在任何已索引 chunk 中。
+  protected override readonly likeOnFtsMiss = false
   protected markFtsDegraded(): void {
     this.stats?.setCaseLawFtsDegraded(true)
   }
@@ -342,10 +345,11 @@ export class CaseLawSearchEngine extends KnowledgeFtsSearchBase<CaseLawSearchOpt
    * 片段——保持旧行为"片段 = 命中的 chunk"；JS 层解压（绕开 UDF 边界开销）。
    */
   private backfillContent(hits: CaseLawHit[]): CaseLawHit[] {
-    return hits.map((hit) => {
-      if (hit.snippet) return hit
-      const row = this.stmtGetChunkAt.get(hit.chunkIndex, hit.documentId) as CaseLawRow | undefined
-      return row ? { ...hit, snippet: decompressChunk(row.content) } : hit
+    return backfillChunkContent(hits, {
+      chunkAt: this.stmtGetChunkAt,
+      locate: hit => ({ documentId: hit.documentId, chunkIndex: hit.chunkIndex }),
+      hasContent: hit => hit.snippet !== '',
+      attach: (hit, snippet) => ({ ...hit, snippet }),
     })
   }
 

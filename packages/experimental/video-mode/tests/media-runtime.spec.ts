@@ -25,7 +25,7 @@ import VideoMode, {
   type MediaTask,
   type MediaTaskRecord,
 } from '../src/index.ts'
-import { messageOf } from '../src/media.ts'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { MediaFailure } from '../src/types.ts'
 
 /** A model table for a stub provider. */
@@ -116,6 +116,10 @@ describe('configuration guards', () => {
     expect(() => resolveMiniMax({ timeoutMs: 0 }, 10)).toThrow(/minimax.timeoutMs/)
     expect(() => resolveMiniMax({ defaultDurationSec: 3 }, 10)).toThrow(/defaultDurationSec/)
     expect(() => resolveMiniMax({ maxDurationSec: 20 }, 10)).toThrow(/maxDurationSec/)
+    expect(() => resolveMiniMax({ maxRetries: -1 }, 10)).toThrow(/maxRetries/)
+    expect(() => resolveMiniMax({ maxRetries: 1.5 }, 10)).toThrow(/maxRetries/)
+    expect(() => resolveMiniMax({ maxRetryAfterMs: -1 }, 10)).toThrow(/maxRetryAfterMs/)
+    expect(() => resolveMiniMax({ maxRetryAfterMs: 1.5 }, 10)).toThrow(/maxRetryAfterMs/)
     expect(resolveMiniMax({}, 10).apiKey).toBe('')
   })
 })
@@ -207,8 +211,8 @@ describe('submission and generation', () => {
     media.register(stubProvider({ id: 'broken', submit: async () => { throw 'offline' } }))
     await expect(media.submit({ kind: 'video', prompt: 'x', model: 'broken/video' }, new AbortController().signal))
       .rejects.toThrow(/media provider broken failed to submit: offline/)
-    expect(messageOf(new Error('boom'))).toBe('boom')
-    expect(messageOf('plain')).toBe('plain')
+    expect(errorMessage(new Error('boom'))).toBe('boom')
+    expect(errorMessage('plain')).toBe('plain')
     await ctx.fiber.dispose()
   })
 

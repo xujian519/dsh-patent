@@ -7,6 +7,7 @@
  */
 
 import { parseDocument } from 'yaml'
+import { asRecord } from '@deepseek-ai/dsh-value'
 import type { LegalEvidenceRule, LegalEvidenceRuleSet, LegalEvidenceType } from './types.ts'
 import { LEGAL_EVIDENCE_TYPES } from './types.ts'
 
@@ -26,12 +27,6 @@ function asString(value: unknown): string | undefined {
 /** 取数组中的字符串项。 */
 function asStringArray(value: readonly unknown[]): string[] {
   return value.filter((v): v is string => typeof v === 'string')
-}
-
-/** 安全取对象。 */
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null
-  return value as Record<string, unknown>
 }
 
 /**

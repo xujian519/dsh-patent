@@ -9,6 +9,7 @@
  * listeners onto it.
  */
 import type { Context } from '@deepseek-ai/cordis'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { InboxState } from '@deepseek-ai/dsh-agent/types'
 import {
   createSnapshotStore, type ObservableSnapshot, type SnapshotStore,
@@ -119,11 +120,6 @@ function projectionContentChanged(prev: EditorProjection, next: EditorProjection
     const old = prev.occurrences[i]
     return old === undefined || old.occurrenceId !== occ.occurrenceId || old.invalid !== occ.invalid
   })
-}
-
-/** Message of a failure surfaced as a composer notice. */
-function errorText(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }
 
 const EMPTY_QUEUE: InboxState['next-turn'] = []
@@ -791,7 +787,7 @@ export class SessionInputShell implements SessionInput {
   /** Settle a send that ended without a Host outcome; the draft stays for correction. */
   private failSink(attempt: SubmitAttempt, error: unknown): void {
     if (this.dead(attempt)) return
-    this.dispatchRun(({ type: 'sink-settled', attempt, ok: false, message: errorText(error) }))
+    this.dispatchRun(({ type: 'sink-settled', attempt, ok: false, message: errorMessage(error) }))
   }
 
   /** Enter adjudication: poll the session controller; failure = notice + draft retained (never a silent downgrade). */

@@ -12005,11 +12005,15 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WorkflowRunOptions',
-    declaration: 'export type WorkflowRunOptions = {\n    handlers?: StageHandlerRegistry;\n    atoms?: AtomRegistry;\n    provider?: StageProvider;\n    approvalGrants?: string[];\n    persist?: WorkflowRunStore;\n    runId?: string;\n    maxParallelStages?: number;\n    onStage?: (stageId: string, index: number, total: number) => void;\n    signal?: AbortSignal;\n    now?: () => string;\n    guidelineRevision?: string;\n};',
+    declaration: 'export type WorkflowRunOptions = {\n    handlers?: StageHandlerRegistry;\n    atoms?: AtomRegistry;\n    provider?: StageProvider;\n    approvalGrants?: string[];\n    resumeFrom?: WorkflowRunResult;\n    persist?: WorkflowRunStore;\n    runId?: string;\n    maxParallelStages?: number;\n    onStage?: (stageId: string, index: number, total: number) => void;\n    signal?: AbortSignal;\n    now?: () => string;\n    guidelineRevision?: string;\n};',
+  },
+  {
+    name: 'WorkflowRunRecovery',
+    declaration: 'export type WorkflowRunRecovery = {\n    nextStageIndex: number;\n    state: PipelineState;\n    rewindCounts: Record<string, number>;\n    pendingRevisions: RevisionRecord[];\n};',
   },
   {
     name: 'WorkflowRunResult',
-    declaration: 'export type WorkflowRunResult = {\n    manifestId: string;\n    caseType: string;\n    completed: boolean;\n    stages: WorkflowStageResult[];\n    degradedSteps: string[];\n    summary: string;\n    interrupted?: WorkflowInterrupt;\n    persistWarning?: string;\n    evidenceLedger?: WorkflowEvidenceLedger;\n    revisions?: RevisionRecord[];\n    revisionsTruncated?: boolean;\n};',
+    declaration: 'export type WorkflowRunResult = {\n    manifestId: string;\n    caseType: string;\n    completed: boolean;\n    stages: WorkflowStageResult[];\n    degradedSteps: string[];\n    summary: string;\n    interrupted?: WorkflowInterrupt;\n    persistWarning?: string;\n    evidenceLedger?: WorkflowEvidenceLedger;\n    revisions?: RevisionRecord[];\n    revisionsTruncated?: boolean;\n    recovery?: WorkflowRunRecovery;\n};',
   },
   {
     name: 'WorkflowRunStore',

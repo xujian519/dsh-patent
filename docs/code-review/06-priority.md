@@ -203,6 +203,85 @@ F-PAT-024 的对外可见变化（七个包导出的 `Config` 中带缺省值的
 
 与同批的 R-F2 结构复用批次（[#923](https://github.com/xujian519/dsh-patent/pull/923)，F-PAT-027、F-PAT-028）合并计，修后未修条目为 34 条：P0 0 / P1 2 / P2 26 / P3 6。可派发 P1 为 0：剩下的 F-VID-008 与 F-PAT-047 均为 `deferred`，前者等结构 PR，后者等真实续接立项。
 
+## 批次 R-F3 正确性修复（2026-11-20）
+
+与 R-D1 的测试缺口处置同批，在 [#927](https://github.com/xujian519/dsh-patent/pull/927) 中合入。
+
+| 条目 | 原队列 | 改法 |
+|---|---|---|
+| F-PAT-050 | P2 | 重规划按哈希复用已完成步骤时按出现次数配对，重复步骤不再全部判为已完成 |
+| F-VID-015 | P2 | EDL 音频片段的 `inSec`/`outSec` 顺序在解析期校验，不再等到 ffmpeg 才失败 |
+
+修后未修条目为 32 条：P0 0 / P1 2 / P2 24 / P3 6。
+
+## 批次 R-F4 跨域错误文本收口（2026-11-20）
+
+收掉 F-CROSS-001（P2）。`freecad-renderer`、`lsp-stdio`、`ptc-runtime-node` 三处的 `messageOf`/`errorText` 与可并的 `asRecord` 改为导入 `@deepseek-ai/dsh-value` 的共享原语，`ptc-runtime-node` 补上依赖声明。修复随 [#927](https://github.com/xujian519/dsh-patent/pull/927) 合入；[09-ci-gates-execution-plan.md](09-ci-gates-execution-plan.md) 的门禁表已登记防回潮项。
+
+修后未修条目为 31 条：P0 0 / P1 2 / P2 23 / P3 6。
+
+## 批次 R-F5 状态读取与专利域原语（2026-11-20）
+
+本批六条全部已修。前三条随 [#927](https://github.com/xujian519/dsh-patent/pull/927) 合入，F-PAT-019、F-PAT-022 与 F-PAT-025 单独提交。
+
+| 条目 | 原队列 | 改法 | 结果 |
+|---|---|---|---|
+| F-PAT-021 | P2 | `workflow/types.ts` 的两处 JSDoc 改为指向 `@deepseek-ai/dsh-patent-workflow` 的 `workflow-store.ts` | fixed |
+| F-PAT-029 | P2 | 专利域的 `escapeRegExp` 统一到 `@deepseek-ai/dsh-value`，删除本地命名封装与内联实现 | fixed |
+| F-PAT-031 | P2 | `templateDraft` 删除死字段 `openEnd`，复用已命中的位置 | fixed |
+| F-PAT-019 | P2 | 状态文本读取单源：`patent-core` 公开 `readStateText`/`resolveKeyList`/`resolveTrimmedKey`，`patent-tools` 改为导入或薄适配，删除 `resolveTextKeys` 与无人写入的数组分支 | fixed |
+| F-PAT-022 | P2 | `figure/` 几何原语集中到 `geometry.ts`，`orientation` 改名 `segmentAngleDeg`，`plot-diagram` 改用 `glyph-box.textWidthMm` | fixed |
+| F-PAT-025 | P2 | 规则资产 YAML 解析改走 `runtime/yaml-asset.ts` 的 `readYamlRecord`，`asRecord` 与 `v8 ignore` 各剩一处 | fixed |
+
+修后未修条目为 25 条：P0 0 / P1 2 / P2 17 / P3 6。P1 两条（F-VID-008、F-PAT-047）仍为 `deferred`，可派发 P1 为 0。
+
+## 批次 R-F6 请求类型与法律域判定（2026-11-20）
+
+| 条目 | 原队列 | 改法 | 结果 |
+|---|---|---|---|
+| F-DOC-006 | P2 | `RenderDocTemplateInput extends RenderRequest`；`OfficeOperation.images` 改为 `{ kind: 'images' } & Omit<OfficeImagesRequest, 'extension' \| 'source'>` | fixed |
+| F-LEG-006 | P2 | `evaluators/base.ts` 导出 `dimensionJudgment`，13 处判定尾各缩为一行调用；布尔三元 helper 未采纳 | fixed |
+| F-LEG-007 | P2 | 新增 `shared/validity.ts` 的 `withVisibility`，两个 `getById` 各缩为 4 行 | fixed |
+| F-LEG-008 | P2 | `evaluate-evidence.ts` 的三份维度 schema 收为 `DIMENSION_JUDGMENT_SCHEMA` | fixed |
+
+修后未修条目为 21 条：P0 0 / P1 2 / P2 13 / P3 6。P1 两条（F-VID-008、F-PAT-047）仍为 `deferred`，可派发 P1 为 0。
+
+## 批次 R-F7 视频云 provider 与 store 骨架收口（2026-11-20）
+
+| 条目 | 原队列 | 改法 | 结果 |
+|---|---|---|---|
+| F-VID-009 | P2 | `cloud-common.ts` 补 `submitResponse` / `settledVideoTask` / `imageDataUri`（空文件统一拒绝）；`KeyedCloudProvider` 补 `beginPoll` / `trackSubmission` / `resumedRemoteId`；删两处 `jscpd:ignore` 与两份 `localIdOf`；`comfyui.failed` 改调 `failedTask` | fixed |
+| F-VID-010 | P2 | journal 侧补 `journalLockKey`；账本侧补 `readLedgerEntries` 与 `writeLedger`，`readLedger` / `appendLedgerEntry` 共用一条读写路径 | fixed |
+
+修后未修条目为 19 条：P0 0 / P1 2 / P2 11 / P3 6。P1 两条（F-VID-008、F-PAT-047）仍为 `deferred`，可派发 P1 为 0。
+
+## 批次 R-F8 专利域结构复用与判例检索兜底（2026-11-20）
+
+| 条目 | 原队列 | 改法 | 结果 |
+|---|---|---|---|
+| F-PAT-026 | P2 | `patent-teams` 新增 `emitTaskUpdated` 与 `recordSessionOf`（三处事件载荷、四处队长会话解析各收为一处）；`mailbox.ts` 新增 `settleMailboxDelivery`，`service.ts` 两条投递路径与 `scheduler.ts` 兜底共用；`tools.ts` 抽 `taskDetailSuffixes` | fixed |
+| F-PAT-030 | P2 | `patent-kg-adapter.ts` 新增 `expandNeighbors` 覆盖三处邻居扩展；`chunk-compression.ts` 新增 `backfillChunkContent`，判例与法规两份 `backfillContent` 改为传入定位与写回回调 | fixed |
+| F-PAT-032 | P2 | `FtsSearchLadder` 新增 `likeOnFtsMiss`（缺省 true），判例引擎设为 false：三码点以上查询在 FTS 正常执行且无命中时不再整表解压 LIKE；短查询、缺索引、FTS 抛错仍走 LIKE | fixed |
+
+修后未修条目为 12 条：P0 0 / P1 2 / P2 4 / P3 6（按清单逐条重数：86 条 `fixed`、3 条 `new`、7 条 `confirmed`、2 条 `deferred`）。P1 两条（F-VID-008、F-PAT-047）仍为 `deferred`，可派发 P1 为 0。
+
+## 批次 R-F9 FreeCAD 脚本模板外置（2026-11-20）
+
+| 条目 | 原队列 | 改法 | 结果 |
+|---|---|---|---|
+| F-PAT-023 | P2 | 940 行内嵌 Python 抽为同目录 `freecad-structure-script.py` 资产，`buildStructureScript` 首次调用读入并缓存；新增 `readStructureScriptTemplate` 承载源码/打包双候选路径，资产缺失直接抛错。`npm pack` 与 Desktop 复制策略确认资产随包进入 asar，无需新增 `asarUnpack` | fixed |
+
+修后未修条目为 11 条：P0 0 / P1 2 / P2 3 / P3 6（按清单逐条重数：87 条 `fixed`、3 条 `new`、6 条 `confirmed`、2 条 `deferred`）。P1 两条（F-VID-008、F-PAT-047）仍为 `deferred`，可派发 P1 为 0。
+
+## 批次 R-F10 审批续跑与视频文法对照（2026-11-20）
+
+| 条目 | 原队列 | 改法 | 结果 |
+|---|---|---|---|
+| F-PAT-047 | P1 | 中断结果增加恢复点；库层校验并从下一阶段续跑，工具层自动分配新 runId、保留原记录并复用门前产出；无恢复点的旧记录仍整次重跑且明确提示 | fixed |
+| F-VID-008 | P1 | 客户端补齐 Host 项目文法的字段、边界与未知字段拒绝；新增 Host↔client 接受/拒绝、文件名、状态表与预算口径对照测试。未新建共享包，也未迁移客户端，文法仍有多个所有者 | partial |
+
+修后未修条目为 10 条：P0 0 / P1 1 / P2 3 / P3 6（按清单逐条重数：88 条 `fixed`、3 条 `new`、6 条 `confirmed`、1 条 `partial`）。P1 剩 F-VID-008，校验漂移已受对照测试约束，文法单源仍需独立的结构改动。
+
 ## 未修条目打分（Day 44，2026-11-18）
 
 对 42 条仍为 `new`、`confirmed`、`deferred` 的条目补打分，使验收条件「每个 P0/P1 条目可直接分派」成立。紧迫性取值：A 维度计「立即」，含 E 维度计「本周期」，其余计「可延后」。已修条目沿用首次打分的队列，本表不重打。

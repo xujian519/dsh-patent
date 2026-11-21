@@ -176,8 +176,9 @@ export async function evaluateClientHalf(
     // The wrapper mirrors the host precheck exactly, so line offsets match.
     // Evaluating a definition's browser half IS this package's product: the
     // source arrived from a host process that accepted and prechecked it.
-    // oxlint-disable-next-line typescript/no-implied-eval -- see above
-    const factory = new Function(...parameters, `return (async () => {\n${clientCode}\n})()`)
+    const body = `return (async () => {\n${clientCode}\n})()`
+    // oxlint-disable-next-line typescript/no-implied-eval -- evaluating a definition's browser half is this package's product
+    const factory = new Function(...parameters, body) // nosemgrep: dsh-no-dynamic-code
     closure = factory as (...args: unknown[]) => Promise<unknown>
   } catch (error) {
     if (!(error instanceof SyntaxError)) throw error

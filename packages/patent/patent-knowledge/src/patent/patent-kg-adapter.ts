@@ -55,6 +55,38 @@ export function resolveNodeTypes(raw: string): string[] {
   return [trimmed]
 }
 
+/**
+ * 展开一个节点的出向邻居：按关系顺序查询，跳过已见与缺失节点。
+ *
+ * 三个调用点只在关系集合与上限上不同，节点组装口径（以目标 id 去重、
+ * 取不到节点时跳过）必须一致，否则同一邻居在不同入口会出现或消失。
+ * @param store 图谱存储。
+ * @param nodeId 起点节点 id。
+ * @param relations 关系类型集合，按迭代顺序展开。
+ * @param limit 每种关系的邻居上限。
+ * @param seen 已收集的节点 id；命中即跳过，新邻居就地追加。
+ * @returns 本次新出现的邻居节点及其关系。
+ */
+function expandNeighbors(
+  store: KgStore,
+  nodeId: string,
+  relations: ReadonlySet<string>,
+  limit: number,
+  seen: Set<string>,
+): Array<{ node: KgNode; relation: string }> {
+  const found: Array<{ node: KgNode; relation: string }> = []
+  for (const relation of relations) {
+    for (const neighbor of store.getNeighbors(nodeId, relation, limit)) {
+      if (seen.has(neighbor.targetId)) continue
+      const node = store.getNode(neighbor.targetId)
+      if (!node) continue
+      seen.add(node.id)
+      found.push({ node, relation })
+    }
+  }
+  return found
+}
+
 /** 专利知识图谱适配器（封装 KgStore，提供专利语义查询）。 */
 export class PatentKgAdapter {
   constructor(private readonly store: KgStore) {}
@@ -90,23 +122,11 @@ export class PatentKgAdapter {
 
     // 扩展：相似节点 + 引用关系（取优先类型，避免重复）
     for (const hit of hits) {
-      for (const relation of SIMILAR_RELATIONS) {
-        for (const neighbor of this.store.getNeighbors(hit.id, relation, expandLimit)) {
-          if (seen.has(neighbor.targetId)) continue
-          const node = this.store.getNode(neighbor.targetId)
-          if (!node) continue
-          seen.add(node.id)
-          results.push({ node, via: 'similar', relation })
-        }
+      for (const { node, relation } of expandNeighbors(this.store, hit.id, SIMILAR_RELATIONS, expandLimit, seen)) {
+        results.push({ node, via: 'similar', relation })
       }
-      for (const relation of CITE_RELATIONS) {
-        for (const neighbor of this.store.getNeighbors(hit.id, relation, 4)) {
-          if (seen.has(neighbor.targetId)) continue
-          const node = this.store.getNode(neighbor.targetId)
-          if (!node) continue
-          seen.add(node.id)
-          results.push({ node, via: 'cites', relation })
-        }
+      for (const { node, relation } of expandNeighbors(this.store, hit.id, CITE_RELATIONS, 4, seen)) {
+        results.push({ node, via: 'cites', relation })
       }
     }
 
@@ -120,18 +140,7 @@ export class PatentKgAdapter {
    * @returns 邻居节点及其关系列表。
    */
   getSimilarNodes(nodeId: string, limit = 10): Array<{ node: KgNode; relation: string }> {
-    const results: Array<{ node: KgNode; relation: string }> = []
-    const seen = new Set<string>([nodeId])
-    for (const relation of SIMILAR_RELATIONS) {
-      for (const neighbor of this.store.getNeighbors(nodeId, relation, limit)) {
-        if (seen.has(neighbor.targetId)) continue
-        const node = this.store.getNode(neighbor.targetId)
-        if (!node) continue
-        seen.add(node.id)
-        results.push({ node, relation })
-      }
-    }
-    return results
+    return expandNeighbors(this.store, nodeId, SIMILAR_RELATIONS, limit, new Set<string>([nodeId]))
   }
 
   /**

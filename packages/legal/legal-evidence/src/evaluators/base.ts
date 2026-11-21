@@ -68,6 +68,31 @@ export function levelFor(score: number): string {
 }
 
 /**
+ * 组装一个维度的判定：评分夹紧到 `[0,1]`、推导等级、拼接理由或基础评分文案。
+ *
+ * 各证据类型的判定器共用同一尾部，改夹紧范围或兜底文案只需改这里。
+ * @param dimension - 维度标识。
+ * @param score - 未夹紧的评分。
+ * @param reasons - 已命中的理由。
+ * @param label - 判定标签（如「关联性」「书证真实性」）。
+ * @returns 该维度的判定。
+ */
+export function dimensionJudgment(
+  dimension: LegalEvidenceDimensionJudgment['dimension'],
+  score: number,
+  reasons: readonly string[],
+  label: string,
+): LegalEvidenceDimensionJudgment {
+  const clamped = Math.max(0, Math.min(score, 1.0))
+  return {
+    dimension,
+    score: clamped,
+    level: levelFor(clamped),
+    reasoning: reasons.length > 0 ? `${label}评估：${reasons.join('；')}` : `${label}评估：基础评分`,
+  }
+}
+
+/**
  * 通用关联性评估：基于待证事实的明确性与证据内容的相关度。
  * @param input - 证据输入。
  * @returns 关联性判定。
@@ -87,13 +112,7 @@ export function evaluateGenericRelevance(input: LegalEvidenceInput): LegalEviden
     score += 0.1
     reasons.push('已记录证据来源')
   }
-  score = Math.min(score, 1.0)
-  return {
-    dimension: 'relevance',
-    score,
-    level: levelFor(score),
-    reasoning: reasons.length > 0 ? `关联性评估：${reasons.join('；')}` : '关联性评估：基础评分',
-  }
+  return dimensionJudgment('relevance', score, reasons, '关联性')
 }
 
 /**
@@ -122,11 +141,5 @@ export function evaluateGenericLegality(input: LegalEvidenceInput): LegalEvidenc
     score += 0.05
     reasons.push('已记录证据来源')
   }
-  score = Math.max(0, Math.min(score, 1.0))
-  return {
-    dimension: 'legality',
-    score,
-    level: levelFor(score),
-    reasoning: reasons.length > 0 ? `合法性评估：${reasons.join('；')}` : '合法性评估：基础评分',
-  }
+  return dimensionJudgment('legality', score, reasons, '合法性')
 }

@@ -5,6 +5,7 @@ import { createBirpc, type BirpcReturn } from 'birpc'
 
 const stringify = JSON.stringify
 const parse = JSON.parse
+// Copied into a child that has no workspace packages, so the diagnostic stays local.
 const messageOf = (error: unknown): string => error instanceof Error ? error.message : String(error)
 
 /**

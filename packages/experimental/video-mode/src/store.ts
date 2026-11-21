@@ -162,11 +162,20 @@ export async function writeTaskRecords(
     throw new MediaFailure(`invalid task journal record: ${issuesOf(parsed.error)}`, 'MEDIA_STORE_INVALID')
   }
   const path = storePathOf(projectPath, TASK_JOURNAL_FILE)
-  await withKeyLock(`store:${path}`, () => publishWithRetry('task journal', async () => {
+  await withKeyLock(journalLockKey(path), () => publishWithRetry('task journal', async () => {
     // Replacement does not need the stored records, only the version it replaces.
     const version = await storeVersion(ctx, path, cwd, signal)
     await writeStoreDocument(ctx, path, parsed.data, version, cwd, signal)
   }))
+}
+
+/**
+ * Lock key that serializes every writer of one journal file.
+ * @param path - journal path.
+ * @returns the in-process lock key.
+ */
+function journalLockKey(path: string): string {
+  return `store:${path}`
 }
 
 /**
@@ -186,7 +195,7 @@ async function mutateJournal(
   apply: (records: readonly MediaTaskRecord[]) => readonly MediaTaskRecord[] | undefined,
 ): Promise<void> {
   const path = storePathOf(projectPath, TASK_JOURNAL_FILE)
-  await withKeyLock(`store:${path}`, () => publishWithRetry('task journal', async () => {
+  await withKeyLock(journalLockKey(path), () => publishWithRetry('task journal', async () => {
     const snapshot = await readSnapshot(ctx, projectPath, TASK_JOURNAL_FILE, journalSchema, cwd, signal)
     const next = apply(snapshot?.document.tasks ?? [])
     if (next === undefined) return
@@ -285,12 +294,8 @@ export async function readLedger(
 ): Promise<readonly MediaLedgerEntry[]> {
   const located = await locateLedger(ctx, projectPath, ledgerDir, cwd)
   return withKeyLock(located.lockKey, () => publishWithRetry('budget ledger', async () => {
-    const host = await readSnapshotAt(ctx, located.filePath, ledgerSchema, HOST_LEDGER_FILE, cwd, signal)
-    if (host !== undefined) return host.document.entries
-    const legacy = await readSnapshot(ctx, projectPath, BUDGET_LEDGER_FILE, ledgerSchema, cwd, signal)
-    if (legacy === undefined) return []
-    await writeStoreDocument(ctx, located.filePath, legacy.document, undefined, cwd, signal, located.policy)
-    return legacy.document.entries
+    const ledger = await readLedgerEntries(ctx, projectPath, located, cwd, signal)
+    return ledger.entries
   }))
 }
 
@@ -317,19 +322,68 @@ export async function appendLedgerEntry(
 ): Promise<boolean> {
   const located = await locateLedger(ctx, projectPath, ledgerDir, cwd)
   return withKeyLock(located.lockKey, () => publishWithRetry('budget ledger', async () => {
-    const host = await readSnapshotAt(ctx, located.filePath, ledgerSchema, HOST_LEDGER_FILE, cwd, signal)
-    const legacy = host === undefined
-      ? await readSnapshot(ctx, projectPath, BUDGET_LEDGER_FILE, ledgerSchema, cwd, signal)
-      : undefined
-    const entries = host?.document.entries ?? legacy?.document.entries ?? []
-    if (entries.some(existing => existing.taskId === entry.taskId)) return false
-    const parsed = ledgerSchema.safeParse({ schemaVersion: STORE_SCHEMA_VERSION, entries: [...entries, entry] })
-    if (!parsed.success) {
-      throw new MediaFailure(`invalid budget ledger entry: ${issuesOf(parsed.error)}`, 'MEDIA_STORE_INVALID')
-    }
-    await writeStoreDocument(ctx, located.filePath, parsed.data, host?.version, cwd, signal, located.policy)
+    const ledger = await readLedgerEntries(ctx, projectPath, located, cwd, signal)
+    if (ledger.entries.some(existing => existing.taskId === entry.taskId)) return false
+    await writeLedger(ctx, located, [...ledger.entries, entry], ledger.version, cwd, signal)
     return true
   }))
+}
+
+/**
+ * Read the charges a ledger operation extends.
+ *
+ * A missing host file with a valid legacy `budget.json` is copied once, so the
+ * caller sees one list whether or not the session predates the host ledger.
+ * @param ctx - context providing `ctx.fs`.
+ * @param projectPath - project file path.
+ * @param located - host ledger file and its write policy.
+ * @param cwd - Session working directory for relative resolution.
+ * @param signal - caller cancellation.
+ * @returns the current charges and the host version a write replaces.
+ * @throws {@link MediaFailure} `MEDIA_STORE_INVALID` when a ledger file is unreadable or malformed.
+ */
+async function readLedgerEntries(
+  ctx: Context,
+  projectPath: string,
+  located: LocatedLedger,
+  cwd: string,
+  signal?: AbortSignal,
+): Promise<{ readonly entries: readonly MediaLedgerEntry[]; readonly version: FsVersion | undefined }> {
+  const host = await readSnapshotAt(ctx, located.filePath, ledgerSchema, HOST_LEDGER_FILE, cwd, signal)
+  if (host !== undefined) return { entries: host.document.entries, version: host.version }
+  const legacy = await readSnapshot(ctx, projectPath, BUDGET_LEDGER_FILE, ledgerSchema, cwd, signal)
+  if (legacy === undefined) return { entries: [], version: undefined }
+  await writeLedger(ctx, located, legacy.document.entries, undefined, cwd, signal)
+  return { entries: legacy.document.entries, version: undefined }
+}
+
+/**
+ * Publish one complete ledger against the version it replaces.
+ *
+ * The caller holds the ledger lock and has already read the entries it
+ * extends; a concurrent writer between that read and this publication forces
+ * the surrounding retry instead of losing either append.
+ * @param ctx - context providing `ctx.fs`.
+ * @param located - host ledger file and its write policy.
+ * @param entries - complete charge list to store.
+ * @param version - the read the write replaces, or undefined to create.
+ * @param cwd - Session working directory for relative resolution.
+ * @param signal - caller cancellation.
+ * @throws {@link MediaFailure} `MEDIA_STORE_INVALID` for an entry the schema rejects.
+ */
+async function writeLedger(
+  ctx: Context,
+  located: LocatedLedger,
+  entries: readonly MediaLedgerEntry[],
+  version: FsVersion | undefined,
+  cwd: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  const parsed = ledgerSchema.safeParse({ schemaVersion: STORE_SCHEMA_VERSION, entries })
+  if (!parsed.success) {
+    throw new MediaFailure(`invalid budget ledger entry: ${issuesOf(parsed.error)}`, 'MEDIA_STORE_INVALID')
+  }
+  await writeStoreDocument(ctx, located.filePath, parsed.data, version, cwd, signal, located.policy)
 }
 
 /** One host ledger file and the write policy that can publish it. */

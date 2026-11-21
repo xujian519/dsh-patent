@@ -28,6 +28,7 @@ import {
   type StageHandler,
   degraded,
   getStateString,
+  resolveKeyList,
 } from '@deepseek-ai/dsh-patent-core'
 import { analyzeSlop, SLOP_PASS_LINE, visibleChars } from '../internal/slop-engine.ts'
 import { buildSlopRevisionHint } from '../internal/retry-hints.ts'
@@ -38,26 +39,6 @@ export const SLOP_GATE_PASS_THRESHOLD = SLOP_PASS_LINE
 
 /** 缺省受理文本键（撰写链路的权利要求草稿）。 */
 const DEFAULT_SLOP_TEXT_KEYS: readonly string[] = ['claims_draft']
-
-/**
- * 解析阶段参数 `text_keys`。
- *
- * 与 patent-core 内置 handler 的 `resolveKeyList` 同一语义（缺失取缺省、非法返回
- * undefined），但在本包内无法复用该模块的内部实现，故按同一约定在此实现。
- * @param state - 阶段执行态（阶段参数已合入）。
- * @returns 受理文本键；参数已声明但非法时返回 undefined。
- */
-function resolveTextKeys(state: PipelineState): string[] | undefined {
-  const raw = state.text_keys
-  if (raw === undefined) return [...DEFAULT_SLOP_TEXT_KEYS]
-  if (!Array.isArray(raw) || raw.length === 0) return undefined
-  const keys: string[] = []
-  for (const item of raw) {
-    if (typeof item !== 'string' || item.trim().length === 0) return undefined
-    keys.push(item.trim())
-  }
-  return keys
-}
 
 /** 一个带特征编号、需要单独计篇幅的实施例块。 */
 type FeatureCitedBlock = { index: number; text: string }
@@ -122,7 +103,7 @@ export class SlopGateHandler implements StageHandler {
   // oxlint-disable-next-line typescript/require-await -- StageHandler contract requires async execute
   async execute(input: StageExecuteInput): Promise<PipelineState> {
     const { state } = input
-    const keys = resolveTextKeys(state)
+    const keys = resolveKeyList(state, 'text_keys', DEFAULT_SLOP_TEXT_KEYS)
     if (keys === undefined) {
       return degraded('slop-gate', 'params.text_keys 必须是非空字符串数组')
     }

@@ -49,7 +49,7 @@ Web patch 为每个会话挂载本插件；会话打开过项目后标签即出�
 
 `video-projects.ts` 注册回合级的 `ConversationNodeDefinition` 及其会话视图目标。`tool/call` 记录调用名；带 `meta.projectPath` 的成功 append-surface `tool/result` 发布该已解析路径，任意落定的 `video_project` 或 `media` 结果推进修订计数。视图构建器把窗口内每个回合折叠为首见路径列表与最高修订号。看板经 `useConversation` 读取该快照，自己不拥有 store、订阅或事件监听器。
 
-标签经 `ctx.slots.inject('conversation.view')` 注册，id 与视图目标一致。注入面解析一次会话工作目录，并提供 `loadProject`（三次 `workspaceFiles.readBytes`，加上每个可预览媒体路径一次 `stat`）、媒体 URL 构建器与三个文件动作。文件解析在本地完成，对看板展示的字段严格校验：文档格式错误整体报错，而不是展示半个生产；账本或日志格式错误则降级为空总额或空列表，手改它们不会遮住文档本身。
+标签经 `ctx.slots.inject('conversation.view')` 注册，id 与视图目标一致。注入面解析一次会话工作目录，并提供 `loadProject`（三次 `workspaceFiles.readBytes`，加上每个可预览媒体路径一次 `stat`）、媒体 URL 构建器与三个文件动作。文件解析在本地执行 Host 的完整项目文法，包括拒绝未知字段：文档格式错误整体报错，而不是展示半个生产；账本或日志格式错误则降级为空总额或空列表，手改它们不会遮住文档本身。
 
 发现修订号变化或用户点击刷新时重新读取；在工具集之外修改了标题或预算的项目需要这一次手势。列布局按 720px 的容器宽度堆叠，而不是视口宽度，因此被两侧栏夹窄的对话列同样得到单列布局。
 
@@ -93,6 +93,6 @@ Web patch 为每个会话挂载本插件；会话打开过项目后标签即出�
 <details>
 <summary>维护者工作上下文——点击展开</summary>
 
-`tests/project-reads.client.spec.ts` 拥有解析与读取约定，`tests/video-projects.client.spec.ts` 拥有折叠与修订语义，`tests/StudioView.client.spec.tsx` 拥有看板行为。项目文档 schema 位于 `dsh-video-mode`；这些解析器只需与看板展示的字段保持对齐，不要复制 Host 的完整校验器。
+`tests/project-reads.client.spec.ts` 拥有解析与读取约定，`tests/project-grammar-parity.client.spec.ts` 对照 `dsh-video-mode` 的文法、存储文件名、状态表与已提交预算，`tests/video-projects.client.spec.ts` 拥有折叠与修订语义，`tests/StudioView.client.spec.tsx` 拥有看板行为。项目文档 schema 位于 `dsh-video-mode`；客户端解析器需与其完整校验规则保持对齐。
 
 </details>

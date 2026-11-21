@@ -8,7 +8,7 @@
  */
 
 import { deepFreeze } from '@deepseek-ai/dsh-util-values'
-import { messageOf } from './values.ts'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { AnyHook, HookFailure, HookOrigin, HookMatcher, ModsApi, HookNext, PluginOptions } from './types.ts'
 import { matcherMatches } from './matcher.ts'
 
@@ -179,7 +179,7 @@ class NoResultError extends Error {
 function failureOf(error: unknown): HookFailure & { readonly line: string } {
   if (error instanceof HookTimeoutError) return { kind: 'timeout', message: error.message, line: `timeout, ${error.message}` }
   if (error instanceof NoResultError || error instanceof RewriteRefusedError) return { kind: 'throw', message: error.message, line: error.message }
-  const message = error instanceof Error ? `${error.name}: ${error.message}` : messageOf(error)
+  const message = error instanceof Error ? `${error.name}: ${error.message}` : errorMessage(error)
   return { kind: 'throw', message, line: `threw ${message}` }
 }
 
@@ -226,7 +226,7 @@ export async function dispatch<E, R>(request: DispatchRequest<E, R>): Promise<R>
           try {
             request.validateNext(e, hook)
           } catch (error: unknown) {
-            const refused = error instanceof Error ? error : new Error(messageOf(error))
+            const refused = error instanceof Error ? error : new Error(errorMessage(error))
             state.refused = { error: refused }
             return Promise.reject(refused)
           }
@@ -262,7 +262,7 @@ export async function dispatch<E, R>(request: DispatchRequest<E, R>): Promise<R>
       clock.stop()
       if (state.beneath !== undefined) {
         await state.beneath.catch((error: unknown) => {
-          request.report(`${hook.mod.name}: ${request.event}: the chain beneath failed after the hook answered: ${messageOf(error)}`)
+          request.report(`${hook.mod.name}: ${request.event}: the chain beneath failed after the hook answered: ${errorMessage(error)}`)
         })
       }
       return result
@@ -311,7 +311,7 @@ export async function dispatch<E, R>(request: DispatchRequest<E, R>): Promise<R>
           try {
             request.validateNext(e, hook)
           } catch (error: unknown) {
-            return Promise.reject(error instanceof Error ? error : new Error(messageOf(error)))
+            return Promise.reject(error instanceof Error ? error : new Error(errorMessage(error)))
           }
         }
         clock.pause()

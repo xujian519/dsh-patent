@@ -53,7 +53,7 @@ Function plugin porting the Sati patent-domain tool set into the DeepSeek Harnes
 | `recognize_chemical_structure` | analysis | optional (rdkit not bundled); index upsert wired (Config.chemistryIndexFile) |
 | `flexible_plan` | workflow | `@deepseek-ai/dsh-patent-workflow` flexible-plan |
 | `patent_workflow` | workflow | `@deepseek-ai/dsh-patent-workflow` recap |
-| `patent_workflow_run` | workflow | `@deepseek-ai/dsh-patent-workflow` + ModelPort |
+| `patent_workflow_run` | workflow | `@deepseek-ai/dsh-patent-workflow` + ModelPort; `approveStageIds` resumes a matching interrupted case/manifest run from its persisted recovery point under a fresh run id and preserves the interrupted record; without a usable point it reruns from the first stage, and the result says which path ran |
 | `patent_plan_task` | workflow | `@deepseek-ai/dsh-patent-workflow` plantask state machine; `transition` accepts case-docket entries (`issues` + the planning `round`), resolves defaults from the shipped disposition table, echoes the resolved entries, and hands them to the blocking/terminal/round-cap guards |
 | `patent_worker_validate` | quality | `@deepseek-ai/dsh-patent-workflow` worker contract |
 | `knowledge_note_save` | knowledge | file writer under Config.noteDir (default `<workspace>/99-知识库`) |

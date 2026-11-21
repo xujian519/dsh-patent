@@ -13,7 +13,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { evaluatePatentContent } from '@deepseek-ai/dsh-patent-tools'
 import { validateWorkerOutput, workerContract } from '@deepseek-ai/dsh-patent-workflow'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { type Session, SessionId } from '@deepseek-ai/dsh-session'
 import { appendTeamEvent, captainSessionOf } from './events.ts'
 import { PatentTeamsAttemptId, PatentTeamsTaskId, PatentTeamsTeamId } from './ids.ts'
 import { interruptMember, waitForMemberIdle } from './members.ts'
@@ -190,6 +190,47 @@ function taskRef(fresh: TeamState, task: TeamTask): { teamId: PatentTeamsTeamId;
   return { teamId: PatentTeamsTeamId(fresh.id), taskId: PatentTeamsTaskId(task.id) }
 }
 
+/**
+ * Resolve the Session a team record belongs to: the captain's when it is live,
+ * otherwise the acting member's.
+ * @param host - the owning service's task-operation dependencies.
+ * @param fresh - the team whose captain session is the record target.
+ * @param agent - the agent performing the transition.
+ * @returns the session to record into.
+ */
+function recordSessionOf(host: TaskOpsHost, fresh: TeamState, agent: Agent): Session {
+  return captainSessionOf(host.ctx, SessionId(fresh.captainSessionId), agent.session)
+}
+
+/**
+ * Record one task transition.
+ *
+ * Every transition states its payload the same way, so a record names its team,
+ * task, status, assignee, output, and attempt identically whichever operation
+ * produced it. Absent optional fields are omitted rather than sent as
+ * `undefined`, matching their optional declaration.
+ * @param host - the owning service's task-operation dependencies.
+ * @param fresh - the team the task belongs to.
+ * @param task - the task after its transition.
+ * @param session - the session to record into; callers choose the member or captain session.
+ * @param output - output this transition recorded, when it has one.
+ */
+function emitTaskUpdated(
+  host: TaskOpsHost,
+  fresh: TeamState,
+  task: TeamTask,
+  session: Session,
+  output?: string,
+): void {
+  appendTeamEvent(host.ctx, session, 'patent-teams/task-updated', {
+    ...taskRef(fresh, task),
+    status: task.status,
+    ...task.assignee === undefined ? {} : { assignee: task.assignee },
+    ...output === undefined ? {} : { output },
+    ...attemptFields(task),
+  })
+}
+
 /** The model-facing row `taskView` returns for one task mutation. */
 interface TaskView {
   task_id: string
@@ -264,7 +305,7 @@ export async function createTask(
     fresh.taskSeq = seq + 1
     fresh.tasks.push(task)
     await writeTeam(stateRoot, fresh)
-    appendTeamEvent(host.ctx, captainSessionOf(host.ctx, SessionId(fresh.captainSessionId), agent.session), 'patent-teams/task-created', {
+    appendTeamEvent(host.ctx, recordSessionOf(host, fresh, agent), 'patent-teams/task-created', {
       ...taskRef(fresh, task),
       subject: task.subject,
       dependencies: task.dependencies.map(dependency => PatentTeamsTaskId(dependency)),
@@ -371,13 +412,7 @@ export async function reassignTask(
     task.reassigning = false
     if (quiescenceError === undefined && target === CAPTAIN_KEY) beginTaskAttempt(task, CAPTAIN_KEY)
     await writeTeam(stateRoot, fresh)
-    appendTeamEvent(host.ctx, agent.session, 'patent-teams/task-updated', {
-      ...taskRef(fresh, task),
-      status: task.status,
-      assignee: task.assignee,
-      ...args.reason === undefined ? {} : { output: `Reassigned: ${args.reason}` },
-      ...attemptFields(task),
-    })
+    emitTaskUpdated(host, fresh, task, agent.session, args.reason === undefined ? undefined : `Reassigned: ${args.reason}`)
     host.activity.notify(fresh.id)
   })
   if (quiescenceError !== undefined) {
@@ -475,12 +510,7 @@ export async function claimTask(
     }
     const attemptId = beginTaskAttempt(task, assignee)
     await writeTeam(stateRoot, fresh)
-    appendTeamEvent(host.ctx, captainSessionOf(host.ctx, SessionId(fresh.captainSessionId), agent.session), 'patent-teams/task-updated', {
-      ...taskRef(fresh, task),
-      status: task.status,
-      assignee: task.assignee,
-      ...attemptFields(task),
-    })
+    emitTaskUpdated(host, fresh, task, recordSessionOf(host, fresh, agent))
     host.activity.notify(fresh.id)
     // v8 ignore start -- the freshly claimed task always has assignee/attempt
     return {
@@ -560,7 +590,7 @@ export async function updateTask(
           task.gateRejections = rejections
           task.updatedAt = Date.now()
           await writeTeam(stateRoot, fresh)
-          appendTeamEvent(host.ctx, captainSessionOf(host.ctx, SessionId(fresh.captainSessionId), agent.session), 'patent-teams/task-gated', {
+          appendTeamEvent(host.ctx, recordSessionOf(host, fresh, agent), 'patent-teams/task-gated', {
             ...taskRef(fresh, task),
             score: gate.score,
             failures: gate.failures,
@@ -594,16 +624,10 @@ export async function updateTask(
     }
     task.updatedAt = Date.now()
     await writeTeam(stateRoot, fresh)
-    appendTeamEvent(host.ctx, captainSessionOf(host.ctx, SessionId(fresh.captainSessionId), agent.session), 'patent-teams/task-updated', {
-      ...taskRef(fresh, task),
-      status: task.status,
-      ...task.assignee !== undefined ? { assignee: task.assignee } : {},
-      ...task.output !== undefined ? { output: task.output } : {},
-      ...attemptFields(task),
-    })
+    emitTaskUpdated(host, fresh, task, recordSessionOf(host, fresh, agent), task.output)
     host.activity.notify(fresh.id)
     if (validated !== undefined) {
-      appendTeamEvent(host.ctx, captainSessionOf(host.ctx, SessionId(fresh.captainSessionId), agent.session), 'patent-teams/task-validated', {
+      appendTeamEvent(host.ctx, recordSessionOf(host, fresh, agent), 'patent-teams/task-validated', {
         ...taskRef(fresh, task),
         worker: validated.worker,
         valid: validated.valid,

@@ -2,7 +2,7 @@
  * 撰写域原子共用的状态读取。
  */
 
-import { getStateString, type PipelineState } from '@deepseek-ai/dsh-patent-core'
+import { getStateString, readStateText, type PipelineState } from '@deepseek-ai/dsh-patent-core'
 import type { PatentType, TechDomain } from '../tool/draft-claims.ts'
 
 const TECH_DOMAINS: readonly TechDomain[] = ['mechanical', 'electrical', 'chemical', 'software', 'general']
@@ -16,8 +16,8 @@ const PATENT_TYPES: readonly PatentType[] = ['invention', 'utility_model']
  */
 export function firstStateString(state: PipelineState, keys: readonly string[]): string {
   for (const key of keys) {
-    const value = getStateString(state, key)
-    if (value.trim().length > 0) return value.trim()
+    const text = readStateText(state, key)
+    if (text !== undefined) return text
   }
   return ''
 }

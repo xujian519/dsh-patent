@@ -19,7 +19,7 @@ import { type StatementSync } from 'node:sqlite'
 import { KnowledgeFtsSearchBase, type KnowledgeSearchEngineOptions } from '../shared/knowledge-fts.ts'
 import { escapeFtsPhrase, joinFtsOrTerms } from '../shared/fts.ts'
 import { resolveResultLimit } from '@deepseek-ai/dsh-knowledge-core'
-import { decompressChunk } from '../shared/chunk-compression.ts'
+import { backfillChunkContent, decompressChunk } from '../shared/chunk-compression.ts'
 import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { LawCategory, LawLookupOptions, LawRecord, LawSearchResult, LegalSearchSource } from './types.ts'
 import { isLawVisible, resolveAsOf, resolveLawValidity, todayIsoDate } from './validity.ts'
@@ -368,10 +368,11 @@ export class KnowledgeLawSearch extends KnowledgeFtsSearchBase<KnowledgeLawSearc
    * 片段（含解压）——保持旧行为"片段 = 命中的 chunk"。
    */
   private backfillContent(rows: DocChunkRow[]): DocChunkRow[] {
-    return rows.map((row) => {
-      if (row.content !== null) return row
-      const hit = this.stmtGetChunkAt.get(row.chunk_index, row.document_id) as DocChunkRow | undefined
-      return hit ? { ...row, content: decompressChunk(hit.content) } : row
+    return backfillChunkContent(rows, {
+      chunkAt: this.stmtGetChunkAt,
+      locate: row => ({ documentId: row.document_id, chunkIndex: row.chunk_index }),
+      hasContent: row => row.content !== null,
+      attach: (row, content) => ({ ...row, content }),
     })
   }
 

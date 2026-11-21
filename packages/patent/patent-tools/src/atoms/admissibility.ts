@@ -20,6 +20,7 @@ import {
   isJsonRecord,
   isMonthOnlyDate,
   parseDateFlexible,
+  readStateText,
   type Atom,
   type PipelineState,
   type StageExecuteInput,
@@ -193,19 +194,6 @@ function readDate(
       day: parsed.getUTCDate(),
     },
   }
-}
-
-/**
- * 读取非空字符串字段。
- * @param state - 阶段执行态。
- * @param key - 状态键。
- * @returns 去空白后的字符串；缺失或空串时返回 undefined。
- */
-function readText(state: PipelineState, key: string): string | undefined {
-  const raw = state[key]
-  if (typeof raw !== 'string') return undefined
-  const text = raw.trim()
-  return text.length > 0 ? text : undefined
 }
 
 /** 在先决定的解析结果。 */
@@ -489,8 +477,8 @@ function checkResJudicata(state: PipelineState, cited: readonly string[], verdic
  * @param verdict - 结果累加器。
  */
 function checkParty(state: PipelineState, verdict: Verdict): void {
-  const requester = readText(state, DEFAULT_ADMISSIBILITY_REQUESTER_KEY)
-  const owner = readText(state, DEFAULT_ADMISSIBILITY_OWNER_KEY)
+  const requester = readStateText(state, DEFAULT_ADMISSIBILITY_REQUESTER_KEY)
+  const owner = readStateText(state, DEFAULT_ADMISSIBILITY_OWNER_KEY)
   if (requester === undefined || owner === undefined) {
     verdict.lines.push('- 主体资格：未评估（缺请求人或申请人信息）')
     return

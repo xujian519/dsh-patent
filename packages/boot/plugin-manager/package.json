@@ -125,6 +125,8 @@
     "@deepseek-ai/dsh-sandbox": "workspace:*",
     "@deepseek-ai/dsh-user-approval": "workspace:*",
     "@deepseek-ai/dsh-client-connection": "workspace:*",
-    "@types/hosted-git-info": "^3.0.5"
+    "@types/hosted-git-info": "^3.0.5",
+    "@deepseek-ai/cordis-plugin-include": "workspace:~",
+    "@deepseek-ai/dsh-value": "workspace:*"
   }
 }

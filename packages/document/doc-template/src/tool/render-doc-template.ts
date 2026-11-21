@@ -23,22 +23,8 @@ import {
   type VarIssue,
 } from '../types.ts'
 
-/** The model's render request. */
-export interface RenderDocTemplateInput {
-  /** Template name, from `list_doc_templates`. */
-  readonly template: string
-  /** Variable values, keyed by variable name without braces. */
-  readonly variables: Readonly<Record<string, string>>
-  /** Target format; the template's fallback format when omitted. */
-  readonly format?: OutputFormat
-  /** Document title override; the template title when omitted. */
-  readonly title?: string
-  /** Author or attorney recorded in the HTML metadata. */
-  readonly author?: string
-  /** Document date recorded in the HTML metadata. */
-  readonly date?: string
-  /** Suggested file name without extension; the template name when omitted. */
-  readonly filename?: string
+/** The model's render request: a store render plus the optional write target. */
+export interface RenderDocTemplateInput extends RenderRequest {
   /** Write the rendered document to this path instead of returning only its content. */
   readonly outputPath?: string
 }

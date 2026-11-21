@@ -1,3 +1,5 @@
+import { asRecord } from '@deepseek-ai/dsh-value'
+
 /**
  * CNIPR（中国知识产权网）通道的纯函数层：号码分类与规范化、脚本收据解析、页面文本解析。
  *
@@ -256,10 +258,6 @@ type PdfLinksPayloadItem = {
   error?: unknown
 }
 
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === 'object' && value !== null ? value as Record<string, unknown> : undefined
-}
-
 function asString(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined
 }
@@ -286,7 +284,7 @@ export function readCniprScriptFailure(value: unknown): CniprScriptFailure | und
   if (value === null || value === undefined) return undefined
   const record = asRecord(value)
   // 脚本回传的 error 不是对象也是畸形收据：按页面状态失败报出，不静默丢弃。
-  if (record === undefined) {
+  if (record == null) {
     return { code: 'page_state', message: typeof value === 'string' ? value : '脚本回传的 error 不是对象' }
   }
   const message = asString(record.message) ?? ''
@@ -308,7 +306,7 @@ function readCniprPayload<T>(
   readItem: (record: Record<string, unknown>) => T | undefined,
 ): { items: T[]; dropped: number; failure?: CniprScriptFailure } {
   const root = asRecord(payload)
-  if (root === undefined) {
+  if (root == null) {
     return { items: [], dropped: 0, failure: { code: 'page_state', message: 'CNIPR 脚本收据不是对象' } }
   }
   const failure = readCniprScriptFailure(root.error)
@@ -325,7 +323,7 @@ function readCniprPayload<T>(
   let dropped = 0
   for (const entry of list) {
     const record = asRecord(entry)
-    if (record === undefined) {
+    if (record == null) {
       dropped += 1
       continue
     }
@@ -433,7 +431,7 @@ export function readCniprSearchPayload(payload: unknown): {
 } {
   const read = readCniprPayload(payload, readSearchItem)
   const root = asRecord(payload)
-  const header = root === undefined ? undefined : asString(root.header)
+  const header = root == null ? undefined : asString(root.header)
   const total = header === undefined ? null : parseCniprSearchTotal(header)
   return {
     total,

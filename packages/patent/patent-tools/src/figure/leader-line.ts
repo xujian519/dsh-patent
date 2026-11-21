@@ -31,7 +31,8 @@ import {
   textElementContent,
   validateSvgReferences,
 } from './svg-annotate.ts'
-import { formatMm } from './mm-primitives.ts'
+import { boundsOfPoints, formatMm } from './mm-primitives.ts'
+import { segmentsIntersect } from './geometry.ts'
 import type { SvgAnnotateReference } from './svg-annotate.ts'
 
 /** 引线标号选项。 */
@@ -172,30 +173,6 @@ function pointInRect(x: number, y: number, rect: Rect): boolean {
   return x >= rect.minX && x <= rect.maxX && y >= rect.minY && y <= rect.maxY
 }
 
-/** 三点有向面积符号（>0 逆时针、<0 顺时针、=0 共线）。 */
-function orientation(ax: number, ay: number, bx: number, by: number, cx: number, cy: number): number {
-  return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
-}
-
-/** 点 (px,py) 是否落在线段 (ax,ay)-(bx,by) 上（已知共线）。 */
-function onSegment(ax: number, ay: number, bx: number, by: number, px: number, py: number): boolean {
-  return px >= Math.min(ax, bx) && px <= Math.max(ax, bx) && py >= Math.min(ay, by) && py <= Math.max(ay, by)
-}
-
-/** 两线段是否相交（含共线重叠与端点接触）。 */
-function segmentsIntersect(a: Segment, b: Segment): boolean {
-  const d1 = orientation(a.x1, a.y1, a.x2, a.y2, b.x1, b.y1)
-  const d2 = orientation(a.x1, a.y1, a.x2, a.y2, b.x2, b.y2)
-  const d3 = orientation(b.x1, b.y1, b.x2, b.y2, a.x1, a.y1)
-  const d4 = orientation(b.x1, b.y1, b.x2, b.y2, a.x2, a.y2)
-  if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) return true
-  if (d1 === 0 && onSegment(a.x1, a.y1, a.x2, a.y2, b.x1, b.y1)) return true
-  if (d2 === 0 && onSegment(a.x1, a.y1, a.x2, a.y2, b.x2, b.y2)) return true
-  if (d3 === 0 && onSegment(b.x1, b.y1, b.x2, b.y2, a.x1, a.y1)) return true
-  if (d4 === 0 && onSegment(b.x1, b.y1, b.x2, b.y2, a.x2, a.y2)) return true
-  return false
-}
-
 /** 线段是否穿过矩形（含端点落在矩形内）。 */
 function segmentIntersectsRect(segment: Segment, rect: Rect): boolean {
   if (pointInRect(segment.x1, segment.y1, rect) || pointInRect(segment.x2, segment.y2, rect)) return true
@@ -231,21 +208,15 @@ function numberAttr(tag: string, name: string): number | undefined {
 function polygonBBox(pointsAttr: string): Rect | undefined {
   const pairs = pointsAttr.trim().split(/\s+/).filter(pair => pair !== '')
   if (pairs.length === 0) return undefined
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
+  const points: [number, number][] = []
   for (const pair of pairs) {
     const parts = pair.split(',')
     const x = Number(parts[0])
     const y = Number(parts[1])
     if (!Number.isFinite(x) || !Number.isFinite(y)) return undefined
-    minX = Math.min(minX, x)
-    minY = Math.min(minY, y)
-    maxX = Math.max(maxX, x)
-    maxY = Math.max(maxY, y)
+    points.push([x, y])
   }
-  return { minX, minY, maxX, maxY }
+  return boundsOfPoints(points)
 }
 
 /** 从 `<ellipse ...>` 标签解析轮廓 bbox；属性缺失/非法时 undefined。 */

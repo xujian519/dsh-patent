@@ -25,7 +25,7 @@ The `PatentKnowledge` service opens the resolved `knowledge.db` read-only (fail-
 
 ### caseLawSearch(query, options?)
 
-Full-text search over the `documents`/`chunks`/`docs_fts` tables (FTS5 BM25 first, LIKE fallback for short queries or a missing FTS index). Returns `CaseLawHit[]`; options filter by `docType`, `court`, and `excludeSource`. When `documents.search_prefix` exists (written by install with `--search-prefix`), the LIKE fallback scans each document's title and plaintext prefix instead of decompressing every chunk; a database without that column keeps the full decompression path.
+Full-text search over the `documents`/`chunks`/`docs_fts` tables (FTS5 BM25 first, LIKE fallback for short queries, a missing FTS index, or an FTS error). A 3+ rune query that the trigram index answers with no hits returns nothing instead of scanning every chunk through LIKE. Returns `CaseLawHit[]`; options filter by `docType`, `court`, and `excludeSource`. When `documents.search_prefix` exists (written by install with `--search-prefix`), the LIKE fallback scans each document's title and plaintext prefix instead of decompressing every chunk; a database without that column keeps the full decompression path for those queries.
 
 ### legalSearch(query, options?)
 
@@ -89,6 +89,7 @@ Independent; the knowledge seam registers no prompt, tool schema, or result of i
 
 - **No vector or semantic retrieval in P1** — the embedding/vector paths (`knowledge-embeddings`, `wiki-card-vector-index`, the three memory providers) are not ported; wiki-card lookup is keyword-only, and case-law/legal/knowledge-graph search is FTS5/LIKE only.
 - **Knowledge-graph index freshness is assumed** — the trigram fast path treats a row-aligned `kg_nodes_fts` as complete and skips the LIKE fallback; rebuild the index after editing node content in place.
+- **Case-law LIKE fallback stops at FTS misses** — a 3+ rune query that the trigram index misses does not trigger the whole-table decompressing LIKE scan (about 4.6 s on the current corpus), so a chunk absent from `docs_fts` is reachable only through a shorter query or with `--search-prefix`; rebuild the index after installing content.
 - **Case-law prefix recall is bounded when enabled** — with `--search-prefix`, the short-query LIKE path matches only the first `searchPrefixChars` code points of each document's longest chunk; matches further into the body are not returned. The default install keeps full-body matching.
 - **Source database is not bundled** — the data must be prepared locally via `patent-knowledge:install` or pointed at directly through `sourceDbPath`/`knowledgeDir`; no public download is provided.
 - **`node:sqlite` is experimental** — the engines run on Node's built-in SQLite, which is experimental in the supported Node line and may change between releases.

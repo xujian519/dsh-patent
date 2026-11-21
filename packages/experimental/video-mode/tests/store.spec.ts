@@ -271,6 +271,41 @@ describe('budget ledger', () => {
     expect(ledgerCost(await readLedger(ctx, projectPath, ledgerDir, root))).toBe(2)
   })
 
+  it('keeps every charge when many append at once', async () => {
+    const charges = Array.from({ length: 8 }, (_, index) => entry({ taskId: `task-${index}`, costCny: 0.5 }))
+
+    const results = await Promise.all(
+      charges.map(charge => appendLedgerEntry(ctx, projectPath, charge, ledgerDir, root)),
+    )
+
+    expect(results).toEqual(Array<boolean>(8).fill(true))
+    const ledger = await readLedger(ctx, projectPath, ledgerDir, root)
+    expect(ledger.map(item => item.taskId).sort()).toEqual(charges.map(item => item.taskId).sort())
+    expect(ledgerCost(ledger)).toBe(4)
+  })
+
+  it('keeps every charge two file-system contexts write concurrently', async () => {
+    // Two contexts hold independent file-system instances over one ledger, so
+    // each read-modify-publish observes the file on its own; the retry branch
+    // that reconciles them is pinned separately.
+    const peer = new Context()
+    await peer.plugin(LocalFileSystem, { cwd: root }).await()
+    try {
+      await Promise.all([
+        appendLedgerEntry(ctx, projectPath, entry({ taskId: 'local-a' }), ledgerDir, root),
+        appendLedgerEntry(peer, projectPath, entry({ taskId: 'peer-b' }), ledgerDir, root),
+        appendLedgerEntry(ctx, projectPath, entry({ taskId: 'local-c' }), ledgerDir, root),
+        appendLedgerEntry(peer, projectPath, entry({ taskId: 'peer-d' }), ledgerDir, root),
+      ])
+
+      const ledger = await readLedger(ctx, projectPath, ledgerDir, root)
+      expect(ledger.map(item => item.taskId).sort()).toEqual(['local-a', 'local-c', 'peer-b', 'peer-d'])
+      expect(ledgerCost(ledger)).toBe(8)
+    } finally {
+      await peer.fiber.dispose()
+    }
+  })
+
   it('keeps a charge another writer appended while the ledger write raced', async () => {
     await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'a' }), ledgerDir, root)
     const original = ctx.fs.writeText.bind(ctx.fs)
@@ -294,6 +329,36 @@ describe('budget ledger', () => {
     }
 
     expect((await readLedger(ctx, projectPath, ledgerDir, root)).map(item => item.taskId)).toEqual(['a', 'b', 'c'])
+  })
+
+  it('settles a task once when a racing writer charged it first', async () => {
+    // The retry after a stale publication re-reads the ledger under the lock, so
+    // a peer that settled this task in between turns our append into a no-op
+    // instead of a second charge.
+    await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'seed' }), ledgerDir, root)
+    const original = ctx.fs.writeText.bind(ctx.fs)
+    let raced = false
+    ctx.fs.writeText = async (target, content, expected, signal, policy) => {
+      if (!raced && expected?.kind === 'replaceIfVersion') {
+        raced = true
+        const current = JSON.parse(await ctx.fs.readText(target)) as { entries: MediaLedgerEntry[] }
+        await original(target, `${JSON.stringify({
+          schemaVersion: 1,
+          entries: [...current.entries, entry({ taskId: 'shared' })],
+        }, null, 2)}\n`)
+        throw new FsError('stale', 'FS_STALE_VERSION')
+      }
+      return original(target, content, expected, signal, policy)
+    }
+    try {
+      expect(await appendLedgerEntry(ctx, projectPath, entry({ taskId: 'shared' }), ledgerDir, root)).toBe(false)
+    } finally {
+      ctx.fs.writeText = original
+    }
+
+    const ledger = await readLedger(ctx, projectPath, ledgerDir, root)
+    expect(ledger.map(item => item.taskId)).toEqual(['seed', 'shared'])
+    expect(ledgerCost(ledger)).toBe(4)
   })
 
   it('rejects malformed files and invalid new charges', async () => {

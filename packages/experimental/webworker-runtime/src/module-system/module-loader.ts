@@ -394,8 +394,9 @@ export class WorkerModuleLoader {
    */
   private compile(code: string, path: string): (...args: unknown[]) => void {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-implied-eval -- wrapping an image body is this loader's job
-      return new Function(...WRAPPER_PARAMS, code) as (...args: unknown[]) => void
+      // oxlint-disable-next-line typescript/no-implied-eval -- wrapping an image body is this loader's job
+      const wrapper = new Function(...WRAPPER_PARAMS, code) // nosemgrep: dsh-no-dynamic-code
+      return wrapper as (...args: unknown[]) => void
     } catch (reason) {
       if (reason instanceof SyntaxError && /await/i.test(reason.message)) {
         this.fail(`${path} uses top-level await, which cannot run as CommonJS in the worker: ${reason.message}`)

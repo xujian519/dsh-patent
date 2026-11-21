@@ -10,7 +10,7 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { parseDocument } from 'yaml'
+import { readYamlRecord } from './yaml-asset.ts'
 import type { SynonymRequirement } from '@deepseek-ai/dsh-patent-core'
 import { hasNegationContext as sharedHasNegationContext } from '@deepseek-ai/dsh-patent-core'
 import { candidateRuleDirs } from '../asset-location.ts'
@@ -141,18 +141,16 @@ export function checkSynonymRequirements(
 export function parseSynonyms(yamlText: string, source = '<inline>'): { synonyms: SynonymMap; warnings: string[] } {
   const warnings: string[] = []
   const synonyms: SynonymMap = new Map()
-  const doc = parseDocument(yamlText)
-  if (doc.errors.length > 0) {
-    /* v8 ignore next -- yaml parse errors always carry a message. */
-    warnings.push(`同义词 YAML 解析失败 ${source}: ${doc.errors[0]?.message ?? 'unknown'}`)
+  const parsed = readYamlRecord(yamlText)
+  if (parsed.kind === 'parse-error') {
+    warnings.push(`同义词 YAML 解析失败 ${source}: ${parsed.message}`)
     return { synonyms, warnings }
   }
-  const root: unknown = doc.toJS()
-  if (typeof root !== 'object' || root === null || Array.isArray(root)) {
+  if (parsed.kind === 'not-record') {
     warnings.push(`同义词文件顶层必须是对象 ${source}`)
     return { synonyms, warnings }
   }
-  const raw = (root as Record<string, unknown>).synonyms
+  const raw = parsed.record.synonyms
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     warnings.push(`同义词文件缺少 synonyms 映射 ${source}`)
     return { synonyms, warnings }

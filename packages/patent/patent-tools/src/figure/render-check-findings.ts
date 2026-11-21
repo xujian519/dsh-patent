@@ -5,6 +5,8 @@
  * @module @deepseek-ai/dsh-patent-tools/figure/render-check-findings
  */
 
+import { pointSegmentDistance, segmentsIntersect } from './geometry.ts'
+import { boundsOfPoints } from './mm-primitives.ts'
 import { inflateQuad, quadCrossedBySegment } from './glyph-box.ts'
 import type { GlyphQuad } from './glyph-box.ts'
 import { DEFAULT_SVG_MAX_BYTES, assertSafeSvg } from './svg-annotate.ts'
@@ -197,7 +199,7 @@ function length(segment: Segment): number {
 }
 
 /** 线段取向归一化到 [0, 180)。 */
-function orientation(segment: Segment): number {
+function segmentAngleDeg(segment: Segment): number {
   const degrees = (Math.atan2(segment.y2 - segment.y1, segment.x2 - segment.x1) * 180) / Math.PI
   return ((degrees % 180) + 180) % 180
 }
@@ -209,9 +211,7 @@ function orientation(segment: Segment): number {
  * @returns the bounding box.
  */
 export function polyBounds(points: Poly): BoundsBox {
-  const xs = points.map(point => point[0])
-  const ys = points.map(point => point[1])
-  return { minX: Math.min(...xs), minY: Math.min(...ys), maxX: Math.max(...xs), maxY: Math.max(...ys) }
+  return boundsOfPoints(points)
 }
 
 /** 点是否在多边形内（even-odd 射线法）。 */
@@ -288,43 +288,6 @@ function visiblePieces(drawn: DrawnSegment, occluders: readonly Occluder[]): rea
     pieces.push({ x1: start[0], y1: start[1], x2: end[0], y2: end[1] })
   }
   return pieces
-}
-
-/** 点到线段的最短距离（毫米）。 */
-function pointSegmentDistance(point: Point, segment: Segment): number {
-  const dx = segment.x2 - segment.x1
-  const dy = segment.y2 - segment.y1
-  const lengthSquared = dx * dx + dy * dy
-  const t = lengthSquared === 0
-    ? 0
-    : Math.max(0, Math.min(1, ((point[0] - segment.x1) * dx + (point[1] - segment.y1) * dy) / lengthSquared))
-  return Math.hypot(point[0] - (segment.x1 + dx * t), point[1] - (segment.y1 + dy * t))
-}
-
-/** 点在有向直线 `from→to` 的哪一侧（叉积符号）。 */
-function sideOf(from: Point, to: Point, point: Point): number {
-  return (to[0] - from[0]) * (point[1] - from[1]) - (to[1] - from[1]) * (point[0] - from[0])
-}
-
-/** 点是否落在线段上（共线且落在两端之间）。 */
-function onSegment(point: Point, segment: Segment): boolean {
-  return sideOf([segment.x1, segment.y1], [segment.x2, segment.y2], point) === 0
-    && point[0] >= Math.min(segment.x1, segment.x2) && point[0] <= Math.max(segment.x1, segment.x2)
-    && point[1] >= Math.min(segment.y1, segment.y2) && point[1] <= Math.max(segment.y1, segment.y2)
-}
-
-/** 两线段是否相交（含端点接触与共线重叠）。 */
-function segmentsIntersect(a: Segment, b: Segment): boolean {
-  const a1: Point = [a.x1, a.y1]
-  const a2: Point = [a.x2, a.y2]
-  const b1: Point = [b.x1, b.y1]
-  const b2: Point = [b.x2, b.y2]
-  const d1 = sideOf(a1, a2, b1)
-  const d2 = sideOf(a1, a2, b2)
-  const d3 = sideOf(b1, b2, a1)
-  const d4 = sideOf(b1, b2, a2)
-  if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) return true
-  return onSegment(b1, a) || onSegment(b2, a) || onSegment(a1, b) || onSegment(a2, b)
 }
 
 /** 两线段的最短距离（毫米）：相交为 0，否则取四个端点到对侧线段的最短距离。 */
@@ -455,7 +418,7 @@ function hatchSignature(
 ): { readonly orientationDeg: number; readonly spacingMm: number | undefined } | undefined {
   const counts = new Map<number, number>()
   for (const segment of segments) {
-    const key = Math.round(orientation(segment) * 10) / 10
+    const key = Math.round(segmentAngleDeg(segment) * 10) / 10
     counts.set(key, (counts.get(key) ?? 0) + 1)
   }
   let best: number | undefined
@@ -484,7 +447,7 @@ function hatchSpacing(segments: readonly Segment[], orientationDeg: number): num
   const normalX = -Math.sin(radians)
   const normalY = Math.cos(radians)
   const offsets = segments
-    .filter(segment => Math.round(orientation(segment) * 10) / 10 === orientationDeg)
+    .filter(segment => Math.round(segmentAngleDeg(segment) * 10) / 10 === orientationDeg)
     .map(segment => ((segment.x1 + segment.x2) / 2) * normalX + ((segment.y1 + segment.y2) / 2) * normalY)
     .sort((left, right) => left - right)
   const gaps = offsets
@@ -947,7 +910,7 @@ export function checkFigureRendering(
   }
   const orientationCounts = new Map<number, number>()
   for (const item of drawn) {
-    const key = Math.round(orientation(item.segment) * 10) / 10
+    const key = Math.round(segmentAngleDeg(item.segment) * 10) / 10
     orientationCounts.set(key, (orientationCounts.get(key) ?? 0) + 1)
   }
 

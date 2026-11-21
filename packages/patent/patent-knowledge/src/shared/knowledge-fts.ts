@@ -53,6 +53,14 @@ export abstract class KnowledgeFtsSearchBase<TOptions, THit> {
   protected abstract readonly degradeLabel: string
   /** 降级状态的引擎打点（case-law / 法规 各自的 stats 方法）。 */
   protected abstract markFtsDegraded(): void
+  /**
+   * FTS 正常执行但整句与切词都无命中时，是否再用 LIKE 兜底。
+   *
+   * 判例库关闭：那里的 LIKE 要对全部 chunk 解压（整库约 4.6 秒），而 docs_fts
+   * 同时索引标题与正文，未命中意味着检索词不在任何已索引 chunk 中。短查询、
+   * FTS 不可用与 FTS 抛异常仍走 LIKE。
+   */
+  protected readonly likeOnFtsMiss: boolean = true
 
   /** FTS5 粘性降级打点（构造期 prepare 捕获与查询期异常共用）。前缀为 `[patent-knowledge]`。 */
   protected degradeFts(reason: string): void {
@@ -73,7 +81,7 @@ export abstract class KnowledgeFtsSearchBase<TOptions, THit> {
     const trimmed = sanitizeSearchText(keyword).trim()
     if (!trimmed) return []
     return runFtsSearch(createFtsLadder(
-      { keyword: trimmed, hasFts: this.hasFts, ftsDegraded: this.ftsDegraded },
+      { keyword: trimmed, hasFts: this.hasFts, ftsDegraded: this.ftsDegraded, likeOnFtsMiss: this.likeOnFtsMiss },
       options,
       limit,
       {

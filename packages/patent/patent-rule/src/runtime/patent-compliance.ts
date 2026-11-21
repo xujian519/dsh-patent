@@ -10,7 +10,7 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { parseDocument } from 'yaml'
+import { readYamlRecord } from './yaml-asset.ts'
 import type { RuleSet, RuleSetValidationIssue } from '@deepseek-ai/dsh-patent-core'
 import {
   ACTIVATION_PATCH_KEYS,
@@ -255,17 +255,16 @@ export function loadActivationOverrides(rulesDir?: string): ActivationOverrides 
     const path = join(dir, ACTIVATION_OVERRIDES_FILE)
     if (!existsSync(path)) continue
     try {
-      const doc = parseDocument(readFileSync(path, 'utf8'))
-      if (doc.errors.length > 0) {
-        /* v8 ignore next -- yaml parse errors always carry a message. */
-        warnings.push(`激活覆盖文件解析失败 ${path}: ${doc.errors[0]?.message ?? 'unknown'}`)
+      const parsed = readYamlRecord(readFileSync(path, 'utf8'))
+      if (parsed.kind === 'parse-error') {
+        warnings.push(`激活覆盖文件解析失败 ${path}: ${parsed.message}`)
         continue
       }
-      const root = asRecord(doc.toJS())
-      if (root === null) {
+      if (parsed.kind === 'not-record') {
         warnings.push(`激活覆盖文件 ${path}: 顶层必须是对象`)
         continue
       }
+      const root = parsed.record
       for (const key of Object.keys(root)) {
         if (!ACTIVATION_TOP_LEVEL_KEYS.includes(key)) {
           warnings.push(

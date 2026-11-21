@@ -500,6 +500,13 @@ describe('minimax edge cases', () => {
         references: [{ kind: 'image', path: join(directory, 'frame.gif') }],
       }, signal)).rejects.toThrow(/accepts png, jpeg, webp, heic, and heif/)
 
+      const empty = join(directory, 'empty.png')
+      await writeFile(empty, new Uint8Array(0))
+      await expect(provider.submit({
+        kind: 'video', prompt: 'x',
+        references: [{ kind: 'image', path: empty }],
+      }, signal)).rejects.toThrow(/is empty/)
+
       const extensions = ['a.jpg', 'a.jpeg', 'a.webp', 'a.heic', 'a.heif']
       const references = []
       for (const name of extensions) {

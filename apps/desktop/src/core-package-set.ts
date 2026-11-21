@@ -1,6 +1,7 @@
 /** Signed local npm package set that supplies the Desktop-owned dsh runtime and private Host. */
 
 import { createHash } from 'node:crypto'
+import { escapeRegExp } from '@deepseek-ai/dsh-value'
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -156,10 +157,6 @@ export function verifyDesktopCorePackageSet(
     }
   }
   return packageSet
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
 }
 
 /**

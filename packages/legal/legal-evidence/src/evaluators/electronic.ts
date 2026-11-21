@@ -8,7 +8,7 @@
  */
 
 import type { LegalEvidenceFinding, LegalEvidenceInput } from '../types.ts'
-import { createEvaluator, hasText, levelFor, TRIPLE_ATTRIBUTE_BASE, type LegalEvidenceEvaluator } from './base.ts'
+import { createEvaluator, dimensionJudgment, hasText, TRIPLE_ATTRIBUTE_BASE, type LegalEvidenceEvaluator } from './base.ts'
 
 /** 电子数据判定器实现。 */
 export const electronicEvaluator: LegalEvidenceEvaluator = createEvaluator({
@@ -37,13 +37,7 @@ export const electronicEvaluator: LegalEvidenceEvaluator = createEvaluator({
       reasons.push('已记录电子数据来源')
     }
 
-    score = Math.max(0, Math.min(score, 1.0))
-    return {
-      dimension: 'legality',
-      score,
-      level: levelFor(score),
-      reasoning: reasons.length > 0 ? `电子数据合法性评估：${reasons.join('；')}` : '电子数据合法性评估：基础评分',
-    }
+    return dimensionJudgment('legality', score, reasons, '电子数据合法性')
   },
 
   assessAuthenticity(input) {
@@ -84,14 +78,7 @@ export const electronicEvaluator: LegalEvidenceEvaluator = createEvaluator({
       reasons.push('存储完整性未核验')
     }
 
-    score = Math.max(0, Math.min(score, 1.0))
-    return {
-      dimension: 'authenticity',
-      score,
-      level: levelFor(score),
-      // Hash and timestamp each contribute a reason, so this list is never empty.
-      reasoning: `电子数据真实性评估：${reasons.join('；')}`,
-    }
+    return dimensionJudgment('authenticity', score, reasons, '电子数据真实性')
   },
 
   checkFindings(input: LegalEvidenceInput): LegalEvidenceFinding[] {

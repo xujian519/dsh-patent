@@ -9,6 +9,7 @@ import {
 import {
   collectHostDependencyExportPolicyViolations,
   collectPackageDependencyViolations,
+  collectReverseImportViolations,
   collectRootTypePackageViolations,
   collectRuntimeSourceExportUses,
   discoverPackageDependencyScope,
@@ -1283,5 +1284,86 @@ describe('root-provided type packages', () => {
 
     expect(packages.map(pkg => pkg.manifestPath)).toEqual(['packages/client/ui-probe/package.json'])
     expect(collectRootTypePackageViolations(rootManifest, packages)).toEqual([])
+  })
+})
+
+function reverseImportFixture(
+  manifests: Readonly<Record<string, PackageDependencyManifest>>,
+  sources: Readonly<Record<string, string>>,
+): { root: string; packages: WorkspacePackageManifest[]; workspaceNames: Set<string> } {
+  const root = mkdtempSync(join(tmpdir(), 'dsh-reverse-imports-'))
+  roots.push(root)
+  for (const [path, content] of [...Object.entries(manifests).map(([p, m]) => [p, JSON.stringify(m)] as const),
+    ...Object.entries(sources)]) {
+    const absolute = join(root, path)
+    mkdirSync(dirname(absolute), { recursive: true })
+    writeFileSync(absolute, content)
+  }
+  const packages = readWorkspacePackageManifests(root).all
+  return { root, packages, workspaceNames: new Set(packages.map(manifest => manifest.name)) }
+}
+
+describe('reverse import declarations', () => {
+  it('reports a workspace import that no dependency section declares', () => {
+    const { root, packages, workspaceNames } = reverseImportFixture(
+      {
+        'packages/patent/patent-tools/package.json': {
+          name: '@f/patent-tools',
+          dependencies: { '@f/peer': 'workspace:*' },
+        },
+        'packages/util/value/package.json': { name: '@deepseek-ai/dsh-value' },
+      },
+      {
+        'packages/patent/patent-tools/src/law-search.ts':
+          "import { errorMessage } from '@deepseek-ai/dsh-value'\n",
+        'packages/util/value/src/index.ts': 'export function errorMessage(): string { return "" }\n',
+      },
+    )
+
+    expect(collectReverseImportViolations(root, packages, workspaceNames)).toEqual([
+      'packages/patent/patent-tools/package.json: src imports @deepseek-ai/dsh-value (1 file(s))'
+      + ' but no dependency section declares it',
+    ])
+  })
+
+  it('accepts the import once any dependency section declares it', () => {
+    const { root, packages, workspaceNames } = reverseImportFixture(
+      {
+        'packages/patent/patent-tools/package.json': {
+          name: '@f/patent-tools',
+          devDependencies: { '@deepseek-ai/dsh-value': 'workspace:*' },
+        },
+        'packages/util/value/package.json': { name: '@deepseek-ai/dsh-value' },
+      },
+      {
+        'packages/patent/patent-tools/src/law-search.ts':
+          "import { errorMessage } from '@deepseek-ai/dsh-value'\n",
+        'packages/util/value/src/index.ts': 'export function errorMessage(): string { return "" }\n',
+      },
+    )
+
+    expect(collectReverseImportViolations(root, packages, workspaceNames)).toEqual([])
+  })
+
+  it('ignores self imports, non-workspace packages and vendored manifests', () => {
+    const { root, packages, workspaceNames } = reverseImportFixture(
+      {
+        'packages/core/agent/package.json': { name: '@f/agent' },
+        'vendor/hmr/package.json': { name: '@deepseek-ai/cordis-plugin-hmr' },
+        'vendor/include/package.json': { name: '@deepseek-ai/cordis-plugin-include' },
+      },
+      {
+        'packages/core/agent/src/index.ts': [
+          "import { sibling } from '@f/agent/subpath'",
+          "import { readFileSync } from 'node:fs'",
+          "import { z } from 'zod'",
+          '',
+        ].join('\n'),
+        'vendor/hmr/src/index.ts':
+          "import { include } from '@deepseek-ai/cordis-plugin-include'\n",
+      },
+    )
+
+    expect(collectReverseImportViolations(root, packages, workspaceNames)).toEqual([])
   })
 })

@@ -351,7 +351,7 @@ describe('siliconflow provider', () => {
   it('reads the image formats SiliconFlow accepts and rejects the others', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'dsh-siliconflow-images-'))
     try {
-      for (const [name, type] of [['a.jpg', 'jpeg'], ['b.jpeg', 'jpeg'], ['c.webp', 'webp']] as const) {
+      for (const [name, type] of [['a.jpg', 'jpeg'], ['b.jpeg', 'jpeg'], ['c.webp', 'webp'], ['d.heic', 'heic'], ['e.heif', 'heif']] as const) {
         const path = join(directory, name)
         await writeFile(path, solidPng(2, 2, 1, 2, 3))
         const { calls, fetchImpl } = recorder(() => json({ requestId: 'r' }))
@@ -362,7 +362,7 @@ describe('siliconflow provider', () => {
       }
 
       const provider = new SiliconFlowMediaProvider(settingsOf(), recorder(() => json({ requestId: 'r' })).fetchImpl)
-      await expect(submitVideo(provider, { firstFramePath: join(directory, 'a.gif') })).rejects.toThrow(/png, jpeg, and webp/)
+      await expect(submitVideo(provider, { firstFramePath: join(directory, 'a.gif') })).rejects.toThrow(/png, jpeg, webp, heic, and heif/)
       await expect(submitVideo(provider, { firstFramePath: join(directory, 'missing.png') }))
         .rejects.toThrow(/cannot read the SiliconFlow reference image/)
 

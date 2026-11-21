@@ -21,11 +21,9 @@ import { join } from 'node:path'
 import { appendTeamEvent, captainSessionOf } from './events.ts'
 import { PatentTeamsMessageId, PatentTeamsTeamId } from './ids.ts'
 import {
-  acknowledgeMailbox,
   appendMailbox,
   createMessage,
-  releaseMailboxDelivery,
-  withMailboxLease,
+  settleMailboxDelivery,
 } from './mailbox.ts'
 import {
   addMember as addMemberImpl,
@@ -394,37 +392,27 @@ export class PatentTeamsService extends Service {
       if (captain !== undefined && prepared.identity.kind === 'member') {
         delivered = steerCaptainReport(captain, prepared.from, prepared.identity.sessionId, args.content) ? 'live' : 'mailbox'
       }
-      if (delivered === 'live') {
-        await withMailboxLease(stateRoot, prepared.fresh.id, CAPTAIN_KEY, key => (
-          acknowledgeMailbox(stateRoot, prepared.fresh.id, key, [prepared.message.id])
-        ))
-      } else {
-        await withMailboxLease(stateRoot, prepared.fresh.id, CAPTAIN_KEY, key => (
-          releaseMailboxDelivery(stateRoot, prepared.fresh.id, key, [prepared.message.id])
-        ))
-      }
+      await settleMailboxDelivery(
+        stateRoot,
+        prepared.fresh.id,
+        CAPTAIN_KEY,
+        [prepared.message.id],
+        delivered === 'live',
+      )
       return { message_id: prepared.message.id, from: prepared.from, to: CAPTAIN_KEY, delivered }
     }
     let delivered: 'wake' | 'mailbox' = 'mailbox'
+    let accepted = false
     // v8 ignore next 2 -- a live member recipient always has a spawned id
     if (captain !== undefined && prepared.recipient.id !== '') {
       const senderText = prepared.from === CAPTAIN_KEY
         ? args.content
         : `Message from team member ${prepared.from}:\n\n${args.content}`
       const text = `PatentTeams state policy: inspect ${this.config.stateDir}/${prepared.fresh.id}/ read-only; never edit team.json or inbox files directly. Use patent_teams_* tools for team state.\n\n${senderText}`
-      const accepted = await deliverToMember(this.ctx, captain, prepared.recipient.id, text, signal)
+      accepted = await deliverToMember(this.ctx, captain, prepared.recipient.id, text, signal)
       delivered = accepted ? 'wake' : 'mailbox'
-      if (accepted) {
-        await withMailboxLease(stateRoot, prepared.fresh.id, prepared.recipient.name, key => (
-          acknowledgeMailbox(stateRoot, prepared.fresh.id, key, [prepared.message.id])
-        ))
-      }
     }
-    if (delivered === 'mailbox') {
-      await withMailboxLease(stateRoot, prepared.fresh.id, prepared.recipient.name, key => (
-        releaseMailboxDelivery(stateRoot, prepared.fresh.id, key, [prepared.message.id])
-      ))
-    }
+    await settleMailboxDelivery(stateRoot, prepared.fresh.id, prepared.recipient.name, [prepared.message.id], accepted)
     return {
       message_id: prepared.message.id,
       from: prepared.from,

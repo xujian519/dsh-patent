@@ -8,8 +8,8 @@
  */
 
 import { uiElements } from './elements.ts'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { BudgetClock, LoadedMod } from './chain.ts'
-import { messageOf } from './values.ts'
 import type {
   AskOptions, CommandInfo, CommandRunResult, CommandSpec, FsEntry, FsStat, HttpInit, HttpResponse, ModsApi, PaneOpenArgs,
   PaneOpenResult, ProcessRunInit, ProcessRunResult, PromptSubmitArgs, SessionMessage, SessionUsage, SessionVersion,
@@ -56,7 +56,7 @@ export function createModsApi(binding: ApiBinding): ModsApi {
 
   function fire(op: string, input: unknown): void {
     call(op, input).catch((error: unknown) => {
-      binding.report(`${mod.name}: $.${op} failed: ${messageOf(error)}`)
+      binding.report(`${mod.name}: $.${op} failed: ${errorMessage(error)}`)
     })
   }
 

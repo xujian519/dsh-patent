@@ -132,6 +132,7 @@
 | F-CROSS-002 | `patent-tools` 导入未声明的 workspace 依赖 `@deepseek-ai/dsh-value`，运行产物靠打包内联掩盖 | CROSS | B/E | Low | 高 | fixed |
 | F-CROSS-003 | 知识库安装覆盖时先删输出，改名失败没有用例 | CROSS | D | High | 中 | fixed |
 | F-CROSS-004 | 专利、文档、法律三域的工具错误类没有接入 `HarnessError`，失败码在 `tool/result` 与会话界面丢失 | CROSS | E | Low | 高 | fixed |
+| F-CROSS-005 | 专利工具仍有普通 `Error` 进入 `tool/result`，失败事件没有 `error.code` | CROSS | E | Low | 高 | new |
 
 ## 专利域
 
@@ -1574,6 +1575,20 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 是否可自动化：是（每个域一条工具失败用例；静态门禁可扫 `class .*Error extends Error` 且带 `readonly code` 的声明）
 - 修复：`PatentToolError`、`LiteratureToolError`、`DocTemplateError`、`LegalLawVerifyToolError`、`EvaluateLegalEvidenceToolError`、`LegalKnowledgeSearchToolError` 改为继承 `@deepseek-ai/dsh-error` 的 `HarnessError`，构造签名与 `name` 不变，窄的 `code` 联合用 `declare readonly code` 保留。`tool-office` 的 `officeFailure` 用 `HarnessError` 保留 `OfficeKitError` 的 `code`，并把 `remoteErrorOf` 认出的 `RemoteError` 在工具边界同样转成 `HarnessError`。`DocumentStyleError` 与 `OfficeKitError` 仍是纯库错误：前者只在资产加载与解析时抛出，不经工具边界。七个包各补一条断言 `result.error.info` 的用例。
 - 状态：fixed（2026-11-18，批次 R-E5）
+
+### F-CROSS-005 专利工具仍有普通 `Error` 进入 `tool/result`，失败事件没有 `error.code`
+
+- 位置：`packages/patent/patent-law/src/tool/law-verify.ts:35`（`LawVerifyToolError extends Error`，自带 `code`）、`packages/patent/patent-core/src/draft/validate.ts:27`（`DraftValidationError extends Error`）、`packages/patent/patent-filing/src/types.ts:148`（`PatentFilingError extends Error`）、`packages/patent/patent-document/src/document/errors.ts:12`（`DocumentRenderError extends Error`）
+- 维度：E
+- 严重度：Low
+- 可能性：高
+- 证据：2026-11-21 的直接调用，会话里 `isError` 为真且 `tool/result.error` 为空的有四类。`law_verify` 空对象 `{}` 通过 schema（`text` 与 `references` 都不是必填，`packages/law/law-core/src/citation-tool.ts:79`–`:86`），随后 `law-verify.ts:151` 抛出 `LawVerifyToolError`，文本是「至少要给出 text 或 references 之一」；`citationInputProblem` 给出的 code 是 `no_input`（`citation-tool.ts:55`–`:56`），事件里没有这个 code。`render_patent_document` 的题面调用、路径探针和注入探针都得到「草案校验失败（16 项）」，这是 `DraftValidationError`。`build_patent_filing` 的输出目录 `../p1-outside-probe` 得到「输出目录 越出工作目录」，越界目录没有创建；`verify_patent_filing` 对不存在的 docx 得到「待验收文件不存在」。后两条都是 `PatentFilingError`。`DocumentRenderError` 这次没有被抛到：三次渲染都先停在草案校验。该类仍是普通 `Error`，渲染的越界路径用它包 `resolveConfinedPath` 的失败。F-CROSS-004 已把 `PatentToolError` 和 `LegalLawVerifyToolError` 等六个类改为继承 `HarnessError`；上面四个类不在那次改动里。核心只在错误是 `HarnessError` 时把 `{ name, code }` 写入 `tool/result.error`。
+- 影响：模型仍能读到错误文本。会话事件、按 `error.code` 统计的可解释性，以及按错误码分流的消费者看不到 code。同一句「至少要给出 text 或 references 之一」在异常对象上有 `no_input`，到事件里就没了。路径拒绝已经挡住越界写入，但直接调用口径下这种没有 code 的拒绝不算 fail-closed 通过。
+- 最小修复建议：`LawVerifyToolError` 改为继承 `HarnessError`，保留现有 `code`。`DraftValidationError`、`PatentFilingError`、`DocumentRenderError` 在抛出处或工具执行处转成带稳定 code 的 `HarnessError`。各补一条工具失败用例，断言 `result.error.info.code` 存在。不要把「带 code 的普通 Error」再当成已经可解释。
+- 预估工作量：M
+- 是否可自动化：是（每个类一条工具失败用例）
+- 状态：new
+- 队列：本条不改 [06-priority.md](06-priority.md) 的顺序。修复另开 PR。
 
 ## E 维度汇总（Day 40）
 

@@ -88,6 +88,7 @@
 | F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | fixed |
 | F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | fixed |
 | F-PAT-055 | 上游 JSON 字符串含 null 元素时 `mapPatentData` 抛 TypeError | PAT | E | Low | 低 | new |
+| F-PAT-056 | `patent_search` 不按 `limit` 截断命中，返回检索页整页 | PAT | E | Medium | 高 | new |
 | F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | fixed |
 | F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | fixed |
 | F-DOC-003 | OOXML 读取限额两包各写一份字面量 | DOC | B | Low | 高 | fixed |
@@ -896,6 +897,19 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 证据：同一次脚本。`parseJsonArray('[null]')` 返回 `[null]`；把 `inventor_name: '[null]'` 交给 `mapPatentData` 抛 `TypeError: Cannot read properties of null (reading 'inventor_name')`。`parseJsonArray` 的 JSDoc 写「empty or invalid input yields []」，现有用例只覆盖空串、非法 JSON 与非数组（`tests/mapper.spec.ts:37`–`:53`），没有覆盖数组元素为 null 或非对象。
 - 影响：nuo 引擎回传的 JSON 字符串里只要有一个 null 元素，整条专利元数据映射就抛错，工具调用失败；同一字段里的其他发明人／受让人、引证与分类也一起丢失。`parseJsonArray` 是包的导出 API，其他调用方拿到未校验的元素后也会遇到同样的读取错误。
 - 最小修复建议：`extractNames` 跳过不是非 null 对象的元素；或在 `parseJsonArray` 里按调用方给出的元素校验器过滤，保持导出函数声明的宽容语义。新增用例：`inventor_name: '[null]'` 返回空数组，`'[{"inventor_name":"张三"},null]'` 返回 `['张三']`。
+- 预估工作量：S
+- 是否可自动化：是（上面两条断言）
+- 状态：new
+
+### F-PAT-056 `patent_search` 不按 `limit` 截断命中，返回检索页整页
+
+- 位置：`packages/patent/patent-tools/src/tool/patent-search.ts:339`–`:341`（`dedupeByFamily` 后直接 `map(toItem)`，没有按 `limit` 截断）、`:324`（CNIPR 分支直接返回 `attempt.hits`）、`:299`（`limit` 只被传进检索函数）
+- 维度：E
+- 严重度：Medium
+- 可能性：高
+- 证据：D14 脚本场景 P-RET-03。真实 nuo 引擎在 `limit: 5` 下返回 10 条命中（`total` 124797，首条 CN109314225B），题面「命中不超过 5 条」不成立。再用注入的检索函数固定返回 10 条命中复跑：`limit: 5` 与 `limit: 2` 都返回 10 条，说明缺口在工具侧，不在引擎。工具自己的参数描述写的是「Max hits (1-50, default 10)」，渲染头也按 `value.hits.length` 报条数。
+- 影响：调用方与模型用 `limit` 控制上下文与结果条数时，实际拿到检索页整页；`limit` 小于页大小时上限失效，题面 P-RET-03 的外部判定因此不成立。`patent_search` 是试点族里唯一被模型用来控制结果规模的检索工具，这个缺口会让「最多 5 条」类指令无法兑现。
+- 最小修复建议：两条返回路径都按调用方上限截断——`const hits = dedupedHits.slice(0, limit).map(toItem)`，CNIPR 分支返回 `attempt.hits.slice(0, limit)`；补一条注入检索返回 `limit + 5` 条命中的用例，断言 `hits.length === limit`，并断言渲染头的条数与 `hits.length` 一致。`total` 仍报上游总命中，不截断。
 - 预估工作量：S
 - 是否可自动化：是（上面两条断言）
 - 状态：new

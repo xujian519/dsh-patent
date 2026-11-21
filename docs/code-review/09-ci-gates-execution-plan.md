@@ -160,6 +160,7 @@ gitleaks detect --source . --report-path /tmp/gitleaks-history.json --log-opts="
 
 - `packages/subprocess/win32-process/src/ffi.ts:errorText` — Win32 错误码格式化，签名与语义均不同
 - `packages/extensions/cordis-client-runner/src/client/evaluator.ts:errorText` — console 参数 stringify，含 JSON.stringify 分支
+- `packages/ptc-runtime/ptc-runtime-node/src/rpc.ts:messageOf` — 该文件会被复制到没有 workspace 包的子进程，不能导入 `@deepseek-ai/dsh-value`
 
 `packages/util/value/src/index.ts`（原语源头）自动跳过；`tests/**`、`scripts/**` 不在扫描 glob 内。
 

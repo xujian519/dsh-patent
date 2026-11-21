@@ -11,12 +11,13 @@ const ROOT = resolve(import.meta.dirname, '..')
 const DSH_VALUE_DIR = resolve(ROOT, 'packages/util/value/src/index.ts')
 const REPORT_ONLY = process.argv.includes('--report')
 
-// Known non-primitive helpers that coincidentally share a primitive name but
-// have different signatures (Win32 error formatting, console-arg stringify,
-// etc.). Exempting these is the explicit gate policy, not an oversight.
+// Exempt a same-named helper when its signature is not the shared primitive,
+// or when the file cannot import @deepseek-ai/dsh-value. The process child
+// copies rpc.ts outside the workspace, so its diagnostic stays local.
 const EXEMPT: ReadonlySet<string> = new Set([
   'packages/subprocess/win32-process/src/ffi.ts:errorText',
   'packages/extensions/cordis-client-runner/src/client/evaluator.ts:errorText',
+  'packages/ptc-runtime/ptc-runtime-node/src/rpc.ts:messageOf',
 ])
 
 function escape(name: string): string {

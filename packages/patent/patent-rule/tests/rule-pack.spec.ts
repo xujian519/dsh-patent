@@ -399,6 +399,10 @@ describe('rule pack', () => {
     const invalid = loadRulePack({ manifestPath })
     expect(invalid.warnings.some(w => w.includes('清单非法'))).toBe(true)
 
+    writeFileSync(join(base, 'pack.yaml'), '- not-a-record\n', 'utf8')
+    const notRecord = loadRulePack({ manifestPath })
+    expect(notRecord.warnings.some(w => w.includes('清单非法'))).toBe(true)
+
     rmSync(join(base, 'pack.yaml'))
     mkdirSync(join(base, 'pack.yaml'))
     try {

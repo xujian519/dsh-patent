@@ -5,6 +5,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { delay } from '../src/cloud-common.ts'
 import {
   MiniMaxMediaProvider,
   resolveMiniMax,
@@ -106,6 +107,45 @@ describe('minimax rate-limit contract', () => {
 
     expect(calls).toBe(1)
     expect(clock.waits).toEqual([])
+  })
+
+  it('resolves delay after the requested wait', async () => {
+    await delay(0)
+  })
+
+  it('fails at once when Retry-After is not a delay', async () => {
+    let calls = 0
+    const fetchImpl: MiniMaxFetchLike = async () => {
+      calls += 1
+      return limited('not-a-date')
+    }
+    const clock = sleeps()
+    const provider = new MiniMaxMediaProvider(settingsOf(), fetchImpl, undefined, clock.sleep)
+
+    await expect(submit(provider)).rejects.toMatchObject({ code: 'MEDIA_TASK_FAILED' })
+
+    expect(calls).toBe(1)
+    expect(clock.waits).toEqual([])
+  })
+
+  it('retries when releasing the rate-limited body throws', async () => {
+    const stream = new ReadableStream({
+      cancel() {
+        throw new Error('already closed')
+      },
+    })
+    const rejected = new Response(stream, {
+      status: 429,
+      headers: { 'content-type': 'application/json', 'retry-after': '1' },
+    })
+    const responses = [rejected, accepted('remote-cancel')]
+    const clock = sleeps()
+    const provider = new MiniMaxMediaProvider(settingsOf(), sequence(responses), undefined, clock.sleep)
+
+    const task = await submit(provider)
+
+    expect(task.status).toBe('submitted')
+    expect(clock.waits).toEqual([1000])
   })
 
   it('fails at once when the response names no wait', async () => {

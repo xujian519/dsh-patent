@@ -6,14 +6,14 @@
 
 对抗样本打在 15 个已调用工具上：`patent_case_search`、`patent_legal_status`、`patent_search`、`patent_wiki_search`、`law_verify`、`law_search`、`rule_check`、`domain_check`、`claim_lint`、`draft_claims`、`draft_specification`、`validate_specification`、`render_patent_document`、`build_patent_filing`、`verify_patent_filing`。不是 11 族的全部工具。
 
-本日不调用模型，不用 snapshot 回放，不改 [daily/](../daily/)，不改 [pilot-questions.md](pilot-questions.md) 的冻结清单，也不把通过线写进 [10-tool-metrics-plan.md](../10-tool-metrics-plan.md)。
+本日不调用模型，不用 snapshot 回放，不改 [daily/](../daily/)，也不把通过线数字写进 [10-tool-metrics-plan.md](../10-tool-metrics-plan.md)。题库按起草文本冻结，见 [pilot-questions.md](pilot-questions.md)。
 
 ## 检查项
 
 - [x] 非法 JSON、类型错误、缺必填、超长、路径、注入都有会话里的 `tool/call` 与 `tool/result`。
 - [x] 没有 `error.code` 的拒绝没有记成通过。
 - [x] 注入的字面量处理记为 contained，没有并进通过率。
-- [x] 通过线一节保持空白，并写明原因。
+- [x] 通过线等于观察基线表，数字不回填计划文件。
 - [x] 当天不采样的样本表列留空。路径探针的残留是 0，记在对抗表，不回填到未采样的题面残留列。
 
 ## 样本表
@@ -78,7 +78,7 @@
 
 ## 观察基线
 
-下列比例只描述 2026-11-21 这一次测量。题库未冻结，所以它们不是通过线。
+下列比例是 2026-11-21 这一次测量，也是直接调用层的通过线。题库于同日按起草文本冻结，见 [pilot-questions.md](pilot-questions.md)。
 
 | 项 | 观察 | 分母 |
 |---|---|---|
@@ -93,24 +93,23 @@
 
 P-RET-03 在 `limit` 为 5 时渲染出 10 条，见 [F-PAT-056](../05-findings.md)。这条是工具结果和题面外部判定的差，外部判定列仍留空。
 
-冻结时要由人处理、本批不改题面的三处：
+随题面锁定、本批不改的四处判定差：
 
+- P-RET-02 的状态值可以带 `Expired - Lifetime` 这类后缀，题面枚举只有 `Active`、`Expired`、`Abandoned`。
 - P-SPC-03 的草案缺少 patentability-opinion 所要求的 16 个字段，工具按现有校验拒绝。
 - P-LAW-02 的题面路径写有 `审查指南_md/`，本次 `sourcePath` 是 `审查指南/...`。
 - P-RET-03 的题面外部判定是不超过 5 条，本次渲染是 10 条。
 
 ## 通过线
 
-留空。
+与「观察基线」表每一格相同。低于任一格记为低于基线。6 题未测不进分母，也不记失败。脚本场景的 10/14 不是这条通过线。数字不回填 [10-tool-metrics-plan.md](../10-tool-metrics-plan.md)。
 
-原因有两条，缺一不可。其一，[pilot-questions.md](pilot-questions.md) 的冻结清单还没有勾选，[day-08.md](day-08.md) 写明未冻结时不能出通过线。其二，[10-tool-metrics-plan.md](../10-tool-metrics-plan.md) 的待确认第 1 条要求通过线写在 metrics 记录里，不回填计划文件；在题库冻结并且人采纳上表之前，本文件也不填数字。
-
-本阶段议题因此不能当作已经完成而关闭。
+改题或改变工具行为之后，这条通过线作废，直接调用要重跑。
 
 ## 本日结论
 
-直接调用记录已经齐：14 题 15 次会话事件，6 题未测，对抗样本 54 条。观察基线写在上表。通过线留空。两处代码缺陷是 [F-PAT-056](../05-findings.md) 与 [F-CROSS-005](../05-findings.md)，修复不在本批，[06-priority.md](../06-priority.md) 的顺序不改。
+直接调用记录已经齐：14 题 15 次会话事件，6 题未测，对抗样本 54 条。上表是通过线。两处代码缺陷是 [F-PAT-056](../05-findings.md) 与 [F-CROSS-005](../05-findings.md)，修复不在本批，[06-priority.md](../06-priority.md) 的顺序不改。
 
 ## 明日第一件事
 
-D13 进入脚本场景之前，先由人冻结 20 题，并决定是否把上表采纳为通过线。未采纳前不把比例写进计划文件。
+P3 使用这条通过线。脚本场景的 10/14 仍然不是通过线。四处判定差若要改题，先作废这条通过线并重跑直接调用。

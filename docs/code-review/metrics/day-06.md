@@ -42,7 +42,7 @@ pnpm exec vitest run packages/patent/patent-law/tests/tool.spec.ts packages/pate
 
 ## 冻结状态
 
-五题均为「待人工冻结」。冻结人重点看两处：P-LAW-01 的引用文本是否要固定标点；P-LAW-04 的说明书与权利要求 fixture 是否要补专利类型与附图数据。未冻结前不进 D9。
+五题于 2026-11-21 冻结，题面锁定为起草文本。P-LAW-02 的路径前缀没有改写。清单在 [pilot-questions.md](pilot-questions.md)。
 
 ## 明日第一件事
 

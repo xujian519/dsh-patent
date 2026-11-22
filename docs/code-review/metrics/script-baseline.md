@@ -70,12 +70,14 @@
 
 7 次调用返回了非错误结果、但按题面外部判定不成立：干净场景 P-RET-02、P-RET-03、P-LAW-02，加上注入轮 4 次空结果的首次调用（P-RET-01、P-LAW-01、P-CLM-03、P-SPC-02）。只看 `tool/result` 的非错误状态会把这 7 次记成完成，本基线全部记为未闭环。
 
-## 题面待修（冻结前）
+## 锁定的判定差
 
-1. P-RET-02：`status` 实际值是 `Expired - Lifetime`；判定改成小写前缀匹配，或允许 IFI 限定后缀。
-2. P-LAW-02：本机知识库混用 `审查指南/` 与 `审查指南_md/` 两种 `sourcePath` 前缀；判定改成路径含 `审查指南`，或统一安装前缀。
-3. P-SPC-03：`patentability-opinion` 的 draft 缺 16 个必填槽位（`fields.meta-case`、`meta-basis`、`meta-date`、`sum-title`、`footer-case`、`footer-date`，以及 `sections.doc-number`、`basis-body`、`claim-decomposition-body`、`feature-comparison-body`、`inventiveness-step-1/2/3`、`other-requirements-body`、`evidence-body`、`citation-log-body`）；冻结前补齐或换最小合法 draft。
-4. P-SPC-03 的失败结果没有 `error.code`；读数时按 F-CROSS-004 记不可解释，不补猜测的码。
+题面于 2026-11-21 按起草文本冻结。下列四处随文本锁定，本批没有改题面。改题或改变工具行为之后，本基线与 [day-12.md](day-12.md) 的通过线一起作废，两层都要重跑。
+
+1. P-RET-02：状态值可以是 `Expired - Lifetime` 这类带后缀的字符串，题面枚举只有 `Active`、`Expired`、`Abandoned`。
+2. P-LAW-02：题面要求 `审查指南_md/`，测量到的 `sourcePath` 是 `审查指南/`。
+3. P-SPC-03：草案缺少 patentability-opinion 所要求的 16 个字段（`fields.meta-case`、`meta-basis`、`meta-date`、`sum-title`、`footer-case`、`footer-date`，以及 `sections.doc-number`、`basis-body`、`claim-decomposition-body`、`feature-comparison-body`、`inventiveness-step-1/2/3`、`other-requirements-body`、`evidence-body`、`citation-log-body`），工具按现有校验拒绝。
+4. P-SPC-03 的失败结果没有 `error.code`，记为不可解释，见 [F-CROSS-005](../05-findings.md)。
 
 ## 产品缺陷
 
@@ -87,7 +89,7 @@ F-PAT-056：`patent_search` 不按 `limit` 截断命中。真实引擎 `limit=5`
 
 ## 可进 CI
 
-不依赖模型与网络的检查：P-LAW-01、P-LAW-03、P-LAW-04、P-CLM-01、P-CLM-03、P-SPC-01、P-SPC-02；P-SPC-04 需要 `python-docx` 解释器，探测不到时跳过。P-RET-01、P-RET-04 需要本机知识库或 wiki，CI 没有时跳过。P-RET-02、P-RET-03 依赖网络，不进阻塞 CI。12 个注入检查可随对应题进 CI，但必须先修好题面判定。
+不依赖模型与网络的检查：P-LAW-01、P-LAW-03、P-LAW-04、P-CLM-01、P-CLM-03、P-SPC-01、P-SPC-02；P-SPC-04 需要 `python-docx` 解释器，探测不到时跳过。P-RET-01、P-RET-04 需要本机知识库或 wiki，CI 没有时跳过。P-RET-02、P-RET-03 依赖网络，不进阻塞 CI。P-LAW-02 与 P-SPC-03 的外部判定不成立，不进阻塞 CI。12 个注入检查可随对应题进 CI；这 12 次的恢复判定在冻结文本上已经成立。不要把 10/14 当成通过线。
 
 ## 前置与状态
 

@@ -48,7 +48,7 @@
 
 题面的 draft 只给了 `meta-client`、`meta-title`、`sum-conclusion` 三个字段，`sections` 是空数组。当前 `patentability-opinion` 模板要求 16 个必填槽位，空数组不满足。因此外部判定里的 `htmlPath`、文件存在与三个注入字段都无法评估。
 
-这是题面 fixture 与当前模板的不同步，不是工具回归：同一套槽位校验在 P-SPC-04 的 `claims-spec` 路径上正常。冻结前应把 P-SPC-03 的 draft 补齐到模板必填槽位，或改用 `patentability-opinion` 的最小合法 draft；本周期只记录，不改题面。失败结果本身没有 `error.code`，属于 [10-tool-metrics-plan.md](../10-tool-metrics-plan.md) 所列 F-CROSS-004 的「不可解释」样本。
+这是题面 fixture 与当前模板的不同步，不是工具回归：同一套槽位校验在 P-SPC-04 的 `claims-spec` 路径上正常。本轮只记录，不改题面。失败结果本身没有 `error.code`，记为不可解释，见 [F-CROSS-005](../05-findings.md)。
 
 ### P-SPC-04 CNIPA 申请文件成文：成立
 
@@ -60,7 +60,7 @@
 
 4 道可测题里 3 道闭环成立（P-SPC-01、P-SPC-02、P-SPC-04），1 道因题面 draft 缺 16 个必填槽位不成立（P-SPC-03）。本族闭环基线是 3/4；P-SPC-05 不计入分母。
 
-P-SPC-04 是唯一走真实 Python 引擎的题：190 ms 内完成成文与验收，子进程与引擎临时目录都没有残留。P-SPC-03 的失败是冻结前要修的题面问题，不登记为产品缺陷；缺 `error.code` 的现象归入 F-CROSS-004 的读数口径。
+P-SPC-04 是唯一走真实 Python 引擎的题：190 ms 内完成成文与验收，子进程与引擎临时目录都没有残留。P-SPC-03 的失败是题面 draft 缺槽位，不登记为新产品缺陷；缺 `error.code` 见 [F-CROSS-005](../05-findings.md)。
 
 ## 明日第一件事
 

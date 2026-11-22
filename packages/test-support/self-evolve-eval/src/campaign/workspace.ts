@@ -38,8 +38,9 @@ function killProcessGroup(pid: number | undefined, signal: NodeJS.Signals): void
   if (pid === undefined) return
   try {
     process.kill(-pid, signal)
-  } catch {
+  } catch (error) {
     // The group already ended; its exit event settles the promise.
+    void error
   }
 }
 

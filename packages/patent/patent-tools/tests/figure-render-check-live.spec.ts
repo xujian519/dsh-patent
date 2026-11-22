@@ -3,8 +3,9 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import { createGeneratePatentFigureTool } from '../src/tool/generate-patent-figure.ts'
 import { renderWithVizWasm } from '../src/figure/viz-wasm-renderer.ts'
@@ -25,6 +26,7 @@ const signal = new AbortController().signal
 
 async function generateGraphviz(input: Record<string, unknown>): Promise<string> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   const dir = mkdtempSync(join(tmpdir(), 'dsh-figure-live-'))

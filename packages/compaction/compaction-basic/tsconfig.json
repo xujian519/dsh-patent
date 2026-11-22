@@ -7,6 +7,9 @@
   "include": ["src"],
   "references": [
     {
+      "path": "../../util/brand"
+    },
+    {
       "path": "../../util/value"
     },
     {
@@ -26,6 +29,9 @@
     },
     {
       "path": "../../core/session"
+    },
+    {
+      "path": "../../session/session-projection"
     },
     {
       "path": "../../core/agent"

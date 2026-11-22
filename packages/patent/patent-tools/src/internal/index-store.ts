@@ -125,8 +125,9 @@ export function createIndexStore<TEntry>(options: IndexStoreOptions<TEntry>): In
   async function backupCorruptIndex(filePath: string): Promise<void> {
     try {
       await copyFile(filePath, `${filePath}.corrupt-${Date.now()}`)
-    } catch {
+    } catch (error) {
       /* v8 ignore next -- copyFile onto a fresh .corrupt path cannot fail in a writable temp dir. */
+      void error
     }
   }
 

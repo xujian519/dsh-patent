@@ -21,7 +21,7 @@ export const TONE_LABEL: Record<ChangeRequestTone, ForgePanelKey> = {
 }
 
 /** Combined check outcome shown on a collapsed card. */
-type CiSummary =
+export type CiSummary =
   | { readonly kind: 'none' }
   | { readonly kind: 'running' }
   | { readonly kind: 'passed' }
@@ -29,7 +29,7 @@ type CiSummary =
   | { readonly kind: 'failed'; readonly count: number }
   | { readonly kind: 'cancelled'; readonly count: number }
 
-/** Checks grouped by outcome; `other` holds neutral, skipped, and cancelled checks. */
+/** Checks grouped by outcome; `other` holds neutral and skipped checks. */
 export interface CheckCounts {
   readonly failed: number
   readonly running: number
@@ -45,10 +45,10 @@ const SETTLED: Record<Exclude<ChecksRollup, 'failure'>, Exclude<CiSummary['kind'
 }
 
 /** The most urgent fact of an open change request that the collapsed card names. */
-type ChangeRequestFlag = 'changesRequested' | 'conflicting' | 'draft'
+export type ChangeRequestFlag = 'changesRequested' | 'conflicting' | 'draft'
 
 /** The facts of a change request that decide its tone. */
-type ToneFacts = Pick<ChangeRequestSnapshot, 'state' | 'draft' | 'checksRollup' | 'reviewDecision' | 'mergeability'>
+export type ToneFacts = Pick<ChangeRequestSnapshot, 'state' | 'draft' | 'checksRollup' | 'reviewDecision' | 'mergeability'>
 
 /**
  * Pick the glyph tone of a change request: an open draft is always `draft`;
@@ -117,6 +117,18 @@ export function flagOf(snapshot: ChangeRequestSnapshot): ChangeRequestFlag | und
 }
 
 /**
+ * The fields of one change request that the cards, the changes view, and the review page read: a Session binding, or a
+ * change request the review page shows without one.
+ */
+export type ChangeRequestEntry = Pick<ForgePanelChangeRequest, 'url' | 'ref' | 'forge' | 'update' | 'snapshot' | 'reviewRevision'>
+
+/** The panel facts the changes view reads: a Session's panel state, or one change request the review page shows. */
+export type ChangesPanelState = Pick<ForgePanelState, 'checkout' | 'repository' | 'local'> & {
+  /** Change requests the view can show, by URL. */
+  readonly changeRequests: readonly ChangeRequestEntry[]
+}
+
+/**
  * Whether a change request needs the user, the condition its card draws as `blocked`.
  * @param entry - bound change request.
  * @returns whether the header marks it.
@@ -127,13 +139,13 @@ export function needsAttention(entry: ForgePanelChangeRequest): boolean {
 
 /**
  * Pick the cards a Session's panel opens before the user expands or collapses
- * one: the only open change request, drafts included, when exactly one is open.
+ * one: the card of the only bound change request, whatever its state; none
+ * while the Session binds several.
  * @param entries - bound change requests.
  * @returns the URLs of the cards that start expanded.
  */
 export function defaultExpanded(entries: readonly ForgePanelChangeRequest[]): ReadonlySet<string> {
-  const open = entries.filter(entry => entry.snapshot?.state === 'open')
-  return new Set(open.length === 1 ? open.map(entry => entry.url) : [])
+  return new Set(entries.length === 1 ? entries.map(entry => entry.url) : [])
 }
 
 /**
@@ -141,7 +153,7 @@ export function defaultExpanded(entries: readonly ForgePanelChangeRequest[]): Re
  * @param state - panel state of the Session.
  * @returns the change request, or undefined without one or while HEAD is detached.
  */
-export function openChangeRequestOf(state: ForgePanelState): ForgePanelChangeRequest | undefined {
+export function openChangeRequestOf(state: ChangesPanelState): ChangeRequestEntry | undefined {
   const branch = state.checkout.state === 'ready' ? state.checkout.checkout.branch : null
   if (branch === null) return undefined
   return state.changeRequests.find(entry => entry.snapshot?.state === 'open' && entry.snapshot.headBranch === branch)

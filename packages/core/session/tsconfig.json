@@ -9,15 +9,6 @@
   ],
   "references": [
     {
-      "path": "../../util/contained-emit"
-    },
-    {
-      "path": "../../util/entry-lifecycle"
-    },
-    {
-      "path": "../../util/value"
-    },
-    {
       "path": "../../../vendor/cosmokit"
     },
     {
@@ -37,6 +28,9 @@
     },
     {
       "path": "../../typert/protocol"
+    },
+    {
+      "path": "../../util/entry-lifecycle"
     }
   ]
 }

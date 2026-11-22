@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as tool from '../src/index.ts'
@@ -41,6 +42,7 @@ function execute(ctx: Context, name: string, args: unknown, callLabel: string) {
 
 async function setupPlugin(): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(tool, {})
@@ -59,6 +61,7 @@ function makeRegistry(fetchImpl: typeof fetch): ConnectorRegistry {
 
 async function setupRegistry(registry: ConnectorRegistry): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   ctx.tools.register(createPaperSearchTool(registry))
@@ -116,6 +119,7 @@ describe('dsh-tool-literature (plugin-registered tools)', () => {
 
   it('unregisters the tools when its contributing fiber is disposed (HMR-safety)', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     const fiber = await ctx.plugin(tool, {})

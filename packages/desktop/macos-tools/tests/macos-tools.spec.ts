@@ -478,6 +478,7 @@ describe('plugin assembly', () => {
   it('registers all seven tools under the default config', async () => {
     const ctx = new Context()
     contexts.push(ctx)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(macosTools)
@@ -488,6 +489,7 @@ describe('plugin assembly', () => {
   it('fails loud on non-positive or non-integer limits', async () => {
     const ctx = new Context()
     contexts.push(ctx)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     expect(() => { macosTools.apply(ctx, { commandTimeoutMs: 0 }) }).toThrow('commandTimeoutMs must be a positive integer')
@@ -498,6 +500,7 @@ describe('plugin assembly', () => {
   it('removes the seven tools when the contributing fiber disposes', async () => {
     const ctx = new Context()
     contexts.push(ctx)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     const fiber = await ctx.plugin(macosTools)

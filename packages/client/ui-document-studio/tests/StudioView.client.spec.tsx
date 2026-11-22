@@ -15,7 +15,7 @@ import type {
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { SessionListState, SessionSummary } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
-import type { SessionStatusSnapshot } from '@deepseek-ai/dsh-client-ui-session/client'
+import type { SessionStatusSnapshot } from '@deepseek-ai/dsh-client-ui-session-status/client'
 import { SessionId } from '@deepseek-ai/dsh-session/types'
 import { DOCUMENT_DELIVERABLES_TARGET } from '../src/client/document-deliverables.ts'
 import { StudioView, type StudioViewInjected, type StudioViewProps } from '../src/client/StudioView.tsx'

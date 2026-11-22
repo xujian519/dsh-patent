@@ -115,6 +115,7 @@ const PYTHON_METADATA: Record<string, { license: string; repo: string; role?: st
   openpyxl: { license: 'MIT', repo: 'https://foss.heptapod.net/openpyxl/openpyxl' },
   pandas: { license: 'BSD-3-Clause', repo: 'https://github.com/pandas-dev/pandas' },
   pillow: { license: 'MIT-CMU', repo: 'https://github.com/python-pillow/Pillow' },
+  pypdf: { license: 'BSD-3-Clause', repo: 'https://github.com/py-pdf/pypdf' },
   'python-dateutil': { license: 'Apache-2.0 OR BSD-3-Clause', repo: 'https://github.com/dateutil/dateutil' },
   'python-docx': { license: 'MIT', repo: 'https://github.com/python-openxml/python-docx' },
   'python-pptx': { license: 'MIT', repo: 'https://github.com/scanny/python-pptx' },
@@ -444,16 +445,26 @@ export function extractObservedLicenseFromDir(dir: string): string | undefined {
   }
 
   for (const candidate of candidates) {
-    try {
-      const path = resolve(dir, candidate)
-      const text = readFileSync(path, 'utf8')
-      const id = guessSpdxIdFromLicenseText(text)
-      if (id !== undefined) return id
-    } catch {
-      // Permission denied or binary content — skip, try next candidate.
-    }
+    const id = spdxIdFromLicenseFile(dir, candidate)
+    if (id !== undefined) return id
   }
   return undefined
+}
+
+/**
+ * Read one candidate license file and map it to an SPDX identifier.
+ * @param dir - the package directory holding the file.
+ * @param candidate - the license basename relative to `dir`.
+ * @returns the SPDX id, or undefined when the file is unreadable or unrecognized.
+ */
+function spdxIdFromLicenseFile(dir: string, candidate: string): string | undefined {
+  try {
+    return guessSpdxIdFromLicenseText(readFileSync(resolve(dir, candidate), 'utf8'))
+  } catch (error) {
+    // Permission denied or binary content — skip, try next candidate.
+    void error
+    return undefined
+  }
 }
 
 /**

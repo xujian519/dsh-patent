@@ -57,5 +57,5 @@ English | [中文](2026-09-15-analyzer-type-graph-extraction.zh.md)
 
 - [Splitting the seven god files](../../implemented/simplification/2026-09-14-god-file-split-plan.md) (the plan; this is batch 3's fifth landed cut)
 - [Pinning the analyzer's node ids](../testing/2026-09-15-node-id-stability.md) (this cut's precondition)
-- [Extracting the `Session` object and the publication observers](2026-09-15-session-object-extraction.md) (batch 3's third landed cut)
+- [Extracting the `Session` object and the publication observers](../../archived/simplification/2026-09-15-session-object-extraction.md) (batch 3's third landed cut)
 - `packages/typert/generator/src/type-graph.ts`, `packages/typert/generator/tests/node-id-stability.spec.ts`

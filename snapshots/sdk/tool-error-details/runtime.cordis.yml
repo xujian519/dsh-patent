@@ -4,6 +4,12 @@
 - id: tool-executor-ptc
   disabled: true
 
+# The base bundle already mounts `ptc-runtime`; a second row with that id is a
+# duplicate loader entry. Override its config instead of inserting it again.
+- id: ptc-runtime
+  config:
+    executionMode: per-call
+
 - insert:
     - id: structured-denial-fixture
       name: './deny.mjs'

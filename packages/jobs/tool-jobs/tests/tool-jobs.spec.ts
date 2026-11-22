@@ -1,7 +1,7 @@
 import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import type { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import AgentRegistry, { emitAgentEvent } from '@deepseek-ai/dsh-agent'
@@ -10,14 +10,15 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { UserMessage } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import type { SessionId } from '@deepseek-ai/dsh-session'
 import { bindScopeParent, createScope, scopeOf } from '@deepseek-ai/dsh-scope'
-import { JobId } from '@deepseek-ai/dsh-jobs'
+import type { JobId } from '@deepseek-ai/dsh-jobs'
 import LocalJobRegistry from '@deepseek-ai/dsh-jobs-local'
 import type { JobAppendOptions, JobHandle, JobHooks, JobOutcome, JobOutputSource, JobSpec, JobView } from '@deepseek-ai/dsh-jobs'
 import * as ToolJobs from '@deepseek-ai/dsh-tool-jobs'
 import { publicJob, renderModelDelta, statusLine } from '../src/render.ts'
 import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
+import { brandString } from '@deepseek-ai/dsh-brand'
 
 declare module '@deepseek-ai/dsh-jobs' {
   interface JobKindMap {
@@ -50,9 +51,9 @@ function startedId(ctx: Context, legacy: string): JobId {
 
 async function setup(config: ToolJobs.Config = {}, registry: RegistryConfig = {}) {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
-  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(NativeToolExecutor)
   const agentsFiber = await ctx.plugin(AgentRegistry)
   await ctx.plugin(LocalJobRegistry, registry)
@@ -83,7 +84,7 @@ interface FakeDelivery {
  */
 async function fakeAgent(ctx: Context, sessionId: string, delivery: FakeDelivery = {}): Promise<Agent> {
   const scopeFiber = ctx.plugin(() => {})
-  const id = SessionId(sessionId)
+  const id = brandString<SessionId>(sessionId)
   const agent = {
     id,
     ctx: scopeFiber.ctx,
@@ -184,7 +185,7 @@ function producer(overrides: Partial<Omit<JobSpec, 'run' | 'output'> & JobHooks 
 
 let callCounter = 0
 function call(ctx: Context, name: string, args: unknown, agent?: Agent) {
-  return executeToolFixture(ctx, { signal: testToolSignal, callId: ToolCallId(`call-${++callCounter}`), name, arguments: args, ...agent ? { agent } : {} })
+  return executeToolFixture(ctx, { signal: testToolSignal, callId: brandString<ToolCallId>(`call-${++callCounter}`), name, arguments: args, ...agent ? { agent } : {} })
 }
 
 function text(result: { content: { type: string; text?: string }[] }): string {
@@ -213,6 +214,7 @@ describe('tool-jobs setup', () => {
 
   it('serves unowned jobs in a composition without an agent registry', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(NativeToolExecutor)
@@ -229,9 +231,9 @@ describe('tool-jobs setup', () => {
 
   it('rejects a config whose default wait exceeds the cap', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
-    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(NativeToolExecutor)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(LocalJobRegistry)
@@ -251,9 +253,9 @@ describe('tool-jobs setup', () => {
     // Reports the load outcome as text: a resolved fiber is not safely printable.
     const loadWith = async (maxConsecutiveWakes: number): Promise<string> => {
       const ctx = new Context()
+      await ctx.plugin(SessionProjectionRegistry)
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime)
-      await ctx.plugin(SessionProjectionRegistry)
       await ctx.plugin(NativeToolExecutor)
       await ctx.plugin(AgentRegistry)
       await ctx.plugin(LocalJobRegistry)
@@ -279,12 +281,12 @@ describe('tool-jobs setup', () => {
 
   it('projects the public job: live progress or terminal detail, never ownership or offsets', () => {
     const live: JobView = {
-      id: JobId('bash-1'), kind: 'bash', label: 'x', owner: SessionId('sess-1'), outputLimitBytes: 8,
+      id: brandString<JobId>('bash-1'), kind: 'bash', label: 'x', owner: brandString<SessionId>('sess-1'), outputLimitBytes: 8,
       status: 'running', progress: '3/10 files', startedAt: 5, output: { total: 12, earliest: 0 },
     }
     expect(publicJob(live)).toEqual({ id: 'bash-1', kind: 'bash', label: 'x', status: 'running', detail: '3/10 files', startedAt: 5 })
     const settled: JobView = {
-      id: JobId('bash-1'), kind: 'bash', label: 'x', status: 'completed', detail: 'exit code: 0',
+      id: brandString<JobId>('bash-1'), kind: 'bash', label: 'x', status: 'completed', detail: 'exit code: 0',
       startedAt: 5, finishedAt: 9, output: { total: 12, earliest: 0 },
     }
     expect(publicJob(settled)).toEqual({ id: 'bash-1', kind: 'bash', label: 'x', status: 'completed', detail: 'exit code: 0', startedAt: 5, finishedAt: 9 })
@@ -351,9 +353,9 @@ describe('tool-jobs setup', () => {
     // Bypasses the schemastery defaults on purpose: apply() must stand on its
     // own `??` fallbacks when embedded programmatically without the schema.
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
-    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(NativeToolExecutor)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(LocalJobRegistry)
@@ -711,7 +713,7 @@ describe('job_kill', () => {
     expect(result.isError).toBe(true)
     expect(Buffer.byteLength(text(result))).toBeLessThanOrEqual(64)
     expect(text(result)).toContain('[result truncated]')
-    expect(ctx.jobs.get(JobId(startedId(ctx, 'bash-1'))).status).toBe('running')
+    expect(ctx.jobs.get(brandString<JobId>(startedId(ctx, 'bash-1'))).status).toBe('running')
   })
 
   it('bounds single-text post policy while preserving structured policy results', async () => {
@@ -803,9 +805,9 @@ describe('completion notices across scoped mounts', () => {
    */
   it('delivers one notice from the owning scope when two mounts share the registry', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
-    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(NativeToolExecutor)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(LocalJobRegistry)
@@ -821,12 +823,9 @@ describe('completion notices across scoped mounts', () => {
     bindScopeParent(agentKey, scopeOf(standingA.ctx) as object)
 
     const inject = vi.fn()
-    const owner = {
-      id: SessionId('sess-scoped'),
-      ctx: agentScope.ctx,
-      inject,
-      session: { id: SessionId('sess-scoped'), header: { version: 0, id: SessionId('sess-scoped'), createdAt: 0 } },
-    } as unknown as Agent
+    const owner = await fakeAgent(ctx, 'sess-scoped', { inject })
+    await detachAgent(owner)
+    Object.assign(owner, { ctx: agentScope.ctx })
     const dispose = await ctx.agents.register(owner)
 
     try {
@@ -1206,7 +1205,7 @@ describe('completion notices', () => {
     const aborter = new AbortController()
     const pending = executeToolFixture(ctx, {
       signal: aborter.signal,
-      callId: ToolCallId('call-aborted-wait'),
+      callId: brandString<ToolCallId>('call-aborted-wait'),
       name: 'job_output',
       arguments: { job_id: startedId(ctx, 'bash-1'), wait: true },
       agent: owner,
@@ -1232,7 +1231,7 @@ describe('completion notices', () => {
     const aborter = new AbortController()
     const pending = executeToolFixture(ctx, {
       signal: aborter.signal,
-      callId: ToolCallId('call-abort-then-settle'),
+      callId: brandString<ToolCallId>('call-abort-then-settle'),
       name: 'job_output',
       arguments: { job_id: startedId(ctx, 'test-task-1'), wait: true },
       agent: owner,
@@ -1661,7 +1660,7 @@ describe('released waits crossed by a settlement', () => {
       })
       const controller = new AbortController()
       const pending = executeToolFixture(ctx, {
-        signal: controller.signal, callId: ToolCallId('cancel-after-release'),
+        signal: controller.signal, callId: brandString<ToolCallId>('cancel-after-release'),
         name: 'job_output', arguments: { job_id: id, wait: true }, agent: owner,
       })
       await registered.promise
@@ -1694,7 +1693,7 @@ describe('released waits crossed by a settlement', () => {
       })
       const controller = new AbortController()
       const pending = executeToolFixture(ctx, {
-        signal: controller.signal, callId: ToolCallId('kill-then-release'),
+        signal: controller.signal, callId: brandString<ToolCallId>('kill-then-release'),
         name: 'job_output', arguments: { job_id: id, wait: true }, agent: owner,
       })
       await registered.promise

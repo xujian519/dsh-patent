@@ -160,8 +160,9 @@ describe.skipIf(!hasInkscape)('Inkscape 格式导出（真实子进程）', () =
     while ((match = stream.exec(latin)) !== null) {
       try {
         boxes.push(inflateSync(Buffer.from(match[1] as string, 'latin1')).toString('latin1'))
-      } catch {
+      } catch (error) {
         // 非 Flate 流（字体、图像）：与页面尺寸无关，跳过。
+        void error
       }
     }
     for (const text of boxes) {

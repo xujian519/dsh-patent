@@ -16,6 +16,7 @@ import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import {
   createMatterLogAppendTool,
@@ -38,6 +39,7 @@ let calls = 0
 /** Run one tool call against a registry holding only this tool. */
 async function run(caseDir: string, args: Record<string, unknown>) {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   ctx.tools.register(createMatterLogAppendTool())

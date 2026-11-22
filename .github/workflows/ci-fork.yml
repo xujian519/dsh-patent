@@ -131,9 +131,14 @@ jobs:
 
       - name: Unit tests
         # The free 2-core runner executes the native systemd containment path
-        # (probe + scope launch + settle chains) far slower than upstream's
-        # pools; upstream's slow lanes raise the same budget via
-        # DSH_COVERAGE_TEST_TIMEOUT_MS. A genuine hang still fails at 30s.
+        # (probe + scope launch + settle chains) and host boots far slower than
+        # upstream's pools, so this lane grants the 90s per-case budget that
+        # upstream's unit lane grants through DSH_COVERAGE_TEST_TIMEOUT_MS and
+        # that this workflow's coverage job grants below. Under 30s,
+        # client-ui-forge/tests/lens-panel.host.spec.ts — one host boot plus real
+        # git per case — timed out here while the same run's coverage job passed
+        # the file in 108s under that 90s budget. A genuine hang now costs one
+        # case's 90s.
         # The JSON report beside the human one feeds the skip gate below.
         # `pnpm test`, not `pnpm exec vitest`: apps/desktop's flock loader rebuilds
         # native/system whenever its host-addon probe fails, and that fallback reads
@@ -141,11 +146,11 @@ jobs:
         # Linux runner — prebuilds.json declares a static-musl tool and a musl
         # variant that `--host-addon-only` never builds — so the fallback must run.
         # No `--` before the flags. pnpm appends its own separator along with the
-        # arguments, so `pnpm test -- --testTimeout=30000` reaches Vitest as
-        # `vitest run -- --testTimeout=30000`: the `--` turns every flag into a file
+        # arguments, so `pnpm test -- --testTimeout=90000` reaches Vitest as
+        # `vitest run -- --testTimeout=90000`: the `--` turns every flag into a file
         # filter, the run silently keeps the default 5000ms budget, and the JSON
         # report the skip gate reads is never written.
-        run: pnpm test --testTimeout=30000 --hookTimeout=30000 --reporter=default --reporter=json --outputFile=vitest-report.json
+        run: pnpm test --testTimeout=90000 --hookTimeout=90000 --reporter=default --reporter=json --outputFile=vitest-report.json
 
       - name: Reject new test skips
         # A skip reads green in the log, so a path this lane can never run — the

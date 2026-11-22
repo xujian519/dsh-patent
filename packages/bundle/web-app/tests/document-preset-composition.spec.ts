@@ -30,6 +30,7 @@ import { loadOverlayPatches } from '@deepseek-ai/dsh-app-boot'
 import * as DocTemplate from '@deepseek-ai/dsh-doc-template'
 import * as DocumentDeliver from '@deepseek-ai/dsh-document-deliver'
 import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SkillRegistry from '@deepseek-ai/dsh-skill'
 import * as SkillFileSystem from '@deepseek-ai/dsh-skill-filesystem'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
@@ -152,6 +153,7 @@ function asRootList(value: unknown): string[] {
 
 /** Names a test-only mount maps to the module namespaces the Loader imports. */
 const MODULES: ReadonlyMap<string, unknown> = new Map<string, unknown>([
+  ['@deepseek-ai/dsh-session-projection', SessionProjectionRegistry],
   ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
   ['@deepseek-ai/dsh-tools', ToolRuntime],
   ['@deepseek-ai/dsh-fs-local', LocalFileSystem],
@@ -194,6 +196,7 @@ async function mountDeliveryRows(without: readonly string[] = []): Promise<Mount
   }))
   const configPath = join(cwd, 'cordis.yml')
   await writeFile(configPath, JSON.stringify([
+    { id: 'session-projections', name: '@deepseek-ai/dsh-session-projection' },
     { id: 'system-prompt', name: '@deepseek-ai/dsh-system-prompt' },
     { id: 'tools', name: '@deepseek-ai/dsh-tools' },
     { id: 'fs-local', name: '@deepseek-ai/dsh-fs-local', config: { cwd } },

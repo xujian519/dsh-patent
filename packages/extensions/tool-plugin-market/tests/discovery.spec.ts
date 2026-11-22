@@ -13,6 +13,7 @@ import { Context, type Fiber } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { PluginMarketSource } from '@deepseek-ai/dsh-host-plugin-market'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -67,6 +68,7 @@ function stubRegistry(): void {
 /** Boot a Context with system prompt, tool runtime, a read-only plugin market, and the tools. */
 async function setup(): Promise<{ ctx: Context; fiber: Fiber }> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(NativeToolExecutor)

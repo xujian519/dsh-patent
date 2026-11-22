@@ -1,5 +1,5 @@
 ---
-description: "Read-only plugin discovery tab in Web Plugins settings for the dsh web client: catalog sources, search, and install preview over the plugin-market Remote."
+description: "Read-only plugin discovery page in Web Settings for the dsh web client: catalog sources, search, and install preview over the plugin-market Remote."
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-client-ui-plugin-catalog` contributes the read-only **Plugin catalog** tab to the Web Settings Plugins section. The tab lazily calls the `ctx.remote.pluginCatalog` namespace the first time it is selected and renders a source picker, a search form, and an install-preview control. It lists the catalog sources the Host has registered (marking built-in ones), searches one source by free text, category, and capability, and previews a `name@version` reference against the registry — all without touching a profile. Loading, empty, no-match, preview, and generic failure states stay local to the mounted component, and a failed source read can be retried without exposing transport details.
+`dsh-client-ui-plugin-catalog` contributes the read-only **Plugin catalog** page to Web Settings. The page lazily calls the `ctx.remote.pluginCatalog` namespace the first time it is selected and renders a source picker, a search form, and an install-preview control. It lists the catalog sources the Host has registered (marking built-in ones), searches one source by free text, category, and capability, and previews a `name@version` reference against the registry — all without touching a profile. Loading, empty, no-match, preview, and generic failure states stay local to the mounted component, and a failed source read can be retried without exposing transport details.
 
 
 ## Table of Contents
@@ -26,7 +26,7 @@ English | [中文](README.zh.md)
 <a id="use-this-package"></a>
 ## Use this package
 
-Open the Plugins section in Settings and select the **Plugin catalog** tab to discover plugins the Host can reach. The tab reads no Remote during plugin activation — selecting it for the first time mounts the component and lazily calls `ctx.remote.pluginCatalog.listSources()` through `api-remotes`.
+Open Settings and select the **Plugin catalog** entry to discover plugins the Host can reach. The page reads no Remote during plugin activation — selecting it for the first time mounts the component and lazily calls `ctx.remote.pluginCatalog.listSources()` through `api-remotes`.
 
 ### Listing catalog sources
 
@@ -42,7 +42,7 @@ Either the preview button on a card or the dedicated `name@version` input calls 
 
 ### Retrying a failed read
 
-A failed source read renders a generic failure state inside the tab; retrying re-runs the lazy `listSources()` call without exposing transport details.
+A failed source read renders a generic failure state inside the page; retrying re-runs the lazy `listSources()` call without exposing transport details.
 
 -----
 
@@ -52,11 +52,11 @@ A failed source read renders a generic failure state inside the tab; retrying re
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The tab is a read-only projection of Host-owned plugin-market state; it performs no Remote read during plugin activation and takes the source list on first selection.
+The page is a read-only projection of Host-owned plugin-market state; it performs no Remote read during plugin activation and takes the source list on first selection.
 
 ### Registration
 
-The browser plugin registers one localized `settings.plugins.tab` contribution with id `market` and order `30`. The Plugins section owns the navigation entry and tab chrome. Registration uses `ctx.slots.inject()`, so it follows late tab declaration, redeclaration, locale changes, and teardown without importing the section owner. Contributions are registered through a throttle over `ctx.slots.register`.
+The browser plugin registers one localized `settings.section` contribution with id `pluginCatalog` and order `30`. The Settings shell owns the navigation entry and page chrome. Registration uses `ctx.slots.inject()`, so it follows late section declaration, redeclaration, locale changes, and teardown without importing the section owner.
 
 ### Remote face
 
@@ -75,8 +75,7 @@ The component takes only the injected functions and locale key set; it holds no 
 
 These pages cover the settings section, the Remote surface, and the Host-side seam.
 
-- [ui-settings-plugins](../ui-settings-plugins/README.md) — the Plugins section this tab registers into.
-- [ui-settings](../ui-settings/README.md) — the domain base declaring `settings.plugins.tab`.
+- [ui-settings](../ui-settings/README.md) — the domain base declaring `settings.section`.
 - [api-remotes](../../api/remotes/README.md) — the Remote BFF surface behind `pluginCatalog.*`.
 - [plugin-market-controller](../../api/plugin-market-controller/README.md) — the Host controller projecting the read-only seam onto `pluginCatalog`.
 - [plugin-market](../../host/plugin-market/README.md) — the Host-side catalog and install-preview seam this tab renders.
@@ -98,8 +97,8 @@ None; this package neither assembles nor sends a provider request.
 
 These limits define the freshness and reach of the discovery view; they are current package constraints.
 
-- **One source list per Settings mount or retry** — the tab does not subscribe to catalog changes or automatically refetch after reconnect; switching tabs preserves the current source list, while reopening Settings obtains a new one.
-- **Read-only discovery, no install** — this tab never installs or uninstalls a plugin; `dsh plugin install` stays CLI-only. The browser only discovers and previews.
+- **One source list per Settings mount or retry** — the page does not subscribe to catalog changes or automatically refetch after reconnect; switching sections preserves the current source list, while reopening Settings obtains a new one.
+- **Read-only discovery, no install** — this page never installs or uninstalls a plugin; `dsh plugin install` stays CLI-only. The browser only discovers and previews.
 - **Public HTTPS catalog sources remain to be wired** — the shipped composition supplies a built-in offline catalog source, so discovery works without a network catalog endpoint, but a remote HTTPS `dsh-plugin` directory is still future work.
 
 <a id="dev-note"></a>

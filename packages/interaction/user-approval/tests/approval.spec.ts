@@ -1,10 +1,11 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { ToolCallId, createUserMessage } from '@deepseek-ai/dsh-llm'
+import { brandString } from '@deepseek-ai/dsh-brand'
+import { type ToolCallId, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { carrierKeyOf, createScope } from '@deepseek-ai/dsh-scope'
 import type { Scope } from '@deepseek-ai/dsh-scope'
-import SessionStore, { Session, SessionId } from '@deepseek-ai/dsh-session'
+import SessionStore, { Session, type SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
@@ -68,7 +69,7 @@ describe('ApprovalService.request', () => {
     const ctx = await mounted()
     const { agent, appended } = fakeAgent(ctx)
 
-    const outcome = await ctx.approval.request(requestOf(agent, { callId: ToolCallId('call-1'), reason: 'hook says ask' }))
+    const outcome = await ctx.approval.request(requestOf(agent, { callId: brandString<ToolCallId>('call-1'), reason: 'hook says ask' }))
 
     expect(outcome).toBe('unavailable')
     expect(appended.map(e => e.type)).toEqual(['approval/asked', 'approval/decided'])
@@ -103,7 +104,7 @@ describe('ApprovalService.request', () => {
     })
     const request = requestOf(agent, {
       toolName: 'scoped-tool',
-      callId: ToolCallId('scoped-call'),
+      callId: brandString<ToolCallId>('scoped-call'),
       reason: 'scoped reason',
     })
 
@@ -124,7 +125,7 @@ describe('ApprovalService.request', () => {
   it('contains an approval/asked observer throw after append and still completes the pair', async () => {
     const ctx = await context()
     await ctx.plugin(ApprovalService)
-    const session = ctx.sessions.create(SessionId('asked-observer-throw'))
+    const session = ctx.sessions.create(brandString<SessionId>('asked-observer-throw'))
     session.append('turn/start', { turn: 1 })
     const agent = { session } as unknown as Agent
     const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => {})
@@ -140,13 +141,13 @@ describe('ApprovalService.request', () => {
     const decided = session.snapshotEvents().find((event): event is SessionEvent<'approval/decided'> => event.type === 'approval/decided')
     expect(audit.map(event => event.type)).toEqual(['approval/asked', 'approval/decided'])
     expect(decided?.data.id).toBe(asked?.data.id)
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('session/event listener threw: observer failed after asked append'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('session/event listener threw: Error: observer failed after asked append'))
   })
 
   it('contains an approval/decided observer throw after append and still resolves', async () => {
     const ctx = await context()
     await ctx.plugin(ApprovalService)
-    const session = ctx.sessions.create(SessionId('decided-observer-throw'))
+    const session = ctx.sessions.create(brandString<SessionId>('decided-observer-throw'))
     session.append('turn/start', { turn: 1 })
     const agent = { session } as unknown as Agent
     const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => {})
@@ -162,7 +163,7 @@ describe('ApprovalService.request', () => {
     const decided = session.snapshotEvents().find((event): event is SessionEvent<'approval/decided'> => event.type === 'approval/decided')
     expect(audit.map(event => event.type)).toEqual(['approval/asked', 'approval/decided'])
     expect(decided?.data).toMatchObject({ id: asked?.data.id, outcome: 'rejected' })
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('session/event listener threw: observer failed after decided append'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('session/event listener threw: Error: observer failed after decided append'))
   })
 
   it('propagates an append failure that prevented audit log growth', async () => {
@@ -360,7 +361,7 @@ describe('approval policy (the approval/policy fold)', () => {
    * the opened turn satisfies request()'s enclosure precondition.
    */
   function sessionAgent(ctx: Context, id: string): { agent: Agent; session: Session } {
-    const session = ctx.sessions.create(SessionId(id))
+    const session = ctx.sessions.create(brandString<SessionId>(id))
     session.append('turn/start', { turn: 1 })
     const agent = { id, session } as unknown as Agent
     return { agent, session }

@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { BrowserUseExtractor, type ScriptRun } from '@deepseek-ai/dsh-browser-backend'
@@ -65,6 +66,7 @@ type ExecuteToolDeps = {
 
 async function executeTool(args: unknown, deps: ExecuteToolDeps) {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   ctx.tools.register(createPaperDownloadTool(deps))
@@ -535,6 +537,7 @@ describe('paper_download', () => {
     const dir = await mkdtemp(join(tmpdir(), 'dsh-paper-'))
     try {
       const ctx = new Context()
+      await ctx.plugin(SessionProjectionRegistry)
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime)
       ctx.tools.register(createPaperDownloadTool({

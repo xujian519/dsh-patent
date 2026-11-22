@@ -7,6 +7,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import { resolveNodeTypes } from '@deepseek-ai/dsh-patent-knowledge'
 import * as tool from '../src/index.ts'
@@ -27,6 +28,7 @@ function publishWorkspace(ctx: Context): void {
 
 async function mounted(config: Record<string, unknown>): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   publishWorkspace(ctx)
@@ -64,6 +66,7 @@ describe('patent-tools plugin wiring', () => {
 
   it('passes Config maxTokens into the model port', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.provide('llm', {
@@ -84,6 +87,7 @@ describe('patent-tools plugin wiring', () => {
 
   it('builds the image-capability resolver when the llm declares resolveModelInfo', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.provide('llm', { resolveModelInfo: async () => ({ inputModalities: ['text'] }) })
@@ -115,6 +119,7 @@ describe('patent-tools plugin wiring', () => {
     await mkdir(join(temp, 'wiki'))
     await writeFile(join(temp, 'wiki', 'a.md'), '卡片A')
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     const wikiCalls: string[] = []
@@ -184,6 +189,7 @@ describe('patent-tools plugin wiring', () => {
   it('keeps the kg tool dbPath-only when the knowledge db is absent', async () => {
     temp = await mkdtemp(join(tmpdir(), 'dsh-patent-tools-kg-'))
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.provide('patentKnowledge', {
@@ -208,6 +214,7 @@ describe('patent-tools plugin wiring', () => {
     temp = await mkdtemp(join(tmpdir(), 'dsh-patent-tools-fig-'))
     const indexFile = join(temp, 'figures-index.json')
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.provide('llm', {
@@ -242,6 +249,7 @@ describe('patent-tools plugin wiring', () => {
     // 第一次调用返回结构抽取 JSON，第二次返回说明文字，最终结果反映第二步。
     temp = await mkdtemp(join(tmpdir(), 'dsh-patent-tools-2step-'))
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     let call = 0
@@ -319,6 +327,7 @@ describe('patent-tools plugin wiring', () => {
   it('wires patent_pdf_download to the ego session when patentData is provided', async () => {
     temp = await mkdtemp(join(tmpdir(), 'dsh-patent-tools-pdf-'))
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.provide('patentData', {

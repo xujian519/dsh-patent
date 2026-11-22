@@ -12,12 +12,12 @@ The desktop shell's startup cookie reset (see the desktop client-modules 431 not
 
 ## Decision
 
-Cap the `dsh-auth-*` cookies the browser keeps. In `packages/client/connection/src/browser-auth.ts`:
+Cap the `dsh-auth-*` cookies the browser keeps. In `packages/host/authentication-token/src/browser-auth.ts`:
 
-- `MAX_BROWSER_COOKIES` is 32. Thirty-two cookies stay well under the 16 KB header ceiling even when the bundle request line grows.
-- On the token-exchange (minting) path, `excessCookieNames` parses the request `Cookie` header, collects prefixed cookies, decodes each signed payload to recover its `issuedAt` (using the activation secret), and returns the oldest surplus names when the jar would exceed the bound. The current authority's cookie and non-prefixed cookies are never evicted; undecodable prefixed cookies are treated as oldest so excess bytes are shed first.
+- `RETAINED_OTHER_COOKIES` is 16. Sixteen other authorities' 226-character pairs keep the `Cookie` header near 3.9 KB and leave room for about 50 sign-ins on Hosts that expire nothing.
+- On the sign-in (minting) path, `supersededCookieNames` parses the request `Cookie` header, collects the generated-name cookies, reads each signed payload's claimed issue time, and returns every name beyond the `RETAINED_OTHER_COOKIES` most recently issued. The current authority's cookie and cookies outside the generated name pattern are never evicted; an unreadable value counts as issued at time zero so excess bytes are shed first.
 - Each surplus name is cleared with a same-name, `Max-Age=0` `Set-Cookie`, sent alongside the newly minted cookie.
-- `ConnectionIndexResponse.writeHead` header values widen from `string` to `string | string[]` so repeated `Set-Cookie` headers can be expressed.
+- `ConnectionIndexResponse.writeHead` header values widen to `Readonly<Record<string, string | string[]>>` so repeated `Set-Cookie` headers can be expressed.
 
 The bound is enforced at every mint, and a mint is what adds a cookie, so the jar never exceeds the cap between launches.
 
@@ -33,7 +33,7 @@ The bound is enforced at every mint, and a mint is what adds a cookie, so the ja
 
 ## Consequences
 
-- The request head stays bounded (~7 KB at 32 cookies) on every surface served by the same origin, so no number of launches can reintroduce a 431 on a long URL.
-- Multi-instance browsers keep the most recent `MAX_BROWSER_COOKIES` cookies and shed the oldest, rather than failing or logging the user out of the current instance.
+- The request head stays bounded (near 3.9 KB of other authorities' cookies) on every surface served by the same origin, so no number of launches can reintroduce a 431 on a long URL.
+- Multi-instance browsers keep the most recent `RETAINED_OTHER_COOKIES` cookies and shed the oldest, rather than failing or logging the user out of the current instance.
 - The eviction is a one-time fix-up on the minting response; ordinary cookie-authenticated requests are unchanged and do not re-mint.
 - The desktop shell reset and this bound are independent changes in separate packages, and remain complementary rather than redundant.

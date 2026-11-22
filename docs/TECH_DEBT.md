@@ -200,7 +200,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 - **范围与基线**:merge-forward `dsh-v0.1.6-alpha.2` → `dsh-v0.1.7-alpha.1`(`dsh-v0.1.6-alpha.2` 标签即本次合并基点)。上游 1299 提交 / fork 595 提交,首次冲突 183 路径(fork 自有面 70、client 插件包 52、core 包 40、基础设施与配置 20、未归类 1)。本节数字全部来自该合并树上的实跑。
 - **两道新门禁的 fork 侧基线补齐(本轮最重,两个方向都容易被后续同步重复踩)**:
-  - **`verify-no-unknown-casts`**:该门随本版到来,其已提交基线只记录上游的 565 文件 / 1476 断言。直接对合并树跑会把 459 条 fork 侧**存量**断言报成「新增」(fork 清单为 871 文件 / 2214 断言)。处置:以两父清单的并集重建基线,再裁剪到合并后的精确清单 **771 文件 / 1929 断言**,「继承来的断言」与「本次合并新写下的断言」才算可区分。三个超出两父清单的站点逐条复核:① `packages/client/ui-session/tests/status-controller.client.spec.ts` 的 `client.ctx.sessions as unknown as ClientSessions`——client 面把 `Context.sessions` 解析为 host 的 `SessionStore`,故 `as ClientSessions`/`as ISessions` 均 TS2352、直接形式 TS2339,只剩双重断言,且 `packages/api/session-controller/tests/client-apply.client.spec.ts` 早已因同一原因带同一断言(两处对称);② `ui-todo-board` 一个操作数在两父之间移动的 board-view 用例;③ `scripts/verify-agent-preset-config.spec.ts` 的声明夹具改走解析器新抽出的 `pluginConfigSchema(value)` 收窄步骤,**该文件因此没有新增任何基线条目**。**`--prune` 只能在并集基线上跑**:若先对上游基线裁剪,每条 fork 断言都会以「本次合并新增」的身份进入,3 个真新增站点与 456 条继承项无从区分。
+  - **`verify-no-unknown-casts`**:该门随本版到来,其已提交基线只记录上游的 565 文件 / 1476 断言。直接对合并树跑会把 459 条 fork 侧**存量**断言报成「新增」(fork 清单为 871 文件 / 2214 断言)。处置:以两父清单的并集重建基线,再裁剪到合并后的精确清单 **771 文件 / 1929 断言**,「继承来的断言」与「本次合并新写下的断言」才算可区分。三个超出两父清单的站点逐条复核:① `packages/client/ui-session-status/tests/status-controller.client.spec.ts` 的 `client.ctx.sessions as unknown as ClientSessions`——client 面把 `Context.sessions` 解析为 host 的 `SessionStore`,故 `as ClientSessions`/`as ISessions` 均 TS2352、直接形式 TS2339,只剩双重断言,且 `packages/api/session-controller/tests/client-apply.client.spec.ts` 早已因同一原因带同一断言(两处对称);② `ui-todo-board` 一个操作数在两父之间移动的 board-view 用例;③ `scripts/verify-agent-preset-config.spec.ts` 的声明夹具改走解析器新抽出的 `pluginConfigSchema(value)` 收窄步骤,**该文件因此没有新增任何基线条目**。**`--prune` 只能在并集基线上跑**:若先对上游基线裁剪,每条 fork 断言都会以「本次合并新增」的身份进入,3 个真新增站点与 456 条继承项无从区分。
   - **`verify-v3-event-vocabulary`**:要求 `RELEASED_V3_EVENT_TYPES` 与一个 V3 writer 提交**精确相等**,故集合从上游的 58 个名字扩到 **78** 个,新增的正是 fork V3 writer 写过的 20 个(`agent/request-error` 1 个、`patent/*` 3 个、`patent-teams/*` 9 个、`self-evolve/*` 7 个)。删名不是「更保守」:迁移期所有已录制的 patent-mode 与 self-evolve 会话都会被拒或改名。**pin 提交号仍只存在于发布校验、不写入源码树**(本节同样不记字面 SHA),重跑该门需从发布校验取号,这是本条的已知操作代价。
 - **预设的家换了,`$DSH_HOME/.agent-presets` 用户根目录退场**:上游以声明插件 `@deepseek-ai/dsh-agent-preset` + `@deepseek-ai/dsh-agent-preset-registry` 取代 fork 的 `packages/preset/agent-presets` 包,fork 资产移入 `packages/bundle/web-app/presets/{patent,document}.patch.yml`、`presets/{patent,document}{,.zh}.md` 与 `skills/{patent,document}/`。合并树里已无任何读取者指向 `$DSH_HOME/.agent-presets`,`docs/patent-workbench-tasks.md` 的相应路径全部改指 `presets/patent.patch.yml` 里的声明。约束表新增一行 `'@deepseek-ai/dsh-web-app': ['presets/patent.md', 'presets/patent.zh.md', 'presets/document.md', 'presets/document.zh.md', 'skills']`,由 `expectedDshPackageFiles` 的 `dsh.bundle.patch` + `packageFileExtras` 机制承载;**发布该目录是必需而非整洁**——`presets/patent.patch.yml` 用 `createRequire(baseUrl).resolve('@deepseek-ai/dsh-web-app/package.json')` 解析技能根再拼 `skills/patent`,不发布会让已发布的预设行在激活时失败。
 - **持久化:三种 fork 专有来源类型定性为仅归因**:`docs/persistence-changes/2026-09-22-fork-source-attribution`(含 zh 与 `.i18n.yaml`)把 self-evolve、sidechat、patent-teams-report 相对已接受的格式 4 基线记为仅归因来源类型——每种都来自只有本树才发布的产出方,该产出方之外的读取者不丢失信息,故保持同版本而不升格式 5。记录按类型陈述读取者承诺,不授予针对联合备选项的一般豁免。
@@ -358,17 +358,17 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- tech-debt-counters:start -->
 | 计数 | 值 |
 | --- | --- |
-| `structure.long-functions` | 192 |
-| `structure.large-files` | 95 |
+| `structure.long-functions` | 207 |
+| `structure.large-files` | 102 |
 | `structure.patent-large-files` | 9 |
-| `lint.v8-ignore` | 1334 |
-| `lint.ts-expect-error` | 202 |
+| `lint.v8-ignore` | 1348 |
+| `lint.ts-expect-error` | 201 |
 | `packages.patent-directories` | 16 |
 <!-- tech-debt-counters:end -->
 
 ### 专利域 >800 行文件裁定（2026-11-01 复测）
 
-`packages/patent` 当前有 10 个 >800 行源文件，全部保留为「接受」；另有 4 个拆分目标已降到 800 行（2026-11-05 D10 把 `statutes.ts` 拆为数据/计算/查询三层，最大文件 737 行）。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，2026-11-01 附图说明校验把 `validate.ts` 推过 800 行后升至 10 个，2026-11-05 拆分后回落至 9 个，2026-11-08 结构线稿每零件投影占位把 `freecad-structure-script.ts` 从 762 推到 826 后回到 10 个；全仓 >800 行文件相应为 96 个（2026-11-12 上游 rc.2 同步把 6 个包内文件推过 800 行，专利域 10 个不变）。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
+`packages/patent` 当前有 9 个 >800 行源文件，全部保留为「接受」；另有 4 个拆分目标已降到 800 行（2026-11-05 D10 把 `statutes.ts` 拆为数据/计算/查询三层，最大文件 737 行）。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，2026-11-01 附图说明校验把 `validate.ts` 推过 800 行后升至 10 个，2026-11-05 拆分后回落至 9 个，2026-11-08 结构线稿每零件投影占位把 `freecad-structure-script.ts` 从 762 推到 826 后回到 10 个；全仓 >800 行文件相应为 96 个（2026-11-12 上游 rc.2 同步把 6 个包内文件推过 800 行，专利域不变）；2026-11-20 R-F9 把 `freecad-structure-script.ts` 的内嵌 Python 模板外置为 `.py` 资产、TS 文件降到 319 行后专利域回到 9 个，2026-11-22 上游 alpha.1 同步把全仓推到 102 个（专利域仍为 9 个）。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
 
 拆分落点：`generate-patent-figure.ts` 拆出 `figure-panels.ts`（多面板路径）、`figure-delivery.ts`（落版/复核/转路径/导出）与 `figure-run.ts`（共享运行参数与标号）；`evidence/engine.ts` 拆出 `signals.ts`、`judgment.ts`、`public-use.ts`、`conditions.ts` 与 `proof-standard.ts`；`generate-structure-figure.ts` 拆出 `structure-types.ts`、`structure-model.ts` 与 `structure-render.ts`。
 
@@ -394,17 +394,17 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 ### 客户端与实验域大文件裁定（2026-11-02，Issue #654）
 
-#654 点名的六个文件里，`better-sidebar` 的 `Sidebar.tsx` 与 `state.ts` 已随该包在 PR #677 整体删除，`ui-trajectory` 的 `trajectory-record-inspector.tsx` 已随上游 v0.2.2-alpha.3 的轨迹界面重构删除；其余四个保留为「接受」。当前全仓计数为 185 个 >150 行函数、90 个 >800 行文件，与上方计数表一致。裁定按 #86 的「能说出切割换来什么」作出：四个文件都已是所在界面的组合根，可独立命名的子面已拆成兄弟模块，余下的是同一次渲染的状态、事件与 JSX；再切会把同一组 props 与草稿状态原样转交，行数下降而调用面不变。上限是裁定当日的行数，出现第二个消费方或新增职责时须重新定性。该表不在 `verify-tech-debt-counters` 的审计域内，由人工复审维护；审计域（`packages/patent`、`packages/legal`、`packages/document`）仍由上方结构裁定表机检。
+#654 点名的六个文件里，`better-sidebar` 的 `Sidebar.tsx` 与 `state.ts` 已随该包在 PR #677 整体删除，`ui-trajectory` 的 `trajectory-record-inspector.tsx` 已随上游 v0.2.2-alpha.3 的轨迹界面重构删除；其余三个保留为「接受」；`ptc-runtime-python` 的 `supervisor.ts` 行随上游 v0.2.3-alpha.1 删除整包而移除。裁定按 #86 的「能说出切割换来什么」作出：四个文件都已是所在界面的组合根，可独立命名的子面已拆成兄弟模块，余下的是同一次渲染的状态、事件与 JSX；再切会把同一组 props 与草稿状态原样转交，行数下降而调用面不变。上限是裁定当日的行数，出现第二个消费方或新增职责时须重新定性。该表不在 `verify-tech-debt-counters` 的审计域内，由人工复审维护；审计域（`packages/patent`、`packages/legal`、`packages/document`）仍由上方结构裁定表机检。
 
 | 文件 | 行数 | 裁定 | 上限 | 理由 |
 | --- | ---: | --- | ---: | --- |
 | `packages/client/ui-schedule/src/client/TaskDetail.tsx` | 2231 | 接受 | 2231 | 单个保留任务的详情页：时间、cron、频率格式化、时区、历史与菜单已分别在 `task-timing.ts`、`task-cron.ts`、`schedule-format.ts`、`recent-time-zones.ts`、`DeliveryHistory.tsx`、`TaskMenu.tsx`。余下是规则/记录两个标签的页面编排；`RuleCard`（392 行）与 `CronRows`（227 行）共用同一份草稿、权威记录与保存回调，拆出只会把草稿的读取与回写分到两个文件 |
 | `packages/client/ui-plugin-manager/src/client/PluginManagerPage.tsx` | 1887 | 接受 | 1887 | 插件管理页的组合根：状态机在 `manager-store.ts`（1527 行），文案投影在 `presentation.ts`，版本区与 bundle 详情已拆成 `versions.tsx`、`BundleDetailSection.tsx`。余下是目录卡片、详情页与安装向导；`InstallDialog`（489 行）只被本页调用，带 12 个回调与共享的 `InstallState`，抽出只改变文件归属，不减少回调或状态 |
 | `packages/client/ui-workspace/src/client/rows/WorkspaceBrowser.tsx` | 1579 | 接受 | 1579 | 工作区/会话浏览区的组合根：行渲染在 `Rows.tsx`（813 行），树投影在 `tree.ts`，持久化在 `stores.ts`，目录流在 `WorkspacePicker.tsx`。`WorkspaceBrowser`（671 行）与 `SessionTree`（375 行）共享同一组 store 选择器、会话状态与搜索请求；拆成兄弟文件要把三十余个选择器与回调逐层传递 |
-| `packages/experimental/ptc-runtime-python/src/supervisor.ts` | 902 | 接受 | 902 | Python 子进程单次运行的生命周期：`superviseChildRun`（766 行）与其内部匿名阶段（704 行）共享子进程句柄、三路流、abort、帧上限与输出台账，边界由进程事件而非职责划分。拆函数需要把运行期状态装进更大的 deps 对象并跨模块传递，正好是 2026-09-15 从 `index.ts` 收拢到本文件的反向操作 |
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-22 上游 v0.2.3-alpha.1 同步**:上游代码带入大量新增结构债,按当前树复测 `structure.long-functions` 为 **207**、`structure.large-files` 为 **102**(其中 3 个生成文件另计)、`structure.patent-large-files` 保持 **9**。同批次 fork 侧把 `patent-pdf-download.ts` 的续传 MANIFEST 写出抽为 `recordDownloadedFile` 并按 `verify-empty-catch` 具名两处空 `catch`,使 `createPatentPdfDownloadTool` 回落到 150 行以下,`structure.long-functions` 因此比同步带入时少 1;`lint.v8-ignore` **1348** 与 `lint.ts-expect-error` **201** 由上游带入并在本轮回测确认。`packages/experimental/ptc-runtime-python` 整包移除后,实验域大文件裁定表对应的 `supervisor.ts` 行随之删除。
 - **2026-11-20 R-F10 工作流恢复点与视频文法对照**:`patent-workflow-run.ts` 由 1056 升至 **1070** 行并同步重定接受上限;新增 `runId`/`resumeNote` 输出 schema 使 `createPatentWorkflowRunTool` 达到 152 行,`structure.long-functions` 由 191 升至 **192**;本批未改覆盖率豁免,`lint.v8-ignore` 按当前树复测为 **1334**;其余计数不变。
 - **2026-11-20 R-F9 FreeCAD 脚本模板外置**:`freecad-structure-script.ts` 的 940 行内嵌 Python 模板抽为同目录 `freecad-structure-script.py` 资产,构建时首次读入并缓存,TS 文件由 1233 降至 **319** 行;`structure.large-files` 由 96 降至 **95**、`structure.patent-large-files` 由 10 降至 **9**,该文件在结构裁定表里的接受行随之删除。资产随 `files` 的 `src` 发布并被 Desktop 原样复制进 asar,Node 直接读取;`structure.long-functions`、`lint.v8-ignore` 与 `lint.ts-expect-error` 不变。
 - **2026-11-20 R-F5 状态读取与 YAML 资产收口**:`patent-rule` 五处 `parseDocument` 失败惯用法收进 `runtime/yaml-asset.ts`,`v8 ignore` 从 5 处并为 1 处;`patent-tools` 新增 `figure/geometry.ts` 合并交线判定与点线距,删除 `slop-gate` 的 `resolveTextKeys` 与 `readStateText` 的数组分支,`plot-diagram` 改用 `glyph-box.textWidthMm`;这些改动不新增豁免,`lint.v8-ignore` 由 1338 降至 **1334**;新增的 `geometry.ts` 与 `yaml-asset.ts` 均不足 150 行与 800 行,结构债三项不变;其余计数不变。
@@ -812,3 +812,9 @@ hygiene 16/16 PASS、doc-sync 43/43 PASS、duplication 0 clones / 2350 files / 4
   2. 或把全仓 AST 扫描结果在 spec 内做一次 memo，避免 `it.each` 与相邻用例重复扫描；
   3. 或对 `scripts` 目录的整体运行也应用同一份 lane 预算。
 - **判据**：处置后应在并发全量下连续跑三次无超时，且单例耗时仍低于其声明预算的一半。
+
+## 2026-11-22 更新（上游 dsh-v0.2.3-alpha.1 同步后的计数复算）
+
+- **实测**：在合并后的工作树跑 `pnpm run verify-tech-debt-counters`，四项与台账不符，已按实测改写：`structure.long-functions` 192→**208**、`structure.large-files` 95→**102**、`lint.v8-ignore` 1334→**1348**、`lint.ts-expect-error` 202→**201**；`structure.patent-large-files` 与 `packages.patent-directories` 不变。
+- **归因**：增量主体是合并带入的上游源码——用 `scripts/report-structure.ts` 的同一函数按「文件不在合并前 HEAD 里」切分，19 个超 150 行的函数与 3 个超 800 行的文件落在本次新增的文件内，其余为上游对既有文件的改动与两侧删除（`experimental/ptc-runtime-python`、`experimental/personalized-recommendations` 整包移除，`core/session` 的 `Session`/`SessionStore` 回并到 `index.ts`）。计数口径、150/800 行阈值与 `v8 ignore` 的 `git ls-files` 路径规则均未改动，不是放宽统计换来的下降。
+- **连带更正**：「专利域 >800 行文件裁定」段首句原写 10 个，自 2026-11-20 R-F9 起即与台账行矛盾（`freecad-structure-script.ts` 已降至 319 行），一并改回 9，并把全仓数字更新为本次实测的 102。

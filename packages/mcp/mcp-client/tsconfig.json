@@ -8,6 +8,9 @@
     "src"
   ],
   "references": [
+    { "path": "../../credentials/authorization" },
+    { "path": "../../host/webserver" },
+    { "path": "../../util/brand" },
     {
       "path": "../../util/value"
     },
@@ -22,6 +25,9 @@
     },
     {
       "path": "../../llm/llm"
+    },
+    {
+      "path": "../../util/error"
     },
     {
       "path": "../../core/tools"
@@ -49,6 +55,12 @@
     },
     {
       "path": "../../util/values"
+    },
+    {
+      "path": "../../core/agent"
+    },
+    {
+      "path": "../../util/output-retention"
     }
   ]
 }

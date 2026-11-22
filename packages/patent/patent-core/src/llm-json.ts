@@ -25,13 +25,16 @@ export function stripCodeFence(raw: string): string {
 export function tryParseJson(raw: string): Record<string, unknown> | undefined {
   const candidates = [raw, stripCodeFence(raw)]
   for (const candidate of candidates) {
+    let value: unknown
     try {
-      const value: unknown = JSON.parse(candidate)
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
-        return value as Record<string, unknown>
-      }
-    } catch {
-      // 尝试下一个候选
+      value = JSON.parse(candidate)
+    } catch (error) {
+      // 解析失败：尝试下一个候选
+      void error
+      continue
+    }
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return value as Record<string, unknown>
     }
   }
   return undefined

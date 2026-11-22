@@ -21,7 +21,7 @@ interface ForkToolRequest {
 }
 
 /** Stable refusals a child's tool use can receive. */
-type ForkToolRefusal =
+export type ForkToolRefusal =
   | 'fork-ceiling-uninstalled'
   | 'fork-tool-not-permitted'
   | 'fork-child-mismatch'

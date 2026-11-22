@@ -132,7 +132,7 @@ export class ClientRuntimeRouter {
           generation: target.source.generation,
           sessionId,
         })
-      } catch {
+      } catch (_sourceClosed) {
         // Source removal also disables Console observation in the Client.
       }
     }
@@ -274,7 +274,7 @@ export class ClientRuntimeRouter {
       if (subscription.target !== target || subscription.sessionId !== frame.sessionId) continue
       try {
         subscription.listener(frame.event)
-      } catch {
+      } catch (_listenerFailed) {
         // One DevTools Console session cannot disrupt sibling sessions.
       }
     }
@@ -349,7 +349,7 @@ export class ClientRuntimeRouter {
         sessionId,
         requestId,
       })
-    } catch {
+    } catch (_sourceClosed) {
       // Cancellation settlement does not depend on delivery to a source that may be closing.
     }
   }
@@ -366,7 +366,7 @@ export class ClientRuntimeRouter {
     for (const listener of [...this.listeners]) {
       try {
         listener(event)
-      } catch {
+      } catch (_listenerFailed) {
         // One CDP session cannot disrupt context delivery to another session.
       }
     }

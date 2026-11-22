@@ -581,6 +581,7 @@ describe('working directory fallbacks', () => {
     expect(init.results[0]?.result.isError).toBe(false)
 
     const bare = new Context()
+    await bare.plugin(SessionProjectionRegistry).await()
     await bare.plugin(SystemPrompt).await()
     await bare.plugin(ToolsService).await()
     await bare.plugin(LocalFileSystem, { cwd: root }).await()

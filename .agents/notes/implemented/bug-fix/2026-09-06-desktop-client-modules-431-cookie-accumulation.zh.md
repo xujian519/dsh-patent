@@ -18,7 +18,7 @@ Status: implemented
 
 ## Alternatives considered
 
-**在 `packages/client/connection/src/browser-auth.ts` 中限制 cookie 数量。** 根因是 cookie 签发无上限，因此有界 jar 也能帮助使用随机端口的浏览器 `dsh web` 路径。本次未采纳：这是多文件改动——`ConnectionIndexResponse.writeHead` 要从 `Record<string,string>` 头拓宽为 `string | readonly string[]`，会波及 browser-auth 的 host 测试以及两个 gateway 测试 fake——而桌面 shell 可以在本地彻底修复该缺陷。留作后续；桌面重置在不动共享契约的情况下解决了已发布应用。
+**在 `packages/host/authentication-token/src/browser-auth.ts` 中限制 cookie 数量。** 根因是 cookie 签发无上限，因此有界 jar 也能帮助使用随机端口的浏览器 `dsh web` 路径。本次未采纳：这是多文件改动——`ConnectionIndexResponse.writeHead` 要从 `Record<string,string>` 头拓宽为 `string | readonly string[]`，会波及 browser-auth 的 host 测试以及两个 gateway 测试 fake——而桌面 shell 可以在本地彻底修复该缺陷。留作后续；桌面重置在不动共享契约的情况下解决了已发布应用。
 
 **调高 Node 的 `maxHeaderSize`。** 掩盖了积累而非移除它，浏览器路径仍会逐步漂向 431。
 

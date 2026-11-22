@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { registerBuiltinAtoms, type PatentModelPort } from '@deepseek-ai/dsh-patent-core'
@@ -392,6 +393,7 @@ describe('flexible_plan', () => {
     const tool = createFlexiblePlanTool({ store })
     await tool.execute({ action: 'create', caseId: 'c', caseType: 'drafting', stages: STAGES }, exec)
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.tools.register(tool)

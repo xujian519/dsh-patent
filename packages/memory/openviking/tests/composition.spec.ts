@@ -17,6 +17,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { defineTool, type PreToolDecision } from '@deepseek-ai/dsh-tools'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
@@ -56,6 +57,7 @@ describe('@deepseek-ai/dsh-openviking real Loader composition', () => {
     const endpoint = await startRecorder()
     const stateFile = join(root, 'state.json')
     await writeFile(join(root, 'cordis.yml'), [
+      "- name: '@deepseek-ai/dsh-session-projection'",
       "- name: '@deepseek-ai/dsh-system-prompt'",
       "- name: '@deepseek-ai/dsh-tools'",
       "- name: '@test/agents'",
@@ -79,6 +81,7 @@ describe('@deepseek-ai/dsh-openviking real Loader composition', () => {
       apply: () => {},
     } as never
     const modules = new Map<string, unknown>([
+      ['@deepseek-ai/dsh-session-projection', SessionProjectionRegistry],
       ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
       ['@deepseek-ai/dsh-tools', ToolRuntime],
       ['@test/agents', { name: 'test-agents', apply: (ctx: Context) => ctx.provide('agents', {}) }],
@@ -114,7 +117,10 @@ describe('@deepseek-ai/dsh-openviking real Loader composition', () => {
       execute: () => Promise.resolve('local content'),
     }))
 
-    const agent = { id: 'comp-agent-1', session: { id: 'comp-s1' } } as never
+    // The mounted projection registry folds committed events through the Session
+    // interface, so the stand-in carries the header, inherited count, and history read.
+    const session = { id: 'comp-s1', header: {}, inheritedEventCount: 0, snapshotEvents: () => [] }
+    const agent = { id: 'comp-agent-1', session } as never
     const signal = new AbortController().signal
 
     // The session-sync effect initializes asynchronously after the store
@@ -124,7 +130,7 @@ describe('@deepseek-ai/dsh-openviking real Loader composition', () => {
     let round: Round = { got: false }
     for (let attempt = 0; attempt < 30 && !round.got; attempt += 1) {
       context.emit('agent/created', { agent, source: 'startup' })
-      context.emit('session/event', { id: 'comp-s1' } as never, {
+      context.emit('session/event', session as never, {
         type: 'user/message', seq: attempt + 1, time: Date.now(),
         data: { content: [{ type: 'text', text: `composition probe ${attempt}` }], source: { kind: 'user' } },
       } as never)

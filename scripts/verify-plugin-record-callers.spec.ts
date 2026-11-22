@@ -10,7 +10,6 @@ import {
   ENTRY_EXPORT_LIST_FILE,
   findPluginRecordReferences,
   isAdmittedCaller,
-  OWNER_ENTRY_FILE,
   OWNER_FILE,
   readRepositorySources,
   unescaped,
@@ -51,9 +50,6 @@ function declaredRepository(source: string, extra: Record<string, string> = {}):
     'packages/experimental/bridge/package.json': JSON.stringify({ name: '@deepseek-ai/dsh-experimental-bridge' }),
     'packages/core/session/src/types.ts': 'export interface PluginRecordMap {}\n',
     [OWNER_FILE]: "import type { PluginRecordMap } from './types.ts'\nexport function appendPluginRecord<K extends keyof PluginRecordMap>(session: object, type: K, data: NoInfer<PluginRecordMap[K]>): number { return 0 }\n",
-    // The package entry re-exports the owner's declaration, so the fixture resolves
-    // `@deepseek-ai/dsh-session` the way the repository does.
-    [OWNER_ENTRY_FILE]: "export { appendPluginRecord } from './session.ts'\n",
     'packages/experimental/bridge/src/types.ts': [
       'export interface Entry { value: number }',
       "declare module '@deepseek-ai/dsh-session/types' {",

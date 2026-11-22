@@ -73,6 +73,12 @@
       "reason": "The shared zoom viewport is a leaf consumed by the image and PDF domains; extraction target is ui-primitives or a dedicated package."
     },
     {
+      "file": "packages/client/ui-sidebar-documentpreview/src/client/SummaryPreview.tsx",
+      "imported": "./markdown/MarkdownBody.module.css",
+      "count": 1,
+      "reason": "The compaction summary renders the same Markdown document container as the Markdown domain body; the prose rules stay with that body. Move them to a top-level module when a third consumer needs them."
+    },
+    {
       "file": "packages/client/ui-workspace/src/client/session-actions/ArchiveSession.tsx",
       "imported": "../rows/Rows.module.css",
       "count": 1,

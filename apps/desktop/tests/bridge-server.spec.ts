@@ -178,7 +178,10 @@ describe('BridgeServer', () => {
     // every observed run reported ENOENT on the first attempt — and a Windows
     // pipe name is not a file at all, so this stays a best-effort removal
     // rather than a wait for the file to disappear.
-    try { unlinkSync(socketPath) } catch {}
+    try { unlinkSync(socketPath) } catch (error) {
+      // Node unlinks the socket when the closing server releases it; this is best-effort.
+      void error
+    }
   })
 
   it('rejects an unknown method with a JSON-RPC error', async () => {

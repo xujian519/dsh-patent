@@ -15,7 +15,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { basename, dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
+import { parseEntryYaml } from '@deepseek-ai/cordis-plugin-include'
 import * as yaml from 'js-yaml'
 import { describe, expect, it } from 'vitest'
 
@@ -93,7 +93,7 @@ function flattenRows(entries: readonly unknown[]): PresetRow[] {
 
 /** The `legal` preset declaration entry. */
 function legalDeclaration(): PresetDeclaration | undefined {
-  const entries: unknown = yaml.load(readFileSync(LEGAL_PRESET, 'utf8'), { schema: entryListSchema })
+  const entries: unknown = parseEntryYaml(readFileSync(LEGAL_PRESET, 'utf8'))
   if (!Array.isArray(entries)) throw new TypeError('the legal preset patch must contain a Cordis entry list')
   const inserted = entries.flatMap(entry => (
     typeof entry === 'object' && entry !== null && Array.isArray((entry as { insert?: unknown }).insert)

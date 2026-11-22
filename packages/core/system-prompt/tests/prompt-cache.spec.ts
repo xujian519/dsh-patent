@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt, { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
 import type { CachedPromptSection, PromptCache, PromptCacheKey } from '@deepseek-ai/dsh-system-prompt/prompt-cache'
 import type { ScopeKey } from '@deepseek-ai/dsh-scope'
@@ -38,6 +39,7 @@ class StubCache implements PromptCache {
 describe('SystemPrompt stable-prefix cache', () => {
   it('evaluates a stable static prefix once across two assembles', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
     const cache = new StubCache()
     ctx.provide('promptCache', cache)
@@ -54,6 +56,7 @@ describe('SystemPrompt stable-prefix cache', () => {
 
   it('skips a function provider declared stable after the first assembly', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
     const cache = new StubCache()
     ctx.provide('promptCache', cache)
@@ -75,6 +78,7 @@ describe('SystemPrompt stable-prefix cache', () => {
 
   it('re-evaluates a function provider that does not declare stable', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
     const cache = new StubCache()
     ctx.provide('promptCache', cache)
@@ -96,6 +100,7 @@ describe('SystemPrompt stable-prefix cache', () => {
 
   it('serves the cached prefix across variable value changes', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
     const cache = new StubCache()
     ctx.provide('promptCache', cache)
@@ -118,6 +123,7 @@ describe('SystemPrompt stable-prefix cache', () => {
 
   it('invalidating the scope forces re-evaluation', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
     const cache = new StubCache()
     ctx.provide('promptCache', cache)
@@ -142,6 +148,7 @@ describe('SystemPrompt stable-prefix cache', () => {
 
   it('restores a cached complete section as the sole prompt section', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
     const cache = new StubCache()
     ctx.provide('promptCache', cache)
@@ -166,6 +173,7 @@ describe('SystemPrompt stable-prefix cache', () => {
 
   it('keeps registered variable values out of the signature', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
     const cache = new StubCache()
     ctx.provide('promptCache', cache)
@@ -186,6 +194,7 @@ describe('SystemPrompt stable-prefix cache', () => {
 
   it('degrades to the normal assembly path when the cache read throws', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
     const failing = new StubCache()
     failing.get = async () => { throw new Error('cache down') }
@@ -210,6 +219,7 @@ describe('SystemPrompt stable-prefix cache', () => {
 
   it('degrades to the normal assembly path when the cache write throws', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
     const failing = new StubCache()
     failing.set = async () => { throw new Error('cache full') }
@@ -234,6 +244,7 @@ describe('SystemPrompt stable-prefix cache', () => {
 
   it('caches only the contiguous stable prefix, excluding later unstable sections', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
     const cache = new StubCache()
     ctx.provide('promptCache', cache)
@@ -253,6 +264,7 @@ describe('SystemPrompt stable-prefix cache', () => {
 
   it('behaves unchanged when no cache strategy is mounted', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
 
     let calls = 0

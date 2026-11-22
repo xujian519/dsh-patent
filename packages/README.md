@@ -49,9 +49,10 @@ New packages join existing groups; a new group updates its README and this table
 | [`fs/`](fs/README.md) | Filesystem capability family: seam, local impl, model-facing file tools, discovery tools |
 | [`lsp/`](lsp/README.md) | LSP capability family: seam, generic stdio provider, and the `lsp` tool |
 | [`skill/`](skill/README.md) | Skill capability family: provider registry, local provider, model-facing catalog/loader |
+| [`connector/`](connector/README.md) | Plugins connecting third-party services through existing capabilities |
 | [`compaction/`](compaction/README.md) | Compaction capability family: Service Definition + basic provider + command Consumer |
 | [`context/`](context/README.md) | Model-visible request context: workspace instructions, time context, references |
-| [`memory/`](memory/README.md) | External memory and context-database integrations (OpenViking) |
+| [`memory/`](memory/README.md) | External memory and context-database integrations |
 | [`subagent/`](subagent/README.md) | Subagent capability family: provider-registry contract and model-facing delegation tools |
 | [`team/`](team/README.md) | Team coordination: shared task boards and model-facing task tools |
 | [`jobs/`](jobs/README.md) | Generic background-job runtime and model-facing job control tools |
@@ -66,16 +67,17 @@ New packages join existing groups; a new group updates its README and this table
 | [`preset/`](preset/README.md) | Per-session agent composition from preset `cordis.yml` files |
 | [`guard/`](guard/README.md) | Loop-hygiene guards: advisory repeat-call reminders + the `tools/execute` deadline enforcer |
 | [`bundle/`](bundle/README.md) | Installable `dsh --profile` patch layers |
-| [`extensions/`](extensions/README.md) | Agent runtime self-modification and plugin discovery: live inspection, model-written mount/unmount, read-only catalog discovery tools |
-| [`self-evolve/`](self-evolve/README.md) | Campaign-based self-evaluation and plugin evolution: durable service, agent-loop provider, benchmark runner, model-facing tools |
-| [`mcp/`](mcp/README.md) | Attach external Model Context Protocol servers so their tools are callable as native tools |
-| [`patent/`](patent/README.md) | Patent domain plugins ported from Sati: engines, tools, rule gates, and knowledge access as workspace packages |
-| [`legal/`](legal/README.md) | Legal domain plugins: the knowledge-base query seam, the citation gate, and the triple-attribute evidence scorer |
-| [`law/`](law/README.md) | Statute-citation and knowledge-query machinery shared by the legal and patent domains |
+| [`extensions/`](extensions/README.md) | Agent runtime self-modification and plugin discovery: live inspection, model-written mount/unmount, read-only catalog tools |
+| [`self-evolve/`](self-evolve/README.md) | Campaign-based self-evaluation and plugin evolution: service, agent-loop provider, benchmark runner, tools |
+| [`mcp/`](mcp/README.md) | External Model Context Protocol servers exposed as native tools |
+| [`patent/`](patent/README.md) | Patent domain plugins ported from Sati: engines, tools, rule gates, and knowledge access |
+| [`legal/`](legal/README.md) | Legal domain plugins: knowledge-base query seam, citation gate, triple-attribute evidence scorer |
+| [`law/`](law/README.md) | Statute-citation and knowledge-query machinery for the legal and patent domains |
 | [`session/`](session/README.md) | Durable session data plane: persistence seam + backends, projection seam, log-backed titles, session reporting |
 | [`session-query/`](session-query/README.md) | Session retrieval family: logical corpus, bounded reads, lineage, semantic filtering, SQLite full-text search |
 | [`settings/`](settings/README.md) | User-settings seam + file-backed provider |
 | [`credentials/`](credentials/README.md) | Credential-reference and credential-record seam + env-over-`.env` provider + authorization flows that ask a human |
+| [`account/`](account/README.md) | DeepSeek account sign-in and Host-only request credentials |
 | [`storage/`](storage/README.md) | Non-session storage hub + backends + domain form |
 | [`workspace/`](workspace/README.md) | Workspace entity |
 | [`sdk/`](sdk/README.md) | Out-of-process SDK: JSON-RPC protocol and TypeScript client/server |
@@ -85,9 +87,9 @@ New packages join existing groups; a new group updates its README and this table
 | [`browser/`](browser/README.md) | Browser automation backend family: capability probing, cascade routing, link extraction |
 | [`host/`](host/README.md) | Web GUI host services, directory picking, application launch, plugin inventory, and product telemetry |
 | [`client/`](client/README.md) | Web-GUI browser half: shell, wire, object services, slots, `ui-*` plugins |
-| [`desktop/`](desktop/README.md) | Desktop OS integration: Service Definition + Electron shell provider + sandboxed directory-picker bridge + CLI-backed macOS native tools |
+| [`desktop/`](desktop/README.md) | Desktop OS integration: service definition, Electron shell, directory-picker bridge, macOS native tools |
 | [`test-support/`](test-support/README.md) | Test infrastructure (testkits, replay, Loader smokes) |
-| [`util/`](util/README.md) | Shared utilities and package lists (`Branded<B>`, home/path helpers, timeout, retention, official bundle lists); runtime dependencies where needed (`zod`, `undici`, `dsh-util-values`) |
+| [`util/`](util/README.md) | Shared utilities and package lists (`Branded<B>`, home/path helpers, timeout, retention, official bundle lists) and their runtime dependencies (`zod`, `undici`, `dsh-util-values`) |
 
 -----
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { DEFAULT_FEE_POLICY } from '../src/compute.ts'
@@ -61,6 +62,7 @@ const partlyTranscribed: FeeTable = (() => {
 
 async function host(table: FeeTable = shipped, policy: FeePolicy = DEFAULT_FEE_POLICY): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   ctx.tools.register(createPatentFeesTool({ table, policy }))

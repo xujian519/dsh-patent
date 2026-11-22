@@ -232,8 +232,9 @@ export function createRecognizeChemicalStructureTool(deps: RecognizeChemicalStru
             analyzedAt: new Date().toISOString(),
             analysis: result,
           })
-        } catch {
+        } catch (error) {
           // 索引写入是可选增强：写入失败静默降级，不阻断识别结果返回。
+          void error
         }
       }
       return result

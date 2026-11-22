@@ -68,5 +68,5 @@ Status: implemented
 ## Related
 
 - [拆分七个上帝文件](../../implemented/simplification/2026-09-14-god-file-split-plan.zh.md)（本改动为其批次 3 条目解开前置条件的计划）
-- [提取 `Session` 对象与发布观察者](../simplification/2026-09-15-session-object-extraction.zh.md)（批次 3 第三刀落地）
+- [提取 `Session` 对象与发布观察者](../../archived/simplification/2026-09-15-session-object-extraction.md)（批次 3 第三刀落地）
 - `packages/typert/generator/tests/node-id-stability.spec.ts`、`packages/typert/generator/tests/type-model.spec.ts`

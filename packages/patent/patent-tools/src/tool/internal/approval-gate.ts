@@ -12,7 +12,7 @@
  */
 
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
+import type { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { ApprovalOutcome, ApprovalService } from '@deepseek-ai/dsh-user-approval'
 import {
   APPROVAL_GRANTED_KEY,

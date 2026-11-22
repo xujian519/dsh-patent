@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as Pkg from '../src/index.ts'
 
 async function install(config: Record<string, unknown> = {}) {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   const fiber = await ctx.plugin(Pkg, config)
@@ -60,6 +62,7 @@ describe('@deepseek-ai/dsh-patent-deadline plugin surface', () => {
 
   it('mounts service-only without the tools service', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     const fiber = await ctx.plugin(Pkg, { provideService: true, exposeTool: false })
     expect(ctx.get('patentDeadline')).toBeDefined()
@@ -75,6 +78,7 @@ describe('@deepseek-ai/dsh-patent-deadline plugin surface', () => {
 
   it('defaults an empty config when apply is called directly', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await Pkg.apply(ctx, {})
@@ -83,6 +87,7 @@ describe('@deepseek-ai/dsh-patent-deadline plugin surface', () => {
 
   it('rejects a mount that neither publishes the service nor registers the tool', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(Pkg, { provideService: false, exposeTool: false })).rejects.toThrow(/不能同时为 false/)
@@ -90,6 +95,7 @@ describe('@deepseek-ai/dsh-patent-deadline plugin surface', () => {
 
   it('rejects a negative reminder horizon at load', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(Pkg, { reminderLeadDays: -1 })).rejects.toThrow()
@@ -97,6 +103,7 @@ describe('@deepseek-ai/dsh-patent-deadline plugin surface', () => {
 
   it('fails loud at load when the configured time zone is unusable', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(Pkg, { timeZone: 'Not/AZone' })).rejects.toThrow()
@@ -104,6 +111,7 @@ describe('@deepseek-ai/dsh-patent-deadline plugin surface', () => {
 
   it('fails loud at load when the configured calendar directory has no asset', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(Pkg, { calendarDir: '/nonexistent/calendar-dir' })).rejects.toThrow(/无法读取工作日历资产/)

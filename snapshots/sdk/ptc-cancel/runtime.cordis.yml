@@ -1,5 +1,9 @@
 # The base bundle already mounts `ptc-runtime`; a second row with that id is a
-# duplicate loader entry.
+# duplicate loader entry. Override its config instead of inserting it again.
+- id: ptc-runtime
+  config:
+    executionMode: per-call
+
 - insert:
     - id: ptc-cancel-fixture
       name: './cancel.mjs'

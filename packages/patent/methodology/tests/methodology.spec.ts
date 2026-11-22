@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
 import * as methodology from '../src/index.ts'
@@ -48,6 +49,7 @@ function execute(host: Context, name: string, args: unknown, callLabel: string) 
 
 async function setupPlugin(config: Record<string, unknown> = {}): Promise<Context> {
   const host = new Context()
+  await host.plugin(SessionProjectionRegistry)
   await host.plugin(SystemPrompt)
   await host.plugin(ToolRuntime)
   await host.plugin(methodology, config)
@@ -323,6 +325,7 @@ describe('dsh-methodology plugin-registered triz tool', () => {
 
   it('unregisters the tool when its contributing fiber is disposed (HMR-safety)', async () => {
     const host = new Context()
+    await host.plugin(SessionProjectionRegistry)
     await host.plugin(SystemPrompt)
     await host.plugin(ToolRuntime)
     const fiber = await host.plugin(methodology, {})

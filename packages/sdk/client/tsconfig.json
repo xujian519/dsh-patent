@@ -9,7 +9,7 @@
   ],
   "references": [
     {
-      "path": "../../util/value"
+      "path": "../../util/brand"
     },
     {
       "path": "../../../vendor/cosmokit"

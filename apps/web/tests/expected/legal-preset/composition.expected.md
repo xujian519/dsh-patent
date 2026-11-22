@@ -17,22 +17,29 @@ tools:
 - legal_law_verify
 - list_agents
 - list_doc_templates
+- office_convert
+- office_recalculate
+- office_render
 - read
 - read_image
 - render_doc_template
 - schedule_create
-- schedule_delete
+- schedule_edit
 - schedule_list
-- schedule_update
+- schedule_view
 - send_message
 - skill
 - subagent
 - subagent_fork
+- team_task_create
+- team_task_get
+- team_task_list
+- team_task_update
 - todo_write
 - update_goal
+- wait_agent
 - web_fetch
 - workflow
-- working_directory
 - write
 
 skills:

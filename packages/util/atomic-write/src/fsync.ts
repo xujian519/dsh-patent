@@ -29,16 +29,25 @@ export async function syncFileDurably(path: string): Promise<void> {
  */
 export async function syncDirectoryDurably(path: string): Promise<void> {
   try {
-    const handle = await open(path, 'r')
-    try {
-      await handle.sync()
-    } finally {
-      await handle.close()
-    }
-  } catch {
+    await syncDirectoryHandle(path)
+  } catch (error) {
     // Best-effort by contract: the caller's content is already renamed into
     // place, so a skipped or refused directory fsync fails nothing — Windows
     // cannot open directory handles, and no caller can retry a directory
     // fsync meaningfully after the rename committed.
+    void error
+  }
+}
+
+/**
+ * Open the directory, flush its entry ordering, and close the handle.
+ * @param path - the directory whose entry ordering to flush.
+ */
+async function syncDirectoryHandle(path: string): Promise<void> {
+  const handle = await open(path, 'r')
+  try {
+    await handle.sync()
+  } finally {
+    await handle.close()
   }
 }

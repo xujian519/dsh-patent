@@ -245,7 +245,7 @@ class InspectorQueryPeer {
     this.close()
     try {
       this.transport.close(code, reason.slice(0, 123))
-    } catch {
+    } catch (_transportUnusable) {
       // The carrier is already unusable; query state has reached quiescence.
     }
   }

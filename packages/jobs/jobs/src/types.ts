@@ -5,7 +5,7 @@
  * @module @deepseek-ai/dsh-jobs/types
  */
 
-import type { SessionEventMap, SessionId } from '@deepseek-ai/dsh-session'
+import type { SessionEventMap, SessionId } from '@deepseek-ai/dsh-session/types'
 import type { JobId } from './brand.ts'
 import type { JobChannel, JobChunk, JobKind, JobView } from './view.ts'
 
@@ -75,6 +75,12 @@ export interface JobOutcome {
    * reason, the registry appends that reason.
    */
   detail?: string
+  /**
+   * Exit code of the process the job ran, for a producer that runs one. A
+   * nonzero code on a `completed` job means the command reported failure while
+   * the job itself finished.
+   */
+  exitCode?: number
   /**
    * Return value for jobs whose result is a value rather than a stream (a
    * workflow's rendered result, a subagent's report). The output ring carries

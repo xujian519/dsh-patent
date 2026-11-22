@@ -1,5 +1,5 @@
 ---
-description: "dsh Web 客户端设置中的只读插件发现标签页：目录源、搜索与安装预检，基于 plugin-market Remote。"
+description: "dsh Web 客户端设置中的只读插件发现页面：目录源、搜索与安装预检，基于 plugin-market Remote。"
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-client-ui-plugin-catalog` 向 Web 设置的「插件」分区贡献只读的**插件目录**标签页。首次被选择时懒调用 `ctx.remote.pluginCatalog` 命名空间，并渲染目录源选择器、搜索表单与安装预检控件。它列出宿主已注册的目录源（标注内置来源）、按自由文本/类目/能力搜索某个源，并针对 `name@version` 引用向注册表做安装预检——全程不触碰任何 profile。加载、空结果、无匹配、预检与通用失败状态只属于已挂载组件，源读取失败后可以重试，且不会暴露传输细节。
+`dsh-client-ui-plugin-catalog` 向 Web 设置贡献只读的**插件目录**页面。首次被选择时懒调用 `ctx.remote.pluginCatalog` 命名空间，并渲染目录源选择器、搜索表单与安装预检控件。它列出宿主已注册的目录源（标注内置来源）、按自由文本/类目/能力搜索某个源，并针对 `name@version` 引用向注册表做安装预检——全程不触碰任何 profile。加载、空结果、无匹配、预检与通用失败状态只属于已挂载组件，源读取失败后可以重试，且不会暴露传输细节。
 
 
 ## 目录
@@ -26,7 +26,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-打开设置中的「插件」分区并选择**插件目录**标签页，即可发现宿主能触达的插件。插件激活期间不会读取 Remote——首次选择该标签页时才挂载组件，并通过 `api-remotes` 懒调用 `ctx.remote.pluginCatalog.listSources()`。
+打开设置并选择**插件目录**条目，即可发现宿主能触达的插件。插件激活期间不会读取 Remote——首次选择该页面时才挂载组件，并通过 `api-remotes` 懒调用 `ctx.remote.pluginCatalog.listSources()`。
 
 ### 列出目录源
 
@@ -42,7 +42,7 @@ kind: "package-reference"
 
 ### 重试失败的读取
 
-源读取失败会在标签页内渲染通用失败状态；重试会重新执行懒 `listSources()` 调用，且不会暴露传输细节。
+源读取失败会在页面内渲染通用失败状态；重试会重新执行懒 `listSources()` 调用，且不会暴露传输细节。
 
 -----
 
@@ -52,11 +52,11 @@ kind: "package-reference"
 <details>
 <summary>实现细节——点击展开</summary>
 
-该标签页是宿主拥有的 plugin-market 状态的只读投影；插件激活期间不执行任何 Remote 读取，首次选择时才取源列表。
+该页面是宿主拥有的 plugin-market 状态的只读投影；插件激活期间不执行任何 Remote 读取，首次选择时才取源列表。
 
 ### 注册
 
-浏览器插件注册一个 id 为 `market`、order 为 `30` 的本地化 `settings.plugins.tab` 贡献；「插件」分区拥有导航入口与标签栏。注册使用 `ctx.slots.inject()`，因此能跟随标签 slot 的延迟声明、重新声明、本地化变化与 teardown，而无需 import 分区拥有方。贡献经 `ctx.slots.register` 上的节流阀注册。
+浏览器插件注册一个 id 为 `pluginCatalog`、order 为 `30` 的本地化 `settings.section` 贡献；设置外壳拥有导航入口与页面外框。注册使用 `ctx.slots.inject()`，因此能跟随分区 slot 的延迟声明、重新声明、本地化变化与 teardown，而无需 import 分区拥有方。
 
 ### Remote 面
 
@@ -75,8 +75,7 @@ kind: "package-reference"
 
 以下页面覆盖设置分区、Remote 表面与宿主侧 seam。
 
-- [ui-settings-plugins](../ui-settings-plugins/README.zh.md)——本标签页注册进的「插件」分区。
-- [ui-settings](../ui-settings/README.zh.md)——声明 `settings.plugins.tab` 的领域底座。
+- [ui-settings](../ui-settings/README.zh.md)——声明 `settings.section` 的领域底座。
 - [api-remotes](../../api/remotes/README.zh.md)——`pluginCatalog.*` 背后的 Remote BFF 表面。
 - [plugin-market-controller](../../api/plugin-market-controller/README.zh.md)——把只读 seam 投影到 `pluginCatalog` 的宿主控制器。
 - [plugin-market](../../host/plugin-market/README.zh.md)——本标签页所渲染的宿主侧目录与安装预检 seam。
@@ -98,8 +97,8 @@ kind: "package-reference"
 
 这些限制定义发现视图的新鲜度与触达范围；它们是当前包约束。
 
-- **每次 Settings 挂载或重试只读取一份源列表**：标签页不订阅目录变化，也不会在重连后自动重新读取；切换标签页会保留当前源列表，重新打开 Settings 则会取得新列表。
-- **只读发现，不安装**：本标签页从不安装或卸载插件；`dsh plugin install` 保持 CLI 独占。浏览器只能发现与预检。
+- **每次 Settings 挂载或重试只读取一份源列表**：页面不订阅目录变化，也不会在重连后自动重新读取；切换分区会保留当前源列表，重新打开 Settings 则会取得新列表。
+- **只读发现，不安装**：本页面从不安装或卸载插件；`dsh plugin install` 保持 CLI 独占。浏览器只能发现与预检。
 - **公开 HTTPS 目录源仍待接**：shipped 组合提供一个内置离线目录源，因此无需网络目录端点即可发现；但远程 HTTPS `dsh-plugin` 目录仍是后续工作。
 
 <a id="dev-note"></a>

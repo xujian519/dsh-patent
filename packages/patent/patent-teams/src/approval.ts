@@ -13,7 +13,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
+import type { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { ApprovalOutcome } from '@deepseek-ai/dsh-user-approval/types'
 // Type-only: makes `ctx.get('approval')` resolve to the service this module asks.
 import type {} from '@deepseek-ai/dsh-user-approval'

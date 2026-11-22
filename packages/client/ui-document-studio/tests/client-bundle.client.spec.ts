@@ -33,7 +33,11 @@ function sessionBinding() {
   return { eventSource: { getSnapshot: () => ({ entries }), subscribe: () => () => {} } }
 }
 
-interface Handoff { id: string; factory: (require: (spec: string) => unknown) => Record<string, unknown> }
+interface Handoff {
+  id: string
+  factory: (require: (spec: string) => unknown) => Record<string, unknown>
+  meta?: () => { stylesheets?: Readonly<Record<string, { text(context: { asset(reference: string): string }): string }>> }
+}
 type Win = { __ModuleLoader__?: { load(h: Handoff): void } }
 
 function readBundle(): string | undefined {
@@ -217,9 +221,11 @@ describe('tsdown client artifact', () => {
     }
   })
 
-  it.skipIf(code === undefined)('injects plugin-tagged module CSS during factory execution', async () => {
-    await loadArtifact()
-    const tags = document.querySelectorAll(`style[data-plugin=${JSON.stringify(PLUGIN_ID)}]`)
-    expect(tags.length).toBeGreaterThan(0)
+  it.skipIf(code === undefined)('publishes its module CSS through the handoff metadata', async () => {
+    const { handoff } = await loadArtifact()
+    const sheets = Object.entries(handoff.meta?.().stylesheets ?? {})
+    expect(sheets.length).toBeGreaterThan(0)
+    // Text is a deferred producer; the artifact must still carry real CSS behind it.
+    expect(sheets.every(([, sheet]) => sheet.text({ asset: reference => reference }).length > 0)).toBe(true)
   })
 })

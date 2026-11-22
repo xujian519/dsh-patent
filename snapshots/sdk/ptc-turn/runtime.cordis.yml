@@ -1,3 +1,6 @@
 # The base bundle already mounts `ptc-runtime`; a second row with that id is a
-# duplicate loader entry. This scenario adds no rows of its own.
-[]
+# duplicate loader entry. This scenario only keeps the per-call runtime the
+# recorded programs were written for.
+- id: ptc-runtime
+  config:
+    executionMode: per-call

@@ -287,13 +287,16 @@ async function loadManifest(outputDir: string): Promise<Map<string, PatentManife
   for (const line of raw.split('\n')) {
     const trimmed = line.trim()
     if (!trimmed) continue
+    let entry: PatentManifestEntry | null
     try {
-      const entry = JSON.parse(trimmed) as PatentManifestEntry | null
-      if (entry && typeof entry.patent === 'string' && entry.status === 'ok') {
-        byPatent.set(entry.patent, entry)
-      }
-    } catch {
+      entry = JSON.parse(trimmed) as PatentManifestEntry | null
+    } catch (error) {
       // 单行损坏：跳过该行，其余行仍生效
+      void error
+      continue
+    }
+    if (entry && typeof entry.patent === 'string' && entry.status === 'ok') {
+      byPatent.set(entry.patent, entry)
     }
   }
   return byPatent
@@ -309,6 +312,26 @@ async function saveManifestEntry(outputDir: string, entry: PatentManifestEntry):
 async function sha1OfFile(path: string): Promise<string> {
   const data = await readFile(path)
   return createHash('sha1').update(data).digest('hex')
+}
+
+/**
+ * 为已落盘的下载结果追加一条 MANIFEST 续传记录。
+ * 文件不可读（stat/读盘失败）时抛错，由调用方放弃该条记录。
+ * @param outputDir - 输出目录。
+ * @param item - 本次下载成功的结果（path 必填）。
+ * @returns 写入完成。
+ */
+async function recordDownloadedFile(outputDir: string, item: PatentDownloadItem & { path: string }): Promise<void> {
+  const st = await stat(item.path)
+  await saveManifestEntry(outputDir, {
+    patent: item.patent,
+    status: 'ok',
+    path: item.path,
+    size: st.size,
+    sha1: await sha1OfFile(item.path),
+    ts: Date.now(),
+    channel: item.channel,
+  })
 }
 
 /**
@@ -604,18 +627,10 @@ export function createPatentPdfDownloadTool(deps: PatentPdfDownloadDeps): ToolDe
       for (const r of results) {
         if (r.status === 'ok' && r.path) {
           try {
-            const st = await stat(r.path)
-            await saveManifestEntry(outputDir, {
-              patent: r.patent,
-              status: 'ok',
-              path: r.path,
-              size: st.size,
-              sha1: await sha1OfFile(r.path),
-              ts: Date.now(),
-              channel: r.channel,
-            })
-          } catch {
+            await recordDownloadedFile(outputDir, { ...r, path: r.path })
+          } catch (error) {
             // 续传记录失败不影响本次下载结果
+            void error
           }
         }
       }

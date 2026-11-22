@@ -96,12 +96,13 @@ export function apply(ctx: ClientContext): void {
     if (!result.ok) throw new Error(result.error.message)
   }
   const style = document.createElement('style')
-  // The switch parks at the right end of the conversation header's tab row
-  // (placeSwitch), never across the window's top centre where it covered the
-  // Session header's title and preset/agent status. The `top`/`right` pair here
-  // is the fallback for a surface that publishes no tab row (no Session, a
-  // global panel): the header's own bottom edge, clear of its title row.
-  style.textContent = '.dsh-synapse-switch{position:fixed;z-index:80;top:40px;right:28px;display:flex;gap:2px;border:1px solid #d1d5db;border-radius:999px;background:rgba(255,255,255,.96);padding:3px;backdrop-filter:blur(10px)}.dsh-synapse-switch button{height:28px;border:0;border-radius:999px;background:transparent;padding:0 11px;color:#6b7280;font:600 12px Inter,system-ui,sans-serif;cursor:pointer;white-space:nowrap}.dsh-synapse-switch button:hover{background:#f3f4f6;color:#111827}.dsh-synapse-switch button.active{background:#111827;color:#fff}.dsh-synapse-switch button:focus-visible{outline:2px solid #111827;outline-offset:2px}body[data-ds-dark-theme] .dsh-synapse-switch{border-color:rgba(255,255,255,.14);background:rgba(21,21,23,.92)}body[data-ds-dark-theme] .dsh-synapse-switch button{color:#9ca3af}body[data-ds-dark-theme] .dsh-synapse-switch button:hover{background:rgba(255,255,255,.08);color:#e6e8eb}body[data-ds-dark-theme] .dsh-synapse-switch button.active{background:rgba(255,255,255,.14);color:#e6e8eb}body[data-ds-dark-theme] .dsh-synapse-switch button:focus-visible{outline-color:#5b8def}.dsh-synapse-overlay{position:fixed;z-index:100;inset:0;background:#f5f7fa}.dsh-synapse-overlay.is-opening{visibility:hidden}.dsh-synapse-overlay[hidden]{display:none}.dsh-synapse-overlay iframe{display:block;width:100%;height:100%;border:0}'
+  // The switch parks at the right end of the conversation header's tab row,
+  // never across the window's top centre where it covered the Session header's
+  // title and preset/agent status. The `top`/`right` pair is the fallback for
+  // a surface that publishes no anchor (no Session, a global panel). Anchored
+  // rules follow that box with CSS anchor positioning, so a column resize does
+  // not read layout.
+  style.textContent = '.dsh-synapse-switch{position:fixed;z-index:80;top:40px;right:28px;display:flex;gap:2px;border:1px solid #d1d5db;border-radius:999px;background:rgba(255,255,255,.96);padding:3px;backdrop-filter:blur(10px)}.dsh-synapse-switch button{height:28px;border:0;border-radius:999px;background:transparent;padding:0 11px;color:#6b7280;font:600 12px Inter,system-ui,sans-serif;cursor:pointer;white-space:nowrap}.dsh-synapse-switch button:hover{background:#f3f4f6;color:#111827}.dsh-synapse-switch button.active{background:#111827;color:#fff}.dsh-synapse-switch button:focus-visible{outline:2px solid #111827;outline-offset:2px}body[data-ds-dark-theme] .dsh-synapse-switch{border-color:rgba(255,255,255,.14);background:rgba(21,21,23,.92)}body[data-ds-dark-theme] .dsh-synapse-switch button{color:#9ca3af}body[data-ds-dark-theme] .dsh-synapse-switch button:hover{background:rgba(255,255,255,.08);color:#e6e8eb}body[data-ds-dark-theme] .dsh-synapse-switch button.active{background:rgba(255,255,255,.14);color:#e6e8eb}body[data-ds-dark-theme] .dsh-synapse-switch button:focus-visible{outline-color:#5b8def}.dsh-synapse-switch.is-anchored-row{position-anchor:--dsh-synapse-switch;top:auto;right:anchor(right);bottom:anchor(bottom);left:auto}.dsh-synapse-switch.is-anchored-content{position-anchor:--dsh-synapse-switch;top:calc(anchor(top) + 40px);right:anchor(right);bottom:auto;left:auto}.dsh-synapse-overlay{position:fixed;z-index:100;inset:0;background:#f5f7fa}.dsh-synapse-overlay.is-opening{visibility:hidden}.dsh-synapse-overlay[hidden]{display:none}.dsh-synapse-overlay iframe{display:block;width:100%;height:100%;border:0}'
   document.head.append(style)
   const host = document.createElement('div')
   host.className = 'dsh-synapse-host'
@@ -144,17 +145,70 @@ export function apply(ctx: ClientContext): void {
   }
   // ui-conversation marks the full tab row as data-conversation-tab-row and the
   // tablist inside it as data-conversation-tabs. The row's box spans the
-  // conversation column, so parking the switch against its right edge keeps it
-  // clear of the tabs and the More launcher, off the header's title row, and
-  // clear of an open right sidebar. A surface without the anchor keeps the
-  // stylesheet's fallback corner. The row is re-created with the Session view,
-  // so each placement re-observes whichever node carries it: an opening sidebar
-  // respans the column without a window resize.
+  // conversation column. CSS anchor positioning pins the switch to that box's
+  // right and bottom edges, clear of the tabs, the More launcher, the header
+  // title, and an open right sidebar. A blank Session has no row; its content
+  // anchor sits 40px below the content top, still clear of the sidebar header.
+  // A missing or collapsed anchor uses the stylesheet corner. The row is
+  // re-created with the Session view, so placement re-observes whichever node
+  // carries the anchor name. Size deliveries for a live anchor do not read
+  // layout: the anchor follows a sidebar drag without a script-nested reflow.
+  const ANCHOR_NAME = '--dsh-synapse-switch'
   let observedRow: Element | null = null
   let observedContent: Element | null = null
+  let namedAnchor: HTMLElement | null = null
   let placed = false
   let anchorRetry = 0
   let retryTimer = 0
+  const clearNamedAnchor = (): void => {
+    namedAnchor?.style.removeProperty('anchor-name')
+    namedAnchor = null
+  }
+  const nameAnchor = (element: Element): void => {
+    if (!(element instanceof HTMLElement) || namedAnchor === element) return
+    clearNamedAnchor()
+    element.style.setProperty('anchor-name', ANCHOR_NAME)
+    namedAnchor = element
+  }
+  const clearInlinePlace = (): void => {
+    switchEl.style.removeProperty('left')
+    switchEl.style.removeProperty('top')
+    switchEl.style.removeProperty('right')
+  }
+  const useCorner = (): void => {
+    clearNamedAnchor()
+    switchEl.classList.remove('is-anchored-row', 'is-anchored-content', 'is-holding')
+    clearInlinePlace()
+    placed = false
+    anchorRetry = 0
+    window.clearTimeout(retryTimer)
+  }
+  /** Keep the last viewport box while a Session view swaps the anchor node out. */
+  const holdPlacement = (): void => {
+    if (switchEl.classList.contains('is-holding')) return
+    const rect = switchEl.getBoundingClientRect()
+    switchEl.classList.remove('is-anchored-row', 'is-anchored-content')
+    switchEl.classList.add('is-holding')
+    clearNamedAnchor()
+    if (rect.width === 0 || rect.height === 0) return
+    switchEl.style.right = 'auto'
+    switchEl.style.left = `${Math.round(rect.left)}px`
+    switchEl.style.top = `${Math.round(rect.top)}px`
+  }
+  const anchorSwitch = (element: Element, kind: 'row' | 'content'): void => {
+    nameAnchor(element)
+    switchEl.classList.toggle('is-anchored-row', kind === 'row')
+    switchEl.classList.toggle('is-anchored-content', kind === 'content')
+    switchEl.classList.remove('is-holding')
+    clearInlinePlace()
+    anchorRetry = 0
+    window.clearTimeout(retryTimer)
+    placed = true
+  }
+  const collapsed = (element: Element): boolean => {
+    const rect = element.getBoundingClientRect()
+    return rect.width === 0 || rect.height === 0
+  }
   const placeSwitch = (): void => {
     const contentElement = document.querySelector('[data-conversation-session]')
     if (contentElement !== observedContent) {
@@ -169,43 +223,25 @@ export function apply(ctx: ClientContext): void {
       if (row !== null) placementObserver?.observe(row)
       observedRow = row
     }
-    const rect = row === null ? null : row.getBoundingClientRect()
-    if (rect === null || rect.width === 0 || rect.height === 0) {
-      // A blank Session renders no tab row. Its content still spans the
-      // conversation column, so the switch parks just below the header's
-      // controls instead of the window corner, which covers the right
-      // sidebar's header controls.
-      const content = contentElement?.getBoundingClientRect()
-      if (content !== undefined && content.width > 0 && content.height > 0) {
-        anchorRetry = 0
-        placed = true
-        switchEl.style.right = 'auto'
-        switchEl.style.left = `${Math.round(content.right - switchEl.offsetWidth)}px`
-        switchEl.style.top = `${Math.round(content.top + 40)}px`
-        return
-      }
-      // A Session view can unmount the row between two frames. Keep the last
-      // placement briefly and look again before giving up on the inline box.
-      if (row === null && placed && anchorRetry < 20) {
-        anchorRetry += 1
-        window.clearTimeout(retryTimer)
-        retryTimer = window.setTimeout(schedulePlaceSwitch, 50)
-        return
-      }
-      switchEl.style.removeProperty('left')
-      switchEl.style.removeProperty('top')
-      switchEl.style.removeProperty('right')
-      placed = false
+    if (row !== null && !collapsed(row)) {
+      anchorSwitch(row, 'row')
       return
     }
-    anchorRetry = 0
-    window.clearTimeout(retryTimer)
-    placed = true
-    switchEl.style.right = 'auto'
-    switchEl.style.left = `${Math.round(rect.right - switchEl.offsetWidth)}px`
-    // Bottom-aligned with the row: the pill is taller than the 25px row, so
-    // centering it would cross the header's rule into the conversation.
-    switchEl.style.top = `${Math.round(rect.bottom - switchEl.offsetHeight)}px`
+    // A blank Session renders no tab row. Its content still spans the column.
+    if (contentElement !== null && !collapsed(contentElement)) {
+      anchorSwitch(contentElement, 'content')
+      return
+    }
+    // A Session view can unmount the row between two frames. Keep the last
+    // placement briefly and look again before giving up on the inline box.
+    if (row === null && placed && anchorRetry < 20) {
+      anchorRetry += 1
+      holdPlacement()
+      window.clearTimeout(retryTimer)
+      retryTimer = window.setTimeout(schedulePlaceSwitch, 50)
+      return
+    }
+    useCorner()
   }
   let placementFrame = 0
   const schedulePlaceSwitch = (): void => {
@@ -215,7 +251,22 @@ export function apply(ctx: ClientContext): void {
       placeSwitch()
     })
   }
-  const placementObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedulePlaceSwitch)
+  // Positive border boxes are already laid out. Reading them, or measuring the
+  // anchor again, would nest a layout inside this callback on every drag step.
+  const onAnchorResize: ResizeObserverCallback = (entries) => {
+    if ((observedRow !== null && !observedRow.isConnected) || (observedContent !== null && !observedContent.isConnected)) {
+      schedulePlaceSwitch()
+      return
+    }
+    for (const entry of entries) {
+      const box = entry.borderBoxSize[0]
+      if (box !== undefined && (box.inlineSize === 0 || box.blockSize === 0)) {
+        schedulePlaceSwitch()
+        return
+      }
+    }
+  }
+  const placementObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onAnchorResize)
   placeSwitch()
   let mapOpenFallback = 0
   let mapOpening = false
@@ -435,6 +486,7 @@ export function apply(ctx: ClientContext): void {
     window.clearTimeout(mapOpenFallback)
     if (placementFrame !== 0) window.cancelAnimationFrame(placementFrame)
     placementObserver?.disconnect()
+    clearNamedAnchor()
     for (const unsubscribe of liveUnsubscribers.values()) unsubscribe()
     host.remove()
     style.remove()

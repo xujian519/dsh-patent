@@ -20,7 +20,10 @@ import pluginCatalogRemote from '@deepseek-ai/dsh-api-plugin-market-controller/r
 import mcpManagerRemote from '@deepseek-ai/dsh-mcp-manager/remote'
 import toolResultsRemote from '@deepseek-ai/dsh-client-ui-trajectory/remote'
 import pluginRegistryProbeRemote from '@deepseek-ai/dsh-client-ui-plugin-manager/remote'
+import connectorAccountsRemote from '@deepseek-ai/dsh-client-ui-connector-account/remote'
 import pluginMarketRemote from '@deepseek-ai/dsh-plugin-market/remote'
+import actionCardsRemote from '@deepseek-ai/dsh-action-cards/remote'
+import pluginRecommendationsRemote from '@deepseek-ai/dsh-plugin-recommendations/remote'
 import pluginInventoryRemote from '@deepseek-ai/dsh-host-plugin-inventory/remote'
 import messageFeedbackRemote from '@deepseek-ai/dsh-message-feedback/remote'
 import permissionPresetsRemote from '@deepseek-ai/dsh-permission-presets/remote'
@@ -28,6 +31,8 @@ import sessionFeedbackRemote from '@deepseek-ai/dsh-command-feedback/remote'
 import fileUploadsRemote from '@deepseek-ai/dsh-client-file-upload/remote'
 import sessionReferencesRemote from '@deepseek-ai/dsh-session-reference/remote'
 import subagentsRemote from '@deepseek-ai/dsh-subagent/remote'
+import sessionStatusRemote from '@deepseek-ai/dsh-client-ui-session-status/remote'
+export type {} from '@deepseek-ai/dsh-client-ui-session-status/remote'
 import sessionRemote from '@deepseek-ai/dsh-api-session-controller/remote'
 import jobRemote from '@deepseek-ai/dsh-api-job-controller/remote'
 import workspaceRemote from '@deepseek-ai/dsh-api-workspace-controller/remote'
@@ -50,8 +55,11 @@ export type { McpManagedServerStatus, McpManagedServerView } from '@deepseek-ai/
 export type {} from '@deepseek-ai/dsh-plugin-manager/remote'
 export type {} from '@deepseek-ai/dsh-mcp-manager/remote'
 export type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/remote'
+export type {} from '@deepseek-ai/dsh-client-ui-connector-account/remote'
 export type {} from '@deepseek-ai/dsh-client-ui-trajectory/remote'
 export type {} from '@deepseek-ai/dsh-plugin-market/remote'
+export type {} from '@deepseek-ai/dsh-action-cards/remote'
+export type {} from '@deepseek-ai/dsh-plugin-recommendations/remote'
 export type {
   MarketCompatibility, MarketIndexSummary, MarketInstallation, MarketInstallationStatus, MarketListingEntry, MarketListingVersion,
   MarketQuery, MarketSearchResult, MarketSort, PluginDetail, PluginDetailDocumentId, PluginDetailOrigin,
@@ -206,11 +214,13 @@ export const REMOTE_CONTRIBUTIONS: readonly TypertRemoteContribution[] = [
   agentPresetsRemote, commandsRemote, agentTeamsRemote, settingsControllerRemote, accountRemote,
   goalsRemote, llmRemote, dynamicRemote, scheduleRemote,
   pluginInventoryRemote, pluginManagerRemote, mcpManagerRemote, pluginMarketRemote, pluginCatalogRemote, pluginRegistryProbeRemote,
+  connectorAccountsRemote,
   toolResultsRemote,
   messageFeedbackRemote,
   sessionFeedbackRemote, fileUploadsRemote, sessionReferencesRemote,
-  permissionPresetsRemote, subagentsRemote, sessionRemote, jobRemote, workspaceRemote, workspaceFilesRemote, terminalRemote,
-  officeKitRemote, userQuestionsRemote, webRemote,
+  permissionPresetsRemote, subagentsRemote, sessionRemote, sessionStatusRemote, jobRemote,
+  workspaceRemote, workspaceFilesRemote, terminalRemote,
+  officeKitRemote, userQuestionsRemote, webRemote, actionCardsRemote, pluginRecommendationsRemote,
 ]
 
 /**

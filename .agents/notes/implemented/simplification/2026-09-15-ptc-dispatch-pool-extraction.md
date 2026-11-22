@@ -80,6 +80,6 @@ The settle-event side work moves from a transport-local set into `pool.track(wor
 ## Related
 
 - [Splitting the seven god files](../../implemented/simplification/2026-09-14-god-file-split-plan.md) (the plan; this is batch 3's second landed cut)
-- [Extracting the session's incremental folds](2026-09-14-session-folds-extraction.md) (batch 3's first landed cut)
+- [Extracting the session's incremental folds](../../archived/simplification/2026-09-14-session-folds-extraction.md) (batch 3's first landed cut)
 - [Extracting the `acp`/`ptc` clusters](2026-09-14-acp-ptc-cluster-extraction.md) (batch 1's cut of this file: the static spec, the flavor table, and the JSON presentation)
 - `packages/core/tool-executor-ptc/src/ptc.ts`, `packages/core/tool-executor-ptc/tests/ptc.spec.ts`

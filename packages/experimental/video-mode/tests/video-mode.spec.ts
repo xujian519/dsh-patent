@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolsService from '@deepseek-ai/dsh-tools'
 import { LocalFileSystem } from '@deepseek-ai/dsh-fs-local'
@@ -48,6 +49,7 @@ beforeEach(async () => {
   originalCwd = process.cwd()
   process.chdir(root)
   ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry).await()
   await ctx.plugin(SystemPrompt).await()
   await ctx.plugin(ToolsService).await()
   await ctx.plugin(LocalFileSystem, { cwd: root }).await()

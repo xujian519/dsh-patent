@@ -49,9 +49,10 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 | [`fs/`](fs/README.zh.md) | 文件系统能力系列：seam、本地实现、面向模型的文件工具、发现工具 |
 | [`lsp/`](lsp/README.zh.md) | LSP 能力系列：seam、通用 stdio 提供方和 `lsp` 工具 |
 | [`skill/`](skill/README.zh.md) | skill（技能）能力系列：提供方注册表、本地提供方、面向模型的目录／loader |
+| [`connector/`](connector/README.zh.md) | 通过现有能力接入第三方服务的插件 |
 | [`compaction/`](compaction/README.zh.md) | 压缩（compaction）能力系列：Service Definition + 基础提供方 + 命令 Consumer |
 | [`context/`](context/README.zh.md) | 模型可见请求上下文：workspace 指令、时间上下文、引用 |
-| [`memory/`](memory/README.zh.md) | 外部记忆与上下文数据库集成（OpenViking） |
+| [`memory/`](memory/README.zh.md) | 外部记忆与上下文数据库集成 |
 | [`subagent/`](subagent/README.zh.md) | subagent 能力系列：提供方注册表约定和面向模型的委托工具 |
 | [`team/`](team/README.zh.md) | Team 协调：共享任务板与面向模型的任务工具 |
 | [`jobs/`](jobs/README.zh.md) | 通用后台任务运行时和面向模型的作业控制工具 |
@@ -67,15 +68,16 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 | [`guard/`](guard/README.zh.md) | 循环卫生守卫：建议性重复调用提醒 + `tools/execute` 截止时间强制执行器 |
 | [`bundle/`](bundle/README.zh.md) | 可安装的 `dsh --profile` 补丁层 |
 | [`extensions/`](extensions/README.zh.md) | agent 运行时自修改与插件发现：实时检查、模型所写挂载/卸载、只读目录发现工具 |
-| [`self-evolve/`](self-evolve/README.zh.md) | 基于战役的自我评估与插件演化：持久服务、agent 循环提供方、基准运行器、模型可见工具 |
-| [`mcp/`](mcp/README.zh.md) | 挂接外部 Model Context Protocol 服务器，使其工具可作为原生工具调用 |
-| [`patent/`](patent/README.zh.md) | 从 Sati 移植的专利领域插件：引擎、工具、规则门与知识访问，均为工作区包 |
-| [`legal/`](legal/README.zh.md) | 法律领域插件：知识库查询接缝、引用门禁与证据三性评分器 |
-| [`law/`](law/README.zh.md) | 法律与专利领域共用的法条引用与知识库查询机制 |
+| [`self-evolve/`](self-evolve/README.zh.md) | 基于战役的自我评估与插件演化：服务、agent 循环提供方、基准运行器、工具 |
+| [`mcp/`](mcp/README.zh.md) | 以原生工具形式暴露外部 Model Context Protocol 服务器 |
+| [`patent/`](patent/README.zh.md) | 从 Sati 移植的专利领域插件：引擎、工具、规则门与知识访问 |
+| [`legal/`](legal/README.zh.md) | 法律领域插件：知识库查询接缝、引用门禁、证据三性评分器 |
+| [`law/`](law/README.zh.md) | 面向法律与专利领域的法条引用与知识库查询机制 |
 | [`session/`](session/README.zh.md) | 持久会话数据平面：持久化 seam + 后端、投影 seam、基于日志的标题、会话上报 |
 | [`session-query/`](session-query/README.zh.md) | 会话检索系列：逻辑语料库、有界读取、血缘、语义过滤、SQLite 全文搜索 |
 | [`settings/`](settings/README.zh.md) | 用户设置 seam + 基于文件的提供方 |
 | [`credentials/`](credentials/README.zh.md) | 凭据引用与凭据记录 seam + 环境变量优先于 `.env` 的提供方 + 需要向人询问的授权流程 |
+| [`account/`](account/README.zh.md) | DeepSeek 账号登录与仅限 Host 的请求凭据 |
 | [`storage/`](storage/README.zh.md) | 非会话存储中枢 + 后端 + 领域形式 |
 | [`workspace/`](workspace/README.zh.md) | Workspace 实体 |
 | [`sdk/`](sdk/README.zh.md) | 进程外 SDK：JSON-RPC 协议与 TypeScript 客户端／服务器 |
@@ -85,9 +87,9 @@ harness 由 `packages/` 下的 npm 包组装而成，按能力系列分组：会
 | [`browser/`](browser/README.zh.md) | 浏览器自动化后端能力族：能力探测、级联路由、链接提取 |
 | [`host/`](host/README.zh.md) | Web GUI 宿主服务、目录选择、应用启动、插件清单和产品遥测 |
 | [`client/`](client/README.zh.md) | web GUI 浏览器半侧：shell、协议层、对象服务、slot、`ui-*` 插件 |
-| [`desktop/`](desktop/README.zh.md) | 桌面操作系统集成：Service Definition + Electron shell 提供方 + 沙盒化目录选择桥 + CLI 驱动的 macOS 原生工具 |
+| [`desktop/`](desktop/README.zh.md) | 桌面操作系统集成：服务定义、Electron shell、目录选择桥、macOS 原生工具 |
 | [`test-support/`](test-support/README.zh.md) | 测试基础设施（testkit、回放、Loader 冒烟测试） |
-| [`util/`](util/README.zh.md) | 共享工具与纯数据包列表（`Branded<B>`、home/路径辅助函数、超时、留存、官方组合包列表）；运行期依赖出现在确实需要它的原语里（`zod`、`undici`、`dsh-util-values`） |
+| [`util/`](util/README.zh.md) | 共享工具与纯数据包列表（`Branded<B>`、home/路径辅助函数、超时、留存、官方组合包列表）及其运行期依赖（`zod`、`undici`、`dsh-util-values`） |
 
 -----
 

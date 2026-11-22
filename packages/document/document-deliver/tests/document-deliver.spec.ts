@@ -17,6 +17,7 @@ import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
 import { FsError } from '@deepseek-ai/dsh-fs'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import * as plugin from '../src/index.ts'
@@ -90,6 +91,7 @@ afterEach(async () => {
  */
 async function mountedAt(cwd: string, config: Partial<plugin.Config> = {}): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(LocalFileSystem, { cwd })
@@ -99,6 +101,7 @@ async function mountedAt(cwd: string, config: Partial<plugin.Config> = {}): Prom
 
 async function mounted(config: Partial<plugin.Config> = {}): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(LocalFileSystem)
@@ -381,6 +384,7 @@ describe('document_deliver tool', () => {
 describe('document_deliver plugin configuration', () => {
   it('layers a configured style directory and selects the configured default style', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(LocalFileSystem)
@@ -402,6 +406,7 @@ describe('document_deliver plugin configuration', () => {
 
   it('resolves a configured style directory, so a load failure names one absolute path', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(LocalFileSystem)
@@ -414,6 +419,7 @@ describe('document_deliver plugin configuration', () => {
 
   it('fails the deployment when the configured default style is not loaded', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(LocalFileSystem)
@@ -423,6 +429,7 @@ describe('document_deliver plugin configuration', () => {
 
   it('falls back to the packaged style root and the shipped default style when applied without configuration', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(LocalFileSystem)
@@ -610,6 +617,7 @@ describe('document_deliver deterministic checks', () => {
 
   it('refuses a DOCX that expands past the configured budget', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(LocalFileSystem)
@@ -636,6 +644,7 @@ describe('document_deliver deterministic checks', () => {
   it('rejects a DOCX read budget outside its accepted bounds at load', async () => {
     for (const config of [{ maxArchiveEntries: 0 }, { maxArchiveEntries: 0x1_0000 }, { maxUncompressedBytes: 0 }]) {
       const ctx = new Context()
+      await ctx.plugin(SessionProjectionRegistry)
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime)
       await ctx.plugin(LocalFileSystem)

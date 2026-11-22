@@ -9,8 +9,6 @@
  */
 
 import type { Message, ToolSchema } from '@deepseek-ai/dsh-llm'
-import { deepEqualJson } from '@deepseek-ai/dsh-util-values'
-import { isRecord } from '@deepseek-ai/dsh-value'
 import { SessionLogOffset, SessionSeq } from './types.ts'
 import { KNOWN_SESSION_EVENT_TYPES, MESSAGE_PROJECTION_EVENT_TYPES } from './known-event-types.ts'
 import type {
@@ -153,6 +151,11 @@ export function deriveEventMessage(
   }
 }
 
+/** Whether a payload field is a JSON object rather than an array or scalar. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 /**
  * Reject noncanonical request-header fields, developer roles/content, and contradictory tool failure metadata.
  * This does not validate complete event payloads or embedded provider streams.
@@ -238,10 +241,19 @@ export interface SurfaceFoldResult {
   projectedMessages: ReadonlyMap<SessionSeq, Message>
 }
 
+/** One system node on the current surface, including an empty head. */
+export interface SystemSurfaceNode {
+  readonly seq: SessionSeq
+  /** Whether the logged content array has no blocks; a node with empty text blocks is not empty. */
+  readonly isEmpty: boolean
+}
+
 /** Readonly live projection of the message-producing session events. */
 export interface SessionSurface {
   /** Current surface event sequences in model-visible order. */
   readonly nodes: readonly SessionSeq[]
+  /** Current system nodes in surface order, scanned from the surface on each read; citations do not affect membership. */
+  readonly systemNodes: readonly SystemSurfaceNode[]
   /** Monotonic count of committed positional replacements. */
   readonly replaceGeneration: number
   /** Monotonic count of committed replacements and plugin-owned message changes. */
@@ -430,6 +442,24 @@ function replacementRange(
   }
 }
 
+/**
+ * Deep structural equality over the session-event JSON value domain
+ * (null/boolean/number/string, arrays, plain objects). Replaces
+ * `node:util`'s isDeepStrictEqual to keep this module browser-safe.
+ */
+function isDeepEqualJson(a: unknown, b: unknown): boolean {
+  if (a === b) return true
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false
+    return a.every((item, i) => isDeepEqualJson(item, b[i]))
+  }
+  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false
+  const aKeys = Object.keys(a)
+  const bRecord = b as Record<string, unknown>
+  if (aKeys.length !== Object.keys(b).length) return false
+  return aKeys.every(key => Object.hasOwn(b, key) && isDeepEqualJson((a as Record<string, unknown>)[key], bRecord[key]))
+}
+
 /** Restrict a tool-result replacement to one current result's content. */
 function assertToolResultRewrite(
   event: SessionEvent,
@@ -455,7 +485,7 @@ function assertToolResultRewrite(
       ...event.data.message,
       content: null,
     }
-    if (!deepEqualJson(originalRest, replacementRest)) {
+    if (!isDeepEqualJson(originalRest, replacementRest)) {
       throw new Error('tool/result surface replacement may change only content')
     }
   }
@@ -700,6 +730,16 @@ export class SurfaceManager implements SessionSurface {
     this._assertProjections()
     if (this._lastProcessedSeq < this.baseSeq + this.log.length - 1) this._processDelta()
     return this._state.nodes
+  }
+
+  /** System nodes in surface order, including nodes whose content array is empty; scans current nodes on each read. */
+  get systemNodes(): readonly SystemSurfaceNode[] {
+    const systems: SystemSurfaceNode[] = []
+    for (const seq of this.nodes) {
+      const event = this.log[seq - this.baseSeq]
+      if (event?.type === 'system/message') systems.push({ seq, isEmpty: event.data.message.content.length === 0 })
+    }
+    return systems
   }
 
   /** Fold events appended since the previous access. */

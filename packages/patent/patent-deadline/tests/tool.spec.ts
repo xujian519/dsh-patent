@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { loadWorkCalendar, WorkCalendar } from '../src/work-calendar.ts'
@@ -11,6 +12,7 @@ const FIXED_TODAY = { year: 2026, month: 9, day: 20 }
 
 async function host(): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   ctx.tools.register(createPatentDeadlinesTool({
@@ -288,6 +290,7 @@ describe('patent_deadlines tool', () => {
 
   it('reads today from the default zone when no clock is injected', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.tools.register(createPatentDeadlinesTool({
@@ -330,6 +333,7 @@ describe('patent_deadlines tool', () => {
 
   it('propagates an unexpected calendar failure as a tool error', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     class BrokenCalendar extends WorkCalendar {

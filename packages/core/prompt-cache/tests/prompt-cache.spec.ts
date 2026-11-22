@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt, { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
 import PromptCache, { DEFAULT_PROMPT_CACHE_TTL_MS } from '@deepseek-ai/dsh-prompt-cache'
 import type { CachedPromptSection, PromptCacheKey } from '@deepseek-ai/dsh-system-prompt/prompt-cache'
@@ -76,6 +77,7 @@ describe('PromptCache service', () => {
   it('clears every scope on a system-prompt change', async () => {
     const ctx = new Context()
     await ctx.plugin(PromptCache, { ttlMs: 10000 })
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
 
     const k = key()
@@ -89,6 +91,7 @@ describe('PromptCache with SystemPrompt assembly', () => {
   it('serves the stable prefix across assembles without re-evaluating providers', async () => {
     const ctx = new Context()
     await ctx.plugin(PromptCache, { ttlMs: 10000 })
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
 
     let calls = 0
@@ -110,6 +113,7 @@ describe('PromptCache with SystemPrompt assembly', () => {
   it('re-evaluates after an explicit invalidation', async () => {
     const ctx = new Context()
     await ctx.plugin(PromptCache, { ttlMs: 10000 })
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are p.' })
 
     let calls = 0

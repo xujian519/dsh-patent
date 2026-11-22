@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-patent-teams",
-  "version": "0.2.2-rc.5",
+  "version": "0.2.3-alpha.1",
   "publishConfig": {
     "access": "public"
   },

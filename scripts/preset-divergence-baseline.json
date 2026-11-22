@@ -73,7 +73,7 @@
       "document.patch.yml": "99ea7ae70d",
       "legal.patch.yml": "ac42d1bd86",
       "patent.patch.yml": "dfe4d3f371",
-      "ptc.patch.yml": "6932bc5e48",
+      "ptc.patch.yml": "1ae627441e",
       "standard.patch.yml": "1ae627441e"
     },
     "time-context": {
@@ -99,6 +99,10 @@
       "patent.patch.yml": "377fb54b77",
       "ptc.patch.yml": "57e2038c8d",
       "standard.patch.yml": "57e2038c8d"
+    },
+    "tool-cordis": {
+      "cordis.patch.yml": "f6aea28255",
+      "standard.patch.yml": "0201348a8b"
     },
     "tool-document-deliver": {
       "document.patch.yml": "7fd8e0ac04",
@@ -147,7 +151,7 @@
     },
     "tool-plugin-manager": {
       "cordis.patch.yml": "689227cb3b",
-      "ptc.patch.yml": "d66d1ee2d1",
+      "ptc.patch.yml": "689227cb3b",
       "standard.patch.yml": "1add527f8e"
     },
     "tool-plugin-market": {
@@ -180,7 +184,7 @@
       "standard.patch.yml": "6da634189a"
     },
     "tool-skill": {
-      "cordis.patch.yml": "d132cb2a6d",
+      "cordis.patch.yml": "a2ee521aae",
       "document.patch.yml": "a2662fb981",
       "legal.patch.yml": "216a2a0cf2",
       "patent.patch.yml": "9da42c1fdc",
@@ -225,7 +229,7 @@
       "legal.patch.yml": "d8f57f896a",
       "patent.patch.yml": "6d1ff9647d",
       "ptc.patch.yml": "73f227d8e9",
-      "standard.patch.yml": "72e583f2ce"
+      "standard.patch.yml": "73f227d8e9"
     },
     "tool-workflow": {
       "cordis.patch.yml": "0898baaf9f",

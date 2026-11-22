@@ -7,6 +7,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 
@@ -40,6 +41,7 @@ describe('@deepseek-ai/dsh-openviking plugin surface', () => {
 
   it('mounts with an unreachable service without throwing', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(NativeToolExecutor)
@@ -51,6 +53,7 @@ describe('@deepseek-ai/dsh-openviking plugin surface', () => {
 
   it('wires session lifecycle events through the mount', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(NativeToolExecutor)
@@ -60,17 +63,20 @@ describe('@deepseek-ai/dsh-openviking plugin surface', () => {
     const fiber = ctx.plugin(apply, config)
     await fiber.await()
     await new Promise(resolve => setTimeout(resolve, 100))
-    const agent = { session: { id: 's1' } } as never
+    // The mounted projection registry folds committed events through the Session
+    // interface, so the stand-in carries the header, inherited count, and history read.
+    const session = { id: 's1', header: {}, inheritedEventCount: 0, snapshotEvents: () => [] }
+    const agent = { session } as never
     ;(ctx.emit as never as (event: string, ...args: unknown[]) => unknown)('agent/created', { agent, source: 'startup' })
     await new Promise(resolve => setTimeout(resolve, 100))
     const emitAny = (event: string, ...args: unknown[]): void => {
       ;(ctx.emit as never as (event: string, ...args: unknown[]) => unknown)(event, ...args)
     }
-    emitAny('session/event', { id: 's1' }, {
+    emitAny('session/event', session, {
       type: 'user/message', seq: 1, time: Date.now(),
       data: { content: [{ type: 'text', text: 'hello' }], source: { kind: 'user' } },
     })
-    emitAny('session/flush', { id: 's1' })
+    emitAny('session/flush', session)
     // Exercise the pre-step listener paths: accepted, rejected, and aborted.
     const preStep = (
       signal?: AbortSignal,
@@ -119,6 +125,7 @@ describe('@deepseek-ai/dsh-openviking plugin surface', () => {
 
   it('warns when the previous state file was quarantined', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(NativeToolExecutor)
@@ -137,6 +144,7 @@ describe('@deepseek-ai/dsh-openviking plugin surface', () => {
     const ctx = new Context()
     const tmp = await mkdtemp(join(tmpdir(), 'ov-mount-'))
     const stateFile = join(tmp, 'state.json')
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: 'You are an agent.' })
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(NativeToolExecutor)

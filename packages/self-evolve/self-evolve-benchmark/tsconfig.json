@@ -12,13 +12,25 @@
       "path": "../../../vendor/cordis"
     },
     {
+      "path": "../../../vendor/schemastery"
+    },
+    {
       "path": "../../core/agent"
+    },
+    {
+      "path": "../../core/agent-default-model"
     },
     {
       "path": "../../core/session"
     },
     {
+      "path": "../../fs/fs"
+    },
+    {
       "path": "../../subagent/subagent"
+    },
+    {
+      "path": "../../util/brand"
     },
     {
       "path": "../../util/home-paths"

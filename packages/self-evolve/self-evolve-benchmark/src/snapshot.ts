@@ -13,7 +13,8 @@
  */
 
 import { execFile } from 'node:child_process'
-import { mkdir, readdir, rm } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { lstat, mkdir, readFile, readdir, readlink, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { withFileLock } from '@deepseek-ai/dsh-atomic-write'
@@ -146,6 +147,60 @@ export async function createNextSnapshot(baseDir: string, sourceDir: string): Pr
 }
 
 /**
+ * Digest the agent-state directory: every entry's relative path plus each
+ * file's bytes, and each symlink's target.
+ *
+ * The apply seam digests the directory before and after it writes the
+ * candidate's files, so a round cannot proceed unless the content actually
+ * changed. Content, not size or modification time, is the signal: rewriting a
+ * file with identical bytes must still count as unchanged.
+ *
+ * @param dir Agent-state directory to digest.
+ * @returns Hex digest of the directory's current entries.
+ */
+export async function fingerprintAgentState(dir: string): Promise<string> {
+  const hash = createHash('sha256')
+  async function walk(relative: string): Promise<void> {
+    const entries = await readdir(join(dir, relative), { withFileTypes: true })
+    const ordered = [...entries].sort((left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0))
+    for (const entry of ordered) {
+      const path = relative === '' ? entry.name : join(relative, entry.name)
+      const absolute = join(dir, path)
+      const info = await lstat(absolute)
+      if (info.isSymbolicLink()) {
+        hash.update(`l\0${path}\0${await readlink(absolute)}\0`)
+      } else if (info.isDirectory()) {
+        hash.update(`d\0${path}\0`)
+        await walk(path)
+      } else {
+        hash.update(`f\0${path}\0`)
+        hash.update(await readFile(absolute))
+        hash.update('\0')
+      }
+    }
+  }
+  await walk('')
+  return hash.digest('hex')
+}
+
+/**
+ * Whether a relative path could write outside the directory that owns it: an
+ * absolute path, a `..` segment, a home-relative path, or a drive-letter
+ * prefix. Both the archive restore and the applier's file list are checked
+ * with this one rule.
+ *
+ * @param entry A relative path from an archive listing or an applier.
+ * @returns Whether writing to the path could escape the owning directory.
+ */
+export function isUnsafeRelativePath(entry: string): boolean {
+  const parts = entry.split('/').filter(part => part.length > 0 && part !== '.')
+  return entry.startsWith('/')
+    || entry.startsWith('~')
+    || /^[A-Za-z]:/.test(entry)
+    || parts.includes('..')
+}
+
+/**
  * Reject any archive entry that could write outside the restore target: an
  * absolute path, a `..` segment, or a drive-letter prefix. A malicious or
  * corrupted archive must never escape the agent-state directory.
@@ -154,12 +209,9 @@ export async function createNextSnapshot(baseDir: string, sourceDir: string): Pr
  * @throws when the entry is not a safe relative path inside the target.
  */
 export function assertSafeArchiveEntry(entry: string): void {
-  const parts = entry.split('/').filter(part => part.length > 0 && part !== '.')
-  const unsafe = entry.startsWith('/')
-    || entry.startsWith('~')
-    || /^[A-Za-z]:/.test(entry)
-    || parts.includes('..')
-  if (unsafe) throw new Error(`snapshot: refusing archive entry outside the restore target: ${entry}`)
+  if (isUnsafeRelativePath(entry)) {
+    throw new Error(`snapshot: refusing archive entry outside the restore target: ${entry}`)
+  }
 }
 
 /** List the entries of a snapshot archive; fails loud when the archive is unreadable. */

@@ -26,11 +26,11 @@ import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { SubagentResult, SubagentRuntime } from '@deepseek-ai/dsh-subagent'
 import { homedir } from 'node:os'
-import { isAbsolute, parse as parsePath, resolve as resolvePath } from 'node:path'
-import { readdir, stat } from 'node:fs/promises'
+import { dirname, isAbsolute, join, parse as parsePath, resolve as resolvePath } from 'node:path'
+import { mkdir, readdir, stat, writeFile } from 'node:fs/promises'
 import type { BenchmarkId } from './brand.ts'
-import { BenchmarkEngineCore } from './engine.ts'
-import { AGENT_STATE_MARKER, restoreSnapshot } from './snapshot.ts'
+import { assertMinImprovement, BenchmarkEngineCore } from './engine.ts'
+import { AGENT_STATE_MARKER, fingerprintAgentState, isUnsafeRelativePath, restoreSnapshot } from './snapshot.ts'
 import type {
   ApplyCandidate,
   BenchmarkEvolveConfig,
@@ -117,14 +117,15 @@ function proposePrompt(options: ProposeCandidateOptions): string {
   ].join('\n')
 }
 
-/** The applier's prompt: materialize a candidate into the agent state directory. */
+/** The applier's prompt: return the rewritten files; the seam writes them, because the child's sandbox cannot. */
 function applyPrompt(options: { candidate: CandidateProposal; agentStateDir: string }): string {
   return [
-    '你是实现者。请将下列候选改进应用到目标 agent 状态目录,完成必要的编辑。',
+    '你是实现者。请阅读目标 agent 状态目录中的现有文件,按下述候选改进重写受影响的文件。',
     `候选:${options.candidate.name}`,
     `说明:${options.candidate.description}`,
     `目标 agent 状态目录:${options.agentStateDir}`,
-    '完成后只输出一个 JSON 对象:{"applied": true}',
+    '注意:你对这个目录只有读取权限,不要尝试用文件工具或 shell 修改它;由调用方按你返回的内容写盘。',
+    '只输出一个 JSON 对象:{"files":[{"path": 相对该目录的路径, "content": 该文件的完整新内容}]};path 不得是绝对路径,不得包含 ".."。',
   ].join('\n')
 }
 
@@ -182,18 +183,51 @@ async function assertAgentStateDir(agentStateDir: string, baseDir: string): Prom
   }
 }
 
-/** Parse a subagent's terminal output as a JSON object, failing loud on malformed output. */
-function parseJsonObject(result: SubagentResult, label: string): Record<string, unknown> {
-  let parsed: unknown
+/** Marks output that could not be read as a JSON object, so a seam can retry it. */
+class NonJsonOutputError extends Error {}
+
+/** Longest output excerpt quoted in a non-JSON diagnostic. */
+const OUTPUT_EXCERPT_LIMIT = 200
+
+/** Try one candidate JSON text, returning `undefined` instead of throwing. */
+function tryParseObject(text: string): Record<string, unknown> | undefined {
   try {
-    parsed = JSON.parse(finalOutputText(result))
+    const parsed: unknown = JSON.parse(text)
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>
+    }
+    return undefined
   } catch {
-    throw new Error(`self-evolve-benchmark: ${label} subagent returned non-JSON output`)
+    return undefined
   }
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    throw new Error(`self-evolve-benchmark: ${label} subagent returned a non-object`)
+}
+
+/**
+ * Parse a subagent's terminal output as a JSON object, failing loud on
+ * malformed output.
+ *
+ * Models wrap JSON in a Markdown fence or in prose often enough that a strict
+ * `JSON.parse` of the whole output rejects answers that carry a usable object.
+ * The bare text is tried first, then a fenced block, then the first `{` through
+ * the last `}`. The diagnostic quotes an excerpt so the failure is diagnosable
+ * without the transcript.
+ *
+ * @param result The subagent's terminal result.
+ * @param label Which seam produced the output, for the diagnostic.
+ * @returns The parsed JSON object.
+ * @throws NonJsonOutputError when no JSON object can be recovered from the output.
+ */
+function parseJsonObject(result: SubagentResult, label: string): Record<string, unknown> {
+  const text = finalOutputText(result)
+  const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(text)?.[1]?.trim()
+  const braced = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)
+  for (const candidate of [text, fenced, braced]) {
+    if (candidate === undefined || candidate === '') continue
+    const parsed = tryParseObject(candidate)
+    if (parsed !== undefined) return parsed
   }
-  return parsed as Record<string, unknown>
+  const excerpt = text.length > OUTPUT_EXCERPT_LIMIT ? `${text.slice(0, OUTPUT_EXCERPT_LIMIT)}…` : text
+  throw new NonJsonOutputError(`self-evolve-benchmark: ${label} subagent returned non-JSON output: ${JSON.stringify(excerpt)}`)
 }
 
 /** Default executor seam: fork one executor per case run, produce the deliverable under the agent state's guidance. */
@@ -222,35 +256,44 @@ function createSubagentExecuteCase(ctx: Context): ExecuteCase {
   }
 }
 
-/** Default evaluator seam: fork one evaluator per case run, judge against the rubric locally. */
+/** Evaluator forks per case run: one retry absorbs a malformed model answer. */
+const EVALUATOR_PARSE_ATTEMPTS = 2
+
+/** Default evaluator seam: fork an evaluator per case run, judge against the rubric locally. */
 function createSubagentEvaluateCase(ctx: Context): EvaluateCase {
   return async (request) => {
     const { subagents, parent } = requireForkRuntime(ctx, request.sessionId, 'evaluation')
-    const run = await subagents.startActivation({
-      provider: 'fork',
-      label: 'self-evolve-benchmark',
-      delivery: 'caller',
-      prompt: [textMessage(evaluatorPrompt(request))],
-      parent,
-      signal: request.signal,
-    })
-    try {
-      const result = await run.result
-      if (result.stopReason !== 'completed') {
-        throw new Error(`self-evolve-benchmark: evaluation subagent ended ${result.stopReason}`)
+    for (let attempt = 1; ; attempt++) {
+      const run = await subagents.startActivation({
+        provider: 'fork',
+        label: 'self-evolve-benchmark',
+        delivery: 'caller',
+        prompt: [textMessage(evaluatorPrompt(request))],
+        parent,
+        signal: request.signal,
+      })
+      try {
+        const result = await run.result
+        if (result.stopReason !== 'completed') {
+          throw new Error(`self-evolve-benchmark: evaluation subagent ended ${result.stopReason}`)
+        }
+        const parsed = parseJsonObject(result, 'evaluation')
+        if (typeof parsed.score !== 'number') {
+          throw new Error('self-evolve-benchmark: evaluation subagent omitted the numeric "score" field')
+        }
+        const outcome: EvaluateCaseResult = { score: parsed.score }
+        if (typeof parsed.cost === 'number') outcome.cost = parsed.cost
+        if (typeof parsed.durationMs === 'number') outcome.durationMs = parsed.durationMs
+        if (typeof parsed.sessionId === 'string') outcome.sessionId = parsed.sessionId
+        if (typeof parsed.note === 'string') outcome.note = parsed.note
+        return outcome
+      } catch (error) {
+        // Only unparseable output earns a second fork; a missing score or an
+        // early stop is a real failure the retry would reproduce.
+        if (!(error instanceof NonJsonOutputError) || attempt >= EVALUATOR_PARSE_ATTEMPTS) throw error
+      } finally {
+        await run.dispose()
       }
-      const parsed = parseJsonObject(result, 'evaluation')
-      if (typeof parsed.score !== 'number') {
-        throw new Error('self-evolve-benchmark: evaluation subagent omitted the numeric "score" field')
-      }
-      const outcome: EvaluateCaseResult = { score: parsed.score }
-      if (typeof parsed.cost === 'number') outcome.cost = parsed.cost
-      if (typeof parsed.durationMs === 'number') outcome.durationMs = parsed.durationMs
-      if (typeof parsed.sessionId === 'string') outcome.sessionId = parsed.sessionId
-      if (typeof parsed.note === 'string') outcome.note = parsed.note
-      return outcome
-    } finally {
-      await run.dispose()
     }
   }
 }
@@ -283,10 +326,60 @@ function createProposeCandidate(ctx: Context): ProposeCandidate {
   }
 }
 
-/** Default applier seam: fork one child that edits the agent state directory in place. */
+/** One file the applier asked to write, with a path relative to the agent state. */
+interface AppliedFile {
+  path: string
+  content: string
+}
+
+/**
+ * Validate the applier's file list.
+ *
+ * The child runs under the parent's `workspace-write` sandbox, which denies
+ * writes under the home directory, so the applier returns file contents and
+ * this seam writes them. Every path is checked against the same rule as an
+ * archive entry: a write outside the agent state would escape the snapshot
+ * that is supposed to roll it back.
+ *
+ * @param parsed The applier's parsed JSON object.
+ * @param agentStateDir The directory the files are relative to, for diagnostics.
+ * @returns The files to write.
+ * @throws when the list is missing, empty, or carries an unsafe path or content.
+ */
+function parseAppliedFiles(parsed: Record<string, unknown>, agentStateDir: string): AppliedFile[] {
+  const files = parsed.files
+  if (!Array.isArray(files) || files.length === 0) {
+    throw new Error('self-evolve-benchmark: apply subagent returned no "files" to write')
+  }
+  return files.map((entry: unknown) => {
+    const file = typeof entry === 'object' && entry !== null ? entry as { path?: unknown; content?: unknown } : {}
+    if (typeof file.path !== 'string' || file.path.trim() === '' || typeof file.content !== 'string') {
+      throw new Error('self-evolve-benchmark: apply subagent returned a file without a string "path" and "content"')
+    }
+    if (isUnsafeRelativePath(file.path)) {
+      throw new Error(
+        `self-evolve-benchmark: apply subagent returned a path outside ${agentStateDir}: ${JSON.stringify(file.path)}`,
+      )
+    }
+    return { path: file.path, content: file.content }
+  })
+}
+
+/**
+ * Default applier seam: fork one child that returns the rewritten files, then
+ * write them here.
+ *
+ * The child's sandbox inherits `workspace-write` and `approval: never`, so it
+ * cannot write the agent-state directory under the home directory; a child that
+ * edits in place fails on every run. The child therefore only produces content,
+ * and the seam — running in the harness process, which owns the directory —
+ * writes it. A content-identical answer leaves the fingerprint unchanged and
+ * fails the round, because evaluating it would score the old state.
+ */
 function createApplyCandidate(ctx: Context): ApplyCandidate {
   return async (options) => {
     const { subagents, parent } = requireForkRuntime(ctx, options.sessionId, 'optimization')
+    const before = await fingerprintAgentState(options.agentStateDir)
     const run = await subagents.startActivation({
       provider: 'fork',
       label: 'self-evolve-benchmark',
@@ -299,6 +392,19 @@ function createApplyCandidate(ctx: Context): ApplyCandidate {
       const result = await run.result
       if (result.stopReason !== 'completed') {
         throw new Error(`self-evolve-benchmark: apply subagent ended ${result.stopReason}`)
+      }
+      const files = parseAppliedFiles(parseJsonObject(result, 'apply'), options.agentStateDir)
+      for (const file of files) {
+        const target = join(options.agentStateDir, file.path)
+        await mkdir(dirname(target), { recursive: true })
+        await writeFile(target, file.content)
+      }
+      const after = await fingerprintAgentState(options.agentStateDir)
+      if (after === before) {
+        throw new Error(
+          `self-evolve-benchmark: candidate files left the agent state unchanged (${options.agentStateDir}) — `
+          + 'the content matched the current files, so evaluating it would score the old state',
+        )
       }
       return { agentStatePath: options.agentStateDir }
     } finally {
@@ -321,6 +427,8 @@ export class BenchmarkEvolveEngine extends Service {
   private readonly maxRoundsPerLoop: number
   /** Default score goal for optimize loops; absent disables early acceptance. */
   private readonly targetScore: number | undefined
+  /** Default minimum aggregate gain for accepting an optimize round. */
+  private readonly minImprovement: number
   /** Constructor-started validation of `agentStateDir`; every public method awaits it first. */
   private readonly ready: Promise<void>
 
@@ -351,6 +459,9 @@ export class BenchmarkEvolveEngine extends Service {
     this.runsPerCase = config.runsPerCase ?? 1
     this.maxRoundsPerLoop = config.maxRoundsPerLoop ?? 1
     this.targetScore = config.targetScore
+    const minImprovement = config.minImprovement ?? 0
+    assertMinImprovement(minImprovement)
+    this.minImprovement = minImprovement
   }
 
   /** Fill per-run defaults from config when the caller omitted them. */
@@ -365,6 +476,7 @@ export class BenchmarkEvolveEngine extends Service {
     if (options.maxRounds === undefined) filled.maxRounds = this.maxRoundsPerLoop
     if (options.targetScore === undefined && this.targetScore !== undefined) filled.targetScore = this.targetScore
     if (options.runsPerCase === undefined) filled.runsPerCase = this.runsPerCase
+    if (options.minImprovement === undefined) filled.minImprovement = this.minImprovement
     return filled
   }
 

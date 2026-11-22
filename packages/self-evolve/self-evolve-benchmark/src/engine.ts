@@ -56,6 +56,24 @@ function assertScored(score: number, caseId: string): void {
   }
 }
 
+/**
+ * Assert an acceptance threshold is a usable minimum gain.
+ *
+ * A negative threshold would accept a round that lowered the score, and a
+ * `NaN` one would silently reject every round; both break improve-or-rollback
+ * without any visible failure.
+ *
+ * @param minImprovement The configured or per-call minimum gain.
+ * @throws when the value is not a finite number >= 0.
+ */
+export function assertMinImprovement(minImprovement: number): void {
+  if (!Number.isFinite(minImprovement) || minImprovement < 0) {
+    throw new Error(
+      `self-evolve-benchmark: minImprovement must be a finite number >= 0, got ${String(minImprovement)}`,
+    )
+  }
+}
+
 /** Pure orchestration core over injected evaluation and optimization seams. */
 export class BenchmarkEngineCore {
   constructor(private readonly options: BenchmarkEngineOptions) {}
@@ -109,8 +127,9 @@ export class BenchmarkEngineCore {
    * never recycle), packs the current agent state, proposes one candidate
    * against the reference using only the public statement surface, applies it,
    * evaluates the full matrix, and accepts the round only when the candidate's
-   * score strictly beats the reference. A rejected candidate is rolled back to
-   * its snapshot; an accepted one becomes the new reference, and a configured
+   * score beats the reference by at least `minImprovement` — its default of 0
+   * admits any strict gain. A rejected candidate is rolled back to its
+   * snapshot; an accepted one becomes the new reference, and a configured
    * `targetScore` stops the loop early.
    *
    * @param benchmarkId Benchmark id.
@@ -119,6 +138,8 @@ export class BenchmarkEngineCore {
    */
   async optimizeLoop(benchmarkId: BenchmarkId, options: OptimizeLoopOptions): Promise<OptimizeResult> {
     const maxRounds = options.maxRounds ?? 1
+    const minImprovement = options.minImprovement ?? 0
+    assertMinImprovement(minImprovement)
     const reference = options.reference ?? (await readScoreboard(this.options.baseDir, benchmarkId)).at(-1)
     if (reference === undefined) {
       throw new Error(`optimizeLoop: benchmark "${benchmarkId}" has no reference entry — run establishBaseline first`)
@@ -138,42 +159,59 @@ export class BenchmarkEngineCore {
       if (options.signal.aborted) break
       rounds = round
       const { version } = await createNextSnapshot(this.options.baseDir, this.options.agentStateDir)
-      const candidate: CandidateProposal = await this.options.proposeCandidate({
-        benchmarkId,
-        reference: current,
-        statement,
-        round,
-        signal: options.signal,
-        ...(options.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
-      })
-      const applied = await this.options.applyCandidate({
-        benchmarkId,
-        candidate,
-        agentStateDir: this.options.agentStateDir,
-        signal: options.signal,
-        ...(options.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
-      })
-      const entry = await this.evaluateCandidate(benchmarkId, {
-        agentStatePath: applied.agentStatePath,
-        version,
-        signal: options.signal,
-        ...(options.runsPerCase !== undefined ? { runsPerCase: options.runsPerCase } : {}),
-        ...(options.provider !== undefined ? { provider: options.provider } : {}),
-        ...(options.modelId !== undefined ? { modelId: options.modelId } : {}),
-        ...(options.thinkingLevel !== undefined ? { thinkingLevel: options.thinkingLevel } : {}),
-        ...(options.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
-      })
-      entries.push(entry)
-      await appendScoreboard(this.options.baseDir, benchmarkId, entry)
-      const improved = entry.score > current.score
-      const reachedTarget = options.targetScore !== undefined && entry.score >= options.targetScore
-      if (improved) {
-        current = entry
-        accepted = true
-        acceptedVersion = version
-        if (reachedTarget) break
-      } else {
-        await this.options.restoreSnapshot({ version, signal: options.signal })
+      try {
+        const candidate: CandidateProposal = await this.options.proposeCandidate({
+          benchmarkId,
+          reference: current,
+          statement,
+          round,
+          signal: options.signal,
+          ...(options.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
+        })
+        const applied = await this.options.applyCandidate({
+          benchmarkId,
+          candidate,
+          agentStateDir: this.options.agentStateDir,
+          signal: options.signal,
+          ...(options.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
+        })
+        const entry = await this.evaluateCandidate(benchmarkId, {
+          agentStatePath: applied.agentStatePath,
+          version,
+          signal: options.signal,
+          ...(options.runsPerCase !== undefined ? { runsPerCase: options.runsPerCase } : {}),
+          ...(options.provider !== undefined ? { provider: options.provider } : {}),
+          ...(options.modelId !== undefined ? { modelId: options.modelId } : {}),
+          ...(options.thinkingLevel !== undefined ? { thinkingLevel: options.thinkingLevel } : {}),
+          ...(options.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
+        })
+        entries.push(entry)
+        await appendScoreboard(this.options.baseDir, benchmarkId, entry)
+        const gain = entry.score - current.score
+        const improved = gain > 0 && gain >= minImprovement
+        const reachedTarget = options.targetScore !== undefined && entry.score >= options.targetScore
+        if (improved) {
+          current = entry
+          accepted = true
+          acceptedVersion = version
+          if (reachedTarget) break
+        } else {
+          await this.options.restoreSnapshot({ version, signal: options.signal })
+        }
+      } catch (error) {
+        // A round that dies mid-way leaves a half-applied candidate behind.
+        // Restore the round's snapshot so the agent state never keeps a change
+        // that was not measured; the caller's signal may already be aborted, so
+        // the restore runs on its own.
+        try {
+          await this.options.restoreSnapshot({ version, signal: new AbortController().signal })
+        } catch (restoreError) {
+          throw new AggregateError(
+            [error, restoreError],
+            `self-evolve-benchmark: round ${round} failed and the snapshot restore also failed`,
+          )
+        }
+        throw error
       }
     }
 

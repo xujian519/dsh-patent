@@ -13,6 +13,7 @@ import {
   assertSafeArchiveEntry,
   createNextSnapshot,
   createSnapshot,
+  fingerprintAgentState,
   listSnapshotVersions,
   nextVersion,
   parseSnapshotVersion,
@@ -40,6 +41,48 @@ describe('snapshot path and version helpers', () => {
 
   it('excludes vault secrets from every snapshot', () => {
     expect(EXCLUDED_SNAPSHOT_PATHS).toContain('.vault.toml')
+  })
+})
+
+describe('fingerprintAgentState', () => {
+  let dir: string
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'dsh-fingerprint-'))
+  })
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('stays equal while the directory is untouched', async () => {
+    await writeFile(join(dir, 'guidance.md'), 'v1\n')
+    expect(await fingerprintAgentState(dir)).toBe(await fingerprintAgentState(dir))
+  })
+
+  it('changes when a file is written, removed, or rewritten', async () => {
+    await writeFile(join(dir, 'guidance.md'), 'v1\n')
+    const first = await fingerprintAgentState(dir)
+
+    await writeFile(join(dir, 'guidance.md'), 'v2 with more text\n')
+    const second = await fingerprintAgentState(dir)
+    expect(second).not.toBe(first)
+
+    await writeFile(join(dir, 'extra.md'), 'new file\n')
+    const third = await fingerprintAgentState(dir)
+    expect(third).not.toBe(second)
+
+    await rm(join(dir, 'guidance.md'))
+    expect(await fingerprintAgentState(dir)).not.toBe(third)
+  })
+
+  it('covers nested directories', async () => {
+    await mkdir(join(dir, 'notes'))
+    await writeFile(join(dir, 'notes', 'a.md'), 'a\n')
+    const initial = await fingerprintAgentState(dir)
+
+    await writeFile(join(dir, 'notes', 'a.md'), 'ab\n')
+    expect(await fingerprintAgentState(dir)).not.toBe(initial)
   })
 })
 

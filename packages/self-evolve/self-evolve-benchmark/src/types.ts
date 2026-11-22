@@ -194,7 +194,7 @@ export interface ApplyCandidateOptions {
   benchmarkId: BenchmarkId
   /** The candidate to apply. */
   candidate: CandidateProposal
-  /** Agent-state directory the candidate edits in place. */
+  /** Agent-state directory the candidate's files are written into. */
   agentStateDir: string
   /** Parent session id for the live-agent fallback of the default applier. */
   sessionId?: string
@@ -249,8 +249,22 @@ export interface OptimizeLoopOptions {
   targetScore?: number
   /** Maximum candidate rounds; defaults to 1. */
   maxRounds?: number
-  /** Runs per case for candidate evaluations; defaults to 1. */
+  /**
+   * Runs per case for candidate evaluations; defaults to 1.
+   *
+   * One run measures evaluator noise as much as the candidate: identical
+   * repeated evaluations of one case varied by several points. Use at least 3
+   * runs and compare means when deciding whether a candidate helped, and
+   * evaluate the reference under the same `runsPerCase`.
+   */
   runsPerCase?: number
+  /**
+   * Minimum aggregate gain over the reference required to accept a round;
+   * defaults to 0, which admits any strict gain. Set it above the measured
+   * single-run noise so a round is not accepted on a difference the evaluator
+   * could reproduce from an unchanged state.
+   */
+  minImprovement?: number
   /** Evaluation runtime provider route recorded on candidate entries. */
   provider?: string
   /** Evaluation model id recorded on candidate entries. */
@@ -300,4 +314,11 @@ export interface BenchmarkEvolveConfig {
   maxRoundsPerLoop?: number
   /** Default score goal for optimize loops; absent disables early acceptance. */
   targetScore?: number
+  /**
+   * Default minimum aggregate gain for accepting an optimize round; defaults
+   * to 0, which admits any strict gain. Construction rejects a negative or
+   * non-finite value rather than accepting it as a regression-tolerant
+   * threshold.
+   */
+  minImprovement?: number
 }

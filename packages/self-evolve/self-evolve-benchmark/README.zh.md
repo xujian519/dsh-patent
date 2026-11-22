@@ -42,6 +42,7 @@ kind: "package-reference"
 | `runsPerCase` | `1` | 方法未指定时每个用例的 run 次数。 |
 | `maxRoundsPerLoop` | `1` | 每次 optimize loop 的默认最大候选轮数。 |
 | `targetScore` | 无 | optimize loop 的默认分数目标;缺省禁用提前接受。 |
+| `minImprovement` | `0` | optimize 轮次被接受所需的、相对参考的最小聚合提分。`0` 表示任何严格提分都接受;构造时拒绝负数与非有限值。 |
 
 ## Public API
 
@@ -51,8 +52,10 @@ kind: "package-reference"
 |---|---|
 | `runBenchmark(benchmarkId, options)` | 对当前 agent 状态评估每个用例 × `runsPerCase`,并持久化聚合的 `ScoreboardEntry`。 |
 | `establishBaseline(benchmarkId, options)` | 单 run 的 benchmark entry,是 optimize loop 必须严格超越的参考。 |
-| `optimizeLoop(benchmarkId, options)` | 在严格的 improve-or-rollback 下优化;没有参考 entry(显式或 scoreboard 最新)时 fail loud。 |
+| `optimizeLoop(benchmarkId, options)` | 在 improve-or-rollback 下优化,仅当提分达到 `minImprovement`(默认 `0`,即任何严格提分)时才接受该轮;没有参考 entry(显式或 scoreboard 最新)时 fail loud。 |
 | `readScoreboard(benchmarkId)` | 返回某 benchmark 的全部持久化 entry,旧到新。 |
+
+该服务只供程序调用,因此包还以子路径导出一个 function plugin:`@deepseek-ai/dsh-self-evolve-benchmark/baseline-driver`。把它挂到 provider 旁边,即可从 profile 跑一轮基线而无需交互会话:它等 loader 就绪,为 `fork` seams 创建一个空闲的父 Agent,用 profile 当前的模型选择调用 `establishBaseline`,把 scoreboard 条目以 JSON 打到 stdout,并请求进程退出——运行失败时以退出码 1 收尾,并在 stderr 打一行 `dsh:` 诊断。其配置为 `benchmarkId`(必填)与 `runsPerCase`(默认 1)。[examples/patent-oas](examples/patent-oas/README.zh.md) 提供了在 shipped `self-evolve` profile 上启动它的 overlay。
 
 ## On-disk layout
 
@@ -68,7 +71,7 @@ kind: "package-reference"
 
 ## Optimization loop (C1 + C3)
 
-`optimizeLoop` 的每一轮都会铸造一个新的快照版本(版本只增不减、永不回收),打包当前 agent 状态,只基于公共 statement 面提出一个候选,应用它,评估完整矩阵,并且仅当候选分数严格高于参考时才接受该轮。被拒绝的候选回滚到其快照;被接受的候选成为新的参考,配置了 `targetScore` 时循环提前停止。回滚会恢复快照内容并删除被拒候选新增的文件,同时保留 `.vault.toml` 与 `.self-evolve-benchmark` 标记;解包前会校验归档条目的绝对路径、`..` 与路径穿越。铸造快照与追加 scoreboard 都持有 benchmark 级文件锁,因此并发写入方看到的是完整的旧文件或新文件,而不是部分内容。从磁盘加载的 case id 与 benchmark id 必须是安全路径段(`^[A-Za-z0-9][A-Za-z0-9._-]*$`),evaluator 返回的 score 必须是 0–100 内的有限数——超出范围以类型化错误拒绝,而不做 clamp。
+`optimizeLoop` 的每一轮都会铸造一个新的快照版本(版本只增不减、永不回收),打包当前 agent 状态,只基于公共 statement 面提出一个候选,应用它,评估完整矩阵,并且仅当候选分数相对参考的提分达到 `minImprovement`(默认 `0`,即任何严格提分)时才接受该轮。默认 apply seam fork 一个返回待写文件内容的 applier——子代理继承父会话的 `workspace-write` 沙箱,该沙箱拒绝写 home 目录——由 seam 在 harness 进程内、拒绝绝对路径/`..`/home 相对路径之后写盘。seam 在写盘前后对 agent 状态目录取指纹:内容与现有文件完全一致时指纹不变,该轮直接失败,循环不会去评估一个未变化的状态。被拒绝的候选回滚到其快照,而一轮在快照与接受之间抛出异常时,也会在错误向上传播前恢复该轮快照;被接受的候选成为新的参考,配置了 `targetScore` 时循环提前停止。回滚会恢复快照内容并删除被拒候选新增的文件,同时保留 `.vault.toml` 与 `.self-evolve-benchmark` 标记;解包前会校验归档条目的绝对路径、`..` 与路径穿越。铸造快照与追加 scoreboard 都持有 benchmark 级文件锁,因此并发写入方看到的是完整的旧文件或新文件,而不是部分内容。从磁盘加载的 case id 与 benchmark id 必须是安全路径段(`^[A-Za-z0-9][A-Za-z0-9._-]*$`),evaluator 返回的 score 必须是 0–100 内的有限数——超出范围以类型化错误拒绝,而不做 clamp。
 
 <a id="statementrubric-separation-c2"></a>
 ## Statement/rubric 分离(C2)
@@ -81,11 +84,11 @@ kind: "package-reference"
 
 #### What the model sees
 
-本提供方不注册稳定的 prompt section 或 tool schema;每个模型可见的贡献都来自其默认 seams fork 出的子请求。每个用例 run 先 fork 一个 executor 子代理,告知它是任务执行者,交给它 `statement` 与 agent 状态目录中的作业规范,并指示它直接产出交付物文本。随后引擎 fork 一个 evaluator 子代理,告知它是 benchmark evaluator,交给它 `statement`、交付物、私有 `rubric`(在这里是合法的,也仅在这里),以及只输出一个带数字 `score` 的 JSON 对象的指令。每轮优化 fork 一个只拿到参考分数和合并后公共 statements 的 optimizer——明确告知上下文不含 rubric——以及一个拿到候选与 agent 状态目录的 applier。
+本提供方不注册稳定的 prompt section 或 tool schema;每个模型可见的贡献都来自其默认 seams fork 出的子请求。每个用例 run 先 fork 一个 executor 子代理,告知它是任务执行者,交给它 `statement` 与 agent 状态目录中的作业规范,并指示它直接产出交付物文本。随后引擎 fork 一个 evaluator 子代理,告知它是 benchmark evaluator,交给它 `statement`、交付物、私有 `rubric`(在这里是合法的,也仅在这里),以及只输出一个带数字 `score` 的 JSON 对象的指令。每轮优化 fork 一个只拿到参考分数和合并后公共 statements 的 optimizer——明确告知上下文不含 rubric——以及一个拿到候选与 agent 状态目录、被告知只能读取该目录、并被要求返回待写文件的 applier。
 
 #### Token effect
 
-`runBenchmark` 与 `establishBaseline` 每个用例 run 花费一次 executor 与一次 evaluator 请求。每轮优化花费一次 optimizer 请求、一次 applier 请求,以及每个用例 run 一次 executor 与一次 evaluator 请求,外加一次文件系统快照。
+`runBenchmark` 与 `establishBaseline` 每个用例 run 花费一次 executor 与一次 evaluator 请求。每轮优化花费一次 optimizer 请求、一次 applier 请求,以及每个用例 run 一次 executor 与一次 evaluator 请求,外加一次文件系统快照。evaluator 的答案里取不出可恢复的 JSON 对象时,会多花一次 evaluator 请求。
 
 #### KV Cache effect
 
@@ -94,7 +97,8 @@ kind: "package-reference"
 ## Known Limitations and Deferred Work
 
 - **默认 seams 需要活运行时**——执行、评估、提议与应用通过 `ctx.subagents` fork 子代理,需要 `fork` provider 以及通过 `sessionId` 解析出的 live parent agent;没有它们时循环 fail loud 而不是降级。没有 subagent 运行时的调用方必须注入自己的 seams。
-- **子代理输出不重试**——子代理在 `completed` 之前结束、或输出非 JSON、字段不合法的内容,都会使整个操作失败;循环不会重新 fork。executor 的交付物是自由文本(无 JSON 包装),只有 evaluator 必须输出 JSON。
+- **只有无法解析的 evaluator 答案会重新 fork**——evaluator 的回复取不出可恢复的 JSON 对象时重试一次,仍取不到才使该轮失败;其他任何子代理失败(在 `completed` 之前结束、score 缺失或越界、applier 什么都没改)都立即失败。executor 的交付物是自由文本(无 JSON 包装),只有 evaluator 必须输出 JSON。
+- **单 run 分数带有数分级噪声** — 对同一未改动 agent 状态的同一用例重复评估三次,得到 94、100、98,因此逐用例几分的差异可能只是噪声。判定候选质量应使用至少 3 的 `runsPerCase` 并按均值比较,用同样的 `runsPerCase` 评估参考,并把 `minImprovement` 设到观测噪声之上;默认的 `runsPerCase: 1` 与 `minImprovement: 0` 会因任何严格聚合提分接受一轮,单凭它们无法区分真实增益与噪声。
 - **快照版本永不回收**——单调的 `max + 1` 铸造是刻意的(被拒绝轮的归档留在磁盘上作为证据),所以长期运行的循环会积累归档,直到调用方自行清理。
 - **无 UI 或 CLI 面**——这是一个编程接口服务;`dsh` 里还没有任何东西暴露它。
 - **无 keyed 端到端验证**——默认 seams 由 mock 掉 subagent 运行时的单元测试覆盖;真实的 `dsh --profile` 循环运行需要 keyed 环境。

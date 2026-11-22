@@ -75,10 +75,28 @@ Seeded layout:
 ├── novelty-creative/statement|rubric
 └── reexamination-request/statement|rubric
 <baseDir>/patent-state/
-└── guidance.md   # 初始 agent state 种子
+├── .self-evolve-benchmark   # marker the provider requires on a non-empty agent state
+└── guidance.md              # 初始 agent state 种子
 ```
 
+The provider refuses an `agentStateDir` that is non-empty and lacks the `.self-evolve-benchmark` marker, so the seed writes it together with `guidance.md`.
+
 ## Usage
+
+### One-shot baseline from the CLI
+
+`baseline.overlay.yml` boots the shipped `self-evolve` profile, disables its headless runner, mounts the benchmark provider over the seeded data root, and runs one baseline measurement through the operator driver:
+
+```sh
+node seed.mjs
+pnpm dsh --profile self-evolve \
+  --patch packages/self-evolve/self-evolve-benchmark/examples/patent-oas/baseline.overlay.yml \
+  baseline
+```
+
+The positional is parsed by the profile's headless startup row but consumed by nobody, because the runner that would answer it is disabled — the driver owns the process exit. The driver prints the resulting scoreboard entry as JSON on stdout. Cases run one at a time against the live API, so the run costs real tokens and takes tens of minutes; the seeded data root and `agentStateDir` follow `$DSH_HOME`.
+
+### From the engine API
 
 After seeding, drive the loop through the engine's public methods. Point the engine's `baseDir` at the same data root and `agentStateDir` at the seeded `patent-state` work copy:
 

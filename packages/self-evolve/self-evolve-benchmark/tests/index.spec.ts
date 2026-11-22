@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -63,6 +63,9 @@ describe('BenchmarkEvolveEngine service wiring', () => {
     return new BenchmarkEvolveEngine(ctx, { baseDir: dir, agentStateDir: agentDir })
   }
 
+  /** The applier's answer: the seam writes these files and rejects a content-identical answer. */
+  const APPLIED_FILES = '{"files":[{"path":"guidance.md","content":"# candidate\\n"}]}'
+
   async function prepareBenchmark(): Promise<void> {
     await ensureBenchmark(dir, benchmarkId, 'Summarizer')
     await writeCase(dir, benchmarkId, CaseId('c1'), { statement: 'Task one', rubric: 'Rubric one' })
@@ -82,6 +85,13 @@ describe('BenchmarkEvolveEngine service wiring', () => {
     const ctx = new Context()
     // The cwd fallback would make a rejected round wipe the caller's work tree.
     expect(() => new BenchmarkEvolveEngine(ctx, {} as never)).toThrow(/agentStateDir is required/)
+  })
+
+  it('refuses a configured minImprovement that is negative or non-finite', () => {
+    for (const minImprovement of [-1, Number.NaN]) {
+      expect(() => new BenchmarkEvolveEngine(new Context(), { baseDir: dir, agentStateDir: agentDir, minImprovement }))
+        .toThrow(/minImprovement must be a finite number >= 0/)
+    }
   })
 
   it('refuses a relative, forbidden, or unmarked agentStateDir', async () => {
@@ -387,7 +397,9 @@ describe('BenchmarkEvolveEngine service wiring', () => {
   })
 
   describe('default optimizer and applier seams', () => {
-    function routedStart(routes: Record<string, { output: string; stopReason?: string }>): ForkStart {
+    function routedStart(
+      routes: Record<string, { output: string; stopReason?: string }>,
+    ): ForkStart {
       return async (spec) => {
         const first = spec.prompt[0]
         const text = first !== undefined && first.type === 'text' ? first.text : ''
@@ -399,7 +411,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
               ? 'apply'
               : 'evaluate'
         const config = routes[route] ?? { output: '{"score": 90}' }
-        return stubRun([textBlock(config.output)], config.stopReason)
+        return stubRun([textBlock(config.output)], config.stopReason ?? 'completed')
       }
     }
 
@@ -409,7 +421,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
         ctx,
         routedStart({
           propose: { output: '{"name":"n","description":"d","prediction":"p"}' },
-          apply: { output: '{"applied":true}' },
+          apply: { output: APPLIED_FILES },
           evaluate: { output: '{"score": 90}' },
         }),
       )
@@ -425,6 +437,8 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       expect(result.accepted).toBe(true)
       expect(result.bestScore).toBe(90)
       expect(result.acceptedVersion).toBe(1)
+      // The seam, not the sandboxed child, wrote the file.
+      await expect(readFile(join(agentDir, 'guidance.md'), 'utf8')).resolves.toBe('# candidate\n')
     })
 
     it('fails loud when the proposal omits a field', async () => {
@@ -457,7 +471,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
         ctx,
         routedStart({
           propose: { output: '{"name":"n","description":"d","prediction":"p"}' },
-          apply: { output: '{"applied":true}', stopReason: 'error' },
+          apply: { output: APPLIED_FILES, stopReason: 'error' },
         }),
       )
       const engine = makeEngine(ctx)
@@ -475,7 +489,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
         ctx,
         routedStart({
           propose: { output: '{"name":"n","description":"d","prediction":"p"}' },
-          apply: { output: '{"applied":true}' },
+          apply: { output: APPLIED_FILES },
           evaluate: { output: '{"score": 50}' },
         }),
       )
@@ -491,6 +505,114 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       expect(result.accepted).toBe(false)
       expect(result.acceptedVersion).toBeUndefined()
       expect(result.bestScore).toBe(60)
+      expect(await readdir(agentDir)).not.toContain('guidance.md')
+    })
+
+    it('rejects candidate files whose content matches the current state', async () => {
+      // Evaluating identical content would score the old state under a new version.
+      await writeFile(join(agentDir, 'guidance.md'), '# candidate\n')
+      await writeFile(join(agentDir, AGENT_STATE_MARKER), '')
+      const ctx = new Context()
+      provideRuntime(
+        ctx,
+        routedStart({
+          propose: { output: '{"name":"n","description":"d","prediction":"p"}' },
+          apply: { output: APPLIED_FILES },
+          evaluate: { output: '{"score": 90}' },
+        }),
+      )
+      const engine = makeEngine(ctx)
+      await prepareBenchmark()
+      await appendScoreboard(dir, benchmarkId, { version: 0, score: 60, cases: [] })
+
+      await expect(
+        engine.optimizeLoop(benchmarkId, { signal: new AbortController().signal, sessionId: 'sess-1' }),
+      ).rejects.toThrow(/left the agent state unchanged/)
+    })
+
+    it('refuses an applier path outside the agent state', async () => {
+      for (const path of ['../escape.md', '/tmp/escape.md', '~/.bashrc']) {
+        const ctx = new Context()
+        provideRuntime(
+          ctx,
+          routedStart({
+            propose: { output: '{"name":"n","description":"d","prediction":"p"}' },
+            apply: { output: `{"files":[{"path":${JSON.stringify(path)},"content":"x"}]}` },
+          }),
+        )
+        const engine = makeEngine(ctx)
+        await prepareBenchmark()
+        await appendScoreboard(dir, benchmarkId, { version: 0, score: 60, cases: [] })
+
+        await expect(
+          engine.optimizeLoop(benchmarkId, { signal: new AbortController().signal, sessionId: 'sess-1' }),
+        ).rejects.toThrow(/returned a path outside/)
+      }
+    })
+
+    it('refuses an applier answer with no file list', async () => {
+      const ctx = new Context()
+      provideRuntime(
+        ctx,
+        routedStart({
+          propose: { output: '{"name":"n","description":"d","prediction":"p"}' },
+          apply: { output: '{"files":[]}' },
+        }),
+      )
+      const engine = makeEngine(ctx)
+      await prepareBenchmark()
+      await appendScoreboard(dir, benchmarkId, { version: 0, score: 60, cases: [] })
+
+      await expect(
+        engine.optimizeLoop(benchmarkId, { signal: new AbortController().signal, sessionId: 'sess-1' }),
+      ).rejects.toThrow(/returned no "files" to write/)
+    })
+
+    it('retries a malformed evaluator answer once before scoring', async () => {
+      const ctx = new Context()
+      let evaluations = 0
+      provideRuntime(ctx, async (spec) => {
+        const first = spec.prompt[0]
+        const text = first !== undefined && first.type === 'text' ? first.text : ''
+        if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
+        if (text.includes('优化者')) return stubRun([textBlock('{"name":"n","description":"d","prediction":"p"}')])
+        if (text.includes('实现者')) return stubRun([textBlock(APPLIED_FILES)])
+        evaluations += 1
+        return evaluations === 1
+          ? stubRun([textBlock('看起来得分不错。')])
+          : stubRun([textBlock('```json\n{"score": 90}\n```')])
+      })
+      const engine = makeEngine(ctx)
+      await prepareBenchmark()
+      await appendScoreboard(dir, benchmarkId, { version: 0, score: 60, cases: [] })
+
+      const result = await engine.optimizeLoop(benchmarkId, {
+        signal: new AbortController().signal,
+        sessionId: 'sess-1',
+      })
+
+      expect(evaluations).toBe(2)
+      expect(result.accepted).toBe(true)
+      expect(result.bestScore).toBe(90)
+    })
+
+    it('fails loud with an output excerpt when the evaluator never returns JSON', async () => {
+      const ctx = new Context()
+      provideRuntime(ctx, async (spec) => {
+        const first = spec.prompt[0]
+        const text = first !== undefined && first.type === 'text' ? first.text : ''
+        if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
+        if (text.includes('优化者')) return stubRun([textBlock('{"name":"n","description":"d","prediction":"p"}')])
+        if (text.includes('实现者')) return stubRun([textBlock(APPLIED_FILES)])
+        return stubRun([textBlock('这一份交付物质量很高，我给 90 分。')])
+      })
+      const engine = makeEngine(ctx)
+      await prepareBenchmark()
+      await appendScoreboard(dir, benchmarkId, { version: 0, score: 60, cases: [] })
+
+      await expect(
+        engine.optimizeLoop(benchmarkId, { signal: new AbortController().signal, sessionId: 'sess-1' }),
+      ).rejects.toThrow(/non-JSON output: "这一份交付物/)
     })
   })
 
@@ -543,7 +665,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
         const text = first !== undefined && first.type === 'text' ? first.text : ''
         if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
         if (text.includes('优化者')) return stubRun([textBlock('{"name":"n","description":"d","prediction":"p"}')])
-        if (text.includes('实现者')) return stubRun([textBlock('{"applied":true}')])
+        if (text.includes('实现者')) return stubRun([textBlock(APPLIED_FILES)])
         return stubRun([textBlock('{"score": 90}')])
       }
       provideRuntime(ctx, start)
@@ -602,7 +724,7 @@ describe('BenchmarkEvolveEngine service wiring', () => {
         const text = first !== undefined && first.type === 'text' ? first.text : ''
         if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
         if (text.includes('优化者')) return stubRun([textBlock('{"name":"n","description":"d","prediction":"p"}')])
-        if (text.includes('实现者')) return stubRun([textBlock('{"applied":true}')])
+        if (text.includes('实现者')) return stubRun([textBlock(APPLIED_FILES)])
         return stubRun([textBlock('{"score": 90}')])
       })
       const engine = new BenchmarkEvolveEngine(ctx, {
@@ -622,6 +744,62 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       })
 
       expect(result.accepted).toBe(true)
+    })
+
+    it('applies the configured minImprovement to an optimizeLoop that omits it', async () => {
+      const ctx = new Context()
+      provideRuntime(ctx, async (spec) => {
+        const first = spec.prompt[0]
+        const text = first !== undefined && first.type === 'text' ? first.text : ''
+        if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
+        if (text.includes('优化者')) return stubRun([textBlock('{"name":"n","description":"d","prediction":"p"}')])
+        if (text.includes('实现者')) return stubRun([textBlock(APPLIED_FILES)])
+        return stubRun([textBlock('{"score": 65}')])
+      })
+      const engine = new BenchmarkEvolveEngine(ctx, {
+        baseDir: dir,
+        agentStateDir: agentDir,
+        minImprovement: 6,
+      })
+      await prepareBenchmark()
+      await appendScoreboard(dir, benchmarkId, { version: 0, score: 60, cases: [] })
+
+      const result = await engine.optimizeLoop(benchmarkId, {
+        signal: new AbortController().signal,
+        sessionId: 'sess-1',
+      })
+
+      expect(result.accepted).toBe(false)
+      expect(result.bestScore).toBe(60)
+      expect(result.entries[0]!.score).toBe(65)
+    })
+
+    it('lets an explicit minImprovement override the configured default', async () => {
+      const ctx = new Context()
+      provideRuntime(ctx, async (spec) => {
+        const first = spec.prompt[0]
+        const text = first !== undefined && first.type === 'text' ? first.text : ''
+        if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
+        if (text.includes('优化者')) return stubRun([textBlock('{"name":"n","description":"d","prediction":"p"}')])
+        if (text.includes('实现者')) return stubRun([textBlock(APPLIED_FILES)])
+        return stubRun([textBlock('{"score": 65}')])
+      })
+      const engine = new BenchmarkEvolveEngine(ctx, {
+        baseDir: dir,
+        agentStateDir: agentDir,
+        minImprovement: 6,
+      })
+      await prepareBenchmark()
+      await appendScoreboard(dir, benchmarkId, { version: 0, score: 60, cases: [] })
+
+      const result = await engine.optimizeLoop(benchmarkId, {
+        signal: new AbortController().signal,
+        sessionId: 'sess-1',
+        minImprovement: 5,
+      })
+
+      expect(result.accepted).toBe(true)
+      expect(result.bestScore).toBe(65)
     })
   })
 })

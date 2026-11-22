@@ -250,9 +250,9 @@ class FakeResizeObserver {
   static readonly instances: FakeResizeObserver[] = []
   readonly observed = new Set<Element>()
   disconnected = false
-  private readonly notify: () => void
+  private readonly notify: (entries: ResizeObserverEntry[]) => void
 
-  constructor(notify: () => void) {
+  constructor(notify: (entries: ResizeObserverEntry[]) => void) {
     this.notify = notify
     FakeResizeObserver.instances.push(this)
   }
@@ -260,7 +260,42 @@ class FakeResizeObserver {
   observe(target: Element): void { this.observed.add(target) }
   unobserve(target: Element): void { this.observed.delete(target) }
   disconnect(): void { this.disconnected = true; this.observed.clear() }
-  fire(): void { this.notify() }
+  fire(entries: ResizeObserverEntry[] = []): void { this.notify(entries) }
+}
+
+/** One delivered border box. A positive size must not make placement read layout. */
+function sizeEntry(target: Element, inlineSize: number, blockSize: number): ResizeObserverEntry {
+  const size = { inlineSize, blockSize }
+  return {
+    target,
+    borderBoxSize: [size],
+    contentBoxSize: [size],
+    devicePixelContentBoxSize: [size],
+    contentRect: new DOMRectReadOnly(0, 0, inlineSize, blockSize),
+  }
+}
+
+const ANCHOR_NAME = '--dsh-synapse-switch'
+
+function expectAnchored(kind: 'row' | 'content', anchor: Element): void {
+  if (!(anchor instanceof HTMLElement)) throw new Error('anchor is not an element')
+  const box = switchBox()
+  expect(box.classList.contains(kind === 'row' ? 'is-anchored-row' : 'is-anchored-content')).toBe(true)
+  expect(box.classList.contains('is-holding')).toBe(false)
+  expect(anchor.style.getPropertyValue('anchor-name')).toBe(ANCHOR_NAME)
+  expect(box.style.left).toBe('')
+  expect(box.style.top).toBe('')
+  expect(box.style.right).toBe('')
+}
+
+function expectCorner(): void {
+  const box = switchBox()
+  expect(box.classList.contains('is-anchored-row')).toBe(false)
+  expect(box.classList.contains('is-anchored-content')).toBe(false)
+  expect(box.classList.contains('is-holding')).toBe(false)
+  expect(box.style.left).toBe('')
+  expect(box.style.top).toBe('')
+  expect(box.style.right).toBe('')
 }
 
 /** Run the callbacks the plugin queued through requestAnimationFrame. */
@@ -545,11 +580,10 @@ describe('synapse switch placement', () => {
 
   it('parks the switch at the right end of the conversation tab row', () => {
     stubSwitchBox(150, 36)
-    mountTabRow({ top: 50, right: 1180, width: 1180, height: 26 })
+    const row = mountTabRow({ top: 50, right: 1180, width: 1180, height: 26 })
     boot()
-    expect(switchBox().style.left).toBe('1030px')
-    expect(switchBox().style.top).toBe('40px')
-    expect(switchBox().style.right).toBe('auto')
+    expectAnchored('row', row)
+    expect(document.head.querySelector('style')?.textContent).toContain('right:anchor(right);bottom:anchor(bottom)')
   })
 
   it('anchors to the full tab row rather than the tablist inside it', () => {
@@ -565,18 +599,18 @@ describe('synapse switch placement', () => {
 
     boot()
 
-    expect(switchBox().style.left).toBe('1030px')
+    expectAnchored('row', row)
+    expect(tabs.style.getPropertyValue('anchor-name')).toBe('')
   })
 
   it('parks below the header on a blank Session without a tab row', () => {
     stubSwitchBox(150, 36)
-    mountSessionContent({ top: 40, right: 792, width: 512, height: 960 })
+    const content = mountSessionContent({ top: 40, right: 792, width: 512, height: 960 })
 
     boot()
 
-    expect(switchBox().style.left).toBe('642px')
-    expect(switchBox().style.top).toBe('80px')
-    expect(switchBox().style.right).toBe('auto')
+    expectAnchored('content', content)
+    expect(document.head.querySelector('style')?.textContent).toContain('top:calc(anchor(top) + 40px)')
   })
 
   it('re-observes a replaced Session surface and releases one that unmounts', () => {
@@ -598,7 +632,8 @@ describe('synapse switch placement', () => {
       flushFrames()
       expect(observer.observed.has(first)).toBe(false)
       expect(observer.observed.has(second)).toBe(true)
-      expect(switchBox().style.left).toBe('750px')
+      expectAnchored('content', second)
+      expect(first.style.getPropertyValue('anchor-name')).toBe('')
 
       // Without any Session surface the transient retry expires, the switch
       // returns to the stylesheet corner, and the detached node is released.
@@ -611,7 +646,7 @@ describe('synapse switch placement', () => {
       }
       flushFrames()
       expect(observer.observed.has(second)).toBe(false)
-      expect(switchBox().style.left).toBe('')
+      expectCorner()
     } finally {
       vi.useRealTimers()
     }
@@ -623,17 +658,20 @@ describe('synapse switch placement', () => {
       stubSwitchBox(150, 36)
       const row = mountTabRow({ top: 50, right: 1180, width: 1180, height: 26 })
       boot()
-      expect(switchBox().style.left).toBe('1030px')
+      expectAnchored('row', row)
 
+      switchBox().getBoundingClientRect = () => tabRowRect({ top: 40, right: 1180, width: 150, height: 36 })
       row.remove()
       window.dispatchEvent(new Event('resize'))
       flushFrames()
+      expect(switchBox().classList.contains('is-holding')).toBe(true)
       expect(switchBox().style.left).toBe('1030px')
+      expect(switchBox().style.top).toBe('40px')
 
-      mountTabRow({ top: 50, right: 900, width: 900, height: 26 })
+      const next = mountTabRow({ top: 50, right: 900, width: 900, height: 26 })
       vi.advanceTimersByTime(50)
       flushFrames()
-      expect(switchBox().style.left).toBe('750px')
+      expectAnchored('row', next)
     } finally {
       vi.useRealTimers()
     }
@@ -642,9 +680,7 @@ describe('synapse switch placement', () => {
   it('keeps the stylesheet corner while the surface publishes no tab row', () => {
     stubSwitchBox(150, 36)
     boot()
-    expect(switchBox().style.left).toBe('')
-    expect(switchBox().style.top).toBe('')
-    expect(switchBox().style.right).toBe('')
+    expectCorner()
     expect(document.head.querySelector('style')?.textContent)
       .toContain('.dsh-synapse-switch{position:fixed;z-index:80;top:40px;right:28px')
   })
@@ -653,42 +689,57 @@ describe('synapse switch placement', () => {
     stubSwitchBox(150, 36)
     const row = mountTabRow({ top: 50, right: 1180, width: 1180, height: 26 })
     boot()
-    expect(switchBox().style.left).toBe('1030px')
+    expectAnchored('row', row)
 
     row.getBoundingClientRect = () => tabRowRect({ top: 0, right: 0, width: 0, height: 26 })
     window.dispatchEvent(new Event('resize'))
     flushFrames()
-    expect(switchBox().style.left).toBe('')
-    expect(switchBox().style.top).toBe('')
-    expect(switchBox().style.right).toBe('')
+    expectCorner()
+    expect(row.style.getPropertyValue('anchor-name')).toBe('')
+
+    row.getBoundingClientRect = () => tabRowRect({ top: 50, right: 1180, width: 1180, height: 26 })
+    window.dispatchEvent(new Event('resize'))
+    flushFrames()
+    expectAnchored('row', row)
 
     row.getBoundingClientRect = () => tabRowRect({ top: 0, right: 0, width: 1180, height: 0 })
     window.dispatchEvent(new Event('resize'))
     flushFrames()
-    expect(switchBox().style.left).toBe('')
+    expectCorner()
   })
 
   it('coalesces a resize burst into a single placement frame', () => {
     stubSwitchBox(150, 36)
     const row = mountTabRow({ top: 50, right: 1180, width: 1180, height: 26 })
     boot()
-    row.getBoundingClientRect = () => tabRowRect({ top: 50, right: 1000, width: 1000, height: 26 })
+    let reads = 0
+    row.getBoundingClientRect = () => {
+      reads += 1
+      return tabRowRect({ top: 50, right: 1000, width: 1000, height: 26 })
+    }
     window.dispatchEvent(new Event('resize'))
     window.dispatchEvent(new Event('resize'))
-    expect(switchBox().style.left).toBe('1030px')
+    expect(reads).toBe(0)
 
     flushFrames()
-    expect(switchBox().style.left).toBe('850px')
+    expect(reads).toBe(1)
+    expectAnchored('row', row)
   })
 
   it('follows a session change without waiting for a resize', () => {
     stubSwitchBox(150, 36)
     const row = mountTabRow({ top: 50, right: 1180, width: 1180, height: 26 })
     const runtime = boot()
-    row.getBoundingClientRect = () => tabRowRect({ top: 50, right: 1000, width: 1000, height: 26 })
+    let reads = 0
+    row.getBoundingClientRect = () => {
+      reads += 1
+      return tabRowRect({ top: 50, right: 1000, width: 1000, height: 26 })
+    }
     runtime.sessions.list.replace([sessionRow({ id: 's-1' })])
+    expect(reads).toBe(0)
     flushFrames()
-    expect(switchBox().style.left).toBe('850px')
+    expect(reads).toBe(1)
+    expectAnchored('row', row)
   })
 
   it('places the switch when the environment has no ResizeObserver', () => {
@@ -698,12 +749,12 @@ describe('synapse switch placement', () => {
     const row = mountTabRow({ top: 50, right: 1180, width: 1180, height: 26 })
     vi.stubGlobal('ResizeObserver', undefined)
     boot()
-    expect(switchBox().style.left).toBe('1030px')
+    expectAnchored('row', row)
 
-    row.getBoundingClientRect = () => tabRowRect({ top: 50, right: 1000, width: 1000, height: 26 })
+    row.getBoundingClientRect = () => tabRowRect({ top: 0, right: 0, width: 0, height: 26 })
     window.dispatchEvent(new Event('resize'))
     flushFrames()
-    expect(switchBox().style.left).toBe('850px')
+    expectCorner()
   })
 
   it('watches the tab row so a column respan moves the switch without a window resize', () => {
@@ -723,12 +774,14 @@ describe('synapse switch placement', () => {
     flushFrames()
     expect(observer.observed.has(first)).toBe(false)
     expect(observer.observed.has(second)).toBe(true)
-    expect(switchBox().style.left).toBe('750px')
+    expectAnchored('row', second)
 
-    // A sidebar respan reaches the switch through the observer, not the window.
-    observer.fire()
+    // A positive respan is delivered by the observer and must not read layout.
+    const reads = vi.spyOn(second, 'getBoundingClientRect')
+    observer.fire([sizeEntry(second, 900, 26)])
     flushFrames()
-    expect(switchBox().style.left).toBe('750px')
+    expect(reads).not.toHaveBeenCalled()
+    expectAnchored('row', second)
 
     // Losing the row (no Session view) retries the transient replacement,
     // then falls back and stops watching it.
@@ -740,7 +793,7 @@ describe('synapse switch placement', () => {
     }
     flushFrames()
     expect(observer.observed.size).toBe(0)
-    expect(switchBox().style.left).toBe('')
+    expectCorner()
 
     runtime.dispose()
     vi.useRealTimers()
@@ -761,11 +814,13 @@ describe('synapse switch placement', () => {
     // The stubbed scheduler never learns of the cancellation, so drop the
     // callback it still holds before proving the listener is gone too.
     pendingFrames = []
-    expect(box.style.left).toBe('1030px')
+    expect(box.classList.contains('is-anchored-row')).toBe(true)
+    expect(row.style.getPropertyValue('anchor-name')).toBe('')
 
     window.dispatchEvent(new Event('resize'))
     flushFrames()
-    expect(box.style.left).toBe('1030px')
+    expect(box.classList.contains('is-anchored-row')).toBe(true)
+    expect(document.querySelector('.dsh-synapse-host')).toBeNull()
   })
 
   it('disposes a switch that never scheduled a placement frame', () => {

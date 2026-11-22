@@ -35,7 +35,7 @@ None: it sends no model requests and mutates no request headers.
 ## Known Limitations and Deferred Work
 
 - The map runs inside an iframe with its own DOM/Markdown stack; it is not part of the React slot system, so theme tokens and accessibility conventions of the host chrome do not apply inside the canvas.
-- The switch is plain DOM too, not a slot occupant: it parks itself at the right end of the conversation tab row through the `data-conversation-tabs` attribute `ui-conversation` publishes, and falls back to the stylesheet's own top-right corner whenever no Session renders that row.
+- The switch is plain DOM, not a slot occupant. It assigns the CSS anchor name `--dsh-synapse-switch` to the conversation tab row (`data-conversation-tab-row`, otherwise `data-conversation-tabs`) and aligns to that box's right and bottom edges; a blank Session with no row anchors to `data-conversation-session`, 40px below its top. A missing or collapsed anchor uses the stylesheet corner. A column resize, including a right Sidebar drag, moves the switch with the anchor and does not read layout.
 - The exposed bridge surface (create/fork/send/open/activate) is a deliberate minimal RPC contract with the canvas; adding verbs means extending both `src/client/index.ts` and the canvas app.
 
 ### Dev Note

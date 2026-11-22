@@ -20,6 +20,7 @@ import { createNextSnapshot } from './snapshot.ts'
 import { loadBenchmark } from './store.ts'
 import type {
   BenchmarkEngineOptions,
+  CandidateAttempt,
   CandidateProposal,
   CaseAggregate,
   CaseRunRecord,
@@ -74,6 +75,44 @@ export function assertMinImprovement(minImprovement: number): void {
   }
 }
 
+/**
+ * Assert a per-round candidate count is a usable integer.
+ *
+ * Zero would evaluate no candidate and roll every round back, and a fractional
+ * or non-integer value either throws partway through the loop or never
+ * terminates. Rejecting it before the first snapshot keeps the agent state
+ * untouched.
+ *
+ * @param candidatesPerRound The configured or per-call candidate count.
+ * @throws when the value is not an integer >= 1.
+ */
+export function assertCandidatesPerRound(candidatesPerRound: number): void {
+  if (!Number.isInteger(candidatesPerRound) || candidatesPerRound < 1) {
+    throw new Error(
+      `self-evolve-benchmark: candidatesPerRound must be an integer >= 1, got ${String(candidatesPerRound)}`,
+    )
+  }
+}
+
+/**
+ * The entry an optimize round must beat when the caller passes none: the
+ * latest scoreboard entry that was not rolled back.
+ *
+ * A rejected entry describes a state that is not on disk — the round restored
+ * its opening snapshot — so using it as the reference would measure the next
+ * candidate against a score the disk never holds.
+ *
+ * @param entries Persisted entries, oldest first.
+ * @returns The latest kept entry, or `undefined` when every entry was rejected.
+ */
+function latestKeptEntry(entries: readonly ScoreboardEntry[]): ScoreboardEntry | undefined {
+  for (let index = entries.length - 1; index >= 0; index--) {
+    const entry = entries[index]
+    if (entry !== undefined && entry.rejected !== true) return entry
+  }
+  return undefined
+}
+
 /** Pure orchestration core over injected evaluation and optimization seams. */
 export class BenchmarkEngineCore {
   constructor(private readonly options: BenchmarkEngineOptions) {}
@@ -123,14 +162,18 @@ export class BenchmarkEngineCore {
   /**
    * Optimize a benchmark under strict improve-or-rollback.
    *
-   * Each round mints a fresh snapshot version (versions never decrease and
-   * never recycle), packs the current agent state, proposes one candidate
-   * against the reference using only the public statement surface, applies it,
-   * evaluates the full matrix, and accepts the round only when the candidate's
-   * score beats the reference by at least `minImprovement` — its default of 0
-   * admits any strict gain. A rejected candidate is rolled back to its
-   * snapshot; an accepted one becomes the new reference, and a configured
-   * `targetScore` stops the loop early.
+   * Each round mints a snapshot of the opening agent state, then proposes
+   * `candidatesPerRound` candidates (default 1) against the reference using
+   * only the public statement surface. Every candidate starts again from that
+   * opening state, and each applied candidate is snapshotted under its own
+   * version before it is evaluated, so `ScoreboardEntry.version` names the
+   * state that produced the score. The highest scoring candidate whose gain
+   * reaches `minImprovement` (default 0, any strict gain) is accepted and
+   * restored; the rest are rolled back to the opening snapshot and persisted
+   * with `rejected: true`. A configured `targetScore` stops proposing further
+   * candidates once a score reaches it, but never displaces a higher scoring
+   * candidate already evaluated in the round, and stops the loop when the
+   * accepted round reached it.
    *
    * @param benchmarkId Benchmark id.
    * @param options Optimization options.
@@ -139,79 +182,131 @@ export class BenchmarkEngineCore {
   async optimizeLoop(benchmarkId: BenchmarkId, options: OptimizeLoopOptions): Promise<OptimizeResult> {
     const maxRounds = options.maxRounds ?? 1
     const minImprovement = options.minImprovement ?? 0
+    const candidatesPerRound = options.candidatesPerRound ?? 1
     assertMinImprovement(minImprovement)
-    const reference = options.reference ?? (await readScoreboard(this.options.baseDir, benchmarkId)).at(-1)
+    assertCandidatesPerRound(candidatesPerRound)
+    let reference = options.reference
+    let rejectedOnly = false
     if (reference === undefined) {
-      throw new Error(`optimizeLoop: benchmark "${benchmarkId}" has no reference entry — run establishBaseline first`)
+      const persisted = await readScoreboard(this.options.baseDir, benchmarkId)
+      reference = latestKeptEntry(persisted)
+      rejectedOnly = persisted.length > 0
+    }
+    if (reference === undefined) {
+      throw new Error(
+        rejectedOnly
+          ? `optimizeLoop: benchmark "${benchmarkId}" has no kept scoreboard entry — every entry was rejected by its round, so pass the reference explicitly`
+          : `optimizeLoop: benchmark "${benchmarkId}" has no reference entry — run establishBaseline first`,
+      )
     }
     const benchmark = await loadBenchmark(this.options.baseDir, benchmarkId)
     const publicView = publicBenchmarkView(benchmark)
     assertNoPrivateLeak(publicView, `optimizer-context:${benchmarkId}`)
-    const statement = publicView.cases.map(spec => spec.statement).join('\n\n---\n\n')
+    const statement = publicView.cases.map(spec => `[${spec.caseId}]\n${spec.statement}`).join('\n\n---\n\n')
 
     let current = reference
     let accepted = false
     let acceptedVersion: number | undefined
     let rounds = 0
     const entries: ScoreboardEntry[] = []
+    // Every attempt this loop evaluated, so a later round does not repeat a
+    // direction an earlier round already measured.
+    const history: CandidateAttempt[] = []
 
     for (let round = 1; round <= maxRounds; round++) {
       if (options.signal.aborted) break
       rounds = round
-      const { version } = await createNextSnapshot(this.options.baseDir, this.options.agentStateDir)
+      const base = await createNextSnapshot(this.options.baseDir, this.options.agentStateDir)
+      const roundEntries: ScoreboardEntry[] = []
+      let winner: { entry: ScoreboardEntry; version: number } | undefined
       try {
-        const candidate: CandidateProposal = await this.options.proposeCandidate({
-          benchmarkId,
-          reference: current,
-          statement,
-          round,
-          signal: options.signal,
-          ...(options.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
-        })
-        const applied = await this.options.applyCandidate({
-          benchmarkId,
-          candidate,
-          agentStateDir: this.options.agentStateDir,
-          signal: options.signal,
-          ...(options.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
-        })
-        const entry = await this.evaluateCandidate(benchmarkId, {
-          agentStatePath: applied.agentStatePath,
-          version,
-          signal: options.signal,
-          ...(options.runsPerCase !== undefined ? { runsPerCase: options.runsPerCase } : {}),
-          ...(options.provider !== undefined ? { provider: options.provider } : {}),
-          ...(options.modelId !== undefined ? { modelId: options.modelId } : {}),
-          ...(options.thinkingLevel !== undefined ? { thinkingLevel: options.thinkingLevel } : {}),
-          ...(options.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
-        })
-        entries.push(entry)
-        await appendScoreboard(this.options.baseDir, benchmarkId, entry)
-        const gain = entry.score - current.score
-        const improved = gain > 0 && gain >= minImprovement
-        const reachedTarget = options.targetScore !== undefined && entry.score >= options.targetScore
-        if (improved) {
-          current = entry
-          accepted = true
-          acceptedVersion = version
-          if (reachedTarget) break
+        for (let candidateIndex = 1; candidateIndex <= candidatesPerRound; candidateIndex++) {
+          // The opening snapshot already holds this state; later candidates
+          // must discard whatever the previous candidate and its evaluation left.
+          if (candidateIndex > 1) {
+            await this.options.restoreSnapshot({ version: base.version, signal: options.signal })
+          }
+          const candidate: CandidateProposal = await this.options.proposeCandidate({
+            benchmarkId,
+            reference: current,
+            statement,
+            round,
+            candidateIndex,
+            candidateCount: candidatesPerRound,
+            history: [...history],
+            signal: options.signal,
+            ...(options.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
+          })
+          const applied = await this.options.applyCandidate({
+            benchmarkId,
+            candidate,
+            agentStateDir: this.options.agentStateDir,
+            signal: options.signal,
+            ...(options.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
+          })
+          const minted = await createNextSnapshot(this.options.baseDir, this.options.agentStateDir)
+          const entry = await this.evaluateCandidate(benchmarkId, {
+            agentStatePath: applied.agentStatePath,
+            version: minted.version,
+            signal: options.signal,
+            ...(options.runsPerCase !== undefined ? { runsPerCase: options.runsPerCase } : {}),
+            ...(options.provider !== undefined ? { provider: options.provider } : {}),
+            ...(options.modelId !== undefined ? { modelId: options.modelId } : {}),
+            ...(options.thinkingLevel !== undefined ? { thinkingLevel: options.thinkingLevel } : {}),
+            ...(options.sessionId !== undefined ? { sessionId: options.sessionId } : {}),
+          })
+          entry.summaryTitle = candidate.name
+          entry.summary = `${candidate.description}\n预测:${candidate.prediction}`
+          const attempt: CandidateAttempt = {
+            round,
+            candidateIndex,
+            name: candidate.name,
+            description: candidate.description,
+            prediction: candidate.prediction,
+            score: entry.score,
+            referenceScore: current.score,
+            cases: entry.cases,
+          }
+          assertNoPrivateLeak(attempt, `optimizer-history:${benchmarkId}`)
+          history.push(attempt)
+          roundEntries.push(entry)
+          const gain = entry.score - current.score
+          if (gain > 0 && gain >= minImprovement && (winner === undefined || entry.score > winner.entry.score)) {
+            winner = { entry, version: minted.version }
+          }
+          if (options.targetScore !== undefined && entry.score >= options.targetScore) break
+        }
+
+        // Commit the round's state before recording it, so no persisted entry
+        // ever names a state the directory does not hold.
+        if (winner === undefined) {
+          await this.options.restoreSnapshot({ version: base.version, signal: options.signal })
         } else {
-          await this.options.restoreSnapshot({ version, signal: options.signal })
+          // Even when the winner was the last candidate evaluated, the restore
+          // discards anything its evaluation left behind: the directory must
+          // match the archive the entry's version names.
+          await this.options.restoreSnapshot({ version: winner.version, signal: options.signal })
+          current = winner.entry
+          accepted = true
+          acceptedVersion = winner.version
         }
       } catch (error) {
-        // A round that dies mid-way leaves a half-applied candidate behind.
-        // Restore the round's snapshot so the agent state never keeps a change
-        // that was not measured; the caller's signal may already be aborted, so
-        // the restore runs on its own.
-        try {
-          await this.options.restoreSnapshot({ version, signal: new AbortController().signal })
-        } catch (restoreError) {
-          throw new AggregateError(
-            [error, restoreError],
-            `self-evolve-benchmark: round ${round} failed and the snapshot restore also failed`,
-          )
-        }
-        throw error
+        await this.rollbackFailedRound(base.version, error, round)
+      }
+
+      // Record only after the round's state is committed, so no persisted entry
+      // names a state the directory does not hold. Appending in evaluation order
+      // keeps readers monotonic even when a later append fails: the entries they
+      // can see are a true prefix of the round. The round is not atomic — a
+      // failing append leaves the committed state ahead of the ledger, which a
+      // re-run of `runBenchmark` reconciles.
+      for (const entry of roundEntries) {
+        if (entry !== winner?.entry) entry.rejected = true
+        await appendScoreboard(this.options.baseDir, benchmarkId, entry)
+      }
+      entries.push(...roundEntries)
+      if (winner !== undefined && options.targetScore !== undefined && winner.entry.score >= options.targetScore) {
+        break
       }
     }
 
@@ -225,6 +320,30 @@ export class BenchmarkEngineCore {
     }
     if (acceptedVersion !== undefined) result.acceptedVersion = acceptedVersion
     return result
+  }
+
+  /**
+   * Roll a failed round back to its opening snapshot, then rethrow its error.
+   *
+   * A round that dies mid-way leaves a half-applied candidate behind, so the
+   * agent state never keeps a change that was not measured. The caller's signal
+   * may already be aborted, so the restore runs on its own.
+   *
+   * @param baseVersion The round's opening snapshot version.
+   * @param error The error that ended the round.
+   * @param round The 1-based round index, for the diagnostic.
+   * @throws always: the original error, or an `AggregateError` holding it when the restore also fails.
+   */
+  private async rollbackFailedRound(baseVersion: number, error: unknown, round: number): Promise<never> {
+    try {
+      await this.options.restoreSnapshot({ version: baseVersion, signal: new AbortController().signal })
+    } catch (restoreError) {
+      throw new AggregateError(
+        [error, restoreError],
+        `self-evolve-benchmark: round ${round} failed and the snapshot restore also failed`,
+      )
+    }
+    throw error
   }
 
   /** Execute then score every case of a benchmark `runsPerCase` times under one agent state. */

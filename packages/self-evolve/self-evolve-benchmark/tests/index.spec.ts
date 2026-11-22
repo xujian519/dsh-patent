@@ -436,7 +436,8 @@ describe('BenchmarkEvolveEngine service wiring', () => {
 
       expect(result.accepted).toBe(true)
       expect(result.bestScore).toBe(90)
-      expect(result.acceptedVersion).toBe(1)
+      // v1 is the round's opening state; the accepted candidate is snapshotted as v2.
+      expect(result.acceptedVersion).toBe(2)
       // The seam, not the sandboxed child, wrote the file.
       await expect(readFile(join(agentDir, 'guidance.md'), 'utf8')).resolves.toBe('# candidate\n')
     })
@@ -800,6 +801,119 @@ describe('BenchmarkEvolveEngine service wiring', () => {
 
       expect(result.accepted).toBe(true)
       expect(result.bestScore).toBe(65)
+    })
+    it('refuses a configured candidatesPerRound that is not an integer >= 1', () => {
+      for (const candidatesPerRound of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+        expect(() => new BenchmarkEvolveEngine(new Context(), { baseDir: dir, agentStateDir: agentDir, candidatesPerRound }))
+          .toThrow(/candidatesPerRound must be an integer >= 1/)
+      }
+    })
+
+    it('feeds per-case scores, evaluator notes, and earlier candidates to the optimizer', async () => {
+      const ctx = new Context()
+      const prompts: string[] = []
+      provideRuntime(ctx, async (spec) => {
+        const first = spec.prompt[0]
+        const text = first !== undefined && first.type === 'text' ? first.text : ''
+        if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
+        if (text.includes('优化者')) {
+          prompts.push(text)
+          const index = prompts.length
+          return stubRun([
+            textBlock(`{"name":"cand${index}","description":"change ${index}","prediction":"prediction ${index}"}`),
+          ])
+        }
+        if (text.includes('实现者')) return stubRun([textBlock(APPLIED_FILES)])
+        return stubRun([textBlock('{"score":50}')])
+      })
+      // The configured candidate count applies to a loop that omits it.
+      const engine = new BenchmarkEvolveEngine(ctx, { baseDir: dir, agentStateDir: agentDir, candidatesPerRound: 2 })
+      await prepareBenchmark()
+      await appendScoreboard(dir, benchmarkId, {
+        version: 0,
+        score: 55,
+        cases: [{ caseId: CaseId('c1'), score: 55, runs: [{ score: 55, note: `缺少结论段落。${'A'.repeat(250)}` }] }],
+      })
+
+      const result = await engine.optimizeLoop(benchmarkId, {
+        signal: new AbortController().signal,
+        sessionId: 'sess-1',
+      })
+
+      expect(result.accepted).toBe(false)
+      expect(result.entries.map(entry => entry.rejected)).toEqual([true, true])
+      expect(prompts).toHaveLength(2)
+      expect(prompts[0]).toContain('- c1: 55')
+      // Statements carry their case id, so a feedback line maps back to a task.
+      expect(prompts[0]).toContain('[c1]')
+      // The note is quoted but truncated to FEEDBACK_NOTE_LIMIT characters.
+      expect(prompts[0]).toContain('评语:缺少结论段落。')
+      expect(prompts[0]).toContain('…')
+      expect(prompts[0]).not.toContain('A'.repeat(200))
+      expect(prompts[0]).not.toContain('本 loop 已评测的候选')
+      expect(prompts[0]).toContain('本轮共提 2 个候选,你是第 1 个')
+      expect(prompts[1]).toContain('本 loop 已评测的候选')
+      expect(prompts[1]).toContain('第 1 轮第 1 个「cand1」:聚合 50(参考 55)')
+      expect(prompts[1]).toContain('改动:change 1')
+      expect(prompts[1]).toContain('预测:prediction 1')
+      expect(prompts[1]).toContain('- c1: 50')
+      expect(prompts[1]).toContain('你是第 2 个')
+    })
+
+    it('omits the per-case and history sections when the reference has neither', async () => {
+      const ctx = new Context()
+      const prompts: string[] = []
+      provideRuntime(ctx, async (spec) => {
+        const first = spec.prompt[0]
+        const text = first !== undefined && first.type === 'text' ? first.text : ''
+        if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
+        if (text.includes('优化者')) {
+          prompts.push(text)
+          return stubRun([textBlock('{"name":"n","description":"d","prediction":"p"}')])
+        }
+        if (text.includes('实现者')) return stubRun([textBlock(APPLIED_FILES)])
+        return stubRun([textBlock('{"score":90}')])
+      })
+      const engine = makeEngine(ctx)
+      await prepareBenchmark()
+      await appendScoreboard(dir, benchmarkId, { version: 0, score: 60, cases: [] })
+
+      await engine.optimizeLoop(benchmarkId, { signal: new AbortController().signal, sessionId: 'sess-1' })
+
+      expect(prompts).toHaveLength(1)
+      expect(prompts[0]).not.toContain('当前参考的逐例得分')
+      expect(prompts[0]).not.toContain('本 loop 已评测的候选')
+      expect(prompts[0]).not.toContain('本轮共提')
+      expect(prompts[0]).toContain('当前参考分数:60')
+      expect(prompts[0]).toContain('你是优化者')
+    })
+
+    it('lets an explicit candidatesPerRound override the configured default', async () => {
+      const ctx = new Context()
+      let proposals = 0
+      provideRuntime(ctx, async (spec) => {
+        const first = spec.prompt[0]
+        const text = first !== undefined && first.type === 'text' ? first.text : ''
+        if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
+        if (text.includes('优化者')) {
+          proposals += 1
+          return stubRun([textBlock('{"name":"n","description":"d","prediction":"p"}')])
+        }
+        if (text.includes('实现者')) return stubRun([textBlock(APPLIED_FILES)])
+        return stubRun([textBlock('{"score":90}')])
+      })
+      const engine = new BenchmarkEvolveEngine(ctx, { baseDir: dir, agentStateDir: agentDir, candidatesPerRound: 3 })
+      await prepareBenchmark()
+      await appendScoreboard(dir, benchmarkId, { version: 0, score: 60, cases: [] })
+
+      const result = await engine.optimizeLoop(benchmarkId, {
+        signal: new AbortController().signal,
+        sessionId: 'sess-1',
+        candidatesPerRound: 1,
+      })
+
+      expect(proposals).toBe(1)
+      expect(result.accepted).toBe(true)
     })
   })
 })

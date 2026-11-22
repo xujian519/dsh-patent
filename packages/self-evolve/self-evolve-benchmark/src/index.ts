@@ -29,12 +29,13 @@ import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, parse as parsePath, resolve as resolvePath } from 'node:path'
 import { mkdir, readdir, stat, writeFile } from 'node:fs/promises'
 import type { BenchmarkId } from './brand.ts'
-import { assertMinImprovement, BenchmarkEngineCore } from './engine.ts'
+import { assertCandidatesPerRound, assertMinImprovement, BenchmarkEngineCore } from './engine.ts'
 import { AGENT_STATE_MARKER, fingerprintAgentState, isUnsafeRelativePath, restoreSnapshot } from './snapshot.ts'
 import type {
   ApplyCandidate,
   BenchmarkEvolveConfig,
   CandidateProposal,
+  CaseAggregate,
   EvaluateCase,
   EvaluateCaseRequest,
   EvaluateCaseResult,
@@ -105,16 +106,53 @@ function executePrompt(request: ExecuteCaseRequest): string {
   ].join('\n')
 }
 
-/** The optimizer's prompt: public statements and the reference score only, never the rubric. */
+/** Longest evaluator note quoted back to the optimizer. */
+const FEEDBACK_NOTE_LIMIT = 200
+
+/** Render one case's mean score and its evaluator notes as prompt lines. */
+function caseFeedback(aggregate: CaseAggregate, indent = ''): string[] {
+  const lines = [`${indent}- ${aggregate.caseId}: ${aggregate.score}`]
+  const notes = aggregate.runs.flatMap((run) => {
+    if (run.note === undefined) return []
+    return [run.note.length > FEEDBACK_NOTE_LIMIT ? `${run.note.slice(0, FEEDBACK_NOTE_LIMIT)}…` : run.note]
+  })
+  if (notes.length > 0) lines.push(`${indent}  评语:${notes.join(';')}`)
+  return lines
+}
+
+/** The optimizer's prompt: the public statements plus measured per-case results, never the rubric. */
 function proposePrompt(options: ProposeCandidateOptions): string {
-  return [
+  const lines = [
     '你是优化者。目标:针对下列基准提出一个候选改进,使分数严格提高。',
     `当前参考分数:${options.reference.score}`,
+  ]
+  if (options.reference.cases.length > 0) {
+    lines.push('当前参考的逐例得分:')
+    for (const aggregate of options.reference.cases) lines.push(...caseFeedback(aggregate))
+  }
+  if (options.history.length > 0) {
+    lines.push('本 loop 已评测的候选(旧到新;括号内是它评测时的参考分):')
+    for (const attempt of options.history) {
+      lines.push(
+        `- 第 ${attempt.round} 轮第 ${attempt.candidateIndex} 个「${attempt.name}」:聚合 ${attempt.score}(参考 ${attempt.referenceScore})`,
+        `  改动:${attempt.description}`,
+        `  预测:${attempt.prediction}`,
+      )
+      for (const aggregate of attempt.cases) lines.push(...caseFeedback(aggregate, '  '))
+    }
+  }
+  if (options.candidateCount > 1) {
+    lines.push(
+      `本轮共提 ${options.candidateCount} 个候选,你是第 ${options.candidateIndex} 个:请给出与前面候选不同的改进方向。`,
+    )
+  }
+  lines.push(
     '基准任务(statement,唯一允许依据的输入):',
     options.statement,
     '重要:优化上下文中绝不含评分标准;若你发现自己拿到了评分标准或标准答案,立即停止并报告污染。',
     '只输出一个 JSON 对象:{"name": 候选名, "description": 改动说明, "prediction": 可证伪的预测(哪些行为会变)}',
-  ].join('\n')
+  )
+  return lines.join('\n')
 }
 
 /** The applier's prompt: return the rewritten files; the seam writes them, because the child's sandbox cannot. */
@@ -429,6 +467,8 @@ export class BenchmarkEvolveEngine extends Service {
   private readonly targetScore: number | undefined
   /** Default minimum aggregate gain for accepting an optimize round. */
   private readonly minImprovement: number
+  /** Default candidates proposed per optimize round. */
+  private readonly candidatesPerRound: number
   /** Constructor-started validation of `agentStateDir`; every public method awaits it first. */
   private readonly ready: Promise<void>
 
@@ -462,6 +502,9 @@ export class BenchmarkEvolveEngine extends Service {
     const minImprovement = config.minImprovement ?? 0
     assertMinImprovement(minImprovement)
     this.minImprovement = minImprovement
+    const candidatesPerRound = config.candidatesPerRound ?? 1
+    assertCandidatesPerRound(candidatesPerRound)
+    this.candidatesPerRound = candidatesPerRound
   }
 
   /** Fill per-run defaults from config when the caller omitted them. */
@@ -477,6 +520,7 @@ export class BenchmarkEvolveEngine extends Service {
     if (options.targetScore === undefined && this.targetScore !== undefined) filled.targetScore = this.targetScore
     if (options.runsPerCase === undefined) filled.runsPerCase = this.runsPerCase
     if (options.minImprovement === undefined) filled.minImprovement = this.minImprovement
+    if (options.candidatesPerRound === undefined) filled.candidatesPerRound = this.candidatesPerRound
     return filled
   }
 

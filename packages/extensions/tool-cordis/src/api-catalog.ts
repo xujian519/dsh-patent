@@ -6860,6 +6860,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface CachedPromptSection {\n    name: string;\n    text: string;\n}',
   },
   {
+    name: 'CandidateAttempt',
+    declaration: 'export interface CandidateAttempt {\n    round: number;\n    candidateIndex: number;\n    name: string;\n    description: string;\n    prediction: string;\n    score: number;\n    referenceScore: number;\n    cases: CaseAggregate[];\n}',
+  },
+  {
     name: 'CandidateProposal',
     declaration: 'export interface CandidateProposal {\n    name: string;\n    description: string;\n    prediction: string;\n}',
   },
@@ -8997,7 +9001,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'OptimizeLoopOptions',
-    declaration: 'export interface OptimizeLoopOptions {\n    reference?: ScoreboardEntry;\n    targetScore?: number;\n    maxRounds?: number;\n    runsPerCase?: number;\n    provider?: string;\n    modelId?: string;\n    thinkingLevel?: string;\n    sessionId?: string;\n    signal: AbortSignal;\n}',
+    declaration: 'export interface OptimizeLoopOptions {\n    reference?: ScoreboardEntry;\n    targetScore?: number;\n    maxRounds?: number;\n    runsPerCase?: number;\n    minImprovement?: number;\n    candidatesPerRound?: number;\n    provider?: string;\n    modelId?: string;\n    thinkingLevel?: string;\n    sessionId?: string;\n    signal: AbortSignal;\n}',
   },
   {
     name: 'OptimizeResult',
@@ -9469,7 +9473,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ProposeCandidateOptions',
-    declaration: 'export interface ProposeCandidateOptions {\n    benchmarkId: BenchmarkId;\n    reference: ScoreboardEntry;\n    statement: string;\n    round: number;\n    sessionId?: string;\n    signal: AbortSignal;\n}',
+    declaration: 'export interface ProposeCandidateOptions {\n    benchmarkId: BenchmarkId;\n    reference: ScoreboardEntry;\n    statement: string;\n    round: number;\n    candidateIndex: number;\n    candidateCount: number;\n    history: readonly CandidateAttempt[];\n    sessionId?: string;\n    signal: AbortSignal;\n}',
   },
   {
     name: 'ProviderRequestId',
@@ -9969,7 +9973,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ScoreboardEntry',
-    declaration: 'export interface ScoreboardEntry {\n    version: number;\n    provider?: string;\n    modelId?: string;\n    thinkingLevel?: string;\n    score: number;\n    cost?: number;\n    durationMs?: number;\n    sessionId?: string;\n    cases: CaseAggregate[];\n    summaryTitle?: string;\n    summary?: string;\n}',
+    declaration: 'export interface ScoreboardEntry {\n    version: number;\n    rejected?: boolean;\n    provider?: string;\n    modelId?: string;\n    thinkingLevel?: string;\n    score: number;\n    cost?: number;\n    durationMs?: number;\n    sessionId?: string;\n    cases: CaseAggregate[];\n    summaryTitle?: string;\n    summary?: string;\n}',
   },
   {
     name: 'SearchFileMatches',

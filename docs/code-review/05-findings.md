@@ -133,6 +133,7 @@
 | F-CROSS-003 | 知识库安装覆盖时先删输出，改名失败没有用例 | CROSS | D | High | 中 | fixed |
 | F-CROSS-004 | 专利、文档、法律三域的工具错误类没有接入 `HarnessError`，失败码在 `tool/result` 与会话界面丢失 | CROSS | E | Low | 高 | fixed |
 | F-CROSS-005 | 专利工具仍有普通 `Error` 进入 `tool/result`，失败事件没有 `error.code` | CROSS | E | Low | 高 | new |
+| F-CROSS-006 | `patent_fees`、`patent_deadlines`、`document_deliver` 的预期失败仍抛普通 `Error`，失败事件没有 `error.code` | CROSS | E | Low | 高 | new |
 
 ## 专利域
 
@@ -1680,6 +1681,19 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 状态：new
 - 队列：本条不改 [06-priority.md](06-priority.md) 的顺序。修复另开 PR。
 
+### F-CROSS-006 `patent_fees`、`patent_deadlines`、`document_deliver` 的预期失败仍抛普通 `Error`，失败事件没有 `error.code`
+
+- 位置：`packages/patent/patent-fees/src/tool/patent-fees.ts:27`（`PatentFeesToolError extends Error`，自带 `code`）、`packages/patent/patent-deadline/src/calendar.ts:28`（`CalendarDateError extends Error`，没有 `code`）、`packages/document/document-deliver/src/tool.ts:680`、`:690`（直接 `throw new Error`，该文件共 13 处）
+- 维度：E
+- 严重度：Low
+- 可能性：高
+- 证据：2026-11-22 的 P4 脚本注入。`patent_fees` 传 `claims: -1` 得到「claims 必须是非负整数，得到：-1」，`tool/result` 里 `isError` 为真而 `error` 为空；异常对象自己的 code 是 `invalid_count`。`patent_deadlines` 传 `filingDate: "2024-13-40"` 得到 `CalendarDateError` 的文案，`error` 为空，类上没有 code。`document_deliver` 对不存在的文件与含残余占位符的文件都抛普通 `Error`，`error` 同样为空。三次都是预期工具失败，模型能读到文本。F-CROSS-004 修复的六个类与 F-CROSS-005 列出的四个类都不含这三处。
+- 影响：与 F-CROSS-005 相同。按 `error.code` 统计可解释性时，这三件工具的预期失败仍然为 0；会话轨迹与按错误码分流的消费者只能读人类文案。同一批测量里，团队、法条、证据与视频的同类失败已经有 `name`/`code`，说明能力已经具备，缺口在三个工具边界。
+- 最小修复建议：`PatentFeesToolError` 继承 `HarnessError` 并保留 `invalid_count`；`CalendarDateError` 增加稳定 code，并在工具边界转成 `HarnessError`；`document_deliver` 的预期失败改用带 code 的 `HarnessError`（例如 `deliver_files_missing`、`deliver_gate_failed`）。每件工具补一条注入用例，断言 `result.error.info.code`。
+- 预估工作量：S
+- 是否可自动化：是（三条工具失败断言）
+- 状态：new
+
 ## E 维度汇总（Day 40）
 
 D34–D40 新增 E 维度编号 29 条，今日追加 F-CROSS-004 一条，共 30 条；严重度分布为 High 6、Medium 18、Low 6。D1–D33 已登记的 E 维度条目（如 F-PAT-001、F-DOC-002、F-LEG-003、F-VID-001）仍按原状态跟踪，不并入本表。
@@ -2071,6 +2085,8 @@ F-PAT-012。`patent-tools/src` 不再用 `as unknown as` 穿过工具 JSON。
 | OBS-006 | Node 24 全量 `test:coverage` 退出码 1：10 个测试文件、13 个用例失败；`ERROR: Coverage` 为 0；未产出覆盖率百分比 | 覆盖率基线暂缺百分比；失败多为环境相关 | 在 CI 覆盖率 lane 或提高测试超时后复跑；单独复核 watch-config 与 plugin-market git 两条 | new |
 | OBS-007 | 四域类型逃逸计数：patent 82 `any` / 159 `as unknown` / 575 非空断言；document 18/11/13；legal 11/0/44；law 0/0/1；video-mode 5/0/0 | `as unknown` 已被 `no-unknown-casts` 基线冻结，数量本身不是回归 | 精简维度只处理能消除的双重断言，不新增基线条目 | new |
 | OBS-008 | `benchmarks/` 的 9 个目录都是会话、折叠、终端与浏览器重连，没有专利域用例 | C 维度不能从现有性能门禁读到冷启动、单次工具或全流程基线；Day 20 改用一次性本地脚本测确定性路径，模型与网络未计入 | 专利域若要进持续门禁，应在 `benchmarks/` 加一条用户路径，审阅脚本不留在仓库里。Day 21 已用一次性脚本测本地缓存和 `knowledge-lite.db`，检索网络与 PDF 仍未计入。Day 22 用一次性脚本测了团队状态文件、邮箱和一次运行结果落盘，模型耗时未计入。Day 23 用一次性脚本测了文书渲染、输出读取和拷贝，LibreOffice 引擎未启动。Day 24 用一次性脚本测了法律域合成库、法条按需加载和证据规则解析，模型与网络未计入。本机默认查询库不存在。Day 25 用一次性脚本测了视频轮询睡眠、桩下载、参考图读入编码、工作室串行 stat、进程内锁，以及用睡眠脚本代替 ffmpeg 的取消，模型与云端网络未计入，真实 ffmpeg 未启动。Day 26 用一次性脚本测了共享子进程的取消宽限、16 路立即退出和 spill 目录，模型与网络未计入；真实 ffmpeg、Chrome、Python、Inkscape 与 LibreOffice 未启动 | new |
+| OBS-009 | 本机 `request/header` 共 98 个工具，未声明 `office_convert`、`office_render`、`office_recalculate`（无 Office Kit） | DOC-03 与 office 族在本机不能闭环，只能记未测 | 在带 Office Kit 的环境重跑，或依赖 CI 的文档转换 lane；不要把未测记 0 | new |
+| OBS-010 | `knowledge_note_save` 在 `title` 为空时返回「笔记跳过（title 与 content 均不能为空）」，`isError` 为假 | 只按 `isError` 统计的调用方会把一次未落盘记为成功 | 等有调用方依赖 `isError` 统计时再决定是否改成带 code 的跳过结果 | new |
 
 ## 记录规则
 

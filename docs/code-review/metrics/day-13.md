@@ -83,7 +83,7 @@ pnpm exec tsx docs/code-review/metrics/.scenario/runner.ts
 
 题库于 2026-11-21 按起草文本冻结，清单在 [pilot-questions.md](pilot-questions.md)。直接调用记录在 [day-09.md](day-09.md) 至 [day-12.md](day-12.md)，通过线在 [day-12.md](day-12.md)。本层样本读的是这份冻结文本。通过线不由本层填写，也不把本层比例写进计划文件。
 
-这不影响本层的产出：D13–D22 的产出是「闭环与恢复基线」，它记录实际行为与题面判定的差距，正好是冻结前要修的清单。
+本层的产出是闭环与恢复基线，记下实际行为与题面判定的差距。四处差距随起草文本锁定，见 [day-22.md](day-22.md)。
 
 ## 本日结论
 

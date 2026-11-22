@@ -6,7 +6,7 @@ Status: implemented
 
 ## Problem
 
-上游于 2026-11-21 发布 `dsh-v0.2.3-alpha.1`（`d98f5d6851`），距 fork 上次同步的 `dsh-v0.2.2-rc.5`（`9c2670d3bc`）有 2343 个提交。该标签正好是 `git merge-base origin/master dsh-v0.2.3-alpha.1`，因此这一版只需一次内容合并，无需修补祖先关系。
+上游于 2026-11-21 发布 `dsh-v0.2.3-alpha.1`，距 fork 上次同步的 `dsh-v0.2.2-rc.5` 有 2343 个提交。该标签正好是 `git merge-base origin/master dsh-v0.2.3-alpha.1`，因此这一版只需一次内容合并，无需修补祖先关系。
 
 这次发布的规模是一个完整 alpha 周期，而不是两个 rc 之间的补丁：7260 个文件、+302202/−83093 行、329 处内容冲突，分布在 `packages/*/tests`（86）、`packages/*/src`（59）、清单（26）、`docs`（25）、中文页（25）、`.i18n.yaml` 记录（38）、快照（17）、`scripts`（15）与 `.agents`（6）。它带来的改名与删除直接影响 fork 的消费方：
 
@@ -44,4 +44,8 @@ fork 现在运行在 Cordis 4 上，DeepSeek 凭据统一经一个服务解析�
 
 ## Testing
 
-`pnpm run typecheck` 通过全部五个门禁（Host Typert、host 与 client 编译器、两个聚合检查）。合并提交上 `pnpm exec vitest run` 跑 10438 个套件、72995 个用例：72764 通过、231 跳过、darwin 上零失败，`pnpm run verify-test-skips --report <darwin json> --update` 已把该平台预算记为 72995 个用例、231 个跳过。`verify-cordis-config` 接受 448 个配置文件，`pnpm run persistence-changes --check` 以 49 条历史记录收口 90 个根。`verify-translation-pairing` 报告 1886 对一致，`verify-tech-debt-counters` 接受六个声明计数（`structure.long-functions` 207、`structure.large-files` 102），`verify-doc-budgets` 让七篇受控文档全部落在预算内。
+`pnpm run typecheck` 通过全部五个门禁（Host Typert、host 与 client 编译器、两个聚合检查）。`pnpm run build:artifacts` 重建目录、客户端 bundle 与 Web 构建（8 个门禁，399 个客户端产物），`pnpm run build:check` 对这份产物通过。`pnpm run lint`、`pnpm run duplication`（0 处克隆）、`pnpm run constraints` 与 `pnpm run hygiene` 通过。`pnpm run test:docs` 通过 30 个门禁，`pnpm run doc-sync` 以 `NODE_OPTIONS=--max-old-space-size=16384` 通过全部 53 个。
+
+darwin 上 `pnpm exec vitest run` 跑 10442 个套件、73040 个用例：72806 通过、231 跳过，另有三个用例在全量并发下撞到 5 秒超时（HMR watch-config、plugin-manager 的 Git 重装、browser-use-runtime 的 MCP 发现），单独跑该文件时 213/213 全部通过；`pnpm run verify-test-skips --report <darwin json> --update` 把该平台预算记为 73040 个用例、231 个跳过。`pnpm run test:snapshot` 重放 330 个用例、跳过 2 个，并把九份 ACP 的 `agentInfo.version` 钉到 `0.2.3-alpha.1`；`pnpm run test:web:built snapshot` 重放 27 个；`self-evolve` 与 `tool-cordis` 共 464 个全部通过。
+
+`verify-cordis-config` 接受 448 个配置文件，`pnpm run persistence-changes --check` 以 49 条历史记录收口 90 个根。`verify-translation-pairing` 报告 1886 对一致，`verify-tech-debt-counters` 接受六个声明计数（`structure.long-functions` 207、`structure.large-files` 102），`verify-doc-budgets` 让七篇受控文档全部落在预算内。

@@ -4674,7 +4674,7 @@ export interface WorkspaceVerifierConfig {
 
 ## `@deepseek-ai/dsh-self-evolve-benchmark`
 
-- `source`: [`packages/self-evolve/self-evolve-benchmark/src/types.ts:285`](../packages/self-evolve/self-evolve-benchmark/src/types.ts)
+- `source`: [`packages/self-evolve/self-evolve-benchmark/src/types.ts:359`](../packages/self-evolve/self-evolve-benchmark/src/types.ts)
 
 ```ts config-catalog
 /** Public configuration for the benchmark-driven provider. */
@@ -4696,6 +4696,19 @@ export interface BenchmarkEvolveConfig {
   maxRoundsPerLoop?: number
   /** Default score goal for optimize loops; absent disables early acceptance. */
   targetScore?: number
+  /**
+   * Default minimum aggregate gain for accepting an optimize round; defaults
+   * to 0, which admits any strict gain. Construction rejects a negative or
+   * non-finite value rather than accepting it as a regression-tolerant
+   * threshold.
+   */
+  minImprovement?: number
+  /**
+   * Default candidates proposed per optimize round; defaults to 1. Construction
+   * rejects a value that is not an integer >= 1 rather than proposing nothing
+   * or a fraction of a candidate.
+   */
+  candidatesPerRound?: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-self-evolve-benchmark -->

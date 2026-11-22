@@ -17,7 +17,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { Context, Service } from '@deepseek-ai/cordis'
 import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
-import { readJsonlRowsCached, readLatestJsonRow, appendJsonlCapped } from './jsonl.ts'
+import { readJsonlRows, readJsonlRowsCached, readLatestJsonRow, appendJsonlCapped } from './jsonl.ts'
 import { BlockAssembler, createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { StreamChunk } from '@deepseek-ai/dsh-llm'
 import z from '@deepseek-ai/schemastery'
@@ -105,6 +105,8 @@ const MAX_UNTRACKED_LINES = 100_000
 const GIT_OUTPUT_MAX_BYTES = 1_000_000
 const DEFAULT_GIT_TIMEOUT_MS = 30_000
 const DEFAULT_BUILD_TIMEOUT_MS = 300_000
+/** Retained row count of the append-only committed-L2 section log. */
+const L2_COMMITTED_MAX_ROWS = 2_000
 
 /**
  * Patterns that cleared the mining threshold (SIG-2). Weak `tool-runtime`
@@ -383,6 +385,50 @@ const WEAK_VALIDATION_SCORES: ValidationScores = {
  */
 function utf8Bytes(text: string): number {
   return Buffer.byteLength(text, 'utf8')
+}
+
+/**
+ * One append-only row of the committed-L2 section log. A `commit` row records a
+ * live prompt section so a later process can restore it; a `prune` row retires
+ * the section name (budget pruning or first-commit rollback) so a restart does
+ * not bring it back. The last row for a name wins.
+ */
+type L2SectionRow =
+  | {
+    op: 'commit'
+    ts: number
+    sectionName: string
+    sectionText: string
+    order: number
+    patternId?: string
+  }
+  | { op: 'prune'; ts: number; sectionName: string }
+
+/**
+ * Parse one committed-L2 log row. Fields come from a durable file, so every
+ * value used by the restore path is type-checked; a malformed row is skipped
+ * rather than failing startup on unrelated corruption.
+ *
+ * @param raw - one parsed JSON value from the log.
+ * @returns the typed row, or null when the value is not a valid row.
+ */
+function parseL2SectionRow(raw: unknown): L2SectionRow | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const row = raw as Record<string, unknown>
+  if (typeof row.ts !== 'number' || !Number.isFinite(row.ts)) return null
+  if (typeof row.sectionName !== 'string' || row.sectionName.length === 0) return null
+  if (row.op === 'prune') return { op: 'prune', ts: row.ts, sectionName: row.sectionName }
+  if (row.op !== 'commit') return null
+  if (typeof row.sectionText !== 'string') return null
+  if (typeof row.order !== 'number' || !Number.isFinite(row.order)) return null
+  return {
+    op: 'commit',
+    ts: row.ts,
+    sectionName: row.sectionName,
+    sectionText: row.sectionText,
+    order: row.order,
+    ...(typeof row.patternId === 'string' ? { patternId: row.patternId } : {}),
+  }
 }
 
 /** One append-only negative-result row (P1.7b, 翁荔挑战 4). */
@@ -755,9 +801,10 @@ export class BasicSelfEvolveEngine extends SelfEvolveEngine {
     }))
   }
 
-  /** Register the failure-pattern projection before any mining or draining runs. */
+  /** Register the failure-pattern projection and restore committed L2 sections before any mining or draining runs. */
   protected async [Service.init](): Promise<void> {
     await this.ctx.sessionProjections.register(failurePatternsProjectionDefinition)
+    await this.restoreL2Sections()
   }
 
   /** Undefine an L4 plugin this provider defined when its run was refused or failed (P2.2). */
@@ -1649,6 +1696,10 @@ export class BasicSelfEvolveEngine extends SelfEvolveEngine {
     // a champion row for a candidate that never went live.
     await this.archiveChampion(proposal, commitEvent.seq)
     const patternId = proposal.addressesPatternIds[0]
+    // L2 sections are process-local registrations, so the commit is only
+    // durable once the log records them. Written after the session event so a
+    // failed append cannot resurrect an uncommitted section on restart.
+    if (candidate.kind === 'L2-context') await this.recordL2Commit(candidate, patternId)
     if (patternId !== undefined) this.liveByPattern.set(patternId, candidate)
     return { commitSeq: commitEvent.seq }
   }
@@ -1767,11 +1818,18 @@ export class BasicSelfEvolveEngine extends SelfEvolveEngine {
     if (row === null || row.previousCandidate === null) {
       const stale = this.liveByPattern.get(patternId)
       if (stale?.kind === 'L1-skill') await this.tombstoneSkill(this.rollbackCwd(), stale.skillName)
+      if (stale?.kind === 'L2-context') await this.retireL2Section(stale.sectionName)
       this.liveByPattern.delete(patternId)
       return
     }
     const champion = row.previousCandidate
     const cwd = this.rollbackCwd()
+    // A self-evolve L2 section the champion does not replace must be retired
+    // from the log too; otherwise the next restart restores both.
+    const stale = this.liveByPattern.get(patternId)
+    if (stale?.kind === 'L2-context' && (champion.kind !== 'L2-context' || stale.sectionName !== champion.sectionName)) {
+      await this.retireL2Section(stale.sectionName)
+    }
     switch (champion.kind) {
       case 'L1-skill': {
         const current = this.liveSkills.get(champion.skillName)
@@ -1792,6 +1850,8 @@ export class BasicSelfEvolveEngine extends SelfEvolveEngine {
       }
       case 'L2-context':
         this.registerL2Section(champion)
+        // The champion replaces the rolled-back candidate in the durable log.
+        await this.recordL2Commit(champion, patternId)
         break
       default:
         return
@@ -1854,6 +1914,101 @@ export class BasicSelfEvolveEngine extends SelfEvolveEngine {
       })
       this.liveSkills.set(candidate.skillName, { ...previous, dispose: restore })
     }
+  }
+
+  /** Durable log of committed L2 sections under the resolved DSH home. */
+  protected l2CommitFile(): string {
+    return dshHomePath('self-evolve', 'l2-committed.jsonl')
+  }
+
+  /**
+   * Append one committed L2 section to the durable log. A later process reads
+   * this log at startup and re-registers the sections, which is what makes an
+   * accepted L2 patch outlive the process that accepted it. The write is part
+   * of the commit: a section that cannot be recorded for restore is reported
+   * rather than silently lost on the next restart.
+   *
+   * @param candidate - the accepted L2 candidate.
+   * @param patternId - the failure pattern the commit addressed, when known.
+   */
+  protected async recordL2Commit(
+    candidate: Extract<EvolveProposal['candidate'], { kind: 'L2-context' }>,
+    patternId?: string,
+  ): Promise<void> {
+    const row: L2SectionRow = {
+      op: 'commit',
+      ts: Date.now(),
+      sectionName: candidate.sectionName,
+      sectionText: candidate.sectionText,
+      order: candidate.order,
+      ...(patternId !== undefined ? { patternId } : {}),
+    }
+    await appendJsonlCapped(this.l2CommitFile(), [JSON.stringify(row)], L2_COMMITTED_MAX_ROWS)
+  }
+
+  /**
+   * Retire one section name in the durable log so a restart does not restore a
+   * section that budget pruning or a rollback removed.
+   *
+   * @param sectionName - the section name being retired.
+   */
+  protected async recordL2Prune(sectionName: string): Promise<void> {
+    const row: L2SectionRow = { op: 'prune', ts: Date.now(), sectionName }
+    await appendJsonlCapped(this.l2CommitFile(), [JSON.stringify(row)], L2_COMMITTED_MAX_ROWS)
+  }
+
+  /**
+   * Remove one live L2 section and record the retirement, so no later restart
+   * restores it. The prune row is written even when the section is not live:
+   * the log may still hold a commit row this process skipped on budget.
+   *
+   * @param sectionName - the section name being retired.
+   */
+  private async retireL2Section(sectionName: string): Promise<void> {
+    this.liveSections.get(sectionName)?.dispose()
+    this.liveSections.delete(sectionName)
+    await this.recordL2Prune(sectionName)
+  }
+
+  /**
+   * Restore committed L2 sections at provider startup. The last row per
+   * section name wins, so a pruned or rolled-back name stays retired. Sections
+   * are selected newest-first under `maxPromptInflationBytesPerWeek` (the same
+   * budget the live pruning path enforces) and registered oldest-first, so the
+   * restored set matches what the previous process would have kept.
+   */
+  protected async restoreL2Sections(): Promise<void> {
+    const rows = await readJsonlRows(this.l2CommitFile(), parseL2SectionRow)
+    if (rows.length === 0) return
+    const latest = new Map<string, { row: L2SectionRow; index: number }>()
+    rows.forEach((row, index) => { latest.set(row.sectionName, { row, index }) })
+    // Same-millisecond commits are common; the log position breaks the tie so
+    // the later write keeps the section.
+    const commits = [...latest.values()]
+      .filter((entry): entry is { row: Extract<L2SectionRow, { op: 'commit' }>; index: number } => entry.row.op === 'commit')
+      .sort((a, b) => (b.row.ts - a.row.ts) || (b.index - a.index))
+    const budget = this.config.maxPromptInflationBytesPerWeek
+    const restored: typeof commits = []
+    let used = 0
+    for (const entry of commits) {
+      const bytes = utf8Bytes(entry.row.sectionText)
+      if (used + bytes > budget) {
+        this.ctx.logger('self-evolve').debug(`L2 restore skipped ${entry.row.sectionName}: prompt-inflation budget exhausted`)
+        continue
+      }
+      used += bytes
+      restored.push(entry)
+    }
+    for (const { row } of restored.reverse()) {
+      this.registerL2Section({
+        kind: 'L2-context',
+        sectionName: row.sectionName,
+        sectionText: row.sectionText,
+        order: row.order,
+        estimatedBytes: utf8Bytes(row.sectionText),
+      })
+    }
+    this.ctx.logger('self-evolve').debug(`restored ${restored.length} committed L2 sections`)
   }
 
   /**
@@ -1924,6 +2079,9 @@ export class BasicSelfEvolveEngine extends SelfEvolveEngine {
       section.dispose()
       this.liveSections.delete(name)
       total -= utf8Bytes(section.text)
+      // A pruned section must stay pruned across restarts, or every boot
+      // re-registers the set the budget just removed.
+      await this.recordL2Prune(name)
     }
   }
 

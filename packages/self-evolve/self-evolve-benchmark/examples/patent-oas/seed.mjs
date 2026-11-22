@@ -16,7 +16,8 @@
  *
  * and the initial agent state seed:
  *
- *   <baseDir>/patent-state/guidance.md   # model-visible work specification
+ *   <baseDir>/patent-state/.self-evolve-benchmark   # marker (see AGENT_STATE_MARKER)
+ *   <baseDir>/patent-state/guidance.md              # model-visible work specification
  *
  * Each case is a directory under `cases/` holding two plain-text files:
  * `statement` (public task text) and `rubric` (private scoring standard).
@@ -51,6 +52,10 @@ await writeFile(
 // the data root, never the caller's working directory.
 const patentStateDir = join(baseDir, 'patent-state')
 await mkdir(patentStateDir, { recursive: true })
+// Mirrors `AGENT_STATE_MARKER` in `src/snapshot.ts`; a plain script cannot
+// import the TypeScript module, and the provider rejects a non-empty
+// `agentStateDir` without this file, so the seed must write it.
+await writeFile(join(patentStateDir, '.self-evolve-benchmark'), '')
 await copyFile(join(dirname(casesDir), 'patent-state', 'guidance.md'), join(patentStateDir, 'guidance.md'))
 
 let caseCount = 0

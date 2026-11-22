@@ -12,8 +12,8 @@
   en: 9e9bc212385dc3cc
   zh: 09eff1bb8db49419
 /deepseek-ai-dsh-self-evolve-basic/table-of-contents:
-  en: 2db1c4d8d0f53e87
-  zh: de2f18b471216fed
+  en: 5053ae22c9a7b38b
+  zh: e6bbd18ffebcda57
 /deepseek-ai-dsh-self-evolve-basic/role:
   en: 6f63fde745743beb
   zh: abe4f2f86f21b27c
@@ -21,14 +21,17 @@
   en: 755a5e59834a93f2
   zh: ab75e55519074aa5
 /deepseek-ai-dsh-self-evolve-basic/configuration:
-  en: 6aafc84a23c1d538
-  zh: a31a7122a961e796
+  en: 0e37c4c375dfc3f4
+  zh: c390624646c672e2
 /deepseek-ai-dsh-self-evolve-basic/validation-pipeline-phase-1:
   en: 2f11c3bfd32988e0
   zh: a9d7d62d450e0606
 /deepseek-ai-dsh-self-evolve-basic/negative-results-p1-7b:
   en: d3bc6b680a123240
   zh: 803a1d80c5edd28d
+/deepseek-ai-dsh-self-evolve-basic/l2-prompt-section-persistence:
+  en: 31bbd1c323c1594c
+  zh: 3d5521ceaf10683b
 /deepseek-ai-dsh-self-evolve-basic/model-experience:
   en: 215e7ba838619b7b
   zh: 215e7ba838619b7b
@@ -45,8 +48,8 @@
   en: 1401559f4d4f0bdc
   zh: 8f4267ffd1a3bde5
 /deepseek-ai-dsh-self-evolve-basic/known-limitations-and-deferred-work:
-  en: dcafb922926aa1d6
-  zh: a2f6243b96796ffd
+  en: b4514f265e67795e
+  zh: 7150d6bffed0d95c
 /deepseek-ai-dsh-self-evolve-basic/known-limitations-and-deferred-work/dev-note:
   en: 0a1253c6f7b5e8b9
   zh: 9f56528562c7c914

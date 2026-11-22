@@ -19,8 +19,8 @@ function signal(): AbortSignal {
   return new AbortController().signal
 }
 
-function candidate() {
-  return { name: 'candidate', description: 'change', prediction: 'scores shift' }
+function candidate(index = 1) {
+  return { name: `candidate ${index}`, description: `change ${index}`, prediction: `scores shift ${index}` }
 }
 
 describe('BenchmarkEngineCore', () => {
@@ -238,12 +238,15 @@ describe('BenchmarkEngineCore', () => {
       })
 
       expect(result.accepted).toBe(true)
-      expect(result.acceptedVersion).toBe(1)
+      // Version 1 is the round's opening state; the candidate's own snapshot is 2.
+      expect(result.acceptedVersion).toBe(2)
       expect(result.referenceScore).toBe(60)
       expect(result.bestScore).toBe(90)
       expect(result.rounds).toBe(1)
       expect(result.entries).toHaveLength(1)
-      expect(restoreSnapshot).not.toHaveBeenCalled()
+      // Acceptance restores the candidate's archive so the disk matches the version.
+      expect(restoreSnapshot).toHaveBeenCalledTimes(1)
+      expect(restoreSnapshot.mock.calls[0]![0].version).toBe(2)
       expect(proposeCandidate).toHaveBeenCalledTimes(1)
       const proposeCall = proposeCandidate.mock.calls[0]![0]
       expect(proposeCall.reference.score).toBe(60)
@@ -272,6 +275,97 @@ describe('BenchmarkEngineCore', () => {
       expect(restoreCall.version).toBe(1)
     })
 
+    it('rejects a candidate whose gain stays below minImprovement', async () => {
+      await prepareBenchmark()
+      const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
+      const evaluateCase = vi.fn(async (_request: EvaluateCaseRequest) => ({ score: 64 }))
+      const restoreSnapshot = vi.fn(async (_options: { version: number; signal: AbortSignal }) => {})
+      const engine = new BenchmarkEngineCore(options({ evaluateCase, restoreSnapshot }))
+
+      const result = await engine.optimizeLoop(benchmarkId, {
+        reference,
+        maxRounds: 1,
+        minImprovement: 5,
+        signal: signal(),
+      })
+
+      expect(result.accepted).toBe(false)
+      expect(result.bestScore).toBe(60)
+      expect(restoreSnapshot).toHaveBeenCalledTimes(1)
+    })
+
+    it('accepts a candidate whose gain reaches minImprovement', async () => {
+      await prepareBenchmark()
+      const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
+      const evaluateCase = vi.fn(async (_request: EvaluateCaseRequest) => ({ score: 65 }))
+      const restoreSnapshot = vi.fn(async (_options: { version: number; signal: AbortSignal }) => {})
+      const engine = new BenchmarkEngineCore(options({ evaluateCase, restoreSnapshot }))
+
+      const result = await engine.optimizeLoop(benchmarkId, {
+        reference,
+        maxRounds: 1,
+        minImprovement: 5,
+        signal: signal(),
+      })
+
+      expect(result.accepted).toBe(true)
+      expect(result.acceptedVersion).toBe(2)
+      expect(restoreSnapshot).toHaveBeenCalledTimes(1)
+      expect(restoreSnapshot.mock.calls[0]![0].version).toBe(2)
+    })
+
+    it('rejects a negative or non-finite minImprovement before touching the agent state', async () => {
+      await prepareBenchmark()
+      const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
+      const proposeCandidate = vi.fn(async (_options: ProposeCandidateOptions) => candidate())
+      const restoreSnapshot = vi.fn(async (_options: { version: number; signal: AbortSignal }) => {})
+      const engine = new BenchmarkEngineCore(options({ proposeCandidate, restoreSnapshot }))
+
+      for (const minImprovement of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+        await expect(engine.optimizeLoop(benchmarkId, { reference, minImprovement, signal: signal() }))
+          .rejects.toThrow(/minImprovement must be a finite number >= 0/)
+      }
+
+      expect(proposeCandidate).not.toHaveBeenCalled()
+      expect(restoreSnapshot).not.toHaveBeenCalled()
+    })
+
+    it('restores the round snapshot when evaluation throws', async () => {
+      await prepareBenchmark()
+      const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
+      const evaluateCase = vi.fn(async (_request: EvaluateCaseRequest) => {
+        throw new Error('evaluator exploded')
+      })
+      const restoreSnapshot = vi.fn(async (_options: { version: number; signal: AbortSignal }) => {})
+      const engine = new BenchmarkEngineCore(options({ evaluateCase, restoreSnapshot }))
+
+      await expect(engine.optimizeLoop(benchmarkId, { reference, maxRounds: 1, signal: signal() }))
+        .rejects.toThrow('evaluator exploded')
+
+      expect(restoreSnapshot).toHaveBeenCalledTimes(1)
+      expect(restoreSnapshot.mock.calls[0]![0].version).toBe(1)
+    })
+
+    it('reports both failures when the rollback itself fails', async () => {
+      await prepareBenchmark()
+      const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
+      const evaluateCase = vi.fn(async (_request: EvaluateCaseRequest) => {
+        throw new Error('evaluator exploded')
+      })
+      const restoreSnapshot = vi.fn(async (_options: { version: number; signal: AbortSignal }) => {
+        throw new Error('restore exploded')
+      })
+      const engine = new BenchmarkEngineCore(options({ evaluateCase, restoreSnapshot }))
+
+      const failure: unknown = await engine
+        .optimizeLoop(benchmarkId, { reference, maxRounds: 1, signal: signal() })
+        .catch((error: unknown) => error)
+
+      expect(failure).toBeInstanceOf(AggregateError)
+      expect((failure as AggregateError).message).toMatch(/round 1 failed and the snapshot restore also failed/)
+      expect((failure as AggregateError).errors).toHaveLength(2)
+    })
+
     it('accepts an improving candidate on a later round under a fresh version', async () => {
       await prepareBenchmark()
       const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
@@ -286,9 +380,10 @@ describe('BenchmarkEngineCore', () => {
 
       expect(result.rounds).toBe(2)
       expect(result.accepted).toBe(true)
-      expect(result.acceptedVersion).toBe(2)
+      // Round 1 mints v1 (opening) + v2 (candidate); round 2 mints v3 + v4.
+      expect(result.acceptedVersion).toBe(4)
       expect(result.bestScore).toBe(90)
-      expect(restoreSnapshot).toHaveBeenCalledTimes(1)
+      expect(restoreSnapshot).toHaveBeenCalledTimes(2)
     })
 
     it('uses the latest scoreboard entry as the reference when none is given', async () => {
@@ -368,6 +463,193 @@ describe('BenchmarkEngineCore', () => {
       expect(entry.provider).toBe('deepseek')
       expect(entry.modelId).toBe('deepseek-chat')
       expect(entry.thinkingLevel).toBe('high')
+    })
+
+    it('proposes candidatesPerRound candidates and rolls every rejected one back to the opening snapshot', async () => {
+      await prepareBenchmark()
+      const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
+      const evaluateCase = vi.fn(async (_request: EvaluateCaseRequest) => ({ score: 50 }))
+      const proposeCandidate = vi.fn(async (options: ProposeCandidateOptions) => candidate(options.candidateIndex))
+      const applyCandidate = vi.fn(async (_options: ApplyCandidateOptions) => ({ agentStatePath: agentDir }))
+      const restoreSnapshot = vi.fn(async (_options: { version: number; signal: AbortSignal }) => {})
+      const engine = new BenchmarkEngineCore(
+        options({ evaluateCase, proposeCandidate, applyCandidate, restoreSnapshot }),
+      )
+
+      const result = await engine.optimizeLoop(benchmarkId, {
+        reference,
+        candidatesPerRound: 3,
+        signal: signal(),
+      })
+
+      expect(result.accepted).toBe(false)
+      expect(result.bestScore).toBe(60)
+      expect(result.entries).toHaveLength(3)
+      expect(proposeCandidate).toHaveBeenCalledTimes(3)
+      expect(applyCandidate).toHaveBeenCalledTimes(3)
+      // Candidates 2 and 3 return to the opening state, and so does the round.
+      expect(restoreSnapshot.mock.calls.map(call => call[0].version)).toEqual([1, 1, 1])
+      expect(result.entries.map(entry => entry.rejected)).toEqual([true, true, true])
+      expect(result.entries[0]!.summaryTitle).toBe('candidate 1')
+      expect(result.entries[0]!.summary).toBe('change 1\n预测:scores shift 1')
+      const persisted = await engine.readScoreboard(benchmarkId)
+      expect(persisted.map(entry => entry.rejected)).toEqual([true, true, true])
+    })
+
+    it('accepts the highest scoring candidate and restores that candidate snapshot', async () => {
+      await prepareBenchmark()
+      const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
+      const scores = [70, 90, 80]
+      const evaluateCase = vi.fn(async (_request: EvaluateCaseRequest) => ({ score: scores.shift() ?? 0 }))
+      const proposeCandidate = vi.fn(async (options: ProposeCandidateOptions) => candidate(options.candidateIndex))
+      const restoreSnapshot = vi.fn(async (_options: { version: number; signal: AbortSignal }) => {})
+      const engine = new BenchmarkEngineCore(options({ evaluateCase, proposeCandidate, restoreSnapshot }))
+
+      const result = await engine.optimizeLoop(benchmarkId, {
+        reference,
+        candidatesPerRound: 3,
+        signal: signal(),
+      })
+
+      expect(result.accepted).toBe(true)
+      // The opening state is v1; the three candidates are v2, v3, v4.
+      expect(result.acceptedVersion).toBe(3)
+      expect(result.bestScore).toBe(90)
+      expect(restoreSnapshot.mock.calls.map(call => call[0].version)).toEqual([1, 1, 3])
+      expect(result.entries.map(entry => entry.rejected)).toEqual([true, undefined, true])
+      const persisted = await engine.readScoreboard(benchmarkId)
+      expect(persisted.map(entry => entry.rejected)).toEqual([true, undefined, true])
+      expect(persisted[1]!.version).toBe(3)
+    })
+
+    it('stops proposing once a candidate reaches the target score', async () => {
+      await prepareBenchmark()
+      const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
+      const scores = [70, 90]
+      const evaluateCase = vi.fn(async (_request: EvaluateCaseRequest) => ({ score: scores.shift() ?? 0 }))
+      const proposeCandidate = vi.fn(async (options: ProposeCandidateOptions) => candidate(options.candidateIndex))
+      const engine = new BenchmarkEngineCore(options({ evaluateCase, proposeCandidate }))
+
+      const result = await engine.optimizeLoop(benchmarkId, {
+        reference,
+        targetScore: 90,
+        candidatesPerRound: 3,
+        signal: signal(),
+      })
+
+      expect(proposeCandidate).toHaveBeenCalledTimes(2)
+      expect(result.entries).toHaveLength(2)
+      expect(result.acceptedVersion).toBe(3)
+      expect(result.bestScore).toBe(90)
+      expect(result.rounds).toBe(1)
+    })
+
+    it('restores the opening snapshot and persists nothing when a later candidate throws', async () => {
+      await prepareBenchmark()
+      const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
+      let evaluations = 0
+      const evaluateCase = vi.fn(async (_request: EvaluateCaseRequest) => {
+        evaluations += 1
+        if (evaluations === 2) throw new Error('second candidate exploded')
+        return { score: 50 }
+      })
+      const proposeCandidate = vi.fn(async (options: ProposeCandidateOptions) => candidate(options.candidateIndex))
+      const restoreSnapshot = vi.fn(async (_options: { version: number; signal: AbortSignal }) => {})
+      const engine = new BenchmarkEngineCore(options({ evaluateCase, proposeCandidate, restoreSnapshot }))
+
+      await expect(engine.optimizeLoop(benchmarkId, { reference, candidatesPerRound: 2, signal: signal() }))
+        .rejects.toThrow('second candidate exploded')
+
+      // Candidate 2's own return to the opening state, then the round's rollback.
+      expect(restoreSnapshot.mock.calls.map(call => call[0].version)).toEqual([1, 1])
+      await expect(engine.readScoreboard(benchmarkId)).resolves.toEqual([])
+    })
+
+    it('persists no entry when the commit restore fails', async () => {
+      await prepareBenchmark()
+      const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
+      const restoreSnapshot = vi.fn(async (call: { version: number; signal: AbortSignal }) => {
+        if (call.version === 2) throw new Error('commit restore failed')
+      })
+      const evaluateCase = vi.fn(async (_request: EvaluateCaseRequest) => ({ score: 80 }))
+      const engine = new BenchmarkEngineCore(options({ evaluateCase, restoreSnapshot }))
+
+      await expect(engine.optimizeLoop(benchmarkId, { reference, signal: signal() }))
+        .rejects.toThrow('commit restore failed')
+
+      // The round opened at v1 and the candidate minted v2; the catch rolls back
+      // to v1. Nothing was appended, so no entry names the failed commit.
+      expect(restoreSnapshot.mock.calls.map(call => call[0].version)).toEqual([2, 1])
+      await expect(engine.readScoreboard(benchmarkId)).resolves.toEqual([])
+    })
+
+    it('feeds earlier attempts to later candidates within and across rounds', async () => {
+      await prepareBenchmark()
+      const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
+      const evaluateCase = vi.fn(async (_request: EvaluateCaseRequest) => ({ score: 50 }))
+      const proposeCandidate = vi.fn(async (options: ProposeCandidateOptions) => candidate(options.candidateIndex))
+      const engine = new BenchmarkEngineCore(options({ evaluateCase, proposeCandidate }))
+
+      await engine.optimizeLoop(benchmarkId, {
+        reference,
+        maxRounds: 2,
+        candidatesPerRound: 2,
+        signal: signal(),
+      })
+
+      const histories = proposeCandidate.mock.calls.map(call => call[0].history)
+      expect(histories.map(history => history.length)).toEqual([0, 1, 2, 3])
+      expect(histories[3]![0]).toMatchObject({
+        round: 1,
+        candidateIndex: 1,
+        name: 'candidate 1',
+        description: 'change 1',
+        prediction: 'scores shift 1',
+        score: 50,
+        referenceScore: 60,
+      })
+      expect(histories[3]![0]!.cases).toHaveLength(1)
+      expect(histories[3]![2]).toMatchObject({ round: 2, candidateIndex: 1 })
+      const numbering = proposeCandidate.mock.calls.map(call => [call[0].candidateIndex, call[0].candidateCount])
+      expect(numbering).toEqual([[1, 2], [2, 2], [1, 2], [2, 2]])
+    })
+
+    it('skips rejected entries when resolving the default reference', async () => {
+      await prepareBenchmark()
+      await appendScoreboard(dir, benchmarkId, { version: 0, score: 60, cases: [] })
+      await appendScoreboard(dir, benchmarkId, { version: 1, score: 30, cases: [], rejected: true })
+      const proposeCandidate = vi.fn(async (_options: ProposeCandidateOptions) => candidate())
+      const engine = new BenchmarkEngineCore(options({ proposeCandidate }))
+
+      const result = await engine.optimizeLoop(benchmarkId, { signal: signal() })
+
+      expect(result.referenceScore).toBe(60)
+      expect(proposeCandidate.mock.calls[0]![0].reference.score).toBe(60)
+    })
+
+    it('fails loud when every scoreboard entry was rejected', async () => {
+      await prepareBenchmark()
+      await appendScoreboard(dir, benchmarkId, { version: 1, score: 30, cases: [], rejected: true })
+      const engine = new BenchmarkEngineCore(options())
+
+      await expect(engine.optimizeLoop(benchmarkId, { signal: signal() }))
+        .rejects.toThrow(/no kept scoreboard entry/)
+    })
+
+    it('rejects a non-integer or sub-one candidatesPerRound before touching the agent state', async () => {
+      await prepareBenchmark()
+      const reference: ScoreboardEntry = { version: 0, score: 60, cases: [] }
+      const proposeCandidate = vi.fn(async (_options: ProposeCandidateOptions) => candidate())
+      const restoreSnapshot = vi.fn(async (_options: { version: number; signal: AbortSignal }) => {})
+      const engine = new BenchmarkEngineCore(options({ proposeCandidate, restoreSnapshot }))
+
+      for (const candidatesPerRound of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+        await expect(engine.optimizeLoop(benchmarkId, { reference, candidatesPerRound, signal: signal() }))
+          .rejects.toThrow(/candidatesPerRound must be an integer >= 1/)
+      }
+
+      expect(proposeCandidate).not.toHaveBeenCalled()
+      expect(restoreSnapshot).not.toHaveBeenCalled()
     })
   })
 })

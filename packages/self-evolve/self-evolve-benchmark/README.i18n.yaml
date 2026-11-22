@@ -18,17 +18,17 @@
   en: f804f498a3360e02
   zh: 6d850789da60a29e
 /deepseek-ai-dsh-self-evolve-benchmark/configuration:
-  en: 1873876f80a80662
-  zh: 75ca9cccefc44a7e
+  en: 7e22f96b09dcdbc8
+  zh: 679e841be443f567
 /deepseek-ai-dsh-self-evolve-benchmark/public-api:
-  en: 1194192a958d78fd
-  zh: 68c2e0ff7462c34e
+  en: 94247c1f055ae2d9
+  zh: cd0b117e496d9226
 /deepseek-ai-dsh-self-evolve-benchmark/on-disk-layout:
   en: f9e3e5ed0218cf9c
   zh: f9e3e5ed0218cf9c
 /deepseek-ai-dsh-self-evolve-benchmark/optimization-loop-c1-c3:
-  en: baf61cfee0f25af6
-  zh: 59b219b002735f85
+  en: 2455358f93713bbb
+  zh: 75561bb2a926f73d
 /deepseek-ai-dsh-self-evolve-benchmark/statement-rubric-separation-c2:
   en: ad3b92970c48fa73
   zh: 2643915f8daeb0cc
@@ -39,17 +39,17 @@
   en: 3e43627151d391ef
   zh: ac4b36e3eea45ac6
 /deepseek-ai-dsh-self-evolve-benchmark/model-experience/default-seam-prompts/what-the-model-sees:
-  en: ec3bc18c7829388f
-  zh: 13f3c082e8cb8f11
+  en: 77e53b601b62cecc
+  zh: 3087a590e5ff82f9
 /deepseek-ai-dsh-self-evolve-benchmark/model-experience/default-seam-prompts/token-effect:
-  en: 0f1995bc4d756544
-  zh: 811d53f0f5678d25
+  en: 7ed394804ff66068
+  zh: e03ad1c3d7b1432e
 /deepseek-ai-dsh-self-evolve-benchmark/model-experience/default-seam-prompts/kv-cache-effect:
   en: 2aacdccaf058907d
   zh: 5907d7e0208b3f45
 /deepseek-ai-dsh-self-evolve-benchmark/known-limitations-and-deferred-work:
-  en: 09921af5aa819be3
-  zh: 8accbedc5bd25231
+  en: 62e9a1358e668a2f
+  zh: 406d44988b23c0ed
 /deepseek-ai-dsh-self-evolve-benchmark/known-limitations-and-deferred-work/dev-note:
   en: 0a1253c6f7b5e8b9
   zh: 9f56528562c7c914

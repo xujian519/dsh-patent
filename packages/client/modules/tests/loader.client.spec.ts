@@ -953,7 +953,7 @@ describe('HMR reset', () => {
 
   it('refuses to replace the bootstrap module and keeps its exports pinned', () => {
     const b = bench([])
-    expect(() => b.loader.invalidate(MODULES_ID, 'next')).toThrow(/requires a page reload/)
+    expect(() => { b.loader.invalidate(MODULES_ID, 'next') }).toThrow(/requires a page reload/)
     expect(b.loader.loadCache.get(MODULES_ID)?.exports).toBe(bootstrapExports)
   })
 

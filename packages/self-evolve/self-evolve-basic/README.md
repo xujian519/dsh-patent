@@ -19,6 +19,7 @@ The **`BasicSelfEvolveEngine`** is the default provider of `ctx.selfEvolve`. It 
 - [Configuration](#configuration)
 - [Validation pipeline (Phase 1)](#validation-pipeline-phase-1)
 - [Negative results (P1.7b)](#negative-results-p17b)
+- [L2 prompt-section persistence](#l2-prompt-section-persistence)
 - [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 
@@ -58,7 +59,7 @@ A completed explicit request sends one follow-up message when `notifyOnExplicitR
 | `validatorTarget` | none | Optional `{ provider, model }` routed for the validation LLM judge (P1.4). Absent leaves the judge dimension unsignalled, so every proposal is rejected as `verifier-unavailable`. Must differ from `proposerTarget` or load fails. |
 | `maxDirtyLinesAddedPerCommit` | `2` | Dirty-line tolerance for the held-in workspace verifier (P1.9b); a replay may add at most this many dirty lines before the gate rejects it as a workspace regression. |
 | `workspaceVerifier` | `{ enabled: true }` | Held-in workspace verifier policy (P1.9b): `enabled` is the master switch; `buildCommand` (e.g. `pnpm run build`) is the project build command run after the replay; `gitTimeoutMs` (default 30000) and `buildTimeoutMs` (default 300000) bound the git and build runs. Without a `buildCommand`, the signal stays unavailable and the loop degrades to the weak path. |
-| `maxPromptInflationBytesPerWeek` | `2048` | Long-horizon prompt-inflation budget (翁荔 challenge 7), measured in UTF-8 bytes: when live self-evolve L2 sections exceed it, the pruning job archives the oldest to `$DSH_HOME/self-evolve/l2-archive/` and disposes their effects until the total fits (P1.9). Sections are ordered by registration age; a usage-based ordering is not implemented. |
+| `maxPromptInflationBytesPerWeek` | `2048` | Long-horizon prompt-inflation budget (翁荔 challenge 7), measured in UTF-8 bytes: when live self-evolve L2 sections exceed it, the pruning job archives the oldest to `$DSH_HOME/self-evolve/l2-archive/`, records the retirement in `l2-committed.jsonl`, and disposes their effects until the total fits (P1.9). Sections are ordered by registration age; a usage-based ordering is not implemented. |
 | `l4ReapprovalHours` | `24` | L4 re-approval cadence (P2.3): a plugin this provider drove is forced through human approval again when the current proposal differs from the last approved one or the approval is older than this window — even over `approveFutureVersions` grants. |
 | `maxStepReflectionsPerTurn` | `1` | Step-reflection throttle (P3.1): a low-budget LLM reflection on a failing step runs at most this many times per turn; `0` disables it. |
 | `reflectionMinConfidence` | `0.85` | Minimum model-reported confidence for a step reflection to reinforce a pattern via a `self-evolve/reflection` event (P3.1). |
@@ -84,6 +85,10 @@ L3 and L4 proposals are not implemented by this base provider; downstream provid
 
 Rejected proposals are appended as one JSON line per rejection to `$DSH_HOME/self-evolve/negative-results.jsonl` (`{ts, patternId, proposalId, reason, diagnostic, deconstructedScores?, nextRoundSuggestion}`). `readNegativeResults(patternId, limit)` loads the most recent rows for one pattern, the template proposer summarizes them into its generated prompt-section text so repeated failed approaches are not proposed again, and `readPatterns` enriches each pattern's `verifierMeta.failedProposals` (P1.6).
 
+## L2 prompt-section persistence
+
+An accepted L2 section is appended to `$DSH_HOME/self-evolve/l2-committed.jsonl`, and provider startup re-registers the latest row per section name under the `maxPromptInflationBytesPerWeek` budget. Pruning and rollback append a retirement row for the section name, so a retired section is not restored.
+
 ## Model Experience
 
 ### Stable self-evolve guidance
@@ -107,6 +112,7 @@ The stable tool-self-evolve prompt section is present on every request while the
 - **Held-out defaults to same-session** — `collectHeldOutSignal` searches the proposing session's own event history unless `heldOutSessionIds` names other sessions, so the default cannot supply an independent distribution; a fresh session with a concentrated failure pattern commonly finds no hit at all.
 - **Replay proves exercise, not repair** — `replayCase` requires the child to complete, to have made at least one tool call, and to re-trigger no failure pattern. All three read durable events, but none of them verifies that the original failure is actually fixed: a child that runs the wrong command still passes. Objective judging needs the failure pattern to carry a replayable command with an expected result.
 - **L4 is authorized by approval alone** — `validateL4Proposal` records `L4_APPROVAL_SCORES` and pins `confidence: 1`; the aggregate gate does not evaluate L4, and the human approval flow is its only defense.
+- **L1 and L2 survive restarts; L3/L4 do not** — an accepted L1 skill is a file under `<cwd>/.dsh/skills/`, and an accepted L2 section is a commit row in `$DSH_HOME/self-evolve/l2-committed.jsonl` replayed at startup. L3 workflow scripts and L4 harness plugins are process-local effects that end with the provider fiber.
 - **No keyed end-to-end verification** — proposal effects are reversible commits covered by unit tests; a live `dsh --profile` loop run requires a keyed environment.
 - **First-commit rollback writes a tombstone** — rolling back a skill this provider committed first restores the runtime skill and rewrites `.dsh/skills/<name>/SKILL.md` as front-matter-less content, because the `fs` seam has no remove primitive; the skill filesystem ignores that file and logs one scan warning. Rolling back over a champion rewrites the file with the champion's content instead.
 - **Queue state is in memory** — a queued request that outlives the process is lost; `self-evolve/start|end` and the tool receipt remain in the session log as the durable record.

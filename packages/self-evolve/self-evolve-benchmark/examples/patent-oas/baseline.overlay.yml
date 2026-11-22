@@ -1,0 +1,32 @@
+# One-shot baseline overlay for the shipped `self-evolve` profile.
+#
+#   node seed.mjs
+#   pnpm dsh --profile self-evolve \
+#     --patch packages/self-evolve/self-evolve-benchmark/examples/patent-oas/baseline.overlay.yml \
+#     baseline
+#
+# The `self-evolve` profile composes dsh-base, dsh-headless, and
+# dsh-self-evolve-app, so the headless runner would answer the CLI positional
+# and exit while the benchmark is still measuring. This overlay disables that
+# runner — the positional is parsed but consumed by nobody — and mounts the
+# benchmark provider over the seeded data root plus the driver that calls
+# `establishBaseline` once, prints the scoreboard entry as JSON, and exits.
+#
+# `agentStateDir` must already exist and either be empty or carry the
+# `.self-evolve-benchmark` marker; `seed.mjs` writes that marker.
+
+- id: headless-runner
+  disabled: true
+
+- insert:
+    - id: self-evolve-benchmark
+      name: '@deepseek-ai/dsh-self-evolve-benchmark'
+      config:
+        agentStateDir: !!js "process.getBuiltinModule('node:path').join(process.env.DSH_HOME && process.env.DSH_HOME.trim() ? process.env.DSH_HOME : process.getBuiltinModule('node:os').homedir() + '/.dsh', 'self-evolve-benchmark', 'patent-state')"
+        targetScore: 80
+
+    - id: self-evolve-benchmark-baseline
+      name: '@deepseek-ai/dsh-self-evolve-benchmark/baseline-driver'
+      config:
+        benchmarkId: patent-oas
+        runsPerCase: 1

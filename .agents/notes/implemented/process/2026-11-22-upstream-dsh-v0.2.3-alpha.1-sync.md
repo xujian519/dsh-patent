@@ -6,7 +6,7 @@ English | [中文](2026-11-22-upstream-dsh-v0.2.3-alpha.1-sync.zh.md)
 
 ## Problem
 
-Upstream published `dsh-v0.2.3-alpha.1` (`d98f5d6851`) on 2026-11-21, 2343 commits after the fork's last sync at `dsh-v0.2.2-rc.5` (`9c2670d3bc`). That tag is exactly `git merge-base origin/master dsh-v0.2.3-alpha.1`, so the release needs one content merge and no ancestry repair.
+Upstream published `dsh-v0.2.3-alpha.1` on 2026-11-21, 2343 commits after the fork's last sync at `dsh-v0.2.2-rc.5`. That tag is exactly `git merge-base origin/master dsh-v0.2.3-alpha.1`, so the release needs one content merge and no ancestry repair.
 
 The release is a full alpha cycle, not a patch between releases: 7260 files, +302202/−83093 lines, and 329 content conflicts across `packages/*/tests` (86), `packages/*/src` (59), manifests (26), `docs` (25), Chinese pages (25), `.i18n.yaml` records (38), snapshots (17), `scripts` (15), and `.agents` (6). It carries breaking renames and removals that the fork consumes directly:
 
@@ -44,4 +44,8 @@ The debt ledger grew with upstream's files: 208 functions above 150 lines, 102 s
 
 ## Testing
 
-`pnpm run typecheck` passes all five gates (Host Typert, the host and client compilers, and both aggregate checks). `pnpm exec vitest run` at the merge commit runs 10438 suites and 72995 cases: 72764 pass, 231 skip, none fail on darwin, and `pnpm run verify-test-skips --report <darwin json> --update` records that platform budget (72995 cases, 231 skipped). `verify-cordis-config` accepts 448 config files and `pnpm run persistence-changes --check` closes 90 roots against 49 history records. `verify-translation-pairing` reports 1886 pairs consistent, `verify-tech-debt-counters` accepts the six declared counters with `structure.long-functions` at 207 and `structure.large-files` at 102, and `verify-doc-budgets` keeps all seven budgeted docs within ceiling.
+`pnpm run typecheck` passes all five gates (Host Typert, the host and client compilers, and both aggregate checks). `pnpm run build:artifacts` rebuilds the catalogs, the client bundles, and the Web build (8 gates, 399 client artifacts), and `pnpm run build:check` passes against that output. `pnpm run lint`, `pnpm run duplication` (0 clones), `pnpm run constraints`, and `pnpm run hygiene` pass. `pnpm run test:docs` passes 30 gates and `pnpm run doc-sync` all 53 with `NODE_OPTIONS=--max-old-space-size=16384`.
+
+`pnpm exec vitest run` on darwin runs 10442 suites and 73040 cases: 72806 pass, 231 skip, and three cases reach the 5 s timeout under full parallelism (HMR watch-config, plugin-manager Git reinstall, browser-use-runtime MCP discovery) while passing when their file runs alone (213/213); `pnpm run verify-test-skips --report <darwin json> --update` records the platform budget at 73040 cases and 231 skipped. `pnpm run test:snapshot` replays 330 cases with 2 skipped and pins the nine ACP `agentInfo.version` values to `0.2.3-alpha.1`; `pnpm run test:web:built snapshot` replays 27; the `self-evolve` and `tool-cordis` files run 464, all passing.
+
+`verify-cordis-config` accepts 448 config files and `pnpm run persistence-changes --check` closes 90 roots against 49 history records. `verify-translation-pairing` reports 1886 pairs consistent, `verify-tech-debt-counters` accepts the six declared counters with `structure.long-functions` at 207 and `structure.large-files` at 102, and `verify-doc-budgets` keeps all seven budgeted docs within ceiling.

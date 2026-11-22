@@ -89,6 +89,8 @@
 | F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | fixed |
 | F-PAT-055 | 上游 JSON 字符串含 null 元素时 `mapPatentData` 抛 TypeError | PAT | E | Low | 低 | new |
 | F-PAT-056 | `patent_search` 不按 `limit` 截断命中，返回检索页整页 | PAT | E | Medium | 高 | new |
+| F-PAT-057 | `validate_specification` 缺 `text` 时返回成功的校验报告 | PAT | E | Low | 高 | new |
+| F-PAT-058 | `patent_plan_task` 的 `transition` 接受 `planSteps` 但不执行同步 | PAT | B | Low | 中 | new |
 | F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | fixed |
 | F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | fixed |
 | F-DOC-003 | OOXML 读取限额两包各写一份字面量 | DOC | B | Low | 高 | fixed |
@@ -113,6 +115,7 @@
 | F-LEG-012 | 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略 | LEG | E | Medium | 中 | fixed |
 | F-LEG-013 | 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果 | LEG | E | Medium | 中 | fixed |
 | F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | fixed |
+| F-LEG-015 | `law_verify` 与 `legal_law_verify` 的二选一约束不在参数层，法律侧描述缺零字节规则 | LEG | E | Low | 高 | new |
 | F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | fixed |
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | fixed |
 | F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | fixed |
@@ -956,6 +959,32 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 是否可自动化：是（上面两条断言）
 - 状态：new
 
+### F-PAT-057 `validate_specification` 缺 `text` 时返回成功的校验报告
+
+- 位置：`packages/patent/patent-tools/src/tool/validate-specification.ts:432`（`text` 未设 `required: true`）、`:95`（`const text = input.text ?? ''`）
+- 维度：E
+- 严重度：Low
+- 可能性：高
+- 证据：2026-11-21 直接调用的缺必填探针。`validate_specification` 收到 `{}` 后通过 schema，返回 `isError` 为假、`passed` 为假、`score` 0.65 的校验报告，错误文案是「说明书缺少所有必要章节（text 为空）」；`tool/result` 与事件里没有 `INVALID_ARGS`。同包的 `claim-lint.ts:154` 对空白正文直接返回参数错误。
+- 影响：调用方把「没有给正文」当成一次已完成的校验；按 `error.code` 分流的消费看不到参数错误。P1 缺必填格 13/15 里，这是 SPC 族的一格；空对象探针在直接调用、真实模型与 CI 里都会留下成功形状。
+- 最小修复建议：把 `text` 设为 `required: true`，并在 `execute` 开头对空白 `text` 返回 `INVALID_ARGS`，与 `claim_lint` 的空白检查同形；增加 `{}` 与 `{ text: '' }` 两例，断言 `isError` 为真、`error.code === 'INVALID_ARGS'`，且不再生成校验报告。若确实需要「只校验权项」模式，另立参数与描述，不做隐式分支。
+- 预估工作量：S
+- 是否可自动化：是（上述两例）
+- 状态：new
+
+### F-PAT-058 `patent_plan_task` 的 `transition` 接受 `planSteps` 但不执行同步
+
+- 位置：`packages/patent/patent-tools/src/tool/patent-plan-task.ts:215`–`:219`（`planSteps`、`previousTasks` 在全 action 参数表）、`:271`–`:309`（`transition` 不读这两个参数）、`:310`–`:320`（只有 `sync` 与 `replan` 读 `planSteps`）
+- 维度：B
+- 严重度：Low
+- 可能性：中
+- 证据：P4-WF-04 第 2 次在 `transition` 调用里带 `planSteps`，工具返回 `ok: true` 与 `planning → awaiting_approval`，没有任务被写入或同步；第 1、3 次不带 `planSteps`，结果相同。参数描述写的是「Plan steps (sync/replan)」，`sync` 与 `replan` 都有非空校验，`transition` 没有。
+- 影响：模型传了已声明的参数并收到成功结果，会认为同步已经发生；P4-WF-04 的语义列因此记「是」，而实际同步次数为 0。任何把状态迁移与任务同步合成一次调用的调用方都会静默丢掉任务清单。
+- 最小修复建议：`transition` 分支对 `planSteps` 与 `previousTasks` 显式返回 `invalid_tool_input`，与 `sync` 与 `replan` 的非空校验同形；若产品希望合并调用，就在 `transition` 里执行 `syncPlanToTasks` 并在渲染里列出任务，同时改描述。补一条用例：`transition` + `planSteps` 要么报参数错误，要么结果里出现同步后的任务，不能只返回状态迁移。
+- 预估工作量：S
+- 是否可自动化：是（上述用例）
+- 状态：new
+
 ### Day 10 定向结论：法律域与共享层无安全发现
 
 - **SQL 全部参数化**：`MATCH ?` 与 `LIKE ?` 绑定，`likePattern` 转义 `%`、`_`、反斜杠并配合 `ESCAPE '\'`；唯一的表名插值取自包内固定数组；安装 API 的源库与输出目录来自 options/CLI，不注册为工具。
@@ -1345,6 +1374,19 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 是否可自动化：是（固定时钟的跨日用例）
 - 修复：`todayIsoDate` 改按 `Asia/Shanghai` 用 `Intl.DateTimeFormat` 的 `formatToParts` 取年月日，默认判定日期取中国大陆自然日而不是 UTC 日；显式传入 `asOf` 的路径不变。新增固定时钟用例：`2026-12-21T19:00:00Z` 判为 `2026-12-22`，当日生效的法规判 `in-force`；同一时刻的 UTC 正午两边同为 `2026-12-21`。
 - 状态：fixed（2026-11-18，批次 R-E3）
+
+### F-LEG-015 `law_verify` 与 `legal_law_verify` 的二选一约束不在参数层，法律侧描述缺零字节规则
+
+- 位置：`packages/law/law-core/src/citation-tool.ts:79`–`:86`（`citationVerifyParameters` 的两个属性都可选，没有 `required` 或二选一）、`:55`–`:56`（`citationInputProblem` 在业务层返回 `no_input`）；`packages/legal/legal-law/src/tool/law-verify.ts:105`（描述只写「pass the text ... or pass exact references」）；对照 `packages/patent/patent-law/src/tool/law-verify.ts:107`（写明零字节调用是输入错误）
+- 维度：E
+- 严重度：Low
+- 可能性：高
+- 证据：2026-11-21 直接调用的 `{}` 探针：`law_verify` 通过 schema，在 `execute` 里抛 `LawVerifyToolError`，异常 code 为 `no_input`，`tool/result.error` 为空。2026-11-22 的 P4S-LGL-02 用空文本调用 `legal_law_verify`，同样走到 `no_input`，有结构化错误。两个工具共用同一张参数表，只有专利侧描述写了零字节规则。
+- 影响：缺必填格拿不到 `INVALID_ARGS`；即使 F-CROSS-005 修好错误类，事件里的 code 仍是业务码而不是参数码。使用 `legal_law_verify` 的模型从描述里看不到「空调用不能算完成核验」，与专利同名工具的可发现性不一致。
+- 最小修复建议：在参数层增加「`text` 与 `references` 至少一个非空」的校验，失败返回 `ToolArgsError` / `INVALID_ARGS`；参数 DSL 若不能表达二选一，先在两个工具的入口统一检查，再考虑扩展 DSL。把专利侧那句零字节规则补进 `legal_law_verify` 的描述；补两条 `{}` 用例（两个工具各一）与一条描述断言。
+- 预估工作量：M（扩展参数 DSL）或 S（入口检查）
+- 是否可自动化：是（两条 `{}` 用例与描述断言）
+- 状态：new
 
 ## 视频模式
 

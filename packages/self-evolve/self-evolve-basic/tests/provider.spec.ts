@@ -29,7 +29,9 @@ beforeEach(async () => {
   process.env.DSH_HOME = isolationHome
 })
 afterEach(async () => {
-  if (isolationHome !== undefined) await rm(isolationHome, { recursive: true, force: true })
+  // A fire-and-forget drain from this case can still be writing into the home
+  // it resolved late; retries let the removal converge instead of racing it.
+  if (isolationHome !== undefined) await rm(isolationHome, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 })
   isolationHome = undefined
   if (ORIGINAL_DSH_HOME === undefined) delete process.env.DSH_HOME
   else process.env.DSH_HOME = ORIGINAL_DSH_HOME
@@ -2958,7 +2960,7 @@ describe('workspace verifier (P1.9b)', () => {
   const tempDirs: string[] = []
 
   afterEach(async () => {
-    for (const dir of tempDirs.splice(0)) await rm(dir, { recursive: true, force: true })
+    for (const dir of tempDirs.splice(0)) await rm(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 })
   })
 
   async function tempDir(): Promise<string> {

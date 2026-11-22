@@ -19,6 +19,22 @@ import type { EvolveLevel, EvolveProposal, FailurePattern, SelfEvolveAgentContex
 import type { Agent, RequestErrorAction } from '@deepseek-ai/dsh-agent'
 import type { ProposalValidationOutcome, ReplayEvidence, ValidationScores } from '@deepseek-ai/dsh-self-evolve/types'
 
+// Every engine mount reads `$DSH_HOME` for durable state — committed L2
+// sections included — so each case gets its own home instead of the developer's
+// `~/.dsh`, which would make restore-dependent assertions depend on run history.
+const ORIGINAL_DSH_HOME = process.env.DSH_HOME
+let isolationHome: string | undefined
+beforeEach(async () => {
+  isolationHome = await mkdtemp(join(tmpdir(), 'self-evolve-home-'))
+  process.env.DSH_HOME = isolationHome
+})
+afterEach(async () => {
+  if (isolationHome !== undefined) await rm(isolationHome, { recursive: true, force: true })
+  isolationHome = undefined
+  if (ORIGINAL_DSH_HOME === undefined) delete process.env.DSH_HOME
+  else process.env.DSH_HOME = ORIGINAL_DSH_HOME
+})
+
 function sessionFactory(): Session {
   return Session.create(SessionId(`test-${Math.random().toString(36).slice(2, 10)}`))
 }
@@ -4564,5 +4580,170 @@ describe('workspace verifier degradation and engine edges (P0-2/P0-4/P1.9b)', ()
     } finally {
       vi.unstubAllEnvs()
     }
+  })
+})
+
+interface RegisteredSection { name: string; text: string; order: number }
+
+/** Mount a probe engine whose system prompt records every section registration. */
+async function mountL2Engine(
+  registered: RegisteredSection[],
+  config: Partial<BasicSelfEvolveConfig> = {},
+): Promise<{ ctx: Context; session: Session; scope: Awaited<ReturnType<Context['plugin']>>; engine: ProbeEngine }> {
+  const ctx = new Context()
+  const session = sessionWithBoom()
+  provideSkillCatalog(ctx, session, { skills: [], complete: true }, undefined, {
+    section: (input: RegisteredSection) => {
+      registered.push({ name: input.name, text: input.text, order: input.order })
+      return () => {}
+    },
+  })
+  const scope = await ctx.plugin(ProbeEngine, baseConfig(config))
+  return { ctx, session, scope, engine: probeOf(ctx) }
+}
+
+/** One L2 candidate with an explicit section name, for multi-section cases. */
+function namedSection(name: string, text: string, patternId = 'L1-skill:abc'): EvolveProposal {
+  return proposal({
+    proposalId: `prop-${name}`,
+    addressesPatternIds: [patternId],
+    candidate: { kind: 'L2-context', sectionName: name, sectionText: text, order: 260, estimatedBytes: text.length },
+  })
+}
+
+describe('committed L2 section persistence (P0)', () => {
+  it('restores a committed L2 section in a new engine', async () => {
+    const firstRegistered: RegisteredSection[] = []
+    const first = await mountL2Engine(firstRegistered)
+    await first.engine.commit(agentFor(first.session), l2Section('prop-l2', 'v1', 'L1-skill:abc'))
+    await first.scope.dispose()
+
+    const secondRegistered: RegisteredSection[] = []
+    const second = await mountL2Engine(secondRegistered)
+    expect(secondRegistered).toEqual([{ name: 'sec', text: 'v1', order: 260 }])
+    await second.scope.dispose()
+  })
+
+  it('does not restore a section that budget pruning retired', async () => {
+    const firstRegistered: RegisteredSection[] = []
+    const first = await mountL2Engine(firstRegistered, { maxPromptInflationBytesPerWeek: 10 })
+    await first.engine.commit(agentFor(first.session), l2Section('prop-l2', '0123456789abcde', 'L1-skill:abc'))
+    await first.engine.prune()
+    expect(firstRegistered).toHaveLength(1)
+    await first.scope.dispose()
+
+    const secondRegistered: RegisteredSection[] = []
+    const second = await mountL2Engine(secondRegistered, { maxPromptInflationBytesPerWeek: 10 })
+    expect(secondRegistered).toEqual([])
+    await second.scope.dispose()
+  })
+
+  it('does not restore the first commit of a rolled-back pattern', async () => {
+    const firstRegistered: RegisteredSection[] = []
+    const first = await mountL2Engine(firstRegistered)
+    await first.engine.commit(agentFor(first.session), l2Section('prop-l2', 'v1', 'L1-skill:abc'))
+    await first.engine.rollback('L1-skill:abc')
+    await first.scope.dispose()
+
+    const secondRegistered: RegisteredSection[] = []
+    const second = await mountL2Engine(secondRegistered)
+    expect(secondRegistered).toEqual([])
+    await second.scope.dispose()
+  })
+
+  it('keeps the newest sections when the committed set exceeds the prompt budget', async () => {
+    const firstRegistered: RegisteredSection[] = []
+    const first = await mountL2Engine(firstRegistered)
+    await first.engine.commit(agentFor(first.session), namedSection('old', 'aaa'))
+    await first.engine.commit(agentFor(first.session), namedSection('new', 'bbb'))
+    await first.scope.dispose()
+
+    const secondRegistered: RegisteredSection[] = []
+    const second = await mountL2Engine(secondRegistered, { maxPromptInflationBytesPerWeek: 4 })
+    expect(secondRegistered.map(section => section.name)).toEqual(['new'])
+    await second.scope.dispose()
+  })
+
+  it('skips malformed rows in the committed log', async () => {
+    const firstRegistered: RegisteredSection[] = []
+    const first = await mountL2Engine(firstRegistered)
+    await first.engine.commit(agentFor(first.session), namedSection('good', 'keep'))
+    await first.scope.dispose()
+
+    const log = join(process.env.DSH_HOME!, 'self-evolve', 'l2-committed.jsonl')
+    await appendFile(log, [
+      'not json',
+      'null',
+      '{"op":"commit","ts":"bad","sectionName":"x"}',
+      '{"op":"prune"}',
+      '{"op":"prune","ts":1}',
+      '{"op":"other","ts":1,"sectionName":"x"}',
+      '{"op":"commit","ts":1,"sectionName":"noText","order":260}',
+      '{"op":"commit","ts":1,"sectionName":"noOrder","sectionText":"t"}',
+      '{"op":"prune","ts":1,"sectionName":"gone"}',
+      '{"op":"commit","ts":1,"sectionName":"dup","sectionText":"old","order":1}',
+      '{"op":"commit","ts":2,"sectionName":"dup","sectionText":"new","order":2}',
+      '{"op":"commit","ts":5,"sectionName":"tieA","sectionText":"a","order":1}',
+      '{"op":"commit","ts":5,"sectionName":"tieB","sectionText":"b","order":2}',
+      '',
+    ].join('\n'))
+
+    const secondRegistered: RegisteredSection[] = []
+    const second = await mountL2Engine(secondRegistered)
+    expect(secondRegistered.map(section => `${section.name}:${section.text}`).sort())
+      .toEqual(['dup:new', 'good:keep', 'tieA:a', 'tieB:b'])
+    await second.scope.dispose()
+  })
+
+  it('retires the rolled-back section when the champion has another name', async () => {
+    const firstRegistered: RegisteredSection[] = []
+    const first = await mountL2Engine(firstRegistered)
+    // The archive keeps the lexicographically latest proposal id; name the
+    // second commit so it is also the later one.
+    await first.engine.commit(agentFor(first.session), namedSection('a-first', 'aaa'))
+    await first.engine.commit(agentFor(first.session), namedSection('b-second', 'bbb'))
+    await first.engine.rollback('L1-skill:abc')
+    await first.scope.dispose()
+
+    const secondRegistered: RegisteredSection[] = []
+    const second = await mountL2Engine(secondRegistered)
+    expect(secondRegistered.map(section => `${section.name}:${section.text}`)).toEqual(['a-first:aaa'])
+    await second.scope.dispose()
+  })
+
+  it('records a commit without a pattern id when the proposal addresses none', async () => {
+    const firstRegistered: RegisteredSection[] = []
+    const first = await mountL2Engine(firstRegistered)
+    await first.engine.commit(agentFor(first.session), proposal({
+      proposalId: 'prop-orphan',
+      addressesPatternIds: [],
+      candidate: { kind: 'L2-context', sectionName: 'orphan', sectionText: 'v', order: 260, estimatedBytes: 1 },
+    }))
+    await first.scope.dispose()
+
+    const log = join(process.env.DSH_HOME!, 'self-evolve', 'l2-committed.jsonl')
+    const rows = (await readFile(log, 'utf8')).trim().split('\n')
+      .map(line => JSON.parse(line) as Record<string, unknown>)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).not.toHaveProperty('patternId')
+
+    const secondRegistered: RegisteredSection[] = []
+    const second = await mountL2Engine(secondRegistered)
+    expect(secondRegistered.map(section => section.name)).toEqual(['orphan'])
+    await second.scope.dispose()
+  })
+
+  it('retires a pruned section again when its pattern rolls back', async () => {
+    const firstRegistered: RegisteredSection[] = []
+    const first = await mountL2Engine(firstRegistered, { maxPromptInflationBytesPerWeek: 1 })
+    await first.engine.commit(agentFor(first.session), l2Section('prop-l2', 'vv', 'L1-skill:abc'))
+    await first.engine.prune()
+    await first.engine.rollback('L1-skill:abc')
+    await first.scope.dispose()
+
+    const secondRegistered: RegisteredSection[] = []
+    const second = await mountL2Engine(secondRegistered, { maxPromptInflationBytesPerWeek: 1 })
+    expect(secondRegistered).toEqual([])
+    await second.scope.dispose()
   })
 })

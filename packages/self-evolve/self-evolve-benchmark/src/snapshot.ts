@@ -162,7 +162,7 @@ export async function fingerprintAgentState(dir: string): Promise<string> {
   const hash = createHash('sha256')
   async function walk(relative: string): Promise<void> {
     const entries = await readdir(join(dir, relative), { withFileTypes: true })
-    const ordered = [...entries].sort((left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0))
+    const ordered = [...entries].sort((left, right) => left.name.localeCompare(right.name))
     for (const entry of ordered) {
       const path = relative === '' ? entry.name : join(relative, entry.name)
       const absolute = join(dir, path)

@@ -7,7 +7,7 @@ interface CreateOptions {
   sessionId: string
   meta?: { cwd?: string }
   agentOptions?: { provider?: string; model?: string }
-  setup?: unknown
+  setup?: (agentCtx: Context) => unknown
 }
 
 interface BaselineCall {
@@ -40,6 +40,7 @@ interface DriverEnvironment {
  */
 function mountDriver(options: {
   withBenchmark?: boolean
+  withFs?: boolean
   baseline?: () => Promise<unknown>
 } = {}): DriverEnvironment {
   const ctx = new Context()
@@ -59,6 +60,12 @@ function mountDriver(options: {
   ctx.provide('agentDefaultModel', {
     currentSelection: () => ({ provider: 'deepseek', model: 'deepseek-v4' }),
   })
+  if (options.withFs === true) {
+    ctx.provide('fs', {
+      resolve: async () => ({ targetKey: '/workspace' }),
+      processPath: () => '/workspace',
+    })
+  }
   if (options.withBenchmark !== false) ctx.provide('selfEvolveBenchmark', { establishBaseline })
   apply(ctx, { benchmarkId: 'patent-oas', runsPerCase: 1 })
   return { ctx, exit, create, dispose, establishBaseline, calls }
@@ -81,6 +88,8 @@ describe('baseline driver', () => {
     expect(created.agentOptions).toEqual({ provider: 'deepseek', model: 'deepseek-v4' })
     expect(created.meta?.cwd).toBe(process.cwd())
     expect(typeof created.setup).toBe('function')
+    // The setup scope registers the model-selection listener on the agent's own context.
+    expect(() => { created.setup?.(new Context()) }).not.toThrow()
 
     expect(environment.calls).toHaveLength(1)
     expect(environment.calls[0]?.benchmarkId).toBe('patent-oas')
@@ -106,6 +115,16 @@ describe('baseline driver', () => {
     expect(reported).toContain('selfEvolveBenchmark')
   })
 
+  it('uses the fs process path for the agent cwd when the fs service is present', async () => {
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const environment = mountDriver({ withFs: true })
+
+    await vi.waitFor(() => { expect(environment.exit).toHaveBeenCalledWith(0) })
+
+    const created = environment.create.mock.calls[0]?.[0] as CreateOptions
+    expect(created.meta?.cwd).toBe('/workspace')
+  })
+
   it('disposes the agent and exits failing when the baseline rejects', async () => {
     const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     const environment = mountDriver({ baseline: () => Promise.reject(new Error('case run failed')) })
@@ -115,5 +134,19 @@ describe('baseline driver', () => {
     expect(environment.dispose).toHaveBeenCalledTimes(1)
     const reported = stderr.mock.calls.map(call => String(call[0])).join('')
     expect(reported).toContain('case run failed')
+  })
+
+  it('reports a non-Error rejection by its string form', async () => {
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const environment = mountDriver({
+      baseline: async () => {
+        throw 'plain failure'
+      },
+    })
+
+    await vi.waitFor(() => { expect(environment.exit).toHaveBeenCalledWith(1) })
+
+    const reported = stderr.mock.calls.map(call => String(call[0])).join('')
+    expect(reported).toContain('plain failure')
   })
 })

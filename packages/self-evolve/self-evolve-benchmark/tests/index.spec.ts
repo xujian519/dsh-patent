@@ -569,6 +569,26 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       ).rejects.toThrow(/returned no "files" to write/)
     })
 
+    it('refuses an applier file entry without a string path and content', async () => {
+      for (const entry of [null, {}, { path: 'guidance.md' }, { path: 'guidance.md', content: 1 }]) {
+        const ctx = new Context()
+        provideRuntime(
+          ctx,
+          routedStart({
+            propose: { output: '{"name":"n","description":"d","prediction":"p"}' },
+            apply: { output: `{"files":[${JSON.stringify(entry)}]}` },
+          }),
+        )
+        const engine = makeEngine(ctx)
+        await prepareBenchmark()
+        await appendScoreboard(dir, benchmarkId, { version: 0, score: 60, cases: [] })
+
+        await expect(
+          engine.optimizeLoop(benchmarkId, { signal: new AbortController().signal, sessionId: 'sess-1' }),
+        ).rejects.toThrow(/returned a file without a string "path" and "content"/)
+      }
+    })
+
     it('retries a malformed evaluator answer once before scoring', async () => {
       const ctx = new Context()
       let evaluations = 0
@@ -614,6 +634,25 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       await expect(
         engine.optimizeLoop(benchmarkId, { signal: new AbortController().signal, sessionId: 'sess-1' }),
       ).rejects.toThrow(/non-JSON output: "这一份交付物/)
+    })
+
+    it('truncates a long non-JSON evaluator output in the diagnostic', async () => {
+      const ctx = new Context()
+      provideRuntime(ctx, async (spec) => {
+        const first = spec.prompt[0]
+        const text = first !== undefined && first.type === 'text' ? first.text : ''
+        if (text.includes('任务执行者')) return stubRun([textBlock('deliverable')])
+        if (text.includes('优化者')) return stubRun([textBlock('{"name":"n","description":"d","prediction":"p"}')])
+        if (text.includes('实现者')) return stubRun([textBlock(APPLIED_FILES)])
+        return stubRun([textBlock('这一份交付物质量很高。'.repeat(40))])
+      })
+      const engine = makeEngine(ctx)
+      await prepareBenchmark()
+      await appendScoreboard(dir, benchmarkId, { version: 0, score: 60, cases: [] })
+
+      await expect(
+        engine.optimizeLoop(benchmarkId, { signal: new AbortController().signal, sessionId: 'sess-1' }),
+      ).rejects.toThrow(/non-JSON output: ".*…"/)
     })
   })
 
@@ -832,7 +871,10 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       await appendScoreboard(dir, benchmarkId, {
         version: 0,
         score: 55,
-        cases: [{ caseId: CaseId('c1'), score: 55, runs: [{ score: 55, note: `缺少结论段落。${'A'.repeat(250)}` }] }],
+        cases: [
+          { caseId: CaseId('c1'), score: 55, runs: [{ score: 55, note: `缺少结论段落。${'A'.repeat(250)}` }] },
+          { caseId: CaseId('c2'), score: 55, runs: [{ score: 55, note: '缺少附图。' }] },
+        ],
       })
 
       const result = await engine.optimizeLoop(benchmarkId, {
@@ -850,6 +892,8 @@ describe('BenchmarkEvolveEngine service wiring', () => {
       expect(prompts[0]).toContain('评语:缺少结论段落。')
       expect(prompts[0]).toContain('…')
       expect(prompts[0]).not.toContain('A'.repeat(200))
+      // A note within the limit is quoted whole.
+      expect(prompts[0]).toContain('评语:缺少附图。')
       expect(prompts[0]).not.toContain('本 loop 已评测的候选')
       expect(prompts[0]).toContain('本轮共提 2 个候选,你是第 1 个')
       expect(prompts[1]).toContain('本 loop 已评测的候选')

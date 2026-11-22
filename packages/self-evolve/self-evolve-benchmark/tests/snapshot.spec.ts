@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -83,6 +83,26 @@ describe('fingerprintAgentState', () => {
 
     await writeFile(join(dir, 'notes', 'a.md'), 'ab\n')
     expect(await fingerprintAgentState(dir)).not.toBe(initial)
+  })
+
+  it('digests a symlink by its target path rather than the linked bytes', async () => {
+    const outside = await mkdtemp(join(tmpdir(), 'dsh-fingerprint-target-'))
+    try {
+      await writeFile(join(outside, 'a.md'), 'a\n')
+      await symlink(join(outside, 'a.md'), join(dir, 'guidance.md'))
+      const first = await fingerprintAgentState(dir)
+
+      // Bytes reached through the link live outside the digested directory.
+      await writeFile(join(outside, 'a.md'), 'changed\n')
+      expect(await fingerprintAgentState(dir)).toBe(first)
+
+      // The link's own target is part of the digest.
+      await rm(join(dir, 'guidance.md'))
+      await symlink(join(outside, 'missing.md'), join(dir, 'guidance.md'))
+      expect(await fingerprintAgentState(dir)).not.toBe(first)
+    } finally {
+      await rm(outside, { recursive: true, force: true })
+    }
   })
 })
 

@@ -47,7 +47,7 @@ kind: "package-reference"
 
 ### 激活与挂载
 
-插件注入 `modules`，安装 Slot renderer，并发布 [`UiRenderer`](src/client/renderer.ts) 实例。其 [`DocumentStyles`](src/client/styles/document-styles.ts) 构造器只保留依赖；显式 `mount()` 订阅模块记录变化，并在 React 挂载前安装 CSS。后续物化、依赖变化和失效会同步更新资源。元信息及逐文件文本缓存由 renderer 持有，并以模块记录为键，替换后的记录不会复用旧文本。
+插件注入 `modules`，安装 Slot renderer，并发布 [`UiRenderer`](src/client/renderer.ts) 实例。其 [`DocumentStyles`](src/client/document-styles.ts) 构造器只保留依赖；显式 `mount()` 订阅模块记录变化，并在 React 挂载前安装 CSS。后续物化、依赖变化和失效会同步更新资源。元信息及逐文件文本缓存由 renderer 持有，并以模块记录为键，替换后的记录不会复用旧文本。
 
 对于带有 `meta` 的模块，样式来自其可选的 `stylesheets` 字典：以样式在所属包内的路径为键，每份描述提供 `text(context)`。安装的每个 style 元素以 `data-plugin` 携带所属包名，以 `data-path` 携带该路径。已加载依赖的资源先于消费者；同一包内相同路径共用一个 style 节点。组件挂载和卸载不登记样式。失败只影响其自身的样式：模块的 `meta()` 或某份描述的 `text()` 抛错，或某路径已有同一包内另一模块提供的不同 CSS 时，renderer 不安装该样式，通过 `console.error` 报告一次，并照常安装其余样式。路径冲突时保留已安装的文本。失败的生产函数只会在替换后的模块记录上重新运行。实时替换期间，旧样式保留到被替换的插件完成卸载。
 

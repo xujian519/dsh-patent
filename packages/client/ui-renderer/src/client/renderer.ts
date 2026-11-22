@@ -5,7 +5,7 @@ import { createRoot, hydrateRoot, type Root } from 'react-dom/client'
 import type { Context } from '@deepseek-ai/cordis'
 import type { UiRendererService } from './index.ts'
 import { buildRenderApp } from './app.tsx'
-import { DocumentStyles } from './styles/document-styles.ts'
+import { DocumentStyles } from './document-styles.ts'
 
 interface BootSnapshot {
   className: string

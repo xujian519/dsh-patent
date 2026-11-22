@@ -552,7 +552,8 @@ suite('forge-session through a real cordis.yml Loader composition', () => {
       url: `https://gitlab.example.test/group/app/-/merge_requests/${number}`,
       ref: { repository: { forge: 'gitlab', host: 'gitlab.example.test', owner: 'group', name: 'app' }, number },
     })
-    await vi.waitFor(() => { expect(ctx.forgeSession.changeRequests(agent.session)).toHaveLength(5) })
+    // Merge requests 7 and 9 bind through CLI lookups that run after the turn, so the wait spans two real processes.
+    await vi.waitFor(() => { expect(ctx.forgeSession.changeRequests(agent.session)).toHaveLength(5) }, { timeout: 10_000 })
     expect(byUrl(ctx.forgeSession.changeRequests(agent.session))).toEqual([5, 6, 7, 8, 9].map(number => ({
       ...merge(number), origin: number === 5 ? 'created' : 'referenced', update: null,
     })))
@@ -569,9 +570,10 @@ suite('forge-session through a real cordis.yml Loader composition', () => {
     }])
     const listener = vi.fn<SessionChangeRequestsListener>()
     ctx.forgeSession.watch(agent.session, listener)
+    // The watched snapshot arrives from a GraphQL call through the CLI, so it needs the same budget as the lookups.
     await vi.waitFor(() => { expect(listener.mock.lastCall?.[0].map(entry => entry.update !== null && 'snapshot' in entry.update
       ? [entry.update.snapshot.title, entry.update.snapshot.checksRollup, entry.update.snapshot.mergeMethods]
-      : null)).toEqual([['Change 5', 'success', ['merge', 'squash']]]) })
+      : null)).toEqual([['Change 5', 'success', ['merge', 'squash']]]) }, { timeout: 10_000 })
     const calls = (await readFile(join(root, 'glab.log'), 'utf8')).trim().split('\n').map(line => JSON.parse(line) as string[])
     expect(calls).toContainEqual(['api', 'graphql', '--hostname', 'gitlab.example.test', '--input', '-', '-H', 'Content-Type: application/json'])
   }, 60_000)

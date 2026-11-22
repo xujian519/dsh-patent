@@ -12,8 +12,14 @@
   en: 691f8748937645b7
   zh: a820bdb954fc167e
 /patent-oas-example-benchmark/seeding:
-  en: 7835cdc5a5857581
-  zh: 58c6434c0eaa12c2
+  en: 40a7b6681333aa46
+  zh: b07b91dc11568664
 /patent-oas-example-benchmark/usage:
-  en: 42e99f8dfe175f90
-  zh: 25398f247e4901d6
+  en: 63bfd61a0561b255
+  zh: 23816953c89cecf5
+/patent-oas-example-benchmark/usage/one-shot-baseline-from-the-cli:
+  en: 974609751b5bbfeb
+  zh: 852c1940e1ba247c
+/patent-oas-example-benchmark/usage/from-the-engine-api:
+  en: 657a1fe4497e4767
+  zh: a3c6634215787064

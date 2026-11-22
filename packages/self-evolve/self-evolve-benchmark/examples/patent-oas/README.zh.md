@@ -76,10 +76,28 @@ node seed.mjs [baseDir]
 ├── novelty-creative/statement|rubric
 └── reexamination-request/statement|rubric
 <baseDir>/patent-state/
-└── guidance.md   # 初始 agent state 种子
+├── .self-evolve-benchmark   # marker the provider requires on a non-empty agent state
+└── guidance.md              # 初始 agent state 种子
 ```
 
+非空目录缺少 `.self-evolve-benchmark` 标记时,provider 会拒绝该 `agentStateDir`,因此播种脚本会连同 `guidance.md` 一起写入标记。
+
 ## 使用
+
+### 从 CLI 跑一次性基线
+
+`baseline.overlay.yml` 启动 shipped `self-evolve` profile,关闭其 headless runner,在播种出的数据根上挂载 benchmark provider,并通过 operator driver 跑一轮基线测量:
+
+```sh
+node seed.mjs
+pnpm dsh --profile self-evolve \
+  --patch packages/self-evolve/self-evolve-benchmark/examples/patent-oas/baseline.overlay.yml \
+  baseline
+```
+
+该位置参数仍会被 profile 的 headless startup 行解析,但没有消费者——会回答它的 runner 已被关闭,进程退出由 driver 接管。driver 把得到的 scoreboard 条目以 JSON 打到 stdout。用例逐个打真实 API,因此这一轮消耗真实 token、耗时数十分钟;播种数据根与 `agentStateDir` 都跟随 `$DSH_HOME`。
+
+### 从引擎 API 驱动
 
 播种后即可通过引擎公共方法跑闭环。引擎的 `baseDir` 应指向同一数据根,`agentStateDir` 指向播种出的 `patent-state` 工作副本:
 

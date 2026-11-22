@@ -70,6 +70,13 @@ export interface CaseAggregate {
 export interface ScoreboardEntry {
   /** Agent-state snapshot version this entry was evaluated under. */
   version: number
+  /**
+   * Whether the round that produced this entry rolled its candidate back;
+   * absent when the entry was kept. A rejected entry's state is not on disk, so
+   * the default optimize reference resolves to the latest entry without this
+   * mark.
+   */
+  rejected?: boolean
   /** Evaluation runtime provider route; absent when not reported. */
   provider?: string
   /** Evaluation model id; absent when not reported. */
@@ -86,9 +93,9 @@ export interface ScoreboardEntry {
   sessionId?: string
   /** Per-case aggregates, in benchmark case order. */
   cases: CaseAggregate[]
-  /** One-line conclusion for this round; model-facing. */
+  /** One-line conclusion for this entry, set to the candidate name by an optimize round; model-facing. */
   summaryTitle?: string
-  /** Longer summary plus the next round's falsifiable hypothesis; model-facing. */
+  /** Longer summary of the candidate change plus its falsifiable prediction; model-facing. */
   summary?: string
 }
 
@@ -166,6 +173,31 @@ export interface CandidateProposal {
   prediction: string
 }
 
+/**
+ * One candidate already evaluated in the current optimize loop, projected for
+ * the optimizer: the proposal, what it scored, and the per-case detail behind
+ * that score. The projection deliberately carries no cost, provider, or
+ * session metadata — those say nothing about why the candidate scored as it did.
+ */
+export interface CandidateAttempt {
+  /** 1-based round the candidate was proposed in. */
+  round: number
+  /** 1-based position of the candidate within its round. */
+  candidateIndex: number
+  /** The candidate's name. */
+  name: string
+  /** What the candidate changed about the agent state. */
+  description: string
+  /** The candidate's falsifiable prediction. */
+  prediction: string
+  /** Aggregate score the candidate reached. */
+  score: number
+  /** Reference score the candidate was measured against, so a reader can verify the comparison. */
+  referenceScore: number
+  /** Per-case aggregates behind `score`, in benchmark case order. */
+  cases: CaseAggregate[]
+}
+
 /** Optimizer seam: propose one candidate against a reference entry. */
 export type ProposeCandidate = (options: ProposeCandidateOptions) => Promise<CandidateProposal>
 
@@ -175,10 +207,26 @@ export interface ProposeCandidateOptions {
   benchmarkId: BenchmarkId
   /** The reference entry this round must strictly beat. */
   reference: ScoreboardEntry
-  /** Public statement text of all cases, joined; never contains rubric content. */
+  /**
+   * Public statement text of all cases joined in case order, each preceded by
+   * its `[caseId]` label so optimizer feedback can name the case a score belongs
+   * to; never contains rubric content.
+   */
   statement: string
   /** 1-based round index within the current optimize loop. */
   round: number
+  /** 1-based position of this candidate within the round. */
+  candidateIndex: number
+  /** How many candidates this round proposes in total. */
+  candidateCount: number
+  /**
+   * Candidates this loop already evaluated, oldest first, kept or rejected.
+   * The reference's per-case scores and evaluator notes are on `reference`;
+   * this list adds what earlier attempts changed and how
+   * they scored, so the optimizer does not repeat a direction already measured.
+   * Empty for the first candidate of the first round.
+   */
+  history: readonly CandidateAttempt[]
   /** Parent session id for the live-agent fallback of the default optimizer. */
   sessionId?: string
   /** Cancellation signal. */
@@ -194,7 +242,7 @@ export interface ApplyCandidateOptions {
   benchmarkId: BenchmarkId
   /** The candidate to apply. */
   candidate: CandidateProposal
-  /** Agent-state directory the candidate edits in place. */
+  /** Agent-state directory the candidate's files are written into. */
   agentStateDir: string
   /** Parent session id for the live-agent fallback of the default applier. */
   sessionId?: string
@@ -249,8 +297,30 @@ export interface OptimizeLoopOptions {
   targetScore?: number
   /** Maximum candidate rounds; defaults to 1. */
   maxRounds?: number
-  /** Runs per case for candidate evaluations; defaults to 1. */
+  /**
+   * Runs per case for candidate evaluations; defaults to 1.
+   *
+   * One run measures evaluator noise as much as the candidate: identical
+   * repeated evaluations of one case varied by several points. Use at least 3
+   * runs and compare means when deciding whether a candidate helped, and
+   * evaluate the reference under the same `runsPerCase`.
+   */
   runsPerCase?: number
+  /**
+   * Minimum aggregate gain over the reference required to accept a round;
+   * defaults to 0, which admits any strict gain. Set it above the measured
+   * single-run noise so a round is not accepted on a difference the evaluator
+   * could reproduce from an unchanged state.
+   */
+  minImprovement?: number
+  /**
+   * Candidates proposed per round; defaults to 1. Each candidate is evaluated
+   * from the round's opening state and the highest scoring qualified one is
+   * accepted, so a larger count spends proportionally more requests. Picking
+   * the maximum of several noisy scores inflates the accepted score when
+   * `runsPerCase` is 1 — raise `runsPerCase` before raising this.
+   */
+  candidatesPerRound?: number
   /** Evaluation runtime provider route recorded on candidate entries. */
   provider?: string
   /** Evaluation model id recorded on candidate entries. */
@@ -277,7 +347,11 @@ export interface OptimizeResult {
   accepted: boolean
   /** Snapshot version of the last accepted candidate; absent when nothing was accepted. */
   acceptedVersion?: number
-  /** Every candidate scoreboard entry produced this loop, in round order. */
+  /**
+   * Every candidate entry this loop produced, in evaluation order, with the
+   * `rejected` mark already applied. A round that threw contributes nothing
+   * here: its entries are neither persisted nor returned.
+   */
   entries: ScoreboardEntry[]
 }
 
@@ -300,4 +374,17 @@ export interface BenchmarkEvolveConfig {
   maxRoundsPerLoop?: number
   /** Default score goal for optimize loops; absent disables early acceptance. */
   targetScore?: number
+  /**
+   * Default minimum aggregate gain for accepting an optimize round; defaults
+   * to 0, which admits any strict gain. Construction rejects a negative or
+   * non-finite value rather than accepting it as a regression-tolerant
+   * threshold.
+   */
+  minImprovement?: number
+  /**
+   * Default candidates proposed per optimize round; defaults to 1. Construction
+   * rejects a value that is not an integer >= 1 rather than proposing nothing
+   * or a fraction of a candidate.
+   */
+  candidatesPerRound?: number
 }

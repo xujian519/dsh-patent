@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -13,6 +13,7 @@ import {
   assertSafeArchiveEntry,
   createNextSnapshot,
   createSnapshot,
+  fingerprintAgentState,
   listSnapshotVersions,
   nextVersion,
   parseSnapshotVersion,
@@ -40,6 +41,68 @@ describe('snapshot path and version helpers', () => {
 
   it('excludes vault secrets from every snapshot', () => {
     expect(EXCLUDED_SNAPSHOT_PATHS).toContain('.vault.toml')
+  })
+})
+
+describe('fingerprintAgentState', () => {
+  let dir: string
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'dsh-fingerprint-'))
+  })
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('stays equal while the directory is untouched', async () => {
+    await writeFile(join(dir, 'guidance.md'), 'v1\n')
+    expect(await fingerprintAgentState(dir)).toBe(await fingerprintAgentState(dir))
+  })
+
+  it('changes when a file is written, removed, or rewritten', async () => {
+    await writeFile(join(dir, 'guidance.md'), 'v1\n')
+    const first = await fingerprintAgentState(dir)
+
+    await writeFile(join(dir, 'guidance.md'), 'v2 with more text\n')
+    const second = await fingerprintAgentState(dir)
+    expect(second).not.toBe(first)
+
+    await writeFile(join(dir, 'extra.md'), 'new file\n')
+    const third = await fingerprintAgentState(dir)
+    expect(third).not.toBe(second)
+
+    await rm(join(dir, 'guidance.md'))
+    expect(await fingerprintAgentState(dir)).not.toBe(third)
+  })
+
+  it('covers nested directories', async () => {
+    await mkdir(join(dir, 'notes'))
+    await writeFile(join(dir, 'notes', 'a.md'), 'a\n')
+    const initial = await fingerprintAgentState(dir)
+
+    await writeFile(join(dir, 'notes', 'a.md'), 'ab\n')
+    expect(await fingerprintAgentState(dir)).not.toBe(initial)
+  })
+
+  it('digests a symlink by its target path rather than the linked bytes', async () => {
+    const outside = await mkdtemp(join(tmpdir(), 'dsh-fingerprint-target-'))
+    try {
+      await writeFile(join(outside, 'a.md'), 'a\n')
+      await symlink(join(outside, 'a.md'), join(dir, 'guidance.md'))
+      const first = await fingerprintAgentState(dir)
+
+      // Bytes reached through the link live outside the digested directory.
+      await writeFile(join(outside, 'a.md'), 'changed\n')
+      expect(await fingerprintAgentState(dir)).toBe(first)
+
+      // The link's own target is part of the digest.
+      await rm(join(dir, 'guidance.md'))
+      await symlink(join(outside, 'missing.md'), join(dir, 'guidance.md'))
+      expect(await fingerprintAgentState(dir)).not.toBe(first)
+    } finally {
+      await rm(outside, { recursive: true, force: true })
+    }
   })
 })
 

@@ -419,6 +419,8 @@ export function expectedDshPackageFiles(manifest: PackageManifest, detailFiles: 
     ...exportDefault(manifest, './startup') === './lib/startup.js' ? ['lib/startup.js'] : [],
     // A prompt-cache subpath ships its own bundle beside the lib half.
     ...exportDefault(manifest, './prompt-cache') === './lib/prompt-cache.js' ? ['lib/prompt-cache.js'] : [],
+    // An operator driver is a Loader row module, so it ships as its own bundle.
+    ...exportDefault(manifest, './baseline-driver') === './lib/baseline-driver.js' ? ['lib/baseline-driver.js'] : [],
     ...extras,
     // Subpaths whose runtime default is the tsc-emitted tree (lib/types/*.js —
     // browser-safe source channels rehomed off src so plain Node can import

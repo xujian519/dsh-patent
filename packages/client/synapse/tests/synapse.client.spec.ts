@@ -800,6 +800,41 @@ describe('synapse switch placement', () => {
     expect(observer.disconnected).toBe(true)
   })
 
+  it('re-places when a delivered size reports a collapsed anchor', () => {
+    stubSwitchBox(150, 36)
+    FakeResizeObserver.instances.length = 0
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+    const row = mountTabRow({ top: 50, right: 1180, width: 1180, height: 26 })
+    boot()
+    const observer = FakeResizeObserver.instances[0]!
+
+    // A zero side means the anchor is not laid out yet, so the positive-size
+    // shortcut does not apply and placement measures again.
+    const reads = vi.spyOn(row, 'getBoundingClientRect')
+    observer.fire([sizeEntry(row, 0, 26)])
+    expect(reads).not.toHaveBeenCalled()
+    flushFrames()
+    expect(reads).toHaveBeenCalled()
+    expectAnchored('row', row)
+  })
+
+  it('re-places when the observed Session surface detaches', () => {
+    stubSwitchBox(150, 36)
+    FakeResizeObserver.instances.length = 0
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+    const content = mountSessionContent({ top: 40, right: 792, width: 512, height: 960 })
+    boot()
+    const observer = FakeResizeObserver.instances[0]!
+    expectAnchored('content', content)
+
+    // The view unmounts the surface without a window resize; the observer
+    // delivery re-runs placement, which holds the last box while it retries.
+    content.remove()
+    observer.fire()
+    flushFrames()
+    expect(switchBox().classList.contains('is-holding')).toBe(true)
+  })
+
   it('drops the resize listener and the pending placement frame on disposal', () => {
     stubSwitchBox(150, 36)
     const row = mountTabRow({ top: 50, right: 1180, width: 1180, height: 26 })

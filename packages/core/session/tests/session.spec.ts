@@ -1592,6 +1592,27 @@ describe('SessionStore', () => {
     expect(events.at(-1)?.type).toBe('user/message')
   })
 
+  it('pairs a detach requested by a creation listener that then throws', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SessionStore)
+    const disposed: Session[] = []
+    ctx.on('session/disposed', (session) => { disposed.push(session) })
+
+    const session = ctx.sessions.prepare(brandString<SessionId>('detach-then-throw'))
+    const detach = ctx.sessions.enter(session)
+    ctx.on('session/created', () => {
+      detach()
+      throw new Error('boom after detach')
+    })
+
+    // The deferred removal lands with the failed announcement, once.
+    expect(() => { ctx.sessions.announce(session) }).toThrow('boom after detach')
+    expect(ctx.sessions.get(session.id)).toBeUndefined()
+    expect(disposed.map(item => item.id)).toEqual(['detach-then-throw'])
+    detach()
+    expect(disposed).toHaveLength(1)
+  })
+
   it('contains session/event observer failures after the append commit point', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)

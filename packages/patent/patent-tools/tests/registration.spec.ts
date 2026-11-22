@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { globalAtomRegistry, globalStageHandlerRegistry } from '@deepseek-ai/dsh-patent-core'
@@ -115,6 +116,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
 
   it('registers all 37 tools via ctx.plugin (direct mount)', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     publishWorkspace(ctx)
@@ -125,6 +127,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
 
   it('unregisters every registered tool when its contributing fiber is disposed (HMR-safety)', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     publishWorkspace(ctx)
@@ -136,6 +139,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
 
   it('does not register render_patent_document (owned by dsh-patent-document)', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     publishWorkspace(ctx)
@@ -146,6 +150,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
 
   it('fails plugin load when a built-in manifest targets another guideline revision', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(tool, { guidelineRevision: '2026 年修订版（2026-01-01 施行）' }))
@@ -154,6 +159,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
 
   it('fails plugin load when a manifest exceeds the configured stage budget', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(tool, { workflowStageBudget: 20 }))
@@ -162,6 +168,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
 
   it('fails plugin load when a manifest exceeds the configured model-calling stage budget', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(tool, { workflowLlmStageBudget: 8 }))
@@ -170,6 +177,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
 
   it('accepts budgets raised to the current built-in manifest sizes', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     publishWorkspace(ctx)
@@ -179,6 +187,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
 
   it('每个内置 manifest 声明的 atom 在完整组合下都有契约与 handler（跨包注册：九个 patent-tools 原子属本包）', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     publishWorkspace(ctx)
@@ -198,6 +207,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
 
   it('flexible_plan 的 atom 参数说明覆盖每个已注册原子（新增原子即须同步说明）', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     publishWorkspace(ctx)
@@ -213,6 +223,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
 describe('model route fallback (B4)', () => {
   it('builds a real port from the deployment default route when Config omits provider/model', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-v4-flash' }) })
@@ -246,6 +257,7 @@ describe('model route fallback (B4)', () => {
 
   it('fails loud with setup_required only when neither Config nor the deployment default resolves', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     publishWorkspace(ctx)

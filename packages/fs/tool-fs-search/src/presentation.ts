@@ -58,7 +58,7 @@ type RetainedPage<T> = Pick<RetainedItems<T>, 'items' | 'truncated' | 'seen'>
  * returns; the two are structurally identical, so the projected value still reads
  * back as a {@link SearchResultView}.
  */
-type SearchMeta =
+export type SearchMeta =
   | { shape: 'matches'; files: MetaFileMatches[]; truncated: boolean; total: number }
   | { shape: 'paths'; paths: string[]; truncated: boolean; total: number }
 
@@ -138,11 +138,18 @@ export function grepSearchMeta(retained: RetainedPage<GrepMatch>, maxMetaBytes: 
   return capMetaBytes(meta, maxMetaBytes)
 }
 
+// Glob paths are V8 substrings of ripgrep's whole stdout, and the Session keeps `meta` for its
+// lifetime. A UTF-16LE round trip copies each path so the stdout string can be garbage-collected.
+function detachText(text: string): string {
+  return Buffer.from(text, 'utf16le').toString('utf16le')
+}
+
 /**
  * Project the retained `glob` paths into {@link SearchMeta} for the search card.
  * Consumes the same {@link RetainedItems} the model-facing render consumes (inline
  * path cap already applied), reports `total` (every discovered path) and
- * `truncated`, then bounds the serialized meta to `maxMetaBytes`.
+ * `truncated`, then bounds the serialized meta to `maxMetaBytes`. Returned paths hold no reference
+ * to the strings in `retained`.
  *
  * @param retained - the retention outcome over every discovered path (capped).
  * @param maxMetaBytes - the serialized-meta byte budget.
@@ -151,7 +158,7 @@ export function grepSearchMeta(retained: RetainedPage<GrepMatch>, maxMetaBytes: 
 export function globSearchMeta(retained: RetainedPage<string>, maxMetaBytes: number): SearchMeta {
   const meta: SearchMeta = {
     shape: 'paths',
-    paths: retained.items,
+    paths: retained.items.map(detachText),
     truncated: retained.truncated,
     total: retained.seen,
   }

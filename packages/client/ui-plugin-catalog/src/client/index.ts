@@ -46,7 +46,7 @@ const unwrap = async <T>(call: Promise<RemoteValue<T>>, kind: string): Promise<T
   return result.value
 }
 
-/** Contribute the lazy catalog tab to the Plugins settings section. */
+/** Contribute the lazy catalog page as its own Settings section. */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-plugin-catalog: dictionaries')
 
@@ -57,9 +57,9 @@ export function apply(ctx: ClientContext): void {
     preview: ref => unwrap(ctx.remote.pluginCatalog.preview(ref), 'preview'),
   })
 
-  ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
-    name: 'settings.plugins.tab',
-    id: 'catalog',
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
+    id: 'pluginCatalog',
     order: 30,
     label: () => t('tab'),
     locale: NS,

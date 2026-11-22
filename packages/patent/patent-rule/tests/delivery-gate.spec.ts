@@ -6,6 +6,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, {  defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolExecutionInput } from '@deepseek-ai/dsh-tools'
@@ -406,6 +407,7 @@ describe('Config.deliveryGate', () => {
 describe('tools/guard 交付前置门禁', () => {
   async function mount(config: Partial<PatentRule.Config>): Promise<Context> {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(PatentRule, config)
@@ -658,6 +660,7 @@ describe('tools/guard 交付前置门禁', () => {
 
   it('空声明告警且该条不生效', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     const warnSpy = vi.spyOn(ctx.logger, 'warn')
@@ -670,6 +673,7 @@ describe('tools/guard 交付前置门禁', () => {
 
   it('撤销贡献后门禁随之移除（HMR 安全）', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     const fiber = await ctx.plugin(PatentRule, {

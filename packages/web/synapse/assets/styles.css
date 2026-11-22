@@ -1,4 +1,5 @@
 :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #1f2937; background: #f5f7fa; }
+/* css-selector-gate: this standalone page has no component boundary; a document-wide box-sizing reset cannot name every element it covers. */
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; background: #f5f7fa; }
 button, select, textarea { font: inherit; }

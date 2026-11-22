@@ -4,6 +4,7 @@
 // plugin.
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as methodology from '../src/index.ts'
@@ -29,6 +30,7 @@ describe('TRIZ separation signals that are not text', () => {
 
   it('refuses to load the plugin', async () => {
     const host = new Context()
+    await host.plugin(SessionProjectionRegistry)
     await host.plugin(SystemPrompt)
     await host.plugin(ToolRuntime)
     await expect(host.plugin(methodology, {})).rejects.toThrow(/separation "space" signal 1 is empty or not a string/)

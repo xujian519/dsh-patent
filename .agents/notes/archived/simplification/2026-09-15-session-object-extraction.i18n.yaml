@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-archived-agent-notes --write
+2026-09-15-session-object-extraction.md: 85f4c0df570a93bf3716600e0ab6637a7ae6e2d7
+2026-09-15-session-object-extraction.zh.md: 3be8c01bb08c5c0284aaf897650e56bfd0f1a383

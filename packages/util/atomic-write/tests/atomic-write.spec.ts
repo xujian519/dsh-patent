@@ -5,7 +5,7 @@ import { lstat, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile 
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { withFileLock, writeFileAtomic } from '../src/index.ts'
+import { FileLockError, withFileLock, writeFileAtomic } from '../src/index.ts'
 import { syncDirectoryDurably, syncFileDurably } from '../src/fsync.ts'
 
 const state = vi.hoisted(() => ({
@@ -392,7 +392,10 @@ describe('withFileLock', () => {
     await writeFile(`${target}.lock`, held)
     const operation = vi.fn(async () => {})
 
-    await expect(withFileLock(target, operation, { waitMs: 50 })).rejects.toThrow(/timed out waiting for the writer lock/)
+    const waiting = withFileLock(target, operation, { waitMs: 50 })
+    await expect(waiting).rejects.toThrow(/timed out waiting for the writer lock/)
+    await expect(waiting).rejects.toBeInstanceOf(FileLockError)
+    await expect(waiting).rejects.toMatchObject({ name: 'FileLockError', code: 'FILE_LOCK_TIMEOUT', lockPath: `${target}.lock` })
     expect(operation).not.toHaveBeenCalled()
     expect(await readFile(`${target}.lock`, 'utf8')).toBe(held)
   })

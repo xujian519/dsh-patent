@@ -224,8 +224,9 @@ export function errorMessage(value: unknown): string {
 export function toError(value: unknown): Error {
   try {
     if (value instanceof Error) return value
-  } catch {
+  } catch (error) {
     // A hostile proxy may throw during instanceof; fall through to the total renderer.
+    void error
   }
   return new Error(errorMessage(value))
 }

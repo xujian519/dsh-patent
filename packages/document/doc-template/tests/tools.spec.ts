@@ -5,6 +5,7 @@
 
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
@@ -46,6 +47,7 @@ function storeOf(templateDirs: readonly string[] = [templatesDirectory()]) {
 /** A host registering both tools. */
 async function host(templateDirs?: readonly string[]): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   const store = storeOf(templateDirs)

@@ -1,3 +1,4 @@
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 // Web e2e scenario: fresh round trip. A real chromium types a prompt into the
 // real composer; the wire, Remote gateway, agent loop, and the REAL bash tool (echo
 // in the temp workspace) all run; the model adapter is dsh-llm-replay (keyless)
@@ -18,8 +19,8 @@ import { fileURLToPath } from 'node:url'
 import type { Browser, Page, Route, WebSocketRoute } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
-import { ToolCallId, expandAssistantStream } from '@deepseek-ai/dsh-llm'
-import { SessionId, type Session, type SessionEvent } from '@deepseek-ai/dsh-session'
+import { type ToolCallId, expandAssistantStream } from '@deepseek-ai/dsh-llm'
+import type { SessionId, Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { SessionListValue } from '@deepseek-ai/dsh-api-session-controller/types'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import {
@@ -30,7 +31,7 @@ import {
 import {
   connectFreshWorkspace, expandTurnProcesses, newEnglishPage, REPO_ROOT, saveFailureShot,
 } from './support.ts'
-import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
+import { brandString } from '@deepseek-ai/dsh-brand'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('../../../snapshots/web/fresh-round-trip', import.meta.url))
 const FIXTURE = fileURLToPath(new URL('../../../snapshots/web/fresh-round-trip/session.v3.jsonl', import.meta.url))
@@ -54,7 +55,7 @@ type SessionListResponse = { result: RemoteResult<SessionListValue> }
 /** Rendered text of the system prompt surface node, or undefined when the surface carries none. */
 function systemPromptText(session: Session): string | undefined {
   const message = session.deriveMessages().find(candidate => candidate.role === 'system')
-  return message?.content.flatMap(block => block.type === 'text' ? [block.text] : []).join('')
+  return message?.content.flatMap(block => block.type === 'text' ? [block.text.trim()] : []).filter(Boolean).join('\n\n')
 }
 
 describe('web e2e: fresh round trip through the real assembly', () => {
@@ -263,13 +264,13 @@ describe('web e2e: fresh round trip through the real assembly', () => {
     const probe = await launchWebScaffold()
     try {
       const handle = await probe.ctx.agents.create({
-        sessionId: SessionId('web-url-probe'),
+        sessionId: brandString<SessionId>('web-url-probe'),
         setup: agentCtx => probe.ctx.agentPresets.mount(agentCtx).then(() => undefined),
       })
       try {
         const result = await executeToolFixture(probe.ctx, {
           signal: AbortSignal.timeout(5_000),
-          callId: ToolCallId('web-url-probe'),
+          callId: brandString<ToolCallId>('web-url-probe'),
           name: 'bash',
           arguments: {
             command: 'printf \'%s\\n\' "$DSH_WEB_URL"',

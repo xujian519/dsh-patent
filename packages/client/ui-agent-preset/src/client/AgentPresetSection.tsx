@@ -100,8 +100,10 @@ export function AgentPresetSection({
       </button>
     )
   return <section className={css.section}>
-    <h2 className={css.title}>{t('nav')}</h2>
-    <p className={css.intro}>{t('sectionIntro')}</p>
+    <div className={css.sectionHeader}>
+      <h2 className={css.title}>{t('nav')}</h2>
+      <p className={css.intro}>{t('sectionIntro')}</p>
+    </div>
     {/* A refused blank-session switch arrives as a seat marker; every other
         error is already report text and shows verbatim. */}
     {state.error === null ? null : (

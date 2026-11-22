@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { LegalKnowledge } from '../src/index.ts'
@@ -89,6 +90,7 @@ const GUIDING_CASE: GuidingCaseRecord = {
 async function host(): Promise<Context> {
   const ctx = new Context()
   contexts.push(ctx)
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   const service = new LegalKnowledge(ctx, { knowledgeDir: tempDir(), useFts5: false })
@@ -210,6 +212,7 @@ describe('legal_knowledge_search tool', () => {
   it('clamps the limit instead of returning unbounded results', async () => {
     const ctx = new Context()
     contexts.push(ctx)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     const service = {

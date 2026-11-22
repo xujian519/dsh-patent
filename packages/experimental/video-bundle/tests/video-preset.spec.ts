@@ -10,8 +10,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
-import * as yaml from 'js-yaml'
+import { parseEntryYaml } from '@deepseek-ai/cordis-plugin-include'
 import { describe, expect, it } from 'vitest'
 
 const REPO_ROOT = fileURLToPath(new URL('../../../../', import.meta.url))
@@ -52,7 +51,7 @@ function findRow(node: unknown, id: string): PresetRow | undefined {
 
 /** Load the shipped preset. */
 async function loadPreset(): Promise<unknown> {
-  return yaml.load(await readFile(PRESET, 'utf8'), { schema: entryListSchema })
+  return parseEntryYaml(await readFile(PRESET, 'utf8'))
 }
 
 /** Read one row's config object. */

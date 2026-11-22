@@ -68,5 +68,5 @@ The change adds one test file and no source line, so no coverage exemption moves
 ## Related
 
 - [Splitting the seven god files](../../implemented/simplification/2026-09-14-god-file-split-plan.md) (the plan whose batch-3 item this unblocks)
-- [Extracting the `Session` object and the publication observers](../simplification/2026-09-15-session-object-extraction.md) (batch 3's third landed cut)
+- [Extracting the `Session` object and the publication observers](../../archived/simplification/2026-09-15-session-object-extraction.md) (batch 3's third landed cut)
 - `packages/typert/generator/tests/node-id-stability.spec.ts`, `packages/typert/generator/tests/type-model.spec.ts`

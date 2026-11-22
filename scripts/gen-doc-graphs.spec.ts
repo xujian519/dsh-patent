@@ -28,7 +28,15 @@ const FIXTURE: Record<string, string> = {
     },
     include: ['vendor/**/*.ts', 'packages/**/*.ts'],
   }),
-  'vendor/cordis/src/context.ts': 'export class Context { private brand!: void }\n',
+  'vendor/cordis/src/context.ts': [
+    'export class Context {',
+    '  private brand!: void',
+    '  bail(...args: unknown[]): void {}',
+    '  on(...args: unknown[]): void {}',
+    '  once(...args: unknown[]): void {}',
+    '}',
+    '',
+  ].join('\n'),
   'vendor/cordis/src/events.ts': [
     'export class EventsService {',
     '  dispatch(type: string, args: unknown[]): unknown[] { return [type, args] }',
@@ -85,6 +93,28 @@ const FIXTURE: Record<string, string> = {
     "fireExported([{ id: 'subject' }, 'pkgd/exported-event'])",
     '',
   ].join('\n'),
+  'packages/fix/bailtypes/src/receiver.ts': [
+    "import { Context } from '../../../../vendor/cordis/src/context.ts'",
+    'export declare const application: Context',
+    "export declare const event: 'bail/union-a' | 'bail/union-b'",
+    '',
+  ].join('\n'),
+  'packages/fix/bailcalls/src/index.ts': [
+    "import { application as receiver, event } from '../../bailtypes/src/receiver.ts'",
+    "receiver.bail('bail/direct')",
+    "receiver.bail({}, 'bail/scoped')",
+    'receiver.bail(event)',
+    "receiver.on('bail/direct', () => {})",
+    "receiver.once('bail/scoped', () => {})",
+    'declare const widened: string',
+    'receiver.bail(widened)',
+    'const ctx = { bail(...args: unknown[]): void {} }',
+    "ctx.bail('bail/unrelated')",
+    '// An untyped receiver cannot establish event API ownership.',
+    'declare const untyped: any',
+    "untyped.bail('bail/untyped')",
+    '',
+  ].join('\n'),
 }
 
 const root = mkdtempSync(join(tmpdir(), 'gen-doc-graphs-'))
@@ -130,6 +160,34 @@ describe('event relation call-site indexing', () => {
     // disturb it.
     expect(dispatchersOf(['pkgd'], 'pkgd/exported-event')).toEqual(['pkgd'])
     expect(dispatchersOf(['pkgd'], 'pkgd/local-event')).toEqual(['pkgd'])
+  })
+})
+
+describe('type-aware bail dispatch', () => {
+  function collectBailRelations() {
+    return new EventRelationCollector(project, sources.filter(source => source.pkg === 'bailcalls')).collect()
+  }
+
+  it.each(['bail/direct', 'bail/scoped', 'bail/union-a', 'bail/union-b'])(
+    'records %s from an imported Context receiver as a bail dispatcher',
+    (event) => {
+      expect(collectBailRelations().get(event)?.dispatchers).toEqual(new Map([
+        ['bailcalls', new Set(['bail'])],
+      ]))
+    },
+  )
+
+  it('keeps on and once registrations as listeners', () => {
+    const relations = collectBailRelations()
+    expect(relations.get('bail/direct')?.listeners).toEqual(new Set(['bailcalls']))
+    expect(relations.get('bail/scoped')?.listeners).toEqual(new Set(['bailcalls']))
+    expect(relations.get('bail/union-a')?.listeners.size).toBe(0)
+  })
+
+  it('excludes unrelated and untyped receivers and widened event names', () => {
+    expect([...collectBailRelations().keys()].sort()).toEqual([
+      'bail/direct', 'bail/scoped', 'bail/union-a', 'bail/union-b',
+    ])
   })
 })
 

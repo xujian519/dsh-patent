@@ -32,11 +32,8 @@ const root = resolve(import.meta.dirname, '..')
 /** The restricted function. */
 export const RESTRICTED_NAME = 'appendPluginRecord'
 
-/** The module that declares the restricted function. */
-export const OWNER_FILE = 'packages/core/session/src/session.ts'
-
-/** The package entry that re-exports the owner's declaration. */
-export const OWNER_ENTRY_FILE = 'packages/core/session/src/index.ts'
+/** The module that declares the restricted function; it is also the package entry. */
+export const OWNER_FILE = 'packages/core/session/src/index.ts'
 
 /** Production source under this prefix may call the restricted function. */
 export const EXPERIMENTAL_PREFIX = 'packages/experimental/'
@@ -114,7 +111,7 @@ export function isTestFile(file: string): boolean {
  * entry export list.
  */
 export function isAdmittedCaller(file: string): boolean {
-  return file.startsWith(EXPERIMENTAL_PREFIX) || file === OWNER_FILE || file === OWNER_ENTRY_FILE
+  return file.startsWith(EXPERIMENTAL_PREFIX) || file === OWNER_FILE
     || isTestFile(file) || GATE_FILES.has(file)
     || file === DEPENDENCY_POLICY_FILE || file === ENTRY_EXPORT_LIST_FILE
 }

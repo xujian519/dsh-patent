@@ -3,8 +3,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import { createGeneratePatentFigureTool } from '../src/tool/generate-patent-figure.ts'
 import { createVerifyPatentFigureTool } from '../src/tool/verify-patent-figure.ts'
@@ -20,6 +21,7 @@ function text(result: { content: { type: string; text?: string }[] }): string {
 /** 建一个只挂了本工具的运行时。 */
 async function ctxWith(cwd: string): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   ctx.tools.register(createVerifyPatentFigureTool({ cwd }))
@@ -130,6 +132,7 @@ describe('verify_patent_figure 量测缺省', () => {
       const file = join(dir, 'abs.svg')
       writeFileSync(file, svg('<text x="10" y="10" font-size="3.5" text-anchor="middle" fill="#000000" stroke="none">1</text>'))
       const ctx = new Context()
+      await ctx.plugin(SessionProjectionRegistry)
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime)
       ctx.tools.register(createVerifyPatentFigureTool())
@@ -167,6 +170,7 @@ describe('generate_patent_figure → verify_patent_figure 联合复核', () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-verify-'))
     const outDir = join(dir, 'figs')
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.tools.register(createGeneratePatentFigureTool({
@@ -280,6 +284,7 @@ describe('verify_patent_figure 标号净距', () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-verify-'))
     const outDir = join(dir, 'figs')
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.tools.register(createGeneratePatentFigureTool({
@@ -396,6 +401,7 @@ describe('verify_patent_figure 字高下限', () => {
   it('部署内控下限（deps.minFontMm）在模型未传参时生效，模型传参覆盖它', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-verify-'))
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.tools.register(createVerifyPatentFigureTool({ cwd: dir, minFontMm: 3 }))

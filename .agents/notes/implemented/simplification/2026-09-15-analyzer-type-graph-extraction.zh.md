@@ -57,5 +57,5 @@ Status: implemented
 
 - [拆分七个上帝文件](../../implemented/simplification/2026-09-14-god-file-split-plan.zh.md)（计划；本刀是批次 3 第五刀落地）
 - [钉住 analyzer 的节点 id](../testing/2026-09-15-node-id-stability.zh.md)（本刀的前置件）
-- [提取 `Session` 对象与发布观察者](2026-09-15-session-object-extraction.zh.md)（批次 3 第三刀落地）
+- [提取 `Session` 对象与发布观察者](../../archived/simplification/2026-09-15-session-object-extraction.md)（批次 3 第三刀落地）
 - `packages/typert/generator/src/type-graph.ts`、`packages/typert/generator/tests/node-id-stability.spec.ts`

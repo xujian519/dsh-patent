@@ -1,11 +1,7 @@
 /** Browser caller for generic Connection unary RPC channels. */
 
-import { isRecord } from '@deepseek-ai/dsh-value'
-import {
-  RpcId,
-  type ClientRequest,
-  type RpcId as RpcIdType,
-} from '../rpc.ts'
+import { brandString } from '@deepseek-ai/dsh-brand'
+import type { ClientRequest, RpcId as RpcIdType } from '../rpc.ts'
 import type { ClientConnectionRpc, ConnectionRpcResult } from '../rpc.ts'
 import { randomUuid } from './random-uuid.ts'
 
@@ -37,7 +33,7 @@ export function createWebConnectionRpc(doFetch?: RpcFetch, openStream?: RpcStrea
   return {
     async call(channel, endpoint, payload, signal) {
       assertTarget(channel, endpoint)
-      const rpcId = RpcId(randomUuid())
+      const rpcId = brandString<RpcIdType>(randomUuid())
       const message: ClientRequest = {
         type: 'client-request',
         rpcId,
@@ -150,7 +146,7 @@ function parseConnectionResponse(value: unknown): {
   if (!isRecord(result)) throw new TypeError('connection: invalid server-response result')
   if (result.ok === true) {
     return {
-      rpcId: RpcId(value.rpcId),
+      rpcId: brandString<RpcIdType>(value.rpcId),
       result: { ok: true, value: result.value },
     }
   }
@@ -162,12 +158,16 @@ function parseConnectionResponse(value: unknown): {
     throw new TypeError('connection: invalid server-response failure')
   }
   return {
-    rpcId: RpcId(value.rpcId),
+    rpcId: brandString<RpcIdType>(value.rpcId),
     result: {
       ok: false,
       error: { code: error.code, message: error.message, details: error.details },
     },
   }
+}
+
+function isRecord(value: unknown): value is Record<PropertyKey, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function assertTarget(channel: string, endpoint: string): void {

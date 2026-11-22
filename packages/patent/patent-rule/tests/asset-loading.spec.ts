@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as PatentRule from '@deepseek-ai/dsh-patent-rule'
@@ -7,6 +8,7 @@ import { loadPatentComplianceRuleSet, resolveRuleAsset } from '@deepseek-ai/dsh-
 
 async function mount(config: Partial<PatentRule.Config>): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(PatentRule, config)
@@ -46,6 +48,7 @@ describe('Config validation', () => {
 
   it('rejects a non-array gateToolNames at load', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(PatentRule, { gateToolNames: 42 as never })).rejects.toThrow()

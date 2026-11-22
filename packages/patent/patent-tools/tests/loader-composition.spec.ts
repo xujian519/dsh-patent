@@ -18,6 +18,7 @@ import Include from '@deepseek-ai/cordis-plugin-include'
 import LocalJobRegistry from '@deepseek-ai/dsh-jobs-local'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import PatentData from '@deepseek-ai/dsh-patent-data'
 import * as PatentTools from '@deepseek-ai/dsh-patent-tools'
@@ -69,6 +70,7 @@ async function boot(
   const configPath = join(root, 'cordis.yml')
   const yml = [
     "- name: '@deepseek-ai/dsh-subprocess-local'",
+    "- name: '@deepseek-ai/dsh-session-projection'",
     "- name: '@deepseek-ai/dsh-system-prompt'",
     "- name: '@deepseek-ai/dsh-tools'",
     "- name: '@deepseek-ai/dsh-patent-data'",
@@ -90,6 +92,7 @@ async function boot(
   ctx.loader.builtins.include = Include
   const modules = new Map<string, unknown>([
     ['@deepseek-ai/dsh-subprocess-local', LocalSubprocessRuntime],
+    ['@deepseek-ai/dsh-session-projection', SessionProjectionRegistry],
     ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
     ['@deepseek-ai/dsh-tools', ToolRuntime],
     ['@deepseek-ai/dsh-patent-data', PatentData],

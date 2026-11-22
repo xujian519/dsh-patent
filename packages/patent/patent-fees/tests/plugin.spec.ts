@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as Pkg from '../src/index.ts'
@@ -8,6 +9,7 @@ import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
 async function install(overrides: Partial<Pkg.Config> = {}) {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   const fiber = await ctx.plugin(Pkg, {
@@ -78,6 +80,7 @@ describe('@deepseek-ai/dsh-patent-fees plugin surface', () => {
 
   it('fails loud at load when the configured fee index is missing', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(Pkg, { failOnUnverified: true, feeTablePath: '/nonexistent/fees.yaml' }))

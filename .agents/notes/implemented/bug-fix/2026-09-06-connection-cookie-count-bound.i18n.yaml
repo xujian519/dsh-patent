@@ -9,11 +9,11 @@
   en: 320ebdb33b79c352
   zh: cd6265ac0cec9ab2
 /agent-note-bound-browser-session-cookie-count-to-keep-the-request-head-under-the-http-limit/decision:
-  en: 45c054ead718b7d4
-  zh: 481727a8c677ac74
+  en: c629fee3f424ce25
+  zh: b9fb163b49a43c14
 /agent-note-bound-browser-session-cookie-count-to-keep-the-request-head-under-the-http-limit/alternatives-considered:
   en: 509faae9d3a16cb9
   zh: c04cd1db4aa7eeef
 /agent-note-bound-browser-session-cookie-count-to-keep-the-request-head-under-the-http-limit/consequences:
-  en: 591c668dd9731174
-  zh: d26dd044bc32a966
+  en: a1ede1b43820fc81
+  zh: ac7f55fc05e74286

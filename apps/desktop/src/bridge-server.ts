@@ -146,8 +146,9 @@ export function removeStaleBridgeSockets(platform: NodeJS.Platform = process.pla
     if (entry === `${BRIDGE_SOCKET_PREFIX}${process.pid}.sock`) continue
     try {
       unlinkSync(join(tmpdir(), entry))
-    } catch {
+    } catch (error) {
       // Another user's file or an already-removed entry: leave it alone.
+      void error
     }
   }
 }

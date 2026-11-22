@@ -42,7 +42,7 @@
       "path": "../../patent/patent-teams"
     },
     {
-      "path": "../ui-workspace"
+      "path": "../ui-workspace/tsconfig.client.json"
     },
     {
       "path": "../../api/session-controller/tsconfig.client.json"

@@ -20,7 +20,7 @@
  */
 
 import { join } from 'node:path'
-import type { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
+import type { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type { JobOutcome, JobRegistry, JobSpec } from '@deepseek-ai/dsh-jobs'

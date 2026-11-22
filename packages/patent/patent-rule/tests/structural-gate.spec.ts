@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as PatentRule from '@deepseek-ai/dsh-patent-rule'
@@ -395,6 +396,7 @@ describe('structural gate apply', () => {
 
   async function mounted(textArgs: string[], strict: boolean): Promise<Context> {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.tools.register(documentTool())
@@ -407,6 +409,7 @@ describe('structural gate apply', () => {
 
   it('strict textArgs 与已注册工具的入参不一致时加载失败', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.tools.register(documentTool())
@@ -458,6 +461,7 @@ describe('tools/pre-execute 制品结构门禁', () => {
 
   async function mount(config: Partial<PatentRule.Config>): Promise<Context> {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(PatentRule, config)
@@ -527,6 +531,7 @@ describe('tools/pre-execute 制品结构门禁', () => {
 
   it('strict 声明无法解析时插件加载失败，而不是带着未装上的门禁继续跑', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await expect(ctx.plugin(PatentRule, {
@@ -537,6 +542,7 @@ describe('tools/pre-execute 制品结构门禁', () => {
 
   it('未知规则 id、未知门禁检查族与「缺失即违规」族都告警但不阻塞挂载', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     const warnSpy = vi.spyOn(ctx.logger, 'warn')

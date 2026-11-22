@@ -80,6 +80,6 @@ Status: implemented
 ## Related
 
 - [拆分七个上帝文件](../../implemented/simplification/2026-09-14-god-file-split-plan.zh.md)（计划；本刀是批次 3 第二刀落地）
-- [提取会话的增量折叠](2026-09-14-session-folds-extraction.zh.md)（批次 3 首刀落地）
+- [提取会话的增量折叠](../../archived/simplification/2026-09-14-session-folds-extraction.md)（批次 3 首刀落地）
 - [提取 `acp`/`ptc` 簇](2026-09-14-acp-ptc-cluster-extraction.zh.md)（本文件批次 1 的一刀：静态 spec、flavor 表与 JSON 呈现）
 - `packages/core/tool-executor-ptc/src/ptc.ts`、`packages/core/tool-executor-ptc/tests/ptc.spec.ts`

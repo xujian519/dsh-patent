@@ -9,23 +9,23 @@
   en: da5060e577578ea7
   zh: 2e77d570e32d8938
 /deepseek-harness-architecture/profiles-and-bundles:
-  en: bc50f1180fe80b2d
-  zh: 9070509c423016d8
+  en: 047812854056a8ce
+  zh: 1eb775749353f1c0
 /deepseek-harness-architecture/application-launch:
-  en: 0953aa9179d8af4a
-  zh: e4124a1bf5d3fe8c
+  en: 5f8e46c2ea2f3abc
+  zh: 07dda76aab4ebd30
 /deepseek-harness-architecture/desktop-application:
   en: b9eeb18645121a8b
   zh: 70d87a12c43e042a
 /deepseek-harness-architecture/core-packages:
-  en: 20ef882e44b06a10
+  en: 24b3cbbce1d7391f
   zh: c10c3934ed5570e9
 /deepseek-harness-architecture/events:
-  en: 0d4481070a0ba352
+  en: 8b87255d577187a5
   zh: 026be77a9f3db68e
 /deepseek-harness-architecture/turn-flow:
-  en: 1d496f1893bdbb8d
-  zh: f16d162a803fc791
+  en: fd8e639264b820ef
+  zh: 3d21f61de3571a37
 /deepseek-harness-architecture/session-log:
   en: b3b63d8fe7cab9fe
   zh: 3703fcf30b1639d0
@@ -33,5 +33,5 @@
   en: 1d425c445bfcc931
   zh: 834d486f88e68edf
 /deepseek-harness-architecture/where-new-behavior-goes:
-  en: 63512a7e9613381c
-  zh: f6f99c11fa97e995
+  en: d1935d7125ac11bd
+  zh: 6e5397fcea850b4e

@@ -21,7 +21,7 @@ import { globSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
+import { parseEntryYaml } from '@deepseek-ai/cordis-plugin-include'
 import * as yaml from 'js-yaml'
 import { describe, expect, it } from 'vitest'
 
@@ -125,7 +125,7 @@ function flattenRows(entries: unknown[], parent?: string): PresetRow[] {
 /** Read the `patent` declaration's rows out of the bundle's patch file. */
 async function patentRows(): Promise<PresetRow[]> {
   const source = await readFile(PATENT_PRESET, 'utf8')
-  const entries: unknown = yaml.load(source, { schema: entryListSchema })
+  const entries: unknown = parseEntryYaml(source)
   if (!Array.isArray(entries)) throw new TypeError('the patent preset patch must contain a Cordis entry list')
   const inserted: unknown[] = []
   for (const entry of entries) {

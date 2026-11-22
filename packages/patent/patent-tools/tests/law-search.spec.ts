@@ -3,8 +3,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import type { LawSearchResult } from '@deepseek-ai/dsh-patent-knowledge'
 import { createLawSearchTool } from '../src/tool/law-search.ts'
@@ -44,6 +45,7 @@ function recorder(overrides: { law?: LawSearchResult[]; guideline?: LawSearchRes
 
 async function ctxWith(deps: LawSearchDeps): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   ctx.tools.register(createLawSearchTool(deps))

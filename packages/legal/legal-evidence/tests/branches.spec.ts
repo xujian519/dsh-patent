@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -45,6 +46,7 @@ afterEach(() => {
 
 async function hostWith(config?: { rulesDir?: string }): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   apply(ctx, config ?? {})
@@ -651,6 +653,7 @@ describe('plugin entry', () => {
 
   it('renders a report with no rule findings', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.tools.register(createEvaluateLegalEvidenceTool(new LegalEvidenceEngine()))
@@ -667,6 +670,7 @@ describe('plugin entry', () => {
 
   it('renders warning and low-score guidance', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.tools.register(createEvaluateLegalEvidenceTool(new LegalEvidenceEngine()))

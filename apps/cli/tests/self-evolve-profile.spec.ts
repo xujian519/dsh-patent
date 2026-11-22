@@ -19,6 +19,7 @@ import { Context } from '@deepseek-ai/cordis'
 import {
   composeEntries, initProfile, loadProfile, PROFILE_TEMPLATES, PROFILES_DIR,
 } from '@deepseek-ai/dsh-app-boot'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
@@ -97,6 +98,7 @@ describe('the shipped self-evolve profile', () => {
     // queues through and the agent directory it resolves the caller from.
     ctx.provide('selfEvolve', { readPatterns: async () => [], requestEvolve: () => ({ requestId: 'r', status: 'queued', queuePosition: 1 }) } as never)
     ctx.provide('agents', { get: () => undefined } as never)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(NativeToolExecutor)

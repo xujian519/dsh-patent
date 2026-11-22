@@ -44,6 +44,7 @@
         "tool-plugin-market": "Read-only plugin catalog browsing over the host `pluginCatalog` service. Installing or removing a plugin is a deployment action taken through the `dsh plugin` CLI, not a step of producing a document.",
         "present": "`present` declares an arbitrary accessible file as a deliverable for the client UI. This mode declares its deliverables through `document_deliver`, which carries the deterministic check results the document studio renders; a second declaration channel would split that state.",
         "tool-plugin-manager": "The plugin-manager tools write profile configuration; the host patch ships this row disabled and a document delivery has no profile-editing step.",
+        "tool-cordis": "Read-only Cordis runtime API discovery for agents that write or configure plugins. A document delivery has no plugin-authoring step, and the preset row alone registers no provider: the host composition mounts `@deepseek-ai/dsh-tool-cordis/host` once for every web preset.",
         "openviking": "Opt-in external memory over an HTTP service this composition does not run. The row is carried by `standard` alone; a document delivery is grounded in the files and sources the user supplies, not in recalled session history."
       }
     },
@@ -85,6 +86,7 @@
         "tool-plugin-market": "Read-only plugin catalog browsing over the host `pluginCatalog` service. Installing or removing a plugin is a deployment action taken through the `dsh plugin` CLI, not a step of a personal legal matter.",
         "present": "`present` declares an arbitrary accessible file as a deliverable for the client UI. This mode declares its deliverables through `document_deliver`, whose records the delivery studio renders, and the persona plus `legal-quality-gate` require the legal checks before delivery; a second declaration channel would split that state.",
         "tool-plugin-manager": "The plugin-manager tools write profile configuration; the host patch ships this row disabled and a legal matter has no profile-editing step.",
+        "tool-cordis": "Read-only Cordis runtime API discovery for agents that write or configure plugins. A legal matter has no plugin-authoring step, and the preset row alone registers no provider: the host composition mounts `@deepseek-ai/dsh-tool-cordis/host` once for every web preset.",
         "openviking": "Opt-in external memory over an HTTP service this personal composition does not run. Case facts live in `matters/<slug>/matter.md` and retrieval evidence in `research/evidence.jsonl`, both inside the session workspace; recall from a separate service would add a copy of privileged material outside that workspace."
       }
     },
@@ -128,7 +130,8 @@
       "explainedAbsences": {
         "tool-plugin-market": "Read-only plugin catalog browsing over the host `pluginCatalog` service. Installing or removing a plugin is a deployment action for the firm's operator, not a step of prosecuting a case.",
         "present": "`present` declares an arbitrary accessible file as a deliverable for the client UI. This mode declares its deliverables through `render_patent_document` and `build_patent_filing`, both of which the delivery gate holds to the rule and citation runs; a second declaration channel would sit outside that gate.",
-        "tool-plugin-manager": "The plugin-manager tools write profile configuration; the host patch ships this row disabled and a patent filing has no profile-editing step."
+        "tool-plugin-manager": "The plugin-manager tools write profile configuration; the host patch ships this row disabled and a patent filing has no profile-editing step.",
+        "tool-cordis": "Read-only Cordis runtime API discovery for agents that write or configure plugins. A patent filing or prosecution has no plugin-authoring step, and the preset row alone registers no provider: the host composition mounts `@deepseek-ai/dsh-tool-cordis/host` once for every web preset."
       }
     },
     "ptc.patch.yml": {

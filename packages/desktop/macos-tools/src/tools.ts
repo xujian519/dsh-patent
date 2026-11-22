@@ -244,10 +244,11 @@ export function createMacosTools(deps: MacosToolDeps): ToolDefinition[] {
         let text = ''
         try {
           text = (await spawn(PBPASTE, [], exec)).stdout
-        } catch {
+        } catch (error) {
           // pbpaste exits non-zero when the clipboard holds no text (e.g. an
           // image); approval already resolved above, so the exit reads as an
           // empty clipboard.
+          void error
         }
         const truncated = text.length > limits.clipboardReadMaxChars
         return {

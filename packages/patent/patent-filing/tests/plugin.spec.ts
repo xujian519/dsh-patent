@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as Pkg from '@deepseek-ai/dsh-patent-filing'
@@ -83,6 +84,7 @@ describe('@deepseek-ai/dsh-patent-filing plugin surface', () => {
     const python = pythonStub()
     try {
       const ctx = new Context()
+      await ctx.plugin(SessionProjectionRegistry)
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime)
       ctx.provide('subprocess', fakeSubprocess(() => stdoutHandle(BUILD_REPORT)).spawner)
@@ -103,6 +105,7 @@ describe('@deepseek-ai/dsh-patent-filing plugin surface', () => {
     const python = pythonStub()
     try {
       const ctx = new Context()
+      await ctx.plugin(SessionProjectionRegistry)
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime)
       ctx.provide('subprocess', fakeSubprocess(() => stdoutHandle(BUILD_REPORT)).spawner)
@@ -190,6 +193,7 @@ describe('verify report is a domain result, not an infrastructure failure', () =
     const python = pythonStub()
     try {
       const ctx = new Context()
+      await ctx.plugin(SessionProjectionRegistry)
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime)
       ctx.provide('subprocess', fakeSubprocess(() => stdoutHandle(VERIFY_REPORT)).spawner)

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as Pkg from '@deepseek-ai/dsh-patent-document'
@@ -28,6 +29,7 @@ describe('@deepseek-ai/dsh-patent-document plugin surface', () => {
 
   it('registers render_patent_document through the plugin and unregisters it on dispose (HMR-safety)', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.provide('subprocess', fakeSubprocess(() => successHandle()).runtime)
@@ -39,6 +41,7 @@ describe('@deepseek-ai/dsh-patent-document plugin surface', () => {
 
   it('applies an explicit chromePath while outputRoot stays unset', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     ctx.provide('subprocess', fakeSubprocess(() => successHandle()).runtime)

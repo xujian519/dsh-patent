@@ -25,7 +25,7 @@ export interface PluginCatalogTabInjected {
 
 /** Full component props assembled by the Settings slot renderer. */
 export type PluginCatalogTabProps =
-  PropsRuntime<'settings.plugins.tab'>
+  PropsRuntime<'settings.section'>
   & PropsLocale<'settings.pluginCatalog'>
   & InjectFace<PluginCatalogTabInjected>
 

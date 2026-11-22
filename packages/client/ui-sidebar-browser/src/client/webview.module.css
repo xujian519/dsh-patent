@@ -10,6 +10,7 @@
 }
 
 /* Native guest input must not consume a docking gesture's window events. */
+/* css-selector-gate: the gesture attribute lands on the element the press started on, so a drag begun anywhere else in the document cannot key this guest; the rule has to reach a global ancestor. */
 :global(html:has([data-dockkit-pointer])) .webview {
   pointer-events: none;
 }

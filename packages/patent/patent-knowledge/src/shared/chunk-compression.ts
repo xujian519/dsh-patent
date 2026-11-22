@@ -52,9 +52,10 @@ export function decompressChunk(data: string | Uint8Array | null): string {
   if (data.length >= MAGIC.length && data[0] === MAGIC[0] && data[1] === MAGIC[1]) {
     try {
       return gunzipSync(Buffer.from(data.subarray(MAGIC.length))).toString('utf8')
-    } catch {
+    } catch (error) {
       // 魔数匹配但非有效 gzip（截断写入 / 巧合 'SC' 开头）：吞掉 gunzip 异常，
       // 落到下方统一的 utf8 兜底（避免整条 SQL 查询抛错）。
+      void error
     }
   }
   return Buffer.from(data).toString('utf8')

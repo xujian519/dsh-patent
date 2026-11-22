@@ -34,7 +34,7 @@ import { deadline, MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import { assertNever, deepFreeze } from '@deepseek-ai/dsh-util-values'
 import { assertPositiveInteger } from '@deepseek-ai/dsh-value'
 import type { SessionSeq } from '@deepseek-ai/dsh-session'
-import { SessionTitleProviderId } from '@deepseek-ai/dsh-session-title'
+import type { SessionTitleProviderId } from '@deepseek-ai/dsh-session-title/types'
 import type {
   SessionTitleModelIdentity,
   SessionTitleProviderRequest,

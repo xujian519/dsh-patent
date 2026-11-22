@@ -12,12 +12,12 @@ Status: implemented
 
 ## Decision
 
-限制浏览器保留的 `dsh-auth-*` cookie 数量。在 `packages/client/connection/src/browser-auth.ts` 中：
+限制浏览器保留的 `dsh-auth-*` cookie 数量。在 `packages/host/authentication-token/src/browser-auth.ts` 中：
 
-- `MAX_BROWSER_COOKIES` 为 32。即便 bundle 请求行继续增长，32 条 cookie 也远低于 16 KB 请求头上限。
-- 在 token-exchange（签发）分支，`excessCookieNames` 解析请求的 `Cookie` 头，收集带前缀的 cookie，用激活密钥解码每个已签名负载以恢复其 `issuedAt`，当 jar 将超过上限时返回最旧的超额名。当前授权域的 cookie 与不带前缀的 cookie 永不清理；无法解码的带前缀 cookie 按最旧处理，以便先削减超额字节。
+- `RETAINED_OTHER_COOKIES` 为 16。其他 16 个授权域各占一对 226 字符，使 `Cookie` 头保持在约 3.9 KB，留下约 50 次登录的余地（对不过期任何凭据的 Host 而言）。
+- 在登录（签发）分支，`supersededCookieNames` 解析请求的 `Cookie` 头，收集符合生成名模式的 cookie，读取每个已签名负载声称的签发时间，返回 `RETAINED_OTHER_COOKIES` 个最近签发之外的其余名。当前授权域的 cookie 与不符合生成名模式的 cookie 永不清理；无法读取的值按签发时间为零处理，以便先削减超额字节。
 - 每个超额名都用同名、`Max-Age=0` 的 `Set-Cookie` 清除，与新签发的 cookie 一并下发。
-- `ConnectionIndexResponse.writeHead` 的头值由 `string` 放宽为 `string | string[]`，以便表达重复的 `Set-Cookie` 头。
+- `ConnectionIndexResponse.writeHead` 的头值放宽为 `Readonly<Record<string, string | string[]>>`，以便表达重复的 `Set-Cookie` 头。
 
 约束在每次签发时生效，而签发正是新增 cookie 的地方，因此 jar 在两次启动之间永远不会超过上限。
 
@@ -33,7 +33,7 @@ Status: implemented
 
 ## Consequences
 
-- 由同一源服务的每个表面其请求头都被限制（32 条 cookie 约 7 KB），因此无论启动多少次都不会在长 URL 上重新引发 431。
-- 多实例浏览器保留最近的 `MAX_BROWSER_COOKIES` 条 cookie 并淘汰最旧的，而不是失败或把当前实例登出。
+- 由同一源服务的每个表面其请求头都被限制（其他授权域的 cookie 约 3.9 KB），因此无论启动多少次都不会在长 URL 上重新引发 431。
+- 多实例浏览器保留最近的 `RETAINED_OTHER_COOKIES` 条 cookie 并淘汰最旧的，而不是失败或把当前实例登出。
 - 清理是签发响应上的一次性纠偏；普通的 cookie 认证请求不变，也不会重新签发。
 - 桌面 shell 重置与本约束是不同包里的独立改动，二者互补而非重复。

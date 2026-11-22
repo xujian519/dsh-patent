@@ -7,6 +7,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import SkillRegistry from '@deepseek-ai/dsh-skill'
 import CommandRuntime from '@deepseek-ai/dsh-commands'
@@ -46,6 +47,7 @@ describe('registerOpenVikingTools', () => {
   let ctx: Context
   beforeEach(async () => {
     ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
   })
@@ -287,6 +289,7 @@ describe('registerOpenVikingCommands', () => {
 describe('mountOpenVikingMcp', () => {
   it('mounts without failing on an unreachable endpoint', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     const fiber = mountOpenVikingMcp(ctx, { endpoint: 'http://127.0.0.1:1', apiKey: '', account: '', user: '', agentId: 'dsh', timeoutMs: 1000 })
@@ -296,6 +299,7 @@ describe('mountOpenVikingMcp', () => {
 
   it('passes identity headers for the MCP session', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     const fiber = mountOpenVikingMcp(ctx, { endpoint: 'http://127.0.0.1:1/', apiKey: 'k', account: 'a', user: 'u', agentId: 'dsh', timeoutMs: 1000 })
@@ -304,6 +308,7 @@ describe('mountOpenVikingMcp', () => {
 
   it('omits an empty agent header', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     const fiber = mountOpenVikingMcp(ctx, { endpoint: 'http://127.0.0.1:1', apiKey: 'k', account: 'a', user: 'u', agentId: '', timeoutMs: 1000 })
@@ -314,6 +319,7 @@ describe('mountOpenVikingMcp', () => {
 describe('tool render branches and edge wires', () => {
   it('memqueue renders the error state and memcommit the nothing-to-commit state', async () => {
     const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     const f = mockClient()

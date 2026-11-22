@@ -70,6 +70,8 @@ export interface HeroShellProps {
   sessionId?: SessionId | undefined
   /** Authorized renderer for the hero brand-mark slot. */
   renderSlot: ConversationContentProps['renderSlot']
+  /** Text shown instead of the default headline and preview badge. */
+  headline?: string | undefined
   /** Overlay content after the stack (modals). */
   children?: ReactNode
 }
@@ -165,10 +167,10 @@ function heroHeadlineOf(sessionId: SessionId): typeof HERO_HEADLINES[number] {
  * @param props - see {@link HeroShellProps}.
  * @returns the centered hero element tree.
  */
-export function HeroShell({ t, sessionId, renderSlot, children }: HeroShellProps) {
+export function HeroShell({ t, sessionId, renderSlot, headline: headlineOverride, children }: HeroShellProps) {
   const [hovering, setHovering] = useState(false)
   // No Session, no line: the mark alone stands until a conversation exists.
-  const headline = sessionId === undefined ? undefined : heroHeadlineOf(sessionId)
+  const headline = headlineOverride ?? (sessionId === undefined ? undefined : t(heroHeadlineOf(sessionId)))
   return (
     <div className={css.root}>
       <div className={css.stack}>
@@ -194,8 +196,8 @@ export function HeroShell({ t, sessionId, renderSlot, children }: HeroShellProps
               ? null
               : (
                 <>
-                  <span>{t(headline)}</span>
-                  <span className={css.previewBadge}>{t('hero.preview')}</span>
+                  <span>{headline}</span>
+                  {headlineOverride === undefined && <span className={css.previewBadge}>{t('hero.preview')}</span>}
                 </>
               )}
           </span>

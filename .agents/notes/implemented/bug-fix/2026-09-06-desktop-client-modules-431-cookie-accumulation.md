@@ -18,7 +18,7 @@ The desktop shell always rebuilds its browser session from the per-launch token 
 
 ## Alternatives considered
 
-**Bound the number of cookies in `packages/client/connection/src/browser-auth.ts`.** The root cause is unbounded cookie minting, so a bounded jar would help the browser `dsh web` path with random ports too. Rejected for this change: it is a multi-file change — `ConnectionIndexResponse.writeHead` would widen from `Record<string,string>` headers to `string | readonly string[]`, touching the browser-auth host tests and the two gateway test fakes — for a defect the desktop shell can fix locally and fully. Deferred as a follow-up; the desktop reset solves the shipped app without a shared-contract change.
+**Bound the number of cookies in `packages/host/authentication-token/src/browser-auth.ts`.** The root cause is unbounded cookie minting, so a bounded jar would help the browser `dsh web` path with random ports too. Rejected for this change: it is a multi-file change — `ConnectionIndexResponse.writeHead` would widen from `Record<string,string>` headers to `string | readonly string[]`, touching the browser-auth host tests and the two gateway test fakes — for a defect the desktop shell can fix locally and fully. Deferred as a follow-up; the desktop reset solves the shipped app without a shared-contract change.
 
 **Raise the Node `maxHeaderSize`.** Masks the accumulation instead of removing it, and the browser path would still drift toward 431.
 

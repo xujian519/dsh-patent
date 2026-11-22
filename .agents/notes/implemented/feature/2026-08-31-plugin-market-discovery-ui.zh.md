@@ -10,10 +10,10 @@ Status: implemented
 
 ## 决策
 
-用**只读 Remote controller** 把能力间隔桥接到浏览器，并把投影放进现有的**插件设置 tab**，让发现可以在产品内完成，而所有写入仍留在 CLI。
+用**只读 Remote controller** 把能力间隔桥接到浏览器，并把投影作为独立**分区**放进设置页，让发现可以在产品内完成，而所有写入仍留在 CLI。
 
 - [`@deepseek-ai/dsh-api-plugin-market-controller`](../../../../packages/api/plugin-market-controller/README.zh.md) 继承 `TypertRemoteService`，命名空间为 `pluginCatalog`，只转发只读动词 `listSources` / `search` / `preview`。它把 host 的 `PluginMarketError` 投射为 `TypertRemoteFailure` 业务码，并在未挂载 provider 时报告可执行的配置错误。
-- [`@deepseek-ai/dsh-client-ui-plugin-catalog`](../../../../packages/client/ui-plugin-catalog/README.zh.md) 注册一个 `settings.plugins.tab` 条目（`id: 'catalog'`，`order: 30`）。它列出目录源，用 `q` / `category` / `capability` 搜索选中的源，并预检一个 `name@version` 引用。所有文案都走 typed locale 字典；组件只消费注入的纯函数，不直接触碰 `ctx` 或 Remote。
+- [`@deepseek-ai/dsh-client-ui-plugin-catalog`](../../../../packages/client/ui-plugin-catalog/README.zh.md) 注册一个本地化的 `settings.section` 贡献（`id: 'pluginCatalog'`，`order: 30`），导航入口与页面外框由设置外壳拥有。它列出目录源，用 `q` / `category` / `capability` 搜索选中的源，并预检一个 `name@version` 引用。所有文案都走 typed locale 字典；组件只消费注入的纯函数，不直接触碰 `ctx` 或 Remote。
 - `@deepseek-ai/dsh-api-remotes` 挂载该 controller（`pluginCatalogRemote`），令浏览器通过 `ctx.remote.pluginCatalog` 解析到与 CLI 动词相同的命名空间。
 
 两者都从构造上保持只读：没有任何方法能写入 profile、编辑 `cordis.yml` 或安装包。安装与卸载仍保留在操作者驱动的 `dsh plugin` CLI。

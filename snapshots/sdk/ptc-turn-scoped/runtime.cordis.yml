@@ -1,0 +1,6 @@
+# Replays the ptc-turn program with the scoped REPL. The base bundle already
+# mounts `ptc-runtime`; override its config instead of inserting it again, which
+# the loader rejects as a duplicate entry id.
+- id: ptc-runtime
+  config:
+    executionMode: persistent-in-memory

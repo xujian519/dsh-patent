@@ -47,15 +47,15 @@ const threadListTitle = thread => thread.dshSessionTitle ?? thread.title ?? ques
 
 function rememberBranchAnchor(sessionId, cardId) {
   state.branchAnchors.set(sessionId, cardId)
-  try { localStorage.setItem('dsh-synapse:branch-anchors', JSON.stringify([...state.branchAnchors])) } catch { /* Private browsing may disable local storage. */ }
+  try { localStorage.setItem('dsh-synapse:branch-anchors', JSON.stringify([...state.branchAnchors])) } catch (error) { /* Private browsing may disable local storage. */ void error }
 }
 
 function persistCardPositions() {
-  try { localStorage.setItem(CARD_POSITIONS_KEY, JSON.stringify([...state.cardPositions])) } catch { /* Private browsing may disable local storage. */ }
+  try { localStorage.setItem(CARD_POSITIONS_KEY, JSON.stringify([...state.cardPositions])) } catch (error) { /* Private browsing may disable local storage. */ void error }
 }
 
 function persistCollapsedCards() {
-  try { localStorage.setItem(COLLAPSED_CARDS_KEY, JSON.stringify([...state.collapsedCardIds])) } catch { /* Private browsing may disable local storage. */ }
+  try { localStorage.setItem(COLLAPSED_CARDS_KEY, JSON.stringify([...state.collapsedCardIds])) } catch (error) { /* Private browsing may disable local storage. */ void error }
 }
 
 function rememberCardPosition(cardId, position, aliases = []) {
@@ -68,9 +68,8 @@ function resetCardPositions() {
   state.cardPositions.clear()
   persistCardPositions()
   try {
-    localStorage.removeItem(LEGACY_CARD_POSITIONS_KEY)
-    localStorage.removeItem('dsh-synapse:card-positions:v2')
-  } catch { /* Private browsing may disable local storage. */ }
+    for (const key of [LEGACY_CARD_POSITIONS_KEY, 'dsh-synapse:card-positions:v2']) localStorage.removeItem(key)
+  } catch (error) { /* Private browsing may disable local storage. */ void error }
 }
 
 function resetCanvasCamera() {

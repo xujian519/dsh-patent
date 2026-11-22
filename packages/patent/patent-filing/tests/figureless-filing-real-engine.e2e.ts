@@ -41,11 +41,12 @@ function pythonWithDocx(): string | undefined {
   if (candidate === undefined) return undefined
   try {
     execFileSync(candidate, ['-c', 'import docx'], { stdio: 'ignore', timeout: 10_000 })
-    return candidate
-  } catch {
-    // 导入失败表示该解释器缺 python-docx（或根本不可用）；交给下一个候选。
+  } catch (error) {
+    // 导入失败表示该解释器缺 python-docx（或根本不可用）；本次跳过。
+    void error
+    return undefined
   }
-  return undefined
+  return candidate
 }
 
 /** 将 node:child_process.spawn 适配为 SubprocessRuntime（收集 stdout/stderr 与退出码）。 */

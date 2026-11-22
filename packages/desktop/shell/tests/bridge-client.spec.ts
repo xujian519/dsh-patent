@@ -75,7 +75,10 @@ describe('BridgeClient', () => {
         }
       })
     })
-    try { unlinkSync(socketPath) } catch {}
+    try { unlinkSync(socketPath) } catch (error) {
+      // Node unlinks the socket when the server closes; the removal is best-effort.
+      void error
+    }
   })
 
   it('calls a method and resolves the result', async () => {
@@ -288,7 +291,10 @@ describe('BridgeClient reconnect', () => {
         })
       })
     }
-    try { unlinkSync(socketPath) } catch {}
+    try { unlinkSync(socketPath) } catch (error) {
+      // Node unlinks the socket when the server closes; the removal is best-effort.
+      void error
+    }
   })
 
   it('rejects pending calls when the socket errors after connecting', async () => {
@@ -397,6 +403,9 @@ describe('BridgeClient reconnect', () => {
         else resolve()
       })
     })
-    try { unlinkSync(latePath) } catch {}
+    try { unlinkSync(latePath) } catch (error) {
+      // Node unlinks the socket when the server closes; the removal is best-effort.
+      void error
+    }
   })
 })

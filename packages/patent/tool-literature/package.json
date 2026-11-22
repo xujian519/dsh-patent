@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-literature",
   "description": "Model-facing literature tools for the DeepSeek Harness: arXiv, OpenAlex, Semantic Scholar, and Crossref connectors",
-  "version": "0.2.2-rc.5",
+  "version": "0.2.3-alpha.1",
   "publishConfig": {
     "access": "public"
   },

@@ -55,8 +55,14 @@ async function bench() {
 function declare(slots: SlotRegistry): () => void {
   return slots.register({
     name: 'root',
-    children: { 'settings.plugins.tab': { kind: 'list', scope: 'root' } },
+    children: { 'settings.section': { kind: 'list', scope: 'root' } },
   } as never, () => null)
+}
+
+/** Read the declared section's erased inject face as the catalog's Remote face. */
+function catalogFace(slots: SlotRegistry): PluginCatalogTabInjected {
+  const erased: object = slots.entries('settings.section')[0]!.inject!()
+  return erased as PluginCatalogTabInjected
 }
 
 describe('ui-plugin-catalog browser plugin', () => {
@@ -64,19 +70,19 @@ describe('ui-plugin-catalog browser plugin', () => {
     expect(inject).toEqual(['slots', 'locale', 'remote', 'remote.pluginCatalog'])
   })
 
-  it('registers a localized tab without reading the Remote eagerly', async () => {
+  it('registers a localized section without reading the Remote eagerly', async () => {
     const b = await bench()
     declare(b.slots)
     await b.ctx.plugin({ inject: [...inject], apply }).await()
 
-    const entry = b.slots.entries('settings.plugins.tab')[0]!
+    const entry = b.slots.entries('settings.section')[0]!
     expect(entry.component).toBe(PluginCatalogTab)
-    expect(entry.options).toMatchObject({ id: 'catalog', order: 30 })
+    expect(entry.options).toMatchObject({ id: 'pluginCatalog', order: 30 })
     expect(entry.locale).toBe(NS)
     expect(resolveSlotLabel(entry.options.label)).toBe('插件目录')
     expect(listSources).not.toHaveBeenCalled()
 
-    const injected = (entry.inject as unknown as () => PluginCatalogTabInjected)()
+    const injected = catalogFace(b.slots)
     await expect(injected.listSources()).resolves.toEqual(SOURCES)
     expect(listSources).toHaveBeenCalledOnce()
 
@@ -90,7 +96,7 @@ describe('ui-plugin-catalog browser plugin', () => {
     declare(b.slots)
     await b.ctx.plugin({ inject: [...inject], apply }).await()
 
-    const injected = (b.slots.entries('settings.plugins.tab')[0]!.inject as unknown as () => PluginCatalogTabInjected)()
+    const injected = catalogFace(b.slots)
     await expect(injected.search('official', { q: 'docs' })).resolves.toEqual(PAGE)
     expect(search).toHaveBeenCalledWith('official', { q: 'docs' })
 
@@ -109,22 +115,22 @@ describe('ui-plugin-catalog browser plugin', () => {
     const b = await bench()
     const fiber = b.ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
-    expect(b.slots.entries('settings.plugins.tab')).toHaveLength(0)
+    expect(b.slots.entries('settings.section')).toHaveLength(0)
 
     const stop = declare(b.slots)
-    await vi.waitFor(() => { expect(b.slots.entries('settings.plugins.tab')).toHaveLength(1) })
+    await vi.waitFor(() => { expect(b.slots.entries('settings.section')).toHaveLength(1) })
     b.locale.setLocale('en')
-    expect(resolveSlotLabel(b.slots.entries('settings.plugins.tab')[0]!.options.label)).toBe('Plugin catalog')
+    expect(resolveSlotLabel(b.slots.entries('settings.section')[0]!.options.label)).toBe('Plugin catalog')
 
     stop()
-    expect(b.slots.entries('settings.plugins.tab')).toHaveLength(0)
+    expect(b.slots.entries('settings.section')).toHaveLength(0)
     declare(b.slots)
     await vi.waitFor(() => {
-      expect(b.slots.entries('settings.plugins.tab')[0]?.component).toBe(PluginCatalogTab)
+      expect(b.slots.entries('settings.section')[0]?.component).toBe(PluginCatalogTab)
     })
 
     await fiber.dispose()
-    expect(b.slots.entries('settings.plugins.tab')).toHaveLength(0)
+    expect(b.slots.entries('settings.section')).toHaveLength(0)
     expect(() => b.locale.register(NS, 'zh', {})).not.toThrow()
     await b.ctx.fiber.dispose()
   })

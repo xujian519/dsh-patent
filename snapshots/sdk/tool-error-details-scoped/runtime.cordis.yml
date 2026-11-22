@@ -1,0 +1,16 @@
+# Replays the native-then-PTC denial details with the scoped REPL.
+- id: tool-executor-native
+  disabled: false
+
+- id: tool-executor-ptc
+  disabled: true
+
+# The base bundle already mounts `ptc-runtime`; override its config instead of
+# inserting it again, which the loader rejects as a duplicate entry id.
+- id: ptc-runtime
+  config:
+    executionMode: persistent-in-memory
+
+- insert:
+    - id: structured-denial-fixture
+      name: '../tool-error-details/deny.mjs'

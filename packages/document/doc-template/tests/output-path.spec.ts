@@ -16,6 +16,7 @@ import { extractDocxText } from '@deepseek-ai/dsh-docx-kit'
 import type { ZipReadLimits } from '@deepseek-ai/dsh-docx-kit'
 import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
@@ -63,6 +64,7 @@ function variablesFor(template: string): Record<string, string> {
 /** A context with the tool registry, the host filesystem at `cwd`, and both document plugins. */
 async function mounted(cwd: string): Promise<Context> {
   const ctx = new Context()
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(LocalFileSystem, { cwd })

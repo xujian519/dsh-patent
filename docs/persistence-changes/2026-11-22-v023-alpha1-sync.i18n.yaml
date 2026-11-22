@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-11-22-v023-alpha1-sync.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-11-22-v023-alpha1-sync.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-11-22-v023-alpha1-sync:
+  en: b72df1c9a5941259
+  zh: 61401bb2b1ee7e7a
+/2026-11-22-v023-alpha1-sync/summary:
+  en: 600049a109dba07c
+  zh: ba83e429a7621798
+/2026-11-22-v023-alpha1-sync/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-11-22-v023-alpha1-sync/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-11-22-v023-alpha1-sync/compatibility:
+  en: c8a7d0c32d29d338
+  zh: df004e37330546dd
+/2026-11-22-v023-alpha1-sync/verification:
+  en: 3335c8b87851f74a
+  zh: 4da01dad8be99041
+/2026-11-22-v023-alpha1-sync/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

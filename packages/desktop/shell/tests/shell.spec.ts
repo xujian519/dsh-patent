@@ -79,7 +79,10 @@ describe('DesktopShell', () => {
       })
     })
     delete process.env.DSH_DESKTOP_BRIDGE_PATH
-    try { unlinkSync(socketPath) } catch {}
+    try { unlinkSync(socketPath) } catch (error) {
+      // Node unlinks the socket when the server closes; the removal is best-effort.
+      void error
+    }
   })
 
   it('showOpenDialog returns the selected paths', async () => {

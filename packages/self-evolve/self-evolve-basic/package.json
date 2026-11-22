@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-self-evolve-basic",
   "description": "Projection-driven idle-pressure evolution policy for the DeepSeek Harness self-evolve seam",
-  "version": "0.2.2-rc.5",
+  "version": "0.2.3-alpha.1",
   "publishConfig": {
     "access": "public"
   },

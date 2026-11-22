@@ -2,6 +2,7 @@
 
 - banner:
   - navigation "Session hierarchy": {{workspace}}
+  - button "Session panel"
   - button "More actions"
   - button "Open right sidebar"
   - tablist:
@@ -32,6 +33,7 @@
 
 - banner:
   - navigation "Session hierarchy": {{workspace}}
+  - button "Session panel"
   - button "More actions"
   - button "Open right sidebar"
   - tablist:
@@ -66,6 +68,7 @@
 
 - banner:
   - navigation "Session hierarchy": {{workspace}}
+  - button "Session panel" [disabled]
   - button "More actions"
   - button "Open right sidebar"
   - tablist:

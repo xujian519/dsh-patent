@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type {
   SessionEventLike, SessionEventLikeEntry, SessionLiveEventEntry,
 } from '@deepseek-ai/dsh-api-session-controller/client'
-import { LlmAttemptId, ToolCallId } from '@deepseek-ai/dsh-llm/brand'
+import { brandString } from '@deepseek-ai/dsh-brand'
+import type { LlmAttemptId, ToolCallId } from '@deepseek-ai/dsh-llm/types'
 import type { StreamChunk } from '@deepseek-ai/dsh-llm'
 import { SessionSeq } from '@deepseek-ai/dsh-session/types'
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
@@ -180,7 +181,7 @@ function transientChunk(
       type: 'assistant/live-chunk',
       seq,
       time: 1_700_000_000_000 + seq,
-      data: { attemptId: LlmAttemptId('test-attempt'), turn, step, chunk },
+      data: { attemptId: brandString<LlmAttemptId>('test-attempt'), turn, step, chunk },
     },
   }
 }
@@ -906,7 +907,7 @@ describe('ConversationNodeAssembler', () => {
     if (settlementEvent.type !== 'assistant/message') throw new Error('expected Assistant settlement')
     const settlement = { type: 'event' as const, event: settlementEvent }
 
-    expect(assembler.settleAssistant(LlmAttemptId('test-attempt'), settlement)).toBe('immediate')
+    expect(assembler.settleAssistant(brandString<LlmAttemptId>('test-attempt'), settlement)).toBe('immediate')
     assembler.flush()
 
     const after = [...testSnapshot(assembler)?.nodes.values() ?? []]
@@ -918,7 +919,7 @@ describe('ConversationNodeAssembler', () => {
 
     assembler.append(transientChunk(13.5, 2, 3, { type: 'reasoning-delta', index: 0, text: 'x' }))
     assembler.flush()
-    expect(assembler.settleAssistant(LlmAttemptId('test-attempt'))).toBe('immediate')
+    expect(assembler.settleAssistant(brandString<LlmAttemptId>('test-attempt'))).toBe('immediate')
     assembler.flush()
     expect([...testSnapshot(assembler)?.nodes.values() ?? []]
       .find(candidate => candidate.id === '2:3')?.data)
@@ -956,7 +957,7 @@ describe('ConversationNodeAssembler', () => {
     expect(before.order).toHaveLength(6)
     const unrelated = before.nodes.get(before.order[5]!)
     const delta = transientChunk(1.5, 1, 1, {
-      type: 'tool-call-delta', index: 0, id: ToolCallId('shared'), name: 'write', argumentsDelta: '{}',
+      type: 'tool-call-delta', index: 0, id: brandString<ToolCallId>('shared'), name: 'write', argumentsDelta: '{}',
     })
     expect(() => assembler.append(delta)).toThrow('owner failure')
     assembler.flush()
@@ -968,7 +969,7 @@ describe('ConversationNodeAssembler', () => {
     expect(assembler.append(delta)).toBe('none')
     assembler.flush()
     expect(testSnapshot(assembler)).toBe(partial)
-    expect(assembler.settleAssistant(LlmAttemptId('test-attempt'))).toBe('immediate')
+    expect(assembler.settleAssistant(brandString<LlmAttemptId>('test-attempt'))).toBe('immediate')
     assembler.flush()
     const settled = testSnapshot(assembler)!
     for (const key of before.order.slice(0, 5)) {
@@ -1064,7 +1065,7 @@ describe('ConversationNodeAssembler', () => {
     assembler.flush()
     expect(start).toHaveBeenCalledOnce()
     expect([...testSnapshot(assembler)?.nodes.values() ?? []][0]?.data).toBe(1)
-    assembler.settleAssistant(LlmAttemptId('test-attempt'))
+    assembler.settleAssistant(brandString<LlmAttemptId>('test-attempt'))
     assembler.flush()
     expect([...testSnapshot(assembler)?.nodes.values() ?? []][0]?.data).toBeNull()
   })
@@ -1329,15 +1330,15 @@ describe('ConversationNodeAssembler', () => {
     assembler.replaceWindow([], false)
     for (const [index, id] of ['a', 'b'].entries()) {
       assembler.append(transientChunk(1.1 + index / 10, 1, 1, {
-        type: 'tool-call-delta', index, id: ToolCallId(id), name: 'write', argumentsDelta: '',
+        type: 'tool-call-delta', index, id: brandString<ToolCallId>(id), name: 'write', argumentsDelta: '',
       }))
     }
-    assembler.append(input(at(SessionSeq(3), 'tool/call', { turn: 1, step: 1, callId: ToolCallId('b'), name: 'write', arguments: '{}' })))
-    assembler.append(input(at(SessionSeq(4), 'tool/call', { turn: 1, step: 1, callId: ToolCallId('a'), name: 'write', arguments: '{}' })))
+    assembler.append(input(at(SessionSeq(3), 'tool/call', { turn: 1, step: 1, callId: brandString<ToolCallId>('b'), name: 'write', arguments: '{}' })))
+    assembler.append(input(at(SessionSeq(4), 'tool/call', { turn: 1, step: 1, callId: brandString<ToolCallId>('a'), name: 'write', arguments: '{}' })))
     assembler.append(input(at(SessionSeq(5), 'step/end', { turn: 1, step: 1 })))
     assembler.flush()
     expect([...testSnapshot(assembler)!.nodes.values()][0]?.data).toBeCloseTo(1.2)
-    assembler.settleAssistant(LlmAttemptId('test-attempt'))
+    assembler.settleAssistant(brandString<LlmAttemptId>('test-attempt'))
     assembler.flush()
     expect([...testSnapshot(assembler)!.nodes.values()][0]?.data).toBe(4)
   })

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-law-core",
   "description": "Statute-citation machinery shared by the legal and patent domains: citation text normalization, reference extraction, proposition-overlap scoring, the per-article citation decision, and the citation-verify tool scaffolding",
-  "version": "0.2.2-rc.5",
+  "version": "0.2.3-alpha.1",
   "publishConfig": {
     "access": "public"
   },

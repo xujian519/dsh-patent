@@ -10,10 +10,10 @@ The plugin-market seam ([`@deepseek-ai/dsh-host-plugin-market`](../../../../pack
 
 ## Decision
 
-Bridge the seam to the browser with a **read-only Remote controller** and drop the projection into the existing **Plugins settings tab**, so discovery is available in-product while every write stays on the CLI.
+Bridge the seam to the browser with a **read-only Remote controller** and drop the projection into the Settings page as its own **section**, so discovery is available in-product while every write stays on the CLI.
 
 - [`@deepseek-ai/dsh-api-plugin-market-controller`](../../../../packages/api/plugin-market-controller/README.md) extends `TypertRemoteService` under the `pluginCatalog` namespace and forwards only the read-only verbs `listSources` / `search` / `preview`. It projects a host `PluginMarketError` to a `TypertRemoteFailure` business code and reports the actionable configuration error when no provider is mounted.
-- [`@deepseek-ai/dsh-client-ui-plugin-catalog`](../../../../packages/client/ui-plugin-catalog/README.md) registers a `settings.plugins.tab` entry (`id: 'catalog'`, `order: 30`). It lists sources, searches a selected source with `q` / `category` / `capability`, and previews a `name@version` reference. Every string goes through a typed locale dictionary; the component consumes injected pure functions and never touches `ctx` or the Remote directly.
+- [`@deepseek-ai/dsh-client-ui-plugin-catalog`](../../../../packages/client/ui-plugin-catalog/README.md) registers a localized `settings.section` contribution (`id: 'pluginCatalog'`, `order: 30`) while the Settings shell owns the navigation entry and page chrome. It lists sources, searches a selected source with `q` / `category` / `capability`, and previews a `name@version` reference. Every string goes through a typed locale dictionary; the component consumes injected pure functions and never touches `ctx` or the Remote directly.
 - `@deepseek-ai/dsh-api-remotes` mounts the controller (`pluginCatalogRemote`), so the browser resolves `ctx.remote.pluginCatalog` against the same namespace the CLI verbs use.
 
 Both read-only by construction: no method can write a profile, edit `cordis.yml`, or install a package. Installation and uninstallation remain on the operator-driven `dsh plugin` CLI.

@@ -1,25 +1,18 @@
 /**
- * Validation of session headers and events at every detached-entry boundary: a
- * durable header, a seed event, and an adopted event each pass through one of
- * these before the session log accepts them.
- *
+ * Session header, seed-event, and inherited-cut validation shared by Session
+ * construction and log validation.
  * @module @deepseek-ai/dsh-session/validation
  */
 
 import { isAbsolute } from 'node:path'
 import { deepFreeze, snapshotJsonValue } from '@deepseek-ai/dsh-util-values'
 import type { Message } from '@deepseek-ai/dsh-llm'
-import { SESSION_FORMAT_VERSION } from './types.ts'
-import type { SessionEvent, SessionHeader, SessionId, SurfaceEventType } from './types.ts'
-import { validateSessionEventData, validateSurfaceMetadata } from './surface.ts'
+import { SESSION_FORMAT_VERSION, SessionLogOffset } from './types.ts'
+import type { SessionEvent, SessionHeader, SessionHeaderMeta, SessionId, SessionSeedEventState, SurfaceEventType } from './types.ts'
+import { SurfaceManager, validateSessionEventData } from './surface.ts'
+import type { SessionMessageProjection } from './surface.ts'
 
-/**
- * Validate and freeze one detached creation header in place.
- * @param id - session identity the header must carry.
- * @param input - detached header record to validate and freeze.
- * @returns the same record, deeply frozen as a {@link SessionHeader}.
- * @throws when the record is not plain JSON, carries an unknown field, or violates a field contract.
- */
+/** Validate and freeze one detached creation header in place. */
 function validateSessionHeader(id: SessionId, input: unknown): SessionHeader {
   if (input === null || typeof input !== 'object' || Array.isArray(input)) {
     throw new Error('session header is not a plain JSON record')
@@ -66,10 +59,10 @@ function validateSessionHeader(id: SessionId, input: unknown): SessionHeader {
 
 /**
  * Validate and freeze one exclusively owned persistence header in place.
- * @param id - session identity the header must carry.
- * @param input - independently owned header record to validate and freeze.
- * @returns the same record, deeply frozen as a {@link SessionHeader}.
- * @throws when the record is not a plain JSON object or fails header validation.
+ * @param id - Session identity the header must carry.
+ * @param input - decoded header, owned by the caller and frozen in place.
+ * @returns the validated, deeply frozen header.
+ * @throws when `input` is not a plain JSON record or fails header validation.
  */
 export function validateRestoredSessionHeader(id: SessionId, input: unknown): SessionHeader {
   if (input !== null && typeof input === 'object' && !Array.isArray(input)) {
@@ -83,10 +76,10 @@ export function validateRestoredSessionHeader(id: SessionId, input: unknown): Se
 
 /**
  * Detach, validate, and freeze the creation metadata published by a session.
- * @param id - session identity the header must carry.
- * @param source - borrowed creation metadata; omitted, a minimal header is synthesized.
- * @returns the detached, deeply frozen header.
- * @throws when the metadata is not losslessly JSON-serializable or fails header validation.
+ * @param id - Session identity the header must carry.
+ * @param source - borrowed header; omitted synthesizes a minimal current-format header.
+ * @returns a validated, deeply frozen copy.
+ * @throws when `source` is not losslessly JSON-serializable or fails header validation.
  */
 export function snapshotSessionHeader(id: SessionId, source?: SessionHeader): SessionHeader {
   const input: unknown = source === undefined
@@ -97,56 +90,8 @@ export function snapshotSessionHeader(id: SessionId, source?: SessionHeader): Se
   return validateSessionHeader(id, snapshot)
 }
 
-/**
- * Validate an exclusively owned event and deeply freeze its identified message
- * without copying the event. The caller transfers an object graph that no
- * producer retains and that shares no mutable children with another event.
- * Use {@link snapshotSessionEvent} when exclusive ownership is not guaranteed.
- * @param event - exclusively owned event imported across a trusted boundary.
- * @returns the same event object with a validated, deeply frozen message.
- * @throws when event-local surface metadata, request-header fields, or message invariants are invalid; history relations are not checked.
- */
-export function adoptSessionEvent<T extends SessionEvent>(event: T): T {
-  validateSessionEventData(event, `session event at seq ${event.seq}`)
-  validateSurfaceMetadata(event)
-  assertMessageEventShape(
-    event,
-    `session event at seq ${event.seq}`,
-  )
-  switch (event.type) {
-    case 'user/message':
-      deepFreeze(event.data)
-      break
-    case 'developer/message':
-    case 'system/message':
-    case 'assistant/message':
-    case 'tool/result':
-      deepFreeze(event.data.message)
-      break
-    default:
-      // SessionEventMap is merge-extensible; plugin-owned events carry no core message.
-      break
-  }
-  return event
-}
-
-/**
- * Detach one event while preserving deep immutability for its identified message.
- * @param event - event imported across a query or persistence boundary.
- * @returns a detached event snapshot with a validated, deeply frozen message.
- */
-export function snapshotSessionEvent<T extends SessionEvent>(event: T): T {
-  return adoptSessionEvent(structuredClone(event))
-}
-
-/**
- * Validate the fixed event envelope after one-pass JSON materialization.
- * @param value - materialized seed value to check and narrow.
- * @param index - seed position, named in every rejection message.
- * @returns nothing; narrows `value` to {@link SessionEvent}.
- * @throws when the envelope, its data, or an embedded message violates its contract.
- */
-export function assertSessionEventEnvelope(value: unknown, index: number): asserts value is SessionEvent {
+/** Validate the fixed event envelope after one-pass JSON materialization. */
+function assertSessionEventEnvelope(value: unknown, index: number): asserts value is SessionEvent {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`seed event at index ${index} has an invalid event envelope`)
   }
@@ -176,9 +121,6 @@ export function assertSessionEventEnvelope(value: unknown, index: number): asser
     throw new Error(`seed event at index ${index} has an invalid event envelope`)
   }
   validateSessionEventData(event as SessionEvent, `seed ${type} at index ${index}`)
-  // Only these seven types carry the request/message envelope `assertCurrentLlmShape`
-  // owns. Other types are plugin-owned or ignorable events from the merge-extensible
-  // `SessionEventMap`, with no core envelope to assert.
   switch (type) {
     case 'request/header':
     case 'developer/message':
@@ -279,8 +221,72 @@ const MESSAGE_ROLE_BY_TYPE: Record<SurfaceEventType, Message['role']> = {
   'tool/result': 'tool',
 }
 
-/** Validate only the event-specific invariants needed to safely replay a message. */
-function assertMessageEventShape(event: Record<string, unknown>, subject: string): void {
+/** Validate source attribution without rejecting unrelated metadata fields. */
+function assertSystemSectionMetadata(
+  sourceRecord: Record<string, unknown>, content: unknown, subject: string,
+): void {
+  for (const marker of ['complete', 'reset']) {
+    if (sourceRecord[marker] !== undefined && sourceRecord[marker] !== true) {
+      throw new Error(`${subject} has invalid ${marker} system prompt marker`)
+    }
+  }
+  const sections = sourceRecord['sections']
+  if (sections === undefined) {
+    if (sourceRecord['reset'] !== undefined) {
+      throw new Error(`${subject} requires system section attribution`)
+    }
+    return
+  }
+  if (!Array.isArray(sections) || !Array.isArray(content)
+    || content.some((block: unknown) => typeof block !== 'object' || block === null
+      || !('type' in block) || block.type !== 'text' || !('text' in block) || typeof block.text !== 'string')) {
+    throw new Error(`${subject} has invalid system section attribution`)
+  }
+  const names = new Set<string>()
+  const indices = new Set<number>()
+  const entries: readonly unknown[] = sections
+  for (const section of entries) {
+    if (typeof section !== 'object' || section === null
+      || !('name' in section) || typeof section.name !== 'string' || section.name.length === 0) {
+      throw new Error(`${subject} has invalid system section attribution`)
+    }
+    if (!('state' in section) || (section.state !== 'active' && section.state !== 'retired')) {
+      throw new Error(`${subject} has invalid system section attribution`)
+    }
+    if (section.state === 'active'
+      && (!('order' in section) || typeof section.order !== 'number' || !Number.isFinite(section.order))) {
+      throw new Error(`${subject} has invalid system section attribution`)
+    }
+    const contentIndex = 'contentIndex' in section ? section.contentIndex : undefined
+    if (section.state === 'retired' && contentIndex !== undefined) {
+      throw new Error(`${subject} has invalid system section attribution`)
+    }
+    const references: unknown[] = section.state === 'active' ? [contentIndex] : []
+    const noticeIndex = 'noticeIndex' in section ? section.noticeIndex : undefined
+    if (noticeIndex !== undefined) {
+      if (!Array.isArray(noticeIndex)) throw new Error(`${subject} has invalid system section attribution`)
+      const notices: readonly unknown[] = noticeIndex
+      references.push(...notices)
+    }
+    if (names.has(section.name)) throw new Error(`${subject} has invalid system section attribution`)
+    names.add(section.name)
+    for (const index of references) {
+      if (typeof index !== 'number' || !Number.isSafeInteger(index) || index < 0 || index >= content.length
+        || indices.has(index)) {
+        throw new Error(`${subject} has invalid system section attribution`)
+      }
+      indices.add(index)
+    }
+  }
+}
+
+/**
+ * Validate only the event-specific invariants needed to safely replay a message.
+ * @param event - candidate event record; events that produce no message pass unchecked.
+ * @param subject - description of the event that prefixes each error message.
+ * @throws when a message event lacks its message or has an invalid role, source, or content.
+ */
+export function assertMessageEventShape(event: Record<string, unknown>, subject: string): void {
   const type = event['type']
   if (!isMessageEventType(type)) return
   const data = event['data']
@@ -312,6 +318,7 @@ function assertMessageEventShape(event: Record<string, unknown>, subject: string
     if (sourceRecord['kind'] !== 'system-prompt') {
       throw new Error(`${subject} message must have system-prompt source`)
     }
+    assertSystemSectionMetadata(sourceRecord, messageRecord['content'], subject)
     return
   }
   if (type === 'assistant/message') {
@@ -337,4 +344,227 @@ function hasProviderModel(value: unknown): boolean {
   const pair = value as Record<string, unknown>
   return typeof pair['provider'] === 'string' && pair['provider'].length > 0
     && typeof pair['model'] === 'string' && pair['model'].length > 0
+}
+
+/** Construction mode: `snapshot` borrows events like `Session.create`; an event state adopts them like `Session.fromRestore`. */
+export type SessionSeedMode = 'snapshot' | SessionSeedEventState
+
+/**
+ * Validate one seed event's lossless JSON form, envelope, and position.
+ * @param source - borrowed (`snapshot`) or adopted event at `index`.
+ * @param index - position in the seed.
+ * @param mode - whether the event is copied before validation.
+ * @returns the detached copy in `snapshot` mode, otherwise `source`.
+ * @throws when the event is not losslessly JSON-serializable, has an invalid envelope, or its seq is not `index`.
+ */
+export function validateSeedEvent(source: SessionEvent, index: number, mode: SessionSeedMode): SessionEvent {
+  // The seed is a persistence/replay boundary: validate and detach the
+  // complete event in one lossless-JSON pass.
+  const snapshot = mode === 'snapshot' ? snapshotJsonValue(source) : source
+  if (snapshot === undefined) {
+    throw new Error(`seed event at index ${index} is not losslessly JSON-serializable`)
+  }
+  assertSessionEventEnvelope(snapshot, index)
+  if (snapshot.seq !== index) {
+    throw new Error(`seed event at index ${index} has seq ${snapshot.seq} (expected ${index}); seed must be contiguous from 0`)
+  }
+  return snapshot
+}
+
+/**
+ * Admit one validated seed event through the surface transition.
+ * @param event - validated event at `index`, not yet in the log `surface` reads.
+ * @param index - position in the seed.
+ * @param surface - incremental surface validator carrying the message interpreters.
+ * @throws `invalid seed event at index <index>: …` when the surface rejects the event.
+ */
+export function replaySurfaceEvent(event: SessionEvent, index: number, surface: SurfaceManager): void {
+  // A seed is accepted incrementally through the same transition as a
+  // live append and a full-log fold. The candidate is planned before it
+  // enters `log`, so a failure cannot partially mutate the surface.
+  try {
+    surface.validateNext(event)
+  } catch (error: unknown) {
+    throw new Error(`invalid seed event at index ${index}: ${error instanceof Error ? error.message : 'invalid surface metadata'}`)
+  }
+}
+
+/**
+ * Validate seed events in order and push each accepted event into `log`, which `surface` reads.
+ * Each event passes {@link validateSeedEvent} and then {@link replaySurfaceEvent} before it enters `log`.
+ * @param seed - borrowed or adopted events.
+ * @param mode - `snapshot` pushes deeply frozen copies; an event state pushes the adopted events.
+ * @param log - empty log that `surface` was constructed over.
+ * @param surface - incremental surface validator carrying the message interpreters.
+ * @throws on the first invalid event; `log` then holds the accepted prefix.
+ */
+export function acceptSeedEvents(
+  seed: readonly SessionEvent[],
+  mode: SessionSeedMode,
+  log: SessionEvent[],
+  surface: SurfaceManager,
+): void {
+  for (const [index, source] of seed.entries()) {
+    const snapshot = validateSeedEvent(source, index, mode)
+    replaySurfaceEvent(snapshot, index, surface)
+    log.push(mode === 'snapshot' ? deepFreeze(snapshot) : snapshot)
+  }
+}
+
+/** Whether one event is the tagged inherited marker `session/end-seed { inherited: true }`. */
+function isInheritedSeedMarker(event: SessionEvent | undefined): boolean {
+  return event?.type === 'session/end-seed' && event.data.inherited === true
+}
+
+/**
+ * Validate the inherited cut of a constructed log against its validated header.
+ * @param header - validated header.
+ * @param hasSeed - whether construction received a seed (an empty seed counts).
+ * @param supplied - inherited event count supplied by the caller.
+ * @param log - accepted seed events.
+ * @param mode - construction mode; only `snapshot` requires a fresh seeded seed to equal its inherited prefix or mark its cut.
+ * @returns the inherited event count, 0 when omitted for an unseeded header.
+ * @throws when the cut is missing, inconsistent with `isSeeded`, beyond the log, or not the final inherited marker.
+ */
+export function validateInheritedCut(
+  header: SessionHeader,
+  hasSeed: boolean,
+  supplied: SessionLogOffset | undefined,
+  log: readonly SessionEvent[],
+  mode: SessionSeedMode,
+): SessionLogOffset {
+  if (header.isSeeded && !hasSeed) {
+    throw new Error('seeded session requires an explicit constructor seed')
+  }
+  if (header.isSeeded && supplied === undefined) {
+    throw new Error('seeded session requires an inherited event count')
+  }
+  const inheritedEventCount = SessionLogOffset(supplied ?? 0)
+  if (!header.isSeeded && inheritedEventCount !== 0) {
+    throw new Error('unseeded session inherited event count must be 0')
+  }
+  if (inheritedEventCount > log.length) {
+    throw new Error('session inherited event count exceeds its event log')
+  }
+  const markedSeed = isInheritedSeedMarker(log[inheritedEventCount])
+  if (mode === 'snapshot' && header.isSeeded && inheritedEventCount !== log.length && !markedSeed) {
+    throw new Error('seeded session constructor seed must equal its inherited prefix or mark its inherited cut')
+  }
+  if (markedSeed && log.slice(inheritedEventCount + 1).some(isInheritedSeedMarker)) {
+    throw new Error('session inherited event count must identify the final inherited marker')
+  }
+  return inheritedEventCount
+}
+
+/**
+ * Whether a fresh fork child must append its tagged inherited marker: the
+ * header is seeded and the event at the inherited cut is not
+ * `session/end-seed { inherited: true }`. A copied ancestor marker earlier in
+ * the prefix does not count. Session construction applies this rule to a
+ * borrowed seed; a restored log keeps its durable marker.
+ * @param header - header of the new Session.
+ * @param events - seed events, contiguous from seq 0.
+ * @param inheritedEventCount - inherited cut.
+ * @returns true when the marker must be appended at seq `events.length`.
+ */
+export function needsInheritedSeedMarker(
+  header: SessionHeader,
+  events: readonly SessionEvent[],
+  inheritedEventCount: SessionLogOffset,
+): boolean {
+  return header.isSeeded && !isInheritedSeedMarker(events[inheritedEventCount])
+}
+
+/** A validated session log: header, inherited cut, and events. */
+export interface CheckSessionLogResult {
+  /** Validated, deeply frozen header. */
+  readonly header: SessionHeader
+  /** Inherited event count validated against `header` and `events`. */
+  readonly inheritedEventCount: SessionLogOffset
+}
+
+/**
+ * Validate a header, seed, and inherited cut in Session construction order.
+ * An event-state `mode` validates the header first; `snapshot` validates the
+ * events first. Each event passes the surface transition before the next is read.
+ * @param id - Session identity the header must carry.
+ * @param header - borrowed (`snapshot`) or adopted header; omitted synthesizes a minimal header in `snapshot` mode.
+ * @param seed - borrowed or adopted events; omitted means no seed.
+ * @param inheritedEventCount - exact fork-inherited prefix length; required when the header is seeded.
+ * @param mode - construction mode.
+ * @param events - empty log that `surface` was constructed over; receives the accepted events.
+ * @param surface - incremental surface validator carrying the message interpreters.
+ * @returns the validated header and inherited cut.
+ * @throws on the first invalid header field, event envelope, sequence, surface transition, or inherited cut.
+ */
+export function checkSessionLog(
+  id: SessionId,
+  header: SessionHeader | undefined,
+  seed: readonly SessionEvent[] | undefined,
+  inheritedEventCount: SessionLogOffset | undefined,
+  mode: SessionSeedMode,
+  events: SessionEvent[],
+  surface: SurfaceManager,
+): CheckSessionLogResult {
+  const restoredHeader = mode === 'snapshot' ? undefined : validateRestoredSessionHeader(id, header)
+  // Validate the seed to the SAME invariants `append` enforces, so a
+  // replay/fork (`ctx.sessions.create(id, { seed })`) cannot construct a
+  // live log that no persistence backend could store: each event's `data`
+  // must be JSON-serializable, and `seq` must be contiguous from 0 (the
+  // `seq = log.length` contract the whole system relies on). Without this,
+  // a bad seed would surface only later as a backend rejection or a silent
+  // divergence between the live log and disk.
+  if (seed !== undefined) acceptSeedEvents(seed, mode, events, surface)
+  const checkedHeader = restoredHeader ?? snapshotSessionHeader(id, header)
+  return {
+    header: checkedHeader,
+    inheritedEventCount: validateInheritedCut(checkedHeader, seed !== undefined, inheritedEventCount, events, mode),
+  }
+}
+
+/**
+ * Validate a header and event log with every check that constructing a Session
+ * performs, in the same order and with the same errors, without constructing one.
+ * Without `eventState` the checks match `Session.create`: events and header are
+ * copied before validation. With it they match `Session.fromRestore`, which
+ * validates and deeply freezes `header` in place and leaves events uncopied.
+ * Embedded Assistant streams are not replayed.
+ * @param header - header whose `id` is the Session identity.
+ * @param events - seed events; omitted means no seed.
+ * @param inheritedEventCount - exact fork-inherited prefix length; required when `header.isSeeded`.
+ * @param eventState - aliasing state of adopted events; omitted for borrowed events.
+ * @param projections - message interpreters for plugin-owned events.
+ * @throws on the first invalid header field, event envelope, sequence, surface transition, or inherited cut.
+ */
+export function validateSessionLog(
+  header: SessionHeader,
+  events?: readonly SessionEvent[],
+  inheritedEventCount?: SessionLogOffset,
+  eventState?: SessionSeedEventState,
+  projections: readonly SessionMessageProjection[] = [],
+): void {
+  const log: SessionEvent[] = []
+  checkSessionLog(header.id, header, events, inheritedEventCount, eventState ?? 'snapshot', log, new SurfaceManager(log, SessionLogOffset(0), projections))
+}
+
+/**
+ * Build the header of a new Session: the current format version, `createdAt`
+ * (the current time when omitted), `isSeeded` (false when omitted), and the
+ * other supplied fields. The result is not validated; Session construction validates it.
+ * @param id - identity of the new Session.
+ * @param meta - caller-supplied storage fields.
+ * @returns a fresh, unfrozen header.
+ */
+export function buildSessionHeader(id: SessionId, meta?: SessionHeaderMeta): SessionHeader {
+  return {
+    version: SESSION_FORMAT_VERSION,
+    id,
+    createdAt: meta?.createdAt ?? Date.now(),
+    ...meta?.cwd === undefined ? {} : { cwd: meta.cwd },
+    ...meta?.parentSession === undefined ? {} : { parentSession: meta.parentSession },
+    isSeeded: meta?.isSeeded ?? false,
+    ...meta?.origin === undefined ? {} : { origin: meta.origin },
+    ...meta?.delegationDepth === undefined ? {} : { delegationDepth: meta.delegationDepth },
+    ...meta?.agentPreset === undefined ? {} : { agentPreset: meta.agentPreset },
+  }
 }

@@ -85,7 +85,7 @@ export function classifyTransportFailure(error: unknown): TransportFailure {
   const [only] = classes
   const failure = classes.size === 1 && only !== undefined ? only : UNCLASSIFIED
   const systemCode = new Set(systemCodes).size === 1 ? systemCodes[0] : undefined
-  const detail = bounded(aggregate ? attemptsDetail(attempts, error) : messageOf(innermost, error))
+  const detail = bounded(aggregate ? attemptsDetail(attempts, error) : messageOrFallback(innermost, error))
   return { code: failure.code, message: `${failure.summary}${systemCode === undefined ? '' : ` (${systemCode})`}: ${detail}` }
 }
 
@@ -104,13 +104,13 @@ function systemCodeOf(error: unknown): string | undefined {
 
 /** Name at most `MAX_ATTEMPTS` attempts and count the rest. */
 function attemptsDetail(attempts: readonly unknown[], fallback: unknown): string {
-  const named = attempts.slice(0, MAX_ATTEMPTS).map(attempt => messageOf(attempt, fallback))
+  const named = attempts.slice(0, MAX_ATTEMPTS).map(attempt => messageOrFallback(attempt, fallback))
   const rest = attempts.length - named.length
   return named.join('; ') + (rest > 0 ? `; ${rest} more` : '')
 }
 
 /** An error's message, or the rejection's text when the message is empty. */
-function messageOf(error: unknown, fallback: unknown): string {
+function messageOrFallback(error: unknown, fallback: unknown): string {
   const message = error instanceof Error ? error.message : String(error)
   return message === '' ? String(fallback) : message
 }

@@ -1,0 +1,25 @@
+# Bilingual-pair consistency record for ADR-002-filing-artifact-contract.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/adr/ADR-002-filing-artifact-contract.md
+/adr-002-filing-artifact-contract:
+  en: a164e3324fcb6407
+  zh: 9e0456ea1497d44f
+/adr-002-filing-artifact-contract/summary:
+  en: 37c724b5cda9367a
+  zh: 029df7e06b913a72
+/adr-002-filing-artifact-contract/context:
+  en: ad58175cf544926a
+  zh: e98ea467f04e4002
+/adr-002-filing-artifact-contract/decision:
+  en: a27c60cdc52072e4
+  zh: 552e1fdedc48ccdf
+/adr-002-filing-artifact-contract/consequences:
+  en: cc791d9a49406955
+  zh: 7342ee627a0c5b5f
+/adr-002-filing-artifact-contract/out-of-scope:
+  en: 01d12a86616e7469
+  zh: 7c202e728be8f6b2
+/adr-002-filing-artifact-contract/leftover-risks:
+  en: b18e5d1ffe26b68b
+  zh: 37d450f4c5d4b9e5

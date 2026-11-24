@@ -65,6 +65,7 @@ export {
   patentReexaminationManifest,
   SHIPPED_GUIDELINE_REVISION,
 } from './workflow/manifests.ts'
+export { DisclosureAssemblyError, assembleDisclosureTerminalState } from './workflow/assemble-disclosure.ts'
 export { runStageOnce, type RunStageOnceOptions } from './workflow/executor.ts'
 export { compileSignal, signalFor, signalMatches } from './workflow/signal.ts'
 

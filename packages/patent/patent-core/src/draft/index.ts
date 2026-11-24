@@ -28,4 +28,5 @@ export {
 } from './figureDescriptions.ts'
 export { formatTableCaption } from './tableCaption.ts'
 export { SPEC_DRAFT_SCHEMA, TEMPLATE_DRAFT_SCHEMA } from './schema.ts'
+export { DisclosureAssemblyError, assembleDisclosureSpecDraft } from './assemble-disclosure.ts'
 export { DraftValidationError, validateSpecDraft, validateTemplateDraft } from './validate.ts'

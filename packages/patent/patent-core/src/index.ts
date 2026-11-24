@@ -46,9 +46,11 @@ export {
   TEMPLATE_DRAFT_SCHEMA,
   formatTableCaption,
   numberedFigureDescriptions,
+  assembleDisclosureSpecDraft,
   validateSpecDraft,
   validateTemplateDraft,
 } from './draft/index.ts'
+export { DisclosureAssemblyError } from './draft/index.ts'
 export type {
   DraftBlock,
   DraftGroundItem,

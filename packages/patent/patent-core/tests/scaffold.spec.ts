@@ -23,6 +23,8 @@ describe('@deepseek-ai/dsh-patent-core surface', () => {
 
   it('exports the controlled draft model + validators', () => {
     expect(typeof Pkg.validateSpecDraft).toBe('function')
+    expect(typeof Pkg.assembleDisclosureSpecDraft).toBe('function')
+    expect(typeof Pkg.DisclosureAssemblyError).toBe('function')
     expect(typeof Pkg.validateTemplateDraft).toBe('function')
     expect(typeof Pkg.numberedFigureDescriptions).toBe('function')
     expect(Pkg.SPEC_PART_HEADINGS.embodiment).toBe('具体实施方式')

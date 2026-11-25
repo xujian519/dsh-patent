@@ -321,7 +321,7 @@ export function createPatentSearchTool(deps: PatentSearchDeps = {}): ToolDefinit
         ? undefined
         : await searchThroughCnipr(deps.cnipr, query, limit, exec.signal)
       if (attempt?.served === true) {
-        return { query, channel: CNIPR_CHANNEL, total: attempt.total, hits: attempt.hits, warnings: attempt.warnings }
+        return { query, channel: CNIPR_CHANNEL, total: attempt.total, hits: attempt.hits.slice(0, limit), warnings: attempt.warnings }
       }
       const secondChannel = attempt?.warnings ?? []
 
@@ -337,7 +337,7 @@ export function createPatentSearchTool(deps: PatentSearchDeps = {}): ToolDefinit
       }
 
       const { hits: dedupedHits, warnings } = dedupeByFamily(settled.result.hits, settled.result.warnings)
-      const hits = dedupedHits.map(toItem)
+      const hits = dedupedHits.slice(0, limit).map(toItem)
       return { query, channel: GOOGLE_PATENTS_CHANNEL, total: settled.result.total, hits, warnings: [...warnings, ...secondChannel] }
     },
   })

@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { Config, DEFAULT_PDF_TIMEOUT_MS } from '@deepseek-ai/dsh-patent-document'
 
 describe('Config', () => {
-  it('defaults outputRoot to .dsh/documents', () => {
+  it('leaves outputRoot unset', () => {
     const config = Config({})
-    expect(config.outputRoot).toBe('.dsh/documents')
+    expect(config.outputRoot).toBeUndefined()
+    expect(config.workbenchCaseRoot).toBeUndefined()
     expect(config.chromePath).toBeUndefined()
   })
 

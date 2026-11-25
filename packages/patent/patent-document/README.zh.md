@@ -55,7 +55,8 @@ Schemastery 配置，所有字段均可选。
 | 键 | 类型 | 默认值 | 含义 |
 | --- | --- | --- | --- |
 | chromePath | string | 无 | 用于 PDF 的 Chrome 可执行文件绝对路径；覆盖 DSH_CHROME_PATH/CHROME_PATH 探测。 |
-| outputRoot | string | .dsh/documents | 既未给出 outputDir 也未给出 caseId 时的默认输出目录（相对进程工作目录）。 |
+| outputRoot | string | 未设置 | 显式目录。仅当案卷目录无法解析、调用未传 `outputDir`、且调用未点名案号时使用。 |
+| workbenchCaseRoot | string | 未设置 | 工作根目录。一个案卷是 `<根>/<案号>/`。 |
 | pdfTimeoutMs | number | 120000 | 单次 headless Chrome 打印的超时；部署较慢时可上调，而 SIGTERM->SIGKILL 宽限（3 秒）与单流输出上限（100000 字节）保持固定，分别是收尾对称与内存边界。 |
 
 <a id="model-experience"></a>
@@ -66,7 +67,7 @@ Schemastery 配置，所有字段均可选。
 
 #### 模型看到的内容
 
-一个名为 `render_patent_document` 的已注册工具，含必需的 `template` 枚举（十三个 id：`patentability-opinion`、`search-report`、`oa-response`、`claims-spec`、`invalidation-opinion`、`invalidation-analysis`、`invalidation-defense`、`rectification-response`、`re-examination-request`、`infringement-opinion`、`litigation-pleading`、`right-evaluation-report`、`search-report-form`）、必需的 `outputName`，必需的 `draft`，以及可选的 `caseId`、`outputDir`、`format`、`brand` 与 `brandPath`。`outputDir` 与 `brandPath` 按进程工作目录解析，真实位置落在工作目录之外时在读写之前即被拒绝。结果以 Markdown 文本渲染，列出写出的 `htmlPath`、`pdfPath`、可能的 `pdfError` 与 `warnings`。
+一个名为 `render_patent_document` 的已注册工具，含必需的 `template` 枚举（十三个 id：`patentability-opinion`、`search-report`、`oa-response`、`claims-spec`、`invalidation-opinion`、`invalidation-analysis`、`invalidation-defense`、`rectification-response`、`re-examination-request`、`infringement-opinion`、`litigation-pleading`、`right-evaluation-report`、`search-report-form`）、必需的 `outputName`，必需的 `draft`，以及可选的 `caseId`、`outputDir`、`format`、`brand` 与 `brandPath`。`caseId` 与 `workbenchCaseRoot` 一起选定案卷目录；未传 `outputDir` 时，文件写在该目录已有的布局子目录内。`outputDir` 与 `brandPath` 按进程工作目录解析，真实位置落在工作目录之外时在读写之前即被拒绝。结果以 Markdown 文本渲染，列出写出的 `htmlPath`、`pdfPath`、可能的 `pdfError` 与 `warnings`。
 
 #### Token 影响
 
@@ -96,7 +97,7 @@ Schemastery 配置，所有字段均可选。
 
 - **不随包分发默认品牌 theme.json** — 移除了 Sati 的 products/_example/brand/theme.json 默认品牌回退；调用方必须显式传入 brand 或 brandPath，否则使用模板 tokens.css 中的默认值。
 - **PDF 需要可探测的 Chrome** — headless PDF 打印经 ctx.subprocess 派生 Chrome（取代 Sati 的 execFile）；当探测不到 Chrome（或未设置 chromePath/DSH_CHROME_PATH）时，渲染降级为仅 HTML，结果携带 pdfError。
-- **默认输出目录为 .dsh/documents** — 相对进程工作目录（取代 Sati 的 .sati/documents）；给定 caseId 时仍采用 data/cases/<caseId>/outputs 约定。
+- **写入需要案卷目录或显式目录** — HTML 与 PDF 写在已解析的案卷目录内，子目录用模板对应的既有布局名（`01-检索`、`03-分析`、`04-撰写` 或 `05-答复`）。`workbenchCaseRoot` 加 `caseId` 选定 `<根>/<案号>/`。工作目录里已有 `_matter-log.md` 时，该工作目录就是案卷目录。显式 `outputDir`，或调用未点名案号时的 `outputRoot`，仍可以是 `.dsh/documents` 或 `data/cases/<案号>/outputs`。既没有案卷目录也没有显式目录时，写入失败。
 - **brandPath 读取 Sati 形态的 theme.json** — 加载器读取该文件的 documents.patent 命名空间；不支持其他主题 schema。
 - **配置了 brandPath 就必须可用** — 文件不存在、JSON 损坏、`documents.patent` 不是对象，或其中某个值不是字符串，都会以 `DocumentRenderError` 让调用失败；不传 `brandPath` 时仍使用模板默认值。静默回退只保留给「未配置」，否则路径写错会把默认事务所与免责声明带进交付件。
 - **草案硬切换已完成** — 全部 13 个模板都要求 `draft`，旧 `sections` innerHTML 参数已删除，传它的调用会被参数校验拒绝。10 个文档模板走 id 键控草案：fields 填叶级文本槽（meta、footer 等），sections 传 blocks（paragraph/list/table 块，表题自动连续编号）或 rows（等宽字符串数组，按各表占位行克隆）。表单模板的页脚页码（逐页不同）、评价报告专用章与诉讼文书签名槽刻意不由草案驱动或非必填，定稿时人工处理。

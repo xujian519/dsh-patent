@@ -16,6 +16,7 @@ import type { FigureComponent } from './analyze-patent-figure.ts'
 import { assertRendered } from './internal/render-outcome.ts'
 import { assertViewSvgs, normalizeCallouts, normalizeDetails, normalizeViews, readManifest, resolveStructureModels } from './structure-model.ts'
 import { DEFAULT_STRUCTURE_SCALE } from './structure-types.ts'
+import { resolveFigureWriteDir } from './figure-write-dir.ts'
 import type {
   GenerateStructureFigureDeps,
   GenerateStructureFigureInput,
@@ -64,8 +65,7 @@ export async function resolveStructureRun(args: unknown, deps: GenerateStructure
   // schema 校验后的模型 JSON 边界：调用方传来的实参在这里窄化为领域类型。
   const input = args as GenerateStructureFigureInput
   const cwd = deps.cwd ?? process.cwd()
-  /* v8 ignore next -- apply() always injects outputDir; the cwd-relative default stays for standalone library callers */
-  const outputDir = deps.outputDir ?? resolve(cwd, 'patent/figures')
+  const outputDir = resolveFigureWriteDir(deps, cwd, input.case_id, 'generate_structure_figure')
   const views = normalizeViews(input.views, deps.defaultViews ?? DEFAULT_STRUCTURE_VIEWS)
   const scale = input.scale ?? deps.defaultScale ?? DEFAULT_STRUCTURE_SCALE
   // scale 来自模型 JSON 或 Config：schema 只约束为 number，正有限性须运行时复核

@@ -81,7 +81,7 @@ describe.skipIf(interpreter === undefined)('filing engine end to end', () => {
     }
     const buildOptions: BuildEngineOptions = {
       ...common,
-      defaultOutputDir: work,
+      outputRoot: work,
       figureScale: 1,
     }
     const content = {
@@ -169,7 +169,7 @@ describe.skipIf(interpreter === undefined)('filing engine end to end', () => {
         },
         outputName: '表格验收',
         outputDir: dir,
-      }, { ...common, defaultOutputDir: dir, figureScale: 1 }, process.cwd(), signal)
+      }, { ...common, outputRoot: dir, figureScale: 1 }, process.cwd(), signal)
 
       // Mutate only the table cell: a passing document with one defective cell must fail.
       const mutate = [
@@ -232,7 +232,7 @@ describe.skipIf(interpreter === undefined)('filing engine end to end', () => {
           specPath: defaultSpecPath(),
           templatePath: defaultTemplatePath(),
           timeoutMs: DEFAULT_ENGINE_TIMEOUT_MS,
-          defaultOutputDir: dir,
+          outputRoot: dir,
           figureScale: 1,
         },
         process.cwd(),
@@ -274,7 +274,7 @@ describe.skipIf(interpreter === undefined)('filing engine end to end', () => {
         },
         outputName: '无附图',
         outputDir: dir,
-      }, { ...common, defaultOutputDir: dir, figureScale: 1 }, process.cwd(), new AbortController().signal)
+      }, { ...common, outputRoot: dir, figureScale: 1 }, process.cwd(), new AbortController().signal)
       expect(built.sections.map(tally => tally.key)).toEqual(['abstract', 'claims', 'specification'])
       expect(built.figures).toEqual([])
 

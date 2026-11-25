@@ -6,7 +6,7 @@
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
-import { assertDeliverableName, resolveConfinedPath, resolvePatentOutputDir } from '@deepseek-ai/dsh-patent-core'
+import { assertDeliverableName, resolveConfinedPath, resolvePatentOutputDir, type MatterLayoutDir } from '@deepseek-ai/dsh-patent-core'
 import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import { buildBrandStyle, loadBrandFromPath, mergeBrand } from './brandInjector.ts'
 import { checkDocumentCompliance } from './documentCompliance.ts'
@@ -16,24 +16,53 @@ import { applyParagraphNumbering } from './paragraphNumbering.ts'
 import { DEFAULT_PDF_TIMEOUT_MS, renderPdf } from './pdfRenderer.ts'
 import { foldEmptyOptionalSections, renumberSections } from './sectionFold.ts'
 import { isInternalRecordTemplate, readTemplateHtml } from './templateResolver.ts'
-import type { DocumentRenderInput, DocumentRenderResult, RenderFormat } from './types.ts'
+import type { DocumentRenderInput, DocumentRenderResult, DocumentTemplateId, RenderFormat } from './types.ts'
 import { isFormTemplateId, isGenericTemplateId } from './draftSchema/index.ts'
 import { groundsSectionStyles } from './draftSchema/generic.ts'
 import { injectTemplateDraft, renderGenericTemplateSections, renderSpecDraftSections } from './draftConverter/index.ts'
 
-/** 缺省输出目录（相对 cwd，取代 Sati 的 .sati/documents）。 */
+/**
+ * 历史输出目录 `.dsh/documents`。
+ * 只在调用方显式传入 `outputDir` 或 `outputRoot` 时使用，不会自动成为写入根。
+ */
 export const DEFAULT_OUTPUT_DIR = '.dsh/documents'
 
 /**
- * 渲染专利文书所需的运行期依赖与缺省目录。
+ * 模板对应的案卷布局子目录。名字都来自 patent-workspace-layout：
+ * 检索报告在 `01-检索`，申请文件在 `04-撰写`，分析与比对意见在 `03-分析`，
+ * 答复、补正与复审文书在 `05-答复`。诉讼文书与无效意见归入 `03-分析`。
+ */
+const TEMPLATE_LAYOUT_DIR: Record<DocumentTemplateId, MatterLayoutDir> = {
+  'patentability-opinion': '03-分析',
+  'search-report': '01-检索',
+  'oa-response': '05-答复',
+  'claims-spec': '04-撰写',
+  'invalidation-opinion': '03-分析',
+  'invalidation-analysis': '03-分析',
+  'invalidation-defense': '05-答复',
+  'rectification-response': '05-答复',
+  're-examination-request': '05-答复',
+  'infringement-opinion': '03-分析',
+  'litigation-pleading': '03-分析',
+  'right-evaluation-report': '03-分析',
+  'search-report-form': '01-检索',
+}
+
+/**
+ * 渲染专利文书所需的运行期依赖与写入根。
  */
 export interface RenderPatentDocumentOptions {
   /** 注入的 subprocess 服务（ctx.subprocess），用于 headless Chrome 打印 PDF。 */
   subprocess: SubprocessRuntime
   /** Chrome 可执行文件覆盖；缺省时按 DSH_CHROME_PATH/CHROME_PATH/内置候选探测。 */
   chromePath?: string
-  /** 既无 outputDir 也无 caseId 时的缺省输出目录（相对 cwd）。 */
-  defaultOutputDir?: string
+  /** `workbenchCaseRoot`。与案号一起解析案卷目录。 */
+  workRoot?: string
+  /**
+   * 显式部署覆盖。案卷目录无法解析、且调用未传 outputDir、也未点名案号时使用。
+   * 缺省不回落 `.dsh/documents`。
+   */
+  outputRoot?: string
   /** 调用方取消信号；触发后终止 headless Chrome 进程树。 */
   signal?: AbortSignal
   /** Chrome 无头打印超时（毫秒）；缺省取 pdfRenderer 的导出默认值。 */
@@ -192,7 +221,11 @@ export async function renderPatentDocument(
   const outputDir = resolvePatentOutputDir(
     input,
     cwd,
-    options.defaultOutputDir ?? DEFAULT_OUTPUT_DIR,
+    {
+      layoutDir: TEMPLATE_LAYOUT_DIR[input.template],
+      ...(options.workRoot === undefined ? {} : { workRoot: options.workRoot }),
+      ...(options.outputRoot === undefined ? {} : { outputRoot: options.outputRoot }),
+    },
     message => new DocumentRenderError(message),
   )
   await mkdir(outputDir, { recursive: true })

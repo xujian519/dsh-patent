@@ -115,7 +115,7 @@ describe('build_patent_filing tool', () => {
       pythonPath: '/usr/bin/python3',
       specPath: defaultSpecPath(),
       templatePath: defaultTemplatePath(),
-      defaultOutputDir: '.dsh/documents',
+      outputRoot: '.dsh/documents',
       figureScale: 3,
       timeoutMs: 1_000,
     })
@@ -142,7 +142,7 @@ describe('build_patent_filing tool', () => {
         pythonPath: '/usr/bin/python3',
         specPath: defaultSpecPath(),
         templatePath: defaultTemplatePath(),
-        defaultOutputDir: work,
+        outputRoot: work,
         figureScale: 3,
         timeoutMs: 1_000,
         chromePath: '/usr/bin/chrome',
@@ -175,7 +175,7 @@ describe('build_patent_filing tool', () => {
         pythonPath: '/usr/bin/python3',
         specPath: defaultSpecPath(),
         templatePath: defaultTemplatePath(),
-        defaultOutputDir: work,
+        outputRoot: work,
         figureScale: 3,
         timeoutMs: 1_000,
       })
@@ -192,7 +192,7 @@ describe('build_patent_filing tool', () => {
     }
   })
 
-  it('takes the deployment default output directory when neither caseId nor outputDir is given', async () => {
+  it('writes to an explicit output root when the matter directory cannot be resolved', async () => {
     const work = mkdtempSync(join(tmpdir(), 'dsh-filing-tool-'))
     const figure = join(work, 'fig1.png')
     writeFileSync(figure, 'png')
@@ -202,11 +202,11 @@ describe('build_patent_filing tool', () => {
         pythonPath: '/usr/bin/python3',
         specPath: defaultSpecPath(),
         templatePath: defaultTemplatePath(),
-        defaultOutputDir: work,
+        outputRoot: work,
         figureScale: 3,
         timeoutMs: 1_000,
       })
-      // 无 caseId、无 outputDir：覆盖缺省目录分支。
+      // 无案号、无 outputDir：显式 outputRoot 是这次写入的目录。
       const value = await tool.execute({
         draft: draftFixture(figure),
         outputName: 'default-dir',
@@ -223,7 +223,7 @@ describe('build_patent_filing tool', () => {
       pythonPath: '/usr/bin/python3',
       specPath: defaultSpecPath(),
       templatePath: defaultTemplatePath(),
-      defaultOutputDir: '.dsh/documents',
+      outputRoot: '.dsh/documents',
       figureScale: 3,
       timeoutMs: 1_000,
     })
@@ -240,7 +240,7 @@ describe('build_patent_filing tool', () => {
       pythonPath: '/usr/bin/python3',
       specPath: defaultSpecPath(),
       templatePath: defaultTemplatePath(),
-      defaultOutputDir: '.dsh/documents',
+      outputRoot: '.dsh/documents',
       figureScale: 3,
       timeoutMs: 1_000,
     })
@@ -256,7 +256,7 @@ describe('build_patent_filing tool', () => {
       pythonPath: '/usr/bin/python3',
       specPath: defaultSpecPath(),
       templatePath: defaultTemplatePath(),
-      defaultOutputDir: '.dsh/documents',
+      outputRoot: '.dsh/documents',
       figureScale: 3,
       timeoutMs: 1_000,
     })

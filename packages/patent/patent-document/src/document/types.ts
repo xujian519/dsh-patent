@@ -33,9 +33,12 @@ export type DocumentRenderInput = {
   template: DocumentTemplateId
   /** 输出文件名主干（不含扩展名）。 */
   outputName: string
-  /** 案卷 id；提供时结果落盘 data/cases/<caseId>/outputs/。 */
+  /**
+   * 案号。与 `workRoot`（`workbenchCaseRoot`）一起选定案卷目录。
+   * 未传 `outputDir` 时，成品写在该案卷目录的既有布局子目录内。
+   */
   caseId?: string
-  /** 显式输出目录（覆盖默认目录）。 */
+  /** 显式输出目录。优先于案卷目录；真实位置必须留在工作目录内。 */
   outputDir?: string
   /** 输出格式：html / pdf / both（默认 both）。 */
   format?: RenderFormat

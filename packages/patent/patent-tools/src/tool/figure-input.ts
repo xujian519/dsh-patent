@@ -85,8 +85,13 @@ export type GeneratePatentFigureDeps = {
    * 未注入时保持渲染器直接出图（落版与渲染复核对非 SVG 不生效）。
    */
   exportFigure?: ExportFigurePort
-  /** 输出目录（绝对路径），默认 <cwd>/patent/figures。 */
+  /**
+   * 显式输出目录（绝对路径）。设置后附图写到这里，包括旧的 `patent/figures`。
+   * 缺省时写入已解析案卷目录的 `04-撰写/`。
+   */
   outputDir?: string
+  /** `workbenchCaseRoot`。与 `case_id` 一起解析案卷目录。 */
+  workRoot?: string
   /**
    * 可选剖切几何端口（宿主注入 FreeCAD 的剖切与剖面线渲染器）：把剖视图的
    * `sections.source`（模型文件 + 剖切平面）展开成轮廓与剖面线段。未注入时给 `source`
@@ -172,6 +177,8 @@ export type GeneratePatentFigurePanelInput = SharedFigureInputFields & {
 export type GeneratePatentFigureInput = SharedFigureInputFields & {
   /** 多面板模式（与顶层结构输入互斥）：一次生成多张共享标号系列的面板。 */
   panels?: GeneratePatentFigurePanelInput[]
+  /** 案号。未设置 `outputDir` 时与 `workRoot` 一起选定案卷目录。 */
+  case_id?: string
   figure_number?: number
   invention_name?: string
   /** 显式标号（组件 id → 标号；跨图同件同号续接）。 */

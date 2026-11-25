@@ -568,10 +568,10 @@ describe('输出路径锚定部署工作区根', () => {
       rmSync(elsewhere, { recursive: true, force: true })
     }
 
-    expect(mock.figures.at(-1)?.outputDir).toBe(resolve(root, 'patent/figures'))
-    expect(mock.structures.at(-1)?.outputDir).toBe(resolve(root, 'patent/figures'))
+    expect(mock.figures.at(-1)?.outputDir).toBeUndefined()
+    expect(mock.structures.at(-1)?.outputDir).toBeUndefined()
     expect(mock.noteDirs.at(-1)).toBe(resolve(root, '99-知识库'))
-    expect(mock.figures.at(-1)?.outputDir?.startsWith(elsewhere)).toBe(false)
+    expect(mock.noteDirs.at(-1)?.startsWith(elsewhere)).toBe(false)
 
     const figureUpsert = vi.spyOn(figureIndexStore, 'upsert').mockResolvedValue(undefined)
     const figureLoad = vi.spyOn(figureIndexStore, 'load').mockResolvedValue({ entries: [] })
@@ -625,6 +625,20 @@ describe('输出路径锚定部署工作区根', () => {
     }, { workspaceRoot: false })
     expect(mock.noteDirs.at(-1)).toBe(join(root, 'notes'))
     expect(mock.figures.at(-1)?.outputDir).toBe(join(root, 'figures'))
+  })
+
+  it('未配置 figureOutputDir 时不把 patent/figures 当成缺省，也不因此要求工作区根', async () => {
+    const root = workspace()
+    await mount({
+      noteDir: join(root, 'notes'),
+      figureIndexFile: join(root, 'figures-index.json'),
+      chemistryIndexFile: join(root, 'chemistry-index.json'),
+      workbenchCaseRoot: join(root, 'matters'),
+    }, { workspaceRoot: false })
+    expect(mock.figures.at(-1)?.outputDir).toBeUndefined()
+    expect(mock.figures.at(-1)?.workRoot).toBe(join(root, 'matters'))
+    expect(mock.structures.at(-1)?.outputDir).toBeUndefined()
+    expect(mock.structures.at(-1)?.workRoot).toBe(join(root, 'matters'))
   })
 
   it('没有工作区根且路径缺省时加载失败', async () => {

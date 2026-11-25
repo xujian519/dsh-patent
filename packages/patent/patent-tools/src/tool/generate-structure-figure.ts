@@ -122,7 +122,7 @@ const ASSEMBLY_SCHEMA = {
 } as const
 
 const DESCRIPTION = [
-  '从 3D 模型生成专利结构线稿附图：用本机 FreeCAD（TechDraw）把 STEP/IGES/BREP 投影为多视图黑白线稿 SVG（等轴测/三视图等），件号以引线锚定到真实顶点投影，输出到工作区 patent/figures/，返回标号映射表与「图N是…的结构示意图」附图说明。需要机械结构真实投影（而非示意框图）时使用。',
+  '从 3D 模型生成专利结构线稿附图：用本机 FreeCAD（TechDraw）把 STEP/IGES/BREP 投影为多视图黑白线稿 SVG（等轴测/三视图等），件号以引线锚定到真实顶点投影。未配置 figureOutputDir 时输出到案卷目录的 04-撰写/；显式 figureOutputDir 按其路径写出。返回标号映射表与「图N是…的结构示意图」附图说明。需要机械结构真实投影（而非示意框图）时使用。',
   '',
   '默认关闭：结构线稿依赖本机 FreeCAD，需先设 Config.structureFigureEnabled=true；未开启或未安装 freecadcmd 时返回 setup_required 与配置/安装引导。',
   '',
@@ -165,6 +165,10 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
       hidden_line_style: { type: 'string', enum: ['solid', 'dashed'], description: '隐藏线线型，默认 solid（FreeCAD 原始细实线）；dashed 时按线宽加 stroke-dasharray 画成虚线' },
       callouts: { type: 'array', items: CALLOUT_SCHEMA, description: '件号锚定 [{numeral, point3d:[x,y,z], label?, model?}]；model 为所属零件下标，装配体下必填；目录批量不支持' },
       details: { type: 'array', items: DETAIL_SCHEMA, description: '局部放大视图 [{base, center:[x,y,z], radius_mm, scale?, reference?}]：把 base 视图上以模型坐标 center 为圆心、radius_mm 为半径的区域放大成独立视图；目录批量不支持' },
+      case_id: {
+        type: 'string',
+        description: '案号。未设置 figureOutputDir 时与 workbenchCaseRoot 一起选定案卷目录，附图写入该目录的 04-撰写/。',
+      },
       figure_number: { type: 'integer', description: '图号（正整数），默认 1（批量时作为起始图号）' },
       invention_name: { type: 'string', description: '发明名称（附图说明模板句）' },
       target_office: { type: 'string', enum: TARGET_OFFICES, description: '目标法域：给定时把每个视图 SVG 落版到该法域的 A4 幅面与页边距，并返回落版尺寸（仅 SVG 产物生效）' },

@@ -50,7 +50,8 @@ Schemastery configuration, every field optional.
 | Key | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | chromePath | string | none | Absolute Chrome executable used for PDF; overrides DSH_CHROME_PATH/CHROME_PATH discovery. |
-| outputRoot | string | .dsh/documents | Default output directory (relative to the process working directory) when neither outputDir nor caseId is given. |
+| outputRoot | string | unset | Explicit directory used only when the matter directory cannot be resolved, the call omits `outputDir`, and the call does not name a case id. |
+| workbenchCaseRoot | string | unset | Work root. One matter is `<root>/<case id>/`. |
 | pdfTimeoutMs | number | 120000 | Timeout for one headless-Chrome print; a slower deployment can raise it without changing the SIGTERM->SIGKILL grace (3 s) or the per-stream output cap (100000 bytes), which stay fixed as a teardown symmetry and a memory bound. |
 
 ## Model Experience
@@ -59,7 +60,7 @@ Schemastery configuration, every field optional.
 
 #### What the model sees
 
-One registered tool named `render_patent_document` with a required `template` enum (thirteen ids: `patentability-opinion`, `search-report`, `oa-response`, `claims-spec`, `invalidation-opinion`, `invalidation-analysis`, `invalidation-defense`, `rectification-response`, `re-examination-request`, `infringement-opinion`, `litigation-pleading`, `right-evaluation-report`, `search-report-form`), a required `outputName`, a required `draft`, and optional `caseId`, `outputDir`, `format`, `brand`, and `brandPath`. `outputDir` and `brandPath` resolve against the process working directory, and a real path outside it is rejected before any write or read. The result renders as Markdown prose naming the written `htmlPath`, `pdfPath`, any `pdfError`, and `warnings`.
+One registered tool named `render_patent_document` with a required `template` enum (thirteen ids: `patentability-opinion`, `search-report`, `oa-response`, `claims-spec`, `invalidation-opinion`, `invalidation-analysis`, `invalidation-defense`, `rectification-response`, `re-examination-request`, `infringement-opinion`, `litigation-pleading`, `right-evaluation-report`, `search-report-form`), a required `outputName`, a required `draft`, and optional `caseId`, `outputDir`, `format`, `brand`, and `brandPath`. `caseId` with `workbenchCaseRoot` selects the matter directory, and an omitted `outputDir` writes the file in that directory's existing layout subdirectory. `outputDir` and `brandPath` resolve against the process working directory, and a real path outside it is rejected before any write or read. The result renders as Markdown prose naming the written `htmlPath`, `pdfPath`, any `pdfError`, and `warnings`.
 
 #### Token effect
 
@@ -87,7 +88,7 @@ Append-only; newly visible result prose follows the reusable request prefix and 
 
 - **No default brand theme.json** — the Sati products/_example/brand/theme.json default-brand fallback is dropped; callers must pass brand or brandPath explicitly, or the templates' tokens.css defaults apply.
 - **PDF needs a discoverable Chrome** — headless PDF printing spawns Chrome through ctx.subprocess (replacing Sati's execFile); when no Chrome is discoverable (or chromePath/DSH_CHROME_PATH is unset), rendering degrades to HTML-only and the result carries pdfError.
-- **Default output directory is .dsh/documents** — relative to the process working directory (replacing Sati's .sati/documents); a caseId keeps the data/cases/<caseId>/outputs convention.
+- **A write needs a matter directory or an explicit directory** — HTML and PDF land in the resolved matter directory, under the layout subdirectory the template already uses (`01-检索`, `03-分析`, `04-撰写`, or `05-答复`). `workbenchCaseRoot` plus `caseId` selects `<root>/<case id>/`. A working directory that already contains `_matter-log.md` is that matter directory. An explicit `outputDir`, or `outputRoot` when the call names no case id, may still be `.dsh/documents` or `data/cases/<case id>/outputs`. With neither a matter directory nor an explicit directory, the write fails.
 - **brandPath reads a Sati-shaped theme.json** — the loader reads the documents.patent namespace from that file; no other theme schema is supported.
 - **A configured brandPath must be usable** — a missing file, malformed JSON, a non-object `documents.patent`, or a non-string value inside it fails the call with `DocumentRenderError`; omitting `brandPath` still renders with the templates' defaults. Silent fallback is reserved for "not configured", because a mistyped path would otherwise ship the default firm and disclaimer.
 - **No figure page or image embedding** — the templates carry the 附图说明 text section only; a rendered document contains no drawing images, so drawings reach the client as separate attachments that the caller names and ships alongside the rendered file.

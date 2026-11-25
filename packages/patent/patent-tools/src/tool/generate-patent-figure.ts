@@ -63,9 +63,10 @@ import { assignFigureNumerals, resolveFontPt } from './figure-run.ts'
 import type { FigureContext } from './figure-run.ts'
 import { generatePanels } from './figure-panels.ts'
 import { finishDirectRender, finishSvgChain, needsSvgChain } from './figure-delivery.ts'
+import { resolveFigureWriteDir } from './figure-write-dir.ts'
 
 const DESCRIPTION = [
-  '生成专利风格附图：流程图（方法步骤）、状态图（状态+转移条件）、系统框图（组件+连接）、组件层级图，以及直接绘制 SVG 的电路图、曲线图/坐标图、剖视图（含剖面线与剖切符号）、时序图、外观设计六面视图排布；另有内置模板与原始 DOT，输出 SVG/PNG/PDF 到工作区 patent/figures/，返回参考标号映射表与「图N是…；图中：…」格式的附图说明文字。撰写权利要求/说明书需要配图时使用。',
+  '生成专利风格附图：流程图（方法步骤）、状态图（状态+转移条件）、系统框图（组件+连接）、组件层级图，以及直接绘制 SVG 的电路图、曲线图/坐标图、剖视图（含剖面线与剖切符号）、时序图、外观设计六面视图排布；另有内置模板与原始 DOT。未配置 figureOutputDir 时，输出 SVG/PNG/PDF 到案卷目录的 04-撰写/；显式 figureOutputDir 按其路径写出。返回参考标号映射表与「图N是…；图中：…」格式的附图说明文字。撰写权利要求/说明书需要配图时使用。',
   '',
   '标号体系：每图独立 100 系列（FIG.1=100-199、FIG.2=200-299，默认步进 2，可调）；同一组件跨图出现时用 numerals 显式传入沿用同号，或声明 figure_family 自动续号（同名组件沿用既有标号、新组件取空闲号；缺省每图独立编号）。',
   '',
@@ -181,8 +182,7 @@ async function generateSingleFigure(
   context: FigureContext,
 ): Promise<GeneratePatentFigureOutput> {
   const { deps, cwd, format } = context
-  /* v8 ignore next -- apply() always injects outputDir; the cwd-relative default stays for standalone library callers */
-  const outputDir = deps.outputDir ?? resolve(cwd, 'patent/figures')
+  const outputDir = resolveFigureWriteDir(deps, cwd, input.case_id, 'generate_patent_figure')
   const figureNumber = input.figure_number ?? 1
   const expanded = await withSectionSource(normalizeSingleFigure(input), {
     deps,
@@ -520,6 +520,10 @@ export function createGeneratePatentFigureTool(deps: GeneratePatentFigureDeps): 
       },
       dot: { type: 'string', description: '原始 Graphviz DOT（figure_type=raw_dot）；须自包含：不接受 image/shapefile/fontpath 等文件引用属性' },
       panels: { type: 'array', items: PANEL_SCHEMA, description: '多面板模式：一次生成多张共享标号系列的面板（fig1A/fig1B…）；与顶层结构输入互斥，列表不可为空' },
+      case_id: {
+        type: 'string',
+        description: '案号。未设置 figureOutputDir 时与 workbenchCaseRoot 一起选定案卷目录，附图写入该目录的 04-撰写/。',
+      },
       figure_number: { type: 'integer', description: '图号，默认 1（决定标号系列起点）' },
       invention_name: { type: 'string', description: '发明名称（附图说明模板句）' },
       numerals: { type: 'object', additionalProperties: true, description: '显式标号（组件 id → 标号；标号可为字符串或数字，其他类型会被拒绝；跨图同件同号续接）' },

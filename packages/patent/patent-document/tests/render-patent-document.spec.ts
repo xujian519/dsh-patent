@@ -230,8 +230,9 @@ describe('renderPatentDocument', () => {
     }
   })
 
-  it('uses data/cases/<caseId>/outputs when a caseId is given', async () => {
+  it('writes inside the resolved matter directory when no output directory is passed', async () => {
     const dir = makeTempDir()
+    const workRoot = makeTempDir()
     try {
       const result = await renderPatentDocument(
         {
@@ -242,10 +243,57 @@ describe('renderPatentDocument', () => {
           templateDraft: { fields: { 'meta-title': '检索报告测试' }, sections: [] },
         },
         dir,
-        { subprocess: unusedSubprocess() },
+        { subprocess: unusedSubprocess(), workRoot },
       )
-      expect(result.htmlPath.endsWith(join('data', 'cases', 'case-2026-001', 'outputs', 'sr-001.html'))).toBe(true)
+      expect(result.htmlPath).toBe(join(workRoot, 'case-2026-001', '01-检索', 'sr-001.html'))
       expect(existsSync(result.htmlPath)).toBe(true)
+      expect(existsSync(join(dir, '.dsh', 'documents'))).toBe(false)
+      expect(existsSync(join(dir, 'data', 'cases'))).toBe(false)
+    } finally {
+      cleanup(dir)
+      cleanup(workRoot)
+    }
+  })
+
+  it('still writes an explicitly passed old path', async () => {
+    const dir = makeTempDir()
+    const workRoot = makeTempDir()
+    try {
+      const result = await renderPatentDocument(
+        {
+          template: 'search-report',
+          outputName: 'old-path',
+          outputDir: join('.dsh', 'documents'),
+          format: 'html',
+          templateDraft: { fields: { 'meta-title': '旧路径' }, sections: [] },
+        },
+        dir,
+        { subprocess: unusedSubprocess(), workRoot },
+      )
+      expect(result.htmlPath).toBe(join(dir, '.dsh', 'documents', 'old-path.html'))
+      expect(existsSync(result.htmlPath)).toBe(true)
+    } finally {
+      cleanup(dir)
+      cleanup(workRoot)
+    }
+  })
+
+  it('fails when the matter directory cannot be resolved and no override is passed', async () => {
+    const dir = makeTempDir()
+    try {
+      await expect(renderPatentDocument(
+        {
+          template: 'search-report',
+          outputName: 'sr-001',
+          caseId: 'case-2026-001',
+          format: 'html',
+          templateDraft: { fields: { 'meta-title': '检索报告测试' }, sections: [] },
+        },
+        dir,
+        { subprocess: unusedSubprocess() },
+      )).rejects.toThrow(/无法解析案卷目录/)
+      expect(existsSync(join(dir, '.dsh', 'documents'))).toBe(false)
+      expect(existsSync(join(dir, 'data', 'cases'))).toBe(false)
     } finally {
       cleanup(dir)
     }
@@ -527,10 +575,10 @@ describe('renderPatentDocument', () => {
     }
   })
 
-  it('lands in the default output directory when neither outputDir nor caseId is given', async () => {
+  it('fails closed when neither a matter directory nor an output directory is given', async () => {
     const dir = makeTempDir()
     try {
-      const result = await renderPatentDocument(
+      await expect(renderPatentDocument(
         {
           template: 'patentability-opinion',
           outputName: 'default-dir',
@@ -539,8 +587,27 @@ describe('renderPatentDocument', () => {
         },
         dir,
         { subprocess: unusedSubprocess() },
+      )).rejects.toThrow(/无法解析案卷目录/)
+      expect(existsSync(join(dir, DEFAULT_OUTPUT_DIR))).toBe(false)
+    } finally {
+      cleanup(dir)
+    }
+  })
+
+  it('uses an explicit output root when the matter directory cannot be resolved', async () => {
+    const dir = makeTempDir()
+    try {
+      const result = await renderPatentDocument(
+        {
+          template: 'patentability-opinion',
+          outputName: 'explicit-root',
+          format: 'html',
+          templateDraft: { fields: { 'meta-title': '显式覆盖' }, sections: [] },
+        },
+        dir,
+        { subprocess: unusedSubprocess(), outputRoot: 'out/docs' },
       )
-      expect(result.htmlPath).toBe(join(dir, DEFAULT_OUTPUT_DIR, 'default-dir.html'))
+      expect(result.htmlPath).toBe(join(dir, 'out', 'docs', 'explicit-root.html'))
       expect(existsSync(result.htmlPath)).toBe(true)
     } finally {
       cleanup(dir)

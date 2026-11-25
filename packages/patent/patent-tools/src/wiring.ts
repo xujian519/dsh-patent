@@ -248,8 +248,9 @@ function resolveOutputPath(
 
 /** True when any of the four output paths still needs the deployment workspace root. */
 function outputPathsNeedWorkspace(config: Config): boolean {
-  return [config.noteDir, config.figureIndexFile, config.chemistryIndexFile, config.figureOutputDir]
-    .some(value => value === undefined || !isAbsolute(value))
+  const pending = [config.noteDir, config.figureIndexFile, config.chemistryIndexFile]
+  if (config.figureOutputDir !== undefined) pending.push(config.figureOutputDir)
+  return pending.some(value => value === undefined || !isAbsolute(value))
 }
 
 /** CJK 文本检测（决定平台字体）。 */
@@ -341,7 +342,7 @@ interface PatentToolWiring {
   resolveImageInputModalitiesFor: ReturnType<typeof buildImageGateResolver>
   figureIndexFile: string
   chemistryIndexFile: string
-  figureOutputDir: string
+  figureOutputDir: string | undefined
   noteDir: string
   knowledge: PatentKnowledge | undefined
 }
@@ -568,7 +569,8 @@ function registerFigureTools(wiring: PatentToolWiring): void {
     ...(outlineText === undefined ? {} : { outlineText }),
     ...(exportFigure === undefined ? {} : { exportFigure }),
     ...(sectionSource === undefined ? {} : { sectionSource }),
-    outputDir: wiring.figureOutputDir,
+    ...(wiring.figureOutputDir === undefined ? {} : { outputDir: wiring.figureOutputDir }),
+    ...(wiring.config.workbenchCaseRoot === undefined ? {} : { workRoot: wiring.config.workbenchCaseRoot }),
     upsertIndex: entry => figureIndexStore.upsert(wiring.figureIndexFile, entry),
     loadIndex: async () => (await figureIndexStore.load(wiring.figureIndexFile)).entries,
     resolveFont: labels => resolveDotFont(wiring.config, labels),
@@ -612,7 +614,8 @@ function registerFigureTools(wiring: PatentToolWiring): void {
     render: structureRender,
     ...(outlineText === undefined ? {} : { outlineText }),
     ...(wiring.config.structureFigureEnabled === undefined ? {} : { enabled: wiring.config.structureFigureEnabled }),
-    outputDir: wiring.figureOutputDir,
+    ...(wiring.figureOutputDir === undefined ? {} : { outputDir: wiring.figureOutputDir }),
+    ...(wiring.config.workbenchCaseRoot === undefined ? {} : { workRoot: wiring.config.workbenchCaseRoot }),
     upsertIndex: entry => figureIndexStore.upsert(wiring.figureIndexFile, entry),
     ...(wiring.config.structureFigureScale === undefined ? {} : { defaultScale: wiring.config.structureFigureScale }),
     ...(wiring.config.figureFailOnRenderFindings === undefined ? {} : { failOnRenderFindings: wiring.config.figureFailOnRenderFindings }),
@@ -726,7 +729,9 @@ export function registerPatentTools(ctx: Context, config: Config): void {
     resolveImageInputModalitiesFor: buildImageGateResolver(ctx),
     figureIndexFile: resolveOutputPath(config.figureIndexFile, DEFAULT_FIGURE_INDEX_RELATIVE_PATH, workspaceRoot, 'figureIndexFile'),
     chemistryIndexFile: resolveOutputPath(config.chemistryIndexFile, DEFAULT_CHEMISTRY_INDEX_RELATIVE_PATH, workspaceRoot, 'chemistryIndexFile'),
-    figureOutputDir: resolveOutputPath(config.figureOutputDir, 'patent/figures', workspaceRoot, 'figureOutputDir'),
+    figureOutputDir: config.figureOutputDir === undefined
+      ? undefined
+      : resolveOutputPath(config.figureOutputDir, config.figureOutputDir, workspaceRoot, 'figureOutputDir'),
     noteDir: resolveOutputPath(config.noteDir, '99-知识库', workspaceRoot, 'noteDir'),
     knowledge: ctx.get('patentKnowledge'),
   }

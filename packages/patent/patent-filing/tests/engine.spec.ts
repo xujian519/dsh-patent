@@ -76,7 +76,7 @@ function buildOptions(subprocess: BuildEngineOptions['subprocess']): BuildEngine
     pythonPath: '/usr/bin/python3',
     specPath: defaultSpecPath(),
     templatePath: defaultTemplatePath(),
-    defaultOutputDir: DEFAULT_OUTPUT_DIR,
+    outputRoot: DEFAULT_OUTPUT_DIR,
     figureScale: 3,
     timeoutMs: DEFAULT_ENGINE_TIMEOUT_MS,
   }
@@ -120,34 +120,54 @@ describe('assertSafeOutputName', () => {
 
 describe('resolveOutputDir', () => {
   it('prefers an explicit directory, absolute or relative to cwd', () => {
-    expect(resolveOutputDir({ outputDir: '/abs/out' }, '/abs', DEFAULT_OUTPUT_DIR)).toBe('/abs/out')
-    expect(resolveOutputDir({ outputDir: 'rel/out' }, '/cwd', DEFAULT_OUTPUT_DIR)).toBe(resolve('/cwd', 'rel/out'))
+    expect(resolveOutputDir({ outputDir: '/abs/out' }, '/abs')).toBe('/abs/out')
+    expect(resolveOutputDir({ outputDir: 'rel/out' }, '/cwd')).toBe(resolve('/cwd', 'rel/out'))
   })
 
-  it('uses the case outputs convention when a caseId is given', () => {
-    expect(resolveOutputDir({ caseId: 'A-1' }, '/cwd', DEFAULT_OUTPUT_DIR)).toBe(resolve('/cwd', 'data/cases/A-1/outputs'))
-  })
-
-  it('accepts a Chinese caseId like the document tools do', () => {
-    expect(resolveOutputDir({ caseId: '①张三_无效案' }, '/cwd', DEFAULT_OUTPUT_DIR))
-      .toBe(resolve('/cwd', 'data/cases/①张三_无效案/outputs'))
+  it('writes a resolved matter into 04-撰写 and keeps an explicit old path', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dsh-filing-cwd-'))
+    const workRoot = mkdtempSync(join(tmpdir(), 'dsh-filing-work-'))
+    try {
+      expect(resolveOutputDir({ caseId: 'A-1' }, cwd, { workRoot })).toBe(join(workRoot, 'A-1', '04-撰写'))
+      expect(resolveOutputDir({ caseId: '①张三_无效案' }, cwd, { workRoot }))
+        .toBe(join(workRoot, '①张三_无效案', '04-撰写'))
+      expect(resolveOutputDir({ outputDir: '.dsh/documents', caseId: 'A-1' }, cwd, { workRoot }))
+        .toBe(join(cwd, '.dsh', 'documents'))
+      expect(resolveOutputDir({ outputDir: join('data', 'cases', 'A-1', 'outputs') }, cwd, { workRoot }))
+        .toBe(join(cwd, 'data', 'cases', 'A-1', 'outputs'))
+    } finally {
+      rmSync(cwd, { recursive: true, force: true })
+      rmSync(workRoot, { recursive: true, force: true })
+    }
   })
 
   it('rejects an unsafe caseId instead of escaping the case directory', () => {
-    expect(() => resolveOutputDir({ caseId: '../escape' }, '/cwd', DEFAULT_OUTPUT_DIR)).toThrow(/案卷号 .* 不可用/)
+    expect(() => resolveOutputDir({ caseId: '../escape' }, '/cwd', { workRoot: '/work' })).toThrow(/案卷号 .* 不可用/)
   })
 
-  it('falls back to the deployment default directory', () => {
-    expect(resolveOutputDir({}, '/cwd', 'out/docs')).toBe(resolve('/cwd', 'out/docs'))
+  it('uses an explicit output root only when the matter directory cannot be resolved', () => {
+    expect(resolveOutputDir({}, '/cwd', { outputRoot: 'out/docs' })).toBe(resolve('/cwd', 'out/docs'))
+  })
+
+  it('fails when the matter directory cannot be resolved and no override is passed', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'dsh-filing-cwd-'))
+    try {
+      expect(() => resolveOutputDir({}, cwd)).toThrow(/无法解析案卷目录/)
+      expect(() => resolveOutputDir({ caseId: 'A-1' }, cwd, { outputRoot: DEFAULT_OUTPUT_DIR })).toThrow(/无法解析案卷目录/)
+      expect(existsSync(join(cwd, '.dsh', 'documents'))).toBe(false)
+      expect(existsSync(join(cwd, 'data', 'cases', 'A-1', 'outputs'))).toBe(false)
+    } finally {
+      rmSync(cwd, { recursive: true, force: true })
+    }
   })
 
   it('rejects an explicit directory whose real path leaves the working directory', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'dsh-filing-cwd-'))
     const outside = mkdtempSync(join(tmpdir(), 'dsh-filing-outside-'))
     try {
-      expect(() => resolveOutputDir({ outputDir: '../outside' }, cwd, DEFAULT_OUTPUT_DIR)).toThrow(/输出目录 越出工作目录/)
-      expect(() => resolveOutputDir({ outputDir: outside }, cwd, DEFAULT_OUTPUT_DIR)).toThrow(/输出目录 越出工作目录/)
-      expect(resolveOutputDir({ outputDir: join(cwd, 'deliver') }, cwd, DEFAULT_OUTPUT_DIR)).toBe(join(cwd, 'deliver'))
+      expect(() => resolveOutputDir({ outputDir: '../outside' }, cwd)).toThrow(/输出目录 越出工作目录/)
+      expect(() => resolveOutputDir({ outputDir: outside }, cwd)).toThrow(/输出目录 越出工作目录/)
+      expect(resolveOutputDir({ outputDir: join(cwd, 'deliver') }, cwd)).toBe(join(cwd, 'deliver'))
     } finally {
       rmSync(cwd, { recursive: true, force: true })
       rmSync(outside, { recursive: true, force: true })
@@ -156,6 +176,30 @@ describe('resolveOutputDir', () => {
 })
 
 describe('buildFiling', () => {
+  it('writes the docx inside the resolved matter directory when no output directory is passed', async () => {
+    const { spawner } = answering({ 'build.py': buildReport() })
+    const cwd = mkdtempSync(join(tmpdir(), 'dsh-filing-cwd-'))
+    const workRoot = mkdtempSync(join(tmpdir(), 'dsh-filing-work-'))
+    const figure = join(cwd, 'fig1.png')
+    writeFileSync(figure, 'png')
+    try {
+      const { outputRoot: _explicitRoot, ...options } = buildOptions(spawner)
+      const result = await buildFiling(
+        { content: { ...CONTENT, figures: [figure] }, outputName: '申请文件', caseId: 'CN-1' },
+        { ...options, workRoot },
+        cwd,
+        new AbortController().signal,
+      )
+      expect(result.docxPath).toBe(join(workRoot, 'CN-1', '04-撰写', '申请文件.docx'))
+      expect(existsSync(result.docxPath)).toBe(true)
+      expect(existsSync(join(cwd, '.dsh', 'documents'))).toBe(false)
+      expect(existsSync(join(cwd, 'data', 'cases'))).toBe(false)
+    } finally {
+      rmSync(cwd, { recursive: true, force: true })
+      rmSync(workRoot, { recursive: true, force: true })
+    }
+  })
+
   it('runs build.py with the packaged assets and returns the canonical result', async () => {
     const { spawner, calls } = answering({ 'build.py': buildReport() })
     const outDir = mkdtempSync(join(tmpdir(), 'dsh-filing-out-'))

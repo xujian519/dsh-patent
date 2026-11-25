@@ -7,7 +7,7 @@ import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as Pkg from '@deepseek-ai/dsh-patent-filing'
-import { DEFAULT_ENGINE_TIMEOUT_MS, DEFAULT_OUTPUT_DIR } from '@deepseek-ai/dsh-patent-filing'
+import { DEFAULT_ENGINE_TIMEOUT_MS } from '@deepseek-ai/dsh-patent-filing'
 import { fakeSubprocess, stdoutHandle } from './helpers.ts'
 
 /** Build report the packaged engine prints for a successful build. */
@@ -109,8 +109,12 @@ describe('@deepseek-ai/dsh-patent-filing plugin surface', () => {
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime)
       ctx.provide('subprocess', fakeSubprocess(() => stdoutHandle(BUILD_REPORT)).spawner)
-      // 只给可选字段：outputRoot/figureScale/timeoutMs 由 Config 填充后再交给 apply。
-      Pkg.apply(ctx, Pkg.Config({ pythonPath: python.path, chromePath: '/usr/bin/chrome' }))
+      Pkg.apply(ctx, Pkg.Config({
+        pythonPath: python.path,
+        chromePath: '/usr/bin/chrome',
+        outputRoot: 'out/docs',
+        workbenchCaseRoot: '/cases',
+      }))
       expect(ctx.tools.schemas().some(schema => schema.name === 'build_patent_filing')).toBe(true)
     } finally {
       python.cleanup()
@@ -157,9 +161,10 @@ describe('@deepseek-ai/dsh-patent-filing plugin surface', () => {
 })
 
 describe('Config', () => {
-  it('defaults outputRoot, figureScale, and timeoutMs', () => {
+  it('leaves outputRoot unset and defaults figureScale and timeoutMs', () => {
     const config = Pkg.Config({})
-    expect(config.outputRoot).toBe(DEFAULT_OUTPUT_DIR)
+    expect(config.outputRoot).toBeUndefined()
+    expect(config.workbenchCaseRoot).toBeUndefined()
     expect(config.figureScale).toBe(3)
     expect(config.timeoutMs).toBe(DEFAULT_ENGINE_TIMEOUT_MS)
     expect(config.pythonPath).toBeUndefined()
@@ -173,10 +178,12 @@ describe('Config', () => {
       templatePath: '/tpl.docx',
       specPath: '/spec.json',
       outputRoot: 'out/docs',
+      workbenchCaseRoot: '/cases',
       figureScale: 4,
       timeoutMs: 300_000,
     })
     expect(config.pythonPath).toBe('/usr/bin/python3')
+    expect(config.workbenchCaseRoot).toBe('/cases')
     expect(config.specPath).toBe('/spec.json')
     expect(config.figureScale).toBe(4)
     expect(config.timeoutMs).toBe(300_000)

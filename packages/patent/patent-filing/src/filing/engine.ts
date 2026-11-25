@@ -25,7 +25,10 @@ import { getEngineDir } from './assets.ts'
 import { requirePython } from './python.ts'
 import { validateContent } from './content.ts'
 
-/** 默认输出目录（相对进程工作目录）；与专利域既有约定一致。 */
+/**
+ * 历史输出目录 `.dsh/documents`。
+ * 只在调用方显式传入 `outputDir` 或 `outputRoot` 时使用，不会自动成为写入根。
+ */
 export const DEFAULT_OUTPUT_DIR = '.dsh/documents'
 
 /** 默认引擎超时（毫秒）。成文含 Chrome 栅格化，故与 patent-document 的打印超时同量级。 */
@@ -60,8 +63,13 @@ export interface BuildEngineOptions extends EngineInvocation {
   specPath: string
   /** 模板路径（体例真相源）。 */
   templatePath: string
-  /** 缺省输出目录（相对 cwd）。 */
-  defaultOutputDir: string
+  /** `workbenchCaseRoot`。与案号一起解析案卷目录。 */
+  workRoot?: string
+  /**
+   * 显式部署覆盖。案卷目录无法解析、且调用未传 outputDir、也未点名案号时使用。
+   * 缺省不回落 `.dsh/documents`。
+   */
+  outputRoot?: string
   /** 附图栅格化倍率。 */
   figureScale: number
   /** Chrome 可执行文件覆盖（`.svg` 附图栅格化用）。 */
@@ -82,9 +90,11 @@ export interface BuildFilingInput {
   content: FilingContent
   /** 输出文件名主干（不含扩展名）。 */
   outputName: string
-  /** 可选案卷号；给出后落在 `data/cases/<案卷号>/outputs/`。 */
+  /**
+   * 案号。与 `workRoot` 一起选定案卷目录。未传 `outputDir` 时，成品写在该案卷目录的 `04-撰写/`。
+   */
   caseId?: string
-  /** 可选显式输出目录（优先于案卷号与缺省目录）。 */
+  /** 显式输出目录。优先于案卷目录；真实位置必须留在工作目录内。 */
   outputDir?: string
 }
 
@@ -110,22 +120,29 @@ export function assertSafeOutputName(name: string): string {
 /**
  * 解析输出目录。
  *
- * 显式 outputDir 的真实位置必须留在 cwd 内：模型控制的工具参数若允许绝对路径
- * 或 `../` 串联，会把文件写到 cwd 之外进程有权限的任意位置（数据污染/安全风险）。
- * cwd 内的绝对路径照常接受；caseId 已走 assertSafeId 校验，不会带出 `..` 段；
- * defaultOutputDir 是本包固定常量。
+ * 显式 outputDir 的真实位置必须留在 cwd 内。案号与 `workRoot` 一起把成品写进案卷目录的
+ * `04-撰写/`。案卷目录无法解析且没有覆盖时失败，不回落 `data/cases` 或 `.dsh/documents`。
  * @param input - 成文请求的目录相关字段。
  * @param cwd - 进程工作目录。
- * @param defaultOutputDir - 既无 outputDir 也无 caseId 时的缺省目录。
+ * @param root - 工作根与可选的显式覆盖。
  * @returns 输出目录绝对路径。
- * @throws PatentFilingError 当 outputDir 解析后的真实路径落在 cwd 之外。
+ * @throws PatentFilingError 当 outputDir 越出 cwd、案号不可用，或案卷目录无法解析且没有可用覆盖时。
  */
 export function resolveOutputDir(
   input: Pick<BuildFilingInput, 'outputDir' | 'caseId'>,
   cwd: string,
-  defaultOutputDir: string,
+  root: { readonly workRoot?: string; readonly outputRoot?: string } = {},
 ): string {
-  return resolvePatentOutputDir(input, cwd, defaultOutputDir, message => new PatentFilingError(message))
+  return resolvePatentOutputDir(
+    input,
+    cwd,
+    {
+      layoutDir: '04-撰写',
+      ...(root.workRoot === undefined ? {} : { workRoot: root.workRoot }),
+      ...(root.outputRoot === undefined ? {} : { outputRoot: root.outputRoot }),
+    },
+    message => new PatentFilingError(message),
+  )
 }
 
 /**
@@ -342,7 +359,10 @@ export async function buildFiling(
 ): Promise<FilingBuildResult> {
   const content = validateContent(input.content)
   assertSafeOutputName(input.outputName)
-  const outputDir = resolveOutputDir(input, cwd, options.defaultOutputDir)
+  const outputDir = resolveOutputDir(input, cwd, {
+    ...(options.workRoot === undefined ? {} : { workRoot: options.workRoot }),
+    ...(options.outputRoot === undefined ? {} : { outputRoot: options.outputRoot }),
+  })
   await mkdir(outputDir, { recursive: true })
   const docxPath = join(outputDir, `${input.outputName}.docx`)
 

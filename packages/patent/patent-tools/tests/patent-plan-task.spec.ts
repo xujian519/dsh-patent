@@ -167,6 +167,35 @@ describe('patent_plan_task', () => {
     expect(defaultFrom.isError).toBe(false)
   })
 
+  it('rejects plan steps on a transition instead of reporting a state change that synced nothing', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    ctx.tools.register(createPatentPlanTaskTool())
+    const signal = new AbortController().signal
+    const withSteps = await executeToolFixture(ctx, {
+      signal,
+      callId: ToolCallId('pt-plan-steps'),
+      name: 'patent_plan_task',
+      arguments: { action: 'transition', currentState: 'planning', to: 'awaiting_approval', planSteps: ['a'] },
+    })
+    expect(withSteps.isError).toBe(true)
+    expect(withSteps.error?.info).toMatchObject({ name: 'PatentToolError', code: 'invalid_tool_input' })
+    expect(JSON.stringify(withSteps.content)).toContain('transition 不接受 planSteps 或 previousTasks')
+
+    const withPrevious = await executeToolFixture(ctx, {
+      signal,
+      callId: ToolCallId('pt-previous-tasks'),
+      name: 'patent_plan_task',
+      arguments: {
+        action: 'transition', currentState: 'awaiting_feedback', to: 'replanning', feedback: '补充检索', previousTasks: [],
+      },
+    })
+    expect(withPrevious.isError).toBe(true)
+    expect(withPrevious.error?.info).toMatchObject({ name: 'PatentToolError', code: 'invalid_tool_input' })
+  })
+
   it('replans without previous tasks and rejects empty sync/replan steps', async () => {
     const tool = createPatentPlanTaskTool()
     const value = (await tool.execute({ action: 'replan', planSteps: ['a'] }, exec)) as PatentPlanTaskOutput

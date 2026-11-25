@@ -320,7 +320,7 @@ export const patentDisclosureManifest: WorkflowManifest = {
     {
       id: 'draft_review',
       strategy: 'chain',
-      description: '撰写链换位审查：只读说明书、权利要求、PFIE 特征与检索文献，按 26.3/26.4/清楚性/单一性/33 条列出争议点，可执行项按类别回退到说明书、权项或策略阶段（最多两轮，之后交人工复核）',
+      description: '撰写链换位审查：只读说明书、权利要求、PFIE 特征与检索文献，按 26.3/26.4/清楚性/单一性/33 条列出争议点，可执行项按类别回退到说明书、权项或策略阶段（最多三轮，每轮逐条复核上轮未销账条目，之后交人工复核）',
       atom: 'draft-review',
       retry: {
         whenRevisionRequested: true,
@@ -334,8 +334,17 @@ export const patentDisclosureManifest: WorkflowManifest = {
           'draft-review:clarity': 'draft_claims',
           'draft-review:unity': 'claim_strategy',
         },
-        maxRetries: 2,
+        maxRetries: 3,
       },
+    },
+    {
+      // 修订账本紧跟 draft_review：审查回退循环收敛（通过或穷尽）后立即对账一次，
+      // 把各轮争议点按稳定 finding id 折叠成销账清单，供 legal_gaps 与人工复核引用。
+      // 本阶段不调用模型，也不声明 retry——回退所有权属于 draft_review 的类别级信号。
+      id: 'revision_ledger',
+      strategy: 'chain',
+      description: '修订逐条对账（确定性）：按稳定 finding id 折叠 draft-review 各轮争议点，输出首轮/末轮销账矩阵与仍存在、新增条目',
+      atom: 'revision-ledger',
     },
     {
       id: 'legal_gaps',
@@ -345,6 +354,16 @@ export const patentDisclosureManifest: WorkflowManifest = {
       params: { profile: 'disclosure' },
       // 未评估项反哺采集：回退到提取链重新抽取，最多一轮（legal_gaps 共执行两次）。
       retry: { whenRevisionRequested: true, rewindTo: 'extract_problem', maxRetries: 1 },
+    },
+    {
+      // 质量账本在 legal_gaps 之后、审批门之前：把五门已写出的判定折叠成矩阵与
+      // 0–100 标量，人工复核时一眼看到哪些门未过或未评估。本阶段不调用模型、
+      // 不声明 retry——各门的回退归各自的阶段所有者；legal_gaps 反哺回退后
+      // 本阶段会随下游重跑，标量反映重跑后的判定。
+      id: 'draft_quality',
+      strategy: 'chain',
+      description: '稿件质量账本（确定性）：形式合规、充分公开、概括支撑、修订销账、法条缺口五门逐条判定与 0–100 标量，缺信号判未评估不并入通过',
+      atom: 'draft-quality-ledger',
     },
     {
       // 审批门放在反哺回路之后：legal_gaps 回退会重做报告、权利要求与说明书，

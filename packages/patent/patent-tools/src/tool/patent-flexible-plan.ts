@@ -160,6 +160,8 @@ export const ATOM_PARAM_DESCRIPTION = [
   'claim-strategy (params: none; reads pfe_triples/merge_result/novelty_conclusion/prior_art/source_text/tech_domain, or confirmed_features when the caller supplies the table; writes anchor-checked claim_strategy and claim_strategy_report).',
   'draft-claims (params: none; reads claim_strategy, renders the independent claim and dependent tree deterministically, lets a dependent-claim specialist only reorder or supplement dependents, and vetoes the draft on any claim_lint error).',
   'draft-review (params: none; reads specification, claims_draft, pfe_triples/features and prior_art, then calls the model for examiner-perspective disputes across A26.3/A26.4/unity/A33 and re-checks every quoted anchor against the specification or claims).',
+  'revision-ledger (params: none; folds the `_revision_ledger_rounds` draft-review appends each round into a per-finding resolved/persisting/introduced matrix without calling the model).',
+  'draft-quality-ledger (params: none; folds spec_check_passed, enablement_passed, claim_breadth_passed, the revision-ledger matrix and legal_gaps_passed into a per-gate quality matrix with a 0-100 scalar; missing signals read as unassessed, `slop_score` is an info line).',
 ].join(' ')
 
 /** Stage JSON schema shared by create's stages list and add's single stage. */

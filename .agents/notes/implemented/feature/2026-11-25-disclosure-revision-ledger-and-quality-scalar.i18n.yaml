@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-25-disclosure-revision-ledger-and-quality-scalar.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-11-25-disclosure-revision-ledger-and-quality-scalar.md
+/agent-note-reconcile-draft-review-rounds-and-score-the-disclosure-chain-deterministically:
+  en: a51097b97e0cd0c1
+  zh: 801cd0f62ae1ec3e
+/agent-note-reconcile-draft-review-rounds-and-score-the-disclosure-chain-deterministically/problem:
+  en: 9cd61d392a389bd9
+  zh: faabb0737d4008fb
+/agent-note-reconcile-draft-review-rounds-and-score-the-disclosure-chain-deterministically/decision:
+  en: 61806b83c7b901ab
+  zh: b936170ce7424c7d
+/agent-note-reconcile-draft-review-rounds-and-score-the-disclosure-chain-deterministically/alternatives-considered:
+  en: 6db36e4d6ba5d1c0
+  zh: 9a55369fa4ce1e47
+/agent-note-reconcile-draft-review-rounds-and-score-the-disclosure-chain-deterministically/consequences:
+  en: 612304e4c6acd5d8
+  zh: 4332b06a3145cbec
+/agent-note-reconcile-draft-review-rounds-and-score-the-disclosure-chain-deterministically/testing:
+  en: 56020ec2abfbd01f
+  zh: 647d2b551c53d1ab

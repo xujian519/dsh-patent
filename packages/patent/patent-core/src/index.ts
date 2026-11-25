@@ -250,7 +250,11 @@ export {
 } from './adversary/index.ts'
 
 // Draft-chain review: examiner-perspective disputes over the drafted specification
-// and claims, with strict quote anchoring and per-category rewind routes.
+// and claims, with strict quote anchoring and per-category rewind routes. The
+// cross-rewind ledger key and its record types are published so a stage handler
+// registered in another package reads the same record instead of restating the key.
+export { REVISION_LEDGER_ROUNDS_KEY } from './draft-review/findings.ts'
+export type { DraftReviewLedgerRound, DraftReviewLedgerSummary } from './draft-review/findings.ts'
 
 // Patent analysis product contract + deterministic aggregator (Athena-inspired report).
 export type {

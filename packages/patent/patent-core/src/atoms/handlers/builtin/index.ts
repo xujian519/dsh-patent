@@ -26,6 +26,8 @@
  * - claim-breadth.ts：claim-breadth（概括范围 A26.4：逐条上位概括锚点复核）
  * - quote-stage.ts：enablement-report / claim-breadth 共用的输入读取与模型解析
  * - draft-review.ts：draft-review（撰写链换位审查：争议点、判定与回退路由）
+ * - revision-ledger.ts：revision-ledger（修订逐条对账：销账/仍存在/新增）
+ * - draft-quality-ledger.ts：draft-quality-ledger（稿件质量账本：五门判定矩阵与标量）
  *
  * 注：rule-lock 原子位于 @deepseek-ai/dsh-patent-law，由插件 effect 注册。
  */
@@ -193,3 +195,11 @@ export {
   draftReviewAtom,
   DraftReviewHandler,
 } from './draft-review.ts'
+export {
+  revisionLedgerAtom,
+  RevisionLedgerHandler,
+} from './revision-ledger.ts'
+export {
+  draftQualityLedgerAtom,
+  DraftQualityLedgerHandler,
+} from './draft-quality-ledger.ts'

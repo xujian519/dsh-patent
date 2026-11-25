@@ -76,7 +76,7 @@ Schemastery configuration, every field optional.
 | `model` | string | unset → deployment default route | LLM model id for the LLM-consuming tools; resolved together with `provider` as described above. |
 | `imageModel` | object | — | Dedicated figure/image model route (`{ provider, model }`) whose declared input modalities gate `analyze_patent_figure`; falls back to `provider`/`model` when unset. |
 | `maxTokens` | number | — | Optional output token cap for the LLM-consuming tools; omitted leaves the provider default. |
-| `workflowStageBudget` | number | `27` | Maximum stages one built-in workflow manifest may declare; plugin load fails above it. |
+| `workflowStageBudget` | number | `29` | Maximum stages one built-in workflow manifest may declare; plugin load fails above it. |
 | `workflowLlmStageBudget` | number | `14` | Maximum model-calling stages one built-in workflow manifest may declare. Stages without an atom and atoms whose contract sets `usesModel` count; plugin load fails above it. |
 | `approveStageGates` | boolean | `false` | Ask the deployment's `approval` service when a foreground manifest run reaches an `approval-gate`: a granted decision continues the run, while a refusal, cancellation, missing answerer, or `never` policy pauses it and names the outcome. When the switch is on, `approveStageIds` is refused on every call, including a background job, so the model cannot self-declare the grant. A background job pauses at the gate because the service only answers inside an open turn; rerun it in the foreground. |
 | `noteDir` | string | `<workspace>/99-知识库` | Knowledge-note directory for `knowledge_note_save`. Absolute, or relative to `sandboxPolicy.workspaceRoot`. Load fails when that root is absent. |

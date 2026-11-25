@@ -3,7 +3,7 @@
  *
  * - atom.ts：Atom 声明式契约 + 注册表（纯声明，不参与执行）
  * - handler.ts：StageHandler 运行时 + PipelineState + 错误模型 + 注册表
- * - handlers/builtin/：32 个内置原子，按职责分域：
+ * - handlers/builtin/：34 个内置原子，按职责分域：
  *   search/keywords/extract/merge/compare/novelty/reasoning/groundedness/
  *   draft-claims/approval-gate/claim-chart 为模型或检索阶段；
  *   claim-strategy 为成文前的权利要求策略阶段（特征归属、锚点与从权树）；
@@ -16,6 +16,8 @@
  *   enablement-report 为充分公开判定原子（独权特征逐条锚点复核）。
  *   claim-breadth 为概括范围判定原子（上位概括逐条锚点复核）。
  *   draft-review 为撰写链审查员回合（按类别回退到说明书、权利要求或策略阶段）。
+ *   revision-ledger 为修订逐条对账（销账/仍存在/新增，不调用模型）。
+ *   draft-quality-ledger 为稿件质量账本（五门判定矩阵与标量，不调用模型）。
  *   @deepseek-ai/dsh-patent-tools 另以插件 effect 注册 9 个包内原子：
  *   slop-gate、tighten、draft-specification、figure-analysis、spec-check、response-check、eligibility、legal-gaps、admissibility。
  *   @deepseek-ai/dsh-patent-law 以插件 effect 注册 rule-lock 原子。
@@ -185,7 +187,7 @@ import { globalStageHandlerRegistry } from './handler.ts'
 import * as builtin from './handlers/builtin/index.ts'
 
 /**
- * 将 32 个内置原子（契约 + 运行时）注册进全局注册表。幂等：同名覆盖。
+ * 将 33 个内置原子（契约 + 运行时）注册进全局注册表。幂等：同名覆盖。
  *
  * 随包的 8 个 manifest 引用其中 30 个；`compare` 与 `reasoning` 是通用扩展原子，
  * 供经 `ctx.patentWorkflow.runWorkflow` 传入自定义 manifest 的调用方使用。
@@ -223,6 +225,8 @@ export function registerBuiltinAtoms(): void {
   globalAtomRegistry.register(builtin.enablementReportAtom)
   globalAtomRegistry.register(builtin.claimBreadthAtom)
   globalAtomRegistry.register(builtin.draftReviewAtom)
+  globalAtomRegistry.register(builtin.revisionLedgerAtom)
+  globalAtomRegistry.register(builtin.draftQualityLedgerAtom)
 
   globalStageHandlerRegistry.register(new builtin.SearchHandler())
   globalStageHandlerRegistry.register(new builtin.ExtractHandler())
@@ -256,4 +260,6 @@ export function registerBuiltinAtoms(): void {
   globalStageHandlerRegistry.register(new builtin.EnablementReportHandler())
   globalStageHandlerRegistry.register(new builtin.ClaimBreadthHandler())
   globalStageHandlerRegistry.register(new builtin.DraftReviewHandler())
+  globalStageHandlerRegistry.register(new builtin.RevisionLedgerHandler())
+  globalStageHandlerRegistry.register(new builtin.DraftQualityLedgerHandler())
 }

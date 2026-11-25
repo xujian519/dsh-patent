@@ -86,7 +86,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     const disclosure = manifestOf('patent_disclosure_v1').stages.map(stage => stage.id)
     expect(disclosure).not.toContain('dispute-framing')
     expect(disclosure).not.toContain('dispute-framing-refine')
-    expect(disclosure).toHaveLength(27)
+    expect(disclosure).toHaveLength(29)
   })
 
   it('修正阶段排在已锁定的时间基准或程序理由之后，且阶段数在默认预算内', () => {
@@ -101,7 +101,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     }
     const expectedCounts: Record<string, number> = {
       patent_novelty_v1: 14,
-      patent_disclosure_v1: 27,
+      patent_disclosure_v1: 29,
       patent_inventiveness_v1: 16,
       patent_patentability_v1: 16,
       patent_oa_response_v1: 15,
@@ -111,11 +111,11 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
     }
     for (const manifest of builtinPatentManifests) {
       expect(manifest.stages.length, manifest.id).toBe(expectedCounts[manifest.id])
-      expect(manifest.stages.length, manifest.id).toBeLessThanOrEqual(27)
+      expect(manifest.stages.length, manifest.id).toBeLessThanOrEqual(29)
     }
   })
 
-  it('默认预算（27/14）下全部内置 manifest 通过，模型阶段数不因确定性定位增加', () => {
+  it('默认预算（29/14）下全部内置 manifest 通过，模型阶段数不因确定性定位增加', () => {
     registerBuiltinAtoms()
     // patent-tools 的确定性原子在预算统计里只需契约（usesModel 标记），此处注册同名 stub。
     for (const name of ['admissibility', 'draft-specification', 'eligibility', 'figure-analysis', 'legal-gaps', 'response-check', 'slop-gate', 'spec-check']) {
@@ -144,7 +144,7 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
       expect(countWorkflowLlmStages(manifest, globalAtomRegistry), manifest.id)
         .toBe(expectedLlmStages[manifest.id])
       expect(() => {
-        validateWorkflowBudget(manifest, { maxStages: 27, maxLlmStages: 14 }, globalAtomRegistry)
+        validateWorkflowBudget(manifest, { maxStages: 29, maxLlmStages: 14 }, globalAtomRegistry)
       }, manifest.id).not.toThrow()
     }
   })
@@ -166,8 +166,19 @@ describe('争议定位接线范围（6 必须 / 1 可选 / 1 排除）', () => {
         'draft-review:clarity': 'draft_claims',
         'draft-review:unity': 'claim_strategy',
       },
-      maxRetries: 2,
+      maxRetries: 3,
     })
+  })
+
+  it('披露链质量账本接在 legal_gaps 之后、审批门之前，不调用模型不回退', () => {
+    const stage = stageOf('patent_disclosure_v1', 'draft_quality')
+    expect(stage?.atom).toBe('draft-quality-ledger')
+    expect(stage?.retry).toBeUndefined()
+    expect(stage?.consumes).toBeUndefined()
+    expect(indexOf('patent_disclosure_v1', 'legal_gaps'))
+      .toBeLessThan(indexOf('patent_disclosure_v1', 'draft_quality'))
+    expect(indexOf('patent_disclosure_v1', 'draft_quality'))
+      .toBeLessThan(indexOf('patent_disclosure_v1', 'review_gate'))
   })
 })
 

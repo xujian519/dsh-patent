@@ -207,12 +207,12 @@ describe('law_verify tool', () => {
     expect(value.blocked).toBe(false)
   })
 
-  it('reports a call with neither text nor references as an input error', async () => {
+  it('reports a call with neither text nor references as a parameter error', async () => {
     const ctx = await host()
     const result = await execute(ctx, {})
     expect(result.isError).toBe(true)
     expect(JSON.stringify(result.content)).toContain('至少要给出 text 或 references 之一')
-    expect(result.error?.info).toMatchObject({ name: 'LawVerifyToolError', code: 'no_input' })
+    expect(result.error?.info).toMatchObject({ name: 'LawVerifyToolError', code: 'invalid_tool_input' })
   })
 
   it('rejects blank text when no references are given, so a zero-byte call cannot satisfy a gate', async () => {

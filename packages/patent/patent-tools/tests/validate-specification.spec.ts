@@ -1,4 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { Context } from '@deepseek-ai/cordis'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
+import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import ToolRuntime from '@deepseek-ai/dsh-tools'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import { extractNumericFindings } from '@deepseek-ai/dsh-patent-core'
 import { checkClaimSet, extractClaimFeatures } from '../src/tool/spec-claim-coverage.ts'
 import {
@@ -387,6 +393,33 @@ describe('createValidateSpecificationTool', () => {
     const out = validateSpecification({ title: '一种装置' })
     const v = out.violations.find(x => x.rule === 'sections')
     expect(v?.message).toContain('text 为空')
+  })
+
+  it('rejects a call with no text and a blank text as argument errors instead of reporting a pass', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    ctx.tools.register(createValidateSpecificationTool())
+
+    const missing = await executeToolFixture(ctx, {
+      signal: new AbortController().signal,
+      callId: ToolCallId('spec-missing-text'),
+      name: 'validate_specification',
+      arguments: {},
+    })
+    expect(missing.isError).toBe(true)
+    expect(missing.error?.info).toMatchObject({ name: 'ToolArgsError', code: 'INVALID_ARGS' })
+
+    const blank = await executeToolFixture(ctx, {
+      signal: new AbortController().signal,
+      callId: ToolCallId('spec-blank-text'),
+      name: 'validate_specification',
+      arguments: { text: ' \n\t ' },
+    })
+    expect(blank.isError).toBe(true)
+    expect(blank.error?.info).toMatchObject({ name: 'PatentToolError', code: 'invalid_tool_input' })
+    expect(JSON.stringify(blank.content)).toContain('text 为空')
   })
 })
 

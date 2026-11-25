@@ -23,6 +23,7 @@ import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { locateMatch } from '@deepseek-ai/dsh-patent-core'
 import { evaluatedTexts, EVALUATED_TEXT_SCHEMA, renderEvaluatedTexts } from '../internal/evaluated-input.ts'
 import { FIGURE_ANALYSIS_INPUT_SCHEMA } from './internal/figure-schemas.ts'
+import { requireNonBlankText } from './internal/tool-input.ts'
 import { checkAbstract } from './spec-abstract.ts'
 import { checkChemicalClaimSubjectMatter, checkChemicalDisclosure } from './spec-chemical.ts'
 import { checkClaimCoverage, checkClaimSet } from './spec-claim-coverage.ts'
@@ -429,7 +430,7 @@ export function createValidateSpecificationTool(deps?: ValidateSpecificationDeps
     name: 'validate_specification',
     description: DESCRIPTION,
     parameters: {
-      text: { type: 'string', description: '说明书全文（markdown，含章节标题）' },
+      text: { type: 'string', required: true, description: '说明书全文（markdown，含章节标题）' },
       title: { type: 'string', description: '发明名称（可选，单独校验长度）' },
       abstract: { type: 'string', description: '摘要（可选，校验长度/关键词/附图标记括号/宣传语）' },
       claims: { type: 'string', description: '权利要求书全文（可选，用于特征覆盖比对）' },
@@ -542,6 +543,7 @@ export function createValidateSpecificationTool(deps?: ValidateSpecificationDeps
       render: (_args, value) => [{ type: 'text', text: renderSpecification(value) }],
     },
     execute: (args) => {
+      requireNonBlankText(args.text, 'validate_specification', 'text 为空（须为说明书全文）')
       const input = args
       const output = validateSpecification(input)
       // Sati's SMILES spot-check appends warnings only when RDKit is available;

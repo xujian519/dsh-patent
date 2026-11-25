@@ -39,4 +39,53 @@ describe('checkFigureDelivery', () => {
       '<text x="50" y="50">1</text>',
     ].join('')))).toEqual([])
   })
+
+  it('图形正下方的落版图号不报 figure-wording', () => {
+    const findings = checkFigureDelivery(svg([
+      '<rect x="10" y="10" width="40" height="70" fill="none" stroke="#000"/>',
+      '<text x="30" y="90" data-dsh-role="caption">图1</text>',
+    ].join('')))
+    expect(findings.filter(finding => finding.check === 'figure-wording')).toEqual([])
+  })
+
+  it('基线落在墨迹内的图号仍报 figure-wording', () => {
+    const findings = checkFigureDelivery(svg([
+      '<rect x="10" y="10" width="40" height="70" fill="none" stroke="#000"/>',
+      '<text x="30" y="40" data-dsh-role="caption">图1</text>',
+    ].join('')))
+    expect(findings.find(finding => finding.check === 'figure-wording')?.message).toContain('"图1" 是图号')
+  })
+
+  it('没有角色的图号即使在图形下方也报 figure-wording', () => {
+    const findings = checkFigureDelivery(svg([
+      '<rect x="10" y="10" width="40" height="70" fill="none" stroke="#000"/>',
+      '<text x="30" y="90">图1</text>',
+    ].join('')))
+    expect(findings.find(finding => finding.check === 'figure-wording')?.message).toContain('"图1" 是图号')
+  })
+
+  it('页码节点不参与用语检查，图内标号规则仍在', () => {
+    const findings = checkFigureDelivery(svg([
+      '<rect x="10" y="10" width="40" height="40" fill="none" stroke="#000"/>',
+      '<text x="30" y="30">controller</text>',
+      '<text x="30" y="90" data-dsh-role="sheet-number">注：见正文</text>',
+    ].join('')))
+    const wording = findings.filter(finding => finding.check === 'figure-wording')
+    expect(wording).toHaveLength(1)
+    expect(wording[0]?.message).toContain('controller')
+    expect(wording.some(finding => finding.message.includes('注：见正文'))).toBe(false)
+  })
+
+  it('没有其他墨迹时不豁免图号', () => {
+    const findings = checkFigureDelivery(svg('<text x="30" y="90" data-dsh-role="caption">图1</text>'))
+    expect(findings.find(finding => finding.check === 'figure-wording')?.message).toContain('"图1" 是图号')
+  })
+
+  it('图号角色不从父组继承', () => {
+    const findings = checkFigureDelivery(svg([
+      '<rect x="10" y="10" width="40" height="70" fill="none" stroke="#000"/>',
+      '<g data-dsh-role="caption"><text x="30" y="90">图1</text></g>',
+    ].join('')))
+    expect(findings.find(finding => finding.check === 'figure-wording')?.message).toContain('"图1" 是图号')
+  })
 })

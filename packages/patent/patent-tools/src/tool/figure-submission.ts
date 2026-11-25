@@ -54,6 +54,8 @@ export type SubmissionPlanInput = {
   figure_count?: number | undefined
   sheet_index?: number | undefined
   sheet_total?: number | undefined
+  /** 是否编页码，默认 true。false 时页码计划值为空字符串，不调用页码写法，也不校验页序。 */
+  sheet_number?: boolean | undefined
   caption?: string | undefined
   abstract_figure?: boolean | undefined
   fit_to_page?: boolean | undefined
@@ -64,8 +66,8 @@ export type SubmissionPlanInput = {
 }
 
 /**
- * 解析落版参数：图号按目标法域生成（panels 模式追加面板后缀），页码按法域写法生成，
- * 图号/页码字号与间距填默认并校验为正。
+ * 解析落版参数：图号按目标法域生成（panels 模式追加面板后缀），页码按法域写法生成。
+ * `sheet_number: false` 时不调用页码写法，计划值为空字符串。图号/页码字号与间距填默认并校验为正。
  * @param input - 工具输入（或归一化后的结构化输入）。
  * @param suffix - 面板后缀（单图为空串）。
  * @param bodyFontSize - 图面字号（用户单位：DOT 图为 pt、直绘图型为毫米）；未给时用历史默认 10pt。
@@ -95,7 +97,9 @@ export function resolveSubmission(
     }
     const base = input.caption ?? figureCaption(profile, figureNumber, figureCount)
     caption = base === undefined || base === '' ? undefined : `${base}${suffix}`
-    sheetNumber = sheetNumberText(profile, input.sheet_index ?? 1, input.sheet_total ?? 1)
+    sheetNumber = input.sheet_number === false
+      ? ''
+      : sheetNumberText(profile, input.sheet_index ?? 1, input.sheet_total ?? 1)
   } catch (error) {
     throw new PatentToolError('invalid_tool_input', `落版参数非法：${error instanceof Error ? error.message : String(error)}`, { tool: 'generate_patent_figure' })
   }

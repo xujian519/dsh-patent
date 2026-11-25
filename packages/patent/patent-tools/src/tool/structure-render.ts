@@ -305,7 +305,9 @@ export async function applyStructureLayout(args: {
   const profile = officeProfile(input.target_office)
   let sheetNumber: string
   try {
-    sheetNumber = sheetNumberText(profile, input.sheet_index ?? 1, input.sheet_total ?? 1)
+    sheetNumber = input.sheet_number === false
+      ? ''
+      : sheetNumberText(profile, input.sheet_index ?? 1, input.sheet_total ?? 1)
   } catch (error) {
     /* v8 ignore next -- sheetNumberText only throws RangeError */
     throw new PatentToolError('invalid_tool_input', `落版参数非法：${error instanceof Error ? error.message : String(error)}`, { tool: 'generate_structure_figure' })

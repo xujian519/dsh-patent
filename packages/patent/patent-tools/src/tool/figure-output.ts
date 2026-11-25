@@ -10,9 +10,8 @@ import { sanitizeId } from '../figure/dot-builder.ts'
 import type { DotEngine, DotFormat, HierarchyNode } from '../figure/dot-builder.ts'
 import { figureDescription as buildFigureDescription } from '../figure/figure-description.ts'
 import type { FigureIndexEntry } from '../figure/index-store.ts'
-import { FIGURE_TYPE_NAMES } from './analyze-patent-figure.ts'
 import type { FigureAnalysisResult, FigureComponent, FigureConnection, FigureType } from './analyze-patent-figure.ts'
-import { FIGURE_GENERATOR_MODEL_USED, singleLine } from './figure-input.ts'
+import { FIGURE_GENERATOR_MODEL_USED, figureViewName, singleLine } from './figure-input.ts'
 import type { GeneratePatentFigureOutput, StructuralFigureInput } from './figure-input.ts'
 import { warningSection } from './internal/tool-output.ts'
 
@@ -96,7 +95,7 @@ export function renderGenerateFigureResult(value: GeneratePatentFigureOutput): {
         `- 缩放 ${layout.pageScale}，图形 ${layout.placedWidthMm}×${layout.placedHeightMm} 毫米`,
         ...(layout.charHeightMm === undefined ? [] : [`- 字高 ${layout.charHeightMm} 毫米（缩小至三分之二后 ${layout.reducedCharHeightMm} 毫米）`]),
         ...(layout.caption === undefined ? [] : [`- 图号 ${layout.caption}`]),
-        `- 页码 ${layout.sheetNumber}`,
+        ...(layout.sheetNumber === '' ? [] : [`- 页码 ${layout.sheetNumber}`]),
       ]),
     '',
     '## 参考标号',
@@ -124,6 +123,8 @@ export function buildOutput(
     numeralBy: Map<string, string>
     /** 面板后缀（panels 模式；进入「图N<suffix>」句式）。 */
     suffix?: string
+    /** 视图名；省略或空白时附图说明仍用图型中文名。 */
+    viewName?: string
   },
 ): GeneratePatentFigureOutput {
   const { cwd, outcomePath, figureNumber, format, engine, figureType } = params
@@ -175,7 +176,7 @@ export function buildOutput(
 
   const description = buildFigureDescription({
     figureNumber,
-    figureTypeName: FIGURE_TYPE_NAMES[figureType],
+    figureTypeName: figureViewName(figureType, params.viewName),
     inventionName: input.invention_name,
     ...(params.suffix === undefined ? {} : { suffix: params.suffix }),
     numerals: numeralMap,

@@ -2,6 +2,14 @@
  * Delivery review for a finished drawing: findings that only make sense on the
  * artefact about to be filed, not on the drawing's input description.
  *
+ * A sheet caption (`data-dsh-role="caption"`) leaves the wording check only when its
+ * baseline sits strictly below the ink of everything that is not a caption or a sheet
+ * number. A sheet number (`data-dsh-role="sheet-number"`) always leaves that check.
+ * The role is read from the `<text>` element itself. `figureWordingWarnings` stays a
+ * string check so input labels without coordinates are not exempted. The role is
+ * declared in the SVG, so an SVG handed to `verify_patent_figure` can declare it too;
+ * the finding is advisory, so this is not a trust boundary.
+ *
  * The checks are deterministic and read the SVG source. They cover four items
  * the input-side checks do not see: raster/photo content (`<image>`), a frame
  * drawn around the whole sheet, landscape orientation, and non-essential words
@@ -13,8 +21,15 @@
  */
 
 import { polyBounds } from './render-check-findings.ts'
-import { scanSvg } from './render-check-scan.ts'
+import { quadCorners, scanSvg, textQuad } from './render-check-scan.ts'
+import type { Point, Scan, ScannedText } from './render-check-scan.ts'
 import { figureWordingWarnings } from './wording-rules.ts'
+
+/** 落版页图号。只有基线在图形墨迹底边之下时才移出用语检查。 */
+const CAPTION_ROLE = 'caption'
+
+/** 落版页页码。整段移出用语检查，不要求它写成「图N」。 */
+const SHEET_NUMBER_ROLE = 'sheet-number'
 
 /** One delivery finding; `check` is a stable identifier. */
 type DeliveryFinding = {
@@ -70,11 +85,43 @@ export function checkFigureDelivery(svg: string): DeliveryFinding[] {
     }
   }
 
-  const labels = scan.texts.map(text => text.content)
+  const labels = wordingTexts(scan).map(text => text.content)
   const numerals = labels.filter(label => /^\d{1,4}$/.test(label.trim()))
   for (const warning of figureWordingWarnings(labels, numerals)) {
     findings.push({ check: 'figure-wording', message: warning })
   }
 
   return findings
+}
+
+/**
+ * 参与图面用语检查的文字。
+ *
+ * 页码整段退出。图号仅在 `data-dsh-role="caption"` 且基线严格低于不含图号和页码的墨迹底边时退出。
+ * 没有可量测墨迹时不豁免图号：没有参照底边就不能声称它在图形正下方。
+ * 角色只认该 `<text>` 自身，比较不加容差；角色由 SVG 声明，外部 SVG 同样可以自报，该检查只是提示级发现。
+ * @param scan - 已遍历的 SVG。
+ * @returns 仍要送进用词规则的文字。
+ */
+function wordingTexts(scan: Scan): ScannedText[] {
+  const inkBottom = inkBottomExcludingChrome(scan)
+  return scan.texts.filter((text) => {
+    if (text.role === SHEET_NUMBER_ROLE) return false
+    return !(text.role === CAPTION_ROLE && inkBottom !== undefined && text.baseline[1] > inkBottom)
+  })
+}
+
+/**
+ * 不含落版图号和页码的墨迹底边（根坐标最大 y）。
+ * @param scan - 已遍历的 SVG。
+ * @returns 底边；没有顶点也没有其余文字时 undefined。
+ */
+function inkBottomExcludingChrome(scan: Scan): number | undefined {
+  const points: Point[] = [
+    ...scan.shapes.flatMap(shape => shape.subpaths.flatMap(subpath => subpath.points)),
+    ...scan.texts
+      .filter(text => text.role !== CAPTION_ROLE && text.role !== SHEET_NUMBER_ROLE)
+      .flatMap(text => [...quadCorners(textQuad(text))]),
+  ]
+  return points.length === 0 ? undefined : polyBounds(points).maxY
 }

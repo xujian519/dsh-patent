@@ -10,13 +10,12 @@ import { DotBuildError, resolvePageBundle } from '../figure/dot-builder.ts'
 import type { DotPageBundle, NumeralAssignment } from '../figure/dot-builder.ts'
 import { figureSentence } from '../figure/figure-description.ts'
 import { figureWordingWarnings } from '../figure/wording-rules.ts'
-import { FIGURE_TYPE_NAMES } from './analyze-patent-figure.ts'
-import { collectComponents, collectFigureWording, inferFigureType, presentStructuralFields, presentVectorFields, readNumerals, resolveFamilySeeds, toFigureType } from './figure-input.ts'
+import { collectComponents, collectFigureWording, dotDocumentTitle, figureViewName, inferFigureType, presentStructuralFields, presentVectorFields, readNumerals, resolveFamilySeeds, toFigureType } from './figure-input.ts'
 import type { DotFigureType, GeneratePatentFigureInput, GeneratePatentFigureOutput, GeneratePatentFigurePanelInput, StructuralFigureInput } from './figure-input.ts'
 import { buildOutput, indexAnalysis, upsertFigureIndex } from './figure-output.ts'
 import { annotateRenderedSvg, buildFigureDot } from './figure-render-plan.ts'
 import { assertRendered } from './internal/render-outcome.ts'
-import { finishDirectRender, finishSvgChain, needsSvgChain } from './figure-delivery.ts'
+import { finishDirectRender, finishSvgChain, needsSvgChain, stampDotDocumentTitle } from './figure-delivery.ts'
 import { resolveFigureWriteDir } from './figure-write-dir.ts'
 import { assignFigureNumerals, resolveFontPt } from './figure-run.ts'
 import type { FigureContext } from './figure-run.ts'
@@ -231,10 +230,13 @@ async function renderPanel(
     figureType: toFigureType(panel.figureType),
     numeralBy,
     suffix: panel.suffix,
+    ...(run.input.view_name === undefined ? {} : { viewName: run.input.view_name }),
   })
   if (leaderLinesActive) {
     await annotateRenderedSvg(outcome.path, output.numeralMap, output.warnings)
   }
+  const documentTitle = dotDocumentTitle(run.input.invention_name, toFigureType(panel.figureType), run.input.view_name)
+  await stampDotDocumentTitle(outcome.path, chain ? 'svg' : format, documentTitle)
   // 全链成功后不再走直绘收尾；失败则按请求的格式重渲染一次，交付物与不带
   // target_office 时逐字节相同（`finishSvgChain` 已把未生效的原因写进警告）。
   let directPath = outcome.path
@@ -264,6 +266,7 @@ async function renderPanel(
       })
       assertRendered(direct, 'generate_patent_figure')
       directPath = direct.path
+      await stampDotDocumentTitle(direct.path, format, documentTitle)
     }
     await finishDirectRender({
       deps,
@@ -298,7 +301,7 @@ async function mergePanelOutputs(args: {
   const mergedNumerals = panelOutputs.flatMap(po => po.output.numeralMap)
   const sentences = panelOutputs.map(po => figureSentence(
     figureNumber,
-    FIGURE_TYPE_NAMES[po.output.figureType],
+    figureViewName(po.output.figureType, input.view_name),
     input.invention_name,
     po.suffix,
   ))

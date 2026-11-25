@@ -181,6 +181,11 @@ export type GeneratePatentFigureInput = SharedFigureInputFields & {
   case_id?: string
   figure_number?: number
   invention_name?: string
+  /**
+   * 视图名。省略或去掉首尾空白后为空时，标题与附图说明仍用图型中文名。
+   * 非空时只替换视图名。不能含换行，去掉首尾空白后不超过 200 个字符。
+   */
+  view_name?: string
   /** 显式标号（组件 id → 标号；跨图同件同号续接）。 */
   numerals?: { [key: string]: JsonValue }
   numeral_start?: number
@@ -209,6 +214,11 @@ export type GeneratePatentFigureInput = SharedFigureInputFields & {
   sheet_index?: number
   /** 附图页总数（默认 1）。 */
   sheet_total?: number
+  /**
+   * 是否在落版页上编页码，默认 true。
+   * false 时不画页码、不警告，也不校验页序；未给 target_office 时无效果，也不报错。
+   */
+  sheet_number?: boolean
   /** 图号文字覆盖（缺省按目标法域生成「图1」/「Fig. 1」/「FIG. 1」；panels 模式自动追加面板后缀）。 */
   caption?: string
   /** 本幅是否为请求书指定的摘要附图：给出时按 40×60 毫米缩放核算可辨度量。 */
@@ -510,15 +520,65 @@ export function collectFigureWording(input: StructuralFigureInput): string[] {
   }
 }
 
+/** 视图名去掉首尾空白后的长度上限。交案视图名远短于此，上限只挡住整段说明书。 */
+const VIEW_NAME_MAX_CHARS = 200
+
 /**
- * 矢量图 SVG 的 `<title>`（不落图面像素）：发明名称缺省时只写图型。
- * @param inventionName - 发明名称；缺省或全空白时只写图型。
+ * 拒绝不能写入单行标题的 `view_name`。空白视图名留给调用方按省略处理。
+ * @param viewName - 工具入参；未传时通过。
+ * @throws PatentToolError('invalid_tool_input') 含换行，或去掉首尾空白后超过 200 个字符时。
+ */
+export function assertViewName(viewName: string | undefined): void {
+  if (viewName === undefined) return
+  if (viewName.includes('\n') || viewName.includes('\r')) {
+    throw new PatentToolError('invalid_tool_input', 'view_name 不能包含换行', { tool: 'generate_patent_figure' })
+  }
+  if (viewName.trim().length > VIEW_NAME_MAX_CHARS) {
+    throw new PatentToolError(
+      'invalid_tool_input',
+      `view_name 去掉首尾空白后不能超过 ${VIEW_NAME_MAX_CHARS} 个字符`,
+      { tool: 'generate_patent_figure' },
+    )
+  }
+}
+
+/**
+ * 附图说明句与 SVG 标题共用的视图名。省略或空白时仍是图型中文名。
  * @param figureType - 分析侧图型名。
+ * @param viewName - 调用方给出的视图名；空白视为未给。
+ * @returns 写入「……的{视图名}」的那一段。
+ */
+export function figureViewName(figureType: FigureType, viewName?: string): string {
+  if (viewName === undefined || viewName.trim() === '') return FIGURE_TYPE_NAMES[figureType]
+  return viewName.trim()
+}
+
+/**
+ * 矢量图 SVG 的 `<title>`（不落图面像素）：发明名称缺省时只写视图名。
+ * @param inventionName - 发明名称；缺省或全空白时只写视图名。
+ * @param figureType - 分析侧图型名。
+ * @param viewName - 视图名；省略或空白时用图型中文名。
  * @returns SVG 标题文本。
  */
-export function vectorTitle(inventionName: string | undefined, figureType: FigureType): string {
+export function vectorTitle(inventionName: string | undefined, figureType: FigureType, viewName?: string): string {
   const title = inventionName === undefined || inventionName.trim() === '' ? '' : `${inventionName.trim()}的`
-  return `${title}${FIGURE_TYPE_NAMES[figureType]}`
+  return `${title}${figureViewName(figureType, viewName)}`
+}
+
+/**
+ * DOT 绘图 SVG 的文档级标题。视图名省略或空白时返回 undefined，调用方不改文件。
+ * @param inventionName - 发明名称。
+ * @param figureType - 分析侧图型名。
+ * @param viewName - 调用方给出的视图名。
+ * @returns 与 {@link vectorTitle} 相同的标题；不需要写入时为 undefined。
+ */
+export function dotDocumentTitle(
+  inventionName: string | undefined,
+  figureType: FigureType,
+  viewName: string | undefined,
+): string | undefined {
+  if (viewName === undefined || viewName.trim() === '') return undefined
+  return vectorTitle(inventionName, figureType, viewName)
 }
 
 /**

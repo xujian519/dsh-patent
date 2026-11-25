@@ -37,6 +37,10 @@ function execute(ctx: Context, name: string, args: unknown, label: string) {
   return executeToolFixture(ctx, { signal, callId: ToolCallId(label), name, arguments: args })
 }
 
+function text(result: { content: { type: string; text?: string }[] }): string {
+  return result.content.filter(block => block.type === 'text').map(block => block.text ?? '').join('')
+}
+
 function tempDir(): string {
   return mkdtempSync(join(tmpdir(), 'dsh-structool-'))
 }
@@ -557,6 +561,35 @@ describe('generate_structure_figure wording & validation', () => {
       }, exec) as { layout?: { sheetNumber: string; caption?: string } }
       expect(value.layout?.sheetNumber).toBe('第1页')
       expect(value.layout?.caption).toBe('图1')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('sheet_number false 不画页码、不警告，回执页码为空', async () => {
+    const dir = tempDir()
+    const model = writeModel(dir, 'a.step')
+    try {
+      const { render } = okRenderer({
+        svg: '<svg width="100mm" height="50mm" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg"><g stroke="#000000" stroke-width="0.35"><path d="M0 0 L10 10"/></g></svg>',
+      })
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: dir, cwd: dir })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'generate_structure_figure', {
+        model_path: model,
+        views: ['iso'],
+        target_office: 'cnipa',
+        sheet_number: false,
+        persist_index: false,
+      }, 's-no-sheet') as { isError: boolean; value: { layout?: { sheetNumber: string }; warnings: string[] }; content: { type: string; text?: string }[] }
+      expect(result.isError).toBe(false)
+      expect(result.value.layout?.sheetNumber).toBe('')
+      expect(result.value.warnings.join('\n')).not.toContain('未写页码')
+      expect(text(result)).toContain('## 落版（cnipa）')
+      expect(text(result)).not.toContain('- 页码')
+      const written = readFileSync(join(dir, 'fig1', 'fig1_iso.svg'), 'utf8')
+      expect(written).not.toContain('data-dsh-role="sheet-number"')
+      expect(written).not.toContain('第1页')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

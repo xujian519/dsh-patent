@@ -358,7 +358,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- tech-debt-counters:start -->
 | 计数 | 值 |
 | --- | --- |
-| `structure.long-functions` | 207 |
+| `structure.long-functions` | 209 |
 | `structure.large-files` | 102 |
 | `structure.patent-large-files` | 9 |
 | `lint.v8-ignore` | 1345 |
@@ -404,6 +404,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-25 附图视图名与页码关闭**:`generate-patent-figure.ts` 的 `generateSingleFigure` 新增 `view_name` 参数校验与传递后达到 155 行、`generate-structure-figure.ts` 的 `createGenerateStructureFigureTool` 新增 `sheet_number` schema 字段后达到 151 行，两个函数均越过 150 行阈值；`structure.long-functions` 由 207 升至 **209**；其余计数不变。
 - **2026-11-25 出件默认根改到案卷目录**:删掉三处为「未注入 outputDir 时回落 `<cwd>/patent/figures`」准备的 `v8 ignore`，行号取自 master `f41dd58c`：`packages/patent/patent-tools/src/tool/figure-panels.ts:93`、`packages/patent/patent-tools/src/tool/generate-patent-figure.ts:184`、`packages/patent/patent-tools/src/tool/structure-render.ts:67`。这三行的下一行已改为 `resolveFigureWriteDir`，缺省目录不再存在。当前树仍保留 `generate-patent-figure.ts:227` 的 `v8 ignore`，它豁免的是 `mkdir`。`lint.v8-ignore` 由 1348 降至 **1345**；其余计数不变。
 - **2026-11-22 上游 v0.2.3-alpha.1 同步**:上游代码带入大量新增结构债,按当前树复测 `structure.long-functions` 为 **207**、`structure.large-files` 为 **102**(其中 3 个生成文件另计)、`structure.patent-large-files` 保持 **9**。同批次 fork 侧把 `patent-pdf-download.ts` 的续传 MANIFEST 写出抽为 `recordDownloadedFile` 并按 `verify-empty-catch` 具名两处空 `catch`,使 `createPatentPdfDownloadTool` 回落到 150 行以下,`structure.long-functions` 因此比同步带入时少 1;`lint.v8-ignore` **1348** 与 `lint.ts-expect-error` **201** 由上游带入并在本轮回测确认。`packages/experimental/ptc-runtime-python` 整包移除后,实验域大文件裁定表对应的 `supervisor.ts` 行随之删除。
 - **2026-11-20 R-F10 工作流恢复点与视频文法对照**:`patent-workflow-run.ts` 由 1056 升至 **1070** 行并同步重定接受上限;新增 `runId`/`resumeNote` 输出 schema 使 `createPatentWorkflowRunTool` 达到 152 行,`structure.long-functions` 由 191 升至 **192**;本批未改覆盖率豁免,`lint.v8-ignore` 按当前树复测为 **1334**;其余计数不变。

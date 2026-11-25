@@ -142,7 +142,7 @@ const DESCRIPTION = [
   '',
   '批量：model_path 传目录时，对目录内每个受支持模型各出一图，图号自 figure_number 起递增；批量模式不支持 callouts（件号 3D 锚点仅对单个模型有效），多个零件要合成一张图时改用 model_paths。',
   '',
-  '产物为纯几何片段，不含模板边框、标题栏与图号，符合《专利审查指南》第一部分第一章 4.3 对线条与版面的要求；给定 target_office 时按该法域的 A4 幅面与页边距落版，并可在图形正下方落图号。',
+  '产物为纯几何片段，不含模板边框、标题栏与图号，符合《专利审查指南》第一部分第一章 4.3 对线条与版面的要求；给定 target_office 时按该法域的 A4 幅面与页边距落版，并可在图形正下方落图号。sheet_number 默认 true；false 时不画页码、不警告。未给 target_office 时该开关无效果，也不报错。',
 ].join('\n')
 
 /**
@@ -174,6 +174,7 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
       target_office: { type: 'string', enum: TARGET_OFFICES, description: '目标法域：给定时把每个视图 SVG 落版到该法域的 A4 幅面与页边距，并返回落版尺寸（仅 SVG 产物生效）' },
       sheet_index: { type: 'integer', description: '附图页序号，默认 1' },
       sheet_total: { type: 'integer', description: '附图页总数，默认 1' },
+      sheet_number: { type: 'boolean', description: '是否编页码，默认 true。false 时不画页码、不警告；未给 target_office 时无效果，也不报错' },
       caption: { type: 'string', description: '图号文字（如「图1」）；缺省不落图号——多视图如何编号由调用方按整案附图顺序决定' },
       fit_to_page: { type: 'boolean', description: '默认 true：落版到目标法域幅面；false 时只核算尺寸' },
       persist_index: { type: 'boolean', description: '默认 true：写入附图索引（供 search_patent_figure 检索）' },
@@ -211,7 +212,7 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
               charHeightMm: { type: 'number' },
               reducedCharHeightMm: { type: 'number' },
               caption: { type: 'string' },
-              sheetNumber: { type: 'string', required: true },
+              sheetNumber: { type: 'string', required: true, description: '落版页上的页码；显式关闭时为空字符串' },
             },
           },
           numeralMap: { type: 'array', required: true, items: NUMERAL_MAP_SCHEMA },
@@ -344,7 +345,12 @@ function renderStructureResult(value: {
     value.figureDescription,
     ...(value.layout === undefined
       ? []
-      : ['', `## 落版（${value.layout.office}）`, `- 缩放 ${value.layout.pageScale}，图形 ${value.layout.placedWidthMm}×${value.layout.placedHeightMm} 毫米`, `- 页码 ${value.layout.sheetNumber}`]),
+      : [
+        '',
+        `## 落版（${value.layout.office}）`,
+        `- 缩放 ${value.layout.pageScale}，图形 ${value.layout.placedWidthMm}×${value.layout.placedHeightMm} 毫米`,
+        ...(value.layout.sheetNumber === '' ? [] : [`- 页码 ${value.layout.sheetNumber}`]),
+      ]),
     ...(value.numeralMap.length > 0 ? ['', '## 参考标号', ...value.numeralMap.map(m => `- ${m.numeral} ${m.label}`.trimEnd())] : []),
     ...warningSection(value.warnings),
   ]

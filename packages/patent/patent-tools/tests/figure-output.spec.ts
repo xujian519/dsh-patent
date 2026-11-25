@@ -119,6 +119,21 @@ describe('renderGenerateFigureResult', () => {
     expect(text).toContain('- 页码 1')
   })
 
+  it('skips the sheet-number line when the layout sheet number is empty', () => {
+    const text = renderGenerateFigureResult({
+      ...base,
+      layout: {
+        office: 'cnipa',
+        pageScale: 1,
+        placedWidthMm: 100,
+        placedHeightMm: 50,
+        sheetNumber: '',
+      },
+    })[0]!.text
+    expect(text).toContain('## 落版（cnipa）')
+    expect(text).not.toContain('- 页码')
+  })
+
   it('joins panel paths in the header', () => {
     const text = renderGenerateFigureResult({
       ...base,

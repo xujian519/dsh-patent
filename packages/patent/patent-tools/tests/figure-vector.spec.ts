@@ -54,6 +54,12 @@ describe('vector-figure：矢量附图接缝', () => {
     expect(titled).toBe('<svg xmlns="http://www.w3.org/2000/svg" data-note="a>b">\n  <title>图</title><g/></svg>')
   })
 
+  it('<svg 开标签没有关闭的 > 时抛出 VectorFigureError', () => {
+    // rootSvgOpenTagEnd 找到 <svg 但遍历到末尾仍无 '>' → 返回 undefined
+    expect(() => insertSvgDocumentTitle('<svg xmlns="http://www.w3.org/2000/svg"', '图')).toThrow(VectorFigureError)
+    expect(() => insertSvgDocumentTitle('<svg xmlns="http://www.w3.org/2000/svg"', '图')).toThrow('缺少根 svg 开标签')
+  })
+
   it('数值格式化去掉尾随零并拒绝非有限数', () => {
     expect(fmt(1.23456)).toBe('1.235')
     expect(fmt(2.5)).toBe('2.5')

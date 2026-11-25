@@ -421,6 +421,9 @@ function ciSharedStaticGates(): Gate[] {
     pnpmScript('sbom', 'verify-sbom', { label: 'SBOM bytes lock' }),
     pnpmScript('self-evolve-eval', 'verify-self-evolve-eval', { label: 'self-evolve eval decision' }),
     pnpmScript('patent-oas-gold', 'verify-patent-oas-gold', { label: 'patent-oas gold gate' }),
+    // The calibration artifact is the only place the attorney-revision readings live;
+    // the corpus stays off-repository, so this gate checks the rows against themselves.
+    pnpmScript('patent-draft-calibration', 'verify-patent-draft-calibration', { label: 'patent draft calibration artifact' }),
     // Legal corpus and rule assets: coverage, freshness, procedural alignment, and citations.
     // Keyless and source-plane; every static aggregate runs them.
     pnpmScript('patent-law-coverage', 'verify-patent-law-coverage', { label: 'patent law coverage' }),

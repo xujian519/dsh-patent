@@ -62,6 +62,12 @@ jobs:
         # problem-space DAG, thresholds, and baseline: no key, no build.
         run: pnpm run verify-patent-oas-gold
 
+      - name: Patent draft calibration artifact
+        # Recomputes every aggregate from the stored per-pair rows and refuses while
+        # the artifact is absent or below its declared floors. The attorney corpus it
+        # was measured from stays off-repository, so no corpus path is needed here.
+        run: pnpm run verify-patent-draft-calibration
+
       # The legal corpus and rule assets reach no aggregate in this fork: each
       # check reads only checked-in law, rules, and manifests, so this required
       # lane carries all four.

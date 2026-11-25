@@ -1,0 +1,772 @@
+{
+  "schema": 1,
+  "generatedBy": "tsx scripts/verify-patent-draft-calibration.ts --manifest <cases.yaml> --corpus <case dir> --write",
+  "corpusDigest": "sha256:f93f8dc6015f11741ffcd20f76156485bb61fc876086f206b70c8d8b84e7b8eb",
+  "axes": [
+    "lint-errors",
+    "lint-warnings",
+    "spec-violations",
+    "spec-score",
+    "slop-total"
+  ],
+  "cases": [
+    {
+      "alias": "akbjghfeod",
+      "similarity": 0.9637,
+      "band": "tweak",
+      "pre": {
+        "claimCount": 7,
+        "lintErrors": 3,
+        "lintWarnings": 5,
+        "specViolations": 1,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "process-feature:warning": 2,
+          "functional-limitation:warning": 2,
+          "non-technical-feature:warning": 1,
+          "terminator:error": 1,
+          "antecedent-basis:error": 1
+        },
+        "specScore": 0.9,
+        "slopTotal": 34,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "post": {
+        "claimCount": 4,
+        "lintErrors": 3,
+        "lintWarnings": 5,
+        "specViolations": 1,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "process-feature:warning": 2,
+          "functional-limitation:warning": 2,
+          "non-technical-feature:warning": 1,
+          "terminator:error": 1,
+          "antecedent-basis:error": 1
+        },
+        "specScore": 0.9,
+        "slopTotal": 34,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "direction": {
+        "lint-errors": "unchanged",
+        "lint-warnings": "unchanged",
+        "spec-violations": "unchanged",
+        "spec-score": "unchanged",
+        "slop-total": "unchanged"
+      }
+    },
+    {
+      "alias": "alnaamghpp",
+      "similarity": 0.2691,
+      "band": "replace",
+      "pre": {
+        "claimCount": 3,
+        "lintErrors": 2,
+        "lintWarnings": 3,
+        "specViolations": 0,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "functional-limitation:warning": 2,
+          "process-feature:warning": 1,
+          "terminator:error": 1
+        },
+        "specScore": 1,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "post": {
+        "claimCount": 2,
+        "lintErrors": 1,
+        "lintWarnings": 0,
+        "specViolations": 0,
+        "lintRules": {
+          "non-claim-content:error": 1
+        },
+        "specScore": 1,
+        "slopTotal": 35,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": true
+      },
+      "direction": {
+        "lint-errors": "improved",
+        "lint-warnings": "improved",
+        "spec-violations": "unchanged",
+        "spec-score": "unchanged",
+        "slop-total": "improved"
+      }
+    },
+    {
+      "alias": "bjobfejeff",
+      "similarity": 0.9852,
+      "band": "tweak",
+      "pre": {
+        "claimCount": 7,
+        "lintErrors": 3,
+        "lintWarnings": 7,
+        "specViolations": 1,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "process-feature:warning": 2,
+          "antecedent-basis:warning": 2,
+          "functional-limitation:warning": 2,
+          "non-technical-feature:warning": 1,
+          "terminator:error": 1,
+          "antecedent-basis:error": 1
+        },
+        "specScore": 0.9,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "post": {
+        "claimCount": 7,
+        "lintErrors": 5,
+        "lintWarnings": 8,
+        "specViolations": 1,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "process-feature:warning": 2,
+          "terminator:error": 2,
+          "antecedent-basis:warning": 3,
+          "antecedent-basis:error": 2,
+          "functional-limitation:warning": 2,
+          "non-technical-feature:warning": 1
+        },
+        "specScore": 0.9,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "direction": {
+        "lint-errors": "regressed",
+        "lint-warnings": "regressed",
+        "spec-violations": "unchanged",
+        "spec-score": "unchanged",
+        "slop-total": "unchanged"
+      }
+    },
+    {
+      "alias": "bonceelcmj",
+      "similarity": 0.7687,
+      "band": "rewrite",
+      "pre": {
+        "claimCount": 9,
+        "lintErrors": 7,
+        "lintWarnings": 12,
+        "specViolations": 1,
+        "lintRules": {
+          "two-part-form:warning": 5,
+          "dependent-limitation:warning": 3,
+          "subject-consistency:warning": 2,
+          "process-feature:warning": 2,
+          "terminator:error": 2,
+          "numbering:error": 4,
+          "external-reference:error": 1
+        },
+        "specScore": 0.9,
+        "slopTotal": 34,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "post": {
+        "claimCount": 7,
+        "lintErrors": 0,
+        "lintWarnings": 8,
+        "specViolations": 1,
+        "lintRules": {
+          "two-part-form:warning": 7,
+          "process-feature:warning": 1
+        },
+        "specScore": 0.9,
+        "slopTotal": 35,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": true
+      },
+      "direction": {
+        "lint-errors": "improved",
+        "lint-warnings": "improved",
+        "spec-violations": "unchanged",
+        "spec-score": "unchanged",
+        "slop-total": "improved"
+      }
+    },
+    {
+      "alias": "cjdkabbepk",
+      "similarity": 0.976,
+      "band": "tweak",
+      "pre": {
+        "claimCount": 8,
+        "lintErrors": 2,
+        "lintWarnings": 5,
+        "specViolations": 0,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "process-feature:warning": 2,
+          "functional-limitation:warning": 3,
+          "terminator:error": 1
+        },
+        "specScore": 1,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "post": {
+        "claimCount": 4,
+        "lintErrors": 3,
+        "lintWarnings": 5,
+        "specViolations": 0,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "process-feature:warning": 2,
+          "reference-direction:error": 1,
+          "functional-limitation:warning": 3,
+          "terminator:error": 1
+        },
+        "specScore": 1,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "direction": {
+        "lint-errors": "regressed",
+        "lint-warnings": "unchanged",
+        "spec-violations": "unchanged",
+        "spec-score": "unchanged",
+        "slop-total": "unchanged"
+      }
+    },
+    {
+      "alias": "cnfdpeahmg",
+      "similarity": 0.3371,
+      "band": "replace",
+      "pre": {
+        "claimCount": 4,
+        "lintErrors": 6,
+        "lintWarnings": 3,
+        "specViolations": 1,
+        "lintRules": {
+          "numbering:error": 4,
+          "two-part-form:warning": 1,
+          "terminator:error": 2,
+          "functional-limitation:warning": 1,
+          "non-technical-feature:warning": 1
+        },
+        "specScore": 0.75,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": false,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "post": {
+        "claimCount": 1,
+        "lintErrors": 2,
+        "lintWarnings": 0,
+        "specViolations": 1,
+        "lintRules": {
+          "external-reference:error": 1,
+          "terminator:error": 1
+        },
+        "specScore": 0.75,
+        "slopTotal": 34,
+        "specAssessed": true,
+        "specPassed": false,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "direction": {
+        "lint-errors": "improved",
+        "lint-warnings": "improved",
+        "spec-violations": "unchanged",
+        "spec-score": "unchanged",
+        "slop-total": "improved"
+      }
+    },
+    {
+      "alias": "fhnnbafdlh",
+      "similarity": 0.9668,
+      "band": "tweak",
+      "pre": {
+        "claimCount": 8,
+        "lintErrors": 3,
+        "lintWarnings": 2,
+        "specViolations": 1,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "process-feature:warning": 2,
+          "terminator:error": 2
+        },
+        "specScore": 0.9,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "post": {
+        "claimCount": 8,
+        "lintErrors": 6,
+        "lintWarnings": 2,
+        "specViolations": 1,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "process-feature:warning": 2,
+          "terminator:error": 3,
+          "numbering:error": 2
+        },
+        "specScore": 0.9,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "direction": {
+        "lint-errors": "regressed",
+        "lint-warnings": "unchanged",
+        "spec-violations": "unchanged",
+        "spec-score": "unchanged",
+        "slop-total": "unchanged"
+      }
+    },
+    {
+      "alias": "fklbdemage",
+      "similarity": 0.9469,
+      "band": "surgical",
+      "pre": {
+        "claimCount": 12,
+        "lintErrors": 1,
+        "lintWarnings": 1,
+        "specViolations": 0,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "antecedent-basis:warning": 1
+        },
+        "specScore": 1,
+        "slopTotal": 35,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": true
+      },
+      "post": {
+        "claimCount": 11,
+        "lintErrors": 1,
+        "lintWarnings": 1,
+        "specViolations": 0,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "antecedent-basis:warning": 1
+        },
+        "specScore": 1,
+        "slopTotal": 35,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": true
+      },
+      "direction": {
+        "lint-errors": "unchanged",
+        "lint-warnings": "unchanged",
+        "spec-violations": "unchanged",
+        "spec-score": "unchanged",
+        "slop-total": "unchanged"
+      }
+    },
+    {
+      "alias": "gcpedkpkab",
+      "similarity": 0.8028,
+      "band": "surgical",
+      "pre": {
+        "claimCount": 2,
+        "lintErrors": 2,
+        "lintWarnings": 5,
+        "specViolations": 1,
+        "lintRules": {
+          "two-part-form:warning": 2,
+          "process-feature:warning": 2,
+          "step-order:warning": 1,
+          "external-reference:error": 1,
+          "terminator:error": 1
+        },
+        "specScore": 0.9,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "post": {
+        "claimCount": 5,
+        "lintErrors": 0,
+        "lintWarnings": 7,
+        "specViolations": 1,
+        "lintRules": {
+          "two-part-form:warning": 1,
+          "process-feature:warning": 1,
+          "step-order:warning": 1,
+          "dependent-limitation:warning": 4
+        },
+        "specScore": 0.9,
+        "slopTotal": 35,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": true
+      },
+      "direction": {
+        "lint-errors": "improved",
+        "lint-warnings": "regressed",
+        "spec-violations": "unchanged",
+        "spec-score": "unchanged",
+        "slop-total": "improved"
+      }
+    },
+    {
+      "alias": "hkaekaflaf",
+      "similarity": 0.1132,
+      "band": "replace",
+      "pre": {
+        "claimCount": 12,
+        "lintErrors": 9,
+        "lintWarnings": 18,
+        "specViolations": 1,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "two-part-form:warning": 7,
+          "dependent-limitation:warning": 4,
+          "process-feature:warning": 4,
+          "terminator:error": 3,
+          "numbering:error": 5,
+          "functional-limitation:warning": 1,
+          "non-technical-feature:warning": 1,
+          "commercial-language:warning": 1
+        },
+        "specScore": 0.75,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": false,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "post": {
+        "claimCount": 2,
+        "lintErrors": 1,
+        "lintWarnings": 3,
+        "specViolations": 1,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "two-part-form:warning": 2,
+          "process-feature:warning": 1
+        },
+        "specScore": 0.9,
+        "slopTotal": 35,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": true
+      },
+      "direction": {
+        "lint-errors": "improved",
+        "lint-warnings": "improved",
+        "spec-violations": "unchanged",
+        "spec-score": "improved",
+        "slop-total": "improved"
+      }
+    },
+    {
+      "alias": "ieihdgdcce",
+      "similarity": 0.9903,
+      "band": "tweak",
+      "pre": {
+        "claimCount": 4,
+        "lintErrors": 4,
+        "lintWarnings": 2,
+        "specViolations": 1,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "terminator:error": 3,
+          "functional-limitation:warning": 1,
+          "process-feature:warning": 1
+        },
+        "specScore": 0.9,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "post": {
+        "claimCount": 3,
+        "lintErrors": 2,
+        "lintWarnings": 3,
+        "specViolations": 1,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "process-feature:warning": 2,
+          "functional-limitation:warning": 1,
+          "terminator:error": 1
+        },
+        "specScore": 0.9,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "direction": {
+        "lint-errors": "improved",
+        "lint-warnings": "regressed",
+        "spec-violations": "unchanged",
+        "spec-score": "unchanged",
+        "slop-total": "unchanged"
+      }
+    },
+    {
+      "alias": "khglgdhajf",
+      "similarity": 0.9834,
+      "band": "tweak",
+      "pre": {
+        "claimCount": 4,
+        "lintErrors": 2,
+        "lintWarnings": 3,
+        "specViolations": 1,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "functional-limitation:warning": 2,
+          "process-feature:warning": 1,
+          "terminator:error": 1
+        },
+        "specScore": 0.9,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "post": {
+        "claimCount": 1,
+        "lintErrors": 2,
+        "lintWarnings": 4,
+        "specViolations": 1,
+        "lintRules": {
+          "non-claim-content:error": 1,
+          "two-part-form:warning": 1,
+          "functional-limitation:warning": 2,
+          "process-feature:warning": 1,
+          "terminator:error": 1
+        },
+        "specScore": 0.9,
+        "slopTotal": 31,
+        "specAssessed": true,
+        "specPassed": true,
+        "slopAssessed": true,
+        "slopPassed": false
+      },
+      "direction": {
+        "lint-errors": "unchanged",
+        "lint-warnings": "regressed",
+        "spec-violations": "unchanged",
+        "spec-score": "unchanged",
+        "slop-total": "unchanged"
+      }
+    }
+  ],
+  "summary": {
+    "pairs": 12,
+    "perAxis": {
+      "lint-errors": {
+        "improved": 6,
+        "unchanged": 3,
+        "regressed": 3,
+        "agreement": 0.667,
+        "medianDelta": 0
+      },
+      "lint-warnings": {
+        "improved": 4,
+        "unchanged": 4,
+        "regressed": 4,
+        "agreement": 0.5,
+        "medianDelta": 0
+      },
+      "spec-violations": {
+        "improved": 0,
+        "unchanged": 12,
+        "regressed": 0,
+        "agreement": null,
+        "medianDelta": 0
+      },
+      "spec-score": {
+        "improved": 1,
+        "unchanged": 11,
+        "regressed": 0,
+        "agreement": 1,
+        "medianDelta": 0
+      },
+      "slop-total": {
+        "improved": 5,
+        "unchanged": 7,
+        "regressed": 0,
+        "agreement": 1,
+        "medianDelta": 0
+      }
+    },
+    "reference": {
+      "lint-errors": {
+        "p10": 0,
+        "median": 2,
+        "p90": 5,
+        "passRate": 0.167
+      },
+      "lint-warnings": {
+        "p10": 0,
+        "median": 3,
+        "p90": 8,
+        "passRate": 0.167
+      },
+      "spec-violations": {
+        "p10": 0,
+        "median": 1,
+        "p90": 1,
+        "passRate": 0.25
+      },
+      "spec-score": {
+        "p10": 0.9,
+        "median": 0.9,
+        "p90": 1,
+        "passRate": 0.917
+      },
+      "slop-total": {
+        "p10": 31,
+        "median": 34,
+        "p90": 35,
+        "passRate": 0.417
+      }
+    },
+    "lintRules": [
+      {
+        "rule": "antecedent-basis:error",
+        "preFindings": 2,
+        "postFindings": 3,
+        "cases": 2
+      },
+      {
+        "rule": "antecedent-basis:warning",
+        "preFindings": 3,
+        "postFindings": 4,
+        "cases": 2
+      },
+      {
+        "rule": "commercial-language:warning",
+        "preFindings": 1,
+        "postFindings": 0,
+        "cases": 1
+      },
+      {
+        "rule": "dependent-limitation:warning",
+        "preFindings": 7,
+        "postFindings": 4,
+        "cases": 3
+      },
+      {
+        "rule": "external-reference:error",
+        "preFindings": 2,
+        "postFindings": 1,
+        "cases": 3
+      },
+      {
+        "rule": "functional-limitation:warning",
+        "preFindings": 14,
+        "postFindings": 10,
+        "cases": 8
+      },
+      {
+        "rule": "non-claim-content:error",
+        "preFindings": 9,
+        "postFindings": 9,
+        "cases": 9
+      },
+      {
+        "rule": "non-technical-feature:warning",
+        "preFindings": 4,
+        "postFindings": 2,
+        "cases": 4
+      },
+      {
+        "rule": "numbering:error",
+        "preFindings": 13,
+        "postFindings": 2,
+        "cases": 4
+      },
+      {
+        "rule": "process-feature:warning",
+        "preFindings": 19,
+        "postFindings": 14,
+        "cases": 10
+      },
+      {
+        "rule": "reference-direction:error",
+        "preFindings": 0,
+        "postFindings": 1,
+        "cases": 1
+      },
+      {
+        "rule": "step-order:warning",
+        "preFindings": 1,
+        "postFindings": 1,
+        "cases": 1
+      },
+      {
+        "rule": "subject-consistency:warning",
+        "preFindings": 2,
+        "postFindings": 0,
+        "cases": 1
+      },
+      {
+        "rule": "terminator:error",
+        "preFindings": 18,
+        "postFindings": 10,
+        "cases": 11
+      },
+      {
+        "rule": "two-part-form:warning",
+        "preFindings": 15,
+        "postFindings": 11,
+        "cases": 5
+      }
+    ]
+  },
+  "thresholds": {
+    "minPairs": 12,
+    "minAgreement": 0.6,
+    "agreementAxes": [
+      "lint-errors",
+      "spec-score",
+      "slop-total"
+    ]
+  }
+}

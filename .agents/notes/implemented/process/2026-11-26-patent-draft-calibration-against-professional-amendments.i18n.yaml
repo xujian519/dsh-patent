@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-11-26-patent-draft-calibration-against-professional-amendments.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-11-26-patent-draft-calibration-against-professional-amendments.md
+/agent-note-calibrate-deterministic-readings-against-professional-amendments:
+  en: c56c367ec6dc511c
+  zh: 5a2ac30d7f364821
+/agent-note-calibrate-deterministic-readings-against-professional-amendments/problem:
+  en: 8763bb4634d16de2
+  zh: 88ec68cdfc5f83f6
+/agent-note-calibrate-deterministic-readings-against-professional-amendments/decision:
+  en: 0ecaa8cbcd150d8c
+  zh: bc824c04715db12c
+/agent-note-calibrate-deterministic-readings-against-professional-amendments/reading-limits:
+  en: 44ed6716c3718011
+  zh: f52dd666e313c1dc
+/agent-note-calibrate-deterministic-readings-against-professional-amendments/alternatives-considered:
+  en: 6f07707d0de9eb6b
+  zh: 6d86892a9a3653b1
+/agent-note-calibrate-deterministic-readings-against-professional-amendments/consequences:
+  en: 40586e9cd278cc63
+  zh: 4e7d898d04e16a5b
+/agent-note-calibrate-deterministic-readings-against-professional-amendments/testing:
+  en: 6de467d539b9985e
+  zh: 74f9a4fddc63ebc8
+/agent-note-calibrate-deterministic-readings-against-professional-amendments/related:
+  en: c89ac77bbfe0ad31
+  zh: 7ded416ed93c4c5a

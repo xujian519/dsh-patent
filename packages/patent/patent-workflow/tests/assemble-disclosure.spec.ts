@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { validateSpecDraft } from '@deepseek-ai/dsh-patent-core'
-import { DisclosureAssemblyError, assembleDisclosureTerminalState } from '@deepseek-ai/dsh-patent-workflow'
+import { DisclosureAssemblyError, validateSpecDraft } from '@deepseek-ai/dsh-patent-core'
+import { assembleDisclosureTerminalState } from '../src/workflow/assemble-disclosure.ts'
 
-/** 工作流包只转发装配器；夹具保持披露终态的文本键，而不是 SpecDraft。 */
+/** 同包测试从内部模块导入装配函数；夹具保持披露终态的文本键，而不是 SpecDraft。 */
 function terminalState(): Record<string, unknown> {
   return {
     caseId: 'CN2026-0001',

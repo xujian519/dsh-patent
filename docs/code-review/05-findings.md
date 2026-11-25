@@ -88,9 +88,9 @@
 | F-PAT-053 | 费用工具把单一 `lateMonths` 套到每个年费年度，多年度补缴的滞纳金与事实不符 | PAT | E | Medium | 中 | fixed |
 | F-PAT-054 | `designatedMonths` 可覆盖法定期间，驳回决定的 3 个月复审期被缩成 1 个月 | PAT | E | Medium | 低 | fixed |
 | F-PAT-055 | 上游 JSON 字符串含 null 元素时 `mapPatentData` 抛 TypeError | PAT | E | Low | 低 | new |
-| F-PAT-056 | `patent_search` 不按 `limit` 截断命中，返回检索页整页 | PAT | E | Medium | 高 | new |
-| F-PAT-057 | `validate_specification` 缺 `text` 时返回成功的校验报告 | PAT | E | Low | 高 | new |
-| F-PAT-058 | `patent_plan_task` 的 `transition` 接受 `planSteps` 但不执行同步 | PAT | B | Low | 中 | new |
+| F-PAT-056 | `patent_search` 不按 `limit` 截断命中，返回检索页整页 | PAT | E | Medium | 高 | fixed |
+| F-PAT-057 | `validate_specification` 缺 `text` 时返回成功的校验报告 | PAT | E | Low | 高 | fixed |
+| F-PAT-058 | `patent_plan_task` 的 `transition` 接受 `planSteps` 但不执行同步 | PAT | B | Low | 中 | fixed |
 | F-DOC-001 | DOCX 渲染的 Markdown 解析无围栏代码块分支 | DOC | E | High | 高 | fixed |
 | F-DOC-002 | `document_deliver` 把取消与编程错误都报为"不可读" | DOC | E | Medium | 中 | fixed |
 | F-DOC-003 | OOXML 读取限额两包各写一份字面量 | DOC | B | Low | 高 | fixed |
@@ -115,7 +115,7 @@
 | F-LEG-012 | 电子数据与证人证言的 `formLegal: false` 在合法性评分中被忽略 | LEG | E | Medium | 中 | fixed |
 | F-LEG-013 | 法规检索先取 2 倍上限再按时间效力过滤，SQLite 与内存后端给出不同结果 | LEG | E | Medium | 中 | fixed |
 | F-LEG-014 | 法律知识的默认判定日期取 UTC，与中国法域的自然日相差 8 小时 | LEG | E | Low | 中 | fixed |
-| F-LEG-015 | `law_verify` 与 `legal_law_verify` 的二选一约束不在参数层，法律侧描述缺零字节规则 | LEG | E | Low | 高 | new |
+| F-LEG-015 | `law_verify` 与 `legal_law_verify` 的二选一约束不在参数层，法律侧描述缺零字节规则 | LEG | E | Low | 高 | fixed |
 | F-VID-001 | 任务 journal 与账本无跨进程写守卫 | VID | E | High | 中 | fixed |
 | F-VID-002 | 成功任务缺 `output_path` 时不清 journal、不记账 | VID | E | Medium | 中 | fixed |
 | F-VID-003 | zod schema 与手写类型双份维护，靠 `as` 抹平 | VID | B | Medium | 高 | fixed |
@@ -135,8 +135,8 @@
 | F-CROSS-002 | `patent-tools` 导入未声明的 workspace 依赖 `@deepseek-ai/dsh-value`，运行产物靠打包内联掩盖 | CROSS | B/E | Low | 高 | fixed |
 | F-CROSS-003 | 知识库安装覆盖时先删输出，改名失败没有用例 | CROSS | D | High | 中 | fixed |
 | F-CROSS-004 | 专利、文档、法律三域的工具错误类没有接入 `HarnessError`，失败码在 `tool/result` 与会话界面丢失 | CROSS | E | Low | 高 | fixed |
-| F-CROSS-005 | 专利工具仍有普通 `Error` 进入 `tool/result`，失败事件没有 `error.code` | CROSS | E | Low | 高 | new |
-| F-CROSS-006 | `patent_fees`、`patent_deadlines`、`document_deliver` 的预期失败仍抛普通 `Error`，失败事件没有 `error.code` | CROSS | E | Low | 高 | new |
+| F-CROSS-005 | 专利工具仍有普通 `Error` 进入 `tool/result`，失败事件没有 `error.code` | CROSS | E | Low | 高 | fixed |
+| F-CROSS-006 | `patent_fees`、`patent_deadlines`、`document_deliver` 的预期失败仍抛普通 `Error`，失败事件没有 `error.code` | CROSS | E | Low | 高 | fixed |
 
 ## 专利域
 
@@ -957,7 +957,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：两条返回路径都按调用方上限截断——`const hits = dedupedHits.slice(0, limit).map(toItem)`，CNIPR 分支返回 `attempt.hits.slice(0, limit)`；补一条注入检索返回 `limit + 5` 条命中的用例，断言 `hits.length === limit`，并断言渲染头的条数与 `hits.length` 一致。`total` 仍报上游总命中，不截断。
 - 预估工作量：S
 - 是否可自动化：是（上面两条断言）
-- 状态：new
+- 修复：两条返回路径都按调用方上限截断——Google 分支在族去重后 `slice(0, limit)`，CNIPR 分支对通道命中同样截断；`total` 仍报上游总命中。新增两例：注入 10 条命中、`limit: 5` 时渲染头与命中都是 5 条且第 6 条不出现；CNIPR 返回 4 条、`limit: 2` 时只报 2 条。
+- 状态：fixed（2026-11-26，工具指标修复队列 #951）
 
 ### F-PAT-057 `validate_specification` 缺 `text` 时返回成功的校验报告
 
@@ -970,7 +971,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：把 `text` 设为 `required: true`，并在 `execute` 开头对空白 `text` 返回 `INVALID_ARGS`，与 `claim_lint` 的空白检查同形；增加 `{}` 与 `{ text: '' }` 两例，断言 `isError` 为真、`error.code === 'INVALID_ARGS'`，且不再生成校验报告。若确实需要「只校验权项」模式，另立参数与描述，不做隐式分支。
 - 预估工作量：S
 - 是否可自动化：是（上述两例）
-- 状态：new
+- 修复：`text` 改为 schema 必填；`execute` 开头对空白 `text` 抛 `PatentToolError('invalid_tool_input')`，与 `claim_lint` 的空白检查同形。新增两例：空对象在参数门禁被 `ToolArgsError` 拒绝（`INVALID_ARGS`）；`{ text: ' \n\t ' }` 报 `invalid_tool_input` 且不再生成校验报告。
+- 状态：fixed（2026-11-26，工具指标修复队列 #951）
 
 ### F-PAT-058 `patent_plan_task` 的 `transition` 接受 `planSteps` 但不执行同步
 
@@ -983,7 +985,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：`transition` 分支对 `planSteps` 与 `previousTasks` 显式返回 `invalid_tool_input`，与 `sync` 与 `replan` 的非空校验同形；若产品希望合并调用，就在 `transition` 里执行 `syncPlanToTasks` 并在渲染里列出任务，同时改描述。补一条用例：`transition` + `planSteps` 要么报参数错误，要么结果里出现同步后的任务，不能只返回状态迁移。
 - 预估工作量：S
 - 是否可自动化：是（上述用例）
-- 状态：new
+- 修复：`transition` 分支对 `planSteps` 与 `previousTasks` 显式返回 `invalid_tool_input`，任务清单只由 `sync` / `replan` 写入。新增用例：两种参数各一例，断言 `error.info.code` 与拒绝文案。
+- 状态：fixed（2026-11-26，工具指标修复队列 #951）
 
 ### Day 10 定向结论：法律域与共享层无安全发现
 
@@ -1386,7 +1389,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：在参数层增加「`text` 与 `references` 至少一个非空」的校验，失败返回 `ToolArgsError` / `INVALID_ARGS`；参数 DSL 若不能表达二选一，先在两个工具的入口统一检查，再考虑扩展 DSL。把专利侧那句零字节规则补进 `legal_law_verify` 的描述；补两条 `{}` 用例（两个工具各一）与一条描述断言。
 - 预估工作量：M（扩展参数 DSL）或 S（入口检查）
 - 是否可自动化：是（两条 `{}` 用例与描述断言）
-- 状态：new
+- 修复：`citationInputProblem` 的码由 `no_input` 改为 `invalid_tool_input`，两个同名工具在入口统一按参数错误拒绝空调用；参数 DSL 未扩展，二选一约束仍由共享入口检查实施。`legal_law_verify` 描述补上零字节规则。新增用例：两个工具的 `{}` 与空文本各断言 `error.info.code`，并加一条描述断言。
+- 状态：fixed（2026-11-26，工具指标修复队列 #951）
 
 ## 视频模式
 
@@ -1720,7 +1724,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：`LawVerifyToolError` 改为继承 `HarnessError`，保留现有 `code`。`DraftValidationError`、`PatentFilingError`、`DocumentRenderError` 在抛出处或工具执行处转成带稳定 code 的 `HarnessError`。各补一条工具失败用例，断言 `result.error.info.code` 存在。不要把「带 code 的普通 Error」再当成已经可解释。
 - 预估工作量：M
 - 是否可自动化：是（每个类一条工具失败用例）
-- 状态：new
+- 修复：`LawVerifyToolError`、`DraftValidationError`、`PatentFilingError`、`DocumentRenderError` 改为继承 `@deepseek-ai/dsh-error` 的 `HarnessError`，构造签名与 `name` 不变。`DraftValidationError` 带 `draft_validation_failed`，`DocumentRenderError` 带 `invalid_tool_input`，`PatentFilingError` 缺省 `patent_filing_failed`（引擎输出不可解析与成文后验收失败两处给出更具体的码）。`patent-law`、`patent-core`、`patent-filing`、`patent-document` 声明 `@deepseek-ai/dsh-error` 依赖边，模块图随之重生成。各补一条工具边界用例，断言 `result.error.info` 的 `name`/`code`。
+- 状态：fixed（2026-11-26，工具指标修复队列 #951）
 - 队列：本条不改 [06-priority.md](06-priority.md) 的顺序。修复另开 PR。
 
 ### F-CROSS-006 `patent_fees`、`patent_deadlines`、`document_deliver` 的预期失败仍抛普通 `Error`，失败事件没有 `error.code`
@@ -1734,7 +1739,8 @@ D14 只覆盖 `patent-teams` 与 `patent-rule`，并把后者记为「7 处」�
 - 最小修复建议：`PatentFeesToolError` 继承 `HarnessError` 并保留 `invalid_count`；`CalendarDateError` 增加稳定 code，并在工具边界转成 `HarnessError`；`document_deliver` 的预期失败改用带 code 的 `HarnessError`（例如 `deliver_files_missing`、`deliver_gate_failed`）。每件工具补一条注入用例，断言 `result.error.info.code`。
 - 预估工作量：S
 - 是否可自动化：是（三条工具失败断言）
-- 状态：new
+- 修复：`PatentFeesToolError` 继承 `HarnessError` 并保留 `invalid_count`；`CalendarDateError` 带 `invalid_calendar_date`，`DeadlineToolError` 继承 `HarnessError` 并保留工具自有的参数码（`invalid_date`、`invalid_query`）；三者所在包声明 `@deepseek-ai/dsh-error` 依赖边。`document_deliver` 的 11 处参数用法错误统一改抛 `invalid_tool_input`，缺交付文件与门禁不通过分别用 `deliver_files_missing`、`deliver_gate_failed`。三个工具各补一条断言 `result.error.info.code` 的用例。
+- 状态：fixed（2026-11-26，工具指标修复队列 #951）
 
 ## E 维度汇总（Day 40）
 

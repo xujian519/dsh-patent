@@ -70,7 +70,7 @@ type SubmissionPageInput = {
   caption?: string | undefined
   /**
    * 附图页页码文字（如「第2页 共3页」「2/3」）。
-   * `undefined` 不画，并警告应当编页码。空字符串不画，也不警告。
+   * `undefined` 不画，并警告应当编页码。空字符串不画，也不警告；其他字符串按原样画，包括只含空白的字符串。
    */
   sheetNumber?: string | undefined
   /** 图形正文的数字与字母字号（用户单位，如 DOT 的 fontsize=10），用于核算字高。 */

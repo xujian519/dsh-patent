@@ -216,7 +216,7 @@ export type GeneratePatentFigureInput = SharedFigureInputFields & {
   sheet_total?: number
   /**
    * 是否在落版页上编页码，默认 true。
-   * false 时不画页码、不警告；未给 target_office 时无效果，也不报错。
+   * false 时不画页码、不警告，也不校验页序；未给 target_office 时无效果，也不报错。
    */
   sheet_number?: boolean
   /** 图号文字覆盖（缺省按目标法域生成「图1」/「Fig. 1」/「FIG. 1」；panels 模式自动追加面板后缀）。 */

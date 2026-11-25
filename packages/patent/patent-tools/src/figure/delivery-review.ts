@@ -6,7 +6,9 @@
  * baseline sits strictly below the ink of everything that is not a caption or a sheet
  * number. A sheet number (`data-dsh-role="sheet-number"`) always leaves that check.
  * The role is read from the `<text>` element itself. `figureWordingWarnings` stays a
- * string check so input labels without coordinates are not exempted.
+ * string check so input labels without coordinates are not exempted. The role is
+ * declared in the SVG, so an SVG handed to `verify_patent_figure` can declare it too;
+ * the finding is advisory, so this is not a trust boundary.
  *
  * The checks are deterministic and read the SVG source. They cover four items
  * the input-side checks do not see: raster/photo content (`<image>`), a frame
@@ -97,7 +99,7 @@ export function checkFigureDelivery(svg: string): DeliveryFinding[] {
  *
  * 页码整段退出。图号仅在 `data-dsh-role="caption"` 且基线严格低于不含图号和页码的墨迹底边时退出。
  * 没有可量测墨迹时不豁免图号：没有参照底边就不能声称它在图形正下方。
- * 角色只认该 `<text>` 自身，比较不加容差。
+ * 角色只认该 `<text>` 自身，比较不加容差；角色由 SVG 声明，外部 SVG 同样可以自报，该检查只是提示级发现。
  * @param scan - 已遍历的 SVG。
  * @returns 仍要送进用词规则的文字。
  */

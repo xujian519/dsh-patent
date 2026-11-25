@@ -102,19 +102,43 @@ export function escapeXmlAttribute(value: string): string {
 
 /**
  * 在根 `<svg>` 开标签后插入一行文档级 `<title>`。
- * 不改写节点或 `class="graph"` 里面已有的 `<title>`。
+ * 不改写节点或 `class="graph"` 里面已有的 `<title>`。属性值内的 `>` 不截断开标签。
  * @param svg - 绘图 SVG 文本。
  * @param title - 标题原文；写入前按 XML 文本转义。
  * @returns 插入文档标题后的 SVG 文本。
  * @throws VectorFigureError('invalid_input') 文本里没有根 `<svg>` 开标签时。
  */
 export function insertSvgDocumentTitle(svg: string, title: string): string {
-  const match = /<svg\b[^>]*>/.exec(svg)
-  if (match === null) {
+  const at = rootSvgOpenTagEnd(svg)
+  if (at === undefined) {
     throw new VectorFigureError('invalid_input', '绘图 SVG 缺少根 svg 开标签，无法写入文档标题')
   }
-  const at = match.index + match[0].length
   return `${svg.slice(0, at)}\n  <title>${escapeXmlAttribute(title)}</title>${svg.slice(at)}`
+}
+
+/**
+ * 根 `<svg>` 开标签的结束位置（结尾 `>` 之后）。
+ * 跳过引号内的 `>`，因为 XML 允许属性值里直接出现它。
+ * @param svg - 绘图 SVG 文本。
+ * @returns 结束位置；没有根开标签时 undefined。
+ */
+function rootSvgOpenTagEnd(svg: string): number | undefined {
+  const start = /<svg\b/.exec(svg)
+  if (start === null) return undefined
+  let quote: '"' | "'" | undefined
+  for (let index = start.index + 4; index < svg.length; index += 1) {
+    const char = svg[index]
+    if (quote !== undefined) {
+      if (char === quote) quote = undefined
+      continue
+    }
+    if (char === '"' || char === "'") {
+      quote = char
+      continue
+    }
+    if (char === '>') return index + 1
+  }
+  return undefined
 }
 
 /**

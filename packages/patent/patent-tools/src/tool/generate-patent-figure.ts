@@ -72,7 +72,7 @@ const DESCRIPTION = [
   '',
   '图型推断：figure_type 缺省时从唯一结构输入推断（steps→流程图、states→状态图、blocks→框图、tree→层级图、dot→原始 DOT、template→模板）；同时提供多个结构输入或全空时须显式指定 figure_type。',
   '',
-  '视图名：可选 view_name 只替换 SVG 文档标题和附图说明句里的图型名。省略或空白时字符串不变（剖视图仍是「剖视图」）。传入时不改 figure_type、不改几何，也不改 Graphviz 节点里的标题。不能含换行，去掉首尾空白后不超过 200 个字符。',
+  '视图名：可选 view_name 只替换 SVG 文档标题和附图说明句里的图型名。省略或空白时字符串不变（剖视图仍是「剖视图」）。传入时不改 figure_type、不改几何，也不改 Graphviz 节点里的标题。panels 模式下所有面板共用该视图名；不同面板的视图名需分次调用。不能含换行，去掉首尾空白后不超过 200 个字符。',
   '',
   '多面板：panels 一次生成 FIG.1A/1B 等多张面板（每面板独立文件 figN+后缀，如 A → fig1A.svg），全部面板组件共享一条连续标号系列，附图说明合并输出。',
   '',
@@ -539,7 +539,7 @@ export function createGeneratePatentFigureTool(deps: GeneratePatentFigureDeps): 
       invention_name: { type: 'string', description: '发明名称（附图说明模板句）' },
       view_name: {
         type: 'string',
-        description: '视图名（可选）。省略或空白时标题与附图说明仍用图型名（剖视图仍是「剖视图」）；传入时只替换该视图名，不改图型与几何。不能含换行，去掉首尾空白后不超过 200 个字符',
+        description: '视图名（可选）。省略或空白时标题与附图说明仍用图型名（剖视图仍是「剖视图」）；传入时只替换该视图名，不改图型与几何。panels 模式下所有面板共用该视图名。不能含换行，去掉首尾空白后不超过 200 个字符',
       },
       numerals: { type: 'object', additionalProperties: true, description: '显式标号（组件 id → 标号；标号可为字符串或数字，其他类型会被拒绝；跨图同件同号续接）' },
       numeral_start: { type: 'integer', description: '自动标号系列起点覆盖' },
@@ -626,6 +626,7 @@ export function createGeneratePatentFigureTool(deps: GeneratePatentFigureDeps): 
     },
     async execute(args, exec) {
       // schema 校验后的模型 JSON 边界；深层结构（层次树递归）由 build 函数校验。
+      assertViewName(args.view_name)
       const { tree, panels, ...figureArgs } = args
       const cwd = deps.cwd ?? process.cwd()
       const input = await resolveSectionsFile({
@@ -638,7 +639,6 @@ export function createGeneratePatentFigureTool(deps: GeneratePatentFigureDeps): 
           }),
         }),
       }, cwd)
-      assertViewName(input.view_name)
       const format = input.format ?? 'svg'
       const engine = input.engine ?? 'dot'
       const style = input.style === 'semantic' ? 'semantic' : 'grayscale'

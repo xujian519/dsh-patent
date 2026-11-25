@@ -80,4 +80,12 @@ describe('checkFigureDelivery', () => {
     const findings = checkFigureDelivery(svg('<text x="30" y="90" data-dsh-role="caption">图1</text>'))
     expect(findings.find(finding => finding.check === 'figure-wording')?.message).toContain('"图1" 是图号')
   })
+
+  it('图号角色不从父组继承', () => {
+    const findings = checkFigureDelivery(svg([
+      '<rect x="10" y="10" width="40" height="70" fill="none" stroke="#000"/>',
+      '<g data-dsh-role="caption"><text x="30" y="90">图1</text></g>',
+    ].join('')))
+    expect(findings.find(finding => finding.check === 'figure-wording')?.message).toContain('"图1" 是图号')
+  })
 })

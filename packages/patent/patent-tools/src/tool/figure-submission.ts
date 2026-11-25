@@ -54,7 +54,7 @@ export type SubmissionPlanInput = {
   figure_count?: number | undefined
   sheet_index?: number | undefined
   sheet_total?: number | undefined
-  /** 是否编页码，默认 true。false 时页码计划值为空字符串，不调用页码写法。 */
+  /** 是否编页码，默认 true。false 时页码计划值为空字符串，不调用页码写法，也不校验页序。 */
   sheet_number?: boolean | undefined
   caption?: string | undefined
   abstract_figure?: boolean | undefined

@@ -4330,13 +4330,15 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 图型推断：figure_type 缺省时从唯一结构输入推断（steps→流程图、states→状态图、blocks→框图、tree→层级图、dot→原始 DOT、template→模板）；同时提供多个结构输入或全空时须显式指定 figure_type。
 
+视图名：可选 view_name 只替换 SVG 文档标题和附图说明句里的图型名。省略或空白时字符串不变（剖视图仍是「剖视图」）。传入时不改 figure_type、不改几何，也不改 Graphviz 节点里的标题。panels 模式下所有面板共用该视图名；不同面板的视图名需分次调用。不能含换行，去掉首尾空白后不超过 200 个字符。
+
 多面板：panels 一次生成 FIG.1A/1B 等多张面板（每面板独立文件 figN+后缀，如 A → fig1A.svg），全部面板组件共享一条连续标号系列，附图说明合并输出。
 
 色彩策略：默认 grayscale（黑白线条，符合《专利审查指南》第一部分第一章 4.3「附图一般使用黑色墨水绘制」）；semantic 模式允许按块类型填充颜色，仅当色彩承载技术内容时使用；target_office="pct" 时 semantic 被拒绝（PCT 实施细则 11.13(a) 规定附图不得着色）。
 
 输出格式：默认 svg。png/pdf 在需要落版（给了 target_office）时走「先出 SVG → 落版 → 渲染复核 → 文字转路径 → 用本机 Inkscape 导出」的全链，故落版、复核与引线标号对它们同样生效；本机没有 Inkscape 时退回渲染器直接出图，并给出「落版与复核未生效」的警告。直绘图型（电路/曲线/剖视/时序/外观）只有 SVG 一条绘图通路，导出 png/pdf 同样需要 Inkscape。含中文的图导出 pdf 时要先开启文字转路径（Config.figureTextToPath）——Inkscape 对个别未转路径的中文字形会写出缺 xref 的不完整 PDF，工具检出后按导出失败处理，不交出半成品。
 
-落版：给定 target_office（cnipa/pct/uspto）时，按该法域的 A4 幅面与页边距把图形落版为固定幅面附图页——图号按法域写法（图1 / Fig. 1 / FIG. 1）画在图形正下方（附图两幅以上才编号，单幅不编号），页码按法域写法（中国「第2页 共3页」，单页「第2页」；PCT/USPTO「2/3」）画在版心底部；同时返回落版缩放比、落版尺寸与字高（含缩小至三分之二后的字高）并核算合规项。fit_to_page=false 时只核算尺寸、不改写画布。
+落版：给定 target_office（cnipa/pct/uspto）时，按该法域的 A4 幅面与页边距把图形落版为固定幅面附图页——图号按法域写法（图1 / Fig. 1 / FIG. 1）画在图形正下方（附图两幅以上才编号，单幅不编号），页码按法域写法（中国「第2页 共3页」，单页「第2页」；PCT/USPTO「2/3」）画在版心底部；同时返回落版缩放比、落版尺寸与字高（含缩小至三分之二后的字高）并核算合规项。fit_to_page=false 时只核算尺寸、不改写画布。sheet_number 默认 true；false 时不画页码、不警告。未给 target_office 时该开关无效果，也不报错。
 
 引线标号：框图/层级图 SVG 默认以「数字+引线指向部件」标注（leader_lines 可关闭），流程图默认保留步骤内嵌 NNN. 前缀；png/pdf 走导出全链时引线随中间 SVG 一起进最终产物，否则不支持并返回警告、保持内嵌标号；直绘图型（电路/曲线/剖视/时序/外观）的标号由输入决定，对它们传 leader_lines 会返回「不生效」警告——剖视图用 sections.labels 给出标号落点与引线起点。引线与标号随图面一起落在画布内，并避开图内已绘的边线与箭头；无引线空间时退化为内嵌标号。
 
@@ -5504,6 +5506,10 @@ CAD 剖视（sections.source）：复杂件不必手算轮廓——给 model_pat
       "type": "string",
       "description": "发明名称（附图说明模板句）"
     },
+    "view_name": {
+      "type": "string",
+      "description": "视图名（可选）。省略或空白时标题与附图说明仍用图型名（剖视图仍是「剖视图」）；传入时只替换该视图名，不改图型与几何。panels 模式下所有面板共用该视图名。不能含换行，去掉首尾空白后不超过 200 个字符"
+    },
     "numerals": {
       "type": "object",
       "description": "显式标号（组件 id → 标号；标号可为字符串或数字，其他类型会被拒绝；跨图同件同号续接）",
@@ -5603,6 +5609,10 @@ CAD 剖视（sections.source）：复杂件不必手算轮廓——给 model_pat
       "type": "integer",
       "description": "附图页总数，默认 1（PCT/USPTO 页码写作「序号/总数」）"
     },
+    "sheet_number": {
+      "type": "boolean",
+      "description": "是否编页码，默认 true。false 时不画页码、不警告；未给 target_office 时无效果，也不报错"
+    },
     "caption": {
       "type": "string",
       "description": "图号文字覆盖（缺省按目标法域生成；panels 模式自动追加面板后缀，如 图1A / Fig. 1A）"
@@ -5677,7 +5687,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 批量：model_path 传目录时，对目录内每个受支持模型各出一图，图号自 figure_number 起递增；批量模式不支持 callouts（件号 3D 锚点仅对单个模型有效），多个零件要合成一张图时改用 model_paths。
 
-产物为纯几何片段，不含模板边框、标题栏与图号，符合《专利审查指南》第一部分第一章 4.3 对线条与版面的要求；给定 target_office 时按该法域的 A4 幅面与页边距落版，并可在图形正下方落图号。
+产物为纯几何片段，不含模板边框、标题栏与图号，符合《专利审查指南》第一部分第一章 4.3 对线条与版面的要求；给定 target_office 时按该法域的 A4 幅面与页边距落版，并可在图形正下方落图号。sheet_number 默认 true；false 时不画页码、不警告。未给 target_office 时该开关无效果，也不报错。
 
 ```json
 {
@@ -5852,6 +5862,10 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
     "sheet_total": {
       "type": "integer",
       "description": "附图页总数，默认 1"
+    },
+    "sheet_number": {
+      "type": "boolean",
+      "description": "是否编页码，默认 true。false 时不画页码、不警告；未给 target_office 时无效果，也不报错"
     },
     "caption": {
       "type": "string",

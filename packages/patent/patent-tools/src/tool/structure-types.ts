@@ -171,7 +171,7 @@ export type GenerateStructureFigureInput = {
   /** 附图页序号与总页数（默认 1/1），写入页码。 */
   sheet_index?: number
   sheet_total?: number
-  /** 是否在落版页上编页码，默认 true。false 时不画页码、不警告；未给 target_office 时无效果，也不报错。 */
+  /** 是否在落版页上编页码，默认 true。false 时不画页码、不警告，也不校验页序；未给 target_office 时无效果，也不报错。 */
   sheet_number?: boolean
   /** 图号文字（如「图1」）；缺省不落图号——一个模型的多个视图最终如何编号由调用方按整案附图顺序决定。 */
   caption?: string

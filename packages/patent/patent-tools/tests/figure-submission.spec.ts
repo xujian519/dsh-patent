@@ -391,6 +391,17 @@ describe('figure-submission：图号写法与页码', () => {
     expect(page.svg).toContain('data-dsh-role="caption"')
   })
 
+  it('只含空白的页码按原样画，也不警告', () => {
+    const page = buildSubmissionPage({
+      drawingSvg: '<svg width="10mm" height="10mm" xmlns="http://www.w3.org/2000/svg"><g/></svg>',
+      profile: officeProfile('cnipa'),
+      caption: '图1',
+      sheetNumber: '   ',
+    })
+    expect(page.warnings.join('\n')).not.toContain('未写页码')
+    expect(page.svg).toContain('data-dsh-role="sheet-number"')
+  })
+
   it('sheet_number false 计划值为空字符串，且不校验页序', () => {
     expect(resolveSubmission({ target_office: 'cnipa' }, '')?.sheetNumber).toBe('第1页')
     expect(resolveSubmission({ target_office: 'cnipa', sheet_number: true }, '')?.sheetNumber).toBe('第1页')

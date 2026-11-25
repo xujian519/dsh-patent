@@ -8,7 +8,6 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { DEFAULT_OUTPUT_DIR } from './document/renderPatentDocument.ts'
 import { DEFAULT_PDF_TIMEOUT_MS } from './document/pdfRenderer.ts'
 import { createRenderPatentDocumentTool } from './tool/render-patent-document.ts'
 import { createVerifyDeliverableTool } from './tool/verify-deliverable.ts'
@@ -30,8 +29,13 @@ export const inject = ['tools', 'subprocess']
 export interface Config {
   /** Absolute Chrome executable used for PDF; overrides DSH_CHROME_PATH/CHROME_PATH discovery. */
   chromePath?: string
-  /** Default output directory (relative to the process working directory) when neither outputDir nor caseId is given. */
-  outputRoot: string
+  /**
+   * Explicit output directory used only when the matter directory cannot be resolved,
+   * the call omits outputDir, and the call does not name a case id.
+   */
+  outputRoot?: string
+  /** Work root (`workbenchCaseRoot`). One matter is `<root>/<case id>/`. */
+  workbenchCaseRoot?: string
   /** Headless-Chrome print timeout in milliseconds; defaults to the renderer's exported default (120000). */
   pdfTimeoutMs: number
 }
@@ -39,7 +43,8 @@ export interface Config {
 /** Schemastery configuration: optional Chrome override, default output directory, and print timeout. */
 export const Config: z<Partial<Config>, Config> = z.object({
   chromePath: z.string(),
-  outputRoot: z.string().default(DEFAULT_OUTPUT_DIR),
+  outputRoot: z.string(),
+  workbenchCaseRoot: z.string(),
   pdfTimeoutMs: z.number().step(1).min(1).default(DEFAULT_PDF_TIMEOUT_MS),
 })
 
@@ -53,7 +58,8 @@ export function apply(ctx: Context, config: Config): void {
   ctx.tools.register(createRenderPatentDocumentTool({
     subprocess: ctx.subprocess,
     ...(config.chromePath !== undefined ? { chromePath: config.chromePath } : {}),
-    defaultOutputDir: config.outputRoot,
+    ...(config.workbenchCaseRoot === undefined ? {} : { workRoot: config.workbenchCaseRoot }),
+    ...(config.outputRoot === undefined ? {} : { outputRoot: config.outputRoot }),
     pdfTimeoutMs: config.pdfTimeoutMs,
   }))
   ctx.tools.register(createVerifyDeliverableTool(ctx))

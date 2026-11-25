@@ -26,7 +26,7 @@ async function render(template: 'invalidation-opinion' | 'invalidation-analysis'
   const schema: TemplateDraftSchema = GENERIC_TEMPLATE_SCHEMAS[template]
   const validated = validateTemplateDraft(draft, schema)
   const result = await renderPatentDocument(
-    { template, outputName: 'inv', templateDraft: validated, format: 'html' },
+    { template, outputName: 'inv', outputDir: dir, templateDraft: validated, format: 'html' },
     dir,
     { subprocess: unusedSubprocess() },
   )

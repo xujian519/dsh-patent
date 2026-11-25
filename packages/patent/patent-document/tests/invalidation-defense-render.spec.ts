@@ -28,7 +28,7 @@ async function render(draft: TemplateDraft): Promise<{ html: string; warnings: s
   const schema: TemplateDraftSchema = GENERIC_TEMPLATE_SCHEMAS['invalidation-defense']
   const validated = validateTemplateDraft(draft, schema)
   const result = await renderPatentDocument(
-    { template: 'invalidation-defense', outputName: 'defense', templateDraft: validated, format: 'html' },
+    { template: 'invalidation-defense', outputName: 'defense', outputDir: dir, templateDraft: validated, format: 'html' },
     dir,
     { subprocess: unusedSubprocess() },
   )

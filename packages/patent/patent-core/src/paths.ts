@@ -8,7 +8,8 @@
  * 安装与各领域共用的内核，落在 `@deepseek-ai/dsh-knowledge-core`。
  */
 
-import { isAbsolute, relative, resolve, sep } from 'node:path'
+import { existsSync } from 'node:fs'
+import { basename, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { resolveRealPath } from '@deepseek-ai/dsh-knowledge-core'
 import { assertDeliverableName } from './safe-path.ts'
 
@@ -20,6 +21,45 @@ export const CASE_OUTPUTS_REL = 'outputs'
 
 /** 工作流运行记录子目录名。 */
 export const CASE_WORKFLOW_RUNS_REL = 'workflow-runs'
+
+/**
+ * 案卷目录内的子目录名，与 `patent-workspace-layout` 已有名字一致。
+ * 本列表不新增目录名。
+ */
+export const MATTER_LAYOUT_DIRS = [
+  '00-交底书',
+  '01-检索',
+  '02-对比文件',
+  '03-分析',
+  '04-撰写',
+  '05-答复',
+  '99-知识库',
+] as const
+
+/** `patent-workspace-layout` 已有的案卷子目录名。 */
+export type MatterLayoutDir = (typeof MATTER_LAYOUT_DIRS)[number]
+
+/** 案卷目录内的事件日志文件名。工作目录已是案卷目录时，该文件在目录中。 */
+export const MATTER_LOG_FILENAME = '_matter-log.md'
+
+/**
+ * 出件写入根。
+ *
+ * `workRoot` 是 `workbenchCaseRoot`。与案号一起时，案卷目录是 `<workRoot>/<案号>/`。
+ * 未给出工作根、且 `cwd` 内已有 {@link MATTER_LOG_FILENAME} 时，`cwd` 自己就是案卷目录。
+ * `outputRoot` 只在调用方没有点名案号、且案卷目录无法解析时使用。
+ */
+export interface PatentWriteRoot {
+  /** 工作根目录（`workbenchCaseRoot`）。绝对路径原样使用，相对路径按 `cwd` 解析。 */
+  readonly workRoot?: string
+  /** 案卷目录内的既有布局子目录。 */
+  readonly layoutDir: MatterLayoutDir
+  /**
+   * 显式部署覆盖。调用方未传 `outputDir`、也未点名案号，且案卷目录无法解析时使用。
+   * 相对路径按 `cwd` 解析。
+   */
+  readonly outputRoot?: string
+}
 
 /**
  * `<root>/data/cases/<caseId>/outputs`（worker 输出目录约定，caseId 可含 {caseId} 占位）。
@@ -69,21 +109,47 @@ export function resolveConfinedPath(
 }
 
 /**
- * 解析文书工具的产出目录：显式 outputDir > caseId 约定目录 > 缺省目录。
+ * 解析调用方点名的案卷目录。
  *
- * 显式 outputDir 的真实位置必须留在 cwd 内（模型可控参数），caseId 走交付名判定后
- * 拼入 `data/cases/<caseId>/outputs`；缺省目录由调用方给出。
- * @param input - 目录相关字段。
- * @param cwd - 相对路径基准目录。
- * @param defaultOutputDir - 既无 outputDir 也无 caseId 时的缺省目录。
- * @param createError - 校验失败或越界时构造领域错误。
+ * 工作根与案号都给出时，案卷目录是 `<workRoot>/<案号>/`，可以在 `cwd` 之外。
+ * 未给工作根时，仅当 `cwd` 已含案卷日志、且案号缺省或等于该目录名，才把 `cwd` 当作案卷目录。
+ * @param input - 调用方给出的案号。
+ * @param cwd - 本次写入的工作目录。
+ * @param workRoot - `workbenchCaseRoot`；空白与缺省同等。
+ * @returns 案卷目录绝对路径；无法解析时为 undefined。
+ */
+function resolveMatterDirectory(
+  input: { readonly caseId?: string },
+  cwd: string,
+  workRoot: string | undefined,
+): string | undefined {
+  const root = workRoot?.trim()
+  if (root !== undefined && root !== '' && input.caseId !== undefined) {
+    return resolve(resolve(cwd, root), input.caseId)
+  }
+  if (!existsSync(join(cwd, MATTER_LOG_FILENAME))) return undefined
+  if (input.caseId === undefined || input.caseId === basename(cwd)) return cwd
+  return undefined
+}
+
+/**
+ * 解析文书与附图的产出目录。
+ *
+ * 显式 `outputDir` 优先，真实位置必须留在 `cwd` 内，因此旧的 `.dsh/documents` 与
+ * `data/cases/<案号>/outputs` 只有被传入时才会写到。否则写入已解析案卷目录的
+ * `layoutDir`。案卷目录无法解析、且调用方点了案号时失败。调用方没点案号时，
+ * 显式 `outputRoot` 才可用。两条路都没有时失败，不回落到 `data/cases` 或 `.dsh/documents`。
+ * @param input - 调用方给出的目录与案号。
+ * @param cwd - 相对路径基准，也是「工作目录已是案卷目录」时的案卷目录。
+ * @param root - 工作根、布局子目录，以及可选的显式覆盖。
+ * @param createError - 校验失败、越界或无法解析时构造领域错误。
  * @returns 输出目录绝对路径。
- * @throws 当 outputDir 越出 cwd 或 caseId 不是合法交付名时，抛出 `createError` 构造的错误。
+ * @throws 当 outputDir 越出 cwd、案号不是合法交付名，或案卷目录无法解析且没有可用覆盖时，抛出 `createError` 构造的错误。
  */
 export function resolvePatentOutputDir(
   input: { readonly outputDir?: string; readonly caseId?: string },
   cwd: string,
-  defaultOutputDir: string,
+  root: PatentWriteRoot,
   createError: (message: string) => Error,
 ): string {
   if (input.outputDir !== undefined) {
@@ -91,7 +157,12 @@ export function resolvePatentOutputDir(
   }
   if (input.caseId !== undefined) {
     assertDeliverableName(input.caseId, '案卷号', createError)
-    return resolve(cwd, caseOutputsDir(input.caseId))
   }
-  return resolve(cwd, defaultOutputDir)
+  const matter = resolveMatterDirectory(input, cwd, root.workRoot)
+  if (matter !== undefined) return join(matter, root.layoutDir)
+  const override = root.outputRoot?.trim()
+  if (input.caseId === undefined && override !== undefined && override !== '') {
+    return resolve(cwd, override)
+  }
+  throw createError('无法解析案卷目录，且未传入输出目录')
 }

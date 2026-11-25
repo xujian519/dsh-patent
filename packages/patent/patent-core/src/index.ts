@@ -394,6 +394,7 @@ export {
   resolveConfinedPath,
   resolvePatentOutputDir,
 } from './paths.ts'
+export type { MatterLayoutDir } from './paths.ts'
 
 // Subprocess deadline shared by the domain's four spawn sites.
 export { startSpawnDeadline } from './subprocess-deadline.ts'

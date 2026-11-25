@@ -160,6 +160,8 @@ export type GenerateStructureFigureInput = {
   callouts?: StructureCalloutInput[]
   /** 局部放大视图（可为空）：把某个基视图上的一块圆形窗口放大成一张独立视图。 */
   details?: StructureDetailInput[]
+  /** 案号。未设置 `outputDir` 时与 `workRoot` 一起选定案卷目录。 */
+  case_id?: string
   /** 图号，默认 1（批量时作为起始图号）。 */
   figure_number?: number
   /** 发明名称（附图说明模板句）。 */
@@ -222,8 +224,13 @@ export type GenerateStructureFigureDeps = {
   render: (spec: StructureRenderSpec) => Promise<StructureRenderOutcome>
   /** Config.structureFigureEnabled 门禁；缺省（未开启）时 execute 返回 setup_required。 */
   enabled?: boolean
-  /** 输出目录（绝对路径），默认 <cwd>/patent/figures。 */
+  /**
+   * 显式输出目录（绝对路径）。设置后附图写到这里。
+   * 缺省时写入已解析案卷目录的 `04-撰写/`。
+   */
   outputDir?: string
+  /** `workbenchCaseRoot`。与 `case_id` 一起解析案卷目录。 */
+  workRoot?: string
   /** 可选 upsert 进附图索引（写入失败降级为警告）。 */
   upsertIndex?: (entry: FigureIndexEntry) => Promise<void>
   /** 工作目录（相对路径基准），默认 process.cwd()。 */

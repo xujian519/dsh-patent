@@ -3422,15 +3422,20 @@ export interface Config {
 ## `@deepseek-ai/dsh-patent-document`
 
 - `inject`: `tools` · `subprocess`
-- `source`: [`packages/patent/patent-document/src/index.ts:30`](../packages/patent/patent-document/src/index.ts)
+- `source`: [`packages/patent/patent-document/src/index.ts:29`](../packages/patent/patent-document/src/index.ts)
 
 ```ts config-catalog
 /** Model-facing patent-document plugin configuration. */
 export interface Config {
   /** Absolute Chrome executable used for PDF; overrides DSH_CHROME_PATH/CHROME_PATH discovery. */
   chromePath?: string
-  /** Default output directory (relative to the process working directory) when neither outputDir nor caseId is given. */
-  outputRoot: string
+  /**
+   * Explicit output directory used only when the matter directory cannot be resolved,
+   * the call omits outputDir, and the call does not name a case id.
+   */
+  outputRoot?: string
+  /** Work root (`workbenchCaseRoot`). One matter is `<root>/<case id>/`. */
+  workbenchCaseRoot?: string
   /** Headless-Chrome print timeout in milliseconds; defaults to the renderer's exported default (120000). */
   pdfTimeoutMs: number
 }
@@ -3478,8 +3483,13 @@ export interface Config {
   templatePath?: string
   /** 结构与断言定义（spec JSON）的绝对路径；缺省用随包 spec。换模板时必须一并核对。 */
   specPath?: string
-  /** 缺省输出目录（相对进程工作目录）；既未给 outputDir 也未给 caseId 时使用。 */
-  outputRoot: string
+  /**
+   * 显式输出目录。案卷目录无法解析、调用未传 outputDir、也未点名案号时使用。
+   * 缺省不回落 `.dsh/documents`。
+   */
+  outputRoot?: string
+  /** 工作根目录（`workbenchCaseRoot`）。一个案卷是 `<根>/<案号>/`。 */
+  workbenchCaseRoot?: string
   /** `.svg` 附图栅格化倍率。 */
   figureScale: number
   /** 单次引擎调用超时（毫秒）。 */
@@ -3840,7 +3850,10 @@ export interface Config {
   figureDpi?: number
   /** 附图页边距（厘米，四边同值）；与 figurePageSize 同给时收缩绘图区 size。 */
   figureMargin?: number
-  /** 附图输出目录。绝对路径原样使用；相对路径以及缺省的 `patent/figures` 相对于 `sandboxPolicy.workspaceRoot`。没有工作区根时插件加载失败。 */
+  /**
+   * 附图输出目录的显式覆盖。绝对路径原样使用；相对路径相对于 `sandboxPolicy.workspaceRoot`。
+   * 缺省时不回落 `patent/figures`：附图写入已解析案卷目录的 `04-撰写/`，无法解析且没有覆盖时当次生成失败。
+   */
   figureOutputDir?: string
   /** 附图导出时把图面文字转成轮廓路径；默认 false。开启后 SVG 不再依赖阅读器字体（需要 Inkscape，两个附图生成工具、仅 SVG 生效）。 */
   figureTextToPath?: boolean
@@ -3895,8 +3908,9 @@ export interface Config {
   workbenchBaseUrl?: string
   /**
    * 可配置工作根目录（相对或绝对路径；其下每案一个 <案号>/，内含 _matter-log.md），
-   * 同时作为证据源相对路径的解析基准。未配置时回退 <cwd>/patent-workspace，该回退
-   * 不是案卷真源。部署应设成本机工作根目录，典型值为 /Users/xujian/工作。
+   * 同时作为证据源相对路径的解析基准，以及 HTML/PDF/DOCX 之外附图的默认写入根。
+   * `workbench_link_patent_case` 在未配置时仍回退 `<cwd>/patent-workspace`，该回退
+   * 不是案卷真源，附图与出件也不使用它。部署应设成本机工作根目录，典型值为 /Users/xujian/工作。
    */
   workbenchCaseRoot?: string
   /** DOT 字体名覆盖；默认 Helvetica，含 CJK 文本时按平台候选（PingFang SC / Microsoft YaHei / Noto Sans CJK SC）。 */

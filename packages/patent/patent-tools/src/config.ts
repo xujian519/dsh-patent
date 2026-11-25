@@ -67,7 +67,10 @@ export interface Config {
   figureDpi?: number
   /** 附图页边距（厘米，四边同值）；与 figurePageSize 同给时收缩绘图区 size。 */
   figureMargin?: number
-  /** 附图输出目录。绝对路径原样使用；相对路径以及缺省的 `patent/figures` 相对于 `sandboxPolicy.workspaceRoot`。没有工作区根时插件加载失败。 */
+  /**
+   * 附图输出目录的显式覆盖。绝对路径原样使用；相对路径相对于 `sandboxPolicy.workspaceRoot`。
+   * 缺省时不回落 `patent/figures`：附图写入已解析案卷目录的 `04-撰写/`，无法解析且没有覆盖时当次生成失败。
+   */
   figureOutputDir?: string
   /** 附图导出时把图面文字转成轮廓路径；默认 false。开启后 SVG 不再依赖阅读器字体（需要 Inkscape，两个附图生成工具、仅 SVG 生效）。 */
   figureTextToPath?: boolean
@@ -122,8 +125,9 @@ export interface Config {
   workbenchBaseUrl?: string
   /**
    * 可配置工作根目录（相对或绝对路径；其下每案一个 <案号>/，内含 _matter-log.md），
-   * 同时作为证据源相对路径的解析基准。未配置时回退 <cwd>/patent-workspace，该回退
-   * 不是案卷真源。部署应设成本机工作根目录，典型值为 /Users/xujian/工作。
+   * 同时作为证据源相对路径的解析基准，以及 HTML/PDF/DOCX 之外附图的默认写入根。
+   * `workbench_link_patent_case` 在未配置时仍回退 `<cwd>/patent-workspace`，该回退
+   * 不是案卷真源，附图与出件也不使用它。部署应设成本机工作根目录，典型值为 /Users/xujian/工作。
    */
   workbenchCaseRoot?: string
   /** DOT 字体名覆盖；默认 Helvetica，含 CJK 文本时按平台候选（PingFang SC / Microsoft YaHei / Noto Sans CJK SC）。 */

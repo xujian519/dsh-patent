@@ -4324,7 +4324,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 ### `generate_patent_figure`
 
-生成专利风格附图：流程图（方法步骤）、状态图（状态+转移条件）、系统框图（组件+连接）、组件层级图，以及直接绘制 SVG 的电路图、曲线图/坐标图、剖视图（含剖面线与剖切符号）、时序图、外观设计六面视图排布；另有内置模板与原始 DOT，输出 SVG/PNG/PDF 到工作区 patent/figures/，返回参考标号映射表与「图N是…；图中：…」格式的附图说明文字。撰写权利要求/说明书需要配图时使用。
+生成专利风格附图：流程图（方法步骤）、状态图（状态+转移条件）、系统框图（组件+连接）、组件层级图，以及直接绘制 SVG 的电路图、曲线图/坐标图、剖视图（含剖面线与剖切符号）、时序图、外观设计六面视图排布；另有内置模板与原始 DOT。未配置 figureOutputDir 时，输出 SVG/PNG/PDF 到案卷目录的 04-撰写/；显式 figureOutputDir 按其路径写出。返回参考标号映射表与「图N是…；图中：…」格式的附图说明文字。撰写权利要求/说明书需要配图时使用。
 
 标号体系：每图独立 100 系列（FIG.1=100-199、FIG.2=200-299，默认步进 2，可调）；同一组件跨图出现时用 numerals 显式传入沿用同号，或声明 figure_family 自动续号（同名组件沿用既有标号、新组件取空闲号；缺省每图独立编号）。
 
@@ -5492,6 +5492,10 @@ CAD 剖视（sections.source）：复杂件不必手算轮廓——给 model_pat
         ]
       }
     },
+    "case_id": {
+      "type": "string",
+      "description": "案号。未设置 figureOutputDir 时与 workbenchCaseRoot 一起选定案卷目录，附图写入该目录的 04-撰写/。"
+    },
     "figure_number": {
       "type": "integer",
       "description": "图号，默认 1（决定标号系列起点）"
@@ -5653,7 +5657,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 ### `generate_structure_figure`
 
-从 3D 模型生成专利结构线稿附图：用本机 FreeCAD（TechDraw）把 STEP/IGES/BREP 投影为多视图黑白线稿 SVG（等轴测/三视图等），件号以引线锚定到真实顶点投影，输出到工作区 patent/figures/，返回标号映射表与「图N是…的结构示意图」附图说明。需要机械结构真实投影（而非示意框图）时使用。
+从 3D 模型生成专利结构线稿附图：用本机 FreeCAD（TechDraw）把 STEP/IGES/BREP 投影为多视图黑白线稿 SVG（等轴测/三视图等），件号以引线锚定到真实顶点投影。未配置 figureOutputDir 时输出到案卷目录的 04-撰写/；显式 figureOutputDir 按其路径写出。返回标号映射表与「图N是…的结构示意图」附图说明。需要机械结构真实投影（而非示意框图）时使用。
 
 默认关闭：结构线稿依赖本机 FreeCAD，需先设 Config.structureFigureEnabled=true；未开启或未安装 freecadcmd 时返回 setup_required 与配置/安装引导。
 
@@ -5819,6 +5823,10 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
           "radius_mm"
         ]
       }
+    },
+    "case_id": {
+      "type": "string",
+      "description": "案号。未设置 figureOutputDir 时与 workbenchCaseRoot 一起选定案卷目录，附图写入该目录的 04-撰写/。"
     },
     "figure_number": {
       "type": "integer",
@@ -7212,7 +7220,7 @@ Render a patent-attorney deliverable (patentability opinion, search report, OA r
     },
     "caseId": {
       "type": "string",
-      "description": "Optional case id; when given the result lands in data/cases/<caseId>/outputs/ instead of the default directory."
+      "description": "Case id. With workbenchCaseRoot this selects the matter directory <work root>/<case id>/. When outputDir is omitted, the file is written in that matter directory under the existing layout subdirectory for the template."
     },
     "outputDir": {
       "type": "string",
@@ -8572,7 +8580,7 @@ render_patent_document renders patent deliverables (claims/specification/search 
     },
     "caseId": {
       "type": "string",
-      "description": "可选案卷号；给出后成品落在 data/cases/<案卷号>/outputs/ 而不是缺省目录"
+      "description": "案号。与插件配置 workbenchCaseRoot 一起选定案卷目录。未传 outputDir 时，成品写在该案卷目录的 04-撰写/。"
     },
     "outputDir": {
       "type": "string",

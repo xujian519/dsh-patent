@@ -65,7 +65,8 @@ Schemastery configuration, every field optional.
 | chromePath | string | discovered | Absolute Chrome executable used for `.svg` rasterization; overrides `DSH_CHROME_PATH`/`CHROME_PATH` discovery. |
 | templatePath | string | packaged template | Absolute template path; the formatting source of truth. |
 | specPath | string | packaged spec | Absolute spec path; review it with any template change. |
-| outputRoot | string | `.dsh/documents` | Output directory relative to the process working directory when neither `outputDir` nor `caseId` is given. |
+| outputRoot | string | unset | Explicit directory used only when the matter directory cannot be resolved, the call omits `outputDir`, and the call does not name a case id. |
+| workbenchCaseRoot | string | unset | Work root. One matter is `<root>/<case id>/`. The DOCX is written in that directory's `04-撰写/`. |
 | figureScale | number | 3 | Rasterization factor applied to a drawing's own width and height. |
 | timeoutMs | number | 120000 | Timeout for one engine call; the SIGTERM→SIGKILL grace (3 s) and the per-stream output cap stay fixed. |
 
@@ -78,7 +79,7 @@ The engine needs `python-docx`; the packaged runtime payload supplies it, and di
 
 #### What the model sees
 
-One registered tool named `build_patent_filing` with a required `draft` object (the shared `SpecDraft`: `meta`, unnumbered `claims`, `abstract`, `figureFiles`, `abstractFigure` (which figure goes into the 摘要附图 section, default 1), and the five specification parts as `paragraph`/`list`/`table` blocks (the drawing-description part lists one item per figure, each carrying only the figure name and description text without a figure number prefix or terminal punctuation)), a required `outputName`, and optional `caseId` and `outputDir`. The result renders as Markdown prose: the written path, the acceptance verdict, the reverse-derived formatting, the per-section paragraph and figure tallies, the paragraph-numbering total beside the source numbering it checked, the figure count, and the truncated template fingerprint. A failing acceptance run renders one line per failed assertion under a head that says the filing is already on disk. See the [tool catalog](../../../docs/tool-catalog.md#deepseek-aidsh-patent-filing) for the schema itself.
+One registered tool named `build_patent_filing` with a required `draft` object (the shared `SpecDraft`: `meta`, unnumbered `claims`, `abstract`, `figureFiles`, `abstractFigure` (which figure goes into the 摘要附图 section, default 1), and the five specification parts as `paragraph`/`list`/`table` blocks (the drawing-description part lists one item per figure, each carrying only the figure name and description text without a figure number prefix or terminal punctuation)), a required `outputName`, and optional `caseId` and `outputDir`. `caseId` with `workbenchCaseRoot` selects the matter directory; an omitted `outputDir` writes the DOCX in that directory's `04-撰写/`. The result renders as Markdown prose: the written path, the acceptance verdict, the reverse-derived formatting, the per-section paragraph and figure tallies, the paragraph-numbering total beside the source numbering it checked, the figure count, and the truncated template fingerprint. A failing acceptance run renders one line per failed assertion under a head that says the filing is already on disk. See the [tool catalog](../../../docs/tool-catalog.md#deepseek-aidsh-patent-filing) for the schema itself.
 
 #### Token effect
 

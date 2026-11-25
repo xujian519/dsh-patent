@@ -68,7 +68,8 @@ Schemastery 配置，全部字段可选。
 | chromePath | string | 自动探测 | `.svg` 栅格化用的 Chrome 可执行文件绝对路径；覆盖 `DSH_CHROME_PATH`/`CHROME_PATH` 探测。 |
 | templatePath | string | 随包模板 | 模板绝对路径；体例的唯一真相源。 |
 | specPath | string | 随包 spec | spec 绝对路径；换模板时必须一并核对。 |
-| outputRoot | string | `.dsh/documents` | 既未给 `outputDir` 也未给 `caseId` 时的输出目录（相对进程工作目录）。 |
+| outputRoot | string | 未设置 | 显式目录。仅当案卷目录无法解析、调用未传 `outputDir`、且调用未点名案号时使用。 |
+| workbenchCaseRoot | string | 未设置 | 工作根目录。一个案卷是 `<根>/<案号>/`。DOCX 写在该目录的 `04-撰写/`。 |
 | figureScale | number | 3 | 栅格化倍率，作用于附图自身的宽高。 |
 | timeoutMs | number | 120000 | 单次引擎调用超时；SIGTERM→SIGKILL 宽限（3 秒）与单流输出上限固定不变。 |
 
@@ -82,7 +83,7 @@ Schemastery 配置，全部字段可选。
 
 #### What the model sees
 
-一个名为 `build_patent_filing` 的注册工具，必填 `draft` 对象（共享的 `SpecDraft`：`meta`、不带项号的 `claims`、`abstract`、`figureFiles`、`abstractFigure`（哪幅附图进「摘要附图」节，缺省 1），以及按五部分组织的 `paragraph`/`list`/`table` 块（附图说明部分每幅附图一条列表项，每项只写图名与描述文字，不含图号前缀与句末标点））与 `outputName`，可选 `caseId` 与 `outputDir`。结果渲染为 Markdown 散文：成品路径、验收结论、反解出的体例、各节段落与图片数、段落编号总数与其核对过的源稿编号、附图张数，以及截断的模板指纹。验收不通过时，结论行点名成品已在盘上，下面逐条列出未通过的断言。schema 本身见[工具目录](../../../docs/tool-catalog.zh.md#deepseek-aidsh-patent-filing)。
+一个名为 `build_patent_filing` 的注册工具，必填 `draft` 对象（共享的 `SpecDraft`：`meta`、不带项号的 `claims`、`abstract`、`figureFiles`、`abstractFigure`（哪幅附图进「摘要附图」节，缺省 1），以及按五部分组织的 `paragraph`/`list`/`table` 块（附图说明部分每幅附图一条列表项，每项只写图名与描述文字，不含图号前缀与句末标点））与 `outputName`，可选 `caseId` 与 `outputDir`。`caseId` 与 `workbenchCaseRoot` 一起选定案卷目录；未传 `outputDir` 时，DOCX 写在该目录的 `04-撰写/`。结果渲染为 Markdown 散文：成品路径、验收结论、反解出的体例、各节段落与图片数、段落编号总数与其核对过的源稿编号、附图张数，以及截断的模板指纹。验收不通过时，结论行点名成品已在盘上，下面逐条列出未通过的断言。schema 本身见[工具目录](../../../docs/tool-catalog.zh.md#deepseek-aidsh-patent-filing)。
 
 #### Token effect
 

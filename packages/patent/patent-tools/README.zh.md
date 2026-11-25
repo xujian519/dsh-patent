@@ -86,7 +86,7 @@ Schemastery 配置，所有字段可选。
 | `chemistryIndexFile` | string | `<workspace>/.sati/chemistry-index.json` | `recognize_chemical_structure` 写入的化学索引文件。绝对路径，或相对于工作区根。 |
 | `graphvizExecutable` | string | 自动探测 | `dot` 可执行路径覆盖；探测顺序：覆盖值 → `DSH_GRAPHVIZ_DOT` → 平台候选路径 → `PATH`。 |
 | `graphvizRenderTimeoutMs` | number | `60000` | CLI `dot` 单次渲染的超时；WASM 引擎为同步渲染，不受它约束。 |
-| `figureOutputDir` | string | `<workspace>/patent/figures` | `generate_patent_figure` 的输出目录。绝对路径，或相对于工作区根。 |
+| `figureOutputDir` | string | 未设置 | 两个附图工具的显式目录。绝对路径，或相对于工作区根。未设置时，附图写在已解析案卷目录的 `04-撰写/`。 |
 | `figureTextToPath` | boolean | `false` | 导出时把图面文字转成轮廓路径，SVG 因此不依赖阅读器字体；需要 Inkscape，两个附图生成工具都适用，也适用于导出 png/pdf 所依据的中间 SVG；不经该全链的 png/pdf 仍由渲染器出字，并回报该参数不生效。产物仍含 `<text>`、未通过 SVG 安全校验、或墨迹越出原图范围时拒绝替换，原图保持原样。含中文的图导出 pdf 时本参数还是前置条件：Inkscape 1.4.4 在字体子集化个别字形（实测「源」）时会截断 PDF 且退出码仍为 0，故 `exportWithInkscape` 对缺 `startxref`/`%%EOF` 的 PDF 一律判为失败而不交付。 |
 | `figureRequireCuttingMarks` | boolean | `false` | 要求每个剖视图都给出剖切位置符号（`sections.cutting_marks`）：未给即报错，不再交付缺剖切符号的剖视图。GB/T 4458.6 只在剖切平面与对称面重合且视图在标准位置时允许省略，此类剖视图可在调用时传 `require_cutting_marks: false`。 |
 | `figureFailOnRenderFindings` | boolean | `false` | 两个附图生成工具的渲染复核门禁：为 true 时，除 `not-measured` 外的任何发现都判本次生成失败——已写入的文件保留供修正，但不作为交付件。非 SVG 直绘没有可量测的图面，门禁会明确回报未生效，而不是假装通过。 |
@@ -96,7 +96,7 @@ Schemastery 配置，所有字段可选。
 | `inkscapeExecutable` | string | 自动探测 | 文字转路径所用的 `inkscape` 可执行路径覆盖；探测顺序：覆盖值 → `DSH_INKSCAPE` → 平台候选路径 → `PATH`。 |
 | `inkscapeRenderTimeoutMs` | number | `30000` | 单次文字转路径的超时（毫秒）。 |
 | `workbenchBaseUrl` | string | 进程内 webServer 端口 | `workbench_link_patent_case` 的工作台 API 基址；显式配置优先，web 组合内自动取 `http://127.0.0.1:<webServer 端口>`；不可用（非 web profile）时工具在执行期以 `setup_required` 失败。 |
-| `workbenchCaseRoot` | string | 未配置 → `<cwd>/patent-workspace` | `workbench_link_patent_case` 的可配置工作根目录（work root）。每案位于 `<root>/<案号>/`，内含 `_matter-log.md`。应设成本机工作根目录，典型值为 `/Users/xujian/工作`。未配置时的回退不是案卷真源（[ADR-001](../../../docs/adr/ADR-001-matter-folder-index.zh.md)）。 |
+| `workbenchCaseRoot` | string | 未配置时，仅链接工具回退 `<cwd>/patent-workspace` | 工作根目录。每案位于 `<root>/<案号>/`，内含 `_matter-log.md`。`figureOutputDir` 未设置时附图用它。应设成本机工作根目录，典型值为 `/Users/xujian/工作`。未配置时的 `<cwd>/patent-workspace` 只用于 `workbench_link_patent_case`，不是案卷真源（[ADR-001](../../../docs/adr/ADR-001-matter-folder-index.zh.md)）。 |
 | `dotFont` | string | 平台相关 | DOT 字体名覆盖；默认 Helvetica，label 含 CJK 时按平台候选（PingFang SC / Microsoft YaHei / Noto Sans CJK SC）。 |
 | `figureRenderer` | `'wasm' \| 'cli'` | `wasm` | `generate_patent_figure` 的 Graphviz 渲染器：`wasm` 为内置 `@viz-js/viz`（SVG，无系统依赖）；`cli` 走 `dot` 子进程。未给 `target_office` 时的 png/pdf 路由到 CLI。 |
 | `figureAnalysisMode` | `'single' \| 'two-step'` | `single` | `analyze_patent_figure` 模式：`single` 为一次视觉调用；`two-step` 在同一路由先做结构抽取再做说明生成（模型成本翻倍）。 |

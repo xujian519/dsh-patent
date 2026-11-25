@@ -83,8 +83,12 @@ export interface RenderPatentDocumentToolOptions {
   subprocess: SubprocessRuntime
   /** Chrome 可执行文件覆盖。 */
   chromePath?: string
-  /** 缺省输出目录（相对 cwd）。 */
-  defaultOutputDir?: string
+  /** `workbenchCaseRoot`。与案号一起解析案卷目录。 */
+  workRoot?: string
+  /**
+   * 显式部署覆盖。案卷目录无法解析、且调用未传 outputDir、也未点名案号时使用。
+   */
+  outputRoot?: string
   /** Chrome 无头打印超时（毫秒；与 Config.pdfTimeoutMs 同源）。 */
   pdfTimeoutMs?: number
 }
@@ -112,7 +116,7 @@ export function createRenderPatentDocumentTool(options: RenderPatentDocumentTool
       },
       caseId: {
         type: 'string',
-        description: 'Optional case id; when given the result lands in data/cases/<caseId>/outputs/ instead of the default directory.',
+        description: 'Case id. With workbenchCaseRoot this selects the matter directory <work root>/<case id>/. When outputDir is omitted, the file is written in that matter directory under the existing layout subdirectory for the template.',
       },
       outputDir: {
         type: 'string',
@@ -171,7 +175,8 @@ export function createRenderPatentDocumentTool(options: RenderPatentDocumentTool
         {
           subprocess: options.subprocess,
           ...(options.chromePath !== undefined ? { chromePath: options.chromePath } : {}),
-          ...(options.defaultOutputDir !== undefined ? { defaultOutputDir: options.defaultOutputDir } : {}),
+          ...(options.workRoot === undefined ? {} : { workRoot: options.workRoot }),
+          ...(options.outputRoot === undefined ? {} : { outputRoot: options.outputRoot }),
           ...(options.pdfTimeoutMs !== undefined ? { pdfTimeoutMs: options.pdfTimeoutMs } : {}),
           signal: exec.signal,
         },

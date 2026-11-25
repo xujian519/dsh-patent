@@ -126,7 +126,7 @@ describe.skipIf(pythonPath === undefined)('real figureless filing end to end (ne
       pythonPath: python,
       specPath: defaultSpecPath(),
       templatePath: defaultTemplatePath(),
-      defaultOutputDir: join(work, '出件'),
+      outputRoot: join(work, '出件'),
       figureScale: 3,
       timeoutMs: 60_000,
     })
@@ -174,7 +174,7 @@ describe.skipIf(pythonPath === undefined)('real figureless filing end to end (ne
       pythonPath: pythonPath as string,
       specPath: defaultSpecPath(),
       templatePath: defaultTemplatePath(),
-      defaultOutputDir: join(work, '出件'),
+      outputRoot: join(work, '出件'),
       figureScale: 3,
       timeoutMs: 60_000,
     })

@@ -315,7 +315,7 @@ describe('render_patent_document tool', () => {
     const subprocess = fakeSubprocess(() => successHandle()).runtime
     const dir = mkdtempSync(join(tmpdir(), 'dsh-tool-'))
     try {
-      const tool = createRenderPatentDocumentTool({ subprocess, defaultOutputDir: dir, chromePath: join(dir, 'missing-chrome') })
+      const tool = createRenderPatentDocumentTool({ subprocess, outputRoot: dir, chromePath: join(dir, 'missing-chrome') })
       const value = (await tool.execute(
         { template: 'patentability-opinion', outputName: 'default-dir', draft: opinionDraft('缺省') },
         { signal: new AbortController().signal } as never,
@@ -359,13 +359,14 @@ describe('render_patent_document tool', () => {
     }
   })
 
-  it('executes with a caseId into data/cases/<caseId>/outputs relative to the cwd', async () => {
+  it('executes with a caseId into the matter layout directory', async () => {
     const subprocess = fakeSubprocess(() => successHandle()).runtime
     const dir = mkdtempSync(join(tmpdir(), 'dsh-tool-'))
+    const workRoot = mkdtempSync(join(tmpdir(), 'dsh-tool-work-'))
     const savedCwd = process.cwd()
     try {
       process.chdir(dir)
-      const tool = createRenderPatentDocumentTool({ subprocess })
+      const tool = createRenderPatentDocumentTool({ subprocess, workRoot })
       const value = (await tool.execute(
         {
           template: 'patentability-opinion',
@@ -376,11 +377,13 @@ describe('render_patent_document tool', () => {
         },
         { signal: new AbortController().signal } as never,
       )) as { htmlPath: string }
-      expect(value.htmlPath.endsWith(join('data', 'cases', 'c-2026-01', 'outputs', 'sr-case.html'))).toBe(true)
+      expect(value.htmlPath).toBe(join(workRoot, 'c-2026-01', '03-分析', 'sr-case.html'))
       expect(existsSync(value.htmlPath)).toBe(true)
+      expect(existsSync(join(dir, 'data', 'cases'))).toBe(false)
     } finally {
       process.chdir(savedCwd)
       rmSync(dir, { recursive: true, force: true })
+      rmSync(workRoot, { recursive: true, force: true })
     }
   })
 

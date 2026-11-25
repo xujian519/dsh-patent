@@ -116,7 +116,7 @@ export function createBuildPatentFilingTool(options: BuildPatentFilingToolOption
       },
       caseId: {
         type: 'string',
-        description: '可选案卷号；给出后成品落在 data/cases/<案卷号>/outputs/ 而不是缺省目录',
+        description: '案号。与插件配置 workbenchCaseRoot 一起选定案卷目录。未传 outputDir 时，成品写在该案卷目录的 04-撰写/。',
       },
       outputDir: {
         type: 'string',

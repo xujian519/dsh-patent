@@ -9,7 +9,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { DEFAULT_ENGINE_TIMEOUT_MS, DEFAULT_OUTPUT_DIR } from './filing/engine.ts'
+import { DEFAULT_ENGINE_TIMEOUT_MS } from './filing/engine.ts'
 import { defaultSpecPath, defaultTemplatePath } from './filing/assets.ts'
 import { findPython } from './filing/python.ts'
 import { createBuildPatentFilingTool } from './tool/build-patent-filing.ts'
@@ -44,8 +44,13 @@ export interface Config {
   templatePath?: string
   /** 结构与断言定义（spec JSON）的绝对路径；缺省用随包 spec。换模板时必须一并核对。 */
   specPath?: string
-  /** 缺省输出目录（相对进程工作目录）；既未给 outputDir 也未给 caseId 时使用。 */
-  outputRoot: string
+  /**
+   * 显式输出目录。案卷目录无法解析、调用未传 outputDir、也未点名案号时使用。
+   * 缺省不回落 `.dsh/documents`。
+   */
+  outputRoot?: string
+  /** 工作根目录（`workbenchCaseRoot`）。一个案卷是 `<根>/<案号>/`。 */
+  workbenchCaseRoot?: string
   /** `.svg` 附图栅格化倍率。 */
   figureScale: number
   /** 单次引擎调用超时（毫秒）。 */
@@ -58,7 +63,8 @@ export const Config: z<Partial<Config>, Config> = z.object({
   chromePath: z.string(),
   templatePath: z.string(),
   specPath: z.string(),
-  outputRoot: z.string().default(DEFAULT_OUTPUT_DIR),
+  outputRoot: z.string(),
+  workbenchCaseRoot: z.string(),
   figureScale: z.number().step(1).min(1).default(3),
   timeoutMs: z.number().step(1).min(1).default(DEFAULT_ENGINE_TIMEOUT_MS),
 })
@@ -87,7 +93,8 @@ export function apply(ctx: Context, config: Config): void {
     ...(pythonPath !== undefined ? { pythonPath } : {}),
     specPath,
     templatePath,
-    defaultOutputDir: outputRoot,
+    ...(outputRoot === undefined ? {} : { outputRoot }),
+    ...(config.workbenchCaseRoot === undefined ? {} : { workRoot: config.workbenchCaseRoot }),
     figureScale,
     timeoutMs,
     ...(config.chromePath !== undefined ? { chromePath: config.chromePath } : {}),

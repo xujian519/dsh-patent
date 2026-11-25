@@ -5,7 +5,6 @@
  */
 
 import { mkdir } from 'node:fs/promises'
-import { resolve } from 'node:path'
 import { PatentToolError } from '../error.ts'
 import { DotBuildError, resolvePageBundle } from '../figure/dot-builder.ts'
 import type { DotPageBundle, NumeralAssignment } from '../figure/dot-builder.ts'
@@ -18,6 +17,7 @@ import { buildOutput, indexAnalysis, upsertFigureIndex } from './figure-output.t
 import { annotateRenderedSvg, buildFigureDot } from './figure-render-plan.ts'
 import { assertRendered } from './internal/render-outcome.ts'
 import { finishDirectRender, finishSvgChain, needsSvgChain } from './figure-delivery.ts'
+import { resolveFigureWriteDir } from './figure-write-dir.ts'
 import { assignFigureNumerals, resolveFontPt } from './figure-run.ts'
 import type { FigureContext } from './figure-run.ts'
 
@@ -90,8 +90,7 @@ export async function generatePanels(
     dpi: input.dpi ?? deps.dpi,
     marginCm: input.margin ?? deps.marginCm,
   })
-  /* v8 ignore next -- apply() always injects outputDir; the cwd-relative default stays for standalone library callers */
-  const outputDir = deps.outputDir ?? resolve(cwd, 'patent/figures')
+  const outputDir = resolveFigureWriteDir(deps, cwd, input.case_id, 'generate_patent_figure')
   await mkdir(outputDir, { recursive: true })
   const run: PanelRun = {
     input, context, figureNumber, outputDir, fontName,

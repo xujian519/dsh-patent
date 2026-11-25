@@ -923,3 +923,169 @@ describe('generate_patent_figure：剖切符号的强制开关', () => {
     }
   })
 })
+
+describe('generate_patent_figure：view_name', () => {
+  const section = {
+    figure_type: 'cross_section' as const,
+    invention_name: '汇聚箱',
+    sections: { parts: [{ outline: [[0, 0], [40, 0], [40, 20], [0, 20]], hatch: { angle_deg: 45, spacing_mm: 3 } }] },
+  }
+  const dotSvg = [
+    '<svg xmlns="http://www.w3.org/2000/svg">',
+    '<g id="graph0" class="graph">',
+    '<title>G</title>',
+    '<g id="node1" class="node"><title>a</title><polygon points="0,0 10,0 10,10 0,10"/><text>甲</text></g>',
+    '</g>',
+    '</svg>',
+    '',
+  ].join('\n')
+
+  function writingRenderer(body: string): { render: (spec: GraphvizRenderSpec) => Promise<GraphvizRenderOutcome> } {
+    return {
+      render: (spec) => {
+        const out = join(spec.outputDir, `${spec.filename}.${spec.format}`)
+        writeFileSync(out, body)
+        return Promise.resolve({ ok: true, path: out })
+      },
+    }
+  }
+
+  function withoutTitle(svg: string): string {
+    return svg.replace(/\n  <title>[\s\S]*?<\/title>/, '')
+  }
+
+  async function setup(render: (spec: GraphvizRenderSpec) => Promise<GraphvizRenderOutcome>) {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-view-'))
+    const outDir = join(dir, 'figs')
+    const indexed: GeneratePatentFigureIndexEntry[] = []
+    const tool = createGeneratePatentFigureTool({
+      render,
+      outputDir: outDir,
+      cwd: dir,
+      upsertIndex: async (entry) => { indexed.push(entry) },
+    })
+    const ctx = await ctxWith(tool)
+    return {
+      dir,
+      outDir,
+      indexed,
+      run: async (args: unknown, label: string) => await execute(ctx, 'generate_patent_figure', args, label),
+    }
+  }
+
+  it('省略或空白 view_name 时剖视标题仍以剖视图结尾', async () => {
+    const { dir, outDir, run } = await setup(trackingRenderer().render)
+    try {
+      const omitted = await run({ ...section, filename: 'plain' }, 'vn-omit')
+      expect(omitted.isError).toBe(false)
+      const blank = await run({ ...section, filename: 'blank', view_name: '   ' }, 'vn-blank')
+      expect(blank.isError).toBe(false)
+      const plain = readFileSync(join(outDir, 'plain.svg'), 'utf8')
+      const blankSvg = readFileSync(join(outDir, 'blank.svg'), 'utf8')
+      expect(plain).toContain('<title>汇聚箱的剖视图</title>')
+      expect(blankSvg).toBe(plain)
+      const omittedValue = (omitted as { value: { figureDescription: string; figureType: string } }).value
+      expect(omittedValue.figureType).toBe('cross_section')
+      expect(omittedValue.figureDescription).toContain('汇聚箱的剖视图')
+      expect(omittedValue.figureDescription).not.toContain('主视半剖视图')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('传入视图名时只替换标题和附图说明，其余 SVG 字节不变', async () => {
+    const { dir, outDir, indexed, run } = await setup(trackingRenderer().render)
+    try {
+      const named = await run({ ...section, filename: 'named', view_name: '  主视半剖视图  ' }, 'vn-named')
+      const plain = await run({ ...section, filename: 'plain', persist_index: false }, 'vn-plain')
+      expect(named.isError).toBe(false)
+      expect(plain.isError).toBe(false)
+      const namedSvg = readFileSync(join(outDir, 'named.svg'), 'utf8')
+      const plainSvg = readFileSync(join(outDir, 'plain.svg'), 'utf8')
+      expect(namedSvg).toContain('<title>汇聚箱的主视半剖视图</title>')
+      expect(namedSvg).not.toContain('<title>汇聚箱的剖视图</title>')
+      expect(withoutTitle(namedSvg)).toBe(withoutTitle(plainSvg))
+      const value = (named as { value: { figureDescription: string; figureType: string } }).value
+      expect(value.figureType).toBe('cross_section')
+      expect(value.figureDescription).toContain('图1是本发明实施例提供的汇聚箱的主视半剖视图')
+      expect(value.figureDescription).not.toContain('汇聚箱的剖视图')
+      expect(indexed[0]?.analysis.figureType).toBe('cross_section')
+      expect(indexed[0]?.analysis.figureDescription).toContain('主视半剖视图')
+      expect(indexed[0]?.analysis.overallDescription).not.toContain('主视半剖视图')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('拒绝换行和超过 200 个字符的视图名，并转义标题里的 XML', async () => {
+    const { dir, outDir, run } = await setup(trackingRenderer().render)
+    try {
+      const newline = await run({ ...section, view_name: '主视\n半剖' }, 'vn-nl')
+      expect(newline.isError).toBe(true)
+      expect(text(newline)).toContain('view_name 不能包含换行')
+      const tooLong = await run({ ...section, view_name: '视'.repeat(201) }, 'vn-long')
+      expect(tooLong.isError).toBe(true)
+      expect(text(tooLong)).toContain('view_name 去掉首尾空白后不能超过 200 个字符')
+      const escaped = await run({ ...section, filename: 'esc', view_name: 'A&B<C"' }, 'vn-xml')
+      expect(escaped.isError).toBe(false)
+      const svg = readFileSync(join(outDir, 'esc.svg'), 'utf8')
+      expect(svg).toContain('<title>汇聚箱的A&amp;B&lt;C&quot;</title>')
+      const value = (escaped as { value: { figureDescription: string } }).value
+      expect(value.figureDescription).toContain('A&B<C"')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('raw_dot 只在传入 view_name 时插入文档标题，节点标题保持原字节', async () => {
+    const { dir, outDir, run } = await setup(writingRenderer(dotSvg).render)
+    try {
+      const omitted = await run({ figure_type: 'raw_dot', dot: 'digraph G { a [label="甲"] }', filename: 'plain' }, 'vn-dot')
+      expect(omitted.isError).toBe(false)
+      expect(readFileSync(join(outDir, 'plain.svg'), 'utf8')).toBe(dotSvg)
+      const named = await run({
+        figure_type: 'raw_dot',
+        dot: 'digraph G { a [label="甲"] }',
+        filename: 'named',
+        invention_name: '一种方法',
+        view_name: '主视半剖视图',
+      }, 'vn-dot-named')
+      expect(named.isError).toBe(false)
+      const svg = readFileSync(join(outDir, 'named.svg'), 'utf8')
+      expect(svg).toContain('<svg xmlns="http://www.w3.org/2000/svg">\n  <title>一种方法的主视半剖视图</title>\n')
+      expect(svg).toContain('<title>G</title>')
+      expect(svg).toContain('<g id="node1" class="node"><title>a</title>')
+      expect((named as { value: { figureType: string; figureDescription: string } }).value.figureType).toBe('unknown')
+      expect((named as { value: { figureDescription: string } }).value.figureDescription).toContain('一种方法的主视半剖视图')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('多面板共用一个视图名，后缀仍写在图号上', async () => {
+    const { dir, outDir, run } = await setup(writingRenderer(dotSvg).render)
+    try {
+      const named = await run({
+        invention_name: '汇聚箱',
+        view_name: '主视半剖视图',
+        leader_lines: false,
+        panels: [
+          { suffix: 'A', blocks: [{ id: 'a', label: '壳体' }] },
+          { suffix: 'B', blocks: [{ id: 'b', label: '端盖' }] },
+        ],
+      }, 'vn-panels')
+      expect(named.isError).toBe(false)
+      const value = (named as { value: { figureDescription: string } }).value
+      expect(value.figureDescription).toContain('图1A是本发明实施例提供的汇聚箱的主视半剖视图')
+      expect(value.figureDescription).toContain('图1B是本发明实施例提供的汇聚箱的主视半剖视图')
+      expect(value.figureDescription).not.toContain('方框图')
+      for (const name of ['fig1A.svg', 'fig1B.svg']) {
+        const svg = readFileSync(join(outDir, name), 'utf8')
+        expect(svg).toContain('<title>汇聚箱的主视半剖视图</title>')
+        expect(svg).toContain('<g id="node1" class="node"><title>a</title>')
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { FigureAnalysisResult } from '../src/tool/analyze-patent-figure.ts'
 import {
+  assertViewName,
   collectFigureWording,
+  dotDocumentTitle,
+  figureViewName,
   presentStructuralFields,
   resolveFamilySeeds,
   vectorTitle,
@@ -114,6 +117,32 @@ describe('vectorTitle', () => {
     expect(vectorTitle('一种检测装置', 'circuit')).toBe('一种检测装置的电路图')
     expect(vectorTitle('  ', 'plot')).not.toContain('的曲线图')
     expect(vectorTitle(undefined, 'plot')).toBe(vectorTitle('', 'plot'))
+  })
+
+  it('keeps the figure-type name when view_name is omitted or blank', () => {
+    expect(vectorTitle('汇聚箱', 'cross_section')).toBe('汇聚箱的剖视图')
+    expect(vectorTitle('汇聚箱', 'cross_section', '   ')).toBe('汇聚箱的剖视图')
+    expect(figureViewName('cross_section', undefined)).toBe('剖视图')
+  })
+
+  it('replaces only the view name when view_name is set', () => {
+    expect(vectorTitle('汇聚箱', 'cross_section', '  主视半剖视图  ')).toBe('汇聚箱的主视半剖视图')
+    expect(figureViewName('unknown', '主视半剖视图')).toBe('主视半剖视图')
+    expect(dotDocumentTitle('汇聚箱', 'unknown', undefined)).toBeUndefined()
+    expect(dotDocumentTitle('汇聚箱', 'unknown', '  ')).toBeUndefined()
+    expect(dotDocumentTitle('汇聚箱', 'unknown', '主视半剖视图')).toBe('汇聚箱的主视半剖视图')
+  })
+})
+
+describe('assertViewName', () => {
+  it('rejects a newline and a trimmed name longer than 200 characters', () => {
+    expect(() => { assertViewName(undefined) }).not.toThrow()
+    expect(() => { assertViewName('   ') }).not.toThrow()
+    expect(() => { assertViewName('主视（半剖）视图') }).not.toThrow()
+    expect(() => { assertViewName('主视\n半剖') }).toThrow('view_name 不能包含换行')
+    expect(() => { assertViewName('主视\r半剖') }).toThrow('view_name 不能包含换行')
+    expect(() => { assertViewName(` ${'视'.repeat(200)} `) }).not.toThrow()
+    expect(() => { assertViewName('视'.repeat(201)) }).toThrow('view_name 去掉首尾空白后不能超过 200 个字符')
   })
 })
 

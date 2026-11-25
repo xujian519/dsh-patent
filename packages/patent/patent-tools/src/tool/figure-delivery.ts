@@ -7,9 +7,11 @@
  * @module @deepseek-ai/dsh-patent-tools/tool/figure-delivery
  */
 
+import { readFile, writeFile } from 'node:fs/promises'
 import { PatentToolError } from '../error.ts'
 import { clearanceMmForFigure } from '../figure/render-check.ts'
 import { gateRenderedSvg } from '../figure/render-check-gate.ts'
+import { VectorFigureError, insertSvgDocumentTitle } from '../figure/vector-figure.ts'
 import { isVectorFigureType } from '../figure/vector-figure-build.ts'
 import { assertRendered } from './internal/render-outcome.ts'
 import { applySubmissionPage, buildLayout, resolveSubmission } from './figure-submission.ts'
@@ -18,6 +20,28 @@ import { resolveFontPt } from './figure-run.ts'
 import type { DotFormat } from '../figure/dot-builder.ts'
 import type { GenerateFigureType, GeneratePatentFigureDeps, GeneratePatentFigureOutput } from './figure-input.ts'
 import type { TargetOffice } from '../figure/office-profile.ts'
+
+/**
+ * 在 DOT 绘出的 SVG 根元素后写入文档级标题。标题未给出或文件不是 SVG 时不读文件。
+ * @param path - 渲染器写出的文件。
+ * @param format - 该文件的格式；只有 svg 会写入。
+ * @param title - 文档标题；未传时不写。
+ * @throws PatentToolError('tool_execution_failed') 文件没有根 `<svg>` 开标签时。
+ */
+export async function stampDotDocumentTitle(path: string, format: DotFormat, title: string | undefined): Promise<void> {
+  if (title === undefined || format !== 'svg') return
+  const svg = await readFile(path, 'utf8')
+  let next: string
+  try {
+    next = insertSvgDocumentTitle(svg, title)
+  } catch (error) {
+    if (error instanceof VectorFigureError) {
+      throw new PatentToolError('tool_execution_failed', error.message, { tool: 'generate_patent_figure' })
+    }
+    throw error
+  }
+  await writeFile(path, next, 'utf8')
+}
 
 /**
  * 是否需要「SVG 全链」交付非 SVG：先出 SVG、落版、复核、文字转路径，再交 Inkscape 导出。

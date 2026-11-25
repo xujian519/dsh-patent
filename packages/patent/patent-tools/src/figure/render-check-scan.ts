@@ -85,6 +85,13 @@ export type ScannedText = {
   readonly box: GlyphBox
   /** 该元素的累计变换（占位框经它映射到根坐标系）。 */
   readonly matrix: Matrix
+  /** 基线锚点（根坐标系，毫米）：该标签自身的 `x`/`y` 经累计变换后的点。 */
+  readonly baseline: Point
+  /**
+   * 该 `<text>` 自身的 `data-dsh-role`。不从父元素继承，避免一组角色把图内标号一并豁免。
+   * 落版页使用 `caption` 与 `sheet-number`。
+   */
+  readonly role?: string
   /** 所属语义分组（{@link ScanGroup}）；无分组时为 undefined。 */
   readonly group?: ScanGroup
 }
@@ -614,15 +621,14 @@ function groupKindOf(className: string | undefined): 'node' | 'edge' | undefined
  * @returns 文字记录。
  */
 function textEntry(content: string, tag: string, frame: Frame): ScannedText {
+  const anchor: Point = [num(tag, 'x') ?? 0, num(tag, 'y') ?? 0]
+  const role = attr(tag, ROLE_ATTRIBUTE)
   return {
     content,
-    box: glyphBox(
-      content,
-      [num(tag, 'x') ?? 0, num(tag, 'y') ?? 0],
-      frame.fontSizeUser,
-      frame.textAnchor,
-    ),
+    box: glyphBox(content, anchor, frame.fontSizeUser, frame.textAnchor),
     matrix: frame.matrix,
+    baseline: mapPoint(frame.matrix, anchor),
+    ...(role === undefined ? {} : { role }),
     ...(frame.group === undefined ? {} : { group: frame.group }),
   }
 }

@@ -23,7 +23,7 @@ export const LAYOUT_SCHEMA = {
     charHeightMm: { type: 'number', description: '落版后图中数字与字母字高（毫米）' },
     reducedCharHeightMm: { type: 'number', description: '再缩小到三分之二后的字高（毫米）' },
     caption: { type: 'string', description: '落版页上的图号' },
-    sheetNumber: { type: 'string', required: true, description: '落版页上的页码' },
+    sheetNumber: { type: 'string', required: true, description: '落版页上的页码；显式关闭时为空字符串' },
   },
 } as const
 

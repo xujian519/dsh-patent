@@ -68,7 +68,10 @@ type SubmissionPageInput = {
   profile: OfficeProfile
   /** 图号文字（如「图1」）；undefined 表示本幅不标图号（单幅图）。 */
   caption?: string | undefined
-  /** 附图页页码文字（如「第2页 共3页」「2/3」）；undefined 表示不标页码。 */
+  /**
+   * 附图页页码文字（如「第2页 共3页」「2/3」）。
+   * `undefined` 不画，并警告应当编页码。空字符串不画，也不警告。
+   */
   sheetNumber?: string | undefined
   /** 图形正文的数字与字母字号（用户单位，如 DOT 的 fontsize=10），用于核算字高。 */
   bodyFontSize?: number | undefined
@@ -122,7 +125,7 @@ export type SubmissionLayout = {
   reducedCharHeightMm?: number
   /** 落版页上的图号；未标注时缺省。 */
   caption?: string
-  /** 落版页上的页码。 */
+  /** 落版页上的页码。显式关闭时为空字符串。 */
   sheetNumber: string
 }
 
@@ -194,7 +197,7 @@ export function buildSubmissionPage(input: SubmissionPageInput): SubmissionPageR
     }
   }
   const { geometry, warnings } = parseDrawingSvg(input.drawingSvg)
-  if (sheetNumber === undefined || sheetNumber.trim() === '') {
+  if (sheetNumber === undefined) {
     warnings.push('附图页未写页码：每一幅附图页都应当编页码，请补写页码后再交付')
   }
   if (bodyFontSize !== undefined && (!Number.isFinite(bodyFontSize) || bodyFontSize <= 0)) {
@@ -254,11 +257,11 @@ export function buildSubmissionPage(input: SubmissionPageInput): SubmissionPageR
   if (rotateDeg !== 0) lines.push('  </g>')
   if (caption !== undefined) {
     const captionY = profile.margins.topMm + (figureAreaHeightMm - placedHeightMm) / 2 + placedHeightMm + captionGapMm + captionFontMm * 0.8
-    lines.push(textElement(centerX, captionY, captionFontMm, caption))
+    lines.push(textElement(centerX, captionY, captionFontMm, caption, 'caption'))
   }
-  if (sheetNumber !== undefined) {
+  if (sheetNumber !== undefined && sheetNumber !== '') {
     const sheetY = profile.margins.topMm + areaHeightMm - sheetFontMm * 0.3
-    lines.push(textElement(centerX, sheetY, sheetFontMm, sheetNumber))
+    lines.push(textElement(centerX, sheetY, sheetFontMm, sheetNumber, 'sheet-number'))
   }
   lines.push('</svg>', '')
 
@@ -292,7 +295,22 @@ function indent(body: string, spaces: number): string {
     .join('\n')
 }
 
-/** 页面上的一行居中文本（图号或页码）。 */
-function textElement(centerX: number, baselineY: number, fontMm: number, text: string): string {
-  return `  <text x="${fmtMm(centerX)}" y="${fmtMm(baselineY)}" text-anchor="middle" font-family="sans-serif" font-size="${fmtMm(fontMm)}" fill="#000000" stroke="none">${escapeXmlAttribute(text)}</text>`
+/**
+ * 落版页上的一行居中文本（图号或页码）。
+ * 角色只写在该 `<text>` 上，不从父元素继承。
+ * @param centerX - 水平中心（毫米）。
+ * @param baselineY - 基线 y（毫米）。
+ * @param fontMm - 字号（毫米）。
+ * @param text - 文本。
+ * @param role - `caption` 为图号，`sheet-number` 为页码。
+ * @returns 一行 `<text>`。
+ */
+function textElement(
+  centerX: number,
+  baselineY: number,
+  fontMm: number,
+  text: string,
+  role: 'caption' | 'sheet-number',
+): string {
+  return `  <text x="${fmtMm(centerX)}" y="${fmtMm(baselineY)}" text-anchor="middle" font-family="sans-serif" font-size="${fmtMm(fontMm)}" data-dsh-role="${role}" fill="#000000" stroke="none">${escapeXmlAttribute(text)}</text>`
 }

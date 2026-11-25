@@ -101,6 +101,23 @@ export function escapeXmlAttribute(value: string): string {
 }
 
 /**
+ * 在根 `<svg>` 开标签后插入一行文档级 `<title>`。
+ * 不改写节点或 `class="graph"` 里面已有的 `<title>`。
+ * @param svg - 绘图 SVG 文本。
+ * @param title - 标题原文；写入前按 XML 文本转义。
+ * @returns 插入文档标题后的 SVG 文本。
+ * @throws VectorFigureError('invalid_input') 文本里没有根 `<svg>` 开标签时。
+ */
+export function insertSvgDocumentTitle(svg: string, title: string): string {
+  const match = /<svg\b[^>]*>/.exec(svg)
+  if (match === null) {
+    throw new VectorFigureError('invalid_input', '绘图 SVG 缺少根 svg 开标签，无法写入文档标题')
+  }
+  const at = match.index + match[0].length
+  return `${svg.slice(0, at)}\n  <title>${escapeXmlAttribute(title)}</title>${svg.slice(at)}`
+}
+
+/**
  * 把图形规格封装为独立 SVG 文件内容（毫米画布、无边框、无标题栏、无图号）。
  * @param spec - 图形规格。
  * @param title - 可选的图名（写入 `<title>`，不落图面像素）。

@@ -376,6 +376,28 @@ describe('figure-submission：图号写法与页码', () => {
       sheetNumber: undefined,
     })
     expect(page.warnings.join('\n')).toContain('未写页码')
+    expect(page.svg).not.toContain('data-dsh-role="sheet-number"')
+  })
+
+  it('显式空页码不画页码也不警告', () => {
+    const page = buildSubmissionPage({
+      drawingSvg: '<svg width="10mm" height="10mm" xmlns="http://www.w3.org/2000/svg"><g/></svg>',
+      profile: officeProfile('cnipa'),
+      caption: '图1',
+      sheetNumber: '',
+    })
+    expect(page.warnings.join('\n')).not.toContain('未写页码')
+    expect(page.svg).not.toContain('data-dsh-role="sheet-number"')
+    expect(page.svg).toContain('data-dsh-role="caption"')
+  })
+
+  it('sheet_number false 计划值为空字符串，且不校验页序', () => {
+    expect(resolveSubmission({ target_office: 'cnipa' }, '')?.sheetNumber).toBe('第1页')
+    expect(resolveSubmission({ target_office: 'cnipa', sheet_number: true }, '')?.sheetNumber).toBe('第1页')
+    expect(resolveSubmission({ target_office: 'pct', sheet_index: 1, sheet_total: 1 }, '')?.sheetNumber).toBe('1/1')
+    expect(resolveSubmission({ target_office: 'cnipa', sheet_number: false }, '')?.sheetNumber).toBe('')
+    expect(resolveSubmission({ target_office: 'cnipa', sheet_number: false, sheet_index: 0, sheet_total: 1 }, '')?.sheetNumber).toBe('')
+    expect(resolveSubmission({ sheet_number: false }, '')).toBeUndefined()
   })
 })
 
@@ -697,6 +719,8 @@ describe('generate_patent_figure：落版接线', () => {
       expect(value.value.layout.office).toBe('cnipa')
       expect(value.value.layout.caption).toBe('图1')
       expect(value.value.layout.sheetNumber).toBe('第1页')
+      expect(value.value.warnings.join('\n')).not.toContain('未写页码')
+      expect(text(result)).toContain('- 页码 第1页')
       expect(value.value.layout.charHeightMm).toBeGreaterThan(0)
       const written = readFileSync(join(outDir, 'fig1.svg'), 'utf8')
       expect(written).toContain('width="210mm" height="297mm"')
@@ -794,6 +818,32 @@ describe('generate_patent_figure：落版接线', () => {
       const written = readFileSync(join(outDir, 'sized.svg'), 'utf8')
       expect(written).toMatch(/font-size="5"[^>]*>图1<\/text>/)
       expect(written).toMatch(/font-size="4"[^>]*>第1页<\/text>/)
+      const omitted = await execute(ctx, 'generate_patent_figure', {
+        figure_type: 'flowchart',
+        steps: flowSteps,
+        target_office: 'cnipa',
+        figure_count: 2,
+        sheet_number: false,
+        filename: 'no-sheet',
+      }, 's8b')
+      expect(omitted.isError).toBe(false)
+      const omittedValue = omitted as { value: { layout: { sheetNumber: string }; warnings: string[] } }
+      expect(omittedValue.value.layout.sheetNumber).toBe('')
+      expect(omittedValue.value.warnings.join('\n')).not.toContain('未写页码')
+      expect(text(omitted)).toContain('## 落版（cnipa）')
+      expect(text(omitted)).not.toContain('- 页码')
+      const omittedSvg = readFileSync(join(outDir, 'no-sheet.svg'), 'utf8')
+      expect(omittedSvg).not.toContain('data-dsh-role="sheet-number"')
+      expect(omittedSvg).not.toContain('第1页')
+      expect(omittedSvg).toContain('>图1</text>')
+      const withoutOffice = await execute(ctx, 'generate_patent_figure', {
+        figure_type: 'flowchart',
+        steps: flowSteps,
+        sheet_number: false,
+        filename: 'no-office',
+      }, 's8c')
+      expect(withoutOffice.isError).toBe(false)
+      expect((withoutOffice as { value: { layout?: unknown } }).value.layout).toBeUndefined()
       for (const [callId, field, value] of [['s9', 'caption_font_mm', 0], ['s10', 'caption_gap_mm', -1], ['s11', 'sheet_font_mm', 0]] as const) {
         const bad = await execute(ctx, 'generate_patent_figure', {
           figure_type: 'flowchart',

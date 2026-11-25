@@ -5,6 +5,7 @@ import {
   assertVectorFigureSpec,
   escapeXmlAttribute,
   fmt,
+  insertSvgDocumentTitle,
   vectorFigureSvg,
 } from '../src/figure/vector-figure.ts'
 import type { VectorFigureSpec } from '../src/figure/vector-figure.ts'
@@ -29,6 +30,22 @@ describe('vector-figure：矢量附图接缝', () => {
 
   it('无图名时不写入 title', () => {
     expect(vectorFigureSvg(spec)).not.toContain('<title>')
+  })
+
+  it('在根 svg 后插入文档标题，不改写节点与图组里的 title', () => {
+    const source = [
+      '<svg xmlns="http://www.w3.org/2000/svg">',
+      '<g id="graph0" class="graph">',
+      '<title>G</title>',
+      '<g id="node1" class="node"><title>a</title><text>甲</text></g>',
+      '</g>',
+      '</svg>',
+    ].join('\n')
+    const titled = insertSvgDocumentTitle(source, 'A&B<C"')
+    expect(titled).toContain('<svg xmlns="http://www.w3.org/2000/svg">\n  <title>A&amp;B&lt;C&quot;</title>\n')
+    expect(titled).toContain('<title>G</title>')
+    expect(titled).toContain('<g id="node1" class="node"><title>a</title>')
+    expect(() => insertSvgDocumentTitle('<g></g>', '图')).toThrow('缺少根 svg 开标签')
   })
 
   it('数值格式化去掉尾随零并拒绝非有限数', () => {

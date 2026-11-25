@@ -2,7 +2,12 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { validateJsonSchemaValue, type JsonSchemaNode } from '@deepseek-ai/dsh-tools'
+import { Context } from '@deepseek-ai/cordis'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
+import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import ToolRuntime, { validateJsonSchemaValue, type JsonSchemaNode } from '@deepseek-ai/dsh-tools'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import { validateSpecDraft, validateTemplateDraft } from '@deepseek-ai/dsh-patent-core'
 import { createRenderPatentDocumentTool, renderDocumentResult } from '@deepseek-ai/dsh-patent-document'
 import { fakeSubprocess, successHandle } from './helpers.ts'
@@ -183,6 +188,61 @@ describe('render_patent_document tool', () => {
       },
       { signal: new AbortController().signal } as never,
     )).rejects.toThrow(/claims\[0\] 自带项号/)
+  })
+
+  /** A schema-valid spec draft whose claim carries its own number, so `validateSpecDraft` rejects it. */
+  function selfNumberedDraft(): Record<string, unknown> {
+    return {
+      meta: { caseNumber: 'CN2026-0001', title: '一种装置', applicant: '示例申请人', inventor: '示例发明人', agent: '示例代理', date: '2026-10-09' },
+      claims: ['1. 自带项号的一种装置'],
+      abstract: ['本发明公开一种装置。'],
+      figureFiles: ['fig1.svg'],
+      sections: {
+        technicalField: [{ kind: 'paragraph', text: '本发明属于示例领域。' }],
+        background: [{ kind: 'paragraph', text: '现有技术存在不足。' }],
+        summary: [{ kind: 'paragraph', text: '本发明提供一种装置。' }],
+        drawingDescriptions: [{ kind: 'list', items: ['整体结构示意图'] }],
+        embodiment: [{ kind: 'paragraph', text: '下面结合附图说明。' }],
+      },
+    }
+  }
+
+  /** Run the tool through the execution pipeline so failures carry `error.info`. */
+  async function runThroughPipeline(args: Record<string, unknown>) {
+    const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    ctx.tools.register(createRenderPatentDocumentTool({ subprocess: fakeSubprocess(() => successHandle()).runtime }))
+    return executeToolFixture(ctx, {
+      signal: new AbortController().signal,
+      callId: ToolCallId('render-boundary'),
+      name: 'render_patent_document',
+      arguments: args,
+    })
+  }
+
+  it('reports a draft validation failure with a stable code at the tool boundary', async () => {
+    const result = await runThroughPipeline({
+      template: 'claims-spec',
+      outputName: 'draft-fail',
+      format: 'html',
+      draft: selfNumberedDraft(),
+    })
+    expect(result.isError).toBe(true)
+    expect(result.error?.info).toMatchObject({ name: 'DraftValidationError', code: 'draft_validation_failed' })
+  })
+
+  it('reports a document render contract failure with a stable code at the tool boundary', async () => {
+    const result = await runThroughPipeline({
+      template: 'claims-spec',
+      outputName: 'brand-fail',
+      format: 'html',
+      draft: selfNumberedDraft(),
+      brand: { firm: 5 },
+    })
+    expect(result.isError).toBe(true)
+    expect(result.error?.info).toMatchObject({ name: 'DocumentRenderError', code: 'invalid_tool_input' })
   })
 
   it('rejects the legacy sections parameter at the executor argument gate', async () => {

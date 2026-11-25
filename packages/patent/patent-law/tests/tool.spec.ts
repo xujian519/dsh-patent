@@ -181,6 +181,7 @@ describe('law_verify tool', () => {
     const result = await execute(ctx, { references: ['见前述条款'] })
     expect(result.isError).toBe(true)
     expect(JSON.stringify(result.content)).toContain('无法把「见前述条款」解析为单条法条引用')
+    expect(result.error?.info).toMatchObject({ name: 'LawVerifyToolError', code: 'unparsable_reference' })
   })
 
   it('lists an unreadable paragraph from text and does not check it as the bare article', async () => {
@@ -211,6 +212,7 @@ describe('law_verify tool', () => {
     const result = await execute(ctx, {})
     expect(result.isError).toBe(true)
     expect(JSON.stringify(result.content)).toContain('至少要给出 text 或 references 之一')
+    expect(result.error?.info).toMatchObject({ name: 'LawVerifyToolError', code: 'no_input' })
   })
 
   it('rejects blank text when no references are given, so a zero-byte call cannot satisfy a gate', async () => {

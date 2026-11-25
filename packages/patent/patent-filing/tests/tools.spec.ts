@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { Context } from '@deepseek-ai/cordis'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
+import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import ToolRuntime from '@deepseek-ai/dsh-tools'
+import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import {
   createBuildPatentFilingTool,
   createVerifyPatentFilingTool,
@@ -212,6 +218,37 @@ describe('build_patent_filing tool', () => {
         outputName: 'default-dir',
       }, { signal: new AbortController().signal } as never) as FilingBuildResult
       expect(value.docxPath).toBe(join(work, 'default-dir.docx'))
+    } finally {
+      rmSync(work, { recursive: true, force: true })
+    }
+  })
+
+  it('reports an unsafe output name with a stable code at the tool boundary', async () => {
+    const work = mkdtempSync(join(tmpdir(), 'dsh-filing-boundary-'))
+    const figure = join(work, 'fig1.png')
+    writeFileSync(figure, 'png')
+    try {
+      const ctx = new Context()
+      await ctx.plugin(SessionProjectionRegistry)
+      await ctx.plugin(SystemPrompt)
+      await ctx.plugin(ToolRuntime)
+      ctx.tools.register(createBuildPatentFilingTool({
+        subprocess: filingSpawner().spawner,
+        pythonPath: '/usr/bin/python3',
+        specPath: defaultSpecPath(),
+        templatePath: defaultTemplatePath(),
+        outputRoot: work,
+        figureScale: 3,
+        timeoutMs: 1_000,
+      }))
+      const result = await executeToolFixture(ctx, {
+        signal: new AbortController().signal,
+        callId: ToolCallId('filing-boundary'),
+        name: 'build_patent_filing',
+        arguments: { draft: draftFixture(figure), outputName: '../escape' },
+      })
+      expect(result.isError).toBe(true)
+      expect(result.error?.info).toMatchObject({ name: 'PatentFilingError', code: 'patent_filing_failed' })
     } finally {
       rmSync(work, { recursive: true, force: true })
     }

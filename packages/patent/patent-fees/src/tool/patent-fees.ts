@@ -9,6 +9,7 @@
  * @module @deepseek-ai/dsh-patent-fees/tool/patent-fees
  */
 
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { computeFees } from '../compute.ts'
@@ -23,19 +24,17 @@ import type {
   ReductionOutcome,
 } from '../types.ts'
 
-/** Thrown when the tool input cannot be priced. */
-export class PatentFeesToolError extends Error {
-  /** Stable error code for the model and logs. */
-  readonly code: string
-
+/**
+ * Thrown when the tool input cannot be priced.
+ * Extends {@link HarnessError} so the code reaches `tool/result`.
+ */
+export class PatentFeesToolError extends HarnessError {
   /**
-   * @param code - stable error code.
+   * @param code - stable error code for the model and logs.
    * @param message - what is wrong with the input.
    */
   constructor(code: string, message: string) {
-    super(message)
-    this.name = 'PatentFeesToolError'
-    this.code = code
+    super(message, code)
   }
 }
 

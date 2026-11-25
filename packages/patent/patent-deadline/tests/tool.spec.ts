@@ -361,6 +361,7 @@ describe('patent_deadlines tool', () => {
     const result = await execute(ctx, { patentType: 'invention', filingDate: '2025-02-29', claimsPriority: false })
     expect(result.isError).toBe(true)
     expect(JSON.stringify(result.content)).toContain('filingDate')
+    expect(result.error?.info).toMatchObject({ name: 'DeadlineToolError', code: 'invalid_date' })
   })
 
   it('rejects an unknown notice kind at the schema boundary', async () => {

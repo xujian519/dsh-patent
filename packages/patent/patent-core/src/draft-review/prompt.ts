@@ -7,11 +7,14 @@
 
 import { dataBlock, withStageWritingSkills } from '../prompt-hygiene.ts'
 import type { StageProvider } from '../types.ts'
+import { draftReviewFindingLocator } from './findings.ts'
 import {
   DRAFT_REVIEW_CATEGORIES,
+  DRAFT_REVIEW_CATEGORY_LABELS,
   DRAFT_REVIEW_PROVISIONS,
   DRAFT_REVIEW_RECOMMENDATIONS,
   type DraftReviewCategory,
+  type DraftReviewDispute,
   type DraftReviewInput,
 } from './types.ts'
 
@@ -67,17 +70,45 @@ export type DraftReviewPromptLimits = {
   priorArtLimit: number
 }
 
+/** 修订轮逐条复核清单的条目上限；超出时截断并报告未列示数，避免长清单糊掉正文。 */
+const PRIOR_FINDINGS_LIMIT = 12
+
+/** 把一条未销账 finding 渲染成复核清单一行。 */
+function renderPriorFinding(dispute: DraftReviewDispute): string {
+  return `- [${DRAFT_REVIEW_CATEGORY_LABELS[dispute.category]}] ${dispute.provision} — ${draftReviewFindingLocator(dispute)}：${dispute.recommendation}`
+}
+
+/**
+ * 渲染上一轮未销账条目清单。
+ * @param disputes - 上一轮的可执行争议点。
+ * @returns 提示词片段；空输入时为空串。
+ */
+export function renderPriorFindingsBlock(disputes: readonly DraftReviewDispute[]): string {
+  if (disputes.length === 0) return ''
+  const listed = disputes.slice(0, PRIOR_FINDINGS_LIMIT).map(renderPriorFinding)
+  if (disputes.length > PRIOR_FINDINGS_LIMIT) {
+    listed.push(`- …另有 ${String(disputes.length - PRIOR_FINDINGS_LIMIT)} 项未列示，同样需逐条复核。`)
+  }
+  return [
+    `【上一轮审查未销账条目（${String(disputes.length)} 项）：改稿后逐条复核】`,
+    ...listed,
+    '- 已解决的条目不要再列；仍未解决的保留原口径并按当前稿重新定位；',
+  ].join('\n')
+}
+
 /**
  * 构造审查提示词。
  * @param input - 审查输入。
  * @param limits - 各块截断上限。
  * @param provider - 阶段能力提供者；用于追加宿主注入的写作模式。
+ * @param priorFindings - 上一轮未销账的可执行争议点；修订轮传入时要求逐条复核。
  * @returns 完整提示词。
  */
 export function buildDraftReviewPrompt(
   input: DraftReviewInput,
   limits: DraftReviewPromptLimits,
   provider?: StageProvider,
+  priorFindings?: readonly DraftReviewDispute[],
 ): string {
   const categoryLines = DRAFT_REVIEW_CATEGORIES.map(
     category => `- ${category}（${DRAFT_REVIEW_PROVISIONS[category]}）：${CATEGORY_GUIDANCE[category]}`,
@@ -88,10 +119,12 @@ export function buildDraftReviewPrompt(
   const priorArtBlock = input.priorArt.trim().length === 0
     ? ''
     : `\n【检索文献】\n${dataBlock(input.priorArt.slice(0, limits.priorArtLimit))}`
+  const priorFindingsBlock = renderPriorFindingsBlock(priorFindings ?? [])
   return withStageWritingSkills([
     '你是不利方的专利审查员，负责审查一份正在成稿的专利申请。',
     '你只看到说明书、权利要求、PFIE 特征与检索文献；撰写方的策略表、融合结果与改写说明不在你的审查材料中。',
     '只从说明书、权利要求、PFIE 特征与检索文献出发，逐条列出审查员会提出的争议点；不要复述撰写方的决策过程。',
+    priorFindingsBlock,
     '审查口径（每条争议点必须归入其中一类）：',
     ...categoryLines,
     '要求：',

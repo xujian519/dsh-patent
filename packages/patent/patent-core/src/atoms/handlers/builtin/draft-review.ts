@@ -23,14 +23,18 @@ import { readAtomTunables } from '../../tunables.ts'
 import {
   DRAFT_REVIEW_ALLOWED_KEYS,
   DRAFT_REVIEW_FORBIDDEN_KEYS,
+  REVISION_LEDGER_ROUNDS_KEY,
   buildCheckedDisputes,
   buildDraftReviewPrompt,
   buildDraftReviewResult,
   checkDraftReviewInput,
+  draftReviewActionableFindings,
   draftReviewRevisionSignals,
+  readLedgerRounds,
   readModelDispute,
   scanDraftReviewOutput,
   type DraftReviewInput,
+  type DraftReviewLedgerRound,
   type ModelDispute,
   DRAFT_REVIEW_SCHEMA,
 } from '../../../draft-review/index.ts'
@@ -132,12 +136,16 @@ export class DraftReviewHandler implements StageHandler {
     const missing = requireLlm(input.provider, 'draft-review')
     if (missing) return missing
 
+    // 修订轮提示词先读跨回退保留的账本：上一轮标记过哪些可执行问题，本轮逐条复核。
+    const priorRounds = readLedgerRounds(input.state[REVISION_LEDGER_ROUNDS_KEY])
+    const priorFindings = priorRounds.at(-1)?.findings ?? []
+
     const prompt = buildDraftReviewPrompt(read.input, {
       specificationLimit: promptLimit,
       claimsLimit: promptLimitConfigured ? promptLimit : 3000,
       pfeLimit: promptLimitConfigured ? promptLimit : 2000,
       priorArtLimit: promptLimitConfigured ? promptLimit : 2000,
-    }, input.provider)
+    }, input.provider, priorFindings)
 
     const called = await callLlm(input.provider, 'draft-review', prompt, {
       schema: DRAFT_REVIEW_SCHEMA,
@@ -162,8 +170,16 @@ export class DraftReviewHandler implements StageHandler {
 
     const result = buildDraftReviewResult(built.disputes, disputes.notes)
     const signals = draftReviewRevisionSignals(result.draft_review_disputes)
+    // 逐条销账账本：把本轮可执行争议点按稳定 finding id 追加到跨回退保留的轮次记录。
+    // 记录只写入 undeclared 键（不在 outputSchema 中），回退清理不会删除它，下一轮
+    // 才认得出上一轮标记过哪些问题；revision-ledger 原子据此判定已销账/仍存在/新出现。
+    const round: DraftReviewLedgerRound = {
+      round: priorRounds.length + 1,
+      findings: draftReviewActionableFindings(result.draft_review_disputes),
+    }
     return {
       ...result,
+      [REVISION_LEDGER_ROUNDS_KEY]: [...priorRounds, round],
       ...(signals.length > 0 ? { [REVISION_SIGNALS_KEY]: signals } : {}),
     }
   }

@@ -381,7 +381,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-tools/src/figure/section-diagram.ts` | 接受 | 918 | 纯几何绘制：146 行主绘制 + 小工具，与 `leader-line` 同类 |
 | `packages/patent/patent-tools/src/figure/leader-line.ts` | 接受 | 908 | 纯几何：稳定在 906→908，无状态、无 I/O |
 | `packages/patent/patent-tools/src/tool/patent-workflow-run.ts` | 接受 | 1070 | 单一工具入口同时承载 manifest 与领域图两条执行路径，输入 schema、恢复/审批接线与解析器共享同一输出契约；拆分会把 schema 与分派分离而不减少分支。2026-11-04 新增审批门现场决策接线（运行级 handler 注册、`approveStageIds` 拒绝与中断文案）约 85 行；2026-11-18 新增 `ctx.patentWorkflow` 运行入口与「服务记录会话事件」分流约 17 行；2026-11-20 自动续跑新增 `runId`/`resumeNote` 输出字段与恢复说明，`createPatentWorkflowRunTool` 因两个 schema 字段达到 152 行，仅超阈值 2 行 |
-| `packages/patent/patent-workflow/src/workflow/manifests.ts` | 接受 | 960 | 内置 manifest 目录：每个阶段是一行数据（id/策略/描述/参数），答复链 15 阶段把文件从 782 推到 852、投影消耗说明再推 3 行，披露链的充分公开与概括范围阶段再推 12 行、权利要求策略阶段再推 7 行、撰写链换位审查阶段再推 20 行、审批门的 `review_keys` 再推 5 行；2026-11-15 带特征编号的实施例块可见字符预算常量再推 7 行（953 → 960），阶段说明仍各占一行。切分只是把数据挪到别处，不降复杂度 |
+| `packages/patent/patent-workflow/src/workflow/manifests.ts` | 接受 | 979 | 内置 manifest 目录：每个阶段是一行数据（id/策略/描述/参数），答复链 15 阶段把文件从 782 推到 852、投影消耗说明再推 3 行，披露链的充分公开与概括范围阶段再推 12 行、权利要求策略阶段再推 7 行、撰写链换位审查阶段再推 20 行、审批门的 `review_keys` 再推 5 行；2026-11-15 带特征编号的实施例块可见字符预算常量再推 7 行（953 → 960），阶段说明仍各占一行。2026-11-25 披露链的修订对账与质量标量两个阶段连同其 maxRetries 与预算改动再推 19 行（960 → 979），阶段说明仍各占一行。切分只是把数据挪到别处，不降复杂度 |
 | `packages/patent/patent-core/src/atoms/handlers/builtin/evidence-check.ts` | 接受 | 842 | 单个 atom handler 的五阶段，最大函数 123 行，仅超阈值 5% |
 | `packages/patent/patent-tools/src/figure/dot-builder.ts` | 接受 | 839 | 单一 DOT 词汇表：五个 builder 各 <60 行，共享头部/标号/转义契约 |
 | `packages/patent/patent-core/src/ipc/ipc-classifier.ts` | 接受 | 807 | 数据表为主：`IPC_DOMAINS` 409 行 + 明细表 260 行，分类函数 <30 行 |

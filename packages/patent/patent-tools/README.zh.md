@@ -78,7 +78,7 @@ Schemastery 配置，所有字段可选。
 | `model` | string | 未设置 → 部署默认路由 | LLM 消费工具的模型 id；与 `provider` 一起按上述规则解析。 |
 | `imageModel` | object | — | 专用附图/图片模型路由（`{ provider, model }`），其声明的输入模态用于门禁 `analyze_patent_figure`；未设置时回退到 `provider`/`model`。 |
 | `maxTokens` | number | — | LLM 消费工具的输出 token 上限（可选）；省略时用 provider 默认值。 |
-| `workflowStageBudget` | number | `27` | 单个内置工作流 manifest 允许声明的最大阶段数；超过即插件加载失败。 |
+| `workflowStageBudget` | number | `29` | 单个内置工作流 manifest 允许声明的最大阶段数；超过即插件加载失败。 |
 | `workflowLlmStageBudget` | number | `14` | 单个内置工作流 manifest 允许声明的最大模型调用阶段数：未声明 atom 的阶段与契约标记 `usesModel` 的原子计入；超过即插件加载失败。 |
 | `approveStageGates` | boolean | `false` | 前台 manifest 运行到达 `approval-gate` 时向本部署的 `approval` 服务取一次决策：放行则继续，拒绝、取消、无应答者或 `never` 策略都会带结果名暂停。开启时任何运行方式都拒绝 `approveStageIds`，包括后台运行，模型无法自行声明已放行。后台运行仍在审批门暂停，因为审批服务只在开着的回合内应答；需要决策时改在前台重跑。 |
 | `noteDir` | string | `<workspace>/99-知识库` | `knowledge_note_save` 的知识笔记目录。绝对路径，或相对于 `sandboxPolicy.workspaceRoot`。没有该根时加载失败。 |

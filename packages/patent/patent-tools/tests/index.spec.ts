@@ -398,7 +398,9 @@ describe('patent-tools plugin wiring', () => {
   })
 
   it('routes figureRenderer="cli" to the dot CLI and fails loud without the subprocess service', async () => {
-    const ctx = await mounted({ figureRenderer: 'cli' })
+    // 显式输出目录：本用例验证缺 subprocess，不走案卷目录解析。
+    temp = await mkdtemp(join(tmpdir(), 'dsh-patent-tools-cli-'))
+    const ctx = await mounted({ figureRenderer: 'cli', figureOutputDir: join(temp, 'figs') })
     const result = await exec(ctx, 'generate_patent_figure', {
       figure_type: 'flowchart',
       steps: [{ id: 's1', label: '接收输入', next: [] }],
@@ -409,7 +411,9 @@ describe('patent-tools plugin wiring', () => {
   })
 
   it('routes png through the cli fallback and fails loud without a subprocess service', async () => {
-    const ctx = await mounted({})
+    // 显式输出目录：本用例验证 png 回退 CLI 时缺 subprocess，不走案卷目录解析。
+    temp = await mkdtemp(join(tmpdir(), 'dsh-patent-tools-png-'))
+    const ctx = await mounted({ figureOutputDir: join(temp, 'figs') })
     const result = await exec(ctx, 'generate_patent_figure', {
       figure_type: 'flowchart',
       steps: [{ id: 's1', label: '接收输入', next: [] }],

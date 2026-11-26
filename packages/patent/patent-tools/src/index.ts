@@ -55,7 +55,6 @@ export { createRuleCheckTool } from './tool/rule-check.ts'
 export type { RuleCheckInput, RuleCheckOutput, RuleViolationView, RuleCheckDeps } from './tool/rule-check.ts'
 export { createClaimLintTool } from './tool/claim-lint.ts'
 export type { ClaimLintFindingOutput, ClaimLintOutput } from './tool/claim-lint.ts'
-export { createReviewPatentApplicationTool, renderReviewReport } from './tool/review-patent-application.ts'
 export type {
   ReviewPatentApplicationInput,
   ReviewPatentApplicationOutput,

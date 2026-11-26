@@ -1,10 +1,10 @@
 /**
  * `triz_contradiction_analysis` tool: 交底书侧的技术矛盾识别与参数完备性检查。
  *
- * 用途是发明人侧的两件事：由矛盾给出可替代手段方向（方案生成），以及列出
- * 交底书提到却没给取值的工程参数（补强清单）。模型只负责识别，编号合法性、
- * 矩阵落格与证据定位由 `@deepseek-ai/dsh-patent-core` 判定；证据无法在原文
- * 定位的矛盾被丢弃并计数。
+ * 用途是发明人侧的三件事：由矛盾给出可替代手段方向（方案生成），列出交底书提到
+ * 却没给取值的工程参数（补强清单），再把矛盾与其推荐原理折成待发明人确认的候选
+ * PFIE 单元（候选面）。模型只负责识别，编号合法性、矩阵落格与证据定位由
+ * `@deepseek-ai/dsh-patent-core` 判定；证据无法在原文定位的矛盾被丢弃并计数。
  *
  * 产物不进入创造性三步法第二步的「实际解决的技术问题」表述——该问题必须相对
  * 区别特征确定且不含解决手段。
@@ -17,6 +17,7 @@ import {
   asJsonArray,
   asJsonRecord,
   buildTrizAnalysis,
+  buildTrizCandidateUnits,
   extractTrizContradictions,
   readJsonNumber,
   readJsonString,
@@ -64,20 +65,43 @@ type TrizUnmappedJson = {
   reason: string
 }
 
+/** 一条候选 PFIE 单元的工具输出形状（字段与内核类型同构）。 */
+type TrizCandidateUnitJson = {
+  id: string
+  contradictionId: string
+  problem: string
+  insight: string
+  feature: string
+  effect: string
+  principles: Array<{ number: number; name: string }>
+  contradictionEvidence: string
+  status: string
+}
+
+/** 一条未折出候选的矛盾记录。 */
+type TrizCandidateSkipJson = {
+  contradictionId: string
+  matrixStatus: string
+  directionCount: number
+}
+
 /** Output of the triz_contradiction_analysis tool. */
 type TrizContradictionAnalysisOutput = {
   contradictions: TrizContradictionJson[]
   parameter_gaps: TrizParameterGapJson[]
   unmapped: TrizUnmappedJson[]
   dropped_for_evidence: number
+  candidate_units: TrizCandidateUnitJson[]
+  candidate_skips: TrizCandidateSkipJson[]
 }
 
 const DESCRIPTION = [
   '交底书侧的技术矛盾分析与参数完备性检查（发明人侧用途）。',
   '从技术交底书识别「改善某工程参数的同时牺牲另一工程参数」的技术矛盾，落格到 TRIZ 39x39 经典矛盾矩阵取推荐发明原理，',
   '并列出交底书提到但未给出取值的工程参数（缺现状值／目标值／单位／测量口径）。',
-  '两处用途：① 方案生成——按推荐原理给出可替代的手段方向；② 交底书补强——把缺口清单交发明人补充。',
+  '三处用途：① 方案生成——按推荐原理给出可替代的手段方向；② 交底书补强——把缺口清单交发明人补充；③ 候选 PFIE 单元——把矛盾与其推荐原理折成 candidate_units，一条方案方向一个候选，status 恒为 pending-inventor-confirmation，无推荐原理可依的矛盾记入 candidate_skips。',
   '识别由模型完成，编号合法性（1-39）、矩阵落格与证据定位由程序判定：evidence 必须在交底书原文中逐字定位，否则该条矛盾被丢弃并计入 dropped_for_evidence。',
+  'candidate_units 的 feature 与 insight 是手段假设、没有原文锚点，只用于与发明人确认；未确认前不得写入 pfe_triples、权利要求策略或说明书正文。',
   '本工具不产出审查语义的技术问题表述，也不构成法律结论；',
   '创造性三步法第二步的「实际解决的技术问题」必须相对区别特征确定且不含解决手段，不得由本工具的产物代填。',
 ].join('')
@@ -112,6 +136,19 @@ function renderParameterRef(value: unknown): string {
   return no === undefined ? name : `${name}（${no}）`
 }
 
+/** 读取原理引用的行内列表「编号 名称」；非对象与空文本丢弃。 */
+function principleList(value: unknown): string[] {
+  return asJsonArray(value)
+    .map((entry) => {
+      const principle = asJsonRecord(entry)
+      if (principle === undefined) return ''
+      const no = readJsonNumber(principle.number)
+      const name = text(principle.name)
+      return no === undefined ? name : `${no} ${name}`.trim()
+    })
+    .filter(entry => entry.length > 0)
+}
+
 /** 渲染一条矛盾。 */
 function renderContradiction(value: unknown, index: number): string[] {
   const record = asJsonRecord(value)
@@ -122,21 +159,38 @@ function renderContradiction(value: unknown, index: number): string[] {
     `  - 矛盾：${text(record.statement)}`,
     `  - 证据：${text(record.evidence)}`,
   ]
-  const principles = asJsonArray(record.principles)
-    .map((entry) => {
-      const principle = asJsonRecord(entry)
-      if (principle === undefined) return ''
-      const no = readJsonNumber(principle.number)
-      const name = text(principle.name)
-      return no === undefined ? name : `${no} ${name}`.trim()
-    })
-    .filter(entry => entry.length > 0)
+  const principles = principleList(record.principles)
   lines.push(principles.length > 0 ? `  - 推荐原理：${principles.join('；')}` : '  - 推荐原理：无（矩阵无条目或转录空缺）')
   const directions = asJsonArray(record.solutionDirections).map(text).filter(entry => entry.length > 0)
   if (directions.length > 0) {
     lines.push('  - 候选方案方向：', ...directions.map(direction => `    - ${direction}`))
   }
   return lines
+}
+
+/** 渲染一条候选 PFIE 单元。 */
+function renderCandidate(value: unknown, index: number): string[] {
+  const record = asJsonRecord(value)
+  if (record === undefined) return []
+  const principles = principleList(record.principles)
+  return [
+    `- ${text(record.id) || `K${index + 1}`} ← ${text(record.contradictionId)}`,
+    `  - 问题：${text(record.problem)}`,
+    `  - 发明认知（原理推导，非发明人陈述）：${text(record.insight)}`,
+    `  - 特征（无原文锚点）：${text(record.feature)}`,
+    `  - 期望效果：${text(record.effect)}`,
+    `  - 所依原理：${principles.join('；')}`,
+    `  - 来源矛盾证据（只支撑矛盾，不支撑本候选的特征与认知）：${text(record.contradictionEvidence)}`,
+  ]
+}
+
+/** 渲染一条未折出候选的矛盾记录。 */
+function renderCandidateSkip(value: unknown): string {
+  const record = asJsonRecord(value)
+  if (record === undefined) return ''
+  const status = text(record.matrixStatus)
+  const count = readJsonNumber(record.directionCount) ?? 0
+  return `- ${text(record.contradictionId)}：${count} 条方案方向无推荐原理可依（${MATRIX_STATUS_LABELS[status] ?? status}），未折出候选`
 }
 
 /** 渲染一条参数缺口。 */
@@ -170,6 +224,8 @@ export function renderTrizContradictionAnalysis(value: unknown): string {
   const contradictions = asJsonArray(record.contradictions)
   const gaps = asJsonArray(record.parameter_gaps)
   const unmapped = asJsonArray(record.unmapped)
+  const candidates = asJsonArray(record.candidate_units)
+  const candidateSkips = asJsonArray(record.candidate_skips)
   const dropped = readJsonNumber(record.dropped_for_evidence) ?? 0
   const statusCounts = contradictions.map((entry) => {
     const item = asJsonRecord(entry)
@@ -181,7 +237,7 @@ export function renderTrizContradictionAnalysis(value: unknown): string {
 
   const lines = [
     `triz_contradiction_analysis: 矛盾 ${contradictions.length} 条（有推荐原理 ${withPrinciples}、物理矛盾 ${physical}、矩阵空缺 ${gapCells}），`
-    + `参数缺口 ${gaps.length} 项，未采纳 ${unmapped.length} 条（其中证据未定位丢弃 ${dropped} 条）。`,
+    + `参数缺口 ${gaps.length} 项，未采纳 ${unmapped.length} 条（其中证据未定位丢弃 ${dropped} 条），候选 PFIE 单元 ${candidates.length} 条。`,
     '',
     '## 技术矛盾（发明人侧：方案方向与交底书补强，不作三步法第二步的问题表述）',
   ]
@@ -189,6 +245,14 @@ export function renderTrizContradictionAnalysis(value: unknown): string {
     lines.push('未识别到有原文证据支撑的技术矛盾。')
   } else {
     for (const [index, entry] of contradictions.entries()) lines.push(...renderContradiction(entry, index))
+  }
+  lines.push('', '## 候选 PFIE 单元（待发明人确认，未进四元组表）')
+  if (candidates.length === 0 && candidateSkips.length === 0) {
+    lines.push('无候选：矛盾未给出方案方向，或所落矩阵格无推荐原理。')
+  } else {
+    lines.push(`候选 ${candidates.length} 条，status 均为 pending-inventor-confirmation；发明人确认前不得写入 pfe_triples、权利要求策略或说明书正文。`)
+    for (const [index, entry] of candidates.entries()) lines.push(...renderCandidate(entry, index))
+    lines.push(...candidateSkips.map(renderCandidateSkip).filter(line => line.length > 0))
   }
   lines.push('', '## 参数完备性缺口（交底书补强清单）')
   const gapLines = gaps.map(renderGap).filter(line => line.length > 0)
@@ -202,6 +266,7 @@ export function renderTrizContradictionAnalysis(value: unknown): string {
 
 /** 组装工具输出：把内核的只读结构摊成可变 JSON 值。 */
 function toOutput(analysis: TrizContradictionAnalysis): TrizContradictionAnalysisOutput {
+  const candidates = buildTrizCandidateUnits(analysis.contradictions)
   return {
     contradictions: analysis.contradictions.map(contradiction => ({
       id: contradiction.id,
@@ -220,6 +285,22 @@ function toOutput(analysis: TrizContradictionAnalysis): TrizContradictionAnalysi
     })),
     unmapped: analysis.unmapped.map(item => ({ statement: item.statement, reason: item.reason })),
     dropped_for_evidence: analysis.droppedForEvidence,
+    candidate_units: candidates.units.map(unit => ({
+      id: unit.id,
+      contradictionId: unit.contradictionId,
+      problem: unit.problem,
+      insight: unit.insight,
+      feature: unit.feature,
+      effect: unit.effect,
+      principles: unit.principles.map(principle => ({ number: principle.number, name: principle.name })),
+      contradictionEvidence: unit.contradictionEvidence,
+      status: unit.status,
+    })),
+    candidate_skips: candidates.skipped.map(skip => ({
+      contradictionId: skip.contradictionId,
+      matrixStatus: skip.matrixStatus,
+      directionCount: skip.directionCount,
+    })),
   }
 }
 
@@ -245,6 +326,8 @@ export function createTrizContradictionAnalysisTool(deps: TrizContradictionAnaly
           parameter_gaps: { type: 'array', required: true, items: { type: 'json' } },
           unmapped: { type: 'array', required: true, items: { type: 'json' } },
           dropped_for_evidence: { type: 'integer', required: true },
+          candidate_units: { type: 'array', required: true, items: { type: 'json' } },
+          candidate_skips: { type: 'array', required: true, items: { type: 'json' } },
         },
       },
       render: (_args, value) => [{ type: 'text', text: renderTrizContradictionAnalysis(value) }],

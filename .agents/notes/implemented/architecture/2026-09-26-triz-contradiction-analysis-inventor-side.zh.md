@@ -22,7 +22,7 @@ Status: implemented
 
 `triz_contradiction_analysis` 是 `patent-tools` 的第 30 个模型可见工具；工具目录、预设 README、两个包的 README，以及 `patent-oa-response` 的工具 schema 快照（`patent-jobs` class 的 schema owner）随之更新。
 
-产物只喂方案探索与交底书补强清单，到此为止。它不产出问题依赖图、不产出幻觉率指标、不做跨文档问题合并，矛盾对也绝不进入交付文书的法定论证段。
+产物只喂方案探索与交底书补强清单，到此为止。它不产出问题依赖图、不产出幻觉率指标、不做跨文档问题合并，矛盾对也绝不进入交付文书的法定论证段。`buildTrizCandidateUnits` 还会把有原理可依的矛盾的每条方案方向转成工具结果里一个 `pending-inventor-confirmation` 状态的候选 PFIE 单元；那份清单是发明人确认材料，仍不进 `pfe_triples`（[候选单元](2026-11-26-triz-candidate-pfie-units.zh.md)）。
 
 矩阵 1521 格中有 331 格没有推荐——39 个对角物理矛盾与 292 个非对角转录缺口——工具把它们报成空缺，而不是编一条原理；`unmapped` 承接模型无法映射到 1-39 的表述，而不是硬凑一个编号。
 

@@ -78,7 +78,9 @@ Stage params 可调整这些 handler。缺省键保留各原子默认值；畸�
 
 `extractTrizContradictions(port, text, { focus })` 用一次模型调用识别技术矛盾（改善某工程参数的同时牺牲另一工程参数）与交底书点名却未量化的工程参数（缺现状值／目标值／单位／测量口径）。`buildTrizAnalysis(extraction, sourceText)` 确定性组装结果：只接受 1-39 的整数参数编号，逐对落格到 `@deepseek-ai/dsh-methodology` 随包的 39x39 矛盾矩阵（对角格是物理矛盾，空格是转录缺口），参数与原理名称一律取随包资产而非模型输出，并**丢弃证据无法在交底书原文中逐字定位的矛盾**、计入丢弃数。
 
-产物属发明人侧：候选方案方向与交底书补强缺口清单。矛盾对不是三步法第二步的技术问题表述——后者必须相对区别特征确定且不含解决手段（`checkAtomic`），把矛盾填进该字段会直接违反该检验。
+`buildTrizCandidateUnits(contradictions)` 把落格有推荐原理的矛盾的每条非空白方案方向折成一个 `TrizCandidateUnit`，编号 `K1..Kn` 跨矛盾连续，`status` 恒为 `pending-inventor-confirmation`。它的 `problem` 与 `contradictionEvidence` 是已核验的矛盾表述与原文片段；`insight`、`feature`、`effect` 由原理与参数名称推导而来，**没有交底书锚点**。有方向但无原理可依的矛盾（对角格或空格）只留下 `skipped` 记录，不产出候选。候选是发明人确认材料：不会写进 `pfe_triples`，发明人确认后的方向经由消费方已有的已确认特征输入进入撰写。
+
+产物属发明人侧：候选方案方向、由其折出的候选单元，以及交底书补强缺口清单。矛盾对不是三步法第二步的技术问题表述——后者必须相对区别特征确定且不含解决手段（`checkAtomic`），把矛盾填进该字段会直接违反该检验。
 
 <a id="evidence-closed-loop-ledger--judgment-engine"></a>
 ## Evidence（证据闭环账本 + 判定引擎）

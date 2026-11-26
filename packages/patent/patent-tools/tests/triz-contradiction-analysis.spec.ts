@@ -81,10 +81,52 @@ describe('triz_contradiction_analysis', () => {
     expect(out).toContain('温度（17）：缺目标值、缺单位 —— 只写加热，未给温度范围')
     expect(out).toContain('## 未采纳')
     expect(out).toContain('提高客户满意度 —— 非工程参数')
+    expect(out).toContain('候选 PFIE 单元 1 条')
+    expect(out).toContain('## 候选 PFIE 单元（待发明人确认，未进四元组表）')
+    expect(out).toContain('- K1 ← C1')
+    expect(out).toContain('特征（无原文锚点）：预紧力改为分组可调')
 
-    const value = (result as { value?: { dropped_for_evidence?: number; contradictions?: unknown[] } }).value
+    const value = (
+      result as {
+        value?: {
+          dropped_for_evidence?: number
+          contradictions?: unknown[]
+          candidate_units?: Array<{ id: string; feature: string; status: string; contradictionId: string }>
+          candidate_skips?: unknown[]
+        }
+      }
+    ).value
     expect(value?.dropped_for_evidence).toBe(1)
     expect(value?.contradictions).toHaveLength(1)
+    expect(value?.candidate_skips).toEqual([])
+    expect(value?.candidate_units).toHaveLength(1)
+    expect(value?.candidate_units?.[0]).toMatchObject({
+      id: 'K1',
+      contradictionId: 'C1',
+      feature: '预紧力改为分组可调',
+      status: 'pending-inventor-confirmation',
+    })
+  })
+
+  it('物理矛盾的方案方向只计入 candidate_skips，不折出候选', async () => {
+    const model = jsonModel(JSON.stringify({
+      contradictions: [{
+        improving: 5, worsening: 5,
+        statement: '既想要节拍又想要稳定性',
+        evidence: '产线节拍下降',
+        solution_directions: ['分时段切换预紧力档位'],
+      }],
+    }))
+    const ctx = await ctxWith(createTrizContradictionAnalysisTool({ model }))
+    const result = await execute(ctx, 'triz_contradiction_analysis', { text: SOURCE }, 'tca-physical')
+
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    expect(text(result)).toContain('- C1：1 条方案方向无推荐原理可依（物理矛盾（对角格，经典矩阵无条目）），未折出候选')
+
+    const value = (result as { value?: { candidate_units?: unknown[]; candidate_skips?: unknown[] } }).value
+    expect(value?.candidate_units).toEqual([])
+    expect(value?.candidate_skips).toHaveLength(1)
   })
 
   it('text 为空 → 输入错误，不调用模型', async () => {
@@ -132,7 +174,9 @@ describe('renderTrizContradictionAnalysis', () => {
     })
 
     expect(out).toContain('矛盾 0 条')
+    expect(out).toContain('候选 PFIE 单元 0 条')
     expect(out).toContain('未识别到有原文证据支撑的技术矛盾。')
+    expect(out).toContain('无候选：矛盾未给出方案方向，或所落矩阵格无推荐原理。')
     expect(out).toContain('无缺口记录。')
     expect(out).not.toContain('## 未采纳')
   })
@@ -157,6 +201,34 @@ describe('renderTrizContradictionAnalysis', () => {
     expect(out.match(/推荐原理：无（矩阵无条目或转录空缺）/g)).toHaveLength(2)
   })
 
+  it('候选段给出待确认候选与未折出候选的矛盾', () => {
+    const out = renderTrizContradictionAnalysis({
+      contradictions: [],
+      parameter_gaps: [],
+      unmapped: [],
+      dropped_for_evidence: 0,
+      candidate_units: [{
+        id: 'K1',
+        contradictionId: 'C2',
+        problem: '提升稳定性同时牺牲节拍',
+        insight: '借助15 动态性化解「运动物体长度」与「运动物体重量」的取舍',
+        feature: '把预紧力改为可调分组',
+        effect: '改善运动物体长度，且不以牺牲运动物体重量为代价',
+        principles: [{ number: 15, name: '动态性' }],
+        contradictionEvidence: '预紧力增大后装配耗时明显增加',
+        status: 'pending-inventor-confirmation',
+      }],
+      candidate_skips: [{ contradictionId: 'C1', matrixStatus: 'physical', directionCount: 2 }],
+    })
+
+    expect(out).toContain('- K1 ← C2')
+    expect(out).toContain('发明认知（原理推导，非发明人陈述）：借助15 动态性')
+    expect(out).toContain('特征（无原文锚点）：把预紧力改为可调分组')
+    expect(out).toContain('所依原理：15 动态性')
+    expect(out).toContain('- C1：2 条方案方向无推荐原理可依（物理矛盾（对角格，经典矩阵无条目）），未折出候选')
+    expect(out.indexOf('## 候选 PFIE 单元')).toBeLessThan(out.indexOf('## 参数完备性缺口'))
+  })
+
   it('renders malformed entries defensively without throwing', () => {
     const out = renderTrizContradictionAnalysis({
       contradictions: [
@@ -175,6 +247,21 @@ describe('renderTrizContradictionAnalysis', () => {
       parameter_gaps: [null, { parameter: 7, missing: ['unknown-kind', ''], detail: '' }],
       unmapped: [null, { statement: '', reason: 'r' }],
       dropped_for_evidence: 'not-a-number',
+      candidate_units: [
+        null,
+        {
+          id: '',
+          contradictionId: 9,
+          problem: null,
+          insight: 11,
+          feature: 12,
+          effect: 13,
+          principles: [null, { number: 3 }, { name: '局部质量' }],
+          contradictionEvidence: 14,
+          status: 'confirmed',
+        },
+      ],
+      candidate_skips: [null, { contradictionId: 'C7', matrixStatus: 'unknown-status', directionCount: 'x' }],
     })
 
     expect(out).toContain('C2 改善「未命名参数」↔ 恶化「恶化参数」｜unknown-status')
@@ -183,5 +270,8 @@ describe('renderTrizContradictionAnalysis', () => {
     expect(out).toContain('- 未命名参数：unknown-kind')
     expect(out).toContain('证据未定位丢弃 0 条')
     expect(out).toContain('## 未采纳')
+    expect(out).toContain('- K2 ← ')
+    expect(out).toContain('  - 所依原理：3；局部质量')
+    expect(out).toContain('- C7：0 条方案方向无推荐原理可依（unknown-status），未折出候选')
   })
 })

@@ -75,6 +75,8 @@ const EXEMPT_REFERENCES: ReadonlyMap<string, string> = new Map([
   ['abstract_heading', 'validate_specification result key'],
   ['based_on', 'cnlaw graph relation name'],
   ['brief_ref', 'document brief metadata field'],
+  ['candidate_skips', 'triz_contradiction_analysis result key'],
+  ['candidate_units', 'triz_contradiction_analysis result key'],
   ['case_type', 'cnlaw REST query parameter'],
   ['char_budget', 'document deliverable metadata field'],
   ['citation_verified', 'patent evidence field'],

@@ -90,6 +90,8 @@ const DESCRIPTION = [
   '与 generate_patent_figure 的返回值配合使用：生成后按本工具复核，把 findings 当作必须处理的图面缺陷。',
   '',
   'delivery_review=true 时加查交付前四项：图面词语（非必需注释、非中文、标号带括号）、`<image>` 位图/照片、覆盖整幅图纸的边框、横向摆放。四项只看 SVG 文本，不判图面内容是否清楚。',
+  '',
+  'analyze_patent_figure 的结果不是 SVG，不能代替本工具。',
 ].join('\n')
 
 /**

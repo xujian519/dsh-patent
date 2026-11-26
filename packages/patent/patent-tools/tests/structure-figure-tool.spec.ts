@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { utimes } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -11,6 +12,7 @@ import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { StructureRenderOutcome, StructureRenderSpec } from '../src/figure/freecad-renderer.ts'
 import { STRUCTURE_MANIFEST_FILENAME } from '../src/figure/freecad-structure-script.ts'
 import { createGenerateStructureFigureTool, STRUCTURE_FIGURE_MODEL_USED } from '../src/tool/generate-structure-figure.ts'
+import { RENDER_REUSE_VERSION, STRUCTURE_REUSE_WARNING, renderKeyPath, renderReuseKey } from '../src/figure/render-reuse.ts'
 import { structureAssembly } from '../src/tool/structure-render.ts'
 import type { GenerateStructureFigureInput } from '../src/tool/generate-structure-figure.ts'
 import type { FigureIndexEntry } from '../src/figure/index-store.ts'
@@ -159,6 +161,49 @@ describe('generate_structure_figure gate', () => {
       // enabled:false 同样门禁
       const off = createGenerateStructureFigureTool({ render, enabled: false, outputDir: dir, cwd: dir })
       await expect(off.execute({ model_path: join(dir, 'a.step') }, exec)).rejects.toMatchObject({ code: 'setup_required' })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('开启后 jpg 在读盘前拒绝且不投影；关闭时仍先报 setup_required', async () => {
+    const dir = tempDir()
+    try {
+      let calls = 0
+      const { render } = okRenderer()
+      const counting = (spec: StructureRenderSpec): Promise<StructureRenderOutcome> => {
+        calls += 1
+        return render(spec)
+      }
+      const tool = createGenerateStructureFigureTool({ render: counting, enabled: true, outputDir: dir, cwd: dir })
+      await expect(tool.execute({ model_path: 'photo.jpg' }, exec)).rejects.toMatchObject({ code: 'invalid_tool_input' })
+      await expect(tool.execute({ model_path: 'photo.jpg' }, exec)).rejects.toThrow(/analyze_patent_figure/)
+      expect(calls).toBe(0)
+      const off = createGenerateStructureFigureTool({ render: counting, outputDir: dir, cwd: dir })
+      await expect(off.execute({ model_path: 'photo.jpg' }, exec)).rejects.toMatchObject({ code: 'setup_required' })
+      expect(calls).toBe(0)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('export_dxf 为每个视图写 DXF，返回的主路径仍是 SVG', async () => {
+    const dir = tempDir()
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="200pt" height="150pt" viewBox="0 0 200 150"><line x1="0" y1="0" x2="10" y2="0" stroke="#000" fill="none"/></svg>'
+    const { render } = okRenderer({ svg })
+    try {
+      const tool = createGenerateStructureFigureTool({ render, enabled: true, outputDir: dir, cwd: dir })
+      const value = await tool.execute({
+        model_path: writeModel(dir, 'a.step'),
+        views: ['iso'],
+        export_dxf: true,
+        persist_index: false,
+      }, exec) as { paths: string[]; dxfPaths?: string[] }
+      expect(value.paths[0]).toMatch(/\.svg$/)
+      expect(value.dxfPaths).toHaveLength(1)
+      const dxf = value.dxfPaths?.[0] ?? ''
+      expect(existsSync(dxf)).toBe(true)
+      expect(readFileSync(dxf, 'utf8')).toContain('LINE')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -1374,6 +1419,208 @@ describe('generate_structure_figure 渲染复核门禁', () => {
       expect(result.isError).toBe(false)
       const warnings = (result as never as { value: { warnings: string[] } }).value.warnings
       expect(warnings.some(warning => warning.includes('渲染复核：图面文字「条件」被线条贯穿'))).toBe(true)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('generate_structure_figure 复用', () => {
+  function toolIn(dir: string, render: MockRenderer['render']) {
+    return createGenerateStructureFigureTool({ render, enabled: true, outputDir: dir, cwd: dir })
+  }
+
+  it('相同模型与参数第二次不投影，并提示复用', async () => {
+    const dir = tempDir()
+    try {
+      const { render, calls } = okRenderer()
+      const tool = toolIn(dir, render)
+      const args = { model_path: writeModel(dir, 'a.step'), views: ['iso'] as const, persist_index: false }
+      const first = await tool.execute(args, exec) as { paths: string[]; warnings: string[] }
+      const second = await tool.execute(args, exec) as { paths: string[]; warnings: string[] }
+      expect(calls).toHaveLength(1)
+      expect(second.paths).toEqual(first.paths)
+      expect(second.warnings).toContain(STRUCTURE_REUSE_WARNING)
+      expect(first.warnings).not.toContain(STRUCTURE_REUSE_WARNING)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('改模型字节、改比例、或把 SVG 改到键文件之后，都会重新投影', async () => {
+    const dir = tempDir()
+    try {
+      const { render, calls } = okRenderer()
+      const tool = toolIn(dir, render)
+      const model = writeModel(dir, 'a.step')
+      const args = { model_path: model, views: ['iso'] as const, persist_index: false }
+      const first = await tool.execute(args, exec) as { paths: string[] }
+      writeFileSync(model, 'ISO-10303-21;\none-byte\n')
+      await tool.execute(args, exec)
+      await tool.execute({ ...args, scale: 2 }, exec)
+      const svg = resolve(dir, first.paths[0] ?? '')
+      await utimes(svg, new Date('2099-01-01T00:00:00Z'), new Date('2099-01-01T00:00:00Z'))
+      await tool.execute({ ...args, scale: 2 }, exec)
+      expect(calls).toHaveLength(4)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('reuse false 删除键并重新投影；export_dxf 的 DXF 被删掉后也不复用', async () => {
+    const dir = tempDir()
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="200pt" height="150pt" viewBox="0 0 200 150"><line x1="0" y1="0" x2="10" y2="0" stroke="#000" fill="none"/></svg>'
+    try {
+      const { render, calls } = okRenderer({ svg })
+      const tool = toolIn(dir, render)
+      const model = writeModel(dir, 'a.step')
+      await tool.execute({ model_path: model, views: ['iso'], persist_index: false, reuse: false }, exec)
+      await tool.execute({ model_path: model, views: ['iso'], persist_index: false, reuse: false }, exec)
+      expect(calls).toHaveLength(2)
+      const drawn = await tool.execute({
+        model_path: model,
+        views: ['iso'],
+        persist_index: false,
+        export_dxf: true,
+      }, exec) as { dxfPaths?: string[] }
+      expect(calls).toHaveLength(3)
+      const dxf = drawn.dxfPaths?.[0] ?? ''
+      rmSync(dxf)
+      await tool.execute({
+        model_path: model,
+        views: ['iso'],
+        persist_index: false,
+        export_dxf: true,
+      }, exec)
+      expect(calls).toHaveLength(4)
+      await tool.execute({
+        model_path: model,
+        views: ['iso'],
+        persist_index: false,
+        export_dxf: true,
+      }, exec)
+      expect(calls).toHaveLength(4)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('投影失败或抛错后不写复用键；门禁关闭时不读模型也不写收据', async () => {
+    const dir = tempDir()
+    try {
+      const failed = toolIn(dir, async () => ({ ok: false, code: 'render_failed', error: '投影失败' }))
+      const model = writeModel(dir, 'a.step')
+      await expect(failed.execute({ model_path: model, views: ['iso'], persist_index: false }, exec)).rejects.toThrow('投影失败')
+      expect(existsSync(join(dir, 'structure-reuse.json'))).toBe(false)
+      const thrown = toolIn(dir, async () => {
+        throw new Error('freecad down')
+      })
+      await expect(thrown.execute({ model_path: model, views: ['iso'], persist_index: false }, exec)).rejects.toThrow('freecad down')
+      expect(existsSync(join(dir, 'structure-reuse.json'))).toBe(false)
+      const { render, calls } = okRenderer()
+      const off = createGenerateStructureFigureTool({ render, outputDir: dir, cwd: dir })
+      await expect(off.execute({ model_path: join(dir, 'missing.step') }, exec)).rejects.toMatchObject({ code: 'setup_required' })
+      expect(calls).toHaveLength(0)
+      expect(existsSync(join(dir, 'structure-reuse.json'))).toBe(false)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('收据损坏、键版本不同、或结果缺字段时重新投影', async () => {
+    const dir = tempDir()
+    try {
+      const { render, calls } = okRenderer()
+      const tool = toolIn(dir, render)
+      const args = { model_path: writeModel(dir, 'a.step'), views: ['iso'] as const, persist_index: false }
+      const first = await tool.execute(args, exec) as {
+        paths: string[]
+        warnings: string[]
+        figureDescription: string
+        indexed: boolean
+        figures: unknown[]
+        numeralMap: unknown[]
+        components: unknown[]
+      }
+      const receiptPath = join(dir, 'structure-reuse.json')
+      const stored = JSON.parse(readFileSync(receiptPath, 'utf8')) as { key: string; result: Record<string, unknown> }
+      const good = stored.result
+      const bump = renderReuseKey({
+        tool: 'structure',
+        request: { probe: true },
+        modelHashes: [],
+        version: RENDER_REUSE_VERSION + 1,
+      })
+      const bodies = [
+        '{',
+        JSON.stringify({ key: bump, paths: first.paths, result: good }),
+        JSON.stringify({ key: stored.key, paths: [], result: good }),
+        JSON.stringify({ key: stored.key, paths: [1], result: good }),
+        JSON.stringify({ key: stored.key, paths: first.paths, result: [] }),
+        JSON.stringify({ key: stored.key, paths: first.paths, result: { ...good, paths: [1] } }),
+        JSON.stringify({ key: stored.key, paths: first.paths, result: { ...good, warnings: [1] } }),
+        JSON.stringify({ key: stored.key, paths: first.paths, result: { ...good, figureDescription: 1 } }),
+        JSON.stringify({ key: stored.key, paths: first.paths, result: { ...good, indexed: 'yes' } }),
+        JSON.stringify({ key: stored.key, paths: first.paths, result: { ...good, figures: 'no' } }),
+        JSON.stringify({ key: stored.key, paths: first.paths, result: { ...good, dxfPaths: [1] } }),
+      ]
+      for (const body of bodies) {
+        writeFileSync(receiptPath, body)
+        const before = calls.length
+        await tool.execute(args, exec)
+        expect(calls.length).toBe(before + 1)
+      }
+      const svg = resolve(dir, first.paths[0] ?? '')
+      expect(existsSync(renderKeyPath(svg))).toBe(true)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('文字转路径端口有无不同时不复用同一张线稿', async () => {
+    const dir = tempDir()
+    try {
+      const { render, calls } = okRenderer()
+      const model = writeModel(dir, 'a.step')
+      const args = { model_path: model, views: ['iso'] as const, persist_index: false }
+      const outlined = createGenerateStructureFigureTool({
+        render,
+        enabled: true,
+        outputDir: dir,
+        cwd: dir,
+        outlineText: () => Promise.resolve({ ok: true }),
+      })
+      const plain = createGenerateStructureFigureTool({
+        render,
+        enabled: true,
+        outputDir: dir,
+        cwd: dir,
+      })
+      await outlined.execute(args, exec)
+      const again = await outlined.execute(args, exec) as { warnings: string[] }
+      expect(calls).toHaveLength(1)
+      expect(again.warnings).toContain(STRUCTURE_REUSE_WARNING)
+      const without = await plain.execute(args, exec) as { warnings: string[] }
+      expect(calls).toHaveLength(2)
+      expect(without.warnings).not.toContain(STRUCTURE_REUSE_WARNING)
+      const withoutAgain = await plain.execute(args, exec) as { warnings: string[] }
+      expect(calls).toHaveLength(2)
+      expect(withoutAgain.warnings).toContain(STRUCTURE_REUSE_WARNING)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('reuse false 遇到损坏收据仍重新投影', async () => {
+    const dir = tempDir()
+    try {
+      const { render, calls } = okRenderer()
+      const tool = toolIn(dir, render)
+      const args = { model_path: writeModel(dir, 'a.step'), views: ['iso'] as const, persist_index: false }
+      await tool.execute(args, exec)
+      writeFileSync(join(dir, 'structure-reuse.json'), JSON.stringify({ key: 'x', paths: [1] }))
+      await tool.execute({ ...args, reuse: false }, exec)
+      expect(calls).toHaveLength(2)
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

@@ -579,6 +579,8 @@ describe('checkFigureRendering 解析边界', () => {
       '<polygon points="1,1 2,2" stroke-width="0.5"/>',
       '<polygon points="a,b c,d e,f" stroke-width="0.5"/>',
       '<line x1="1" y1="1" x2="2" stroke-width="0.25"/>',
+      '<circle r="0" stroke-width="0.5"/>',
+      '<circle cx="1" cy="1" stroke-width="0.5"/>',
       '<polygon points="0,0 10,0 10,10 0,10" stroke-width="0.5"/>',
     ].join('\n')))
     // 只有一个合法多边形进入量测。
@@ -975,6 +977,8 @@ describe('scanSvg 解析边界补充', () => {
 
     const shifted = scanSvg(svg('<line transform="matrix(1 0 0 1 5 6)" x1="0" y1="0" x2="4" y2="0" stroke-width="0.5"/>'))
     expect(shifted.shapes[0]?.subpaths[0]?.points).toEqual([[5, 6], [9, 6]])
+    const turned = scanSvg(svg('<line transform="rotate(0)" x1="0" y1="0" x2="4" y2="0" stroke-width="0.5"/>'))
+    expect(turned.shapes[0]?.subpaths[0]?.points).toEqual([[0, 0], [4, 0]])
   })
 
   it('路径解析覆盖裸数值、非数值参数、未知命令、只含 M 与缺 d', () => {
@@ -1015,8 +1019,10 @@ describe('scanSvg 解析边界补充', () => {
       '<circle r="2" stroke-width="0.5"/>',
       '<ellipse rx="3" ry="2" stroke-width="0.5"/>',
       '<ellipse rx="3" stroke-width="0.5"/>',
+      '<text font-size="4">甲</text>',
     ].join('\n')))
     expect(scan.shapes).toHaveLength(3)
+    expect(scan.texts[0]?.baseline).toEqual([0, 0])
     expect(scan.shapes[0]?.subpaths[0]?.points).toEqual([[0, 0], [4, 0], [4, 4], [0, 4]])
     expect(scan.shapes[1]?.subpaths[0]?.points[0]).toEqual([2, 0])
     expect(scan.shapes[2]?.subpaths[0]?.points[0]).toEqual([3, 0])

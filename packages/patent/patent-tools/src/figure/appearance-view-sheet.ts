@@ -26,6 +26,7 @@
  * @module @deepseek-ai/dsh-patent-tools/figure/appearance-view-sheet
  */
 
+import { rasterFigureMessage } from './raster-input.ts'
 import { escapeXmlText } from './svg-annotate.ts'
 import { VectorFigureError, fmt } from './vector-figure.ts'
 import type { VectorFigureSpec } from './vector-figure.ts'
@@ -97,6 +98,9 @@ const TINY_CELL_RATIO = 1 / 3
  * 在 SVG 文档中仍是同一元素，故必须一起拒绝。
  */
 const UNSAFE_SVG_ELEMENT = /^<\s*\/?\s*(?:[A-Z_][\w.-]*:)?(?:script|style|foreignObject|iframe|object|embed|animate|set)\b/i
+
+/** 嵌入的位图像素。外观视图只接受矢量片段。 */
+const EMBEDDED_SVG_IMAGE = /^<\s*\/?\s*(?:[A-Z_][\w.-]*:)?image\b/i
 
 /** 标签上的事件处理属性（onload、onclick…），只在引号外的属性名上匹配。 */
 const EVENT_HANDLER_ATTRIBUTE = /\son[a-z]+\s*=/i
@@ -171,6 +175,9 @@ function assertSafeSvgFragment(name: string, body: string): void {
     throw new VectorFigureError('invalid_input', `视图片段包含 ENTITY/CDATA 等不安全结构，拒绝落版：${name}`)
   }
   for (const tag of svgTags(decoded)) {
+    if (EMBEDDED_SVG_IMAGE.test(tag)) {
+      throw new VectorFigureError('invalid_input', `${rasterFigureMessage('视图片段', '<image>')}（${name}）`)
+    }
     if (UNSAFE_SVG_ELEMENT.test(tag)) {
       throw new VectorFigureError('invalid_input', `视图片段包含可执行元素，拒绝落版：${name}（${tag.slice(0, 40)}）`)
     }

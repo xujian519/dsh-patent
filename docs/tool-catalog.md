@@ -3449,6 +3449,8 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 分析专利说明书附图（多模态）：把图片随请求发送给配置的附图模型（imageModel，须声明图片输入），识别附图类型（结构图/流程图/电路图/方框图/示意图/分解图/剖视图）、提取组件与连接关系、核对附图标记并生成专利格式的附图说明文字。当用户提供附图图片并要求撰写附图说明、理解附图内容、核对附图标记一致性时使用。可传入权利要求或技术方案文本作为上下文，提升图文对齐准确率。
 
+结果是读图提案（drawingStatus 恒为 proposal），没有毫米坐标，不能落版。用户确认前不要把 refNumber 抄进 generate_patent_figure 或 generate_structure_figure 的绘制输入。
+
 ```json
 {
   "type": "object",
@@ -4347,6 +4349,10 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 CAD 剖视（sections.source）：复杂件不必手算轮廓——给 model_path（STEP/IGES/BREP）与剖切平面 plane（origin 平面内一点、normal 法向、可选 reference 图面「向右」基准）即由本机 FreeCAD 切出闭合轮廓与剖面线；返回的提示里给出切出的材料区域清单（净面积与图面范围），parts 仍按区域逐个给 label、hatch 与 stroke_width_mm，并用 anchor（落在该区域内的一个图面坐标点）把它与区域对上——区域顺序由 OCCT 决定，不能用序号对。剖面线由模型按区域（含孔）精确裁出，孔里不会被打上；source.scale 缩放图面（默认 1），labels/centerlines/cutting_marks 请给同一比例下的图面坐标。给 part_size_mm 会与模型包围盒比对，不符即报错（挡住模型单位读错导致的整体比例错误）。需要本机安装 FreeCAD 1.1+。
 
 图面用语检查：生成后按《专利法实施细则》第二十一条与《专利审查指南》第一部分第一章 4.3 检查图面词语与标号——非必需注释（注释前缀/正文引用/尺寸标注/句末标点）、非中文词语（缩写与数字符号除外）、非阿拉伯数字标号各出一条警告；只提示，不改写输入。
+
+一次调用只画一种图型，或 panels 里已经分好的面板。不要让本工具从自由文本拆出主视图、侧视图和剖视图：外观六面用 appearance_views，结构多视图用 generate_structure_figure 的 views。
+
+位图不是几何：jpg/png 等不能当作 sections 或剖切模型，读图用 analyze_patent_figure。用户确认前，不要把分析得到的 refNumber 写入 sections.labels、numerals 或 callouts。生成后用 verify_patent_figure 复核 SVG；delivery_review 只在提交前使用。
 
 本机未安装 Graphviz 时返回 setup_required 与安装引导。
 
@@ -5578,7 +5584,7 @@ CAD 剖视（sections.source）：复杂件不必手算轮廓——给 model_pat
     },
     "dpi": {
       "type": "integer",
-      "description": "渲染分辨率（png 栅格生效）；默认取部署配置"
+      "description": "渲染分辨率（png 栅格生效，经 Inkscape --export-dpi 改变像素，不是只写 DPI 元数据）；默认取部署配置"
     },
     "margin": {
       "type": "number",
@@ -5658,6 +5664,14 @@ CAD 剖视（sections.source）：复杂件不必手算轮廓——给 model_pat
     "persist_index": {
       "type": "boolean",
       "description": "默认 true：写入附图索引（供 search_patent_figure 检索）"
+    },
+    "export_dxf": {
+      "type": "boolean",
+      "description": "默认 false。为 true 时在文字转路径之前，按已落版的 SVG 另写一份可编辑 DXF；主交付物仍是 SVG。没有 SVG 时不写文件，只返回警告"
+    },
+    "reuse": {
+      "type": "boolean",
+      "description": "默认 true。仅剖视图的 sections.source：模型字节与剖切参数未变时不再调用 FreeCAD。false 时重新剖切"
     }
   }
 }
@@ -5670,6 +5684,8 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 从 3D 模型生成专利结构线稿附图：用本机 FreeCAD（TechDraw）把 STEP/IGES/BREP 投影为多视图黑白线稿 SVG（等轴测/三视图等），件号以引线锚定到真实顶点投影。未配置 figureOutputDir 时输出到案卷目录的 04-撰写/；显式 figureOutputDir 按其路径写出。返回标号映射表与「图N是…的结构示意图」附图说明。需要机械结构真实投影（而非示意框图）时使用。
 
 默认关闭：结构线稿依赖本机 FreeCAD，需先设 Config.structureFigureEnabled=true；未开启或未安装 freecadcmd 时返回 setup_required 与配置/安装引导。
+
+jpg/png 不是模型，读图用 analyze_patent_figure。用户确认后的零件名才写成 callouts；未确认的分析标号不是件号。生成后用 verify_patent_figure 复核 SVG。
 
 视图：views 缺省 iso/front/top/right，可选 iso/front/rear/top/bottom/left/right；scale 为 TechDraw 投影比例；show_hidden 开启时绘制隐藏线（细实线，FreeCAD 1.1.3 实测隐藏线 0.35 毫米、可见线 0.7 毫米，输出不含 stroke-dasharray，不是虚线）。
 
@@ -5878,6 +5894,14 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
     "persist_index": {
       "type": "boolean",
       "description": "默认 true：写入附图索引（供 search_patent_figure 检索）"
+    },
+    "export_dxf": {
+      "type": "boolean",
+      "description": "默认 false。为 true 时在文字转路径之前，为每个视图 SVG 另写一份可编辑 DXF；主交付物与索引路径仍是 SVG"
+    },
+    "reuse": {
+      "type": "boolean",
+      "description": "默认 true。模型字节与投影参数未变、且线稿未被改过时不再调用 FreeCAD。false 时重新投影"
     }
   }
 }
@@ -7172,6 +7196,8 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 与 generate_patent_figure 的返回值配合使用：生成后按本工具复核，把 findings 当作必须处理的图面缺陷。
 
 delivery_review=true 时加查交付前四项：图面词语（非必需注释、非中文、标号带括号）、`<image>` 位图/照片、覆盖整幅图纸的边框、横向摆放。四项只看 SVG 文本，不判图面内容是否清楚。
+
+analyze_patent_figure 的结果不是 SVG，不能代替本工具。
 
 ```json
 {

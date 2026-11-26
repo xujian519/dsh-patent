@@ -7,8 +7,11 @@
  * @module @deepseek-ai/dsh-patent-tools/tool/figure-delivery
  */
 
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, rm, writeFile } from 'node:fs/promises'
+import { join, parse } from 'node:path'
+import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import { PatentToolError } from '../error.ts'
+import { SvgDxfError, svgToDxf } from '../figure/svg-to-dxf.ts'
 import { clearanceMmForFigure } from '../figure/render-check.ts'
 import { gateRenderedSvg } from '../figure/render-check-gate.ts'
 import { VectorFigureError, insertSvgDocumentTitle } from '../figure/vector-figure.ts'
@@ -91,6 +94,7 @@ async function checkDeliveredSvg(args: {
  * 逐条抛出去会误导用户。
  * @param args - the deps, the intermediate SVG and final paths, the layout input, the format, dpi, signal, and the output to extend.
  * @returns 'done' 表示导出成功；'fallback' 表示导出失败但调用方还有直绘通路可退回。
+ * 回退时删掉本轮写出的 DXF，直绘的 png/pdf 不再带着另一张图的 DXF。
  * @throws PatentToolError 导出失败且该图型没有 SVG 直绘以外的通路时（`setup_required` / `tool_execution_failed`）。
  */
 export async function finishSvgChain(args: {
@@ -107,6 +111,8 @@ export async function finishSvgChain(args: {
   figureType: GenerateFigureType
   /** 渲染器直接出图的通路是否存在（矢量图型为 false：导出失败即无产物可交）。 */
   hasDirectRender: boolean
+  /** 为 true 时在文字转路径之前另写一份可编辑 DXF。 */
+  exportDxf: boolean
 }): Promise<'done' | 'fallback'> {
   const staged: GeneratePatentFigureOutput = { ...args.output, warnings: [] }
   await layoutSubmissionPage({
@@ -125,6 +131,9 @@ export async function finishSvgChain(args: {
     figureType: args.figureType,
     suffix: args.suffix,
   })
+  const dxfWarningCount = args.output.warnings.length
+  const priorDxfCount = args.output.dxfPaths?.length ?? 0
+  if (args.exportDxf) await attachSiblingDxf(args.svgPath, args.output, 'generate_patent_figure')
   await outlineFigureText({ deps: args.deps, path: args.svgPath, format: 'svg', signal: args.signal, warnings: staged.warnings })
   const exported = await args.deps.exportFigure?.({
     path: args.svgPath,
@@ -143,6 +152,7 @@ export async function finishSvgChain(args: {
   if (!args.hasDirectRender) {
     throw new PatentToolError(exported?.code === 'not_installed' ? 'setup_required' : 'tool_execution_failed', `导出 ${args.format} 失败：${reason}`, { tool: 'generate_patent_figure' })
   }
+  if (args.exportDxf) await discardChainDxf(args.output, dxfWarningCount, priorDxfCount)
   args.output.warnings.push(`未能导出 ${args.format}：${reason}；落版、渲染复核与文字转路径未生效（它们只作用于 SVG），改由渲染器直接出图`)
   return 'fallback'
 }
@@ -163,6 +173,8 @@ export async function finishDirectRender(args: {
   signal: AbortSignal
   output: GeneratePatentFigureOutput
   figureType: GenerateFigureType
+  /** 为 true 时在文字转路径之前另写一份可编辑 DXF。非 SVG 且尚未写出 DXF 时只记警告。 */
+  exportDxf: boolean
 }): Promise<void> {
   await layoutSubmissionPage({
     input: args.input,
@@ -184,6 +196,10 @@ export async function finishDirectRender(args: {
   } else if (args.deps.failOnRenderFindings === true) {
     args.output.warnings.push('渲染复核未执行（该格式走渲染器直绘、没有 SVG 可量测）：figureFailOnRenderFindings 对本次输出不生效')
   }
+  if (args.exportDxf) {
+    if (args.format === 'svg') await attachSiblingDxf(args.outcomePath, args.output, 'generate_patent_figure')
+    else if (args.output.dxfPaths === undefined) args.output.warnings.push('没有 SVG，未写 DXF')
+  }
   await outlineFigureText({
     deps: args.deps,
     path: args.outcomePath,
@@ -191,6 +207,57 @@ export async function finishDirectRender(args: {
     signal: args.signal,
     warnings: args.output.warnings,
   })
+}
+
+/**
+ * 导出失败、改走直绘时，删掉本轮写出的 DXF，并撤回它带上的警告。
+ * @param output - 工具输出。
+ * @param warningCount - 写 DXF 之前的警告条数。
+ * @param priorDxf - 写 DXF 之前已有的路径条数。
+ */
+async function discardChainDxf(
+  output: GeneratePatentFigureOutput,
+  warningCount: number,
+  priorDxf: number,
+): Promise<void> {
+  const paths = output.dxfPaths
+  /* v8 ignore next -- attachSiblingDxf 成功后才调用，dxfPaths 已在 */
+  if (paths === undefined) return
+  for (const path of paths.slice(priorDxf)) await rm(path, { force: true })
+  output.warnings.splice(warningCount)
+  if (priorDxf === 0) {
+    delete output.dxfPaths
+    return
+  }
+  output.dxfPaths = paths.slice(0, priorDxf)
+}
+
+/**
+ * 在文字转路径之前，把 SVG 写成同名 DXF。转换失败时不留半成品文件。
+ * 警告直接写入 `output`，不进落版暂存，避免 Inkscape 回退把它们丢掉。
+ * @param svgPath - 已落版、尚未转路径的 SVG。
+ * @param output - 工具输出；成功时追加 `dxfPaths` 与警告。
+ * @param tool - 错误上的工具名。
+ * @throws PatentToolError('invalid_tool_input') SVG 不能写成 DXF 时。
+ */
+export async function attachSiblingDxf(
+  svgPath: string,
+  output: { warnings: string[]; dxfPaths?: string[] },
+  tool: 'generate_patent_figure' | 'generate_structure_figure',
+): Promise<void> {
+  const svg = await readFile(svgPath, 'utf8')
+  let converted: ReturnType<typeof svgToDxf>
+  try {
+    converted = svgToDxf(svg)
+  } catch (error) {
+    /* v8 ignore next -- svgToDxf rejects only with SvgDxfError */
+    if (!(error instanceof SvgDxfError)) throw error
+    throw new PatentToolError('invalid_tool_input', error.message, { tool })
+  }
+  const path = join(parse(svgPath).dir, `${parse(svgPath).name}.dxf`)
+  await writeFileAtomic(path, converted.dxf, { mode: 0o644 })
+  output.warnings.push(...converted.warnings)
+  output.dxfPaths = [...(output.dxfPaths ?? []), path]
 }
 
 /** 导出格式窄化（全链只在非 SVG 时启用）。 */

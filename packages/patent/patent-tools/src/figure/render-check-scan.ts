@@ -30,8 +30,13 @@ const DEFAULT_STROKE_WIDTH = 1
  * 估出的占位框更大，漏报少、误报多，而漏报的代价是交付了读不出的图。
  */
 const DEFAULT_FONT_SIZE_USER = 16
-/** 圆与椭圆的折线近似边数：内接多边形的最大径向误差约 0.9%，足以量测描边与包围盒。 */
-const CIRCLE_GON_SEGMENTS = 24
+/**
+ * 圆与椭圆的折线近似边数：内接多边形的最大径向误差约 0.9%，足以量测描边与包围盒。
+ * DXF 导出用同一边数识别圆，改这里时两边一起改。
+ */
+export const CIRCLE_GON_SEGMENTS = 24
+/** 曲线折线化的递归上限。再分下去弦高仍超差时停在这一层。 */
+const CURVE_FLATTEN_DEPTH = 16
 /** 定义容器：其子元素只被引用而不直接渲染，整段跳过（`<use>` 引用单独报未量测）。 */
 const DEFINITION_CONTAINERS = new Set([
   'defs', 'clippath', 'mask', 'marker', 'pattern', 'symbol', 'filter', 'lineargradient', 'radialgradient',
@@ -72,6 +77,11 @@ type Shape = {
   readonly role?: string
   /** 该元素的不透明填充是否遮挡其下已绘制的图元（白填充）。 */
   readonly occludes: boolean
+  /**
+   * 填充既不是 `none`/`transparent`，也不是白。DXF 只写轮廓，并据此警告一次。
+   * 文字的黑填充不算：文字不是 shape。
+   */
+  readonly regionFill: boolean
   /** 元素在文档序中的位置（0 起）：遮挡只作用于序号更小的图元。 */
   readonly order: number
   /** 所属语义分组（最近一层 `<g class="node|edge">`）；无分组时为 undefined。 */
@@ -87,6 +97,11 @@ export type ScannedText = {
   readonly matrix: Matrix
   /** 基线锚点（根坐标系，毫米）：该标签自身的 `x`/`y` 经累计变换后的点。 */
   readonly baseline: Point
+  /**
+   * `text-anchor`（自祖先继承，经白名单）。
+   * DXF 用它写水平对齐；占位框左缘仍由 {@link glyphBox} 按同一取值计算。
+   */
+  readonly textAnchor: GlyphTextAnchor
   /**
    * 该 `<text>` 自身的 `data-dsh-role`。不从父元素继承，避免一组角色把图内标号一并豁免。
    * 落版页使用 `caption` 与 `sheet-number`。
@@ -125,6 +140,8 @@ type Frame = {
   readonly stroked: boolean
   /** 该元素的不透明填充被视为遮挡面（白填充）；自祖先继承，`fill: none` 起算为假。 */
   readonly occludes: boolean
+  /** 继承来的区域填充（非 none、非白）。根元素未声明填充时为 false。 */
+  readonly regionFill: boolean
   /** 字号（用户单位；绘制时按帧矩阵换算到毫米）。 */
   readonly fontSizeUser: number
   /** `text-anchor`（自祖先继承，取值经白名单校验）。 */
@@ -133,6 +150,17 @@ type Frame = {
   readonly skip: boolean
   /** 所属语义分组：`<g class="node|edge">` 建立，后代继承；无分组时为 undefined。 */
   readonly group?: ScanGroup
+}
+
+/**
+ * 扫描选项。缺省时曲线仍按端点弦近似，复核结论与以前一致。
+ */
+export type ScanOptions = {
+  /**
+   * 把 C/S/Q/T/A 折成弦高不超过该毫米数的折线。
+   * 只给 DXF 用；复核不要传，否则「未量测」说明会消失。
+   */
+  curveToleranceMm?: number
 }
 
 /** 一张 SVG 的图面事实。 */
@@ -272,6 +300,14 @@ function textAnchorValue(raw: string | undefined): GlyphTextAnchor | undefined {
  * @param raw - `fill` 属性原文（行内 `style` 优先，调用方已取值）。
  * @returns 遮挡时 true；`none`/`transparent`、彩色、渐变引用与未声明时为 false。
  */
+/** 显式填充是否要在 DXF 里记成「未写入填充」。none、透明和白不算。 */
+function regionPaint(raw: string): boolean {
+  const value = raw.trim().toLowerCase().replace(/\s+/g, '')
+  if (value === 'none' || value === 'transparent') return false
+  if (value === 'white' || value === '#fff' || value === '#ffffff' || value === 'rgb(255,255,255)' || value === 'rgb(100%,100%,100%)') return false
+  return true
+}
+
 function occludingFill(raw: string | undefined): boolean {
   /* v8 ignore next -- childFrame calls this only when a fill value is declared. */
   if (raw === undefined) return false
@@ -400,19 +436,154 @@ function pathGroups(source: string): PathGroup[] | undefined {
   return groups
 }
 
+/** 点到弦的距离。弦退化为点时改为到该点的距离。 */
+function distanceToChord(point: Point, start: Point, end: Point): number {
+  const dx = end[0] - start[0]
+  const dy = end[1] - start[1]
+  const length = Math.hypot(dx, dy)
+  if (length === 0) return Math.hypot(point[0] - start[0], point[1] - start[1])
+  return Math.abs(dx * (start[1] - point[1]) - dy * (start[0] - point[0])) / length
+}
+
+function midpoint(a: Point, b: Point): Point {
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
+}
+
+/** 关于 `about` 的反射点。平滑曲线的第一控制点用它。 */
+function reflectPoint(point: Point, about: Point): Point {
+  return [2 * about[0] - point[0], 2 * about[1] - point[1]]
+}
+
 /**
- * 解析 `<path>` 的 `d`：支持 M/L/H/V/Z（含相对形式与隐式重复）；曲线命令 C/S/Q/T/A 一律取其
- * 末点连弦并置 `approximate`；未知命令返回 undefined。
+ * 三次贝塞尔折线化：控制点到弦的距离超过 `tolerance` 时用 de Casteljau 对分。
+ * 结果不含起点，含终点。
+ */
+function flattenCubic(p0: Point, p1: Point, p2: Point, p3: Point, tolerance: number, depth: number, out: Point[]): void {
+  const flat = distanceToChord(p1, p0, p3) <= tolerance && distanceToChord(p2, p0, p3) <= tolerance
+  if (depth >= CURVE_FLATTEN_DEPTH || flat) {
+    out.push(p3)
+    return
+  }
+  const p01 = midpoint(p0, p1)
+  const p12 = midpoint(p1, p2)
+  const p23 = midpoint(p2, p3)
+  const p012 = midpoint(p01, p12)
+  const p123 = midpoint(p12, p23)
+  const mid = midpoint(p012, p123)
+  flattenCubic(p0, p01, p012, mid, tolerance, depth + 1, out)
+  flattenCubic(mid, p123, p23, p3, tolerance, depth + 1, out)
+}
+
+/** 二次贝塞尔折线化。结果不含起点，含终点。 */
+function flattenQuadratic(p0: Point, p1: Point, p2: Point, tolerance: number, depth: number, out: Point[]): void {
+  if (depth >= CURVE_FLATTEN_DEPTH || distanceToChord(p1, p0, p2) <= tolerance) {
+    out.push(p2)
+    return
+  }
+  const p01 = midpoint(p0, p1)
+  const p12 = midpoint(p1, p2)
+  const mid = midpoint(p01, p12)
+  flattenQuadratic(p0, p01, mid, tolerance, depth + 1, out)
+  flattenQuadratic(mid, p12, p2, tolerance, depth + 1, out)
+}
+
+function vectorAngle(ux: number, uy: number, vx: number, vy: number): number {
+  const dot = ux * vx + uy * vy
+  const length = Math.hypot(ux, uy) * Math.hypot(vx, vy)
+  /* v8 ignore next -- 半径为正且两端点不同时，两条弧向量都不是零 */
+  if (length === 0) return 0
+  const raw = dot / length
+  /* v8 ignore next -- 端点参数换算不会得到大于 1 的余弦 */
+  const cosine = raw > 1 ? 1 : Math.max(-1, raw)
+  const angle = Math.acos(cosine)
+  return ux * vy - uy * vx < 0 ? -angle : angle
+}
+
+/**
+ * SVG 弧（端点参数）折线化。半径为 0 或端点重合时按规范退化为到终点的直线。
+ * 结果不含起点，含终点，写入 `out`。段数不超过 `2 ** CURVE_FLATTEN_DEPTH`，
+ * 极小公差不会拆出无界点列。
+ */
+function flattenArc(
+  start: Point,
+  end: Point,
+  rx: number,
+  ry: number,
+  phiDeg: number,
+  large: boolean,
+  sweep: boolean,
+  tolerance: number,
+  out: Point[],
+): void {
+  if (!(rx > 0) || !(ry > 0) || (start[0] === end[0] && start[1] === end[1])) {
+    out.push(end)
+    return
+  }
+  const phi = (phiDeg * Math.PI) / 180
+  const cosPhi = Math.cos(phi)
+  const sinPhi = Math.sin(phi)
+  const dx = (start[0] - end[0]) / 2
+  const dy = (start[1] - end[1]) / 2
+  const x1p = cosPhi * dx + sinPhi * dy
+  const y1p = -sinPhi * dx + cosPhi * dy
+  const radii = Math.hypot(x1p / rx, y1p / ry)
+  const radiusScale = radii > 1 ? radii : 1
+  const scaledRx = rx * radiusScale
+  const scaledRy = ry * radiusScale
+  const rxSq = scaledRx * scaledRx
+  const rySq = scaledRy * scaledRy
+  const x1pSq = x1p * x1p
+  const y1pSq = y1p * y1p
+  const numer = rxSq * rySq - rxSq * y1pSq - rySq * x1pSq
+  const denom = rxSq * y1pSq + rySq * x1pSq
+  /* v8 ignore next -- 两端点相同已在上面退化为直线，分母不会是 0 */
+  const safe = denom === 0 ? 0 : Math.max(0, numer / denom)
+  const coef = (large === sweep ? -1 : 1) * Math.sqrt(safe)
+  const cxp = coef * (scaledRx * y1p) / scaledRy
+  const cyp = coef * (-scaledRy * x1p) / scaledRx
+  const cx = cosPhi * cxp - sinPhi * cyp + (start[0] + end[0]) / 2
+  const cy = sinPhi * cxp + cosPhi * cyp + (start[1] + end[1]) / 2
+  const theta1 = vectorAngle(1, 0, (x1p - cxp) / scaledRx, (y1p - cyp) / scaledRy)
+  let delta = vectorAngle((x1p - cxp) / scaledRx, (y1p - cyp) / scaledRy, (-x1p - cxp) / scaledRx, (-y1p - cyp) / scaledRy)
+  if (!sweep && delta > 0) delta -= 2 * Math.PI
+  else if (sweep && delta < 0) delta += 2 * Math.PI
+  const radius = Math.min(scaledRx, scaledRy)
+  const chord = 1 - tolerance / radius
+  /* v8 ignore next -- 走到这里时半径大于公差，弦高余弦落在 (-1, 1] */
+  const clamped = chord > 1 || chord < -1 ? Math.max(-1, Math.min(1, chord)) : chord
+  const maxStep = radius <= tolerance ? Math.PI / 8 : 2 * Math.acos(clamped)
+  const steps = Math.min(
+    1 << CURVE_FLATTEN_DEPTH,
+    Math.max(1, Math.ceil(Math.abs(delta) / Math.max(maxStep, 1e-6))),
+  )
+  for (let index = 1; index <= steps; index += 1) {
+    const theta = theta1 + (delta * index) / steps
+    const cosTheta = Math.cos(theta)
+    const sinTheta = Math.sin(theta)
+    out.push([
+      cx + scaledRx * cosTheta * cosPhi - scaledRy * sinTheta * sinPhi,
+      cy + scaledRx * cosTheta * sinPhi + scaledRy * sinTheta * cosPhi,
+    ])
+  }
+}
+
+/**
+ * 解析 `<path>` 的 `d`：支持 M/L/H/V/Z（含相对形式与隐式重复）。
+ * 未给 `toleranceUser` 时，曲线命令 C/S/Q/T/A 只取末点连弦并置 `approximate`。
+ * 给了公差时折成弦高不超过该用户单位的折线，且不再标记近似。
  * @param d - `d` 属性原文。
+ * @param toleranceUser - 曲线弦高上限（用户单位）；缺省则按端点弦。
  * @returns 子路径与近似标记；无法解析时 undefined。
  */
-function parsePathData(d: string): PathData | undefined {
+function parsePathData(d: string, toleranceUser?: number): PathData | undefined {
   const groups = pathGroups(d.trim())
   if (groups === undefined) return undefined
   const subpaths: SubPath[] = []
   let points: Point[] = []
   let start: Point = [0, 0]
   let current: Point = [0, 0]
+  let lastCubic: Point = [0, 0]
+  let lastQuad: Point = [0, 0]
   let approximate = false
 
   /** 收束当前子路径（顶点不足两个时丢弃）。 */
@@ -424,6 +595,10 @@ function parsePathData(d: string): PathData | undefined {
   const target = (relative: boolean, x: number, y: number): Point =>
     relative ? [current[0] + x, current[1] + y] : [x, y]
   const value = (group: PathGroup, index: number): number => group.args[index] as number
+  const remember = (point: Point): void => {
+    lastCubic = point
+    lastQuad = point
+  }
 
   for (const group of groups) {
     const lower = group.name.toLowerCase()
@@ -435,6 +610,7 @@ function parsePathData(d: string): PathData | undefined {
       if (group.args.length !== 0) return undefined
       flush(true)
       current = start
+      remember(current)
       continue
     }
     if (group.args.length === 0 || group.args.length % arity !== 0) return undefined
@@ -447,6 +623,7 @@ function parsePathData(d: string): PathData | undefined {
         start = target(relative, value(chunk, 0), value(chunk, 1))
         current = start
         points = [start]
+        remember(current)
         continue
       }
       if (points.length === 0) points = [current]
@@ -457,12 +634,63 @@ function parsePathData(d: string): PathData | undefined {
       else if (command === 'h') current = [relative ? current[0] + value(chunk, 0) : value(chunk, 0), current[1]]
       else if (command === 'v') current = [current[0], relative ? current[1] + value(chunk, 0) : value(chunk, 0)]
       else {
-        // 曲线命令：只取末点（最后两个参数），曲率本身不量测。
-        approximate = true
-        const last = arity - 1
-        current = target(relative, value(chunk, last - 1), value(chunk, last))
+        const origin = current
+        const endIndex = arity - 2
+        const end = target(relative, value(chunk, endIndex), value(chunk, endIndex + 1))
+        if (toleranceUser === undefined) {
+          // 曲线命令：只取末点（最后两个参数），曲率本身不量测。
+          approximate = true
+          current = end
+          points.push(current)
+        } else {
+          const samples: Point[] = []
+          if (command === 'c') {
+            const c1 = target(relative, value(chunk, 0), value(chunk, 1))
+            const c2 = target(relative, value(chunk, 2), value(chunk, 3))
+            flattenCubic(origin, c1, c2, end, toleranceUser, 0, samples)
+            lastCubic = c2
+            lastQuad = end
+          } else if (command === 's') {
+            const c1 = reflectPoint(lastCubic, origin)
+            const c2 = target(relative, value(chunk, 0), value(chunk, 1))
+            flattenCubic(origin, c1, c2, end, toleranceUser, 0, samples)
+            lastCubic = c2
+            lastQuad = end
+          } else if (command === 'q') {
+            const c1 = target(relative, value(chunk, 0), value(chunk, 1))
+            flattenQuadratic(origin, c1, end, toleranceUser, 0, samples)
+            lastQuad = c1
+            lastCubic = end
+          } else if (command === 't') {
+            const c1 = reflectPoint(lastQuad, origin)
+            flattenQuadratic(origin, c1, end, toleranceUser, 0, samples)
+            lastQuad = c1
+            lastCubic = end
+          } else {
+            const large = value(chunk, 3)
+            const sweep = value(chunk, 4)
+            flattenArc(
+              origin,
+              end,
+              Math.abs(value(chunk, 0)),
+              Math.abs(value(chunk, 1)),
+              value(chunk, 2),
+              large === 1,
+              sweep === 1,
+              toleranceUser,
+              samples,
+            )
+            lastCubic = end
+            lastQuad = end
+          }
+          for (const sample of samples) points.push(sample)
+          current = end
+        }
+        if (toleranceUser === undefined) remember(current)
+        continue
       }
       points.push(current)
+      remember(current)
     }
   }
   flush(false)
@@ -506,7 +734,7 @@ function ellipsePoints(cx: number, cy: number, rx: number, ry: number): Point[] 
  * @param note - 记录未量测原因的收集器。
  * @returns 子路径或「无几何」。
  */
-function geometryOf(name: string, tag: string, note: (reason: string) => void): ElementGeometry {
+function geometryOf(name: string, tag: string, note: (reason: string) => void, toleranceUser?: number): ElementGeometry {
   switch (name) {
     case 'line': {
       const x1 = num(tag, 'x1')
@@ -546,7 +774,7 @@ function geometryOf(name: string, tag: string, note: (reason: string) => void): 
     case 'path': {
       const d = attr(tag, 'd')
       if (d === undefined) return NO_GEOMETRY
-      const parsed = parsePathData(d)
+      const parsed = parsePathData(d, toleranceUser)
       if (parsed === undefined) {
         note('路径 `d` 含无法解析的命令，该路径的几何未量测')
         return NO_GEOMETRY
@@ -581,6 +809,7 @@ function childFrame(
   const group = groupKind === undefined ? parent.group : { id: nextGroupId(), kind: groupKind }
   const stroke = styled(tag, 'stroke')
   const fill = styled(tag, 'fill')
+  const regionFill = fill === undefined ? parent.regionFill : regionPaint(fill)
   const rawFontSize = styled(tag, 'font-size')
   let fontSize = parent.fontSizeUser
   if (rawFontSize !== undefined) {
@@ -596,6 +825,7 @@ function childFrame(
     strokeWidthMm: numValue(styled(tag, 'stroke-width')) ?? parent.strokeWidthMm,
     stroked: stroke === undefined ? parent.stroked : stroke !== 'none',
     occludes: fill === undefined ? parent.occludes : occludingFill(fill),
+    regionFill,
     fontSizeUser: fontSize,
     textAnchor: textAnchorValue(styled(tag, 'text-anchor')) ?? parent.textAnchor,
     // `display: none` 的子树不渲染：既不算墨迹，也不再逐元素记为未量测。
@@ -628,6 +858,7 @@ function textEntry(content: string, tag: string, frame: Frame): ScannedText {
     box: glyphBox(content, anchor, frame.fontSizeUser, frame.textAnchor),
     matrix: frame.matrix,
     baseline: mapPoint(frame.matrix, anchor),
+    textAnchor: frame.textAnchor,
     ...(role === undefined ? {} : { role }),
     ...(frame.group === undefined ? {} : { group: frame.group }),
   }
@@ -673,9 +904,10 @@ export function quadCorners(quad: GlyphQuad): Quad {
  * 的矩阵，故此后所有坐标与长度都是毫米：落版页、拼版页、px 级用户单位的导出文件都换算
  * 到同一口径。
  * @param svg - 完整 SVG 文本。
+ * @param options - 曲线折线化公差；缺省时曲线仍按端点弦。
  * @returns 画布尺寸、图形、文字与未量测原因。
  */
-export function scanSvg(svg: string): Scan {
+export function scanSvg(svg: string, options?: ScanOptions): Scan {
   // 注释里的 `<line …>` 不是图元：先整段去掉，避免把注释当成元素量测。
   const source = svg.replace(/<!--[\s\S]*?-->/g, '')
   const viewport = resolveSvgViewport(/<svg\b[^>]*>/i.exec(source)?.[0] ?? '')
@@ -694,7 +926,10 @@ export function scanSvg(svg: string): Scan {
     fontSizeUser: DEFAULT_FONT_SIZE_USER,
     textAnchor: 'start',
     skip: false,
+    regionFill: false,
   }
+  const minScale = Math.min(Math.abs(viewport.scaleX), Math.abs(viewport.scaleY))
+  const toleranceUser = options?.curveToleranceMm === undefined ? undefined : options.curveToleranceMm / minScale
   const stack: Frame[] = [root]
   const shapes: Shape[] = []
   const texts: ScannedText[] = []
@@ -764,7 +999,7 @@ export function scanSvg(svg: string): Scan {
       note(`\`<${name}>\` 引用的内容未展开，其几何未量测`)
       continue
     }
-    const geometry = geometryOf(name, tag, note)
+    const geometry = geometryOf(name, tag, note, toleranceUser)
     if (geometry.kind === 'none') continue
     const scale = scaleOf(frame.matrix)
     const dashPattern = dashPatternUser(styled(tag, 'stroke-dasharray'))
@@ -777,6 +1012,7 @@ export function scanSvg(svg: string): Scan {
       })),
       strokeWidthMm: frame.strokeWidthMm * scale,
       stroked: frame.stroked,
+      regionFill: frame.regionFill,
       ...(dashPattern === undefined ? {} : { dashPatternMm: dashPattern.map(value => value * scale) }),
       ...(hatchGroup === undefined ? {} : { hatchGroup }),
       ...(role === undefined ? {} : { role }),

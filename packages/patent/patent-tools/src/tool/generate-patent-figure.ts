@@ -32,6 +32,7 @@ import { sanitizeDotFilename } from '../figure/graphviz-renderer.ts'
 import { TARGET_OFFICES } from '../figure/office-profile.ts'
 import { buildVectorFigure, isVectorFigureType } from '../figure/vector-figure-build.ts'
 import { VectorFigureError, vectorFigureSvg } from '../figure/vector-figure.ts'
+import { rasterFigureExtension, rasterFigureMessage } from '../figure/raster-input.ts'
 import { SectionSourceError, expandSectionSource } from '../figure/section-source.ts'
 import type { SectionSourceExpansion } from '../figure/section-source.ts'
 import { figureWordingWarnings } from '../figure/wording-rules.ts'
@@ -90,6 +91,10 @@ const DESCRIPTION = [
   '',
   '图面用语检查：生成后按《专利法实施细则》第二十一条与《专利审查指南》第一部分第一章 4.3 检查图面词语与标号——非必需注释（注释前缀/正文引用/尺寸标注/句末标点）、非中文词语（缩写与数字符号除外）、非阿拉伯数字标号各出一条警告；只提示，不改写输入。',
   '',
+  '一次调用只画一种图型，或 panels 里已经分好的面板。不要让本工具从自由文本拆出主视图、侧视图和剖视图：外观六面用 appearance_views，结构多视图用 generate_structure_figure 的 views。',
+  '',
+  '位图不是几何：jpg/png 等不能当作 sections 或剖切模型，读图用 analyze_patent_figure。用户确认前，不要把分析得到的 refNumber 写入 sections.labels、numerals 或 callouts。生成后用 verify_patent_figure 复核 SVG；delivery_review 只在提交前使用。',
+  '',
   '本机未安装 Graphviz 时返回 setup_required 与安装引导。',
 ].join('\n')
 
@@ -144,6 +149,10 @@ async function resolveSectionsFile(
 ): Promise<ResolvedFigureInput> {
   const { sections, ...rest } = input
   if (typeof sections !== 'string') return sections === undefined ? rest : { ...rest, sections }
+  const raster = rasterFigureExtension(sections)
+  if (raster !== undefined) {
+    throw new PatentToolError('invalid_tool_input', rasterFigureMessage('sections', raster), { tool: 'generate_patent_figure' })
+  }
   let raw: string
   try {
     raw = await readFile(resolve(cwd, sections), 'utf8')
@@ -267,6 +276,18 @@ async function generateSingleFigure(
     ? undefined
     : dotDocumentTitle(normalized.invention_name, toFigureType(normalized.figure_type), normalized.view_name)
   await stampDotDocumentTitle(rendered.path, chain ? 'svg' : format, documentTitle)
+  // 两条通路的收尾参数相同，只有交付路径与是否复核不同。
+  const directRenderArgs = {
+    deps,
+    input: normalized,
+    suffix: '',
+    format,
+    figureType: normalized.figure_type,
+    style: context.style,
+    signal: context.signal,
+    output: result,
+    exportDxf: normalized.export_dxf === true,
+  }
   if (chain) {
     const outcome = await finishSvgChain({
       deps,
@@ -281,6 +302,7 @@ async function generateSingleFigure(
       signal: context.signal,
       output: result,
       hasDirectRender: !vector,
+      exportDxf: normalized.export_dxf === true,
     })
     if (outcome === 'fallback') {
       // 直绘通路：按请求的格式重新渲染一次，交付物与不带 target_office 时逐字节相同。
@@ -294,32 +316,14 @@ async function generateSingleFigure(
         leaderLinesActive: leaderLines && !vector,
       }, format)
       await stampDotDocumentTitle(direct.path, format, documentTitle)
-      await finishDirectRender({
-        deps,
-        outcomePath: direct.path,
-        input: normalized,
-        suffix: '',
-        format,
-        check: false,
-        figureType: normalized.figure_type,
-        style: context.style,
-        signal: context.signal,
-        output: result,
-      })
+      await finishDirectRender({ ...directRenderArgs, outcomePath: direct.path, check: false })
     }
   } else {
     await finishDirectRender({
-      deps,
+      ...directRenderArgs,
       outcomePath: rendered.path,
-      input: normalized,
-      suffix: '',
-      format,
       // SVG 交付物总能复核；png/pdf 直绘没有可量测的图面。
       check: vector || format === 'svg',
-      figureType: normalized.figure_type,
-      style: context.style,
-      signal: context.signal,
-      output: result,
     })
   }
   let indexed = false
@@ -394,6 +398,7 @@ async function withSectionSource(
       cwd: options.cwd,
       artifactDir: join(options.outputDir, `.fig${String(options.figureNumber)}-section`),
       signal: options.signal,
+      reuse: normalized.reuse !== false,
     })
   } catch (error) {
     if (error instanceof SectionSourceError) throw sectionSourceError(error, 'generate_patent_figure')
@@ -551,7 +556,7 @@ export function createGeneratePatentFigureTool(deps: GeneratePatentFigureDeps): 
       engine: { type: 'string', enum: DOT_ENGINES, description: '布局引擎，默认 dot' },
       page_size: { type: 'string', enum: ['a4', 'letter'], description: '页面尺寸（提交规格）；默认取部署配置' },
       orient: { type: 'string', enum: ['portrait', 'landscape'], description: '页面方向；默认 portrait，取部署配置' },
-      dpi: { type: 'integer', description: '渲染分辨率（png 栅格生效）；默认取部署配置' },
+      dpi: { type: 'integer', description: '渲染分辨率（png 栅格生效，经 Inkscape --export-dpi 改变像素，不是只写 DPI 元数据）；默认取部署配置' },
       margin: { type: 'number', description: '页边距（厘米，四边同值）；默认取部署配置' },
       leader_lines: { type: 'boolean', description: '引线标号（数字置于部件外侧并以引线相连，仅 SVG 生效）；默认框图/层级图开启、流程图关闭' },
       target_office: {
@@ -573,6 +578,8 @@ export function createGeneratePatentFigureTool(deps: GeneratePatentFigureDeps): 
       require_explicit_hatch: { type: 'boolean', description: '剖视图（cross_section）专用，默认 false：true 时每个轮廓都必须显式给出 hatch（不被剖切的写 "none"），否则报错；缺省时未给的轮廓套用默认 45°/3 毫米并返回提示' },
       require_cutting_marks: { type: 'boolean', description: '剖视图（cross_section）专用，默认 false：true 时必须有剖切位置符号（sections.cutting_marks：剖切标记字母 + 剖切位置线 + 投射方向），否则报错；缺省时未给只作提示返回（剖切平面与对称面重合且视图在标准位置时可省略，GB/T 4458.6）' },
       persist_index: { type: 'boolean', description: '默认 true：写入附图索引（供 search_patent_figure 检索）' },
+      export_dxf: { type: 'boolean', description: '默认 false。为 true 时在文字转路径之前，按已落版的 SVG 另写一份可编辑 DXF；主交付物仍是 SVG。没有 SVG 时不写文件，只返回警告' },
+      reuse: { type: 'boolean', description: '默认 true。仅剖视图的 sections.source：模型字节与剖切参数未变时不再调用 FreeCAD。false 时重新剖切' },
     },
     output: {
       schema: {
@@ -604,6 +611,7 @@ export function createGeneratePatentFigureTool(deps: GeneratePatentFigureDeps): 
           },
           warnings: WARNINGS_SCHEMA,
           indexed: { type: 'boolean', required: true },
+          dxfPaths: { type: 'array', items: { type: 'string' }, description: 'export_dxf 为 true 时的 DXF 绝对路径；未请求时省略' },
           layout: { ...LAYOUT_SCHEMA, description: '落版与合规核算结果（给定 target_office 时）' },
           panels: {
             type: 'array',

@@ -51,7 +51,9 @@ function isFigureIndexEntry(value: unknown): value is FigureIndexEntry {
     Array.isArray(analysis.connections) &&
     Array.isArray(analysis.warnings) &&
     // figureFamily 可缺省（旧条目）；存在时必须为字符串，否则跨图续号按名称匹配会拿到非字符串键
-    (analysis.figureFamily === undefined || typeof analysis.figureFamily === 'string')
+    (analysis.figureFamily === undefined || typeof analysis.figureFamily === 'string') &&
+    // drawingStatus 取自磁盘 JSON：静态类型只声明两个字面量，运行时要挡住其它字符串
+    (analysis.drawingStatus === undefined || ['proposal', 'drawn'].includes(analysis.drawingStatus))
   )
 }
 

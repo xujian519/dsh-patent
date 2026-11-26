@@ -200,7 +200,7 @@ export type GeneratePatentFigureInput = SharedFigureInputFields & {
   page_size?: DotPageSize
   /** 提交规格方向（覆盖 Config.figureOrientation）。 */
   orient?: DotOrientation
-  /** 渲染分辨率（覆盖 Config.figureDpi；png 栅格生效）。 */
+  /** 渲染分辨率（覆盖 Config.figureDpi；png 经 Inkscape --export-dpi 改变像素，不是只写 DPI 元数据）。 */
   dpi?: number
   /** 页边距厘米，四边同值（覆盖 Config.figureMargin）。 */
   margin?: number
@@ -242,6 +242,10 @@ export type GeneratePatentFigureInput = SharedFigureInputFields & {
    */
   require_cutting_marks?: boolean
   persist_index?: boolean
+  /** 为 true 时在文字转路径之前另写同名 DXF。主路径仍是 SVG。默认 false。 */
+  export_dxf?: boolean
+  /** 默认 true。仅剖视图 sections.source：模型字节与剖切参数未变时不再调用 FreeCAD。false 时重新剖切。 */
+  reuse?: boolean
 }
 
 /** 落版结果（target_office 给定时返回；形状与结构线稿工具共用）。 */
@@ -276,6 +280,8 @@ export type GeneratePatentFigureOutput = {
   layout?: GeneratePatentFigureLayout
   /** 多面板摘要（panels 模式；单图省略）。 */
   panels?: GeneratePatentFigurePanelOutput[]
+  /** `export_dxf` 为 true 时的 DXF 绝对路径。未请求时省略。 */
+  dxfPaths?: string[]
 }
 
 /** 多面板结果的单面板摘要。 */

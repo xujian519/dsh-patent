@@ -24,7 +24,21 @@
  */
 
 import { stat } from 'node:fs/promises'
-import { basename, extname, resolve } from 'node:path'
+import { basename, extname, join, resolve } from 'node:path'
+import {
+  SECTION_REUSE_WARNING,
+  hashModelFile,
+  readJsonRecord,
+  readReuseText,
+  readStringArray,
+  removeReuseFile,
+  renderKeyPath,
+  renderReuseKey,
+  reusableProduct,
+  writeRenderKey,
+  writeReuseText,
+} from './render-reuse.ts'
+import { rasterFigureExtension, rasterFigureMessage } from './raster-input.ts'
 import { SUPPORTED_MODEL_EXTENSIONS, type SectionGeometryOutcome, type SectionGeometrySpec, type SectionHatchOutcome, type SectionHatchSpec } from './freecad-renderer.ts'
 import { fmtNumber } from './freecad-artifact-numbers.ts'
 import { HatchGeometryError, resolveHatchPattern, type HatchDirection, type HatchRegion } from './freecad-hatch-geometry.ts'
@@ -77,6 +91,11 @@ export type SectionSourceOptions = {
   artifactDir: string
   /** 调用方取消信号。 */
   signal?: AbortSignal
+  /**
+   * 默认 true。模型字节与剖切参数未变、且已有展开收据未被改过时不再调用端口。
+   * false 时删除收据并重新剖切。
+   */
+  reuse?: boolean
 }
 
 /** 展开结果：已填好轮廓与剖面线的剖视图输入，外加随结果返回的提示。 */
@@ -118,6 +137,21 @@ export async function expandSectionSource(
   }
   const anchors = readAnchors(sections)
   const modelPath = await resolveModelPath(source.model_path, options.cwd)
+  const receiptPath = join(options.artifactDir, 'section-reuse.json')
+  const key = renderReuseKey({
+    tool: 'section-source',
+    request: sections,
+    modelHashes: [await hashModelFile(modelPath)],
+  })
+  if (options.reuse !== false) {
+    const cached = await readSectionReuse(receiptPath, key)
+    if (cached !== undefined) {
+      return { sections: cached.sections, warnings: [...cached.warnings, SECTION_REUSE_WARNING] }
+    }
+  } else {
+    await removeReuseFile(renderKeyPath(receiptPath))
+    await removeReuseFile(receiptPath)
+  }
   const geometry = await loadGeometry(options, {
     modelPath,
     plane: readPlane(source),
@@ -136,10 +170,74 @@ export async function expandSectionSource(
       ...(segments === undefined ? {} : { hatch_segments: segments }),
     }
   })
-  return {
+  const expansion: SectionSourceExpansion = {
     sections: { ...sections, parts },
     warnings: [regionInventory(modelPath, regions)],
   }
+  await writeSectionReuse(receiptPath, key, expansion)
+  return expansion
+}
+
+/**
+ * 读取剖切复用收据。键、文件 mtime 或正文对不上时返回 undefined。
+ * @param receiptPath - `section-reuse.json` 路径。
+ * @param key - 本次计算出的键。
+ * @returns 上次成功的展开，或 undefined。
+ */
+async function readSectionReuse(receiptPath: string, key: string): Promise<SectionSourceExpansion | undefined> {
+  if (!await reusableProduct(receiptPath, key)) return undefined
+  const text = await readReuseText(receiptPath)
+  // reusableProduct 刚确认文件在；并发删掉时按未命中。
+  /* v8 ignore next -- the receipt cannot disappear between the stat above and this read in one process */
+  if (text === undefined) return undefined
+  const record = readJsonRecord(text)
+  if (record === undefined || record.key !== key) return undefined
+  return readSectionExpansion(record.expansion)
+}
+
+/**
+ * 收据里的展开结果：warnings 为字符串数组，sections.parts 为数组。
+ * @param value - 收据的 `expansion` 字段。
+ * @returns 展开结果，或 undefined。
+ */
+function readSectionExpansion(value: unknown): SectionSourceExpansion | undefined {
+  const warnings = readStringArray(recordField(value, 'warnings'))
+  const sections = recordField(value, 'sections')
+  if (warnings === undefined || !isSectionFigure(sections)) return undefined
+  return { warnings, sections }
+}
+
+/**
+ * 剖视图 JSON：至少要有 parts 数组，其余字段原样交还给绘图。
+ * @param value - 收据里的 sections。
+ * @returns 是否可当作剖视图输入。
+ */
+function isSectionFigure(value: unknown): value is SectionFigureJson {
+  return Array.isArray(recordField(value, 'parts'))
+}
+
+/**
+ * 对象自身字段。值不是对象、或没有该字段时为 undefined。
+ * @param value - 候选对象。
+ * @param key - 字段名。
+ * @returns 字段值。
+ */
+function recordField(value: unknown, key: string): unknown {
+  if (typeof value !== 'object' || value === null) return undefined
+  const descriptor = Object.getOwnPropertyDescriptor(value, key)
+  if (descriptor === undefined) return undefined
+  return descriptor.value
+}
+
+/**
+ * 成功后写入收据，再写键文件，使收据 mtime 不晚于键。
+ * @param receiptPath - `section-reuse.json` 路径。
+ * @param key - 本次键。
+ * @param expansion - 不含复用提示的展开结果。
+ */
+async function writeSectionReuse(receiptPath: string, key: string, expansion: SectionSourceExpansion): Promise<void> {
+  await writeReuseText(receiptPath, JSON.stringify({ key, expansion }))
+  await writeRenderKey(receiptPath, key)
 }
 
 /**
@@ -225,6 +323,10 @@ function readAnchors(sections: SectionFigureJson): (readonly [number, number])[]
  * @throws SectionSourceError('invalid_input') 不是文件或格式不受支持时。
  */
 async function resolveModelPath(modelPath: string, cwd: string): Promise<string> {
+  const raster = rasterFigureExtension(modelPath)
+  if (raster !== undefined) {
+    throw new SectionSourceError('invalid_input', rasterFigureMessage('sections.source.model_path', raster))
+  }
   const absolute = resolve(cwd, modelPath)
   let info
   try {

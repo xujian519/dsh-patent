@@ -534,6 +534,12 @@ describe('generate_patent_figure：剖视图的引线标号、中心线、字号
       const array = await run({ figure_type: 'cross_section', sections: 'notobject.json' }, 's9')
       expect(array.isError).toBe(true)
       expect(text(array)).toContain('不是 JSON 对象')
+
+      writeFileSync(join(dir, 'shot.PNG'), 'not-json')
+      const raster = await run({ figure_type: 'cross_section', sections: 'shot.PNG' }, 's-raster')
+      expect(raster.isError).toBe(true)
+      expect(text(raster)).toContain('analyze_patent_figure')
+      expect(text(raster)).toContain('.png')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -746,6 +752,32 @@ describe('generate_patent_figure：从 CAD 模型切出剖视图（sections.sour
       expect(result.isError).toBe(true)
       expect(text(result)).toContain('FreeCAD')
       expect(existsSync(join(outDir, 'fig1.svg'))).toBe(false)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('相同剖切第二次复用展开，reuse false 再次调用端口', async () => {
+    let geometryCalls = 0
+    const inner = platePorts().ports
+    const ports: SectionSourcePorts = {
+      sectionGeometry: async (spec) => {
+        geometryCalls += 1
+        return inner.sectionGeometry(spec)
+      },
+      sectionHatch: spec => inner.sectionHatch(spec),
+    }
+    const { dir, run } = await setup(true, ports)
+    try {
+      const first = await run(sourceArgs(), 'reuse1')
+      const second = await run(sourceArgs(), 'reuse2')
+      expect(first.isError).toBe(false)
+      expect(second.isError).toBe(false)
+      expect(geometryCalls).toBe(1)
+      expect(text(second)).toContain('复用已有剖切几何')
+      const forced = await run({ ...sourceArgs(), reuse: false }, 'reuse3')
+      expect(forced.isError).toBe(false)
+      expect(geometryCalls).toBe(2)
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

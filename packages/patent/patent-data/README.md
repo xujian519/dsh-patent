@@ -24,7 +24,7 @@ The `PatentData` service injects `subprocess` and exposes three capability metho
 
 ### createSearchProvider(options?)
 
-Builds a nuo-backed `StageProvider` whose `search(query, { maxResults })` maps source hits to the `{ title, snippet, url }` stage vocabulary. Without `options.search` it wraps the nuo `searchPatents` in the LRU cache, so a repeated query within the TTL reuses the cached result instead of re-spawning the network path; only non-empty successful answers are stored, so a parse-degraded zero-hit reply cannot pin a transient failure for the whole TTL.
+Builds a nuo-backed `StageProvider` whose `search(query, { maxResults })` maps source hits to the `{ title, snippet, url }` stage vocabulary. Without `options.search` it wraps the nuo `searchPatents` in the LRU cache, so a repeated query within the TTL reuses the cached result instead of re-spawning the network path; only non-empty successful answers are stored, so a parse-degraded zero-hit reply cannot pin a transient failure for the whole TTL. The cached wrappers return `CachedLookup<T>` — the value plus `cached` and `retrievedAt` (the original fetch time, preserved on a cache hit), so a consumer can state when a fact was fetched instead of when it was read.
 
 ### createEgoSession(options?)
 

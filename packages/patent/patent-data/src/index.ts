@@ -96,6 +96,7 @@ export {
   caseWorkflowRunsDir,
 } from '@deepseek-ai/dsh-patent-core'
 export type {
+  CachedLookup,
   CniprCallOptions,
   CniprChannelOptions,
   CniprChannelOverrides,

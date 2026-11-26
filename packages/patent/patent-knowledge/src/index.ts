@@ -20,7 +20,8 @@ import { WikiCardLoader } from './patent/wiki-card-loader.ts'
 import { classifyIpc, queryByArticle, queryIpcStandards, searchStandards } from '@deepseek-ai/dsh-patent-core'
 import { KgStore } from './shared/kg-store.ts'
 import { PatentKgAdapter } from './patent/patent-kg-adapter.ts'
-import type { Config, KnowledgePaths } from './types.ts'
+import { readCorpusInfo } from './shared/corpus-info.ts'
+import type { Config, CorpusInfo, KnowledgePaths } from './types.ts'
 import { DEFAULT_NODE_CACHE_MAX_ENTRIES } from './shared/kg-store.ts'
 import type { CaseLawHit, CaseLawSearchOptions } from './case-law/types.ts'
 import type { LawSearchResult } from './legal/types.ts'
@@ -35,7 +36,10 @@ export { installKnowledgeDb } from './install.ts'
 
 // Path/config surface.
 export { DEFAULT_KNOWLEDGE_DIR, DEFAULT_SOURCE_DB_PATH, resolveKnowledgePaths } from './config.ts'
-export type { Config, InstallKnowledgeDbOptions, InstallResult, KnowledgePaths } from './types.ts'
+export type { Config, CorpusInfo, InstallKnowledgeDbOptions, InstallResult, KnowledgePaths } from './types.ts'
+
+// Corpus freshness (index build time, schema version, size, local copy time).
+export { readCorpusInfo } from './shared/corpus-info.ts'
 
 // Database open protocol and schema versions.
 export { KnowledgeDbVersionError, openKnowledgeDb } from './shared/db-version.ts'
@@ -174,6 +178,15 @@ export class PatentKnowledge extends Service {
    */
   guidelineSearch(query: string, options?: KnowledgeLawSearchOptions): LawSearchResult[] {
     return this.guideline().search(query, options)
+  }
+
+  /**
+   * Read the resolved corpus's freshness and size (upstream index build time,
+   * schema version, document/chunk counts, local copy time).
+   * @returns the corpus facts; fields the database does not record are omitted.
+   */
+  corpusInfo(): CorpusInfo {
+    return readCorpusInfo(this.paths.queryDbPath)
   }
 
   /**

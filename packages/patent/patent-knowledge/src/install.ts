@@ -4,7 +4,8 @@
  * Produces a compact knowledge-lite.db from a local source knowledge.db by
  * vacuuming into a fresh copy, gzip-compressing chunks.content long bodies
  * (readers decompress transparently via sati_uncompress), and dropping the
- * embeddings tables (P0.4: no vector infrastructure in P1). The source database
+ * embeddings tables (P0.4: no vector infrastructure in P1); `index_meta` is
+ * kept because it carries the corpus build time and size. The source database
  * is opened read-only and never modified.
  *
  * The install logic never runs on plugin load; it is exported for programmatic
@@ -181,7 +182,9 @@ export async function installKnowledgeDb(options: InstallKnowledgeDbOptions = {}
   log(`输入: ${input}`)
   log(`输出: ${output}`)
   const dropped: string[] = []
-  if (!keepEmbeddings) dropped.push('embeddings', 'ivf_index', 'index_meta')
+  // index_meta 不是向量表：它记录上游索引构建时间与文档/分块数，是语料新鲜度的唯一来源，
+  // 精简库必须保留，否则 corpus_info 只能退到文件 mtime。
+  if (!keepEmbeddings) dropped.push('embeddings', 'ivf_index')
   if (noFts) dropped.push('docs_fts', 'kg_nodes_fts')
   log(`去除: ${dropped.length > 0 ? dropped.join(', ') : '无（仅 VACUUM 去碎片）'}`)
 

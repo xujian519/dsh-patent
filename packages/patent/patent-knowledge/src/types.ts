@@ -74,6 +74,30 @@ export interface InstallResult {
   compressedChunks: number
 }
 
+/**
+ * 本地知识库的语料新鲜度与规模。
+ *
+ * `lastIndexedAt` 是上游管线构建该索引的时间（`index_meta.last_indexed_at`），
+ * `fileModifiedAt` 是本机这份副本的写入时间（安装/重建），两者不可互相替代：
+ * 索引可能在几个月前构建、本周才装到本机。
+ */
+export interface CorpusInfo {
+  /** 实际查询的数据库路径。 */
+  dbPath: string
+  /** 上游索引构建时间（ISO-8601）；源库未记录时省略。 */
+  lastIndexedAt?: string
+  /** 最新 version_history.version；库未记录时省略。 */
+  version?: number
+  /** 最新 version_history.created_at；库未记录时省略。 */
+  versionCreatedAt?: string
+  /** 文档数（index_meta 或最新 version_history 记录）；库未记录时省略。 */
+  documents?: number
+  /** 分块数（index_meta 或最新 version_history 记录）；库未记录时省略。 */
+  chunks?: number
+  /** 本机副本的修改时间（ISO-8601）。 */
+  fileModifiedAt: string
+}
+
 /** Resolved on-disk knowledge paths. */
 export interface KnowledgePaths {
   /** Data directory (the configured knowledgeDir). */

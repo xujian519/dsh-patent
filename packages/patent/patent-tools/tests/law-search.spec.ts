@@ -7,7 +7,7 @@ import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import type { LawSearchResult } from '@deepseek-ai/dsh-patent-knowledge'
+import type { CorpusInfo, LawSearchResult } from '@deepseek-ai/dsh-patent-knowledge'
 import { createLawSearchTool } from '../src/tool/law-search.ts'
 import type { LawSearchDeps } from '../src/tool/law-search.ts'
 import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
@@ -22,10 +22,27 @@ function hit(id: string, name: string, filePath: string, content: string): LawSe
 const LAW_HIT = hit('law:专利法', '中华人民共和国专利法', '法律法规_md/中华人民共和国专利法.md', '第二十六条 说明书应当对发明作出清楚、完整的说明。')
 const GUIDELINE_HIT = hit('raw:审查指南_md:第二部分第八章', '专利审查指南 第二部分第八章-实质审查程序', '审查指南_md/第二部分第八章-实质审查程序.md', '4.1 审查员应当发出审查意见通知书，指出申请文件的缺陷。')
 
+const CORPUS: CorpusInfo = {
+  dbPath: '/tmp/knowledge.db',
+  lastIndexedAt: '2026-07-02T10:59:39.174Z',
+  version: 3,
+  versionCreatedAt: '2026-07-02T10:00:00.000Z',
+  documents: 81038,
+  chunks: 138609,
+  fileModifiedAt: '2026-08-19T11:00:00.000Z',
+}
+
 /** 记录检索调用的替身。 */
-function recorder(overrides: { law?: LawSearchResult[]; guideline?: LawSearchResult[]; dbPath?: string; throwLaw?: boolean } = {}) {
+function recorder(overrides: {
+  law?: LawSearchResult[]
+  guideline?: LawSearchResult[]
+  dbPath?: string
+  throwLaw?: boolean
+  corpus?: CorpusInfo | null
+} = {}) {
   const calls: { scope: string; query: string; limit: number }[] = []
   const asOfCalls: (string | undefined)[] = []
+  const corpus = overrides.corpus === undefined ? CORPUS : overrides.corpus
   const deps: LawSearchDeps = {
     searchLaw: (query, options) => {
       calls.push({ scope: 'law', query, limit: options?.limit ?? 0 })
@@ -39,6 +56,7 @@ function recorder(overrides: { law?: LawSearchResult[]; guideline?: LawSearchRes
       return overrides.guideline ?? [GUIDELINE_HIT]
     },
     ...(overrides.dbPath === undefined ? {} : { dbPath: overrides.dbPath }),
+    ...(corpus === null ? {} : { corpusInfo: () => corpus }),
   }
   return { calls, asOfCalls, deps }
 }
@@ -71,6 +89,24 @@ describe('law_search', () => {
     expect(body).toContain('中华人民共和国专利法')
     expect(body).toContain('sourcePath**: 法律法规_md/中华人民共和国专利法.md')
     expect(body).toContain('第二十六条')
+    expect(body).toContain('语料：上游索引 2026-07-02T10:59:39.174Z · 版本 3 · 81038 文档 / 138609 分块 · 本机副本 2026-08-19T11:00:00.000Z')
+  })
+
+  it('省略语料读取端时不渲染语料行', async () => {
+    const ctx = await ctxWith(recorder({ corpus: null }).deps)
+    const result = await call(ctx, { query: '说明书' }, 'law-no-corpus')
+    expect(result.isError).toBe(false)
+    expect(text(result)).not.toContain('语料：')
+  })
+
+  it('语料读取失败按 setup_required 报错，不静默省略', async () => {
+    const ctx = await ctxWith({
+      ...recorder().deps,
+      corpusInfo: () => { throw new Error('database is locked') },
+    })
+    const result = await call(ctx, { query: '说明书' }, 'law-corpus-fail')
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('database is locked')
   })
 
   it('scope=guideline 检索《专利审查指南》全文', async () => {

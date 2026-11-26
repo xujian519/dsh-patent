@@ -2649,7 +2649,7 @@
     },
     {
       "name": "law_search",
-      "description": "检索部署的外接 IP 知识库（knowledge.db 全文索引）里的规范原文：scope=law 取法律法规条文，scope=guideline 取《专利审查指南》全文。 这是**规则**的检索通道：`law_verify` 只按随包索引判定引用形式与是否转录（指南的节级条目已随包转录，其下各节都没有转录的条目才判「未核验」），指南条文要在这里取原文并把 sourcePath（语料内路径）记为引文来源；判例全文另有 patent_case_search。 命中为空不得下任何结论；引用格式：`<名称>` + `<条号/节号>` + `<sourcePath>`。 每条命中带 `时间效力`：已废止与尚未生效的条文不会返回；标为「未核验」表示库里缺少施行/失效时间，引用前须另行核对版本。",
+      "description": "检索部署的外接 IP 知识库（knowledge.db 全文索引）里的规范原文：scope=law 取法律法规条文，scope=guideline 取《专利审查指南》全文。 这是**规则**的检索通道：`law_verify` 只按随包索引判定引用形式与是否转录（指南的节级条目已随包转录，其下各节都没有转录的条目才判「未核验」），指南条文要在这里取原文并把 sourcePath（语料内路径）记为引文来源；判例全文另有 patent_case_search。 命中为空不得下任何结论；引用格式：`<名称>` + `<条号/节号>` + `<sourcePath>`。 每条命中带 `时间效力`：已废止与尚未生效的条文不会返回；标为「未核验」表示库里缺少施行/失效时间，引用前须另行核对版本。 输出另带 `corpus`：上游索引构建时间、schema 版本与本机副本时间——报告要写明所引条文出自哪一版语料时用它，不要用调用时间代替。",
       "parameters": {
         "type": "object",
         "properties": {
@@ -2803,7 +2803,7 @@
     },
     {
       "name": "patent_case_search",
-      "description": "检索本地专利判例全文（无效复审决定/专利判决，knowledge.db，FTS5 BM25 优先）。用于无效宣告分析、OA 答复时检索相似在先决定的理由论证与证据认定。支持 doc_type（case=无效决定/judgment=判决）与 court（法院）过滤。默认排除 wiki 审查标准卡片（审查标准请用 patent_wiki_search）。",
+      "description": "检索本地专利判例全文（无效复审决定/专利判决，knowledge.db，FTS5 BM25 优先）。用于无效宣告分析、OA 答复时检索相似在先决定的理由论证与证据认定。支持 doc_type（case=无效决定/judgment=判决）与 court（法院）过滤。默认排除 wiki 审查标准卡片（审查标准请用 patent_wiki_search）。输出另带 corpus（上游索引时间、schema 版本、规模与本机副本时间），报告要写明所引判例出自哪一版语料时用它，不要用调用时间代替。",
       "parameters": {
         "type": "object",
         "properties": {
@@ -2835,6 +2835,14 @@
         "required": [
           "query"
         ]
+      }
+    },
+    {
+      "name": "patent_corpus_status",
+      "description": "报告本地专利知识库（knowledge.db：法条、审查指南、判例与知识图谱共用一库）的语料版本与新鲜度：上游索引构建时间、schema 版本、文档/分块数与本地副本时间。 检索命中为空、或报告要写明「所引条文/判例出自哪一版语料」时先查它；它不检索内容，只回答「这是哪一版」。",
+      "parameters": {
+        "type": "object",
+        "properties": {}
       }
     },
     {
@@ -3045,7 +3053,7 @@
     },
     {
       "name": "patent_legal_status",
-      "description": "- Queries patent legal status (Active / Expired / Abandoned) and estimated expiration from Google Patents\n- Batch: pass 1-20 patent numbers; individual failures are reported per-patent without aborting the batch\n- Returns title, status, estimated expiration, filing/grant dates, applicant, inventor, and status event history\n\nUsage notes:\n  - Read-only; makes one network request per patent (concurrency 4 by default, 1-20)\n  - 每个结果点名服务它的 channel。中国申请号/公开(公告)号在 Google Patents 通道查不到时，部署启用 CNIPR 通道重查一次：该通道只出法律状态公告记录（announce_date / status / status_info），其余字段为空，status 取其中公告日最新的一条\n  - 通道失败不是整批失败：失败的号保留 nuo 通道的原因，被咨询过但未能服务的通道写在 warnings 里",
+      "description": "- Queries patent legal status (Active / Expired / Abandoned) and estimated expiration from Google Patents\n- Batch: pass 1-20 patent numbers; individual failures are reported per-patent without aborting the batch\n- Returns title, status, estimated expiration, filing/grant dates, applicant, inventor, and status event history\n\nUsage notes:\n  - Read-only; makes one network request per patent (concurrency 4 by default, 1-20)\n  - retrievedAt is when this batch was fetched, and channelsConsulted records every channel this call queried, skipped, or failed on, so a report states when and from where the statuses came\n  - 每个结果点名服务它的 channel。中国申请号/公开(公告)号在 Google Patents 通道查不到时，部署启用 CNIPR 通道重查一次：该通道只出法律状态公告记录（announce_date / status / status_info），其余字段为空，status 取其中公告日最新的一条\n  - 通道失败不是整批失败：失败的号保留 nuo 通道的原因，被咨询过但未能服务的通道写在 warnings 里",
       "parameters": {
         "type": "object",
         "properties": {
@@ -3068,7 +3076,7 @@
     },
     {
       "name": "patent_metadata",
-      "description": "- Fetches patent metadata from Google Patents by patent number (e.g. US11452699B2)\n- Returns structured data: title, inventors, assignees, dates, legal status, estimated expiration, abstract, PDF URL, classifications, citations\n- Validates and normalizes the patent number automatically; a CN application number keeps its 12-digit form (CN202122978405.0 → CN202122978405) and full-width characters, whitespace, and - / : separators fold away\n- Use for patent due diligence, prior-art detail lookup, legal status checks\n\nUsage notes:\n  - Read-only; makes one network request per patent\n  - One call names the channel that served it and every failure names the channel it failed on, so a report cites the channel it actually used\n  - 中国公开(公告)号（如 CN218483312U）在 Google Patents 通道失败、抛错或查不到时，部署启用 CNIPR 通道会再按号检索一次；CNIPR 只发布标题、申请人、公开日与摘要，其余字段为空，被咨询过但未能服务的通道写在 warnings 里\n  - A country code is required; a bare application number (202122978405) is rejected — prepend CN or use the publication number\n  - A 'not found' result (patent does not exist) is returned as data with success:false — not an error\n  - A transient upstream failure (HTTP 503, dropped connection) is retried twice; a failure that outlives the retries names the channel, the upstream error, and the attempts made\n  - Non-fatal parse warnings (fields the page structure left empty) are listed under 警告 in the rendered result",
+      "description": "- Fetches patent metadata from Google Patents by patent number (e.g. US11452699B2)\n- Returns structured data: title, inventors, assignees, dates, legal status, estimated expiration, abstract, PDF URL, classifications, citations\n- Validates and normalizes the patent number automatically; a CN application number keeps its 12-digit form (CN202122978405.0 → CN202122978405) and full-width characters, whitespace, and - / : separators fold away\n- Use for patent due diligence, prior-art detail lookup, legal status checks\n\nUsage notes:\n  - Read-only; makes one network request per patent\n  - One call names the channel that served it, the time that record was fetched (retrievedAt; a cache hit keeps the original fetch time), and whether it came from cache, so a report cites when and from where the facts came\n  - channelsConsulted records every channel this call queried, skipped, or failed on, with the reason; a failure names the channel it failed on\n  - 中国公开(公告)号（如 CN218483312U）在 Google Patents 通道失败、抛错或查不到时，部署启用 CNIPR 通道会再按号检索一次；CNIPR 只发布标题、申请人、公开日与摘要，其余字段为空，被咨询过但未能服务的通道写在 warnings 里\n  - A country code is required; a bare application number (202122978405) is rejected — prepend CN or use the publication number\n  - A 'not found' result (patent does not exist) is returned as data with success:false — not an error\n  - A transient upstream failure (HTTP 503, dropped connection) is retried twice; a failure that outlives the retries names the channel, the upstream error, and the attempts made\n  - Non-fatal parse warnings (fields the page structure left empty) are listed under 警告 in the rendered result",
       "parameters": {
         "type": "object",
         "properties": {
@@ -3096,7 +3104,7 @@
     },
     {
       "name": "patent_pdf_download",
-      "description": "批量下载专利 PDF。输入 patents 为公开号列表（CN123456789A、US11452699B2、EP1234567A1、WO2023123456A1…），保存为 `<outputDir>/<patent>.pdf`。通道按号族选择并逐篇点名：中国公开(公告)号在部署启用时先走 CNIPR（经 ego lite 登录态取全文直链，`http://pic.cnipr.com/...`）；其余号以及 CNIPR 未能服务的号走 Google Patents——优先经 ego-browser（ego lite）在浏览器内取回 PDF 响应体，取不到时提取 CDN PDF 链接后用 HTTP 直接下载落盘。每篇结果为 status=ok（带 path、method 与 channel）或 status=failed（带 error 与 channel，且保留 pdfUrl 供手动重试）；失败不中断其余专利。\n\nUsage notes:\n  - 每篇的 channel 是实际产出该篇的通道；某通道被咨询过但未能服务时，结果另在 warnings 里点名，报告据此区分「换通道」与「同通道重试」\n  - 重复执行命中 MANIFEST 断点续传（size 匹配即跳过，method=skip），force=true 强制重下；续传条目的 channel 取自 MANIFEST 记录（本字段之前写下的条目没有记录，输出里该篇不带通道）\n  - record=true 可额外截图留证（输出 `<outputDir>/evidence/`）\n  - HTTP 兜底对瞬时失败/限流（429/503）自动重试并按 Retry-After 退避；重试后仍 429 时 error 会注明限流与建议等待时长（并可结合 retryAfterMs），此时应等待后再重试而非立即重试",
+      "description": "批量下载专利 PDF。输入 patents 为公开号列表（CN123456789A、US11452699B2、EP1234567A1、WO2023123456A1…），保存为 `<outputDir>/<patent>.pdf`。通道按号族选择并逐篇点名：中国公开(公告)号在部署启用时先走 CNIPR（经 ego lite 登录态取全文直链，`http://pic.cnipr.com/...`）；其余号以及 CNIPR 未能服务的号走 Google Patents——优先经 ego-browser（ego lite）在浏览器内取回 PDF 响应体，取不到时提取 CDN PDF 链接后用 HTTP 直接下载落盘。每篇结果为 status=ok（带 path、method 与 channel）或 status=failed（带 error 与 channel，且保留 pdfUrl 供手动重试）；失败不中断其余专利。\n\nUsage notes:\n  - 每篇的 channel 是实际产出该篇的通道；某通道被咨询过但未能服务时，结果另在 warnings 里点名，报告据此区分「换通道」与「同通道重试」\n  - 重复执行命中 MANIFEST 断点续传（size 匹配即跳过，method=skip），force=true 强制重下；续传条目的 channel 与 retrievedAt 取自 MANIFEST 记录（本字段之前写下的条目没有记录，输出里该篇不带通道/取数时间）\n  - retrievedAt 是该篇文件的取数时间（本次落盘时间，或续传命中时 MANIFEST 记录的下载时间），报告据此写明原文是何时取得的\n  - record=true 可额外截图留证（输出 `<outputDir>/evidence/`）\n  - HTTP 兜底对瞬时失败/限流（429/503）自动重试并按 Retry-After 退避；重试后仍 429 时 error 会注明限流与建议等待时长（并可结合 retryAfterMs），此时应等待后再重试而非立即重试",
       "parameters": {
         "type": "object",
         "properties": {
@@ -3276,7 +3284,7 @@
     },
     {
       "name": "patent_search",
-      "description": "- Searches Google Patents by keyword or boolean query (e.g. '(phase change OR PCM) AND thermal', 'assignee:(Samsung) after:20200101')\n- Returns structured hits: patent number, title, assignee, publication date, abstract, URL\n- Use for prior-art search, novelty pre-screening, competitor/assignee analysis\n\nUsage notes:\n  - Read-only; query syntax follows Google Patents search grammar\n  - Follow up with patent_metadata to fetch full details of a specific hit\n  - The result names the channel that served it and every failure names the channel it failed on, so a report cites the channel it actually used instead of inferring one from a hit URL\n  - 当 Google Patents 通道失败、抛错或零命中时，部署启用 CNIPR 通道会再检索一次，结果里的 channel 写明这次实际由谁服务；CNIPR 只做关键词检索，命中含公开(公告)号、标题、申请人、公开日与摘要，没有 URL 与优先权，且带 assignee:/after:/CL: 这类字段语法的查询不咨询它\n  - A network failure is reported as an error naming that channel; a genuine zero-result search returns empty hits\n  - A transient upstream failure (timeout, dropped connection) is retried twice; a failure that outlives the retries names the channel, the upstream error, and the attempts made\n  - Non-fatal warnings (family dedupe, fields the page structure left empty) are listed under 警告 in the rendered result",
+      "description": "- Searches Google Patents by keyword or boolean query (e.g. '(phase change OR PCM) AND thermal', 'assignee:(Samsung) after:20200101')\n- Returns lean hits by default (patent number, title, assignee, publication date, URL); set includeAbstract=true when the abstracts are needed to triage\n- Use for prior-art search, novelty pre-screening, competitor/assignee analysis\n\nUsage notes:\n  - Read-only; query syntax follows Google Patents search grammar\n  - Follow up with patent_metadata to fetch full details of a specific hit\n  - The result names the channel that served it, the time that answer was fetched (retrievedAt; a cache hit keeps the original fetch time), and whether it came from cache, so a report cites when and from where the facts came\n  - channelsConsulted records every channel this call queried, skipped, or failed on, with the reason; a channel absent from that list was not consulted\n  - 当 Google Patents 通道失败、抛错或零命中时，部署启用 CNIPR 通道会再检索一次，结果里的 channel 写明这次实际由谁服务；CNIPR 只做关键词检索，命中含公开(公告)号、标题、申请人、公开日与摘要，没有 URL 与优先权，且带 assignee:/after:/CL: 这类字段语法的查询不咨询它\n  - A network failure is reported as an error naming that channel; a genuine zero-result search returns empty hits\n  - A transient upstream failure (timeout, dropped connection) is retried twice; a failure that outlives the retries names the channel, the upstream error, and the attempts made\n  - Non-fatal warnings (family dedupe, fields the page structure left empty) are listed under 警告 in the rendered result",
       "parameters": {
         "type": "object",
         "properties": {
@@ -3287,6 +3295,10 @@
           "limit": {
             "type": "number",
             "description": "Max hits (1-50, default 10)"
+          },
+          "includeAbstract": {
+            "type": "boolean",
+            "description": "Include each hit's abstract (default false; lean rows omit it)"
           }
         },
         "required": [

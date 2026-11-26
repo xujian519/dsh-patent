@@ -118,6 +118,7 @@ describe('patent-tools plugin wiring', () => {
     createKgDb(join(temp, 'query.db'))
     await mkdir(join(temp, 'wiki'))
     await writeFile(join(temp, 'wiki', 'a.md'), '卡片A')
+    const queryDbPath = join(temp, 'query.db')
     const ctx = new Context()
     await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
@@ -125,8 +126,9 @@ describe('patent-tools plugin wiring', () => {
     const wikiCalls: string[] = []
     const kgCalls: string[] = []
     ctx.provide('patentKnowledge', {
-      paths: { wikiDir: join(temp, 'wiki'), queryDbPath: join(temp, 'query.db') },
+      paths: { wikiDir: join(temp, 'wiki'), queryDbPath },
       caseLawSearch: () => [],
+      corpusInfo: () => ({ dbPath: queryDbPath, fileModifiedAt: new Date(0).toISOString() }),
       wikiCardsIn: () => {
         wikiCalls.push('search')
         return [{ id: 'a', title: '卡片A', relativePath: 'a.md' }]

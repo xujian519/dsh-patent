@@ -65,7 +65,8 @@ export type DownloadChannelDeps = {
  * @returns a batch runner producing one `fallback` item per patent.
  */
 export function createScrapeChannelRunner(deps: DownloadChannelDeps = {}): RunEgo {
-  const scrape = deps.scrape ?? cachedScrapePatent(scrapePatentImpl)
+  const cached = cachedScrapePatent(scrapePatentImpl)
+  const scrape: PatentScrape = deps.scrape ?? (async (patent, options) => (await cached(patent, options)).value)
   return async (request: EgoDownloadRequest): Promise<EgoDownloadResult> => {
     const items = await Promise.all(request.patents.map(async (patent): Promise<EgoDownloadItem> => {
       const result = await scrape(patent, { returnAbstract: false, returnLegal: false })

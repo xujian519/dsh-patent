@@ -3,20 +3,20 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/patent/patent-tools/README.md
 /:
-  en: 74fc2f5c0e6db259
-  zh: c686bb1543bf89bf
+  en: c8fe07151a3d930b
+  zh: 33a15e5eddea84c9
 /deepseek-ai-dsh-patent-tools:
   en: 43a4793a611b4e2d
   zh: 64313908162d86ab
 /deepseek-ai-dsh-patent-tools/summary:
-  en: 3a336320ade4688b
-  zh: d2bc9f666f19c1d1
+  en: a9b40299475d7453
+  zh: bc8c16808933f543
 /deepseek-ai-dsh-patent-tools/table-of-contents:
   en: d5e558a2a1eb4650
   zh: 3cd31d97eb0a44a5
 /deepseek-ai-dsh-patent-tools/tools:
-  en: 21179d6b6966c864
-  zh: 186586b412dbc8d6
+  en: 8eb8347c43ff9a8b
+  zh: a38b4e7f16287425
 /deepseek-ai-dsh-patent-tools/configuration:
   en: c9077739e500abae
   zh: ffd92c3a4d6c19a1
@@ -27,8 +27,8 @@
   en: 3039bc5e7a796b21
   zh: 6b7a9eaf69c9ea53
 /deepseek-ai-dsh-patent-tools/model-experience/tool-schemas/what-the-model-sees:
-  en: 71c46d6b5442823f
-  zh: 1f1935e12c8c497d
+  en: 258dfeaba490e816
+  zh: 79ae05b9e0259ad7
 /deepseek-ai-dsh-patent-tools/model-experience/tool-schemas/token-effect:
   en: 498e4b52fc562c0b
   zh: 96419d05aef9b5a7

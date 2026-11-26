@@ -72,7 +72,10 @@ describe('PatentData service', () => {
       expect(ctx.patentData).toBeInstanceOf(PatentData)
 
       const underlying = vi.fn(async () => makeSearchResult())
-      const provider = ctx.patentData.createSearchProvider({ search: cachedSearchPatents(underlying) })
+      const cached = cachedSearchPatents(underlying)
+      const provider = ctx.patentData.createSearchProvider({
+        search: async (query, opts) => (await cached(query, opts)).value,
+      })
       const first = await provider.search!('thermal')
       const second = await provider.search!('thermal')
 

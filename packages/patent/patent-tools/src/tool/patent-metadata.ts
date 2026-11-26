@@ -12,10 +12,18 @@ import { toJsonValue } from './internal/json-value.ts'
 import { scrapePatent as scrapePatentImpl, validatePatentNumber } from '@deepseek-ai/nuo-patent'
 import type { ScrapeResult } from '@deepseek-ai/nuo-patent'
 import { CNIPR_SEARCH_PAGE_SIZE, cachedScrapePatent, mapPatentData } from '@deepseek-ai/dsh-patent-data'
-import type { CniprChannel, CniprSearchHit, CniprSearchResult, StructuredPatentData } from '@deepseek-ai/dsh-patent-data'
+import type { CachedLookup, CniprChannel, CniprSearchHit, CniprSearchResult, StructuredPatentData } from '@deepseek-ai/dsh-patent-data'
 import { PatentToolError } from '../error.ts'
 import { retryBounded } from './internal/bounded-retry.ts'
-import { CNIPR_CHANNEL, GOOGLE_PATENTS_CHANNEL, appendSecondChannel, renderUpstreamFailure } from './internal/upstream-channel.ts'
+import {
+  CHANNEL_CONSULT_SCHEMA,
+  CNIPR_CHANNEL,
+  GOOGLE_PATENTS_CHANNEL,
+  appendSecondChannel,
+  renderChannelConsult,
+  renderUpstreamFailure,
+} from './internal/upstream-channel.ts'
+import type { ChannelConsult } from './internal/upstream-channel.ts'
 import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
 
 /** Input for the patent_metadata tool. */
@@ -41,6 +49,12 @@ export type PatentMetadataOutput = {
   data: JsonValue | null
   errorCode: string
   errorMessage: string
+  /** ISO-8601 UTC time the serving channel fetched this record (cache-hit time on a cache hit). */
+  retrievedAt: string
+  /** True when the scrape engine answered from its LRU cache. */
+  cached: boolean
+  /** Every channel this call consulted: who served it, who was skipped, and why. */
+  channelsConsulted: ChannelConsult[]
   /** 通道级告警（CNIPR 被咨询过但未能服务时点名它）。 */
   warnings: string[]
   /** Non-fatal parse warnings (field gaps from page-structure changes). */
@@ -144,10 +158,10 @@ function cniprStructuredData(hit: CniprSearchHit, patent: string, returnAbstract
   } satisfies Record<keyof StructuredPatentData, JsonValue>
 }
 
-/** 第二通道服务这次查询的结果：命中，或未服务时它留下的告警。 */
+/** 第二通道服务这次查询的结果：命中、零命中、失败，或未被咨询。 */
 type CniprMetadataAttempt =
-  | { served: true; output: PatentMetadataOutput }
-  | { served: false; warnings: string[] }
+  | { outcome: 'served'; data: JsonValue; warnings: string[] }
+  | { outcome: 'empty' | 'failed' | 'skipped'; reason: string; warnings: string[] }
 
 /**
  * 用 CNIPR 第二通道按号查询中国公开(公告)号。
@@ -155,11 +169,11 @@ type CniprMetadataAttempt =
  * 只在前一通道没有可用答案时调用。命中必须与请求的号完全相同：通道按号检索，但结果里
  * 可能混入同族的其他公开号。通道级失败不抛给调用方，而是进 warnings——「第二个通道不可用」
  * 必须在调用记录里看得见，否则会被读成「不需要它」。
- * @param lookup - 晚绑定的通道查询；未接线时按未服务返回。
+ * @param lookup - 晚绑定的通道查询；未接线时按跳过返回。
  * @param patent - 已归一的中国公开(公告)号。
  * @param returnAbstract - 是否保留摘要（调用方关闭摘要时该字段留空）。
  * @param signal - 调用方取消信号。
- * @returns 命中及其输出，或未服务时的告警。
+ * @returns 命中数据及其告警，或未服务时的结局与原因。
  */
 async function lookupThroughCnipr(
   lookup: CniprMetadataLookup | undefined,
@@ -168,40 +182,42 @@ async function lookupThroughCnipr(
   signal: AbortSignal,
 ): Promise<CniprMetadataAttempt> {
   const cnipr = lookup?.()
-  if (cnipr === undefined) return { served: false, warnings: [] }
+  if (cnipr === undefined) return { outcome: 'skipped', reason: '本部署未启用该通道', warnings: [] }
   let result: CniprSearchResult
   try {
     result = await cnipr.search(patent, { limit: CNIPR_SEARCH_PAGE_SIZE, signal })
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error)
-    return { served: false, warnings: [`${CNIPR_CHANNEL}不可用（${detail}），本次结果只有 ${GOOGLE_PATENTS_CHANNEL} 的`] }
+    return {
+      outcome: 'failed',
+      reason: detail,
+      warnings: [`${CNIPR_CHANNEL}不可用（${detail}），本次结果只有 ${GOOGLE_PATENTS_CHANNEL} 的`],
+    }
   }
   const hit = result.hits.find(candidate => compactPatentNumber(candidate.patent) === patent)
-  if (hit === undefined) return { served: false, warnings: [`${CNIPR_CHANNEL}也未检索到该公开(公告)号`] }
-  return {
-    served: true,
-    output: {
-      success: true,
-      patent,
-      channel: CNIPR_CHANNEL,
-      url: '',
-      data: cniprStructuredData(hit, patent, returnAbstract),
-      errorCode: '',
-      errorMessage: '',
-      warnings: [],
-      parseWarnings: [],
-    },
+  if (hit === undefined) {
+    return {
+      outcome: 'empty',
+      reason: '未检索到该公开(公告)号',
+      warnings: [`${CNIPR_CHANNEL}也未检索到该公开(公告)号`],
+    }
   }
+  return { outcome: 'served', data: cniprStructuredData(hit, patent, returnAbstract), warnings: [] }
 }
 
 /**
  * Map one nuo ScrapeResult into the tool output, throwing on runtime-class failures.
  * @param result - the settled scrape result.
  * @param attempts - total scrape attempts made, reported when an upstream failure outlived the retries.
- * @param warnings - 第二通道留下的告警：失败结果据此点名被咨询过但未能服务的通道。
+ * @param retrieval - the call's retrieval facts: channel record, warnings, fetch time, cache flag.
  * @returns the tool output for a completed or not-found lookup.
  */
-function mapScrapeResult(result: ScrapeResult, attempts: number, warnings: readonly string[]): PatentMetadataOutput {
+function mapScrapeResult(
+  result: ScrapeResult,
+  attempts: number,
+  retrieval: { warnings: readonly string[]; retrievedAt: string; cached: boolean; channelsConsulted: ChannelConsult[] },
+): PatentMetadataOutput {
+  const { warnings } = retrieval
   if (result.success && result.data) {
     return {
       success: true,
@@ -211,6 +227,9 @@ function mapScrapeResult(result: ScrapeResult, attempts: number, warnings: reado
       data: toJsonValue(mapPatentData(result.data, result.patent, result.url)),
       errorCode: '',
       errorMessage: '',
+      retrievedAt: retrieval.retrievedAt,
+      cached: retrieval.cached,
+      channelsConsulted: retrieval.channelsConsulted,
       warnings: [...warnings],
       parseWarnings: result.parseWarnings,
     }
@@ -229,6 +248,9 @@ function mapScrapeResult(result: ScrapeResult, attempts: number, warnings: reado
         data: null,
         errorCode: result.errorCode,
         errorMessage: result.errorMessage,
+        retrievedAt: retrieval.retrievedAt,
+        cached: retrieval.cached,
+        channelsConsulted: retrieval.channelsConsulted,
         warnings: [...warnings],
         parseWarnings: result.parseWarnings,
       }
@@ -249,7 +271,8 @@ const DESCRIPTION = [
   '',
   'Usage notes:',
   '  - Read-only; makes one network request per patent',
-  '  - One call names the channel that served it and every failure names the channel it failed on, so a report cites the channel it actually used',
+  '  - One call names the channel that served it, the time that record was fetched (retrievedAt; a cache hit keeps the original fetch time), and whether it came from cache, so a report cites when and from where the facts came',
+  '  - channelsConsulted records every channel this call queried, skipped, or failed on, with the reason; a failure names the channel it failed on',
   '  - 中国公开(公告)号（如 CN218483312U）在 Google Patents 通道失败、抛错或查不到时，部署启用 CNIPR 通道会再按号检索一次；CNIPR 只发布标题、申请人、公开日与摘要，其余字段为空，被咨询过但未能服务的通道写在 warnings 里',
   '  - A country code is required; a bare application number (202122978405) is rejected — prepend CN or use the publication number',
   "  - A 'not found' result (patent does not exist) is returned as data with success:false — not an error",
@@ -272,12 +295,19 @@ function renderMetadata(value: {
   data?: unknown
   errorCode: string
   errorMessage: string
+  retrievedAt: string
+  cached: boolean
+  channelsConsulted: readonly ChannelConsult[]
   warnings: readonly string[]
   parseWarnings: readonly { field: string; message: string }[]
 }): string {
   const lines = value.success && isDataRecord(value.data)
     ? metadataBodyLines(value.data, value.channel)
     : [`patent_metadata(${value.patent}) · channel: ${value.channel}: ${value.errorMessage}`]
+  lines.push(
+    renderChannelConsult(value.channelsConsulted),
+    `取数：${value.retrievedAt}${value.cached ? '（缓存）' : ''}`,
+  )
   lines.push(...warningSection(value.warnings, '通道告警'))
   if (value.parseWarnings.length > 0) {
     lines.push('', '## 警告', ...value.parseWarnings.map(w => `- ${w.field}: ${w.message}`))
@@ -327,7 +357,15 @@ const WARNING_SCHEMA = {
  * @returns a registry-ready tool definition.
  */
 export function createPatentMetadataTool(deps: PatentMetadataDeps = {}): ToolDefinition {
-  const scrape = deps.scrape ?? cachedScrapePatent(scrapePatentImpl)
+  const injected = deps.scrape
+  const cachedScrape = cachedScrapePatent(scrapePatentImpl)
+  const scrape = injected === undefined
+    ? cachedScrape
+    : async (
+      patent: string,
+      opts?: { timeout?: number; returnAbstract?: boolean; returnLegal?: boolean; signal?: AbortSignal },
+    ): Promise<CachedLookup<ScrapeResult>> =>
+      ({ value: await injected(patent, opts), cached: false, retrievedAt: new Date().toISOString() })
   const retryDelaysMs = deps.scrapeRetryDelaysMs ?? DEFAULT_SCRAPE_RETRY_DELAYS_MS
   return defineTool({
     name: 'patent_metadata',
@@ -350,6 +388,9 @@ export function createPatentMetadataTool(deps: PatentMetadataDeps = {}): ToolDef
           data: { type: 'json' },
           errorCode: { type: 'string', required: true },
           errorMessage: { type: 'string', required: true },
+          retrievedAt: { type: 'string', required: true },
+          cached: { type: 'boolean', required: true },
+          channelsConsulted: { type: 'array', required: true, items: CHANNEL_CONSULT_SCHEMA },
           warnings: WARNINGS_SCHEMA,
           parseWarnings: { type: 'array', required: true, items: WARNING_SCHEMA },
         },
@@ -371,7 +412,7 @@ export function createPatentMetadataTool(deps: PatentMetadataDeps = {}): ToolDef
       const patent = validation.normalized ?? compacted
       // 引擎的上游失败写在结果里，但也可能直接抛错（网络栈或引擎自身）。两种都算
       // 「第一通道没有可用答案」，都值得一次第二通道的机会；它也不成时原错误照旧抛出。
-      let settled: { result: ScrapeResult; attempts: number } | undefined
+      let settled: { result: CachedLookup<ScrapeResult>; attempts: number } | undefined
       let thrown: unknown
       try {
         settled = await retryBounded(
@@ -381,22 +422,66 @@ export function createPatentMetadataTool(deps: PatentMetadataDeps = {}): ToolDef
             returnLegal: args.returnLegal ?? true,
             signal: exec.signal,
           }),
-          scrapeRetryable,
+          lookup => scrapeRetryable(lookup.value),
           retryDelaysMs,
         )
       } catch (error) {
         thrown = error
       }
 
-      const answered = settled !== undefined && firstChannelAnswered(settled.result)
-      const attempt = answered || !CNIPR_METADATA_NUMBER.test(patent)
-        ? undefined
-        : await lookupThroughCnipr(deps.cnipr, patent, args.returnAbstract ?? true, exec.signal)
-      if (attempt?.served === true) return attempt.output
-      const warnings = attempt?.warnings ?? []
+      const firstResult = settled?.result.value
+      const answered = firstResult !== undefined && firstChannelAnswered(firstResult)
+      let attempt: CniprMetadataAttempt
+      if (answered) {
+        attempt = { outcome: 'skipped', reason: '第一通道已给出可用答案，未咨询', warnings: [] }
+      } else if (!CNIPR_METADATA_NUMBER.test(patent)) {
+        attempt = { outcome: 'skipped', reason: '非中国公开(公告)号，该通道按号对齐不了', warnings: [] }
+      } else {
+        attempt = await lookupThroughCnipr(deps.cnipr, patent, args.returnAbstract ?? true, exec.signal)
+      }
+
+      const googleConsult: ChannelConsult = settled === undefined
+        ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'failed', reason: thrownMessage(thrown) }
+        : firstResult?.success === true && firstResult.data !== null
+          ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'served' }
+          : firstResult?.errorCode === 'NOT_FOUND'
+            ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'empty', reason: '未查到该号' }
+            : { name: GOOGLE_PATENTS_CHANNEL, outcome: 'failed', reason: firstResult?.errorMessage || firstResult?.errorCode || '未知失败' }
+      const cniprConsult: ChannelConsult = attempt.outcome === 'served'
+        ? { name: CNIPR_CHANNEL, outcome: 'served' }
+        : { name: CNIPR_CHANNEL, outcome: attempt.outcome, reason: attempt.reason }
+      const channelsConsulted = [googleConsult, cniprConsult]
+
+      if (attempt.outcome === 'served') {
+        return {
+          success: true,
+          patent,
+          channel: CNIPR_CHANNEL,
+          url: '',
+          data: attempt.data,
+          errorCode: '',
+          errorMessage: '',
+          retrievedAt: new Date().toISOString(),
+          cached: false,
+          channelsConsulted,
+          warnings: attempt.warnings,
+          parseWarnings: [],
+        }
+      }
+      const warnings = attempt.warnings
 
       if (settled === undefined) throw thrown
-      return mapScrapeResult(settled.result, settled.attempts, warnings)
+      return mapScrapeResult(settled.result.value, settled.attempts, {
+        warnings,
+        retrievedAt: settled.result.retrievedAt,
+        cached: settled.result.cached,
+        channelsConsulted,
+      })
     },
   })
+}
+
+/** 一次抛错的可读原因（用于把「第一通道失败」写进通道记录）。 */
+function thrownMessage(thrown: unknown): string {
+  return thrown instanceof Error ? thrown.message : String(thrown)
 }

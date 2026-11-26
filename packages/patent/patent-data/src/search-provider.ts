@@ -18,7 +18,8 @@ import { cachedSearchPatents } from './patent-cache.ts'
  * @returns the StageProvider whose search drives the workflow search stage.
  */
 export function createNuoSearchProvider(options?: CreateNuoSearchProviderOptions): StageProvider {
-  const search = options?.search ?? cachedSearchPatents(searchPatentsImpl)
+  const cached = cachedSearchPatents(searchPatentsImpl)
+  const search = options?.search ?? (async (query, opts) => (await cached(query, opts)).value)
   return {
     search: async (query, opts) => {
       const result = await search(query, { limit: opts?.maxResults ?? 5 })

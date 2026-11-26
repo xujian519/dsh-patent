@@ -9,10 +9,18 @@ import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { searchPatents as searchPatentsImpl } from '@deepseek-ai/nuo-patent'
 import type { PatentSearchHit, PatentSearchResult } from '@deepseek-ai/nuo-patent'
 import { CNIPR_SEARCH_MAX_HITS, cachedSearchPatents } from '@deepseek-ai/dsh-patent-data'
-import type { CniprChannel, CniprSearchHit, CniprSearchResult } from '@deepseek-ai/dsh-patent-data'
+import type { CachedLookup, CniprChannel, CniprSearchHit, CniprSearchResult } from '@deepseek-ai/dsh-patent-data'
 import { PatentToolError } from '../error.ts'
 import { retryBounded } from './internal/bounded-retry.ts'
-import { CNIPR_CHANNEL, GOOGLE_PATENTS_CHANNEL, appendSecondChannel, renderUpstreamFailure } from './internal/upstream-channel.ts'
+import {
+  CHANNEL_CONSULT_SCHEMA,
+  CNIPR_CHANNEL,
+  GOOGLE_PATENTS_CHANNEL,
+  appendSecondChannel,
+  renderChannelConsult,
+  renderUpstreamFailure,
+} from './internal/upstream-channel.ts'
+import type { ChannelConsult } from './internal/upstream-channel.ts'
 import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
 
 /** Input for the patent_search tool. */
@@ -21,6 +29,8 @@ export type PatentSearchInput = {
   query: string
   /** Max hits (1-50, default 10). */
   limit?: number
+  /** Attach each hit's abstract (default false; the lean row omits it). */
+  includeAbstract?: boolean
 }
 
 /** One normalized search hit. */
@@ -41,6 +51,12 @@ export type PatentSearchOutput = {
   channel: string
   total: number
   hits: PatentSearchHitItem[]
+  /** ISO-8601 UTC time the serving channel fetched this answer (cache-hit time on a cache hit). */
+  retrievedAt: string
+  /** True when the engine answered from its LRU cache. */
+  cached: boolean
+  /** Every channel this call consulted: who served it, who was skipped, and why. */
+  channelsConsulted: ChannelConsult[]
   /** Non-fatal warnings (parse degradation / partial fields / family dedupe). */
   warnings: string[]
 }
@@ -79,14 +95,21 @@ function failureWarning(result: PatentSearchResult): string | undefined {
   return result.warnings.find(w => SEARCH_FAILURE_WARNING.test(w))
 }
 
-function toItem(h: PatentSearchHit): PatentSearchHitItem {
+/**
+ * Map one engine hit into the tool's row. The lean row omits the abstract so a
+ * 50-hit page stays cheap to read; `includeAbstract` opts into it.
+ * @param h - the engine hit.
+ * @param includeAbstract - whether to carry the abstract.
+ * @returns the normalized row.
+ */
+function toItem(h: PatentSearchHit, includeAbstract: boolean): PatentSearchHitItem {
   return {
     patent: h.patent,
     title: h.title,
     assignee: h.assignee,
     publicationDate: h.publication_date,
     priorityDate: h.priority_date,
-    abstract: h.abstract,
+    abstract: includeAbstract ? h.abstract : '',
     url: h.url,
   }
 }
@@ -149,10 +172,10 @@ const CNIPR_USAGE_NOTE = '  - 当 Google Patents 通道失败、抛错或零命�
 /** Google Patents 的字段语法（`assignee:`/`after:`/`CL:`…）；CNIPR 的检索框只认关键词。 */
 const GOOGLE_FIELD_SYNTAX = /(?:^|[\s(])(assignee|inventor|after|before|country|status|type|CL|AB|TI|TA|AN|PN|IPC|CPC)\s*:/iu
 
-/** 第二通道服务这次检索的结果：命中（含它的告警），或未服务时它留下的告警。 */
+/** 第二通道服务这次检索的结果：命中、零命中、失败，或未被咨询。 */
 type CniprSearchAttempt =
-  | { served: true; total: number; hits: PatentSearchHitItem[]; warnings: string[] }
-  | { served: false; warnings: string[] }
+  | { outcome: 'served'; total: number; hits: PatentSearchHitItem[]; warnings: string[] }
+  | { outcome: 'empty' | 'failed' | 'skipped'; reason: string; warnings: string[] }
 
 /** CNIPR 命中映射成工具的命中；该通道不发布 URL 与优先权，两者留空而不编造。 */
 function toCniprItem(hit: CniprSearchHit): PatentSearchHitItem {
@@ -187,10 +210,14 @@ async function searchThroughCnipr(
   signal: AbortSignal | undefined,
 ): Promise<CniprSearchAttempt> {
   const cnipr = lookup?.()
-  if (cnipr === undefined) return { served: false, warnings: [] }
+  if (cnipr === undefined) return { outcome: 'skipped', reason: '本部署未启用该通道', warnings: [] }
   const operator = GOOGLE_FIELD_SYNTAX.exec(query)?.[1]
   if (operator !== undefined) {
-    return { served: false, warnings: [`查询含 Google Patents 字段语法（${operator}:），${CNIPR_CHANNEL}只做关键词检索，未咨询它`] }
+    return {
+      outcome: 'skipped',
+      reason: `查询含 Google Patents 字段语法（${operator}:），该通道只做关键词检索`,
+      warnings: [`查询含 Google Patents 字段语法（${operator}:），${CNIPR_CHANNEL}只做关键词检索，未咨询它`],
+    }
   }
   const truncation = limit > CNIPR_SEARCH_MAX_HITS
     ? [`${CNIPR_CHANNEL}单次检索上限 ${CNIPR_SEARCH_MAX_HITS} 条，请求的 ${limit} 条按上限截断`]
@@ -201,21 +228,28 @@ async function searchThroughCnipr(
     result = await cnipr.search(query, { limit, ...(signal === undefined ? {} : { signal }) })
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error)
-    return { served: false, warnings: [`${CNIPR_CHANNEL}不可用（${detail}），结果只有 ${GOOGLE_PATENTS_CHANNEL} 的`, ...truncation] }
+    return {
+      outcome: 'failed',
+      reason: detail,
+      warnings: [`${CNIPR_CHANNEL}不可用（${detail}），结果只有 ${GOOGLE_PATENTS_CHANNEL} 的`, ...truncation],
+    }
   }
-  if (result.hits.length === 0) return { served: false, warnings: [`${CNIPR_CHANNEL}也未命中`, ...truncation] }
-  return { served: true, total: result.total, hits: result.hits.map(toCniprItem), warnings: truncation }
+  if (result.hits.length === 0) {
+    return { outcome: 'empty', reason: '未命中', warnings: [`${CNIPR_CHANNEL}也未命中`, ...truncation] }
+  }
+  return { outcome: 'served', total: result.total, hits: result.hits.map(toCniprItem), warnings: truncation }
 }
 
 const DESCRIPTION = [
   '- Searches Google Patents by keyword or boolean query (e.g. \'(phase change OR PCM) AND thermal\', \'assignee:(Samsung) after:20200101\')',
-  '- Returns structured hits: patent number, title, assignee, publication date, abstract, URL',
+  '- Returns lean hits by default (patent number, title, assignee, publication date, URL); set includeAbstract=true when the abstracts are needed to triage',
   '- Use for prior-art search, novelty pre-screening, competitor/assignee analysis',
   '',
   'Usage notes:',
   '  - Read-only; query syntax follows Google Patents search grammar',
   '  - Follow up with patent_metadata to fetch full details of a specific hit',
-  '  - The result names the channel that served it and every failure names the channel it failed on, so a report cites the channel it actually used instead of inferring one from a hit URL',
+  '  - The result names the channel that served it, the time that answer was fetched (retrievedAt; a cache hit keeps the original fetch time), and whether it came from cache, so a report cites when and from where the facts came',
+  '  - channelsConsulted records every channel this call queried, skipped, or failed on, with the reason; a channel absent from that list was not consulted',
   CNIPR_USAGE_NOTE,
   '  - A network failure is reported as an error naming that channel; a genuine zero-result search returns empty hits',
   '  - A transient upstream failure (timeout, dropped connection) is retried twice; a failure that outlives the retries names the channel, the upstream error, and the attempts made',
@@ -239,9 +273,11 @@ function renderSearch(value: PatentSearchOutput): string {
       ...(h.abstract ? [h.abstract] : []),
     ].join('\n'),
   )
-  const header = `**patent_search** — ${value.hits.length} result(s) for "${value.query}" · channel: ${value.channel}`
+  const cached = value.cached ? '（缓存）' : ''
+  const header = `**patent_search** — ${value.hits.length} result(s) for "${value.query}" · channel: ${value.channel} · 取数：${value.retrievedAt}${cached}`
+  const channelLine = renderChannelConsult(value.channelsConsulted)
   const warningLines = warningSection(value.warnings)
-  return [header, '', hits.join('\n\n---\n\n'), ...warningLines].join('\n')
+  return [header, channelLine, '', hits.join('\n\n---\n\n'), ...warningLines].join('\n')
 }
 
 const HIT_SCHEMA = {
@@ -264,7 +300,12 @@ const HIT_SCHEMA = {
  * @returns a registry-ready tool definition.
  */
 export function createPatentSearchTool(deps: PatentSearchDeps = {}): ToolDefinition {
-  const search = deps.search ?? cachedSearchPatents(searchPatentsImpl)
+  const injected = deps.search
+  const cachedSearch = cachedSearchPatents(searchPatentsImpl)
+  const search = injected === undefined
+    ? cachedSearch
+    : async (query: string, opts?: { limit?: number; signal?: AbortSignal }): Promise<CachedLookup<PatentSearchResult>> =>
+      ({ value: await injected(query, opts), cached: false, retrievedAt: new Date().toISOString() })
   const retryDelaysMs = deps.searchRetryDelaysMs ?? DEFAULT_SEARCH_RETRY_DELAYS_MS
   return defineTool({
     name: 'patent_search',
@@ -276,6 +317,7 @@ export function createPatentSearchTool(deps: PatentSearchDeps = {}): ToolDefinit
         description: 'Search query in Google Patents syntax: keywords, phrases, boolean (AND/OR/NOT), fielded (assignee:/inventor:), date ranges (after:/before:).',
       },
       limit: { type: 'number', description: 'Max hits (1-50, default 10)' },
+      includeAbstract: { type: 'boolean', description: "Include each hit's abstract (default false; lean rows omit it)" },
     },
     output: {
       schema: {
@@ -286,6 +328,9 @@ export function createPatentSearchTool(deps: PatentSearchDeps = {}): ToolDefinit
           channel: { type: 'string', required: true },
           total: { type: 'integer', required: true },
           hits: { type: 'array', required: true, items: HIT_SCHEMA },
+          retrievedAt: { type: 'string', required: true },
+          cached: { type: 'boolean', required: true },
+          channelsConsulted: { type: 'array', required: true, items: CHANNEL_CONSULT_SCHEMA },
           warnings: WARNINGS_SCHEMA,
         },
       },
@@ -297,15 +342,16 @@ export function createPatentSearchTool(deps: PatentSearchDeps = {}): ToolDefinit
         throw new PatentToolError('invalid_tool_input', 'Search query is empty.', { tool: 'patent_search' })
       }
       const limit = Math.min(Math.max(Math.floor(args.limit ?? 10), 1), 50)
+      const includeAbstract = args.includeAbstract === true
       // 引擎把上游失败写在 warnings 里，但也可能直接抛错（网络栈或引擎自身）。两种都算
       // 「第一通道没有可用答案」，都值得一次第二通道的机会；它也不成时原错误照旧抛出。
-      let settled: { result: PatentSearchResult; attempts: number } | undefined
+      let settled: { result: CachedLookup<PatentSearchResult>; attempts: number } | undefined
       let thrown: unknown
       try {
         settled = await retryBounded(
           () => search(query, { limit, signal: exec.signal }),
-          (result) => {
-            const warning = failureWarning(result)
+          (lookup) => {
+            const warning = failureWarning(lookup.value)
             return warning !== undefined && RETRYABLE_SEARCH_FAILURE_WARNING.test(warning)
           },
           retryDelaysMs,
@@ -315,13 +361,37 @@ export function createPatentSearchTool(deps: PatentSearchDeps = {}): ToolDefinit
         thrown = error
       }
 
-      const failure = settled === undefined ? undefined : failureWarning(settled.result)
-      const hasUsableAnswer = settled !== undefined && failure === undefined && settled.result.hits.length > 0
+      const failure = settled === undefined ? undefined : failureWarning(settled.result.value)
+      const hasUsableAnswer = settled !== undefined && failure === undefined && settled.result.value.hits.length > 0
       const attempt = hasUsableAnswer
         ? undefined
         : await searchThroughCnipr(deps.cnipr, query, limit, exec.signal)
-      if (attempt?.served === true) {
-        return { query, channel: CNIPR_CHANNEL, total: attempt.total, hits: attempt.hits.slice(0, limit), warnings: attempt.warnings }
+
+      const googleConsult: ChannelConsult = hasUsableAnswer
+        ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'served' }
+        : failure !== undefined
+          ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'failed', reason: failure }
+          : settled === undefined
+            ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'failed', reason: thrownMessage(thrown) }
+            : { name: GOOGLE_PATENTS_CHANNEL, outcome: 'empty', reason: '零命中' }
+      const cniprConsult: ChannelConsult = attempt === undefined
+        ? { name: CNIPR_CHANNEL, outcome: 'skipped', reason: '第一通道已给出可用答案，未咨询' }
+        : attempt.outcome === 'served'
+          ? { name: CNIPR_CHANNEL, outcome: 'served' }
+          : { name: CNIPR_CHANNEL, outcome: attempt.outcome, reason: attempt.reason }
+      const channelsConsulted = [googleConsult, cniprConsult]
+
+      if (attempt?.outcome === 'served') {
+        return {
+          query,
+          channel: CNIPR_CHANNEL,
+          total: attempt.total,
+          hits: attempt.hits.slice(0, limit),
+          retrievedAt: new Date().toISOString(),
+          cached: false,
+          channelsConsulted,
+          warnings: attempt.warnings,
+        }
       }
       const secondChannel = attempt?.warnings ?? []
 
@@ -336,9 +406,23 @@ export function createPatentSearchTool(deps: PatentSearchDeps = {}): ToolDefinit
         throw new PatentToolError('tool_execution_failed', appendSecondChannel(renderUpstreamFailure(failure, settled.attempts), secondChannel), { tool: 'patent_search', query })
       }
 
-      const { hits: dedupedHits, warnings } = dedupeByFamily(settled.result.hits, settled.result.warnings)
-      const hits = dedupedHits.slice(0, limit).map(toItem)
-      return { query, channel: GOOGLE_PATENTS_CHANNEL, total: settled.result.total, hits, warnings: [...warnings, ...secondChannel] }
+      const { hits: dedupedHits, warnings } = dedupeByFamily(settled.result.value.hits, settled.result.value.warnings)
+      const hits = dedupedHits.slice(0, limit).map(h => toItem(h, includeAbstract))
+      return {
+        query,
+        channel: GOOGLE_PATENTS_CHANNEL,
+        total: settled.result.value.total,
+        hits,
+        retrievedAt: settled.result.retrievedAt,
+        cached: settled.result.cached,
+        channelsConsulted,
+        warnings: [...warnings, ...secondChannel],
+      }
     },
   })
+}
+
+/** 一次抛错的可读原因（用于把「第一通道失败」写进通道记录）。 */
+function thrownMessage(thrown: unknown): string {
+  return thrown instanceof Error ? thrown.message : String(thrown)
 }

@@ -86,6 +86,41 @@ describe('patent_search', () => {
     expect(text(result)).toContain('CN115690481A')
   })
 
+  it('returns a lean row by default and the abstract on request', async () => {
+    const fake = {
+      query: 'q',
+      total: 1,
+      hits: [{ patent: 'CN115690481A', title: 't', assignee: 'a', publication_date: '2023', priority_date: '2022', abstract: 'ABS-TEXT', url: 'u' }],
+      warnings: [],
+    }
+    const tool = createPatentSearchTool({ search: async () => fake })
+    const ctx = await ctxWith(tool)
+    const lean = await execute(ctx, 'patent_search', { query: 'q' }, 's-lean')
+    expect(lean.isError).toBe(false)
+    expect(text(lean)).not.toContain('ABS-TEXT')
+    const full = await execute(ctx, 'patent_search', { query: 'q', includeAbstract: true }, 's-full')
+    expect(full.isError).toBe(false)
+    expect(text(full)).toContain('ABS-TEXT')
+  })
+
+  it('reports the retrieval time and every channel consulted', async () => {
+    const fake = {
+      query: 'q',
+      total: 1,
+      hits: [{ patent: 'US1A', title: 't', assignee: '', publication_date: '2023', priority_date: '', abstract: '', url: 'u' }],
+      warnings: [],
+    }
+    const tool = createPatentSearchTool({ search: async () => fake })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_search', { query: 'q' }, 's-retrieval-facts')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    const out = text(result)
+    expect(out).toMatch(/取数：\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/u)
+    expect(out).toContain(`${GOOGLE_PATENTS_CHANNEL}（served）`)
+    expect(out).toContain(`${CNIPR_CHANNEL}（skipped：第一通道已给出可用答案，未咨询）`)
+  })
+
   it('clamps limit into [1, 50]', async () => {
     const seen: number[] = []
     const tool = createPatentSearchTool({
@@ -192,6 +227,8 @@ describe('patent_search through the CNIPR channel', () => {
     const out = text(result)
     expect(out).toContain('CN211350734U')
     expect(out).toContain(`channel: ${CNIPR_CHANNEL}`)
+    expect(out).toContain(`${GOOGLE_PATENTS_CHANNEL}（empty：零命中）`)
+    expect(out).toContain(`${CNIPR_CHANNEL}（served）`)
     // CNIPR 不发布 URL：缺席的字段整行不渲染，不留一个空 URL 行。
     expect(out).not.toContain('**url**:')
   })
@@ -365,7 +402,11 @@ describe('patent_metadata', () => {
     const result = await execute(ctx, 'patent_metadata', { patent: 'CN1A' }, 'm-1')
     expect(result.isError).toBe(false)
     if (result.isError) throw new Error('expected success')
-    expect(text(result)).toContain('T')
+    const out = text(result)
+    expect(out).toContain('T')
+    expect(out).toMatch(/取数：\d{4}-\d{2}-\d{2}T/u)
+    expect(out).toContain(`${GOOGLE_PATENTS_CHANNEL}（served）`)
+    expect(out).toContain(`${CNIPR_CHANNEL}（skipped：第一通道已给出可用答案，未咨询）`)
   })
 
   it('returns success:false for a NOT_FOUND scrape', async () => {
@@ -788,9 +829,13 @@ describe('patent_legal_status', () => {
     const result = await execute(ctx, 'patent_legal_status', { patents: ['US1A'] }, 'l-1')
     expect(result.isError).toBe(false)
     if (result.isError) throw new Error('expected success')
-    expect(text(result)).toContain('US1A')
-    expect(text(result)).toContain('Active')
-    expect(text(result)).toContain(`通道：${GOOGLE_PATENTS_CHANNEL}`)
+    const out = text(result)
+    expect(out).toContain('US1A')
+    expect(out).toContain('Active')
+    expect(out).toContain(`通道：${GOOGLE_PATENTS_CHANNEL}`)
+    expect(out).toMatch(/取数：\d{4}-\d{2}-\d{2}T/u)
+    expect(out).toContain(`${GOOGLE_PATENTS_CHANNEL}（served）`)
+    expect(out).toContain(`${CNIPR_CHANNEL}（skipped：本部署未启用该通道）`)
   })
 
   it('clamps maxConcurrency into [1, 20]', async () => {

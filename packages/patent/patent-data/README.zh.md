@@ -25,7 +25,7 @@ kind: "package-reference"
 
 ### createSearchProvider(options?)
 
-构造基于 nuo 的 `StageProvider`，其 `search(query, { maxResults })` 将源命中映射为 `{ title, snippet, url }` 阶段词汇。未传 `options.search` 时，它把 nuo 的 `searchPatents` 套上 LRU 缓存，因此 TTL 内重复的检索式直接命中缓存，而不会重复触发网络路径；只有非空成功结果会入缓存，解析降级导致的零命中不会把一次瞬时失败固定整个 TTL。
+构造基于 nuo 的 `StageProvider`，其 `search(query, { maxResults })` 将源命中映射为 `{ title, snippet, url }` 阶段词汇。未传 `options.search` 时，它把 nuo 的 `searchPatents` 套上 LRU 缓存，因此 TTL 内重复的检索式直接命中缓存，而不会重复触发网络路径；只有非空成功结果会入缓存，解析降级导致的零命中不会把一次瞬时失败固定整个 TTL。缓存包装返回 `CachedLookup<T>`——值加上 `cached` 与 `retrievedAt`（原始取数时间，命中缓存时保持不变），消费方据此写明事实是何时取得的，而不是何时被读取的。
 
 ### createEgoSession(options?)
 

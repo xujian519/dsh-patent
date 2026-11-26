@@ -358,17 +358,17 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- tech-debt-counters:start -->
 | 计数 | 值 |
 | --- | --- |
-| `structure.long-functions` | 209 |
-| `structure.large-files` | 102 |
-| `structure.patent-large-files` | 9 |
-| `lint.v8-ignore` | 1345 |
+| `structure.long-functions` | 208 |
+| `structure.large-files` | 103 |
+| `structure.patent-large-files` | 10 |
+| `lint.v8-ignore` | 1359 |
 | `lint.ts-expect-error` | 201 |
 | `packages.patent-directories` | 16 |
 <!-- tech-debt-counters:end -->
 
 ### 专利域 >800 行文件裁定（2026-11-01 复测）
 
-`packages/patent` 当前有 9 个 >800 行源文件，全部保留为「接受」；另有 4 个拆分目标已降到 800 行（2026-11-05 D10 把 `statutes.ts` 拆为数据/计算/查询三层，最大文件 737 行）。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，2026-11-01 附图说明校验把 `validate.ts` 推过 800 行后升至 10 个，2026-11-05 拆分后回落至 9 个，2026-11-08 结构线稿每零件投影占位把 `freecad-structure-script.ts` 从 762 推到 826 后回到 10 个；全仓 >800 行文件相应为 96 个（2026-11-12 上游 rc.2 同步把 6 个包内文件推过 800 行，专利域不变）；2026-11-20 R-F9 把 `freecad-structure-script.ts` 的内嵌 Python 模板外置为 `.py` 资产、TS 文件降到 319 行后专利域回到 9 个，2026-11-22 上游 alpha.1 同步把全仓推到 102 个（专利域仍为 9 个）。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
+`packages/patent` 当前有 10 个 >800 行源文件，全部保留为「接受」；另有 4 个拆分目标已降到 800 行（2026-11-05 D10 把 `statutes.ts` 拆为数据/计算/查询三层，最大文件 737 行）。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，2026-11-01 附图说明校验把 `validate.ts` 推过 800 行后升至 10 个，2026-11-05 拆分后回落至 9 个，2026-11-08 结构线稿每零件投影占位把 `freecad-structure-script.ts` 从 762 推到 826 后回到 10 个；全仓 >800 行文件相应为 96 个（2026-11-12 上游 rc.2 同步把 6 个包内文件推过 800 行，专利域不变）；2026-11-20 R-F9 把 `freecad-structure-script.ts` 的内嵌 Python 模板外置为 `.py` 资产、TS 文件降到 319 行后专利域回到 9 个，2026-11-22 上游 alpha.1 同步把全仓推到 102 个（专利域仍为 9 个），2026-11-26 附图矢量扫描把 `render-check-scan.ts` 由 798 推到 1034 行后专利域回到 10 个、全仓推到 103 个。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
 
 拆分落点：`generate-patent-figure.ts` 拆出 `figure-panels.ts`（多面板路径）、`figure-delivery.ts`（落版/复核/转路径/导出）与 `figure-run.ts`（共享运行参数与标号）；`evidence/engine.ts` 拆出 `signals.ts`、`judgment.ts`、`public-use.ts`、`conditions.ts` 与 `proof-standard.ts`；`generate-structure-figure.ts` 拆出 `structure-types.ts`、`structure-model.ts` 与 `structure-render.ts`。
 
@@ -377,6 +377,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- structure-baseline:start -->
 | 文件 | 裁定 | 上限 | 理由 |
 | --- | --- | ---: | --- |
+| `packages/patent/patent-tools/src/figure/render-check-scan.ts` | 接受 | 1034 | 矢量扫描前端：按文档序把 SVG 源解析成根坐标系下的描边图形与文字，量测判据在 `render-check-findings.ts`。2026-11-26 附图复用键与 DXF 导出把路径/矩阵/文字量测补齐（位图拒绝、剖面来源与复用键）后由 798 推到 1034 行；全是同族的解析与几何小谓词，无 I/O、无第二消费方 |
 | `packages/patent/patent-tools/src/figure/render-check-findings.ts` | 接受 | 988 | 纯几何判据：30+ 个小谓词 + 109 行编排，无 I/O，无第二消费方。2026-11-08 版面利用率判据（`sheet-underfill`，内容包围盒占该图画布比）加了 37 行，判据本身只读已量测的墨迹包围盒与画布尺寸 |
 | `packages/patent/patent-tools/src/figure/section-diagram.ts` | 接受 | 918 | 纯几何绘制：146 行主绘制 + 小工具，与 `leader-line` 同类 |
 | `packages/patent/patent-tools/src/figure/leader-line.ts` | 接受 | 908 | 纯几何：稳定在 906→908，无状态、无 I/O |
@@ -404,6 +405,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-26 附图拒绝栅格与 DXF 导出**:`render-check-scan.ts` 由 798 升至 **1034** 行并新增接受行（矢量扫描前端，位图拒绝、剖面来源与复用键的路径/矩阵/文字量测补齐，无 I/O、无第二消费方）；`structure.large-files` 由 102 升至 **103**、`structure.patent-large-files` 由 9 升至 **10**；`generate-patent-figure.ts` 的 `generateSingleFigure` 由 155 行回落到 150 行以下，`structure.long-functions` 由 209 降至 **208**；`lint.v8-ignore` 由 1345 升至 **1359**；其余计数不变。
 - **2026-11-25 附图视图名与页码关闭**:`generate-patent-figure.ts` 的 `generateSingleFigure` 新增 `view_name` 参数校验与传递后达到 155 行、`generate-structure-figure.ts` 的 `createGenerateStructureFigureTool` 新增 `sheet_number` schema 字段后达到 151 行，两个函数均越过 150 行阈值；`structure.long-functions` 由 207 升至 **209**；其余计数不变。
 - **2026-11-25 出件默认根改到案卷目录**:删掉三处为「未注入 outputDir 时回落 `<cwd>/patent/figures`」准备的 `v8 ignore`，行号取自 master `f41dd58c`：`packages/patent/patent-tools/src/tool/figure-panels.ts:93`、`packages/patent/patent-tools/src/tool/generate-patent-figure.ts:184`、`packages/patent/patent-tools/src/tool/structure-render.ts:67`。这三行的下一行已改为 `resolveFigureWriteDir`，缺省目录不再存在。当前树仍保留 `generate-patent-figure.ts:227` 的 `v8 ignore`，它豁免的是 `mkdir`。`lint.v8-ignore` 由 1348 降至 **1345**；其余计数不变。
 - **2026-11-22 上游 v0.2.3-alpha.1 同步**:上游代码带入大量新增结构债,按当前树复测 `structure.long-functions` 为 **207**、`structure.large-files` 为 **102**(其中 3 个生成文件另计)、`structure.patent-large-files` 保持 **9**。同批次 fork 侧把 `patent-pdf-download.ts` 的续传 MANIFEST 写出抽为 `recordDownloadedFile` 并按 `verify-empty-catch` 具名两处空 `catch`,使 `createPatentPdfDownloadTool` 回落到 150 行以下,`structure.long-functions` 因此比同步带入时少 1;`lint.v8-ignore` **1348** 与 `lint.ts-expect-error` **201** 由上游带入并在本轮回测确认。`packages/experimental/ptc-runtime-python` 整包移除后,实验域大文件裁定表对应的 `supervisor.ts` 行随之删除。

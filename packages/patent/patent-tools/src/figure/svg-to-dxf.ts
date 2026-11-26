@@ -38,6 +38,7 @@ const PATH_D = /\bd="([^"]*)"/gi
 const CURVE_COMMAND = /[cstqa]/i
 
 /**
+ * 把已落版的 SVG 转成可编辑的 DXF 文本。位图、foreignObject 与 use 一律拒绝。
  * @param svg - 完整 SVG 文本。
  * @returns DXF 文本与警告。
  * @throws SvgDxfError 含位图、foreignObject、use、无法解析的 viewBox 或变换，或没有画布尺寸时。

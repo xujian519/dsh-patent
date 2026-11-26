@@ -276,6 +276,18 @@ async function generateSingleFigure(
     ? undefined
     : dotDocumentTitle(normalized.invention_name, toFigureType(normalized.figure_type), normalized.view_name)
   await stampDotDocumentTitle(rendered.path, chain ? 'svg' : format, documentTitle)
+  // 两条通路的收尾参数相同，只有交付路径与是否复核不同。
+  const directRenderArgs = {
+    deps,
+    input: normalized,
+    suffix: '',
+    format,
+    figureType: normalized.figure_type,
+    style: context.style,
+    signal: context.signal,
+    output: result,
+    exportDxf: normalized.export_dxf === true,
+  }
   if (chain) {
     const outcome = await finishSvgChain({
       deps,
@@ -304,34 +316,14 @@ async function generateSingleFigure(
         leaderLinesActive: leaderLines && !vector,
       }, format)
       await stampDotDocumentTitle(direct.path, format, documentTitle)
-      await finishDirectRender({
-        deps,
-        outcomePath: direct.path,
-        input: normalized,
-        suffix: '',
-        format,
-        check: false,
-        figureType: normalized.figure_type,
-        style: context.style,
-        signal: context.signal,
-        output: result,
-        exportDxf: normalized.export_dxf === true,
-      })
+      await finishDirectRender({ ...directRenderArgs, outcomePath: direct.path, check: false })
     }
   } else {
     await finishDirectRender({
-      deps,
+      ...directRenderArgs,
       outcomePath: rendered.path,
-      input: normalized,
-      suffix: '',
-      format,
       // SVG 交付物总能复核；png/pdf 直绘没有可量测的图面。
       check: vector || format === 'svg',
-      figureType: normalized.figure_type,
-      style: context.style,
-      signal: context.signal,
-      output: result,
-      exportDxf: normalized.export_dxf === true,
     })
   }
   let indexed = false

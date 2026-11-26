@@ -612,12 +612,12 @@ describe('expandSectionSource 复用', () => {
 
     const { artifactDir, modelAbs, sections } = prepare('reuse-plant')
     const input = sections(2)
-    const key = await renderReuseKey({
+    const key = renderReuseKey({
       tool: 'section-source',
       request: input,
       modelHashes: [await hashModelFile(modelAbs)],
     })
-    const bumped = await renderReuseKey({
+    const bumped = renderReuseKey({
       tool: 'section-source',
       request: input,
       modelHashes: [await hashModelFile(modelAbs)],

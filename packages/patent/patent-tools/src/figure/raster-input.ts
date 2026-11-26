@@ -9,6 +9,7 @@ import { extname } from 'node:path'
 export const RASTER_FIGURE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.tif', '.tiff', '.bmp'] as const
 
 /**
+ * 判断路径是不是绘图工具拒绝的位图。
  * @param path - 文件路径或文件名。
  * @returns 是位图时返回小写扩展名（含点）；否则返回 undefined。
  */
@@ -18,6 +19,7 @@ export function rasterFigureExtension(path: string): string | undefined {
 }
 
 /**
+ * 生成把位图输入导向读图工具的提示文案。
  * @param field - 报错里的字段名。
  * @param ext - 位图扩展名，含点。
  * @returns 指向 `analyze_patent_figure` 的说明。调用方套自己的错误类型。

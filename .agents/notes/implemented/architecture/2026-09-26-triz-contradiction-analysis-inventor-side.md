@@ -22,7 +22,7 @@ The disclosure side therefore had two gaps. It had no structured reading of the 
 
 `triz_contradiction_analysis` is the 30th model-facing tool of `patent-tools`; the tool catalog, the preset README, both package READMEs, and the `patent-oa-response` tool-schema snapshot (the `patent-jobs` class's schema owner) move with it.
 
-The output feeds solution exploration and the disclosure gap checklist, and stops there. It produces no problem dependency graph, no hallucination-rate metric, and no cross-document problem merge, and a contradiction pair never enters a delivered document's statutory reasoning.
+The output feeds solution exploration and the disclosure gap checklist, and stops there. It produces no problem dependency graph, no hallucination-rate metric, and no cross-document problem merge, and a contradiction pair never enters a delivered document's statutory reasoning. `buildTrizCandidateUnits` also converts each solution direction of a principle-backed contradiction into a `pending-inventor-confirmation` candidate PFIE unit in the tool result; that list is inventor-confirmation material and stays out of `pfe_triples` ([candidate units](2026-11-26-triz-candidate-pfie-units.md)).
 
 331 of the matrix's 1521 cells carry no recommendation — 39 diagonal physical contradictions and 292 off-diagonal transcription gaps — so the tool reports those as gaps rather than inventing a principle, and `unmapped` carries what the model could not map to 1-39 instead of a forced number.
 

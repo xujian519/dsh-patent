@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-26-triz-candidate-pfie-units.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-26-triz-candidate-pfie-units.md
+/agent-note-triz-contradictions-produce-candidate-pfie-units-held-outside-the-anchored-table:
+  en: 0cdcc9ab94e4989f
+  zh: 88eabe4efd256178
+/agent-note-triz-contradictions-produce-candidate-pfie-units-held-outside-the-anchored-table/problem:
+  en: cf28516060a70e4c
+  zh: 6b3daed2a5adffcd
+/agent-note-triz-contradictions-produce-candidate-pfie-units-held-outside-the-anchored-table/decision:
+  en: 0369214ff49f7619
+  zh: 0283fb0f51c405c5
+/agent-note-triz-contradictions-produce-candidate-pfie-units-held-outside-the-anchored-table/alternatives-considered:
+  en: d1542eecebc3eda2
+  zh: 5a19154e26bfba1a
+/agent-note-triz-contradictions-produce-candidate-pfie-units-held-outside-the-anchored-table/consequences:
+  en: 101e557755f3f379
+  zh: b403a17c3bd201da
+/agent-note-triz-contradictions-produce-candidate-pfie-units-held-outside-the-anchored-table/testing:
+  en: e6ecc67a8a02db41
+  zh: a0f60072790900f2

@@ -92,6 +92,56 @@ export type TrizContradictionAnalysis = {
   readonly droppedForEvidence: number
 }
 
+/**
+ * 一条由矛盾与矩阵推荐原理折出的候选 PFIE 单元（发明人确认材料）。
+ *
+ * 候选面与锚定面分离：`contradictionEvidence` 是来源矛盾的已核验原文片段，
+ * 而 `feature` 与 `insight` 是模型给出的手段假设，**没有**原文锚点。
+ * 因此候选不写进 `pfe_triples`，也不得进入权利要求策略或说明书正文。
+ */
+export type TrizCandidateUnit = {
+  /** 稳定标识，形如 `K1`。 */
+  readonly id: string
+  /** 来源矛盾 id。 */
+  readonly contradictionId: string
+  /** 候选的问题：沿用已核验矛盾的表述。 */
+  readonly problem: string
+  /** 候选的发明认知：按推荐原理给出的机制假设，不是发明人陈述。 */
+  readonly insight: string
+  /** 候选的特征：矛盾的方案方向文本，无原文锚点。 */
+  readonly feature: string
+  /** 候选的效果：化解矛盾后期望的参数方向。 */
+  readonly effect: string
+  /** 来源矛盾格子的推荐原理全集。 */
+  readonly principles: readonly TrizPrincipleRef[]
+  /** 来源矛盾的原文证据；它支撑矛盾，不支撑候选的特征与效果。 */
+  readonly contradictionEvidence: string
+  /** 确认状态：本模块产出的候选一律待发明人确认。 */
+  readonly status: TrizCandidateStatus
+}
+
+/** 候选单元的确认状态。 */
+export const TRIZ_CANDIDATE_STATUS = 'pending-inventor-confirmation' as const
+
+/** 候选单元待发明人确认的单一取值。 */
+export type TrizCandidateStatus = typeof TRIZ_CANDIDATE_STATUS
+
+/** 有方案方向但无推荐原理可依的矛盾：不生成候选，只报告。 */
+export type TrizCandidateSkip = {
+  readonly contradictionId: string
+  readonly matrixStatus: TrizMatrixStatus
+  /** 该矛盾的非空白方案方向数，即本可折出的候选数。 */
+  readonly directionCount: number
+}
+
+/** 候选单元构建结果。 */
+export type TrizCandidateBuild = {
+  /** 已折出的候选，按矛盾输入顺序与方向顺序排列。 */
+  readonly units: readonly TrizCandidateUnit[]
+  /** 有方向但无原理可依的矛盾，按输入顺序排列。 */
+  readonly skipped: readonly TrizCandidateSkip[]
+}
+
 /** 模型抽取的原始结果：字段在组装时逐项校验，故此处保持未知。 */
 export type TrizExtractionInput = {
   /** 矛盾候选数组。 */

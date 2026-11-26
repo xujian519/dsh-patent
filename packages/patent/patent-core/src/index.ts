@@ -341,12 +341,21 @@ export {
   technicalProblemCheck,
 } from './problem/index.ts'
 
-// TRIZ contradiction analysis for the inventor side: disclosure gaps and
-// candidate solution directions. Never a three-step-step-2 problem statement.
-export type { TrizContradictionAnalysis } from './triz/index.ts'
+// TRIZ contradiction analysis for the inventor side: disclosure gaps, candidate
+// solution directions, and the unconfirmed PFIE units folded from them. Never a
+// three-step-step-2 problem statement.
+export type {
+  TrizCandidateBuild,
+  TrizCandidateSkip,
+  TrizCandidateStatus,
+  TrizCandidateUnit,
+  TrizContradictionAnalysis,
+} from './triz/index.ts'
 export {
   buildTrizAnalysis,
+  buildTrizCandidateUnits,
   extractTrizContradictions,
+  TRIZ_CANDIDATE_STATUS,
 } from './triz/index.ts'
 
 // Evidence closed-loop: receipt ledger, spans, binding, conflict, judgment engine.

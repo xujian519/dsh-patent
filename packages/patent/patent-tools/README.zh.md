@@ -34,7 +34,7 @@ kind: "package-reference"
 | `patent_analysis_report` | 分析 | `@deepseek-ai/dsh-patent-core` analysis-report 聚合器 + 可选 ModelPort |
 | `claim_chart_build` | 撰写 | `@deepseek-ai/dsh-patent-core` claim-chart 原子 + ModelPort；`mode: infringement` 另给确定性结论（逐被控产品全面覆盖、等同矛盾；`risk` 给出抗辩与补救事实时给出风险等级） |
 | `parse_office_action` | 分析 | 确定性 `@deepseek-ai/dsh-patent-core` 通知书解析器（驳回类型、引用文献与相关性、涉及权项、审查员论点） |
-| `triz_contradiction_analysis` | 分析 | `@deepseek-ai/dsh-patent-core` TRIZ 引擎（矛盾组装 + 经 `@deepseek-ai/dsh-methodology` 的矛盾矩阵落格）+ ModelPort 负责识别；产出发明人侧的方案方向与交底书参数缺口 |
+| `triz_contradiction_analysis` | 分析 | `@deepseek-ai/dsh-patent-core` TRIZ 引擎（矛盾组装 + 经 `@deepseek-ai/dsh-methodology` 的矛盾矩阵落格）+ ModelPort 负责识别；产出发明人侧的方案方向、由其折出的 `pending-inventor-confirmation` 候选 PFIE 单元，以及交底书参数缺口 |
 | `draft_claims` | 撰写 | 确定性 |
 | `draft_specification` | 撰写 | 确定性 |
 | `validate_specification` | 质量 | 确定性 |
@@ -152,6 +152,7 @@ Schemastery 配置，所有字段可选。
 - **移除语义召回** — `patent_case_search` 仅保留 FTS/LIKE；基于 embedding 的语义召回未移植（dsh 暂无向量基建）。
 - **证据规则资产** — `evaluate_evidence` 经 `@deepseek-ai/dsh-patent-rule` 的资产定位解析 `evidence-rules.yaml`；缺失时引擎降级为默认权重。
 - **TRIZ 分析属发明人侧且有意的窄** — `triz_contradiction_analysis` 一次只读一篇交底书：不构建问题依赖图、不度量幻觉率、不做跨文档合并。它给出的矛盾是工程参数之间的设计层取舍，因此绝不进入审查意见答复或无效论证——三步法第二步的技术问题表述仍归 `checkAtomic` 与创造性子图。证据无法在交底书原文定位的矛盾被丢弃并计数，而不是照报；矩阵中没有推荐原理的格报成空缺，而不是从相邻格补一个。
+- **TRIZ 候选不进锚定表** — `candidate_units` 为有推荐原理可依的矛盾的每条方案方向记一个 `pending-inventor-confirmation` 候选 PFIE 单元，`candidate_skips` 计数那些所落格子无推荐原理的矛盾的方向。候选的 `feature` 与 `insight` 是手段假设、没有摘录锚点，因此没有 handler 读该字段，也不会写进 `pfe_triples`；方案方向只在发明人确认后，经 `claim-strategy` 已有的已确认特征输入进入撰写。
 
 - **`claim_lint` 读的是权项形式而非实质** — 引用基础规则把「所述」之后的术语按虚词截断并封顶 8 字；中文没有形态学边界，因此整体未被引入的复合词（如已有「转子铁芯」时的「所述转子铁芯外圆」）报 warning 而非 error。用语规则（功能性/效果性限定、方法特征、方法权要的步骤顺序、非技术内容、商业性用语、引用说明书或附图）是词表匹配：命中意味着该处需要人工判读，不等于权项有缺陷。本工具不做权项与说明书的支持性比对（那是 `validate_specification` 的特征覆盖检查），也不评判可专利性。
 - **违规定位只覆盖字面命中** — `rule_check` 与 `validate_specification` 对**计入本次违规的最早一处命中**回报 `line` 与 `matchedSentence`，使告警可以在原处判读，不必通读全文。开启否定语境或引文豁免的词表检查（`negationContext`、`quoteImmune`）取的是豁免之后剩下最早的那一处，不是该词在文本中的最早出现。缺项类与比例类检查（章节缺失、覆盖率、数值范围端点）、`quote_repetition`（证据带重复次数，不是原文中的连续片段），以及读取独立入参字段的检查（发明名称、摘要、权利要求）不带这两项：那里指向说明书的行号没有对应位置。

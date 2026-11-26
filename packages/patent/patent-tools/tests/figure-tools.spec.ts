@@ -341,6 +341,7 @@ describe('render helpers', () => {
     expect(text).toContain('需人工确认')
     expect(text).toContain('（无整体描述）')
     expect(text).toContain('（无附图说明）')
+    expect(text).toContain('本结果是读图提案，没有毫米坐标，不能落版')
   })
 
   it('renders a zero-hit search result without a hint', () => {

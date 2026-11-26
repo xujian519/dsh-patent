@@ -1,4 +1,5 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { utimes } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it, vi } from 'vitest'
@@ -8,6 +9,13 @@ import {
   expandSectionSource,
   type SectionSourcePorts,
 } from '../src/figure/section-source.ts'
+import {
+  RENDER_REUSE_VERSION,
+  SECTION_REUSE_WARNING,
+  hashModelFile,
+  renderKeyPath,
+  renderReuseKey,
+} from '../src/figure/render-reuse.ts'
 import { readSectionGeometry, SectionGeometryError, type SectionGeometryPayload } from '../src/figure/freecad-section-geometry.ts'
 import type { SectionGeometryOutcome, SectionGeometrySpec, SectionHatchOutcome, SectionHatchSpec } from '../src/figure/freecad-renderer.ts'
 import type { SectionFigureJson } from '../src/figure/vector-figure-build.ts'
@@ -98,7 +106,7 @@ async function expand(
   const scaled: SectionFigureJson = scale === undefined || sections.source === undefined
     ? sections
     : { ...sections, source: { ...sections.source, scale } }
-  return expandSectionSource(scaled, { ports, cwd: workDir, artifactDir: join(workDir, 'artifacts') })
+  return expandSectionSource(scaled, { ports, cwd: workDir, artifactDir: join(workDir, 'artifacts'), reuse: false })
 }
 
 /** 展开并取回抛出的 SectionSourceError（断言失败也在这里报出实际值）。 */
@@ -193,6 +201,17 @@ describe('expandSectionSource 输入校验', () => {
       'invalid_input',
       '不支持的模型格式',
     )
+  })
+
+  it('位图路径在读盘前拒绝，且不调用几何端口', async () => {
+    const { ports, geometrySpecs } = fakePorts()
+    await expectFailure(
+      sourceSections({ source: { model_path: 'photo.PNG', plane: { origin: [0, 0, 4], normal: [0, 0, 1] } } }),
+      ports,
+      'invalid_input',
+      'analyze_patent_figure',
+    )
+    expect(geometrySpecs).toHaveLength(0)
   })
 
   it('模型路径指向目录报 invalid_input', async () => {
@@ -514,5 +533,117 @@ describe('expandSectionSource 失败映射与提示', () => {
     expect(line).toContain('#1 净面积 1642.920')
     expect(line).toContain('x -30–30')
     expect(line).toContain('y -15–15')
+  })
+})
+
+describe('expandSectionSource 复用', () => {
+  function prepare(name: string): { artifactDir: string; modelAbs: string; sections: (scale?: number) => SectionFigureJson } {
+    const artifactDir = join(workDir, name)
+    const modelRel = `${name}/plate.step`
+    const modelAbs = join(workDir, modelRel)
+    mkdirSync(artifactDir, { recursive: true })
+    writeFileSync(modelAbs, `ISO-10303-21;\n${name}\n`)
+    const sections = (scale?: number): SectionFigureJson => sourceSections({
+      source: {
+        model_path: modelRel,
+        plane: { origin: [0, 0, 4], normal: [0, 0, 1] },
+        ...(scale === undefined ? {} : { scale }),
+      },
+    })
+    return { artifactDir, modelAbs, sections }
+  }
+
+  it('相同模型字节与剖切参数第二次不调用端口，并提示复用', async () => {
+    const { artifactDir, sections } = prepare('reuse-hit')
+    const { ports, geometrySpecs } = fakePorts()
+    const input = sections()
+    const first = await expandSectionSource(input, { ports, cwd: workDir, artifactDir })
+    const second = await expandSectionSource(input, { ports, cwd: workDir, artifactDir })
+    expect(geometrySpecs).toHaveLength(1)
+    expect(second.sections.parts[0]?.outline).toEqual(first.sections.parts[0]?.outline)
+    expect(second.warnings).toContain(SECTION_REUSE_WARNING)
+    expect(first.warnings).not.toContain(SECTION_REUSE_WARNING)
+    expect(existsSync(renderKeyPath(join(artifactDir, 'section-reuse.json')))).toBe(true)
+  })
+
+  it('改模型一个字节、改比例、或把收据改到键文件之后，都会重新剖切', async () => {
+    const { artifactDir, modelAbs, sections } = prepare('reuse-miss')
+    const { ports, geometrySpecs } = fakePorts()
+    const input = sections()
+    await expandSectionSource(input, { ports, cwd: workDir, artifactDir })
+    writeFileSync(modelAbs, 'ISO-10303-21;\nreuse-byte\n')
+    await expandSectionSource(input, { ports, cwd: workDir, artifactDir })
+    expect(geometrySpecs).toHaveLength(2)
+    await expandSectionSource(sections(2), { ports, cwd: workDir, artifactDir })
+    expect(geometrySpecs).toHaveLength(3)
+    const receipt = join(artifactDir, 'section-reuse.json')
+    await utimes(receipt, new Date('2099-01-01T00:00:00Z'), new Date('2099-01-01T00:00:00Z'))
+    await expandSectionSource(sections(2), { ports, cwd: workDir, artifactDir })
+    expect(geometrySpecs).toHaveLength(4)
+  })
+
+  it('把取消信号交给轮廓端口和剖面线端口', async () => {
+    const { artifactDir, sections } = prepare('reuse-signal')
+    const { ports, geometrySpecs, hatchSpecs } = fakePorts()
+    const signal = new AbortController().signal
+    await expandSectionSource(sections(), { ports, cwd: workDir, artifactDir, signal, reuse: false })
+    expect(geometrySpecs[0]?.signal).toBe(signal)
+    expect(hatchSpecs[0]?.signal).toBe(signal)
+  })
+
+  it('reuse false 即使已有收据也重新剖切', async () => {
+    const { artifactDir, sections } = prepare('reuse-off')
+    const { ports, geometrySpecs } = fakePorts()
+    const input = sections()
+    await expandSectionSource(input, { ports, cwd: workDir, artifactDir })
+    await expandSectionSource(input, { ports, cwd: workDir, artifactDir, reuse: false })
+    expect(geometrySpecs).toHaveLength(2)
+  })
+
+  it('端口失败不写键；损坏收据和抬高版本的键都不命中', async () => {
+    const failed = prepare('reuse-fail')
+    const ports: SectionSourcePorts = {
+      sectionGeometry: async () => { throw new Error('剖切进程退出') },
+      sectionHatch: async () => { throw new Error('不应调用剖面线') },
+    }
+    await expect(expandSectionSource(failed.sections(), { ports, cwd: workDir, artifactDir: failed.artifactDir }))
+      .rejects.toThrow('剖切进程退出')
+    expect(existsSync(renderKeyPath(join(failed.artifactDir, 'section-reuse.json')))).toBe(false)
+
+    const { artifactDir, modelAbs, sections } = prepare('reuse-plant')
+    const input = sections(2)
+    const key = await renderReuseKey({
+      tool: 'section-source',
+      request: input,
+      modelHashes: [await hashModelFile(modelAbs)],
+    })
+    const bumped = await renderReuseKey({
+      tool: 'section-source',
+      request: input,
+      modelHashes: [await hashModelFile(modelAbs)],
+      version: RENDER_REUSE_VERSION + 1,
+    })
+    const receipt = join(artifactDir, 'section-reuse.json')
+    const planted = [
+      '{',
+      JSON.stringify({ key: 'other', expansion: { warnings: ['x'], sections: { parts: [] } } }),
+      JSON.stringify({ key, expansion: { warnings: [1], sections: { parts: [] } } }),
+      JSON.stringify({ key, expansion: { warnings: ['x'], sections: { parts: 'no' } } }),
+      JSON.stringify({ key, expansion: { warnings: ['x'], sections: null } }),
+      JSON.stringify({ key: bumped, expansion: { warnings: ['x'], sections: { parts: [] } } }),
+      JSON.stringify({ key, expansion: { sections: { parts: [] } } }),
+      JSON.stringify({ key, expansion: { warnings: ['x'], sections: {} } }),
+    ]
+    const { ports: okPorts, geometrySpecs } = fakePorts()
+    for (const body of planted) {
+      writeFileSync(receipt, body)
+      writeFileSync(renderKeyPath(receipt), key)
+      const past = new Date('2019-01-01T00:00:00Z')
+      await utimes(receipt, past, past)
+      await utimes(renderKeyPath(receipt), past, past)
+      const before = geometrySpecs.length
+      await expandSectionSource(input, { ports: okPorts, cwd: workDir, artifactDir })
+      expect(geometrySpecs.length).toBe(before + 1)
+    }
   })
 })

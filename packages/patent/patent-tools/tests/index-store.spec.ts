@@ -25,6 +25,7 @@ function figureEntry(over: { imagePath: string } & Partial<{ figureNumber: numbe
       warnings: [],
       usable: true,
       modelUsed: 'm',
+      drawingStatus: 'drawn',
       ...(over.figureFamily === undefined ? {} : { figureFamily: over.figureFamily }),
     },
   }
@@ -133,6 +134,45 @@ describe('figureIndexStore.load', () => {
       const { entries, warning } = await figureIndexStore.load(file)
       expect(warning).toBeUndefined()
       expect(entries.map(e => e.analysis.figureFamily)).toEqual([undefined, 'acme'])
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('loads an entry that omits drawingStatus', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-fig-status-'))
+    try {
+      const file = join(dir, 'index.json')
+      const legacy = figureEntry({ imagePath: 'legacy.png' })
+      delete (legacy.analysis as { drawingStatus?: string }).drawingStatus
+      await writeFile(
+        file,
+        JSON.stringify({ version: FIGURE_INDEX_VERSION, updatedAt: '', entries: [legacy] }),
+      )
+      const { entries, warning } = await figureIndexStore.load(file)
+      expect(warning).toBeUndefined()
+      expect(entries[0]?.analysis.drawingStatus).toBeUndefined()
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps proposal and drops a drawingStatus outside proposal or drawn', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-fig-status-'))
+    try {
+      const file = join(dir, 'index.json')
+      const proposal = figureEntry({ imagePath: 'p.png' })
+      proposal.analysis.drawingStatus = 'proposal'
+      const bad = figureEntry({ imagePath: 'bad.png' })
+      Reflect.set(bad.analysis, 'drawingStatus', 'filed')
+      await writeFile(
+        file,
+        JSON.stringify({ version: FIGURE_INDEX_VERSION, updatedAt: '', entries: [proposal, bad] }),
+      )
+      const { entries, warning } = await figureIndexStore.load(file)
+      expect(entries.map(entry => entry.imagePath)).toEqual(['p.png'])
+      expect(entries[0]?.analysis.drawingStatus).toBe('proposal')
+      expect(warning).toContain('1 条无效条目')
     } finally {
       await rm(dir, { recursive: true, force: true })
     }

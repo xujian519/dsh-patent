@@ -179,6 +179,10 @@ export type GenerateStructureFigureInput = {
   fit_to_page?: boolean
   /** 默认 true：写入附图索引（供 search_patent_figure 检索）。 */
   persist_index?: boolean
+  /** 为 true 时在文字转路径之前，为每个视图 SVG 另写同名 DXF。主路径仍是 SVG。默认 false。 */
+  export_dxf?: boolean
+  /** 默认 true。模型字节与投影参数未变、且线稿未被改过时不再调用 FreeCAD。false 时重新投影。 */
+  reuse?: boolean
 }
 
 /**
@@ -218,6 +222,8 @@ export type GenerateStructureFigureOutput = {
   warnings: string[]
   /** 是否已写入附图索引。 */
   indexed: boolean
+  /** `export_dxf` 为 true 时的 DXF 绝对路径。未请求时省略。 */
+  dxfPaths?: string[]
 }
 
 /** 依赖注入。render 为 FreeCAD 结构投影；enabled 为 Config.structureFigureEnabled 门禁。 */

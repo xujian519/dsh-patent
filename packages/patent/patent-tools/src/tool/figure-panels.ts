@@ -253,6 +253,7 @@ async function renderPanel(
     signal: run.context.signal,
     output,
     hasDirectRender: true,
+    exportDxf: run.input.export_dxf === true,
   }) === 'done'
   if (!chained) {
     if (chain) {
@@ -279,6 +280,7 @@ async function renderPanel(
       style: run.context.style,
       signal: run.context.signal,
       output,
+      exportDxf: run.input.export_dxf === true,
     })
   }
   return { suffix: panel.suffix, output }
@@ -310,6 +312,7 @@ async function mergePanelOutputs(args: {
     ? `${sentences.join('；')}。`
     : `${sentences.join('；')}；图中：${sharedNumerals}。`
   const warnings = panelOutputs.flatMap(po => po.output.warnings)
+  const dxfPaths = panelOutputs.flatMap(po => po.output.dxfPaths ?? [])
   if (panelStructurals.some(ps => ps.leaderLines) && format !== 'svg') {
     warnings.push(`引线标号仅支持 SVG 矢量输出；本次 ${format} 保持内嵌标号`)
   }
@@ -347,6 +350,7 @@ async function mergePanelOutputs(args: {
     connections: panelOutputs.flatMap(po => po.output.connections),
     warnings,
     indexed,
+    ...(dxfPaths.length === 0 ? {} : { dxfPaths }),
     panels: panelOutputs.map(po => ({
       suffix: po.suffix,
       path: po.output.path,

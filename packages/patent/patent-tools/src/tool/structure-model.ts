@@ -9,6 +9,7 @@ import { extname, join, resolve } from 'node:path'
 import { PatentToolError } from '../error.ts'
 import { SUPPORTED_MODEL_EXTENSIONS } from '../figure/freecad-renderer.ts'
 import { STRUCTURE_VIEWS } from '../figure/freecad-structure-script.ts'
+import { rasterFigureExtension, rasterFigureMessage } from '../figure/raster-input.ts'
 import { DEFAULT_SVG_MAX_BYTES, assertSafeSvg } from '../figure/svg-annotate.ts'
 import { DEFAULT_DETAIL_SCALE } from './structure-types.ts'
 import type {
@@ -108,7 +109,15 @@ export function normalizeViews(views: readonly string[] | undefined, fallback: r
  * @returns 模型文件的绝对路径。
  * @throws PatentToolError when the path is missing (file_not_found) or is not a supported file.
  */
+function rejectRasterModel(modelPath: string, field: string): void {
+  const raster = rasterFigureExtension(modelPath)
+  if (raster !== undefined) {
+    throw new PatentToolError('invalid_tool_input', rasterFigureMessage(field, raster), { tool: 'generate_structure_figure' })
+  }
+}
+
 async function resolveModelFile(modelPath: string, cwd: string, field: string): Promise<string> {
+  rejectRasterModel(modelPath, field)
   const absolute = resolve(cwd, modelPath)
   const info = await stat(absolute).catch(() => undefined)
   if (info === undefined) {
@@ -125,6 +134,7 @@ async function resolveModelFile(modelPath: string, cwd: string, field: string): 
 
 /** 解析 model_path：文件（单模型）或目录（批量），返回受支持模型的绝对路径列表（升序）。 */
 async function resolveModelPaths(modelPath: string, cwd: string): Promise<string[]> {
+  rejectRasterModel(modelPath, 'model_path')
   const absolute = resolve(cwd, modelPath)
   const info = await stat(absolute).catch(() => undefined)
   if (info === undefined) {

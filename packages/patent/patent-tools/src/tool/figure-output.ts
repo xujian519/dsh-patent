@@ -39,6 +39,7 @@ export function indexAnalysis(
     warnings: output.warnings,
     usable: output.components.length > 0,
     modelUsed: FIGURE_GENERATOR_MODEL_USED,
+    drawingStatus: 'drawn',
     ...(figureFamily === undefined ? {} : { figureFamily }),
   }
 }

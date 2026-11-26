@@ -9,7 +9,7 @@ import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { FigureAnalysisResult } from '../src/tool/analyze-patent-figure.ts'
 import type { FigureIndexEntry } from '../src/figure/index-store.ts'
 import { PatentToolError } from '../src/error.ts'
-import { createAnalyzePatentFigureTool, resolveGateRoute } from '../src/tool/analyze-patent-figure.ts'
+import { createAnalyzePatentFigureTool, normalizeFigureAnalysis, renderFigureAnalysis, resolveGateRoute } from '../src/tool/analyze-patent-figure.ts'
 import { createTwoStepAnalysisEngine } from '../src/figure/analysis-engine.ts'
 
 const signal = new AbortController().signal
@@ -56,6 +56,19 @@ describe('resolveGateRoute', () => {
   it('returns undefined when neither source names a route', () => {
     expect(resolveGateRoute(undefined, undefined)).toBeUndefined()
     expect(resolveGateRoute({}, undefined)).toBeUndefined()
+  })
+})
+
+describe('normalizeFigureAnalysis drawingStatus', () => {
+  it('忽略模型自报的状态，渲染标明不能落版', () => {
+    const result = normalizeFigureAnalysis(JSON.stringify({
+      figure_type: 'structure',
+      drawing_status: 'drawn',
+      drawingStatus: 'filed',
+      components: [{ ref_number: '1', name: '壳体', kind: 'mechanical', description: '外壳' }],
+    }), { imagePath: 'a.png', figureNumber: 1, inventionName: undefined, modelUsed: 'm' })
+    expect(result.drawingStatus).toBe('proposal')
+    expect(renderFigureAnalysis(result)).toContain('本结果是读图提案，没有毫米坐标，不能落版')
   })
 })
 
@@ -150,6 +163,7 @@ describe('analyze_patent_figure vision path', () => {
         exec,
       )) as FigureAnalysisResult
       expect(result.modelUsed).toBe('deepseek-official/vision')
+      expect(result.drawingStatus).toBe('proposal')
       expect(result.usable).toBe(true)
       expect(result.warnings).toHaveLength(0)
       expect(saved).toHaveLength(1)

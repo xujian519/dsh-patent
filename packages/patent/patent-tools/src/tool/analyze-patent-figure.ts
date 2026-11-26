@@ -137,6 +137,12 @@ export type FigureAnalysisResult = {
   usable: boolean
   /** 实际使用的模型标识。 */
   modelUsed: string
+  /**
+   * `proposal`：analyze_patent_figure 的读图结果，没有毫米坐标。
+   * `drawn`：generate_patent_figure / generate_structure_figure 写出的几何。
+   * 磁盘上的旧索引条目可缺省；新写入必须带上。
+   */
+  drawingStatus?: 'proposal' | 'drawn'
   /** 发明家族标识（generate_patent_figure 声明 figure_family 时记录，跨图续号的检索键；旧条目可缺省）。 */
   figureFamily?: string
 }
@@ -501,6 +507,7 @@ export function normalizeFigureAnalysis(
     warnings: [...new Set(warnings)],
     usable: components.length > 0,
     modelUsed: opts.modelUsed,
+    drawingStatus: 'proposal',
   }
 }
 
@@ -533,6 +540,8 @@ export function renderFigureAnalysis(value: FigureAnalysisResult): string {
     value.overallDescription || '（无整体描述）',
     '',
     value.figureDescription || '（无附图说明）',
+    '',
+    '本结果是读图提案，没有毫米坐标，不能落版。',
   ]
   if (value.components.length > 0) {
     lines.push('', '## 组件', ...value.components.map(c => `- ${c.refNumber} ${c.name}（${c.kind}）：${c.description}`))
@@ -546,6 +555,8 @@ export function renderFigureAnalysis(value: FigureAnalysisResult): string {
 
 const DESCRIPTION = [
   '分析专利说明书附图（多模态）：把图片随请求发送给配置的附图模型（imageModel，须声明图片输入），识别附图类型（结构图/流程图/电路图/方框图/示意图/分解图/剖视图）、提取组件与连接关系、核对附图标记并生成专利格式的附图说明文字。当用户提供附图图片并要求撰写附图说明、理解附图内容、核对附图标记一致性时使用。可传入权利要求或技术方案文本作为上下文，提升图文对齐准确率。',
+  '',
+  '结果是读图提案（drawingStatus 恒为 proposal），没有毫米坐标，不能落版。用户确认前不要把 refNumber 抄进 generate_patent_figure 或 generate_structure_figure 的绘制输入。',
 ].join('\n')
 
 const CONNECTION_SCHEMA = {
@@ -591,6 +602,7 @@ export function createAnalyzePatentFigureTool(deps: AnalyzePatentFigureDeps): To
           warnings: WARNINGS_SCHEMA,
           usable: { type: 'boolean', required: true },
           modelUsed: { type: 'string', required: true },
+          drawingStatus: { type: 'string', required: true, enum: ['proposal'] },
         },
       },
       render: (_args, value) => [{ type: 'text', text: renderFigureAnalysis(value) }],
@@ -680,19 +692,20 @@ export function createAnalyzePatentFigureTool(deps: AnalyzePatentFigureDeps): To
           { tool: 'analyze_patent_figure' },
         )
       }
+      const proposal = { ...result, drawingStatus: 'proposal' as const }
       if (deps.upsertIndex !== undefined) {
         try {
           await deps.upsertIndex({
-            imagePath: result.imagePath,
+            imagePath: proposal.imagePath,
             analyzedAt: new Date().toISOString(),
-            analysis: result,
+            analysis: proposal,
           })
         } catch (error) {
           // 索引写入是可选增强：写入失败静默降级，不阻断分析结果返回。
           void error
         }
       }
-      return result
+      return proposal
     },
   })
 }

@@ -308,6 +308,12 @@ describe('buildAppearanceViewSheet 校验', () => {
     expect(() => buildAppearanceViewSheet({
       views: [{ name: '主视图', body: '<rect onload="alert(1)"/>', widthMm: 40, heightMm: 20 }],
     })).toThrow(/事件处理属性/)
+    expect(() => buildAppearanceViewSheet({
+      views: [{ name: '主视图', body: '<image href="a.png" width="10" height="10"/>', widthMm: 40, heightMm: 20 }],
+    })).toThrow(/analyze_patent_figure/)
+    expect(() => buildAppearanceViewSheet({
+      views: [{ name: '主视图', body: '<svg:image href="a.png"/>', widthMm: 40, heightMm: 20 }],
+    })).toThrow(/analyze_patent_figure/)
   })
 
   it('keeps quoted ">" and on…= text inside attribute values while scanning past bare "<"', () => {

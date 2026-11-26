@@ -18,7 +18,7 @@
  */
 
 
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { PatentToolError } from '../error.ts'
@@ -32,6 +32,21 @@ import { STRUCTURE_VIEWS } from '../figure/freecad-structure-script.ts'
 import { STRUCTURE_LINE_WIDTH_SERIES } from '../figure/structure-svg-postprocess.ts'
 import { TARGET_OFFICES } from '../figure/office-profile.ts'
 import { COMPONENT_SCHEMA, NUMERAL_MAP_SCHEMA } from './internal/figure-schemas.ts'
+import { attachSiblingDxf } from './figure-delivery.ts'
+import {
+  STRUCTURE_REUSE_WARNING,
+  hashModelFile,
+  nonEmptyFile,
+  readJsonRecord,
+  readReuseText,
+  readStringArray,
+  removeReuseFile,
+  renderKeyPath,
+  renderReuseKey,
+  reusableProduct,
+  writeRenderKey,
+  writeReuseText,
+} from '../figure/render-reuse.ts'
 import { upsertFigureIndex } from './figure-output.ts'
 import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
 import { STRUCTURE_FIGURE_MODEL_USED } from './structure-types.ts'
@@ -46,7 +61,7 @@ export type {
   StructureManifestAnchor,
   StructureManifestView,
 } from './structure-types.ts'
-import type { GenerateStructureFigureDeps, StructureFigureView } from './structure-types.ts'
+import type { GenerateStructureFigureDeps, GenerateStructureFigureOutput, StructureFigureView } from './structure-types.ts'
 import {
   applyStructureLayout,
   applyViewLineStyles,
@@ -126,6 +141,8 @@ const DESCRIPTION = [
   '',
   '默认关闭：结构线稿依赖本机 FreeCAD，需先设 Config.structureFigureEnabled=true；未开启或未安装 freecadcmd 时返回 setup_required 与配置/安装引导。',
   '',
+  'jpg/png 不是模型，读图用 analyze_patent_figure。用户确认后的零件名才写成 callouts；未确认的分析标号不是件号。生成后用 verify_patent_figure 复核 SVG。',
+  '',
   '视图：views 缺省 iso/front/top/right，可选 iso/front/rear/top/bottom/left/right；scale 为 TechDraw 投影比例；show_hidden 开启时绘制隐藏线（细实线，FreeCAD 1.1.3 实测隐藏线 0.35 毫米、可见线 0.7 毫米，输出不含 stroke-dasharray，不是虚线）。',
   '',
   '线宽与线型：line_width_mm 取 GB/T 4457.4 线宽系列之一改写可见线线宽，hidden_line_style="dashed" 把隐藏线画成虚线；缺省两者都不改写，输出与 FreeCAD 原始投影一致。',
@@ -178,6 +195,8 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
       caption: { type: 'string', description: '图号文字（如「图1」）；缺省不落图号——多视图如何编号由调用方按整案附图顺序决定' },
       fit_to_page: { type: 'boolean', description: '默认 true：落版到目标法域幅面；false 时只核算尺寸' },
       persist_index: { type: 'boolean', description: '默认 true：写入附图索引（供 search_patent_figure 检索）' },
+      export_dxf: { type: 'boolean', description: '默认 false。为 true 时在文字转路径之前，为每个视图 SVG 另写一份可编辑 DXF；主交付物与索引路径仍是 SVG' },
+      reuse: { type: 'boolean', description: '默认 true。模型字节与投影参数未变、且线稿未被改过时不再调用 FreeCAD。false 时重新投影' },
     },
     output: {
       schema: {
@@ -220,6 +239,7 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
           assembly: ASSEMBLY_SCHEMA,
           warnings: WARNINGS_SCHEMA,
           indexed: { type: 'boolean', required: true },
+          dxfPaths: { type: 'array', items: { type: 'string' }, description: 'export_dxf 为 true 时每个视图的 DXF 绝对路径；未请求时省略' },
         },
       },
       render: (_args, value) => renderStructureResult(value),
@@ -230,6 +250,11 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
         throw new PatentToolError('setup_required', '结构线稿默认关闭，设 Config.structureFigureEnabled=true 后重试（需本机安装 FreeCAD 1.1+）。', { tool: 'generate_structure_figure' })
       }
       const run = await resolveStructureRun(args, deps)
+      if (run.input.reuse === false) await clearStructureReuse(run)
+      else {
+        const reused = await loadStructureReuse(run)
+        if (reused !== undefined) return { ...reused, warnings: [...reused.warnings, STRUCTURE_REUSE_WARNING] }
+      }
       const warnings: string[] = ['由 3D 模型（FreeCAD TechDraw）投影生成的结构线稿']
       const figures = await renderStructureFigures(run, exec.signal)
       await applyViewLineStyles({ run, figures, warnings })
@@ -269,6 +294,14 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
           })
         }
       }
+      const dxfOutput: { warnings: string[]; dxfPaths?: string[] } = { warnings }
+      if (run.input.export_dxf === true) {
+        for (const figure of figures) {
+          for (const viewPath of figure.paths) {
+            await attachSiblingDxf(resolve(run.cwd, viewPath), dxfOutput, 'generate_structure_figure')
+          }
+        }
+      }
       await outlineStructureViews({ run, figures, signal: exec.signal })
       let indexed = false
       if ((run.input.persist_index ?? true) && deps.upsertIndex !== undefined) {
@@ -287,7 +320,7 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
         }
       }
       const assembly = structureAssembly(figures)
-      return {
+      const result: GenerateStructureFigureOutput = {
         paths: figures.flatMap(figure => figure.paths),
         figures,
         ...(assembly === undefined ? {} : { assembly }),
@@ -297,9 +330,157 @@ export function createGenerateStructureFigureTool(deps: GenerateStructureFigureD
         components,
         warnings,
         indexed,
+        ...(dxfOutput.dxfPaths === undefined ? {} : { dxfPaths: dxfOutput.dxfPaths }),
       }
+      exec.signal.throwIfAborted()
+      await commitStructureReuse(run, result)
+      return result
     },
   })
+}
+
+/** 结构线稿收据文件名（一次调用一份，盖住批量里的全部视图）。 */
+const STRUCTURE_REUSE_RECEIPT = 'structure-reuse.json'
+
+/** `resolveStructureRun` 的结果。类型未导出，这里只取复用需要的字段。 */
+type StructureReuseRun = Awaited<ReturnType<typeof resolveStructureRun>>
+
+/**
+ * 结构投影的复用键。请求含落版、线型、件号与是否写 DXF，模型只取字节摘要。
+ * @param run - 已归一的调用。
+ * @returns 本次键。
+ */
+async function structureReuseKey(run: StructureReuseRun): Promise<string> {
+  const modelHashes: string[] = []
+  for (const modelPath of run.modelPaths) modelHashes.push(await hashModelFile(modelPath))
+  return renderReuseKey({
+    tool: 'structure',
+    request: {
+      views: run.views,
+      scale: run.scale,
+      showHidden: run.showHidden,
+      lineWidthMm: run.lineWidthMm ?? null,
+      hiddenLineStyle: run.hiddenLineStyle,
+      exploded: run.exploded,
+      callouts: run.callouts,
+      details: run.details,
+      baseFigure: run.baseFigure,
+      assembly: run.assembly,
+      targetOffice: run.input.target_office ?? null,
+      sheetIndex: run.input.sheet_index ?? null,
+      sheetTotal: run.input.sheet_total ?? null,
+      sheetNumber: run.input.sheet_number ?? null,
+      caption: run.input.caption ?? null,
+      fitToPage: run.input.fit_to_page ?? null,
+      inventionName: run.input.invention_name ?? null,
+      exportDxf: run.input.export_dxf === true,
+      persistIndex: (run.input.persist_index ?? true) && run.deps.upsertIndex !== undefined,
+      failOnRenderFindings: run.deps.failOnRenderFindings === true,
+      minSheetFillRatio: run.deps.minSheetFillRatio ?? null,
+    },
+    modelHashes,
+  })
+}
+
+/**
+ * 命中时返回上次的工具结果（不含复用提示）。键、SVG 或 DXF 对不上时返回 undefined。
+ * @param run - 已归一的调用。
+ * @returns 上次的结果，或 undefined。
+ */
+async function loadStructureReuse(run: StructureReuseRun): Promise<GenerateStructureFigureOutput | undefined> {
+  const key = await structureReuseKey(run)
+  const receiptPath = join(run.outputDir, STRUCTURE_REUSE_RECEIPT)
+  const text = await readReuseText(receiptPath)
+  if (text === undefined) return undefined
+  const loaded = parseStructureReceipt(text, key)
+  if (loaded === undefined) return undefined
+  for (const relPath of loaded.paths) {
+    if (!await reusableProduct(resolve(run.cwd, relPath), key)) return undefined
+  }
+  if (loaded.result.dxfPaths !== undefined) {
+    for (const dxfPath of loaded.result.dxfPaths) {
+      if (!await nonEmptyFile(dxfPath)) return undefined
+    }
+  }
+  return loaded.result
+}
+
+/**
+ * 删除收据列出的键文件和收据本身。`reuse: false` 在投影前调用。
+ * @param run - 已归一的调用。
+ */
+async function clearStructureReuse(run: StructureReuseRun): Promise<void> {
+  const receiptPath = join(run.outputDir, STRUCTURE_REUSE_RECEIPT)
+  const text = await readReuseText(receiptPath)
+  if (text !== undefined) {
+    const record = readJsonRecord(text)
+    const paths = readStringArray(record?.paths)
+    if (paths !== undefined) {
+      for (const relPath of paths) await removeReuseFile(renderKeyPath(resolve(run.cwd, relPath)))
+    }
+  }
+  await removeReuseFile(receiptPath)
+}
+
+/**
+ * 投影、落版和文字转路径都成功之后写收据，再写每个视图的键，使 SVG mtime 不晚于键。
+ * @param run - 已归一的调用。
+ * @param result - 本次工具结果（不含复用提示）。
+ */
+async function commitStructureReuse(run: StructureReuseRun, result: GenerateStructureFigureOutput): Promise<void> {
+  const key = await structureReuseKey(run)
+  await writeReuseText(join(run.outputDir, STRUCTURE_REUSE_RECEIPT), JSON.stringify({
+    key,
+    paths: result.paths,
+    result,
+  }))
+  for (const relPath of result.paths) await writeRenderKey(resolve(run.cwd, relPath), key)
+}
+
+/**
+ * 收据正文。键不一致、路径为空、或结果缺字段时返回 undefined。
+ * @param text - 收据 JSON。
+ * @param key - 本次键。
+ * @returns 路径与结果，或 undefined。
+ */
+function parseStructureReceipt(text: string, key: string): { paths: string[]; result: GenerateStructureFigureOutput } | undefined {
+  const record = readJsonRecord(text)
+  if (record === undefined || record.key !== key) return undefined
+  const paths = readStringArray(record.paths)
+  if (paths === undefined || paths.length === 0) return undefined
+  if (!isStructureResult(record.result)) return undefined
+  return { paths, result: record.result }
+}
+
+/**
+ * 工具结果的文件边界：必填字段在，DXF 路径若给出则是字符串数组。
+ * @param value - 收据里的 result。
+ * @returns 是否可当作结构线稿结果。
+ */
+function isStructureResult(value: unknown): value is GenerateStructureFigureOutput {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const paths = readStringArray(descriptorValue(value, 'paths'))
+  const warnings = readStringArray(descriptorValue(value, 'warnings'))
+  if (paths === undefined || warnings === undefined) return false
+  if (typeof descriptorValue(value, 'figureDescription') !== 'string') return false
+  if (typeof descriptorValue(value, 'indexed') !== 'boolean') return false
+  for (const field of ['figures', 'numeralMap', 'components']) {
+    if (!Array.isArray(descriptorValue(value, field))) return false
+  }
+  const dxfPaths = descriptorValue(value, 'dxfPaths')
+  return dxfPaths === undefined || readStringArray(dxfPaths) !== undefined
+}
+
+/**
+ * 对象自身字段的值。
+ * @param value - 已收窄的对象。
+ * @param key - 字段名。
+ * @returns 字段值；没有该字段时为 undefined。
+ */
+function descriptorValue(value: object, key: string): unknown {
+  const descriptor = Object.getOwnPropertyDescriptor(value, key)
+  if (descriptor === undefined) return undefined
+  return descriptor.value
 }
 
 /** 构造索引用 analysis（确定性投影：组件由 callouts 还原，置信度 1）。 */
@@ -322,6 +503,7 @@ function structureAnalysis(
     warnings,
     usable: figure.manifest.views.length > 0,
     modelUsed: STRUCTURE_FIGURE_MODEL_USED,
+    drawingStatus: 'drawn',
   }
 }
 

@@ -258,7 +258,8 @@ describe('document_deliver tool', () => {
     })
     expect(result.isError).toBe(false)
     expect(result.content).toContain('P0 1 项通过')
-    expect(result.content).not.toContain('P1')
+    // 只匹配渲染的质量门片段：临时目录名可能自带「P1」字样。
+    expect(result.content).not.toContain('，P1 ')
     expect(result.content).not.toContain('brief 参考')
   })
 

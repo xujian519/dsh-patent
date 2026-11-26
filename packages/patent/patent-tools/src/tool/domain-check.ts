@@ -11,10 +11,10 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { lintClaimText, type ClaimLintFinding } from '@deepseek-ai/dsh-patent-core'
+import { aggregateReviewFindings } from '../review/aggregate.ts'
+import type { ReviewFinding } from '../review/types.ts'
 import { requireNonBlankText } from './internal/tool-input.ts'
 import { FIGURE_ANALYSIS_INPUT_SCHEMA } from './internal/figure-schemas.ts'
-import { validateSpecification } from './validate-specification.ts'
 import type { ValidateSpecificationInput } from './spec-types.ts'
 import type { PatentType } from './draft-claims.ts'
 
@@ -215,10 +215,15 @@ const MISSING_INPUT_REASON: Readonly<Record<ChecklistInput, string>> = {
 }
 
 /**
- * Collect the findings of both engines for one submission.
+ * Collect the findings of both engines for one submission through the shared
+ * review aggregator, then project them onto the checklist tool's field set.
+ *
+ * `not_assessed`/`info` records are dropped: this tool's schema only carries
+ * error/warning findings, and its checklist `manual` status already marks the
+ * items a human must review. Order is the aggregator's engine order: claim
+ * findings first, then specification.
  * @param text - the specification text.
  * @param inputs - the optional submission fields (claims, abstract, type, figures).
- * @param techDomain - the declared technical domain; the checklist domain fills it in.
  * @returns findings in claim order, then specification order.
  */
 function collectFindings(
@@ -231,45 +236,68 @@ function collectFindings(
     techDomain: DomainCheckDomain
   },
 ): DomainCheckFinding[] {
-  const findings: DomainCheckFinding[] = []
-  if (inputs.claims.trim().length > 0) {
-    for (const finding of lintClaimText(inputs.claims).findings) {
-      findings.push(toClaimFinding(finding))
-    }
-  }
-  const specification = validateSpecification({
-    text,
+  const aggregated = aggregateReviewFindings({
+    specification: text,
     ...(inputs.claims.trim().length > 0 ? { claims: inputs.claims } : {}),
     ...(inputs.abstract === undefined ? {} : { abstract: inputs.abstract }),
-    ...(inputs.patentType === undefined ? {} : { patent_type: inputs.patentType }),
-    ...(inputs.figureAnalysis === undefined ? {} : { figure_analysis: inputs.figureAnalysis }),
-    tech_domain: inputs.techDomain,
+    ...(inputs.patentType === undefined ? {} : { patentType: inputs.patentType }),
+    ...(inputs.figureAnalysis === undefined ? {} : { figureAnalysis: inputs.figureAnalysis }),
+    techDomain: inputs.techDomain,
   })
-  for (const violation of specification.violations) {
-    findings.push({
-      source: 'specification',
-      rule: violation.rule,
-      severity: violation.severity,
-      message: violation.message,
-      ...(violation.suggestion === undefined ? {} : { detail: violation.suggestion }),
-    })
-  }
-  return findings
+  return aggregated.findings.filter(isReportable).map(toDomainFinding)
 }
 
 /**
- * Project one claim-lint finding onto the tool's field set.
- * @param finding - the finding reported by the claims linter.
+ * Whether an aggregated finding belongs in this tool's error/warning output.
+ * @param finding - one aggregated finding.
+ * @returns true for reportable error/warning findings.
+ */
+function isReportable(
+  finding: ReviewFinding,
+): finding is ReviewFinding & { severity: 'error' | 'warning' } {
+  return finding.not_assessed !== true && finding.severity !== 'info'
+}
+
+/**
+ * Whether a claim-lint finding carries the mandatory statute basis.
+ *
+ * `reviewFindingFromClaimLint` always sets `basis`; the predicate lets the
+ * projection copy it without a defensive branch the tests cannot reach.
+ * @param finding - one aggregated finding.
+ * @returns true for claim-lint findings.
+ */
+function isClaimLintFinding(
+  finding: ReviewFinding,
+): finding is ReviewFinding & { source: 'claim_lint'; basis: string } {
+  return finding.source === 'claim_lint'
+}
+
+/**
+ * Project one aggregated finding onto the checklist tool's field set.
+ * @param finding - one reportable aggregated finding.
  * @returns the finding with its claim scope folded into the message.
  */
-function toClaimFinding(finding: ClaimLintFinding): DomainCheckFinding {
-  const scope = finding.claim === null ? '权利要求书' : `权利要求 ${finding.claim}`
+function toDomainFinding(
+  finding: ReviewFinding & { severity: 'error' | 'warning' },
+): DomainCheckFinding {
+  if (isClaimLintFinding(finding)) {
+    const scope = finding.locator.kind === 'claim'
+      ? `权利要求 ${String(finding.locator.claim)}`
+      : '权利要求书'
+    return {
+      source: 'claim_lint',
+      rule: finding.rule,
+      severity: finding.severity,
+      message: `${scope}：${finding.message}`,
+      detail: finding.basis,
+    }
+  }
   return {
-    source: 'claim_lint',
+    source: 'specification',
     rule: finding.rule,
     severity: finding.severity,
-    message: `${scope}：${finding.message}`,
-    detail: finding.basis,
+    message: finding.message,
+    ...(finding.suggestion === undefined ? {} : { detail: finding.suggestion }),
   }
 }
 

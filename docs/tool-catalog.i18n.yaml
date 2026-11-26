@@ -9,8 +9,8 @@
   en: 9ce9c17eea4ddeb6
   zh: 82f2293612b9000b
 /tool-schema-catalog/tool-package-map:
-  en: 6892ae55cfa397de
-  zh: d9d482673e23056a
+  en: db69e7efb51ea8ad
+  zh: 4267e1e0cf96d270
 /tool-schema-catalog/deepseek-ai-dsh-tool-session-control:
   en: 79ab575ea6da86e2
   zh: 79ab575ea6da86e2
@@ -482,6 +482,9 @@
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/recognize-chemical-structure:
   en: d23cf293a4051b66
   zh: 1d8fbb3adc4c7be1
+/tool-schema-catalog/deepseek-ai-dsh-patent-tools/review-patent-application:
+  en: 643ac22aa1c78d6b
+  zh: ca42ee6795cf415c
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/rule-check:
   en: fd38d169641417ff
   zh: b3028248d868e41b
@@ -498,8 +501,8 @@
   en: 606d93789bfa7516
   zh: 2597d0595c5def2f
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/workbench-link-patent-case:
-  en: a962feb03fd9cc29
-  zh: a8a664127df49d19
+  en: 304eb264a499164e
+  zh: 0516e5f439cb65ab
 /tool-schema-catalog/deepseek-ai-dsh-patent-document:
   en: 5ad102b013042c68
   zh: 5ad102b013042c68

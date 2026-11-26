@@ -54,7 +54,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-literature` | `paper_download`, `paper_list_sources`, `paper_search` | `ctx.tools` | `tool/call`, `tool/result` | - | paper_list_sources and paper_search are stateless queries over four keyless public sources (arXiv, OpenAlex, Semantic Scholar, Crossref); connector enablement is config and only narrows which `db` ids are valid. |
 | `@deepseek-ai/dsh-document-deliver` | `document_deliver` | `ctx.tools`, `ctx.fs` | `tool/call`, `tool/result` | - | document_deliver records the delivered files (path + format), the P0/P1 quality-gate state, and the brief reference in the session log; it fails loud on a missing file and writes no file itself. It also reads each delivered file and reports its own deterministic findings (residual placeholders, undeclared anchors, empty sections, style forbidden words, declared length budget) on the tool result, and refuses the registration on a blocking finding. The delivery studio folds the logged call and that result metadata into its deliverable list, gate badges, and machine-check badge. |
 | `@deepseek-ai/dsh-video-mode` | `media`, `video_assemble`, `video_deliver`, `video_project` | `ctx.tools`, `ctx.fs`, `ctx.subprocess` | `tool/call`, `tool/result` | - | The media tool selects an image, video, or speech model through the provider seam and writes the artifact through ctx.fs; video_project owns the durable project document; video_assemble renders an EDL through ffmpeg; video_deliver checks the declared files and refuses incomplete or over-budget work. The synthetic provider makes the whole flow runnable without credentials; the local ComfyUI provider adds Wan 2.2 video and Z-Image images, and the cloud MiniMax-H3 and SiliconFlow Wan2.2 providers add per-second and per-video generation. |
-| `@deepseek-ai/dsh-patent-tools` | `add_patent_figure_references`, `analyze_patent_figure`, `check_patent_figure_consistency`, `claim_chart_build`, `claim_lint`, `compare_patent_figure_analysis`, `domain_check`, `draft_claims`, `draft_specification`, `evaluate_evidence`, `flexible_plan`, `generate_patent_figure`, `generate_structure_figure`, `knowledge_note_save`, `law_search`, `matter_log_append`, `parse_office_action`, `patent_analysis_report`, `patent_case_search`, `patent_eval`, `patent_kg_query`, `patent_legal_status`, `patent_metadata`, `patent_pdf_download`, `patent_plan_task`, `patent_search`, `patent_wiki_search`, `patent_worker_validate`, `patent_workflow`, `patent_workflow_run`, `recognize_chemical_structure`, `rule_check`, `search_patent_figure`, `triz_contradiction_analysis`, `validate_specification`, `verify_patent_figure`, `workbench_link_patent_case` | `ctx.tools` | `tool/call`, `tool/result` | - | The Sati patent domain tool set: search/metadata/legal-status/case/wiki/kg knowledge queries, claim-chart, office-action parsing, drafting, specification validation, evidence judgment, rule check, figure analysis, PDF download, chemical recognition, knowledge notes, and the workflow/plan state machines. render_patent_document is owned by @deepseek-ai/dsh-patent-document. |
+| `@deepseek-ai/dsh-patent-tools` | `add_patent_figure_references`, `analyze_patent_figure`, `check_patent_figure_consistency`, `claim_chart_build`, `claim_lint`, `compare_patent_figure_analysis`, `domain_check`, `draft_claims`, `draft_specification`, `evaluate_evidence`, `flexible_plan`, `generate_patent_figure`, `generate_structure_figure`, `knowledge_note_save`, `law_search`, `matter_log_append`, `parse_office_action`, `patent_analysis_report`, `patent_case_search`, `patent_eval`, `patent_kg_query`, `patent_legal_status`, `patent_metadata`, `patent_pdf_download`, `patent_plan_task`, `patent_search`, `patent_wiki_search`, `patent_worker_validate`, `patent_workflow`, `patent_workflow_run`, `recognize_chemical_structure`, `review_patent_application`, `rule_check`, `search_patent_figure`, `triz_contradiction_analysis`, `validate_specification`, `verify_patent_figure`, `workbench_link_patent_case` | `ctx.tools` | `tool/call`, `tool/result` | - | The Sati patent domain tool set: search/metadata/legal-status/case/wiki/kg knowledge queries, claim-chart, office-action parsing, drafting, application review, specification validation, evidence judgment, rule check, figure analysis, PDF download, chemical recognition, knowledge notes, and the workflow/plan state machines. render_patent_document is owned by @deepseek-ai/dsh-patent-document. |
 | `@deepseek-ai/dsh-patent-document` | `render_patent_document`, `verify_deliverable` | `ctx.tools`, `ctx.subprocess`, `ctx.workingDirectory (Agent executions)` | `tool/call`, `tool/result` | - | render_patent_document renders patent deliverables (claims/specification/search report/OA response/invalidation opinion) from packaged HTML templates, with optional headless-Chrome PDF via ctx.subprocess. |
 | `@deepseek-ai/dsh-patent-filing` | `build_patent_filing`, `verify_patent_filing` | `ctx.tools`, `ctx.subprocess` | `tool/call`, `tool/result` | - | build_patent_filing assembles one CNIPA application document (abstract, abstract drawing, claims, specification, drawings) into a DOCX whose formatting is reverse-derived from the template shipped in the package, with paragraph numbering following the spec's per-section declaration; verify_patent_filing asserts the finished file against that template — section count and headers, spacing, indent, size, non-black text, the five specification parts, the specification title, claim count, numbering continuity where a section declares it, and surviving internal marks. |
 | `@deepseek-ai/dsh-patent-deadline` | `patent_deadlines` | `ctx.tools` | `tool/call`, `tool/result` | - | patent_deadlines reports the statutory and designated deadlines of one Chinese patent case, applying the period and delivery rules of 专利法实施细则 and rolling an end date off a holiday to the next working day; notice-driven periods come back as pending entries naming the missing delivery record. |
@@ -6824,6 +6824,71 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-tools/src/index.ts)
 
+### `review_patent_application`
+
+按专利法/实施细则/审查指南的形式口径，对一份专利申请文件跑确定性评审（不调用模型）。- 权利要求：claim_lint 的编号、引用方向、多项从属、引用基础、主题名称、两部分式、功能性/工艺限定、结尾标点等；- 说明书与摘要：validate_specification 的五部分结构、标题集合、附图引用形式、名称/摘要长度、禁止性内容、模糊表述、实施例、数值范围与领域规则等；- 两者都给时同时跑权项—说明书特征覆盖（A26.4）。至少提供 claims 或 specification 之一；只给一半时，报告用未评估项声明另一半未评审，不会把它读成通过。每条 finding 带报告内唯一的 F 编号、定位、命中原文与法条依据；passed 只表示已运行的确定性规则未发现 error，不表示符合专利法；未评估项单列。结果末尾给出实际读到的文本字数与指纹，便于另一次评审对照是否读的是同一份文本。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "claims": {
+      "type": "string",
+      "description": "权利要求书全文（可选，但与 specification 至少提供一项）。"
+    },
+    "specification": {
+      "type": "string",
+      "description": "说明书全文（可选，但与 claims 至少提供一项）。"
+    },
+    "abstract": {
+      "type": "string",
+      "description": "摘要（可选）；提供时检查篇幅、关键词、附图号与宣传语。"
+    },
+    "title": {
+      "type": "string",
+      "description": "发明名称（可选）；提供时检查长度与禁用词。"
+    },
+    "patent_type": {
+      "type": "string",
+      "description": "专利类型；缺省时按发明检查并给出 warning。",
+      "enum": [
+        "invention",
+        "utility_model"
+      ]
+    },
+    "has_drawings": {
+      "type": "boolean",
+      "description": "是否有附图；缺省时由说明书文本推断。"
+    },
+    "tech_domain": {
+      "type": "string",
+      "description": "技术领域；chemical/software 启用对应领域规则。",
+      "enum": [
+        "mechanical",
+        "electrical",
+        "chemical",
+        "software",
+        "general"
+      ]
+    },
+    "drawing_count": {
+      "type": "number",
+      "description": "声明的附图数量（可选），与附图说明条目数比对。"
+    },
+    "abstract_figure_number": {
+      "type": "number",
+      "description": "请求书中的摘要附图号（可选）。"
+    },
+    "max_claims": {
+      "type": "number",
+      "description": "权利要求项数上限（可选）；超出时报 claim-count。"
+    }
+  }
+}
+```
+
+Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-tools/src/index.ts)
+
 ### `rule_check`
 
 Run deterministic constitutional rule checks (keyword blocklist / pattern / structural / citation range / synonym match / quote repetition) against the given text and return violations with severity, action and legal basis. Most rules declare an applicability premise: a rule whose premise does not match the text reports nothing, so a document is only checked against the subjects it actually discusses (an answer that never touches novelty draws no novelty-completeness findings). Use before publishing compliance-sensitive output (e.g. patent conclusions, legal opinions). Scopes: 'patent' (general patent compliance), 'patent-electrical' (H-section electrical rules + general compliance), 'patent-full' (every bundled asset: general compliance + nuo mirrors + hand-written merged rules, activation-reviewed), a job scope 'patent-drafting' (claim/spec drafting) / 'patent-analysis' (patentability, novelty, inventiveness) / 'patent-oa-response' / 'patent-invalidation' / 'patent-invalidation-defense' / 'patent-reexamination' / 'patent-infringement' (the 'patent-full' assets restricted to that job's rule domains: its own document plus the clauses it must answer or establish), a domain scope 'patent-mechanical', 'patent-chemical', 'patent-software' or 'patent-medical' (the full assets plus that domain's rule pack: argument-completeness rules the general assets do not carry), or 'pack' (layered rule pack assembled from the project manifest .sati/rules.yaml: base + domains + overrides). With the office-action notice at hand, a job scope also takes notice=通知书正文: the two dual-input rules (PR-OA-008 驳回理由覆盖 / PR-OA-009 未提条款引用) then run against the response; without notice they are listed as unevaluated. A missing or malformed synonym asset degrades synonym-match rules to literal keywords; the result then carries assetWarnings so the check strength is visible. Every result ends with an 评估输入 line giving the character count and digest of the text this run actually read: keep that line when you transcribe the result, so a later run can show whether it read the same text.
@@ -7198,7 +7263,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-tools/src/index.ts)
 
-The Sati patent domain tool set: search/metadata/legal-status/case/wiki/kg knowledge queries, claim-chart, office-action parsing, drafting, specification validation, evidence judgment, rule check, figure analysis, PDF download, chemical recognition, knowledge notes, and the workflow/plan state machines. render_patent_document is owned by @deepseek-ai/dsh-patent-document.
+The Sati patent domain tool set: search/metadata/legal-status/case/wiki/kg knowledge queries, claim-chart, office-action parsing, drafting, application review, specification validation, evidence judgment, rule check, figure analysis, PDF download, chemical recognition, knowledge notes, and the workflow/plan state machines. render_patent_document is owned by @deepseek-ai/dsh-patent-document.
 
 <a id="deepseek-aidsh-patent-document"></a>
 

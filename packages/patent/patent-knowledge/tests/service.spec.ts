@@ -144,6 +144,23 @@ describe('PatentKnowledge service', () => {
     }
   })
 
+  it('reports the corpus freshness of the resolved database', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-patent-knowledge-corpus-'))
+    makeDb(dir)
+    cleanups.push(() => {
+      rmSync(dir, { recursive: true, force: true })
+    })
+    const ctx = new Context()
+    const service = new PatentKnowledge(ctx, { knowledgeDir: dir })
+    try {
+      const info = service.corpusInfo()
+      expect(info.dbPath).toBe(join(dir, 'knowledge.db'))
+      expect(Number.isNaN(Date.parse(info.fileModifiedAt))).toBe(false)
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
   it('removes ctx.patentKnowledge when its fiber disposes (HMR safety)', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-patent-knowledge-hmr-'))
     makeDb(dir)

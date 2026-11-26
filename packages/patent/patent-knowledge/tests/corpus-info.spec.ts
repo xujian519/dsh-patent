@@ -65,6 +65,26 @@ describe('readCorpusInfo', () => {
     expect(Number.isNaN(Date.parse(info.fileModifiedAt))).toBe(false)
   })
 
+  it('omits a count the index metadata cannot parse', () => {
+    const path = makeDb({ versionHistory: false })
+    const db = new DatabaseSync(path)
+    db.prepare('UPDATE index_meta SET value = ? WHERE key = ?').run('not-a-number', 'total_docs')
+    db.close()
+    const info = readCorpusInfo(path)
+    expect(info.documents).toBeUndefined()
+    expect(info.chunks).toBe(138609)
+  })
+
+  it('reports no version when version_history exists but holds no row', () => {
+    const path = makeDb({ indexMeta: false })
+    const db = new DatabaseSync(path)
+    db.exec('DELETE FROM version_history')
+    db.close()
+    const info = readCorpusInfo(path)
+    expect(info.version).toBeUndefined()
+    expect(info.documents).toBeUndefined()
+  })
+
   it('refuses a database from a future schema version', () => {
     expect(() => readCorpusInfo(makeDb({ userVersion: 99 }))).toThrow(KnowledgeDbVersionError)
   })

@@ -287,7 +287,7 @@ const DESCRIPTION = [
  * the scrape collected before it gave up, and the description promises the model
  * sees them.
  */
-function renderMetadata(value: {
+export function renderMetadata(value: {
   success: boolean
   patent: string
   channel: string

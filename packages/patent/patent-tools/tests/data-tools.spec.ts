@@ -5,8 +5,8 @@ import ToolRuntime from '@deepseek-ai/dsh-tools'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { createPatentSearchTool, baseNumber, dedupeByFamily } from '../src/tool/patent-search.ts'
-import { createPatentMetadataTool, compactPatentNumber } from '../src/tool/patent-metadata.ts'
+import { createPatentSearchTool, baseNumber, dedupeByFamily, renderSearch } from '../src/tool/patent-search.ts'
+import { createPatentMetadataTool, compactPatentNumber, renderMetadata } from '../src/tool/patent-metadata.ts'
 import { createPatentLegalStatusTool } from '../src/tool/patent-legal-status.ts'
 import { CNIPR_CHANNEL, GOOGLE_PATENTS_CHANNEL } from '../src/tool/internal/upstream-channel.ts'
 import type { LegalStatusOptions, PatentData } from '@deepseek-ai/nuo-patent'
@@ -119,6 +119,25 @@ describe('patent_search', () => {
     expect(out).toMatch(/取数：\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/u)
     expect(out).toContain(`${GOOGLE_PATENTS_CHANNEL}（served）`)
     expect(out).toContain(`${CNIPR_CHANNEL}（skipped：第一通道已给出可用答案，未咨询）`)
+  })
+
+  it('marks a cache hit in the rendered search header', () => {
+    const out = renderSearch({
+      query: 'q',
+      channel: GOOGLE_PATENTS_CHANNEL,
+      total: 0,
+      hits: [],
+      retrievedAt: '2026-01-01T00:00:00.000Z',
+      cached: true,
+      channelsConsulted: [{ name: GOOGLE_PATENTS_CHANNEL, outcome: 'empty', reason: '零命中' }],
+      warnings: [],
+    })
+    expect(out).toContain('（缓存）')
+  })
+
+  it('rethrows a non-Error engine failure unchanged', async () => {
+    const tool = createPatentSearchTool({ search: async () => { throw 'channel offline' } })
+    await expect(tool.execute({ query: 'q' }, { signal } as never)).rejects.toBe('channel offline')
   })
 
   it('clamps limit into [1, 50]', async () => {
@@ -407,6 +426,49 @@ describe('patent_metadata', () => {
     expect(out).toMatch(/取数：\d{4}-\d{2}-\d{2}T/u)
     expect(out).toContain(`${GOOGLE_PATENTS_CHANNEL}（served）`)
     expect(out).toContain(`${CNIPR_CHANNEL}（skipped：第一通道已给出可用答案，未咨询）`)
+  })
+
+  it('marks a cache hit in the rendered metadata', () => {
+    const out = renderMetadata({
+      success: false,
+      patent: 'US1A',
+      channel: GOOGLE_PATENTS_CHANNEL,
+      url: 'u',
+      data: null,
+      errorCode: 'HTTP_ERROR',
+      errorMessage: 'boom',
+      retrievedAt: '2026-01-01T00:00:00.000Z',
+      cached: true,
+      channelsConsulted: [{ name: GOOGLE_PATENTS_CHANNEL, outcome: 'failed', reason: 'boom' }],
+      warnings: [],
+      parseWarnings: [],
+    })
+    expect(out).toContain('（缓存）')
+  })
+
+  it('records the error code when the upstream message is empty', async () => {
+    const tool = createPatentMetadataTool({
+      scrape: async patent => ({ success: false, patent, url: 'u', data: null, errorCode: 'HTTP_ERROR', errorMessage: '', parseWarnings: [] }),
+      scrapeRetryDelaysMs: [],
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_metadata', { patent: 'CN1A' }, 'm-code-only')
+    expect(result.isError).toBe(true)
+  })
+
+  it('records a generic reason when the failure carries neither message nor code', async () => {
+    const tool = createPatentMetadataTool({
+      scrape: async patent => ({ success: false, patent, url: 'u', data: null, errorCode: '' as const, errorMessage: '', parseWarnings: [] }),
+      scrapeRetryDelaysMs: [],
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_metadata', { patent: 'CN1A' }, 'm-no-reason')
+    expect(result.isError).toBe(true)
+  })
+
+  it('rethrows a non-Error scrape failure unchanged', async () => {
+    const tool = createPatentMetadataTool({ scrape: async () => { throw 'channel offline' } })
+    await expect(tool.execute({ patent: 'CN1A' }, { signal } as never)).rejects.toBe('channel offline')
   })
 
   it('returns success:false for a NOT_FOUND scrape', async () => {

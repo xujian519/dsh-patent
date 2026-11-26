@@ -211,6 +211,39 @@ describe('patent_corpus_status', () => {
     expect(result.value).toMatchObject({ dbPath: '/tmp/knowledge.db', documents: 81038, chunks: 138609 })
   })
 
+  it('omits the version-created line and unknown chunk count when the database does not record them', async () => {
+    const tool = createPatentCorpusStatusTool({
+      corpusInfo: () => ({
+        dbPath: '/tmp/knowledge.db',
+        lastIndexedAt: '2026-07-02T10:59:39.174Z',
+        documents: 1,
+        fileModifiedAt: '2026-08-19T11:00:00.000Z',
+      }),
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_corpus_status', {}, 'cs-partial')
+    expect(result.isError).toBe(false)
+    const out = text(result)
+    expect(out).not.toContain('版本创建')
+    expect(out).toContain('1 文档 / ? 分块')
+  })
+
+  it('fails loud when the corpus reader throws', async () => {
+    const tool = createPatentCorpusStatusTool({ corpusInfo: () => { throw new Error('database is locked') } })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_corpus_status', {}, 'cs-throw')
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('database is locked')
+  })
+
+  it('names a non-Error corpus-read failure with its string form', async () => {
+    const tool = createPatentCorpusStatusTool({ corpusInfo: () => { throw 'offline' } })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_corpus_status', {}, 'cs-throw-string')
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('offline')
+  })
+
   it('fails loud when the knowledge service is not mounted', async () => {
     const tool = createPatentCorpusStatusTool({})
     const ctx = await ctxWith(tool)

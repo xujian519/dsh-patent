@@ -263,7 +263,7 @@ const DESCRIPTION = [
  * sees them, and a zero-hit render would otherwise state `0 result(s)` without
  * the reason the upstream reported.
  */
-function renderSearch(value: PatentSearchOutput): string {
+export function renderSearch(value: PatentSearchOutput): string {
   const hits = value.hits.map(h =>
     [
       `## ${h.title || h.patent}`,

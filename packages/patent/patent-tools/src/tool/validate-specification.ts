@@ -549,7 +549,7 @@ export function createValidateSpecificationTool(deps?: ValidateSpecificationDeps
       // Sati's SMILES spot-check appends warnings only when RDKit is available;
       // dsh does not bundle RDKit, so this is a no-op (see checkSmilesValidity).
       /* v8 ignore start -- checkSmilesValidity always returns [] in dsh (RDKit unbundled). */
-      const smileChecks = checkSmilesValidity(input.text ?? '', isRdkitAvailable)
+      const smileChecks = checkSmilesValidity(input.text, isRdkitAvailable)
       if (smileChecks.length > 0) {
         output.violations.push(...smileChecks)
         const scored = computeSpecScore(output.violations)

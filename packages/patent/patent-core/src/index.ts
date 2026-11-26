@@ -343,11 +343,17 @@ export {
 
 // TRIZ contradiction analysis for the inventor side: disclosure gaps, candidate
 // solution directions, and the unconfirmed PFIE units folded from them. Never a
-// three-step-step-2 problem statement.
+// three-step-step-2 problem statement. `buildTrizCandidateUnits` is published,
+// so its return type and the `status` value a caller compares against ship with
+// it; without them a caller can only infer both.
 export type {
+  /** @public */
   TrizCandidateBuild,
+  /** @public */
   TrizCandidateSkip,
+  /** @public */
   TrizCandidateStatus,
+  /** @public */
   TrizCandidateUnit,
   TrizContradictionAnalysis,
 } from './triz/index.ts'
@@ -355,6 +361,7 @@ export {
   buildTrizAnalysis,
   buildTrizCandidateUnits,
   extractTrizContradictions,
+  /** @public */
   TRIZ_CANDIDATE_STATUS,
 } from './triz/index.ts'
 

@@ -207,7 +207,7 @@ export const patentDisclosureManifest: WorkflowManifest = {
     {
       id: 'extract_problem',
       strategy: 'sub_agent',
-      description: '一次性提取待解决的技术问题及其对应的发明认知（配对输出）',
+      description: '一次性提取待解决的技术问题、对应的发明认知及其上下位归属（配对输出）',
       atom: 'extract',
       params: {
         extraction_type: '提取待解决的技术问题并提炼对应的发明认知',
@@ -228,7 +228,7 @@ export const patentDisclosureManifest: WorkflowManifest = {
       atom: 'extract',
       params: { extraction_type: '提取技术效果（严格输出 effects 数组）', output_key: 'effects' },
     },
-    { id: 'merge', strategy: 'chain', description: '融合 PFIE 四元组（问题↔发明认知↔特征↔效果）', atom: 'merge' },
+    { id: 'merge', strategy: 'chain', description: '融合 PFIE 四元组（问题↔发明认知↔特征↔效果，带父子层级）', atom: 'merge' },
     {
       id: 'groundedness',
       strategy: 'chain',
@@ -238,7 +238,7 @@ export const patentDisclosureManifest: WorkflowManifest = {
     {
       id: 'consistency',
       strategy: 'chain',
-      description: 'PFIE 一致性检查（问题与发明认知均有特征承接、问题表述未绑定解决手段）',
+      description: 'PFIE 一致性检查（问题与发明认知均有本组或子组特征承接、问题表述未绑定解决手段、上位构思已提炼发明认知）',
       atom: 'pfe-consistency',
       retry: {
         whenOutputMatches: '不一致|矛盾|缺少|孤立',

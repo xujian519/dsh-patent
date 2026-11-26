@@ -20,13 +20,16 @@ Insight 槽位不得进入三步法的"实际解决的技术问题"。《专利�
 
 `patent_disclosure_v1` 让发明认知与它所解释的问题在同一次抽取中产出：`extract_problem` 以 `output_mode: 'problem_insight'` 运行 `extract`，handler 写入配对数组 `problem_insight` 与派生投影 `problems`。`MergeHandler` 把每条配对当作一组读取，因此认知不需要单独抽取，也不会与问题顺序错位；[配对决策](../bug-fix/2026-10-28-disclosure-extraction-pairs-by-problem.zh.md)记录该改动与代价。`output_key: 'insight'` 保留给独立抽取该槽位的计划，merge 的索引路径仍按 `insight[i]` 配 `problem[i]` 处理由该模式写入的 state。
 
-`consistency` 阶段改用确定性原子 `pfe-consistency`（`PfeConsistencyHandler`），即对合并后分组的纯函数。它报告三类违规，构成封闭集合 `PFE_CONSISTENCY_VIOLATION_IDS`：
+`consistency` 阶段改用确定性原子 `pfe-consistency`（`PfeConsistencyHandler`），即对合并后分组的纯函数。它报告四类违规，构成封闭集合 `PFE_CONSISTENCY_VIOLATION_IDS`：
 
 | id | 判据 |
 |---|---|
-| `pfe-problem-without-solution` | 该组写了技术问题而 `features` 列表为空（`S⊨P`） |
-| `pfe-insight-without-solution` | 该组带发明认知而 `features` 列表为空（`I⇒S`） |
+| `pfe-problem-without-solution` | 该组写了技术问题，而它与其任何后代都不带特征（`S⊨P`） |
+| `pfe-insight-without-solution` | 该组带发明认知，而它与其任何后代都不带特征（`I⇒S`） |
 | `insight-encroaches-problem` | 该组的问题文本未通过 `checkAtomic(problem).checks.noSolutionBinding` |
+| `pfe-parent-without-insight` | 该组至少有一个子组且没有发明认知 |
+
+后代这一条款与第四个 id 来自[父子链接](2026-11-26-pfie-group-parent-link.zh.md)；三元组都不带 `parentId` 时，两个判据都退回这里记录的单组读法。
 
 `insight-encroaches-problem` 复用 `checkAtomic` 的不绑方案判据而不新增第二套模式：一个判据，两个层级，两段不同文本——此处是交底书的问题表述，`INVENTIVENESS-PROBLEM-SOLUTION-BINDING` 处是三步法的问题表述。
 

@@ -2,6 +2,9 @@
  * 提取域原子：pfe-consistency（PFIE 四元组一致性检查，纯函数）。
  *
  * 只判定**结构性**事实：某个上游槽位是否有下游结构承接、问题表述是否已含解决手段。
+ * 四元组带 `parentId` 时，承接可以是本组特征，也可以是子组特征（下位构思就是上位
+ * 问题的实现）；层级只改变判定范围，不改变判定性质。
+ *
  * 语义判定（"机制真的承接了吗""方案真的解决问题了吗"）不在此处 fail-closed——它不可
  * 由确定性规则判定，留给交底书理解的人工确认（Insight 逐条待发明人确认）与问题表述层
  * 的规则检验。
@@ -15,7 +18,7 @@
 import { type Atom } from '../../atom.ts'
 import { type PipelineState, type StageExecuteInput, type StageHandler, getStateArray } from '../../handler.ts'
 import { checkAtomic } from '../../../problem/atomicChecker.ts'
-import { type PFETriple } from './extract.ts'
+import { readPfeHierarchy, type PFETriple, type PfeHierarchy } from './extract.ts'
 import { degraded } from './llm.ts'
 
 /**
@@ -31,6 +34,8 @@ export const PFE_CONSISTENCY_VIOLATION_IDS = [
   'pfe-insight-without-solution',
   /** 发明认知越位：问题表述已绑定解决手段，属三步法问题表述形态（R1 槽位隔离）。 */
   'insight-encroaches-problem',
+  /** 上位构思只留下问题陈述：被引为 parent 的组未提炼发明认知，其子组无从承接机制。 */
+  'pfe-parent-without-insight',
 ] as const
 
 /** PFIE 一致性违规类别 id。 */
@@ -61,19 +66,40 @@ function excerpt(text: string): string {
 
 /**
  * 对 PFIE 四元组做结构性一致性检查（纯函数，不调用模型）。
+ *
+ * 带层级的四元组按子树判定承接：下位构思的特征就是上位问题的实现，因此上位组自身
+ * 没有特征不一定是缺口；子树内仍无特征才是。`insight` 可选只适用于未做问题—认知配对
+ * 抽取的管线：一旦某组被引为 parent，层级就在断言存在一个更一般的机制，该槽位为空
+ * 是结构事实而不是抽取遗漏。
  * @param triples - merge 阶段产出的 PFIE 四元组。
  * @returns 违规列表；全部四元组承接完整时为空数组。
  */
 export function checkPfeConsistency(triples: readonly PFETriple[]): PfeConsistencyViolation[] {
   const violations: PfeConsistencyViolation[] = []
+  const hierarchy = readPfeHierarchy(triples)
+  const byId = new Map(triples.map(triple => [triple.id, triple]))
+  /** 本组或任一子组是否有特征（子树遍历时 `visited` 只防字面构造的环状输入）。 */
+  const covered = (triple: PFETriple, visited: Set<string>): boolean => {
+    if (triple.features.length > 0) return true
+    for (const childId of hierarchy.children.get(triple.id) ?? []) {
+      if (visited.has(childId)) continue
+      visited.add(childId)
+      const child = byId.get(childId)
+      if (child !== undefined && covered(child, visited)) return true
+    }
+    return false
+  }
   for (const triple of triples) {
-    const hasFeatures = triple.features.length > 0
+    const hasFeatures = covered(triple, new Set([triple.id]))
+    const childIds = hierarchy.children.get(triple.id)
+    const subtree = childIds === undefined ? '' : `（含子组 ${childIds.join('、')}）`
     const problem = triple.problem.trim()
+    const insight = triple.insight?.trim() ?? ''
     if (problem.length > 0 && !hasFeatures) {
       violations.push({
         id: 'pfe-problem-without-solution',
         tripleId: triple.id,
-        detail: `四元组 ${triple.id} 的技术问题没有技术特征承接：${excerpt(problem)}`,
+        detail: `四元组 ${triple.id} 的技术问题没有技术特征承接${subtree}：${excerpt(problem)}`,
       })
     }
     if (problem.length > 0 && !checkAtomic(problem).checks.noSolutionBinding) {
@@ -83,13 +109,19 @@ export function checkPfeConsistency(triples: readonly PFETriple[]): PfeConsisten
         detail: `四元组 ${triple.id} 的问题表述已绑定解决手段，属发明构思越位到问题槽位：${excerpt(problem)}`,
       })
     }
-    const insight = triple.insight?.trim() ?? ''
+    if (childIds !== undefined && insight.length === 0) {
+      violations.push({
+        id: 'pfe-parent-without-insight',
+        tripleId: triple.id,
+        detail: `四元组 ${triple.id} 是 ${childIds.join('、')} 的上位构思但未提炼发明认知，子组没有可承接的机制：${excerpt(problem)}`,
+      })
+    }
     if (insight.length === 0) continue
     if (!hasFeatures) {
       violations.push({
         id: 'pfe-insight-without-solution',
         tripleId: triple.id,
-        detail: `四元组 ${triple.id} 的发明认知没有技术特征承接：${excerpt(insight)}`,
+        detail: `四元组 ${triple.id} 的发明认知没有技术特征承接${subtree}：${excerpt(insight)}`,
       })
     }
   }
@@ -99,7 +131,7 @@ export function checkPfeConsistency(triples: readonly PFETriple[]): PfeConsisten
 /** pfe-consistency 原子：PFIE 四元组的结构一致性检查。 */
 export const pfeConsistencyAtom: Atom = {
   name: 'pfe-consistency',
-  description: 'PFIE 一致性检查：问题与发明认知均有特征承接、问题表述未绑定解决手段（纯函数，不调用模型）',
+  description: 'PFIE 一致性检查：问题与发明认知均有本组或子组特征承接、问题表述未绑定解决手段、上位构思已提炼发明认知（纯函数，不调用模型）',
   category: 'extract',
   inputSchema: ['pfe_triples'],
   outputSchema: ['pfe_consistency_summary', 'pfe_consistency_report'],
@@ -110,14 +142,20 @@ export const pfeConsistencyAtom: Atom = {
  *
  * 发现违规时，信号词必须出现在**首个句号之前**：回退判定（`signalMatches`）会跳过命中点
  * 前 12 字符内含句界或否定词的位置，把信号词写在后面的句子里等于不触发回退。因此首行以
- * 信号词开头，计数与明细后置。无违规时不出现任何信号词。
+ * 信号词开头，计数与明细后置。无违规时不出现任何信号词，层级读数也只在那时给出。
  * @param violations - 违规列表。
  * @param tripleCount - 受检四元组数量。
+ * @param hierarchy - 四元组的层级读数。
  * @returns 面向模型与日志的一致性结论文本。
  */
-function summarize(violations: readonly PfeConsistencyViolation[], tripleCount: number): string {
+function summarize(
+  violations: readonly PfeConsistencyViolation[],
+  tripleCount: number,
+  hierarchy: PfeHierarchy,
+): string {
+  const layers = hierarchy.maxDepth > 1 ? `，顶层 ${hierarchy.roots} 组共 ${hierarchy.maxDepth} 层` : ''
   if (violations.length === 0) {
-    return `PFIE 一致性检查通过（${tripleCount} 组四元组）：问题与发明认知均有特征承接，问题表述未绑定解决手段。`
+    return `PFIE 一致性检查通过（${tripleCount} 组四元组${layers}）：问题与发明认知均有特征承接，问题表述未绑定解决手段。`
   }
   const byId = new Map<PfeConsistencyViolationId, number>()
   for (const violation of violations) {
@@ -167,12 +205,19 @@ export class PfeConsistencyHandler implements StageHandler {
         features: Array.isArray(triple.features) ? triple.features.map(String) : [],
         effects: Array.isArray(triple.effects) ? triple.effects.map(String) : [],
         ...(typeof triple.insight === 'string' ? { insight: triple.insight } : {}),
+        ...(typeof triple.parentId === 'string' ? { parentId: triple.parentId } : {}),
       }
     })
     const violations = checkPfeConsistency(triples)
+    const hierarchy = readPfeHierarchy(triples)
     return {
-      pfe_consistency_summary: summarize(violations, triples.length),
-      pfe_consistency_report: JSON.stringify({ passed: violations.length === 0, violations }, null, 2),
+      pfe_consistency_summary: summarize(violations, triples.length, hierarchy),
+      pfe_consistency_report: JSON.stringify({
+        passed: violations.length === 0,
+        roots: hierarchy.roots,
+        maxDepth: hierarchy.maxDepth,
+        violations,
+      }, null, 2),
     }
   }
 }

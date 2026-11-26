@@ -794,6 +794,56 @@ describe('PFIE 一致性阶段：确定性原子与回退信号闭环', () => {
   it('consistency 声明 atom 时不再声明 consumes（原子直接读 state，consumes 会是死数据）', () => {
     expect(stageOf('patent_disclosure_v1', 'consistency')?.consumes).toBeUndefined()
   })
+
+  it('层级端到端接线：parent 经 merge、consistency 流入 claim-strategy 报告', async () => {
+    const extracted = await LookupStageHandler('extract')!.execute({
+      state: { text: '交底书', output_mode: 'problem_insight' },
+      provider: {
+        callLLM: async () => JSON.stringify({
+          problem_insight: [
+            { id: 'P1', problem: '如何在部件装配后提供可靠的轴向定位', insight: '限位面与配合面同轴，使径向间隙自行消除' },
+            { id: 'P2', problem: '如何在振动工况下维持轴向力', parent: 'P1' },
+          ],
+        }),
+      },
+    })
+    expect(extracted._error).toBeUndefined()
+    const merged = await LookupStageHandler('merge')!.execute({
+      state: { ...extracted, features: ['特征A', '特征B'], effects: ['效果A', '效果B'] },
+    })
+    expect(merged.pfe_triples).toMatchObject([{ id: 'T1' }, { id: 'T2', parentId: 'T1' }])
+    const checked = await LookupStageHandler('pfe-consistency')!.execute({ state: merged })
+    expect(
+      JSON.parse(String(checked.pfe_consistency_report)) as { passed: boolean; roots: number; maxDepth: number },
+    ).toMatchObject({ passed: true, roots: 1, maxDepth: 2 })
+
+    const strategy = await LookupStageHandler('claim-strategy')!.execute({
+      state: {
+        ...merged,
+        ...checked,
+        source_text: '一种轴向定位结构，包括限位凸台、弹性垫圈和锁紧螺母。',
+        novelty_conclusion: 'D1 公开了一种轴向定位结构，区别特征为弹性垫圈。',
+        prior_art: [],
+        title: '轴向定位结构',
+        tech_domain: 'mechanical',
+        confirmed_features: {
+          essential_features: [{ id: 'F1', text: '限位凸台', anchor: '限位凸台' }],
+          optional_features: [{ id: 'F2', text: '弹性垫圈', anchor: '弹性垫圈', kind: 'fallback' }],
+          dependent_tree: [{ number: 2, parent: 1, feature_id: 'F2' }],
+        },
+      },
+    })
+    expect(strategy._error).toBeUndefined()
+    expect(String(strategy.claim_strategy_report)).toContain('PFIE 层级：顶层构思 1 组，最长链 2 层')
+  })
+
+  it('claim-strategy 的层级读数来自一致性报告，且该阶段排在 consistency 之后', () => {
+    const atom = globalAtomRegistry.lookup('claim-strategy')
+    expect(atom?.inputSchema).toContain('pfe_consistency_report')
+    expect(indexOf('patent_disclosure_v1', 'consistency')).toBeLessThan(
+      indexOf('patent_disclosure_v1', 'claim_strategy'),
+    )
+  })
 })
 
 describe('manifests 状态机：审批门位置', () => {

@@ -44,16 +44,28 @@ const RETRY_SIGNAL = '不一致|矛盾|缺少|孤立'
  */
 const signal = compileSignal(RETRY_SIGNAL)
 
+/** {@link runConsistency} 的返回值；报告字段仅在 handler 未降级时给出。 */
+type ConsistencyResult = {
+  summary: string
+  passed?: boolean
+  roots?: number
+  maxDepth?: number
+  error?: string
+}
+
 /** 跑 pfe-consistency handler，返回主输出与报告。 */
 async function runConsistency(
   state: Record<string, unknown>,
-): Promise<{ summary: string; passed?: boolean; error?: string }> {
+): Promise<ConsistencyResult> {
   const handler = LookupStageHandler('pfe-consistency')!
   const out = await handler.execute({ state })
-  const report = out.pfe_consistency_report
+  const raw = out.pfe_consistency_report
+  const report = typeof raw === 'string'
+    ? JSON.parse(raw) as { passed: boolean; roots: number; maxDepth: number }
+    : undefined
   return {
     summary: typeof out.pfe_consistency_summary === 'string' ? out.pfe_consistency_summary : '',
-    ...(typeof report === 'string' ? { passed: (JSON.parse(report) as { passed: boolean }).passed } : {}),
+    ...(report === undefined ? {} : { passed: report.passed, roots: report.roots, maxDepth: report.maxDepth }),
     ...(typeof out._error === 'string' ? { error: out._error } : {}),
   }
 }
@@ -111,6 +123,7 @@ describe('checkPfeConsistency：结构性判据', () => {
       ...violationIds([triple({ features: [], insight: null })]),
       ...violationIds([triple({ problem: '', features: [] })]),
       ...violationIds([triple({ problem: '通过设置限位凸台防止位移' })]),
+      ...violationIds([triple({ insight: null }), triple({ id: 'T2', parentId: 'T1' })]),
     ])
     expect([...produced].sort()).toEqual([...PFE_CONSISTENCY_VIOLATION_IDS].sort())
   })
@@ -131,6 +144,68 @@ describe('checkPfeConsistency：结构性判据', () => {
   })
 })
 
+describe('checkPfeConsistency：层级下的子树承接', () => {
+  it('上位组自身无特征、子组有特征 → 承接成立，不报违规', () => {
+    expect(violationIds([
+      triple({ id: 'T1', features: [] }),
+      triple({ id: 'T2', parentId: 'T1' }),
+    ])).toEqual([])
+  })
+
+  it('孙组特征同样上承：三层链只有叶子组带特征', () => {
+    expect(violationIds([
+      triple({ id: 'T1', features: [] }),
+      triple({ id: 'T2', parentId: 'T1', features: [] }),
+      triple({ id: 'T3', parentId: 'T2' }),
+    ])).toEqual([])
+  })
+
+  it('整棵子树无特征 → 逐组各报缺口，父组明细点名子组', () => {
+    const violations = checkPfeConsistency([
+      triple({ id: 'T1', features: [], insight: null }),
+      triple({ id: 'T2', parentId: 'T1', features: [], insight: null }),
+    ])
+    expect(violations.map(v => `${v.tripleId}:${v.id}`)).toEqual([
+      'T1:pfe-problem-without-solution',
+      'T1:pfe-parent-without-insight',
+      'T2:pfe-problem-without-solution',
+    ])
+    expect(violations[0]!.detail).toContain('（含子组 T2）')
+    expect(violations[2]!.detail).not.toContain('含子组')
+  })
+
+  it('被引为上位却未提炼发明认知 → 只报 pfe-parent-without-insight', () => {
+    expect(violationIds([
+      triple({ id: 'T1', insight: null }),
+      triple({ id: 'T2', parentId: 'T1' }),
+    ])).toEqual(['pfe-parent-without-insight'])
+  })
+
+  it('叶子组缺发明认知不触发新判据：可选槽位仍不降级', () => {
+    expect(violationIds([
+      triple({ id: 'T1' }),
+      triple({ id: 'T2', parentId: 'T1', insight: null }),
+    ])).toEqual([])
+  })
+
+  it('无 parentId 的输入不出现层级判据与措辞', () => {
+    const violations = checkPfeConsistency([triple({ features: [], insight: null })])
+    expect(violations.map(v => v.id)).toEqual(['pfe-problem-without-solution'])
+    expect(violations[0]!.detail).not.toContain('子组')
+  })
+
+  it('环状 parentId 可终止：每组各报一次缺口', () => {
+    const violations = checkPfeConsistency([
+      triple({ id: 'T1', parentId: 'T2', features: [] }),
+      triple({ id: 'T2', parentId: 'T1', features: [] }),
+    ])
+    expect(violations).toHaveLength(4)
+    expect(
+      violations.filter(v => v.id === 'pfe-problem-without-solution').map(v => v.tripleId),
+    ).toEqual(['T1', 'T2'])
+  })
+})
+
 describe('PfeConsistencyHandler：回退信号与降级', () => {
   it('违规时主输出命中 manifest 声明的回退信号，报告 passed=false', async () => {
     const result = await runConsistency({ pfe_triples: [triple({ features: [], insight: null })] })
@@ -142,6 +217,24 @@ describe('PfeConsistencyHandler：回退信号与降级', () => {
     const result = await runConsistency({ pfe_triples: [triple()] })
     expect(signalMatches(result.summary, signal)).toBe(false)
     expect(result.passed).toBe(true)
+  })
+
+  it('多层且合规 → 摘要给出层级读数，仍不命中回退信号', async () => {
+    const result = await runConsistency({
+      pfe_triples: [triple({ id: 'T1' }), triple({ id: 'T2', parentId: 'T1' })],
+    })
+    expect(result.passed).toBe(true)
+    expect(result.summary).toContain('顶层 1 组共 2 层')
+    expect(result.roots).toBe(1)
+    expect(result.maxDepth).toBe(2)
+    expect(signalMatches(result.summary, signal)).toBe(false)
+  })
+
+  it('单层输入 → 摘要不附层级读数，报告仍给出 roots/maxDepth', async () => {
+    const result = await runConsistency({ pfe_triples: [triple(), triple({ id: 'T2' })] })
+    expect(result.summary).not.toContain('层')
+    expect(result.roots).toBe(2)
+    expect(result.maxDepth).toBe(1)
   })
 
   it('四元组为空数组 → 视为通过（上游全空已由 merge 降级标记，不重复判罚）', async () => {

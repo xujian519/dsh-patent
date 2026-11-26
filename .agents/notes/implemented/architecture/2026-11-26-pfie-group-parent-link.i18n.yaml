@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-26-pfie-group-parent-link.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-26-pfie-group-parent-link.md
+/agent-note-a-parent-link-turns-the-pfie-group-list-into-a-forest:
+  en: 83749c2310e8f372
+  zh: 778aedcb3b36bc2c
+/agent-note-a-parent-link-turns-the-pfie-group-list-into-a-forest/problem:
+  en: 321a045c64a7735a
+  zh: 8cfafcf6ce9613ea
+/agent-note-a-parent-link-turns-the-pfie-group-list-into-a-forest/decision:
+  en: b4d66840ead2c2bf
+  zh: c2f156b7d5eea72c
+/agent-note-a-parent-link-turns-the-pfie-group-list-into-a-forest/alternatives-considered:
+  en: 14f9cf3dad4abafc
+  zh: 5db4c01b82ad9ad6
+/agent-note-a-parent-link-turns-the-pfie-group-list-into-a-forest/consequences:
+  en: 3582453afd74aaf8
+  zh: 3a7d8b6d5db00c28
+/agent-note-a-parent-link-turns-the-pfie-group-list-into-a-forest/testing:
+  en: f51ab71d23787983
+  zh: 9ba9560c81ca4915

@@ -56,6 +56,8 @@ export type ProblemInsightEntry = {
   problem: string
   /** 使本组特征组合得以奏效的机制层认知；模型未提炼时缺省。 */
   insight?: string
+  /** 本条所隶属的上位问题 id；缺省表示本条即顶层构思。 */
+  parent?: string
 }
 
 /** `problem_insight` 的严格解析结果。 */
@@ -80,12 +82,41 @@ function readProblemInsightMode(
 }
 
 /**
+ * 复核配对条目之间的父子引用。引用图必须是森林：merge 直接把 `parent` 落成
+ * 四元组之间的父子链，留下悬空引用或环会让下游按层遍历时读到错的组。
+ * @param values - 已通过字段校验的配对条目（`id` 在同一次输出内唯一）。
+ * @returns 首个问题的原因；引用图是森林时返回 undefined。
+ */
+function checkPairingGraph(values: readonly ProblemInsightEntry[]): string | undefined {
+  const byId = new Map(values.map(entry => [entry.id, entry]))
+  for (const entry of values) {
+    const parent = entry.parent
+    if (parent === undefined) continue
+    if (parent === entry.id) return `problem_insight 的 id ${entry.id} 把自己列为上位问题`
+    if (!byId.has(parent)) return `problem_insight 的 id ${entry.id} 引用了不存在的上位问题 ${parent}`
+  }
+  for (const entry of values) {
+    if (entry.parent === undefined) continue
+    const path: string[] = []
+    const onPath = new Set<string>()
+    let cursor: ProblemInsightEntry | undefined = entry
+    while (cursor !== undefined) {
+      if (onPath.has(cursor.id)) return `problem_insight 的父子引用成环：${[...path, cursor.id].join(' → ')}`
+      path.push(cursor.id)
+      onPath.add(cursor.id)
+      cursor = cursor.parent === undefined ? undefined : byId.get(cursor.parent)
+    }
+  }
+  return undefined
+}
+
+/**
  * 严格解析 `problem_insight`：整组产出承载交付物，任何一条非法都判整组失败。
  *
  * 保留合法条目、丢掉非法条目会让 merge 用半组问题构造四元组，而摘要看不出缺口；
  * 失败域取整阶段降级，与 problems/effects 的字符串数组解析一致。
  * @param value - LLM 返回的 `problem_insight` 值。
- * @returns 原序配对数组（`id`/`problem` 已去首尾空白，空 insight 视为未提炼），或失败原因。
+ * @returns 原序配对数组（`id`/`problem` 已去首尾空白，空 insight 与空 parent 视为缺省），或失败原因。
  */
 function parseProblemInsight(value: unknown): ProblemInsightResult {
   if (!Array.isArray(value)) return { ok: false, reason: 'problem_insight 不是数组' }
@@ -109,8 +140,20 @@ function parseProblemInsight(value: unknown): ProblemInsightResult {
       return { ok: false, reason: `problem_insight 第 ${index + 1} 项（id ${id}）的 insight 不是字符串` }
     }
     const insight = typeof rawInsight === 'string' ? rawInsight.trim() : ''
-    values.push({ id, problem, ...(insight.length > 0 ? { insight } : {}) })
+    const rawParent = record['parent']
+    if (rawParent !== undefined && rawParent !== null && typeof rawParent !== 'string') {
+      return { ok: false, reason: `problem_insight 第 ${index + 1} 项（id ${id}）的 parent 不是字符串或 null` }
+    }
+    const parent = typeof rawParent === 'string' ? rawParent.trim() : ''
+    values.push({
+      id,
+      problem,
+      ...(insight.length > 0 ? { insight } : {}),
+      ...(parent.length > 0 ? { parent } : {}),
+    })
   }
+  const graph = checkPairingGraph(values)
+  if (graph !== undefined) return { ok: false, reason: graph }
   return { ok: true, values }
 }
 
@@ -213,6 +256,10 @@ const EXTRACT_PROPERTIES = {
         id: { type: 'string', description: '本条配对的唯一标识（同一输出内不重复）' },
         problem: { type: 'string', description: '要解决的技术问题' },
         insight: { type: 'string', description: '使该问题相关特征组合得以奏效的机制层认知' },
+        parent: {
+          type: ['string', 'null'],
+          description: '本条所隶属的上位问题 id（同一输出内的另一条）；本条即顶层构思时写 null',
+        },
       },
       required: ['id', 'problem'],
     },
@@ -311,8 +358,9 @@ export class ExtractHandler implements StageHandler {
       ...(pairMode.enabled
         ? [
           '请从以下文本中提取待解决的技术问题，并为每个问题提炼一条发明认知（使该问题的相关特征组合得以奏效的机制层认知）。严格输出 JSON：',
-          `{ "${PROBLEM_INSIGHT_MODE}": [{"id": "P1", "problem": "<技术问题>", "insight": "<发明认知>"}] }`,
+          `{ "${PROBLEM_INSIGHT_MODE}": [{"id": "P1", "problem": "<技术问题>", "insight": "<发明认知>", "parent": null}] }`,
           'id 在同一输出内唯一；problem 与 insight 必须描述同一个问题。原文不足以提炼发明认知时省略该条的 insight，不得编造原文没有的技术手段。',
+          '一个问题只能是另一个问题的下位拆解：把上位问题的 id 写进下位条目的 parent，顶层问题写 null。parent 必须指向同一输出内已给出的 id，不得自指或成环；只有一层构思时全部写 null，不得为了造层级而拆出重复问题。',
         ]
         : [
           targetKey !== undefined
@@ -390,10 +438,11 @@ export class ExtractHandler implements StageHandler {
 //
 // 确定性实现（无 LLM）：读 extract 的分键产出，按问题构造 PFIE 四元组。
 //
-// 有 `problem_insight` 时按条目配对：问题与发明认知在同一次抽取中生成，对应关系随
-// 条目传递，与数组顺序无关。没有该键时退回按索引配对的旧路径（legacy state、只跑
-// 分键抽取的自定义计划）。两条路径的多余特征/效果都并入末组；索引路径的配对由构造
-// 而非校验，问题多于特征时越界组拿到空特征列表，这正是 pfe-consistency 判定的结构事实。
+// 有 `problem_insight` 时按条目配对：问题、发明认知与父子引用在同一次抽取中生成，
+// 对应关系随条目传递，与数组顺序无关。没有该键时退回按索引配对的旧路径（legacy state、
+// 只跑分键抽取的自定义计划），旧路径不产生层级。两条路径的多余特征/效果都并入末组；
+// 索引路径的配对由构造而非校验，问题多于特征时越界组拿到空特征列表，这正是
+// pfe-consistency 判定的结构事实。
 
 /** merge 原子：融合 PFIE 提取结果为四元组。 */
 export const mergeAtom: Atom = {
@@ -415,8 +464,53 @@ export type PFETriple = {
   problem: string
   /** 发明认知：使本组特征得以奏效的机制层认知；缺省表示本组未提炼。 */
   insight?: string
+  /** 上位四元组的 id（merge 由配对条目的 parent 换算）；缺省表示本组即顶层构思。 */
+  parentId?: string
   features: string[]
   effects: string[]
+}
+
+/** 沿 parentId 链得到的层级读数。 */
+export type PfeHierarchy = {
+  /** 没有上位四元组的组数（独权应对准的构思个数）。 */
+  roots: number
+  /** 最长父子链的层数；顶层计为 1，无层级时亦为 1。 */
+  maxDepth: number
+  /** 每个父组下挂的子组 id，按四元组原序。 */
+  children: Map<string, string[]>
+}
+
+/**
+ * 按 parentId 链给出四元组的层级读数。
+ *
+ * 配对路径下抽取阶段已把父子引用校验为森林（{@link checkPairingGraph}）；`visited` 只让
+ * 直接按字面构造出的环状输入能终止遍历，不在此处判罚。
+ * @param triples - PFIE 四元组。
+ * @returns 顶层组数、最大层深与父子邻接表。
+ */
+export function readPfeHierarchy(triples: readonly PFETriple[]): PfeHierarchy {
+  const byId = new Map(triples.map(triple => [triple.id, triple]))
+  const children = new Map<string, string[]>()
+  let roots = 0
+  let maxDepth = 1
+  for (const triple of triples) {
+    if (triple.parentId === undefined) {
+      roots += 1
+    } else {
+      const siblings = children.get(triple.parentId) ?? []
+      children.set(triple.parentId, [...siblings, triple.id])
+    }
+    const visited = new Set<string>([triple.id])
+    let cursor = triple.parentId === undefined ? undefined : byId.get(triple.parentId)
+    let depth = 1
+    while (cursor !== undefined && !visited.has(cursor.id)) {
+      visited.add(cursor.id)
+      depth += 1
+      cursor = cursor.parentId === undefined ? undefined : byId.get(cursor.parentId)
+    }
+    if (depth > maxDepth) maxDepth = depth
+  }
+  return { roots, maxDepth, children }
 }
 
 /**
@@ -486,6 +580,7 @@ export class MergeHandler implements StageHandler {
     ) {
       return degraded('merge', '四路提取结果均为空（state.problem_insight/features/problems/effects/insight）')
     }
+    const pairIndexes = new Map((pairs ?? []).map((pair, index) => [pair.id, index] as const))
     const triples: PFETriple[] = pairs === undefined
       ? problems.map((problem, i) => ({
         id: `T${i + 1}`,
@@ -494,13 +589,18 @@ export class MergeHandler implements StageHandler {
         features: features[i] !== undefined ? [features[i]] : [],
         effects: effects[i] !== undefined ? [effects[i]] : [],
       }))
-      : pairs.map((pair, i) => ({
-        id: `T${i + 1}`,
-        problem: pair.problem,
-        ...(pair.insight !== undefined ? { insight: pair.insight } : {}),
-        features: features[i] !== undefined ? [features[i]] : [],
-        effects: effects[i] !== undefined ? [effects[i]] : [],
-      }))
+      : pairs.map((pair, i) => {
+        // parent 已在同一次输出内闭合，此处只把条目 id 换成四元组 id。
+        const parentIndex = pair.parent === undefined ? undefined : pairIndexes.get(pair.parent)
+        return {
+          id: `T${i + 1}`,
+          problem: pair.problem,
+          ...(pair.insight !== undefined ? { insight: pair.insight } : {}),
+          ...(parentIndex === undefined ? {} : { parentId: `T${parentIndex + 1}` }),
+          features: features[i] !== undefined ? [features[i]] : [],
+          effects: effects[i] !== undefined ? [effects[i]] : [],
+        }
+      })
     // 多于问题数的特征/效果（以及索引路径的多余发明认知）并入最后一个三元组。
     appendSurplus(
       triples,
@@ -513,6 +613,15 @@ export class MergeHandler implements StageHandler {
       : pairs.filter(pair => pair.insight !== undefined).length
     const pairing = pairs === undefined ? 'index' : PROBLEM_INSIGHT_MODE
     const summary = `PFIE 融合：${problems.length} 个问题 / ${insightCount} 条发明认知 / ${features.length} 个特征 / ${effects.length} 个效果（配对: ${pairing}）`
-    return { pfe_triples: triples, merge_result: summary }
+    // 索引路径没有父子信息可读，不伪造「一层构思」；配对路径额外给出层级读数。
+    const hierarchy = pairs === undefined
+      ? undefined
+      : readPfeHierarchy(triples)
+    return {
+      pfe_triples: triples,
+      merge_result: hierarchy === undefined
+        ? summary
+        : `${summary}。层级：顶层 ${hierarchy.roots} 组，最长链 ${hierarchy.maxDepth} 层`,
+    }
   }
 }

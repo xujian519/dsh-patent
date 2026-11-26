@@ -467,6 +467,79 @@ describe('extract 分键 / merge / draft-claims', () => {
     expect(triples[1]!.id).toBe('T2')
     expect(String(out.merge_result)).toMatch(/2 个问题 \/ 2 条发明认知 \/ 2 个特征 \/ 2 个效果/)
     expect(String(out.merge_result)).toContain('（配对: index）')
+    // 索引路径没有父子信息可读，不伪造「顶层 1 组共 1 层」。
+    expect(String(out.merge_result)).not.toContain('层级：')
+  })
+
+  it('MergeHandler：配对条目的 parent 换算为四元组 parentId，顶层条目不写该键', async () => {
+    const h = LookupStageHandler('merge')!
+    const out = await h.execute({
+      state: {
+        problem_insight: [
+          { id: 'P1', problem: '问题1', insight: '认知1' },
+          { id: 'P2', problem: '问题2', insight: '认知2', parent: 'P1' },
+          { id: 'P3', problem: '问题3', parent: 'P2' },
+        ],
+        features: ['特征A', '特征B', '特征C'],
+        effects: [],
+      },
+    })
+    const triples = out.pfe_triples as Array<Record<string, unknown>>
+    expect('parentId' in triples[0]!).toBe(false)
+    expect(triples[1]!.parentId).toBe('T1')
+    expect(triples[2]!.parentId).toBe('T2')
+    expect(String(out.merge_result)).toContain('层级：顶层 1 组，最长链 3 层')
+  })
+
+  it('MergeHandler：parent 为 null 或空白按顶层构思处理', async () => {
+    const h = LookupStageHandler('merge')!
+    const out = await h.execute({
+      state: {
+        problem_insight: [
+          { id: 'P1', problem: '问题1', parent: null },
+          { id: 'P2', problem: '问题2', parent: '   ' },
+        ],
+        features: ['特征A', '特征B'],
+        effects: [],
+      },
+    })
+    const triples = out.pfe_triples as Array<Record<string, unknown>>
+    expect(triples.every(triple => !('parentId' in triple))).toBe(true)
+    expect(String(out.merge_result)).toContain('层级：顶层 2 组，最长链 1 层')
+  })
+
+  it('MergeHandler：parent 悬空、自指或成环时整组降级并点名 id', async () => {
+    const h = LookupStageHandler('merge')!
+    const dangling = await h.execute({
+      state: {
+        problem_insight: [{ id: 'P1', problem: '问题1', parent: 'P9' }],
+        features: ['特征A'],
+        effects: [],
+      },
+    })
+    expect(String(dangling._error)).toContain('id P1 引用了不存在的上位问题 P9')
+    expect(dangling.pfe_triples).toBeUndefined()
+
+    const self = await h.execute({
+      state: {
+        problem_insight: [{ id: 'P1', problem: '问题1', parent: 'P1' }],
+        features: ['特征A'],
+        effects: [],
+      },
+    })
+    expect(String(self._error)).toContain('id P1 把自己列为上位问题')
+
+    const cycle = await h.execute({
+      state: {
+        problem_insight: [
+          { id: 'P1', problem: '问题1', parent: 'P2' },
+          { id: 'P2', problem: '问题2', parent: 'P1' },
+        ],
+        features: ['特征A', '特征B'],
+        effects: [],
+      },
+    })
+    expect(String(cycle._error)).toContain('父子引用成环：P1 → P2 → P1')
   })
 
   it('MergeHandler：problem_insight 按条目配对，与条目顺序及 problems 投影无关', async () => {

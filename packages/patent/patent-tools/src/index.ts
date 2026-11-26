@@ -1,5 +1,5 @@
 /**
- * Function plugin registering the 37 model-facing patent tools ported from Sati:
+ * Function plugin registering the 38 model-facing patent tools ported from Sati:
  * search, metadata, legal status, case/wiki/kg knowledge queries, claim-chart,
  * office-action parsing, drafting, specification validation, evidence judgment,
  * rule check, claim-set lint, figure analysis + generation, PDF download, chemical recognition,
@@ -55,6 +55,22 @@ export { createRuleCheckTool } from './tool/rule-check.ts'
 export type { RuleCheckInput, RuleCheckOutput, RuleViolationView, RuleCheckDeps } from './tool/rule-check.ts'
 export { createClaimLintTool } from './tool/claim-lint.ts'
 export type { ClaimLintFindingOutput, ClaimLintOutput } from './tool/claim-lint.ts'
+export { createReviewPatentApplicationTool, renderReviewReport } from './tool/review-patent-application.ts'
+export type {
+  ReviewPatentApplicationInput,
+  ReviewPatentApplicationOutput,
+} from './tool/review-patent-application.ts'
+export type {
+  ReviewFinding,
+  ReviewLocator,
+  ReviewLocatorView,
+  ReviewReport,
+  ReviewReportFinding,
+  ReviewReportFindingView,
+  ReviewReportView,
+  ReviewSeverity,
+  ReviewSource,
+} from './review/index.ts'
 export { createDomainCheckTool, DOMAIN_CHECK_DOMAINS } from './tool/domain-check.ts'
 export type { DomainCheckDomain, DomainCheckFinding, DomainCheckItemResult, DomainCheckOutput } from './tool/domain-check.ts'
 export { createAnalyzePatentFigureTool, FIGURE_SPEC_GUIDE, resolveGateRoute } from './tool/analyze-patent-figure.ts'
@@ -266,7 +282,7 @@ export const name = 'patent-tools'
 export const inject = ['tools']
 
 /**
- * Register the 37 patent tools and their workflow atoms.
+ * Register the 38 patent tools and their workflow atoms.
  * @param ctx - registrant context carrying the tool registry and optional services.
  * @param config - validated plugin configuration.
  */

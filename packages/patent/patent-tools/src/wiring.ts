@@ -1,5 +1,5 @@
 /**
- * Registration of the 37 patent tools on a Cordis context. `apply` in the package
+ * Registration of the 38 patent tools on a Cordis context. `apply` in the package
  * entry delegates here; the exports in this module are the composition surface
  * that tools and tests build on directly.
  * @module @deepseek-ai/dsh-patent-tools/wiring
@@ -47,6 +47,7 @@ import { createValidateSpecificationTool } from './tool/validate-specification.t
 import { createEvaluateEvidenceTool } from './tool/evaluate-evidence.ts'
 import { createRuleCheckTool } from './tool/rule-check.ts'
 import { createClaimLintTool } from './tool/claim-lint.ts'
+import { createReviewPatentApplicationTool } from './tool/review-patent-application.ts'
 import { createDomainCheckTool } from './tool/domain-check.ts'
 import { createAnalyzePatentFigureTool } from './tool/analyze-patent-figure.ts'
 import { createSearchPatentFigureTool } from './tool/search-patent-figure.ts'
@@ -423,6 +424,7 @@ function registerWorkflowTools(wiring: PatentToolWiring): void {
   wiring.ctx.tools.register(createValidateSpecificationTool())
   wiring.ctx.tools.register(createRuleCheckTool())
   wiring.ctx.tools.register(createClaimLintTool())
+  wiring.ctx.tools.register(createReviewPatentApplicationTool())
   wiring.ctx.tools.register(createDomainCheckTool())
   wiring.ctx.tools.register(createParseOfficeActionTool())
   wiring.ctx.tools.register(createPatentWorkerValidateTool())
@@ -680,7 +682,7 @@ function readSpecDraftArgument(args: unknown): SpecDraft | undefined {
 }
 
 /**
- * Register the 37 patent tools.
+ * Register the 38 patent tools.
  * @param ctx - registrant context carrying the tool registry and optional services.
  * @param config - validated {@link Config}.
  */

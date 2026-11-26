@@ -90,6 +90,9 @@ describe('domain_check: 机械域清单', () => {
     const finding = value.findings.find(entry => entry.rule === 'non-claim-content')
     expect(finding?.source).toBe('claim_lint')
     expect(finding?.message).toContain('权利要求书：')
+    // 共享汇总层按引擎顺序返回：claim_lint 在前，spec 在后。
+    expect(value.findings[0]?.source).toBe('claim_lint')
+    expect(value.findings[0]?.detail).toBeDefined()
   })
 
   it('实用新型 + 方法权要命中 MECH-DC-021 并判定未通过', async () => {

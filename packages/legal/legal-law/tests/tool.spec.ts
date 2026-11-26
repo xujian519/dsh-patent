@@ -172,11 +172,12 @@ describe('legal_law_verify tool', () => {
     expect(value.blocked).toBe(false)
   }, HOST_TIMEOUT)
 
-  it('reports a call with neither text nor references as an input error', async () => {
+  it('reports a call with neither text nor references as a parameter error', async () => {
     const ctx = await host()
     const result = await execute(ctx, {})
     expect(result.isError).toBe(true)
     expect(JSON.stringify(result.content)).toContain('至少要给出 text 或 references 之一')
+    expect(result.error?.info).toMatchObject({ name: 'LegalLawVerifyToolError', code: 'invalid_tool_input' })
   }, HOST_TIMEOUT)
 
   it('rejects blank text when no references are given', async () => {
@@ -185,7 +186,14 @@ describe('legal_law_verify tool', () => {
       const result = await execute(ctx, { text })
       expect(result.isError).toBe(true)
       expect(JSON.stringify(result.content)).toContain('text 不能为空白')
+      expect(result.error?.info).toMatchObject({ name: 'LegalLawVerifyToolError', code: 'invalid_tool_input' })
     }
+  }, HOST_TIMEOUT)
+
+  it('states the zero-byte rule in the model-facing description', async () => {
+    const ctx = await host()
+    const schema = ctx.tools.schemas().find(entry => entry.name === 'legal_law_verify')
+    expect(schema?.description).toContain('zero-byte call cannot stand in for a completed check')
   }, HOST_TIMEOUT)
 
   it('renders a Markdown decision table', async () => {

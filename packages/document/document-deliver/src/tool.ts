@@ -26,6 +26,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import { FsError } from '@deepseek-ai/dsh-fs'
 import { findStyleByName, type DocumentStyle } from '@deepseek-ai/dsh-doc-style'
 import { extractDocxText, type ZipReadLimits } from '@deepseek-ai/dsh-docx-kit'
@@ -189,6 +190,11 @@ function isNonBlank(value: string): boolean {
   return value.trim().length > 0
 }
 
+/** Build a parameter error naming this tool, so the code reaches `tool/result`. */
+function invalidArgs(message: string): HarnessError {
+  return new HarnessError(`document_deliver: ${message}`, 'invalid_tool_input')
+}
+
 /**
  * Validate the schema-validated arguments into a normalized spec. The JSON
  * schema covers shape and enums; this covers the semantic invariants the
@@ -201,39 +207,39 @@ function isNonBlank(value: string): boolean {
  */
 export function parseDocumentDeliverArgs(args: DocumentDeliverInput): DocumentDeliverSpec {
   if (!Array.isArray(args.files) || args.files.length === 0) {
-    throw new Error('document_deliver: files must list at least one deliverable')
+    throw invalidArgs('files must list at least one deliverable')
   }
   const seen = new Set<string>()
   const files: DocumentDeliverSpec['files'] = []
   for (const file of args.files) {
-    if (!isNonBlank(file.path)) throw new Error('document_deliver: every file path must be a non-empty string')
-    if (seen.has(file.path)) throw new Error(`document_deliver: duplicate deliverable path "${file.path}"`)
+    if (!isNonBlank(file.path)) throw invalidArgs('every file path must be a non-empty string')
+    if (seen.has(file.path)) throw invalidArgs(`duplicate deliverable path "${file.path}"`)
     seen.add(file.path)
     files.push({ path: file.path, format: file.format })
   }
   if (!isNonBlank(args.gate.p0[0] ?? '') || !args.gate.p0.every(isNonBlank)) {
-    throw new Error('document_deliver: gate.p0 must list the P0 checks that passed (non-empty, no blank items)')
+    throw invalidArgs('gate.p0 must list the P0 checks that passed (non-empty, no blank items)')
   }
   const p1 = args.gate.p1 ?? []
   if (!p1.every(isNonBlank)) {
-    throw new Error('document_deliver: gate.p1 items must be non-empty strings')
+    throw invalidArgs('gate.p1 items must be non-empty strings')
   }
   if (args.brief_ref !== undefined && !isNonBlank(args.brief_ref)) {
-    throw new Error('document_deliver: brief_ref must be a non-empty path when provided')
+    throw invalidArgs('brief_ref must be a non-empty path when provided')
   }
   if (args.style !== undefined && !isNonBlank(args.style)) {
-    throw new Error('document_deliver: style must be a non-empty style name when provided')
+    throw invalidArgs('style must be a non-empty style name when provided')
   }
   if (args.char_budget !== undefined && (args.char_budget <= 0 || !Number.isInteger(args.char_budget))) {
-    throw new Error('document_deliver: char_budget must be a positive whole number of characters')
+    throw invalidArgs('char_budget must be a positive whole number of characters')
   }
   const unreadableAck: NonNullable<DocumentDeliverSpec['unreadableAck']> = []
   const acked = new Set<string>()
   for (const entry of args.unreadable_ack ?? []) {
     if (!isNonBlank(entry.path) || !isNonBlank(entry.reason_text)) {
-      throw new Error('document_deliver: every unreadable_ack entry needs a non-empty path and reason_text')
+      throw invalidArgs('every unreadable_ack entry needs a non-empty path and reason_text')
     }
-    if (acked.has(entry.path)) throw new Error(`document_deliver: duplicate unreadable_ack path "${entry.path}"`)
+    if (acked.has(entry.path)) throw invalidArgs(`duplicate unreadable_ack path "${entry.path}"`)
     acked.add(entry.path)
     unreadableAck.push({ path: entry.path, reasonText: entry.reason_text })
   }
@@ -677,7 +683,10 @@ export function createDocumentDeliverTool(ctx: Context, deps: DocumentDeliverDep
       const style = resolveStyle(deps, spec)
       const missing = await missingDeliverableFiles(ctx, exec, spec.files.map(file => file.path))
       if (missing.length > 0) {
-        throw new Error(`document_deliver: 以下交付文件在工作区中不存在，先修复或从登记中移除: ${missing.join('、')}`)
+        throw new HarnessError(
+          `document_deliver: 以下交付文件在工作区中不存在，先修复或从登记中移除: ${missing.join('、')}`,
+          'deliver_files_missing',
+        )
       }
       const warnings = p0ChecklistWarnings(spec.gate.p0)
       if (spec.briefRef !== undefined) {
@@ -686,10 +695,10 @@ export function createDocumentDeliverTool(ctx: Context, deps: DocumentDeliverDep
       const checks = await checkDeliverables(ctx, exec, spec, style, limits)
       const blocking = blockingLines(checks)
       if (blocking.length > 0) {
-        throw new Error([
+        throw new HarnessError([
           'document_deliver: 确定性核验未通过，修复以下问题后重新登记：',
           ...blocking,
-        ].join('\n'))
+        ].join('\n'), 'deliver_gate_failed')
       }
       const readable = resolveUnreadableReports(spec, checks, await resolveAckIdentities(ctx, exec, spec))
       warnings.push(...readable.warnings)

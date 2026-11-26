@@ -5,6 +5,8 @@
  * @module @deepseek-ai/dsh-patent-deadline/calendar
  */
 
+import { HarnessError } from '@deepseek-ai/dsh-error'
+
 /** A civil date; `month` is 1-12. */
 export type CalendarDate = {
   year: number
@@ -24,8 +26,11 @@ const DATE_PATTERN = /^(\d{4})-(\d{1,2})-(\d{1,2})$/
  */
 const MIN_DATE_YEAR = 1900
 
-/** Thrown when a date string is not a real `YYYY-MM-DD` civil date. */
-export class CalendarDateError extends Error {
+/**
+ * Thrown when a date string is not a real `YYYY-MM-DD` civil date.
+ * Extends {@link HarnessError} so the stable code reaches `tool/result`.
+ */
+export class CalendarDateError extends HarnessError {
   /** The rejected input. */
   readonly input: string
 
@@ -33,8 +38,7 @@ export class CalendarDateError extends Error {
    * @param input - the rejected date string.
    */
   constructor(input: string) {
-    super(`不是有效的日期（需要 YYYY-MM-DD 且为真实存在的日期）: ${JSON.stringify(input)}`)
-    this.name = 'CalendarDateError'
+    super(`不是有效的日期（需要 YYYY-MM-DD 且为真实存在的日期）: ${JSON.stringify(input)}`, 'invalid_calendar_date')
     this.input = input
   }
 }

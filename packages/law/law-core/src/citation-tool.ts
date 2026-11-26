@@ -39,24 +39,28 @@ export type CitationVerifyArgs = {
 
 /** What is wrong with a citation-verify tool input. */
 export type CitationInputProblem = {
-  /** Stable error code for callers that catch this error. */
-  code: 'no_input'
+  /** Stable parameter error code for callers that catch this error. */
+  code: 'invalid_tool_input'
   /** What the caller must add or fix. */
   message: string
 }
 
 /**
  * Check that the tool was given something to verify.
+ *
+ * The parameter schema cannot express "at least one of two fields", so both
+ * citation-verify tools reject the empty call here, before any index work, with
+ * a parameter error code rather than a business result.
  * @param args - the tool input.
  * @returns the problem, or null when the input is usable.
  */
 export function citationInputProblem(args: CitationVerifyArgs): CitationInputProblem | null {
   const references = args.references ?? []
   if (args.text === undefined && references.length === 0) {
-    return { code: 'no_input', message: '至少要给出 text 或 references 之一' }
+    return { code: 'invalid_tool_input', message: '至少要给出 text 或 references 之一' }
   }
   if (args.text !== undefined && args.text.trim().length === 0 && references.length === 0) {
-    return { code: 'no_input', message: 'text 不能为空白：请给出要检查的文本，或用 references 列出引用' }
+    return { code: 'invalid_tool_input', message: 'text 不能为空白：请给出要检查的文本，或用 references 列出引用' }
   }
   return null
 }

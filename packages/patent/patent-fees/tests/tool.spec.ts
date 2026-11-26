@@ -332,8 +332,9 @@ describe('patent_fees tool', () => {
   })
 
   it('reports a count that cannot be a quantity as an input error', async () => {
-    expect(rendered(await execute(await host(), { patentType: 'invention', triggers: ['filing'], claims: -1 })))
-      .toContain('claims 必须是非负整数，得到：-1')
+    const negative = await execute(await host(), { patentType: 'invention', triggers: ['filing'], claims: -1 })
+    expect(rendered(negative)).toContain('claims 必须是非负整数，得到：-1')
+    expect(negative.error?.info).toMatchObject({ name: 'PatentFeesToolError', code: 'invalid_count' })
     expect(rendered(await execute(await host(), { patentType: 'invention', triggers: ['filing'], claims: 1.5 })))
       .toContain('claims 必须是非负整数，得到：1.5')
   })

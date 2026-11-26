@@ -221,6 +221,7 @@ async function runEngine(
       throw new PatentFilingError(
         `${script} 未输出可解析的 JSON（${why}）：${stderr || stdout || '无输出'}`
         + missingModuleHint(stderr, pythonPath),
+        'filing_engine_output_invalid',
         { cause },
       )
     }
@@ -385,7 +386,7 @@ export async function buildFiling(
     } catch (error) {
       // 成品已落盘；验收无法完成时调用方必须知道盘上有这份文件，否则会当成没写成。
       const reason = error instanceof Error ? error.message : String(error)
-      throw new PatentFilingError(`成品已写出（${docxPath}），但验收无法完成：${reason}`, { cause: error })
+      throw new PatentFilingError(`成品已写出（${docxPath}），但验收无法完成：${reason}`, 'filing_verification_failed', { cause: error })
     }
     return {
       docxPath,

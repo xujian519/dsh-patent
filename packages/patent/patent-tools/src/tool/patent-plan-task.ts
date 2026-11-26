@@ -269,6 +269,12 @@ export function createPatentPlanTaskTool(): ToolDefinition {
       const input = args
       switch (input.action) {
         case 'transition': {
+          if (input.planSteps !== undefined || input.previousTasks !== undefined) {
+            throw new PatentToolError(
+              'invalid_tool_input',
+              'transition 不接受 planSteps 或 previousTasks：任务清单只能由 sync 或 replan 写入',
+            )
+          }
           const from = (input.currentState ?? 'planning') as PlanTaskState
           const to = input.to as PlanTaskState
           const validStates = new Set(Object.keys(TRANSITIONS))

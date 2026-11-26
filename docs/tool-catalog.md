@@ -7083,7 +7083,10 @@ passed 只表示已运行的确定性规则未发现 error，不表示符合专�
         ]
       }
     }
-  }
+  },
+  "required": [
+    "text"
+  ]
 }
 ```
 
@@ -8959,7 +8962,7 @@ law_verify reads the law citations of a text, or the references passed directly,
 
 - Checks legal-law citations against the statutes the deployed index ships: any law name it declares (national laws, administrative regulations, local regulations, and judicial interpretations), by article and paragraph.
 - Each citation is decided as 已核验 / 与所引命题不符 / 未与条文对应（未判定）/ 条号超出有效范围 / 索引中不存在 / 条文未转录（未核验）. A decision is never reported as checked when it was not: an indexed article whose text has not been transcribed comes back as 未核验.
-- Pass the text whose citations you want checked (citations are extracted from it), or pass exact references. A reference that is not exactly one reference is a tool error.
+- Pass the text whose citations you want checked (citations are extracted from it), or pass exact references. A reference that is not exactly one reference is a tool error. Blank text without references is an input error, so a zero-byte call cannot stand in for a completed check.
 - A citation-like fragment in the text that the parser cannot resolve is returned in `unrecognized` and was not checked.
 - Pass proposition when a citation is offered in support of a specific claim.
 - This checks citation form and index membership, not legal correctness of the actual text.

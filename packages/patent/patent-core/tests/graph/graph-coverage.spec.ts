@@ -17,7 +17,7 @@ import {
   type WorkflowManifest,
 } from '@deepseek-ai/dsh-patent-core'
 import { GraphBuilder } from '../../src/graph/engine.ts'
-import { GraphEngineError } from '../../src/graph/types.ts'
+import { GraphEngineError, type GraphNode } from '../../src/graph/types.ts'
 import { KeywordsHandler } from '../../src/atoms/handlers/builtin/search.ts'
 import { buildEnablementGraph, extractEnablementResult } from '../../src/graph/domains/enablement.ts'
 import { buildInventivenessGraph, extractInventivenessResult } from '../../src/graph/domains/inventiveness.ts'
@@ -97,13 +97,14 @@ it('runNodeWithPolicy：maxRetries 负数时循环不执行 → 兜底错误', a
 })
 
 it('runNodeWithPolicy：节点在超时后返回结果 → 判为超时而非采信', async () => {
-  const late = async (): Promise<GraphState> => {
-    await new Promise<void>(resolve => setTimeout(resolve, 20))
-    return { late: true }
-  }
+  // 结算由超时注入的中止触发：它在 deadline 之后、硬上界拒绝之前同步完成，
+  // 不依赖两个 20ms 定时器的先后顺序。
+  const late: GraphNode = ({ signal }) => new Promise((resolve) => {
+    signal?.addEventListener('abort', () => { resolve({ late: true }) })
+  })
   const outcome = await runNodeWithPolicy(late, { timeoutMs: 20 }, { state: {} })
   expect(outcome.ok).toBe(false)
-  expect((outcome as { error: Error }).error.message).toContain('超时')
+  expect((outcome as { error: Error }).error.message).toContain('结果在超时后返回')
 })
 
 // ---------------------------------------------------------------------------

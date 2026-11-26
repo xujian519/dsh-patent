@@ -131,3 +131,7 @@
 2. token 单价在第 23 天写进当天的 `metrics/` 记录，不写进本文件。
 3. 视频族在第 37–38 天的时间盒里能跑多少记多少。
 4. 源码审阅修复队列仍由 [06-priority.md](06-priority.md) 跟踪，本计划不改那份队列的顺序。
+
+## 修复队列
+
+按本计划写进 [05-findings.md](05-findings.md) 的需改代码条目，由 [#951 工具指标修复队列（跟踪）](https://github.com/xujian519/dsh-patent/issues/951) 承接；状态与修复说明写回发现清单，不改 06-priority.md 的顺序。

@@ -7,6 +7,7 @@
  * @module @deepseek-ai/dsh-patent-law/tool/law-verify
  */
 
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import {
@@ -31,19 +32,17 @@ import type {
   StatuteName,
 } from '../types.ts'
 
-/** Thrown when the tool input cannot be turned into references to check. */
-export class LawVerifyToolError extends Error {
-  /** Stable error code for callers that catch this error. */
-  readonly code: string
-
+/**
+ * Thrown when the tool input cannot be turned into references to check.
+ * Extends {@link HarnessError} so the code reaches `tool/result`.
+ */
+export class LawVerifyToolError extends HarnessError {
   /**
-   * @param code - stable error code.
+   * @param code - stable error code for callers that catch this error.
    * @param message - what is wrong with the input.
    */
   constructor(code: string, message: string) {
-    super(message)
-    this.name = 'LawVerifyToolError'
-    this.code = code
+    super(message, code)
   }
 }
 

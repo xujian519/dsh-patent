@@ -7,6 +7,7 @@
  * @module @deepseek-ai/dsh-patent-deadline/tool/patent-deadlines
  */
 
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { formatCalendarDate, parseCalendarDate, type CalendarDate } from '../calendar.ts'
@@ -27,19 +28,17 @@ import {
 } from '../statutes.ts'
 import type { WorkCalendar } from '../work-calendar.ts'
 
-/** Thrown when the tool input cannot be turned into a deadline query. */
-export class DeadlineToolError extends Error {
-  /** Stable error code for the model and logs. */
-  readonly code: string
-
+/**
+ * Thrown when the tool input cannot be turned into a deadline query.
+ * Extends {@link HarnessError} so the code reaches `tool/result`.
+ */
+export class DeadlineToolError extends HarnessError {
   /**
-   * @param code - stable error code.
+   * @param code - stable error code for the model and logs.
    * @param message - what is wrong with the input.
    */
   constructor(code: string, message: string) {
-    super(message)
-    this.name = 'DeadlineToolError'
-    this.code = code
+    super(message, code)
   }
 }
 

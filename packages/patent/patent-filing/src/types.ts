@@ -3,6 +3,7 @@
  * @module @deepseek-ai/dsh-patent-filing/types
  */
 
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import type { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 
 /**
@@ -144,7 +145,19 @@ export interface FilingVerifyInfo {
   template?: { sections: number; sizes_pt: number[]; line_spacings: number[] }
 }
 
-/** 本包的领域错误：输入不合法、资产缺失、解释器缺失或引擎输出不可解析。 */
-export class PatentFilingError extends Error {
+/**
+ * 本包的领域错误：输入不合法、资产缺失、解释器缺失或引擎输出不可解析。
+ * 继承 `HarnessError`，失败在 `tool/result` 里带稳定错误码；调用点可按需给出更具体的码。
+ */
+export class PatentFilingError extends HarnessError {
   override readonly name = 'PatentFilingError'
+
+  /**
+   * @param message - 面向模型可读的失败说明。
+   * @param code - 稳定错误码；缺省为本包的通用失败码。
+   * @param options - 标准错误选项，用于保留 `cause` 链。
+   */
+  constructor(message: string, code = 'patent_filing_failed', options?: ErrorOptions) {
+    super(message, code, options)
+  }
 }

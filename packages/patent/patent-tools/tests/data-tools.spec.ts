@@ -100,6 +100,27 @@ describe('patent_search', () => {
     expect(seen).toEqual([1, 50])
   })
 
+  it('truncates the page to the requested limit and reports that count', async () => {
+    const page = Array.from({ length: 10 }, (_, index) => ({
+      patent: `US${String(index + 1).padStart(4, '0')}A`,
+      title: `t${index}`,
+      assignee: '',
+      publication_date: '2023-01-01',
+      priority_date: '',
+      abstract: '',
+      url: 'u',
+    }))
+    const tool = createPatentSearchTool({ search: async () => ({ query: 'q', total: 124797, hits: page, warnings: [] }) })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_search', { query: 'q', limit: 5 }, 's-limit-page')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    const out = text(result)
+    expect(out).toContain('5 result(s)')
+    expect(out).toContain('US0005A')
+    expect(out).not.toContain('US0006A')
+  })
+
   it('renders the non-fatal warnings alongside the hits', async () => {
     const fake = {
       query: 'q',
@@ -252,6 +273,22 @@ describe('patent_search through the CNIPR channel', () => {
     const out = text(result)
     expect(out).toContain('HTTP 503')
     expect(out).toContain(`${CNIPR_CHANNEL}也未命中`)
+  })
+
+  it('truncates a CNIPR page to the requested limit', async () => {
+    const page = Array.from({ length: 4 }, (_, index) => ({ ...cnpirHit, patent: `CN21135073${index}U`, title: `t${index}` }))
+    const tool = createPatentSearchTool({
+      search: async () => googleEmpty,
+      cnipr: () => ({ search: async () => ({ total: 655, hits: page }) }),
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_search', { query: '石墨烯电池', limit: 2 }, 's-cnipr-limit')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    const out = text(result)
+    expect(out).toContain('2 result(s)')
+    expect(out).toContain('CN211350730U')
+    expect(out).not.toContain('CN211350733U')
   })
 
   it('warns that CNIPR truncates above its per-call ceiling', async () => {

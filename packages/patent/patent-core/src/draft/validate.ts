@@ -6,6 +6,7 @@
  * {@link DraftValidationError}。违规消息面向模型可读：未知键一律列出可用项。
  */
 
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import { asJsonRecord } from '../llm-json.ts'
 import {
   SPEC_PART_HEADINGS,
@@ -22,14 +23,13 @@ import {
   type TemplateRowsSlot,
 } from './types.ts'
 
-/** 草案校验失败：聚合全部违规，消息面向模型可读。 */
-export class DraftValidationError extends Error {
+/** 草案校验失败：聚合全部违规；继承 `HarnessError` 使错误码进入 `tool/result`。 */
+export class DraftValidationError extends HarnessError {
   /** 逐条违规（路径 + 原因）。 */
   readonly violations: string[]
 
   constructor(violations: string[]) {
-    super(`草案校验失败（${violations.length} 项）：\n- ${violations.join('\n- ')}`)
-    this.name = 'DraftValidationError'
+    super(`草案校验失败（${violations.length} 项）：\n- ${violations.join('\n- ')}`, 'draft_validation_failed')
     this.violations = violations
   }
 }

@@ -109,7 +109,9 @@ async function mounted(config: Partial<plugin.Config> = {}): Promise<Context> {
   return ctx
 }
 
-async function run(ctx: Context, args: unknown): Promise<{ isError: boolean; content: string }> {
+async function run(
+  ctx: Context, args: unknown,
+): Promise<{ isError: boolean; content: string; info: { name: string; code: string } | undefined }> {
   const result = await executeToolFixture(ctx, {
     signal,
     callId: ToolCallId('d-1'),
@@ -118,7 +120,7 @@ async function run(ctx: Context, args: unknown): Promise<{ isError: boolean; con
   })
   const block = result.content[0]
   if (block === undefined || block.type !== 'text') throw new Error('expected a text content block')
-  return { isError: result.isError, content: block.text }}
+  return { isError: result.isError, content: block.text, info: result.isError ? result.error.info : undefined }}
 
 /** Register one declaration through the tool itself and render its result. */
 async function register(
@@ -256,7 +258,8 @@ describe('document_deliver tool', () => {
     })
     expect(result.isError).toBe(false)
     expect(result.content).toContain('P0 1 项通过')
-    expect(result.content).not.toContain('P1')
+    // 只匹配渲染的质量门片段：临时目录名可能自带「P1」字样。
+    expect(result.content).not.toContain('，P1 ')
     expect(result.content).not.toContain('brief 参考')
   })
 
@@ -269,6 +272,7 @@ describe('document_deliver tool', () => {
     })
     expect(result.isError).toBe(true)
     expect(result.content).toContain('不存在')
+    expect(result.info).toMatchObject({ name: 'HarnessError', code: 'deliver_files_missing' })
   })
 
   it('fails semantic validation before touching the filesystem', async () => {
@@ -276,6 +280,7 @@ describe('document_deliver tool', () => {
     const result = await run(ctx, { files: [{ path: 'a.html', format: 'html' }], gate: { p0: [] } })
     expect(result.isError).toBe(true)
     expect(result.content).toContain('p0 must list')
+    expect(result.info).toMatchObject({ name: 'HarnessError', code: 'invalid_tool_input' })
   })
 
   it('rejects an unsupported format through the schema', async () => {
@@ -455,6 +460,7 @@ describe('document_deliver deterministic checks', () => {
     expect(result.isError).toBe(true)
     expect(result.content).toContain('确定性核验未通过')
     expect(result.content).toContain('[placeholder] 第 3 行仍有残余占位符 "{{client_name}}"')
+    expect(result.info).toMatchObject({ name: 'HarnessError', code: 'deliver_gate_failed' })
   })
 
   it('registers a checked document and reports its warnings', async () => {

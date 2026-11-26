@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import type { CollectedOutput, ShellExecSpec, ShellExecution, ShellRunResult } from '@deepseek-ai/dsh-shell'
+import type { CollectedOutput, ShellExecSpec, ShellExecution, ShellProcess, ShellRunResult } from '@deepseek-ai/dsh-shell'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import { SANDBOX_UNAVAILABLE, SandboxProvider, SandboxUnavailableError } from '@deepseek-ai/dsh-sandbox'
 import type { ConfinedArgv, SandboxExecutionPolicy, SandboxMode, SandboxPolicy } from '@deepseek-ai/dsh-sandbox'
@@ -100,6 +100,28 @@ function runResult(exitCode: number | null, stderr: string): ShellRunResult {
 
 function executionPolicy(mode: SandboxMode, workspaceRoot = resolve(process.cwd())): SandboxExecutionPolicy {
   return { mode, workspaceRoot }
+}
+
+/**
+ * Poll a handle's consuming read until the ACCUMULATED delta carries
+ * `expected`; reads never re-deliver, so the caller needs the accumulation to
+ * keep a signature the runtime split across two chunks. The bound is the
+ * lane's budget for this package, not vitest's 1s default: the awaited state
+ * is a real child process writing its first stderr line.
+ * @param proc - the background handle to read.
+ * @param expected - the text the accumulated output must carry.
+ * @param timeoutMs - how long the output may take to arrive.
+ * @returns the accumulated output up to the match.
+ */
+async function readUntil(proc: ShellProcess, expected: string, timeoutMs = 5_000): Promise<string> {
+  const deadline = Date.now() + timeoutMs
+  let all = ''
+  while (Date.now() < deadline) {
+    all += proc.readOutput().delta
+    if (all.includes(expected)) return all
+    await new Promise(resolve => setTimeout(resolve, 20))
+  }
+  throw new Error(`process output did not include ${JSON.stringify(expected)}; accumulated ${JSON.stringify(all)}`)
 }
 
 describe('the provider hand-off', () => {
@@ -649,7 +671,7 @@ describe('background sandbox facts', () => {
     const task = (await start(bash, bash.resolve({ command: 'echo "Permission denied" >&2; sleep 30' })))
     // Let the stderr land before the kill so the classifier sees the
     // signature and must still refuse it on the null exit code alone.
-    await vi.waitFor(() => { expect(task.readOutput().delta).toContain('Permission denied') })
+    await readUntil(task, 'Permission denied')
     task.kill()
     await task.done
     expect(task.sandbox).toEqual({ mode: 'read-only', denied: false, enforcement: 'full' })

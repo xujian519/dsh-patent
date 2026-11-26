@@ -1300,6 +1300,7 @@ export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   KnowledgeLawSearchOptions: 'service-local legal search options are owned by packages/patent/patent-knowledge/src/legal/knowledge-law-search.ts',
   LawSearchResult: 'service-local legal search result is owned by packages/patent/patent-knowledge/src/legal/types.ts',
   WikiCardMeta: 'service-local wiki-card metadata is owned by packages/patent/patent-knowledge/src/patent/wiki-card-loader.ts',
+  CorpusInfo: 'service-local corpus freshness facts are owned by packages/patent/patent-knowledge/src/types.ts',
   IpcClassification: 'service-local IPC classification result is owned by packages/patent/patent-core/src/ipc/types.ts',
   IpcStandardCard: 'service-local IPC examination-standard card is owned by packages/patent/patent-core/src/ipc/types.ts',
   KgNode: 'service-local knowledge-graph node is owned by packages/patent/patent-knowledge/src/patent/types.ts',

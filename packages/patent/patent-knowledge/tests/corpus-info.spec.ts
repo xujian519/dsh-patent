@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, describe, expect, it } from 'vitest'
-import { KnowledgeDbVersionError, readCorpusInfo } from '@deepseek-ai/dsh-patent-knowledge'
+import { KnowledgeDbVersionError } from '@deepseek-ai/dsh-patent-knowledge'
+import { readCorpusInfo } from '../src/shared/corpus-info.ts'
 
 const cleanups: Array<() => void> = []
 

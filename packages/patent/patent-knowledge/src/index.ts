@@ -38,9 +38,6 @@ export { installKnowledgeDb } from './install.ts'
 export { DEFAULT_KNOWLEDGE_DIR, DEFAULT_SOURCE_DB_PATH, resolveKnowledgePaths } from './config.ts'
 export type { Config, CorpusInfo, InstallKnowledgeDbOptions, InstallResult, KnowledgePaths } from './types.ts'
 
-// Corpus freshness (index build time, schema version, size, local copy time).
-export { readCorpusInfo } from './shared/corpus-info.ts'
-
 // Database open protocol and schema versions.
 export { KnowledgeDbVersionError, openKnowledgeDb } from './shared/db-version.ts'
 export type { KnowledgeDbKind, OpenKnowledgeDbOptions, OpenKnowledgeDbResult, OpenKnowledgeDbSpec } from './shared/db-version.ts'

@@ -164,6 +164,26 @@ describe('extract 问题—发明认知配对模式', () => {
       value: [{ id: 'P1', problem: 'p', insight: 1 }],
       reason: 'problem_insight 第 1 项（id P1）的 insight 不是字符串',
     },
+    {
+      label: 'parent 非字符串',
+      value: [{ id: 'P1', problem: 'p', parent: 2 }],
+      reason: 'problem_insight 第 1 项（id P1）的 parent 不是字符串或 null',
+    },
+    {
+      label: 'parent 悬空',
+      value: [{ id: 'P1', problem: 'p', parent: 'P7' }],
+      reason: 'problem_insight 的 id P1 引用了不存在的上位问题 P7',
+    },
+    {
+      label: 'parent 自指',
+      value: [{ id: 'P1', problem: 'p', parent: 'P1' }],
+      reason: 'problem_insight 的 id P1 把自己列为上位问题',
+    },
+    {
+      label: 'parent 成环',
+      value: [{ id: 'P1', problem: 'p', parent: 'P2' }, { id: 'P2', problem: 'q', parent: 'P1' }],
+      reason: 'problem_insight 的父子引用成环：P1 → P2 → P1',
+    },
   ])('非法配对输出（$label）：整阶段降级，不保留部分配对', async ({ value, reason }) => {
     const out = await new ExtractHandler().execute({
       state: { text: '一种装置', output_mode: 'problem_insight' },
@@ -189,6 +209,28 @@ describe('extract 问题—发明认知配对模式', () => {
     expect(empty.problem_insight).toEqual([])
     expect(empty.problems).toEqual([])
     expect(empty._error).toBeUndefined()
+  })
+
+  it('parent 进入 schema 与提示词；null 或空白按顶层构思剔除', async () => {
+    const captured: { schema?: unknown; prompt?: string } = {}
+    const out = await new ExtractHandler().execute({
+      state: { text: '一种装置', output_mode: 'problem_insight' },
+      provider: providerFor(JSON.stringify({
+        problem_insight: [
+          { id: 'P1', problem: '问题1', insight: '认知1', parent: null },
+          { id: 'P2', problem: '问题2', parent: '  ' },
+          { id: 'P3', problem: '问题3', parent: 'P1' },
+        ],
+      }), captured),
+    })
+    expect(out.problem_insight).toEqual([
+      { id: 'P1', problem: '问题1', insight: '认知1' },
+      { id: 'P2', problem: '问题2' },
+      { id: 'P3', problem: '问题3', parent: 'P1' },
+    ])
+    expect(String(captured.prompt)).toContain('把上位问题的 id 写进下位条目的 parent')
+    expect(String(captured.prompt)).toContain('不得自指或成环')
+    expect(JSON.stringify(captured.schema)).toContain('"parent"')
   })
 
   it('缺少 problem_insight 或输出非 JSON：降级并点名该键', async () => {

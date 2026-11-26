@@ -343,4 +343,51 @@ describe('ClaimStrategyHandler', () => {
     expect(parsed.prior_art_text).toBe('')
     expect(String(out.claim_strategy_report)).toContain('未点名')
   })
+
+  it('PFIE 层级读数进入报告，多组顶层附单一性提示', async () => {
+    const report = (roots: number, maxDepth: number) =>
+      JSON.stringify({ passed: true, roots, maxDepth, violations: [] })
+    const single = await run({ pfe_consistency_report: report(1, 2) }, modelStrategy())
+    expect(String(single.claim_strategy_report)).toContain('PFIE 层级：顶层构思 1 组，最长链 2 层')
+    expect(String(single.claim_strategy_report)).not.toContain('单一性提示')
+
+    const multi = await run({ pfe_consistency_report: report(2, 3) }, modelStrategy())
+    expect(String(multi.claim_strategy_report)).toContain('PFIE 层级：顶层构思 2 组，最长链 3 层')
+    expect(String(multi.claim_strategy_report)).toContain('单一性提示：顶层构思多于一组')
+  })
+
+  it('单层或未跑 consistency 时不渲染层级段', async () => {
+    const flat = await run(
+      { pfe_consistency_report: JSON.stringify({ passed: true, roots: 2, maxDepth: 1, violations: [] }) },
+      modelStrategy(),
+    )
+    expect(String(flat.claim_strategy_report)).not.toContain('PFIE 层级')
+
+    const noReport = await run({}, modelStrategy())
+    expect(String(noReport.claim_strategy_report)).not.toContain('PFIE 层级')
+  })
+
+  it('层级读数不可读时退回无层级，不降级', async () => {
+    for (const raw of ['not json', '{}', '[]', '{"roots":0,"maxDepth":2}', '{"roots":"2","maxDepth":2}', '   ']) {
+      const out = await run({ pfe_consistency_report: raw }, modelStrategy())
+      expect(out._error).toBeUndefined()
+      expect(String(out.claim_strategy_report)).not.toContain('PFIE 层级')
+    }
+  })
+
+  it('提示词点名 parentId 的层级分层与单一性规则', async () => {
+    let prompt = ''
+    await new ClaimStrategyHandler().execute({
+      state: { source_text: SOURCE, novelty_conclusion: NOVELTY, prior_art: PRIOR_ART },
+      provider: {
+        callLLM: async (text) => {
+          prompt = text
+          return modelStrategy()
+        },
+      },
+    })
+    expect(prompt).toContain('带 parentId 时表示它是该上位条目的下位拆解')
+    expect(prompt).toContain('每一个顶层条目（无 parentId）')
+    expect(prompt).toContain('先判断它们是否共享同一特定技术特征（第31条第1款）')
+  })
 })

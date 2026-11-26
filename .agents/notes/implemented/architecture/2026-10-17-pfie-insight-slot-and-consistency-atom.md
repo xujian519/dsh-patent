@@ -20,13 +20,16 @@ The insight slot must not reach the three-step method's "实际解决的技术�
 
 `patent_disclosure_v1` produces the insight together with the problem it explains: `extract_problem` runs `extract` with `output_mode: 'problem_insight'`, and the handler writes the paired `problem_insight` array plus a `problems` projection. `MergeHandler` reads each pair as one group, so the insight needs no separate extraction and cannot drift out of problem order; [the pairing decision](../bug-fix/2026-10-28-disclosure-extraction-pairs-by-problem.md) records the change and its cost. `output_key: 'insight'` remains for plans that extract the slot independently, and merge's index path still pairs `insight[i]` with `problem[i]` for states written that way.
 
-The `consistency` stage runs the deterministic atom `pfe-consistency` (`PfeConsistencyHandler`), a pure function over the merged groups. It reports three violation kinds, the closed set `PFE_CONSISTENCY_VIOLATION_IDS`:
+The `consistency` stage runs the deterministic atom `pfe-consistency` (`PfeConsistencyHandler`), a pure function over the merged groups. It reports four violation kinds, the closed set `PFE_CONSISTENCY_VIOLATION_IDS`:
 
 | id | predicate |
 |---|---|
-| `pfe-problem-without-solution` | the group states a problem and its `features` list is empty (`S⊨P`) |
-| `pfe-insight-without-solution` | the group carries an insight and its `features` list is empty (`I⇒S`) |
+| `pfe-problem-without-solution` | the group states a problem and neither it nor any descendant carries features (`S⊨P`) |
+| `pfe-insight-without-solution` | the group carries an insight and neither it nor any descendant carries features (`I⇒S`) |
 | `insight-encroaches-problem` | the group's problem fails `checkAtomic(problem).checks.noSolutionBinding` |
+| `pfe-parent-without-insight` | the group has at least one child and no insight |
+
+The descendant clause and the fourth id come from [the group parent link](2026-11-26-pfie-group-parent-link.md); on triples that carry no `parentId` both judges reduce to the single-group reading recorded here.
 
 `insight-encroaches-problem` reuses `checkAtomic`'s no-solution-means predicate instead of adding a second pattern set: one predicate, two layers, two different texts — the disclosure problem here, the three-step problem in `INVENTIVENESS-PROBLEM-SOLUTION-BINDING`.
 

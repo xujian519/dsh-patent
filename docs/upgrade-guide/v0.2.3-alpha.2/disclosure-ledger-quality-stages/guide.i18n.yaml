@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.3-alpha.2/disclosure-ledger-quality-stages/guide.md
+/:
+  en: 68f85d6abe012f18
+  zh: f819fc10b5df2811
+/the-disclosure-chain-reconciles-review-rounds-and-scores-the-draft:
+  en: e28e8168c263085d
+  zh: f17721c7d75d3033
+/the-disclosure-chain-reconciles-review-rounds-and-scores-the-draft/change:
+  en: 71918cabd87eaac3
+  zh: a79f5fd8a319065b
+/the-disclosure-chain-reconciles-review-rounds-and-scores-the-draft/migration:
+  en: 809090e913ca9fb8
+  zh: 0ca577947addd29d

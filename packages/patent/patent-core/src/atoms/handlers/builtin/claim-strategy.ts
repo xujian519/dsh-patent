@@ -10,6 +10,9 @@
  *   否则失败；文献未点名最接近现有技术时写 `null`；
  * - 从权树由模型给出；本阶段校验编号从 2 起连续、引用方向与 feature_id，
  *   `draftClaims` 再做形式校验；
+ * - PFIE 条目带 `parentId` 时按层级分层：必要特征覆盖顶层条目，下位条目的特征作为
+ *   可选特征进入从权；报告里的顶层组数与最长链取自 `pfe-consistency` 的产出，
+ *   本阶段不重复走父子链；
  * - 调用方注入 `confirmed_features` 时按同一校验读取该表，不再调用模型改写归属。
  *
  * 输出 `claim_strategy` 为 JSON（不进交付正文），`claim_strategy_report` 供
@@ -121,6 +124,7 @@ export const claimStrategyAtom: Atom = {
     'pfe_triples',
     'merge_result',
     'features',
+    'pfe_consistency_report',
     'novelty_conclusion',
     'prior_art',
     'source_text',
@@ -495,11 +499,32 @@ function readConfirmed(value: unknown): Record<string, unknown> | string | undef
 }
 
 /**
+ * 读取 `pfe-consistency` 已给出的 PFIE 层级读数，避免重复走一遍父子链。
+ * @param state - 阶段执行态。
+ * @returns 顶层组数与最长链层数；未跑 consistency 阶段或产出不符约定时缺省。
+ */
+function readHierarchyReading(state: PipelineState): { roots: number; maxDepth: number } | undefined {
+  const text = getStateString(state, 'pfe_consistency_report')
+  if (text.trim() === '') return undefined
+  const parsed = tryParseJson(text)
+  if (!isRecord(parsed)) return undefined
+  const roots = parsed['roots']
+  const maxDepth = parsed['maxDepth']
+  if (typeof roots !== 'number' || typeof maxDepth !== 'number') return undefined
+  if (!Number.isInteger(roots) || !Number.isInteger(maxDepth) || roots < 1 || maxDepth < 1) return undefined
+  return { roots, maxDepth }
+}
+
+/**
  * 渲染策略表报告：特征归属、原文锚点、从权树与现有技术编号。
  * @param strategy - 已复核的策略表。
+ * @param hierarchy - `pfe-consistency` 给出的 PFIE 层级读数；未跑该阶段时缺省。
  * @returns 供人工复核的中文报告。
  */
-export function renderClaimStrategyReport(strategy: ClaimStrategy): string {
+export function renderClaimStrategyReport(
+  strategy: ClaimStrategy,
+  hierarchy?: { roots: number; maxDepth: number },
+): string {
   const lines = [`权利要求策略表：必要特征 ${String(strategy.essential_features.length)} 项，可选特征 ${String(strategy.optional_features.length)} 项，从权 ${String(strategy.dependent_tree.length)} 项`]
   lines.push('必要特征：')
   for (const feature of strategy.essential_features) {
@@ -522,6 +547,12 @@ export function renderClaimStrategyReport(strategy: ClaimStrategy): string {
   lines.push(strategy.prior_art_ref === null
     ? '最接近现有技术：未点名（prior_art_ref = null）'
     : `最接近现有技术：${strategy.prior_art_ref}`)
+  if (hierarchy !== undefined && hierarchy.maxDepth > 1) {
+    lines.push(`PFIE 层级：顶层构思 ${hierarchy.roots} 组，最长链 ${hierarchy.maxDepth} 层`)
+    if (hierarchy.roots > 1) {
+      lines.push('单一性提示：顶层构思多于一组，需确认它们是否共享同一特定技术特征（第31条第1款）；不共享的构思应分案或另起独立权利要求。')
+    }
+  }
   return lines.join('\n')
 }
 
@@ -572,6 +603,8 @@ export class ClaimStrategyHandler implements StageHandler {
         '- essential_features 与 optional_features 的每一项都是对象，必须含 id（如 F1、F2，全表唯一）、text、anchor；可选特征另加 kind（fallback/preferred/range 之一）；',
         '- dependent_tree 的每一项都是对象，必须含 number（从权序号，整数，2 起连续）、parent（被引用的权项号，或表示择一引用的数组）、feature_id；',
         '- dependent_tree 的 feature_id 必须引用上面给出的 id，不得引用 PFIE 编号或数组序号；',
+        '- PFIE 条目带 parentId 时表示它是该上位条目的下位拆解：独权的必要特征必须覆盖每一个顶层条目（无 parentId）的问题与发明认知；下位条目的特征进可选特征（kind 取 fallback 或 preferred），其从权项挂在承接该上位条目特征的那一项下；',
+        '- 出现两个以上顶层条目时，先判断它们是否共享同一特定技术特征（第31条第1款）：共享则写一个独权并把各顶层特征归入必要特征，不共享则只为主构思写独权，其余在 notes 里说明应分案；',
         '- anchor 必须逐字摘录技术交底书原文，用于程序复核；摘录不得改写、拼接或转述；',
         '- prior_art_ref 只写新颖性结论或已过滤文献中出现的编号；没有点名最接近现有技术时写 null。',
         '',
@@ -608,7 +641,7 @@ export class ClaimStrategyHandler implements StageHandler {
     if (!built.ok) return degraded('claim-strategy', built.reason)
     return {
       claim_strategy: JSON.stringify(built.strategy),
-      claim_strategy_report: renderClaimStrategyReport(built.strategy),
+      claim_strategy_report: renderClaimStrategyReport(built.strategy, readHierarchyReading(state)),
     }
   }
 }

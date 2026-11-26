@@ -83,7 +83,7 @@ export function defaultRoleContracts(): RoleContract[] {
       role: 'adversarial-reviewer',
       name: '对立审查员',
       stance: 'examiner',
-      description: '授权审查视角红队评审：区别特征认定、技术启示、效果证据、程序表述、法条核验；撰写场景复核换位审查（draft_review）与 A26.3/A26.4 判定，答复场景复核答复计划薄弱点（adversary-model）与定稿复评（adversary-review）',
+      description: '授权审查视角红队评审：区别特征认定、技术启示、效果证据、程序表述、法条核验；撰写场景复核换位审查（draft_review）与修订销账账本（revision_ledger）的逐条判定及 A26.3/A26.4 结论，答复场景复核答复计划薄弱点（adversary-model）与定稿复评（adversary-review）',
       workers: ['patent-novelty-analyzer', 'patent-inventiveness-analyzer'],
       forbiddenActions: ['不代任一方起草'],
       triggersHITL: true,

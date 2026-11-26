@@ -18,9 +18,9 @@ The four calls also resent the whole disclosure: at the 8,000-character truncati
 {"problem_insight": [{"id": "P1", "problem": "…", "insight": "…"}]}
 ```
 
-`insight` is optional per entry: a problem without a mechanism-level insight is a normal result, not a failed extraction. `id` is model-assigned, must be unique within the output, and exists for validation and diagnostics; `merge` still assigns `T{n}` so snapshots and violation messages do not track model-chosen names.
+`insight` is optional per entry: a problem without a mechanism-level insight is a normal result, not a failed extraction. `id` is model-assigned, must be unique within the output, and exists for validation and diagnostics; `merge` still assigns `T{n}` so snapshots and violation messages do not track model-chosen names. `parent` is optional and names the upper entry within the same list, which makes that list a forest; [the group parent link](../architecture/2026-11-26-pfie-group-parent-link.md) owns the hierarchy rule and the readings it drives.
 
-Parsing fails the whole stage on a non-array, a non-object entry, a missing or empty `id`/`problem`, a duplicate `id`, or a non-string `insight`. Keeping the valid entries would let `merge` construct groups from half an extraction while the summary still looked complete.
+Parsing fails the whole stage on a non-array, a non-object entry, a missing or empty `id`/`problem`, a duplicate `id`, a non-string `insight`, or a `parent` that self-references, points at an absent id, or closes a cycle. Keeping the valid entries would let `merge` construct groups from half an extraction while the summary still looked complete.
 
 `merge` prefers `problem_insight`: each entry becomes one `PFETriple` carrying its own problem and insight, with the index-matched feature and effect; surplus features and effects still attach to the last group. When `problem_insight` is absent — legacy state, or a plan that runs only the per-key extractions — the index path remains. When it is present but invalid, merge degrades rather than falling back, so malformed pairing cannot pass as index pairing. `merge_result` ends with `（配对: problem_insight）` or `（配对: index）`, which states in the run record which path produced the groups.
 

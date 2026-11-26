@@ -5,10 +5,15 @@ import {
   type StageProvider,
 } from '../src/index.ts'
 import {
+  REVISION_LEDGER_ROUNDS_KEY,
+  type DraftReviewLedgerRound,
+} from '../src/draft-review/findings.ts'
+import {
   DRAFT_REVIEW_ALLOWED_KEYS,
   DRAFT_REVIEW_FORBIDDEN_KEYS,
   checkDraftReviewInput,
 } from '../src/draft-review/isolation.ts'
+import { buildDraftReviewPrompt } from '../src/draft-review/prompt.ts'
 import { DraftReviewHandler, draftReviewAtom } from '../src/atoms/handlers/builtin/draft-review.ts'
 
 /** 说明书夹具：缺实施例的特征用于种植 26.3 缺陷。 */
@@ -234,6 +239,100 @@ describe('draft-review 判定与报告', () => {
       { category: 'unity', provision: '专利法第31条第1款', recommendation: 'none' },
       { category: 'amendment', provision: '专利法第33条', recommendation: 'none' },
     ])
+  })
+})
+
+describe('draft-review 修订账本轮次', () => {
+  /** 首轮可执行争议点；第二轮只剩 none，用于验证销账记录。 */
+  const enablementDispute = {
+    category: 'enablement',
+    recommendation: 'add-embodiment',
+    claimNumber: 1,
+    anchor: '输出步骤由控制器完成。',
+  }
+
+  it('账本键不在 outputSchema：回退清理不会抹掉跨轮记录', () => {
+    expect(draftReviewAtom.outputSchema).not.toContain(REVISION_LEDGER_ROUNDS_KEY)
+  })
+
+  it('首轮只记可执行争议点，none 不入账', async () => {
+    const out = await run({
+      disputes: [enablementDispute, { category: 'clarity', recommendation: 'none', claimNumber: 2 }],
+    })
+    const rounds = out[REVISION_LEDGER_ROUNDS_KEY] as DraftReviewLedgerRound[]
+    expect(rounds).toHaveLength(1)
+    expect(rounds[0]?.round).toBe(1)
+    expect(rounds[0]?.findings).toHaveLength(1)
+    expect(rounds[0]?.findings[0]?.claimNumber).toBe(1)
+  })
+
+  it('修订轮追加第 2 轮并把上轮未销账条目带进提示词', async () => {
+    let prompt = ''
+    const provider: StageProvider = {
+      callLLM: async (value) => {
+        prompt = value
+        return JSON.stringify({ disputes: [] })
+      },
+    }
+    const priorRound: DraftReviewLedgerRound = {
+      round: 1,
+      findings: [{
+        category: 'enablement',
+        provision: '专利法第26条第3款',
+        recommendation: 'add-embodiment',
+        claimNumber: 1,
+        anchor: '输出步骤由控制器完成。',
+      }],
+    }
+    const out = await new DraftReviewHandler().execute({
+      state: stateWith({ [REVISION_LEDGER_ROUNDS_KEY]: [priorRound] }),
+      provider,
+    })
+    expect(out._error).toBeUndefined()
+    expect(prompt).toContain('【上一轮审查未销账条目（1 项）：改稿后逐条复核】')
+    expect(prompt).toContain('专利法第26条第3款 — 权利要求 1：add-embodiment')
+    const rounds = out[REVISION_LEDGER_ROUNDS_KEY] as DraftReviewLedgerRound[]
+    expect(rounds).toHaveLength(2)
+    expect(rounds[1]?.round).toBe(2)
+    // 本轮无争议：销账判定靠「末轮不再出现」，空轮也要入账。
+    expect(rounds[1]?.findings).toEqual([])
+  })
+
+  it('超过上限的清单截断列示并报告未列示数', async () => {
+    let prompt = ''
+    const provider: StageProvider = {
+      callLLM: async (value) => {
+        prompt = value
+        return JSON.stringify({ disputes: [] })
+      },
+    }
+    const findings = Array.from({ length: 14 }, (_unused, index) => ({
+      category: 'clarity' as const,
+      provision: '专利法第26条第4款',
+      recommendation: 'clarify-term' as const,
+      claimNumber: index + 1,
+    }))
+    await new DraftReviewHandler().execute({
+      state: stateWith({ [REVISION_LEDGER_ROUNDS_KEY]: [{ round: 1, findings }] }),
+      provider,
+    })
+    expect(prompt).toContain('【上一轮审查未销账条目（14 项）：改稿后逐条复核】')
+    expect(prompt).toContain('…另有 2 项未列示')
+  })
+
+  it('不传上轮条目时提示词不含逐条复核清单', () => {
+    const prompt = buildDraftReviewPrompt(
+      { specification: SPECIFICATION, claims: CLAIMS, pfe: '', priorArt: '' },
+      { specificationLimit: 4000, claimsLimit: 4000, pfeLimit: 2000, priorArtLimit: 2000 },
+    )
+    expect(prompt).not.toContain('上一轮审查未销账条目')
+    expect(prompt).toContain('PFIE')
+  })
+
+  it('降级轮不追加账本记录', async () => {
+    const out = await run({ disputes: [{ category: 'novelty', recommendation: 'none' }] })
+    expect(out._error).toBeDefined()
+    expect(out[REVISION_LEDGER_ROUNDS_KEY]).toBeUndefined()
   })
 })
 

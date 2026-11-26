@@ -144,7 +144,7 @@ export interface Config {
   structureFigureViews?: StructureViewName[]
 }
 /** Default cap on stages per built-in workflow manifest. */
-export const DEFAULT_WORKFLOW_STAGE_BUDGET = 27
+export const DEFAULT_WORKFLOW_STAGE_BUDGET = 29
 
 /** Default cap on model-calling stages per built-in workflow manifest. */
 export const DEFAULT_WORKFLOW_LLM_STAGE_BUDGET = 14

@@ -13,7 +13,7 @@ function publishWorkspace(ctx: Context): void {
   ctx.provide(key, { workspaceRoot: process.cwd() })
 }
 
-/** The 38 tools registered by patent-tools (render_patent_document is owned by dsh-patent-document). */
+/** The 39 tools registered by patent-tools (render_patent_document is owned by dsh-patent-document). */
 const EXPECTED_TOOLS = [
   'patent_search',
   'patent_metadata',
@@ -29,6 +29,7 @@ const EXPECTED_TOOLS = [
   'validate_specification',
   'rule_check',
   'claim_lint',
+  'review_patent_application',
   'domain_check',
   'parse_office_action',
   'patent_worker_validate',
@@ -117,7 +118,7 @@ describe('@deepseek-ai/dsh-patent-tools registration', () => {
     expect(typeof tool.apply).toBe('function')
   })
 
-  it('registers all 38 tools via ctx.plugin (direct mount)', async () => {
+  it('registers all 39 tools via ctx.plugin (direct mount)', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)

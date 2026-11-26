@@ -58,7 +58,7 @@
 | `@deepseek-ai/dsh-tool-literature` | `paper_download`、`paper_list_sources`、`paper_search` | `ctx.tools` | `tool/call`、`tool/result` | - | paper_list_sources 与 paper_search 是对四个免 key 公开源（arXiv、OpenAlex、Semantic Scholar、Crossref）的无状态查询；连接器开关属于配置，只会收窄可用的 `db` id。 |
 | `@deepseek-ai/dsh-document-deliver` | `document_deliver` | `ctx.tools`、`ctx.fs` | `tool/call`、`tool/result` | - | document_deliver 把交付文件（path + format）、P0/P1 质量门状态与 brief 引用记录进会话日志；文件缺失即报错，工具本身不写任何文件。它还会读取每个交付文件并在工具结果里给出自己的确定性核验结论（残余占位符、未声明锚点、空章节、风格禁用词、声明字数预算），阻断级问题直接拒绝登记。交付工作室把该调用与结果元数据折叠进交付物清单、质量门徽标与机器核验徽标。 |
 | `@deepseek-ai/dsh-video-mode` | `media`, `video_assemble`, `video_deliver`, `video_project` | `ctx.tools`、`ctx.fs`、`ctx.subprocess` | `tool/call`、`tool/result` | - | 视频模式：media 选择图像/视频/语音模型并通过 ctx.fs 写入产物；video_project 拥有持久项目文档；video_assemble 通过 ffmpeg 渲染 EDL；video_deliver 检查声明文件并拒绝不完整或超预算的交付。随包提供确定性合成 provider、本地 ComfyUI provider（Wan 2.2 视频、Z-Image 图像），以及云端 MiniMax-H3（按秒计费）与 SiliconFlow Wan2.2（按条计费）视频 provider。 |
-| `@deepseek-ai/dsh-patent-tools` | `add_patent_figure_references`、`analyze_patent_figure`、`check_patent_figure_consistency`、`claim_chart_build`、`claim_lint`、`compare_patent_figure_analysis`、`domain_check`、`draft_claims`、`draft_specification`、`evaluate_evidence`、`flexible_plan`、`generate_patent_figure`、`generate_structure_figure`、`knowledge_note_save`、`matter_log_append`、`parse_office_action`、`patent_analysis_report`、`patent_case_search`、`patent_corpus_status`、`patent_eval`、`patent_kg_query`、`patent_legal_status`、`patent_metadata`、`patent_pdf_download`、`patent_plan_task`、`law_search`、`patent_search`、`patent_wiki_search`、`patent_worker_validate`、`patent_workflow`、`patent_workflow_run`、`recognize_chemical_structure`、`rule_check`、`search_patent_figure`、`triz_contradiction_analysis`、`validate_specification`、`verify_patent_figure`、`workbench_link_patent_case` | `ctx.tools` | `tool/call`、`tool/result` | - | Sati 专利领域工具集：检索/元数据/法律状态/规范原文（法规与审查指南全文）/判例/wiki/知识图谱/语料新鲜度查询，权利要求对照表、通知书解析、撰写、分析报告、说明书校验、证据判定、规则检查、附图分析、PDF 下载、化学结构识别、知识笔记，以及工作流/计划状态机。render_patent_document 由 @deepseek-ai/dsh-patent-document 提供。 |
+| `@deepseek-ai/dsh-patent-tools` | `add_patent_figure_references`、`analyze_patent_figure`、`check_patent_figure_consistency`、`claim_chart_build`、`claim_lint`、`compare_patent_figure_analysis`、`domain_check`、`draft_claims`、`draft_specification`、`evaluate_evidence`、`flexible_plan`、`generate_patent_figure`、`generate_structure_figure`、`knowledge_note_save`、`matter_log_append`、`parse_office_action`、`patent_analysis_report`、`patent_case_search`、`patent_corpus_status`、`patent_eval`、`patent_kg_query`、`patent_legal_status`、`patent_metadata`、`patent_pdf_download`、`patent_plan_task`、`law_search`、`patent_search`、`patent_wiki_search`、`patent_worker_validate`、`patent_workflow`、`patent_workflow_run`、`recognize_chemical_structure`、`review_patent_application`、`rule_check`、`search_patent_figure`、`triz_contradiction_analysis`、`validate_specification`、`verify_patent_figure`、`workbench_link_patent_case` | `ctx.tools` | `tool/call`、`tool/result` | - | Sati 专利领域工具集：检索/元数据/法律状态/规范原文（法规与审查指南全文）/判例/wiki/知识图谱查询，权利要求对照表、通知书解析、撰写、申请文件评审、分析报告、说明书校验、证据判定、规则检查、附图分析、PDF 下载、化学结构识别、知识笔记，以及工作流/计划状态机。render_patent_document 由 @deepseek-ai/dsh-patent-document 提供。 |
 | `@deepseek-ai/dsh-patent-document` | `render_patent_document`、`verify_deliverable` | `ctx.tools`、`ctx.subprocess`、`ctx.workingDirectory (Agent executions)` | `tool/call`、`tool/result` | - | render_patent_document 从内置 HTML 模板渲染专利交付物（权利要求书/说明书/检索报告/OA 答复/无效意见），可选通过 ctx.subprocess 调用无头 Chrome 生成 PDF。 |
 | `@deepseek-ai/dsh-patent-filing` | `build_patent_filing`、`verify_patent_filing` | `ctx.tools`、`ctx.subprocess` | `tool/call`、`tool/result` | - | build_patent_filing 把一件 CNIPA 申请文件（说明书摘要、摘要附图、权利要求书、说明书、说明书附图）按随包模板的体例成文为一件 DOCX，段落编号按 spec 的节声明执行；verify_patent_filing 就同一模板对成品跑体例与内容断言（分节数与各节页眉、行距、首行缩进、字号、非黑色文字、说明书五部分、说明书名称、权项数、按节声明生效的编号连续性、残留内部痕迹）。 |
 | `@deepseek-ai/dsh-patent-deadline` | `patent_deadlines` | `ctx.tools` | `tool/call`、`tool/result` | - | patent_deadlines 报告一件中国专利案件的法定与指定期限，适用专利法实施细则的期限与送达规则，并把落在节假日的届满日顺延至其后第一个工作日；由通知起算的期限以待补项返回，并点名所缺的送达记录。 |
@@ -6853,6 +6853,71 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 来源：[`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-tools/src/index.ts)
 
+### `review_patent_application`
+
+按专利法/实施细则/审查指南的形式口径，对一份专利申请文件跑确定性评审（不调用模型）。- 权利要求：`claim_lint` 的编号、引用方向、多项从属、引用基础、主题名称、两部分式、功能性/工艺限定、结尾标点等；- 说明书与摘要：`validate_specification` 的五部分结构、标题集合、附图引用形式、名称/摘要长度、禁止性内容、模糊表述、实施例、数值范围与领域规则等；- 两者都给时同时跑权项—说明书特征覆盖（A26.4）。至少提供 `claims` 或 `specification` 之一；只给一半时，报告用未评估项声明另一半未评审，不会把它读成通过。每条 finding 带报告内唯一的 `F` 编号、定位、命中原文与法条依据；`passed` 只表示已运行的确定性规则未发现 error，不表示符合专利法；未评估项单列。结果末尾给出实际读到的文本字数与指纹，便于另一次评审对照是否读的是同一份文本。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "claims": {
+      "type": "string",
+      "description": "权利要求书全文（可选，但与 specification 至少提供一项）。"
+    },
+    "specification": {
+      "type": "string",
+      "description": "说明书全文（可选，但与 claims 至少提供一项）。"
+    },
+    "abstract": {
+      "type": "string",
+      "description": "摘要（可选）；提供时检查篇幅、关键词、附图号与宣传语。"
+    },
+    "title": {
+      "type": "string",
+      "description": "发明名称（可选）；提供时检查长度与禁用词。"
+    },
+    "patent_type": {
+      "type": "string",
+      "description": "专利类型；缺省时按发明检查并给出 warning。",
+      "enum": [
+        "invention",
+        "utility_model"
+      ]
+    },
+    "has_drawings": {
+      "type": "boolean",
+      "description": "是否有附图；缺省时由说明书文本推断。"
+    },
+    "tech_domain": {
+      "type": "string",
+      "description": "技术领域；chemical/software 启用对应领域规则。",
+      "enum": [
+        "mechanical",
+        "electrical",
+        "chemical",
+        "software",
+        "general"
+      ]
+    },
+    "drawing_count": {
+      "type": "number",
+      "description": "声明的附图数量（可选），与附图说明条目数比对。"
+    },
+    "abstract_figure_number": {
+      "type": "number",
+      "description": "请求书中的摘要附图号（可选）。"
+    },
+    "max_claims": {
+      "type": "number",
+      "description": "权利要求项数上限（可选）；超出时报 claim-count。"
+    }
+  }
+}
+```
+
+来源：[`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-tools/src/index.ts)
+
 ### `rule_check`
 
 对给定文本运行确定性成文规则检查（关键词黑名单 / 模式 / 结构 / 引用范围 / 同义词匹配 / 引文重复），返回带严重级别、处置建议与法条依据的违规项。多数规则声明适用前提：前提不命中的规则不产生任何结果，文本只按其实际讨论的主题接受检查（未触及新颖性的答复不会收到新颖性完整性命中）。在发布合规敏感输出（如专利结论、法律意见）前使用。范围：patent（通用专利合规）、patent-electrical（H 部电学规则 + 通用合规）、patent-full（全部随包资产：通用合规 + nuo 镜像 + 手写并入规则，需激活评审）、撰写 scope patent-drafting（权利要求/说明书撰写）、分析 scope patent-analysis（专利性/新颖性/创造性）、作业 scope patent-oa-response / patent-invalidation / patent-invalidation-defense / patent-reexamination / patent-infringement（把 patent-full 资产按该作业的规则域收窄：本作业的文书域加上它必须答复或论证的条款所在的域；无效作业分请求人侧与答辩侧两个入口，答辩侧含答复实践域），域 scope patent-mechanical / patent-chemical / patent-software / patent-medical（patent-full 资产加上该领域的规则包：通用资产未覆盖的论证完整性规则），或 pack（由项目 manifest .sati/rules.yaml 组装的分层规则包：base + domains + overrides）。手头已有通知书正文时，作业 scope 还可传 notice=通知书正文：两条双输入规则（PR-OA-008 驳回理由覆盖 / PR-OA-009 未提条款引用）随该通知书一并评估答复；未提供 notice 时，这两条在结果中显式列为未评估。每条结果末尾的「评估输入」给出本次实际读到的文本的字数与指纹：转述结果时请一并保留，便于与另一次运行对照是否读的是同一份文本。
@@ -7225,7 +7290,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 来源：[`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-tools/src/index.ts)
 
-Sati 专利领域工具集：检索/元数据/法律状态/判例/wiki/知识图谱查询，权利要求对照表、撰写、分析报告、说明书校验、证据判定、规则检查、附图分析、PDF 下载、化学结构识别、知识笔记，以及工作流/计划状态机。render_patent_document 由 @deepseek-ai/dsh-patent-document 提供。
+Sati 专利领域工具集：检索/元数据/法律状态/判例/wiki/知识图谱查询，权利要求对照表、撰写、申请文件评审、分析报告、说明书校验、证据判定、规则检查、附图分析、PDF 下载、化学结构识别、知识笔记，以及工作流/计划状态机。render_patent_document 由 @deepseek-ai/dsh-patent-document 提供。
 
 <a id="deepseek-aidsh-patent-document"></a>
 

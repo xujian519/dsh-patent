@@ -43,6 +43,7 @@
     "packages/patent/patent-document/src/tool/verify-deliverable.ts|packages/patent/patent-document/src/tool/verify-deliverable.ts",
     "packages/patent/patent-document/src/tool/verify-deliverable.ts|packages/patent/patent-tools/src/tool/claim-lint.ts",
     "packages/patent/patent-document/src/tool/verify-deliverable.ts|packages/patent/patent-tools/src/tool/draft-claims.ts",
+    "packages/patent/patent-document/src/tool/verify-deliverable.ts|packages/patent/patent-tools/src/tool/review-patent-application.ts",
     "packages/patent/patent-document/src/tool/verify-deliverable.ts|packages/patent/patent-tools/src/tool/validate-specification.ts",
     "packages/patent/patent-knowledge/src/case-law/case-law-search.ts|packages/patent/patent-knowledge/src/legal/knowledge-law-search.ts",
     "packages/patent/patent-knowledge/src/shared/kg-store.ts|packages/patent/patent-knowledge/src/shared/kg/graph-traversal.ts",
@@ -63,6 +64,7 @@
     "packages/patent/patent-tools/src/tool/domain-check.ts|packages/patent/patent-tools/src/tool/figure-tool-schemas.ts",
     "packages/patent/patent-tools/src/tool/domain-check.ts|packages/patent/patent-tools/src/tool/generate-patent-figure.ts",
     "packages/patent/patent-tools/src/tool/domain-check.ts|packages/patent/patent-tools/src/tool/patent-wiki-search.ts",
+    "packages/patent/patent-tools/src/tool/domain-check.ts|packages/patent/patent-tools/src/tool/review-patent-application.ts",
     "packages/patent/patent-tools/src/tool/domain-check.ts|packages/patent/patent-tools/src/tool/verify-patent-figure.ts",
     "packages/patent/patent-tools/src/tool/figure-input.ts|packages/patent/patent-tools/src/tool/figure-input.ts",
     "packages/patent/patent-tools/src/tool/figure-tool-schemas.ts|packages/patent/patent-tools/src/tool/figure-tool-schemas.ts",
@@ -83,6 +85,7 @@
     "packages/patent/patent-tools/src/tool/patent-plan-task.ts|packages/patent/patent-tools/src/tool/workbench-link-patent-case.ts",
     "packages/patent/patent-tools/src/tool/patent-search.ts|packages/patent/patent-tools/src/tool/search-patent-figure.ts",
     "packages/patent/patent-tools/src/tool/patent-workflow-run.ts|packages/patent/patent-tools/src/tool/patent-workflow.ts",
+    "packages/patent/patent-tools/src/tool/review-patent-application.ts|packages/patent/patent-tools/src/tool/validate-specification.ts",
     "packages/patent/patent-tools/src/tool/spec-chemical.ts|packages/patent/patent-tools/src/tool/spec-software.ts",
     "packages/patent/tool-literature/src/tool/paper-download.ts|packages/patent/tool-literature/src/tool/paper-search.ts",
     "packages/patent/writing-patterns/src/pattern-store.ts|packages/patent/writing-patterns/src/pattern-store.ts"

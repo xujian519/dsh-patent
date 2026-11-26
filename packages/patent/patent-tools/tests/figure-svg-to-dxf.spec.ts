@@ -8,6 +8,24 @@ function svg(body: string, page = PAGE): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" ${page}>${body}</svg>`
 }
 
+/** TEXT 实体的组码。同一组码只出现一次。 */
+function textGroups(dxf: string, content: string): Map<string, string> {
+  const marker = `\n1\n${content}\n`
+  const at = dxf.indexOf(marker)
+  expect(at).toBeGreaterThan(0)
+  const start = dxf.lastIndexOf('\n0\nTEXT\n', at)
+  const end = dxf.indexOf('\n0\n', at + marker.length)
+  const body = dxf.slice(start + '\n0\nTEXT\n'.length, end)
+  const rows = body.split('\n').filter(row => row !== '')
+  const groups = new Map<string, string>()
+  for (let index = 0; index < rows.length; index += 2) {
+    const code = rows[index]
+    const value = rows[index + 1]
+    if (code !== undefined && value !== undefined) groups.set(code, value)
+  }
+  return groups
+}
+
 function lineOf(dxf: string): { x1: number; y1: number; x2: number; y2: number } {
   const match = /0\nLINE\n8\n0\n10\n([^\n]+)\n20\n([^\n]+)\n11\n([^\n]+)\n21\n([^\n]+)/.exec(dxf)
   expect(match).not.toBeNull()
@@ -38,7 +56,61 @@ describe('svgToDxf', () => {
     expect(line.y1).toBeCloseTo(line.y2, 5)
     expect(dxf).toContain('LWPOLYLINE')
     expect(dxf).toContain('\n40\n3.5\n')
+    const label = textGroups(dxf, '壳体')
+    expect(label.get('10')).toBe('1')
+    expect(label.get('20')).toBe('10')
+    expect(label.get('72')).toBeUndefined()
+    expect(label.get('11')).toBeUndefined()
+    expect(label.get('50')).toBeUndefined()
     expect(warnings).toEqual(['曲线已折线化'])
+  })
+
+  it('writes text-anchor as DXF justification and rotation in Y-up degrees', () => {
+    const middle = textGroups(svgToDxf(svg('<text x="50" y="40" font-size="3.5" text-anchor="middle">图1</text>')).dxf, '图1')
+    expect(middle.get('10')).toBe('50')
+    expect(middle.get('20')).toBe('10')
+    expect(middle.get('72')).toBe('1')
+    expect(middle.get('11')).toBe('50')
+    expect(middle.get('21')).toBe('10')
+    expect(middle.get('73')).toBeUndefined()
+    expect(middle.get('50')).toBeUndefined()
+
+    const end = textGroups(svgToDxf(svg('<text x="80" y="10" font-size="3.5" text-anchor="end">右</text>')).dxf, '右')
+    expect(end.get('72')).toBe('2')
+    expect(end.get('11')).toBe('80')
+    expect(end.get('21')).toBe('40')
+    expect(end.get('50')).toBeUndefined()
+
+    const inherited = textGroups(
+      svgToDxf(svg('<g text-anchor="end"><text x="80" y="10" font-size="3.5">右</text></g>')).dxf,
+      '右',
+    )
+    expect(inherited.get('72')).toBe('2')
+    expect(inherited.get('11')).toBe('80')
+
+    const upward = textGroups(
+      svgToDxf(svg('<text x="10" y="20" font-size="3.5" text-anchor="middle" transform="rotate(-90 10 20)">温</text>')).dxf,
+      '温',
+    )
+    expect(upward.get('72')).toBe('1')
+    expect(upward.get('11')).toBe('10')
+    expect(upward.get('21')).toBe('30')
+    expect(Number(upward.get('50'))).toBeCloseTo(90, 3)
+
+    const downward = textGroups(
+      svgToDxf(svg('<text x="10" y="20" font-size="3.5" transform="rotate(90 10 20)">温</text>')).dxf,
+      '温',
+    )
+    expect(downward.get('72')).toBeUndefined()
+    expect(Number(downward.get('50'))).toBeCloseTo(-90, 3)
+
+    const tilted = textGroups(
+      svgToDxf(svg('<text x="10" y="20" font-size="3.5" transform="rotate(30 10 20)">斜</text>')).dxf,
+      '斜',
+    )
+    expect(Number(tilted.get('50'))).toBeCloseTo(-30, 3)
+    expect(tilted.get('10')).toBe('10')
+    expect(tilted.get('20')).toBe('30')
   })
 
   it('warns once for a painted fill and not for white, none, or text', () => {

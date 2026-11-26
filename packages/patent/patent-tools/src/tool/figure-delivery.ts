@@ -7,7 +7,7 @@
  * @module @deepseek-ai/dsh-patent-tools/tool/figure-delivery
  */
 
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, rm, writeFile } from 'node:fs/promises'
 import { join, parse } from 'node:path'
 import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import { PatentToolError } from '../error.ts'
@@ -94,6 +94,7 @@ async function checkDeliveredSvg(args: {
  * 逐条抛出去会误导用户。
  * @param args - the deps, the intermediate SVG and final paths, the layout input, the format, dpi, signal, and the output to extend.
  * @returns 'done' 表示导出成功；'fallback' 表示导出失败但调用方还有直绘通路可退回。
+ * 回退时删掉本轮写出的 DXF，直绘的 png/pdf 不再带着另一张图的 DXF。
  * @throws PatentToolError 导出失败且该图型没有 SVG 直绘以外的通路时（`setup_required` / `tool_execution_failed`）。
  */
 export async function finishSvgChain(args: {
@@ -130,6 +131,8 @@ export async function finishSvgChain(args: {
     figureType: args.figureType,
     suffix: args.suffix,
   })
+  const dxfWarningCount = args.output.warnings.length
+  const priorDxfCount = args.output.dxfPaths?.length ?? 0
   if (args.exportDxf) await attachSiblingDxf(args.svgPath, args.output, 'generate_patent_figure')
   await outlineFigureText({ deps: args.deps, path: args.svgPath, format: 'svg', signal: args.signal, warnings: staged.warnings })
   const exported = await args.deps.exportFigure?.({
@@ -149,6 +152,7 @@ export async function finishSvgChain(args: {
   if (!args.hasDirectRender) {
     throw new PatentToolError(exported?.code === 'not_installed' ? 'setup_required' : 'tool_execution_failed', `导出 ${args.format} 失败：${reason}`, { tool: 'generate_patent_figure' })
   }
+  if (args.exportDxf) await discardChainDxf(args.output, dxfWarningCount, priorDxfCount)
   args.output.warnings.push(`未能导出 ${args.format}：${reason}；落版、渲染复核与文字转路径未生效（它们只作用于 SVG），改由渲染器直接出图`)
   return 'fallback'
 }
@@ -203,6 +207,29 @@ export async function finishDirectRender(args: {
     signal: args.signal,
     warnings: args.output.warnings,
   })
+}
+
+/**
+ * 导出失败、改走直绘时，删掉本轮写出的 DXF，并撤回它带上的警告。
+ * @param output - 工具输出。
+ * @param warningCount - 写 DXF 之前的警告条数。
+ * @param priorDxf - 写 DXF 之前已有的路径条数。
+ */
+async function discardChainDxf(
+  output: GeneratePatentFigureOutput,
+  warningCount: number,
+  priorDxf: number,
+): Promise<void> {
+  const paths = output.dxfPaths
+  /* v8 ignore next -- attachSiblingDxf 成功后才调用，dxfPaths 已在 */
+  if (paths === undefined) return
+  for (const path of paths.slice(priorDxf)) await rm(path, { force: true })
+  output.warnings.splice(warningCount)
+  if (priorDxf === 0) {
+    delete output.dxfPaths
+    return
+  }
+  output.dxfPaths = paths.slice(0, priorDxf)
 }
 
 /**

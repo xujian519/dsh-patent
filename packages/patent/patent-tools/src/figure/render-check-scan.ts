@@ -98,6 +98,11 @@ export type ScannedText = {
   /** 基线锚点（根坐标系，毫米）：该标签自身的 `x`/`y` 经累计变换后的点。 */
   readonly baseline: Point
   /**
+   * `text-anchor`（自祖先继承，经白名单）。
+   * DXF 用它写水平对齐；占位框左缘仍由 {@link glyphBox} 按同一取值计算。
+   */
+  readonly textAnchor: GlyphTextAnchor
+  /**
    * 该 `<text>` 自身的 `data-dsh-role`。不从父元素继承，避免一组角色把图内标号一并豁免。
    * 落版页使用 `caption` 与 `sheet-number`。
    */
@@ -853,6 +858,7 @@ function textEntry(content: string, tag: string, frame: Frame): ScannedText {
     box: glyphBox(content, anchor, frame.fontSizeUser, frame.textAnchor),
     matrix: frame.matrix,
     baseline: mapPoint(frame.matrix, anchor),
+    textAnchor: frame.textAnchor,
     ...(role === undefined ? {} : { role }),
     ...(frame.group === undefined ? {} : { group: frame.group }),
   }

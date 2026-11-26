@@ -231,6 +231,125 @@ describe('DXF sibling', () => {
     expect(output.dxfPaths).toEqual(['already.dxf'])
   })
 
+  it('removes the chain DXF when export fails so the direct render warns', async () => {
+    const path = join(dir, 'fallback.svg')
+    const outcomePath = join(dir, 'fallback.png')
+    writeFileSync(path, drawn.replace(
+      '<line',
+      '<rect x="0" y="0" width="4" height="4" fill="#000" stroke="#000"/><line',
+    ))
+    const output: GeneratePatentFigureOutput = {
+      path: 'fallback.png',
+      absolutePath: outcomePath,
+      format: 'png',
+      engine: 'dot',
+      figureNumber: 1,
+      figureType: 'flowchart',
+      figureDescription: '',
+      numeralMap: [],
+      components: [],
+      connections: [],
+      warnings: ['先前'],
+      indexed: false,
+    }
+    const outcome = await finishSvgChain({
+      deps: testDeps({
+        exportFigure: async () => ({ ok: false, code: 'render_failed', error: 'inkscape down' }),
+      }),
+      svgPath: path,
+      outcomePath,
+      input: {},
+      suffix: '',
+      format: 'png',
+      dpi: undefined,
+      style: 'grayscale',
+      signal: new AbortController().signal,
+      output,
+      figureType: 'flowchart',
+      hasDirectRender: true,
+      exportDxf: true,
+    })
+    expect(outcome).toBe('fallback')
+    expect(existsSync(join(dir, 'fallback.dxf'))).toBe(false)
+    expect(output.dxfPaths).toBeUndefined()
+    expect(output.warnings).toEqual([
+      '先前',
+      '未能导出 png：inkscape down；落版、渲染复核与文字转路径未生效（它们只作用于 SVG），改由渲染器直接出图',
+    ])
+    await finishDirectRender({
+      deps: testDeps(),
+      outcomePath,
+      input: {},
+      suffix: '',
+      format: 'png',
+      check: false,
+      style: 'grayscale',
+      signal: new AbortController().signal,
+      output,
+      figureType: 'flowchart',
+      exportDxf: true,
+    })
+    expect(output.warnings).toContain('没有 SVG，未写 DXF')
+  })
+
+  it('keeps a DXF recorded before this chain when export fails', async () => {
+    const path = join(dir, 'fallback-kept.svg')
+    const outcomePath = join(dir, 'fallback-kept.png')
+    writeFileSync(path, drawn)
+    const output: GeneratePatentFigureOutput = {
+      path: 'fallback-kept.png',
+      absolutePath: outcomePath,
+      format: 'png',
+      engine: 'dot',
+      figureNumber: 2,
+      figureType: 'flowchart',
+      figureDescription: '',
+      numeralMap: [],
+      components: [],
+      connections: [],
+      warnings: ['先前'],
+      indexed: false,
+      dxfPaths: ['kept.dxf'],
+    }
+    const outcome = await finishSvgChain({
+      deps: testDeps({
+        exportFigure: async () => ({ ok: false, code: 'render_failed', error: 'inkscape down' }),
+      }),
+      svgPath: path,
+      outcomePath,
+      input: {},
+      suffix: '',
+      format: 'png',
+      dpi: undefined,
+      style: 'grayscale',
+      signal: new AbortController().signal,
+      output,
+      figureType: 'flowchart',
+      hasDirectRender: true,
+      exportDxf: true,
+    })
+    expect(outcome).toBe('fallback')
+    expect(existsSync(join(dir, 'fallback-kept.dxf'))).toBe(false)
+    expect(output.dxfPaths).toEqual(['kept.dxf'])
+    expect(output.warnings[0]).toBe('先前')
+    expect(output.warnings).not.toContain('没有 SVG，未写 DXF')
+    await finishDirectRender({
+      deps: testDeps(),
+      outcomePath,
+      input: {},
+      suffix: '',
+      format: 'png',
+      check: false,
+      style: 'grayscale',
+      signal: new AbortController().signal,
+      output,
+      figureType: 'flowchart',
+      exportDxf: true,
+    })
+    expect(output.warnings).not.toContain('没有 SVG，未写 DXF')
+    expect(output.dxfPaths).toEqual(['kept.dxf'])
+  })
+
   it('does not write a DXF file when the SVG contains an image', async () => {
     const path = join(dir, 'photo.svg')
     writeFileSync(path, '<svg xmlns="http://www.w3.org/2000/svg" width="10mm" height="10mm"><image href="a.png" width="10" height="10"/></svg>')

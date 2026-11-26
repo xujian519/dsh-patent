@@ -1,12 +1,14 @@
 /**
  * 把已落版的 SVG 写成可编辑的 ASCII DXF（毫米，Y 轴向上）。
  *
- * 几何来自 {@link scanSvg} 的毫米坐标，曲线按 0.2 毫米弦高折线化。文字保持 TEXT，
- * 不走文字转路径。填充不写 HATCH。本函数不写文件；调用方在成功之后再落盘。
+ * 几何来自 {@link scanSvg} 的毫米坐标，曲线按 0.2 毫米弦高折线化。文字保持 TEXT：
+ * `text-anchor` 写成组码 72，旋转写成组码 50（Y 轴向上后的角度）。不走文字转路径。
+ * 填充不写 HATCH。本函数不写文件；调用方在成功之后再落盘。
  * @module @deepseek-ai/dsh-patent-tools/figure/svg-to-dxf
  */
 
 import { GLYPH_ASCENT_RATIO, GLYPH_DESCENT_RATIO } from './glyph-box.ts'
+import type { GlyphTextAnchor } from './glyph-box.ts'
 import { rasterFigureMessage } from './raster-input.ts'
 import { CIRCLE_GON_SEGMENTS, scanSvg, textQuad } from './render-check-scan.ts'
 import type { SubPath } from './render-check-scan.ts'
@@ -16,6 +18,9 @@ const CURVE_TOLERANCE_MM = 0.2
 
 /** 圆的半径在这个毫米数内视为不变。 */
 const CIRCLE_RADIUS_TOLERANCE_MM = 0.01
+
+/** 小于这个度数的旋转不写组码 50。 */
+const ROTATION_EPSILON_DEG = 1e-6
 
 /** 不能写成 DXF 的 SVG。 */
 export class SvgDxfError extends Error {
@@ -116,17 +121,45 @@ export function svgToDxf(svg: string): { dxf: string; warnings: string[] } {
     const quad = textQuad(text)
     const height = Math.hypot(quad.edgeHeight[0], quad.edgeHeight[1]) / glyphScale
     if (!(height > 0)) continue
+    const x = dxfNumber(text.baseline[0])
+    const y = dxfNumber(pageHeight - text.baseline[1])
     lines.push(
       '0', 'TEXT',
       '8', '0',
-      '10', dxfNumber(text.baseline[0]),
-      '20', dxfNumber(pageHeight - text.baseline[1]),
+      '10', x,
+      '20', y,
       '40', dxfNumber(height),
       '1', content,
     )
+    const align = dxfHorizontalAlign(text.textAnchor)
+    if (align !== undefined) {
+      // 组码 72 非 0 时 CAD 改用 11/21。对齐点是标签锚点，不按字宽去估左端。
+      lines.push('72', align, '11', x, '21', y)
+    }
+    const rotation = textRotationDegrees(text.matrix[0], text.matrix[1])
+    if (rotation !== 0) lines.push('50', dxfNumber(rotation))
   }
   lines.push('0', 'ENDSEC', '0', 'EOF', '')
   return { dxf: lines.join('\n'), warnings }
+}
+
+/** SVG `text-anchor` 到 DXF 组码 72。基线对齐不写组码 73。 */
+function dxfHorizontalAlign(anchor: GlyphTextAnchor): '1' | '2' | undefined {
+  if (anchor === 'middle') return '1'
+  if (anchor === 'end') return '2'
+  return undefined
+}
+
+/**
+ * DXF 组码 50：从 +X 逆时针的度数，Y 轴向上。
+ * SVG 矩阵的局部 +X 是 `(a, b)`，`b` 向下；翻到向上后角度取反。水平文字返回 0。
+ * @param a - 累计矩阵的 a。
+ * @param b - 累计矩阵的 b。
+ * @returns 度数；水平时为 0。
+ */
+function textRotationDegrees(a: number, b: number): number {
+  const degrees = -Math.atan2(b, a) * 180 / Math.PI
+  return Math.abs(degrees) < ROTATION_EPSILON_DEG ? 0 : degrees
 }
 
 function hasCurve(source: string): boolean {

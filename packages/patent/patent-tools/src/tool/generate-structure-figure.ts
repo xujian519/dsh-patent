@@ -346,7 +346,8 @@ const STRUCTURE_REUSE_RECEIPT = 'structure-reuse.json'
 type StructureReuseRun = Awaited<ReturnType<typeof resolveStructureRun>>
 
 /**
- * 结构投影的复用键。请求含落版、线型、件号与是否写 DXF，模型只取字节摘要。
+ * 结构投影的复用键。请求含落版、线型、件号、是否写 DXF，以及本次是否做文字转路径。
+ * 模型只取字节摘要。
  * @param run - 已归一的调用。
  * @returns 本次键。
  */
@@ -374,6 +375,7 @@ async function structureReuseKey(run: StructureReuseRun): Promise<string> {
       fitToPage: run.input.fit_to_page ?? null,
       inventionName: run.input.invention_name ?? null,
       exportDxf: run.input.export_dxf === true,
+      outlineText: run.deps.outlineText !== undefined,
       persistIndex: (run.input.persist_index ?? true) && run.deps.upsertIndex !== undefined,
       failOnRenderFindings: run.deps.failOnRenderFindings === true,
       minSheetFillRatio: run.deps.minSheetFillRatio ?? null,

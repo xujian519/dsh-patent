@@ -1577,6 +1577,40 @@ describe('generate_structure_figure 复用', () => {
     }
   })
 
+  it('文字转路径端口有无不同时不复用同一张线稿', async () => {
+    const dir = tempDir()
+    try {
+      const { render, calls } = okRenderer()
+      const model = writeModel(dir, 'a.step')
+      const args = { model_path: model, views: ['iso'] as const, persist_index: false }
+      const outlined = createGenerateStructureFigureTool({
+        render,
+        enabled: true,
+        outputDir: dir,
+        cwd: dir,
+        outlineText: () => Promise.resolve({ ok: true }),
+      })
+      const plain = createGenerateStructureFigureTool({
+        render,
+        enabled: true,
+        outputDir: dir,
+        cwd: dir,
+      })
+      await outlined.execute(args, exec)
+      const again = await outlined.execute(args, exec) as { warnings: string[] }
+      expect(calls).toHaveLength(1)
+      expect(again.warnings).toContain(STRUCTURE_REUSE_WARNING)
+      const without = await plain.execute(args, exec) as { warnings: string[] }
+      expect(calls).toHaveLength(2)
+      expect(without.warnings).not.toContain(STRUCTURE_REUSE_WARNING)
+      const withoutAgain = await plain.execute(args, exec) as { warnings: string[] }
+      expect(calls).toHaveLength(2)
+      expect(withoutAgain.warnings).toContain(STRUCTURE_REUSE_WARNING)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('reuse false 遇到损坏收据仍重新投影', async () => {
     const dir = tempDir()
     try {

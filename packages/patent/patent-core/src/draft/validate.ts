@@ -23,17 +23,11 @@ import {
   type TemplateRowsSlot,
 } from './types.ts'
 
-/**
- * 草案校验失败：聚合全部违规，消息面向模型可读。继承 `HarnessError`，
- * 使草案校验失败在 `tool/result` 里带上稳定错误码。
- */
+/** 草案校验失败：聚合全部违规；继承 `HarnessError` 使错误码进入 `tool/result`。 */
 export class DraftValidationError extends HarnessError {
   /** 逐条违规（路径 + 原因）。 */
   readonly violations: string[]
 
-  /**
-   * @param violations - 逐条违规（路径 + 原因）。
-   */
   constructor(violations: string[]) {
     super(`草案校验失败（${violations.length} 项）：\n- ${violations.join('\n- ')}`, 'draft_validation_failed')
     this.violations = violations

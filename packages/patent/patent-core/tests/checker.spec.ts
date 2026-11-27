@@ -118,6 +118,9 @@ it('evaluate: 空文本触发全部失败，aggregate → blocked', () => {
 
 it('formatRuleResults: 通过时输出 Markdown 结论行', () => {
   const md = formatRuleResults([], 'pass')
+  // The heading and the conclusion are separate lines; joining without a
+  // separator would render one run-on heading.
+  expect(md.split('\n').slice(0, 3)).toEqual(['## 规则引擎检查', '', '检查结论: ✅ 通过'])
   expect(md).toMatch(/检查结论: ✅ 通过/)
   expect(md).toMatch(/所有规则检查均通过/)
 })

@@ -441,7 +441,7 @@ export function formatRuleResults(results: readonly RuleCheckResult[], verdict: 
   const lines: string[] = ['## 规则引擎检查', '', `检查结论: ${verdictLabel}`, '', '']
   if (results.length === 0) {
     lines.push('所有规则检查均通过。', '')
-    return lines.join('')
+    return lines.join('\n')
   }
   lines.push('| 规则 | 级别 | 严重度 | 问题 | 修改建议 |', '|------|------|--------|------|----------|')
   for (const result of results) {

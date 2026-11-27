@@ -23,7 +23,14 @@ import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
 
 /** 依赖注入。cwd 为路径基准，默认 process.cwd()。 */
 export type AddPatentFigureReferencesDeps = {
+  /** 工作目录（缺省 process.cwd()）。 */
   cwd?: string
+  /** 引线标号净距（毫米，Config.figureLeaderClearanceMm）。 */
+  leaderClearanceMm?: number
+  /** 引线放置冲突时的外推步长（毫米，Config.figureLeaderPushStepMm）。 */
+  leaderPushStepMm?: number
+  /** 引线外推距离上限（毫米，Config.figureLeaderPushLimitMm）。 */
+  leaderPushLimitMm?: number
 }
 
 /** 输入：SVG 路径 + 参考标号表。 */
@@ -58,6 +65,8 @@ const DESCRIPTION = [
   '标号形式：非阿拉伯数字标号（如 S101）按《专利审查指南》第一部分第一章 4.3「附图标记应当使用阿拉伯数字编号」返回警告（照常标注）。',
   '',
   '引线模式：标号置于组件轮廓外侧，引线避开图内已绘的边线与箭头，并在越出画布时扩展画布使之完整可见；无可放置位置或缺轮廓时退化为内嵌标号并警告。',
+  '',
+  '可重复执行：对已标注的 SVG 再次标注时，先移除上一次写入的引线组与命中文本尾部的内嵌标号，不会叠加或重复编号。',
 ].join('\n')
 
 /**
@@ -110,7 +119,11 @@ export function createAddPatentFigureReferencesTool(deps: AddPatentFigureReferen
       let result
       try {
         result = args.leader_lines === true
-          ? annotateSvgWithLeaderLines(svg, args.references)
+          ? annotateSvgWithLeaderLines(svg, args.references, {
+            ...(deps.leaderClearanceMm === undefined ? {} : { clearanceMm: deps.leaderClearanceMm }),
+            ...(deps.leaderPushStepMm === undefined ? {} : { pushStepMm: deps.leaderPushStepMm }),
+            ...(deps.leaderPushLimitMm === undefined ? {} : { pushLimitMm: deps.leaderPushLimitMm }),
+          })
           : annotateSvg(svg, args.references)
       } catch (error) {
         /* v8 ignore start -- annotateSvg only throws SvgAnnotateError; the rethrow keeps unknown failures loud */

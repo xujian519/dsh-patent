@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { onSegment, pointSegmentDistance, segmentsIntersect, sideOf } from '../src/figure/geometry.ts'
+import { onSegment, pointSegmentDistance, raySegmentIntersection, segmentsIntersect, sideOf } from '../src/figure/geometry.ts'
 
 describe('figure geometry', () => {
   it('reports which side of a directed line a point falls on', () => {
@@ -27,5 +27,17 @@ describe('figure geometry', () => {
     expect(pointSegmentDistance([2, 3], { x1: 0, y1: 0, x2: 4, y2: 0 })).toBe(3)
     expect(pointSegmentDistance([6, 0], { x1: 0, y1: 0, x2: 4, y2: 0 })).toBe(2)
     expect(pointSegmentDistance([2, 0], { x1: 0, y1: 0, x2: 4, y2: 0 })).toBe(0)
+    // 零长度线段退化为点。
+    expect(pointSegmentDistance([1, 1], { x1: 0, y1: 0, x2: 0, y2: 0 })).toBeCloseTo(Math.SQRT2)
+  })
+
+  it('finds the nearest forward ray-segment intersection and rejects parallel, behind-origin, or out-of-segment hits', () => {
+    expect(raySegmentIntersection([0, 0], [1, 0], { x1: 5, y1: -1, x2: 5, y2: 1 })).toBe(5)
+    // 交点落在线段端点上也接受。
+    expect(raySegmentIntersection([0, 0], [1, 0], { x1: 5, y1: 0, x2: 5, y2: 1 })).toBe(5)
+    // 射线背向线段、线段在射线一侧、共线都没有交点。
+    expect(raySegmentIntersection([0, 0], [1, 0], { x1: -5, y1: -1, x2: -5, y2: 1 })).toBeUndefined()
+    expect(raySegmentIntersection([0, 0], [1, 0], { x1: 5, y1: 1, x2: 5, y2: 2 })).toBeUndefined()
+    expect(raySegmentIntersection([0, 0], [1, 0], { x1: 0, y1: 0, x2: 4, y2: 0 })).toBeUndefined()
   })
 })

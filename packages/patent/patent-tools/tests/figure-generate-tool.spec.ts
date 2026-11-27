@@ -586,7 +586,12 @@ describe('add_patent_figure_references tool', () => {
       '<g id="node1" class="node"><title>a</title><polygon points="10,10 10,50 110,50 110,10"/><text text-anchor="middle" x="60" y="34">Input Sensor</text></g>',
       '</svg>',
     ].join('\n'))
-    const tool = createAddPatentFigureReferencesTool({ cwd: dir })
+    const tool = createAddPatentFigureReferencesTool({
+      cwd: dir,
+      leaderClearanceMm: 2,
+      leaderPushStepMm: 1,
+      leaderPushLimitMm: 10,
+    })
     const ctx = await ctxWith(tool)
     try {
       const leader = await execute(ctx, 'add_patent_figure_references', {
@@ -601,6 +606,16 @@ describe('add_patent_figure_references tool', () => {
       expect(leaderOut).toContain('>Input Sensor<')
       expect(leaderOut).not.toContain('(20)')
       expect((valueOf(leader) as { warnings: string[] }).warnings).toEqual([])
+
+      // 未显式注入引线参数时走模块默认值，行为一致。
+      const defaultTool = createAddPatentFigureReferencesTool({ cwd: dir })
+      const leaderDefault = await execute(await ctxWith(defaultTool), 'add_patent_figure_references', {
+        svg_path: 'graph.svg',
+        references: [{ label: 'Input Sensor', numeral: '20' }],
+        leader_lines: true,
+      }, 'a2-default')
+      expect(leaderDefault.isError).toBe(false)
+      expect(readFileSync(join(dir, 'graph_annotated.svg'), 'utf8')).toContain('<line ')
 
       const inline = await execute(ctx, 'add_patent_figure_references', {
         svg_path: 'graph.svg',

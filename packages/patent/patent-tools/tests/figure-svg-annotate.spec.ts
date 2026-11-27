@@ -80,6 +80,60 @@ describe('annotateSvg', () => {
     const { svg } = annotateSvg(SVG, [{ label: 'Input Sensor', numeral: 'a&b "c"' }])
     expect(svg).toContain('Input Sensor (a&amp;b &quot;c&quot;)')
   })
+
+  it('重跑幂等：同一标号表反复标注结果不变，不叠加标号', () => {
+    const references = [
+      { label: 'Input Sensor', numeral: '20' },
+      { label: 'Processor', numeral: '100' },
+    ]
+    const first = annotateSvg(SVG, references)
+    const second = annotateSvg(first.svg, references)
+    expect(second.svg).toBe(first.svg)
+    expect(second.svg.match(/Input Sensor \(20\)/g)?.length).toBe(1)
+    expect(second.svg.match(/Processor \(100\)/g)?.length).toBe(1)
+    expect(second.warnings).toEqual([])
+  })
+
+  it('重跑改号：已有内嵌标号被替换，旧标号不残留', () => {
+    const first = annotateSvg(SVG, [{ label: 'Input Sensor', numeral: '20' }])
+    const second = annotateSvg(first.svg, [{ label: 'Input Sensor', numeral: '30' }])
+    expect(second.svg).toContain('Input Sensor (30)')
+    expect(second.svg).not.toContain('Input Sensor (20)')
+    expect(second.svg.match(/Input Sensor/g)?.length).toBe(1)
+  })
+
+  it('非数字标号（S101 / A-1）重跑同样替换而非叠加', () => {
+    const repeated = annotateSvg(
+      annotateSvg(SVG, [{ label: 'Input Sensor', numeral: 'S101' }]).svg,
+      [{ label: 'Input Sensor', numeral: 'S101' }],
+    )
+    expect(repeated.svg).toContain('Input Sensor (S101)')
+    expect(repeated.svg.match(/Input Sensor/g)?.length).toBe(1)
+
+    const changed = annotateSvg(
+      annotateSvg(SVG, [{ label: 'Input Sensor', numeral: 'S101' }]).svg,
+      [{ label: 'Input Sensor', numeral: 'A-1' }],
+    )
+    expect(changed.svg).toContain('Input Sensor (A-1)')
+    expect(changed.svg).not.toContain('S101')
+    expect(changed.svg.match(/Input Sensor/g)?.length).toBe(1)
+  })
+
+  it('命中文本末尾的纯文字括号不是标号，重跑时保留', () => {
+    const tagged = '<svg><text>端口 (优选)</text></svg>'
+    const first = annotateSvg(tagged, [{ label: '端口', numeral: '20' }])
+    expect(first.svg).toContain('端口 (优选) (20)')
+    const second = annotateSvg(first.svg, [{ label: '端口', numeral: '20' }])
+    expect(second.svg).toContain('端口 (优选) (20)')
+    expect(second.svg.match(/端口 \(优选\)/g)?.length).toBe(1)
+  })
+
+  it('重跑只清理命中文本：未匹配文本末尾的括号数字原样保留', () => {
+    const mixed = '<svg><text>版本 (2024)</text><text>Input Sensor</text></svg>'
+    const { svg } = annotateSvg(mixed, [{ label: 'Input Sensor', numeral: '20' }])
+    expect(svg).toContain('版本 (2024)')
+    expect(svg).toContain('Input Sensor (20)')
+  })
 })
 
 /** Graphviz 节点组结构 fixture（WASM 引擎采样：title=DOT 节点 id + polygon/ellipse + text）。 */
@@ -349,5 +403,38 @@ describe('annotateSvgWithLeaderLines', () => {
     expect(warnings).toEqual([])
     expect(svg).toContain('<svg xmlns="http://www.w3.org/2000/svg">')
     expect(svg).toContain('<line ')
+  })
+
+  it('重跑幂等：再次标注替换引线组，不叠加引线与标号', () => {
+    const references = [
+      { label: '温度传感器', numeral: '100' },
+      { label: '控制单元', numeral: '200' },
+    ]
+    const first = annotateSvgWithLeaderLines(WASM_GRAPH_SVG, references)
+    const second = annotateSvgWithLeaderLines(first.svg, references)
+    expect(second.svg.match(/<g id="leader-lines">/g)?.length).toBe(1)
+    expect(second.svg.match(/<line /g)?.length).toBe(2)
+    expect(second.svg.match(/>100<\/text>/g)?.length).toBe(1)
+    expect(second.svg.match(/>200<\/text>/g)?.length).toBe(1)
+    expect(second.svg).not.toContain('(100)')
+    expect(second.warnings).toEqual([])
+  })
+
+  it('内嵌标注的 SVG 改用引线模式：既有内嵌标号被清理，只剩外置标号', () => {
+    const embedded = annotateSvg(WASM_GRAPH_SVG, [{ label: '温度传感器', numeral: '100' }])
+    expect(embedded.svg).toContain('温度传感器 (100)')
+    const { svg, warnings } = annotateSvgWithLeaderLines(embedded.svg, [{ label: '温度传感器', numeral: '100' }])
+    expect(svg).not.toContain('(100)')
+    expect(svg.match(/<line /g)?.length).toBe(1)
+    expect(svg).toContain('>100</text>')
+    expect(warnings).toEqual([])
+  })
+
+  it('引线标注的 SVG 改用内嵌模式：引线组被移除，只剩内嵌标号', () => {
+    const leader = annotateSvgWithLeaderLines(WASM_GRAPH_SVG, [{ label: '温度传感器', numeral: '100' }])
+    const { svg } = annotateSvg(leader.svg, [{ label: '温度传感器', numeral: '100' }])
+    expect(svg).not.toContain('leader-lines')
+    expect(svg).not.toContain('<line ')
+    expect(svg).toContain('温度传感器 (100)')
   })
 })

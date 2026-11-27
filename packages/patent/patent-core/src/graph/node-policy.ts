@@ -72,7 +72,9 @@ export async function runNodeWithPolicy(
     if (ctx.signal?.aborted === true) controller.abort()
     try {
       // 硬上界：节点不听 signal 而挂起时，race 在 remaining 后拒绝，超步不会无限等待。
-      const delta = await withDeadline(node({ ...ctx, signal: controller.signal }), remaining)
+      // 剩余时长取整到 0 表示"无上界"，而这里必须保留上界：截止前最后一毫秒算出的 0
+      // 会让无视 signal 的节点无限挂起，故按 1ms 起算。
+      const delta = await withDeadline(node({ ...ctx, signal: controller.signal }), deadline === null ? 0 : Math.max(1, remaining))
       // 超时后完成的节点视为失败（超时语义：总时长截止后不再采信结果）。
       if (controller.signal.aborted) {
         // oxlint-disable-next-line typescript/no-unnecessary-condition -- timedOut is set by the deadline timer's callback

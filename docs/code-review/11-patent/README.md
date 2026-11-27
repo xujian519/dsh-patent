@@ -27,7 +27,7 @@
 |---|---|---|---|
 | B0 | 逐文件台账与门禁基线 | 564（登记） | 完成 |
 | B1 | 接线、依赖方向、装配探针 | 配置面 + 4 个探针文件 | 完成 |
-| B2 | patent-core 权项/检查/IPC 等纯函数层 | 59 | 待开始 |
+| B2 | patent-core 权项/检查/IPC 等纯函数层 | 59 | 进行中（12 已签收） |
 | B3 | patent-core 其余（atoms、ModelPort、evidence、workflow 等） | 114 | 待开始 |
 | B4 | patent-tools 检索与数据通道 | 42 | 待开始 |
 | B5 | patent-tools 撰写与校核 | 21 | 待开始 |
@@ -61,3 +61,4 @@
 - 已更正：F-PAT-059、F-PAT-060 原判为依赖错置，复核为误报并回退（`0ccfa1a864`）——tsdown 把未声明导入内联进产物，发布安装本可正常加载。
 - 未修：`verify-npm-install-layout` 超预算（F-PAT-062，待决策）。
 - B1 完成：装配探针 `patent-preset-mount.spec.ts` 真实装载 16 个插件行，六个接缝服务全部可解析、15 个代表性工具全部可见，并附一条会变红的负控制；见 [02-batches/B1.md](02-batches/B1.md)。
+- B2 进行中：12/59 文件签收，两条 P2 已修（F-PAT-064 规则报告拼行、F-PAT-065 节点硬上界临界失效），patent-core 95 文件 / 1873 用例全绿；见 [02-batches/B2.md](02-batches/B2.md)。

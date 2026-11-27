@@ -51,3 +51,25 @@
 - 配套：`scripts/verify-published-imports.spec.ts` 4 条用例，其中 3 条为负控制（未声明依赖、Client 组跳过、缺失构建入口）。
 - 工作量：2 小时。可自动化：是。
 - 状态：已修（2026-11-27）；门禁登记在 `ciPrimaryGates()`，`needs: ['build']`。
+
+## F-PAT-064 规则引擎全通过报告被拼成一行（B2）
+
+- 位置：`packages/patent/patent-core/src/checker/engine.ts:444`（`formatRuleResults`）。
+- 维度：正确性与边界 / 模型可见输出。
+- 严重度：P2。
+- 证据：非空的失败分支用 `lines.join('\n')`，而「全部通过」分支用 `lines.join('')`，标题、结论与正文因此连成一串：`## 规则引擎检查检查结论: ✅ 通过所有规则检查均通过。`。既有测试只断言子串 `所有规则检查均通过`，拼接错误未被发现。
+- 影响：规则检查全部通过时，返回给模型的 Markdown 报告结构损坏。
+- 最小修复：改为 `join('\n')`；测试补一条按行断言标题与结论各占一行。
+- 工作量：5 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B2）。patent-core 95 文件 / 1873 用例通过。
+
+## F-PAT-065 节点硬上界在临界毫秒被静默取消（B2）
+
+- 位置：`packages/patent/patent-core/src/graph/node-policy.ts:75`（`runNodeWithPolicy` 的 `withDeadline` 调用）。
+- 维度：正确性与边界（并发/超时）。
+- 严重度：P2。
+- 证据：`withDeadline(promise, ms)` 在 `ms <= 0` 时返回原 promise（用于「无截止」语义）；而调用点传入的 `remaining = Math.max(0, deadline - Date.now())` 在截止前最后一毫秒可算出 0，此时硬上界被关闭。若节点不响应 abort 信号，图执行会无限挂起——而硬上界存在的目的正是兜住这种节点。
+- 影响：极窄时间窗下的挂死风险；正常路径不受影响。
+- 最小修复：有截止时按 `Math.max(1, remaining)` 传参，保留「无截止传 0」的语义。
+- 工作量：5 分钟。可自动化：否（毫秒级竞态，测试只能覆盖语义而非时序）。
+- 状态：已修（2026-11-27，B2）。

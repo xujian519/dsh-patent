@@ -14,6 +14,8 @@ Status: implemented
 
 `oa-answer` 第 2 轮审查意见改为条件式:第三十三条的质疑只在第一次答复作过修改时提出;`amendment-grounding` 接受与第一次答复及本次审查意见一致、说明了理由的不修改。金标摘要与基线于 2026-10-24 重录:聚合 95.70,`novelty-creative` 98.1,`oa-answer` 92.0,`technical-teaching` 92.2,`amendment-grounding` 83.3。
 
+工作流面暴露了同一缺陷的第二条路径。它的 `draft` 阶段拿不到上一轮交付物;只要 `claims` 参数不带行首编号,`response-plan` 就会产出「修改超范围→修改」与「权利要求1(从属):删除」——`detectIndependentClaims` 返回空表,受影响的权项一律按从属处理。修复前的采集照抄了这个机器默认,虚构了一处并不存在的删除,并用「如审查员认为第一次答复未作修改」兜底;`amendment-grounding` 读到 58。`draft` 指导现在点名 A33 一栏是首轮机器默认,并要求先把 `claims` 参数与任务文本中的原权利要求比对:一致时写「第一次答复未修改权利要求 1，本次亦不修改」、给出与第一次答复及本次审查意见一致的理由与未修改的权利要求全文;不一致时逐处给出修改前/后文本与原申请记载依据,并给出修改后(或恢复后)全文。禁止用附条件表述覆盖两种情形。2026-11-27 重录的工作流基线聚合 89.35,修订轮 `amendment-grounding` 88。
+
 ## Alternatives considered
 
 **保留结论方向评分并删除 `novelty-creative`。** 否决:任务本身允许两个可辩护结论,删除会掩盖论证质量与结论选择的区别。
@@ -22,9 +24,12 @@ Status: implemented
 
 **下调 `amendment-grounding` 下限以接受旧测量。** 否决:会把用例缺陷读成模型质量,并放过真实回退。
 
+**改 `response-plan` 而不是 `draft` 指导。** 本次否决:计划无法知道上一轮是否修改过权利要求;保留权项编号只会把「权利要求1(从属):删除」变成「权利要求1(独立):限缩」——仍是机器默认,不是事实认定。指导同时看得到本轮 `claims` 参数与任务文本,判断应由它作出。若未来某条 manifest 路径在没有模型 `draft` 阶段的情况下也要跑修订轮,再回头改计划。
+
 ## Consequences
 
 - `technical-teaching` 与 `amendment-grounding` 使用统一的 node 下限 70;单列的 60 与 50 已撤销。
 - 门禁会拒绝第 2 轮审查意见摘要与当前脚本不一致的基线,因此用例修改与重录必须同批落地。
 - 随仓基线来自同一 profile 的两次采集:三个单轮 case 来自一次采集,`oa-answer` 在审查意见修改后单独重采。token 合计覆盖全部 96 次被接受的调用。
 - `novelty-creative` 不再把任一可辩护结论判为失败;若未来恢复结论方向评分,必须重录金标摘要与基线。
+- `patent_oa_response_v1` 的工作流基线重新在 `gate.yaml` 声明;记录带 `evaluationDigest`,门禁按终局轮判 89.35。

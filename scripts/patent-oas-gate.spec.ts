@@ -544,10 +544,14 @@ describe('门槛策略', () => {
   })
 
   it('每条声明的被测面就是它自己的基线', () => {
-    // patent_oa_response_v1 的声明已暂时撤出(简洁链修订轮 amendment-grounding 低于下限,
-    // 修复与重录见 #979);恢复时把它的声明加回这里。
+    // 2026-11-27 修 manifest 修订轮指导后重录,恢复 patent_oa_response_v1 的工作流基线。
     expect(config.baselines).toEqual([
       { execution: 'prompt', path: 'packages/self-evolve/evaluation/patent-oas-baseline.json' },
+      {
+        execution: 'workflow',
+        workflowId: 'patent_oa_response_v1',
+        path: 'packages/self-evolve/evaluation/patent-oas-workflow-baseline.json',
+      },
       {
         execution: 'workflow',
         workflowId: 'patent_disclosure_v1',
@@ -815,14 +819,15 @@ describe('被测面的可比性', () => {
 
   it('基线按记录自己的被测面路由', () => {
     const declaredPrompt = first(config.baselines)
-    const declaredWorkflow = first(config.baselines.filter(entry => entry.execution === 'workflow'))
+    const declaredOaWorkflow = first(config.baselines.filter(entry => entry.workflowId === 'patent_oa_response_v1'))
+    const declaredDisclosureWorkflow = first(config.baselines.filter(entry => entry.workflowId === 'patent_disclosure_v1'))
     expect(findBaselineDeclaration(config, 'prompt')).toBe(declaredPrompt)
     expect(baselineDeclarationFor(config, recordFrom(gold, () => 90))).toBe(declaredPrompt)
-    expect(findBaselineDeclaration(config, 'workflow', 'patent_disclosure_v1')).toBe(declaredWorkflow)
+    expect(findBaselineDeclaration(config, 'workflow', 'patent_disclosure_v1')).toBe(declaredDisclosureWorkflow)
     expect(findBaselineDeclaration(config, 'workflow', 'patent_novelty_v1')).toBeUndefined()
-    // patent_oa_response_v1 的声明已撤出(#979):该面的记录路由不到基线。
-    expect(findBaselineDeclaration(config, 'workflow', 'patent_oa_response_v1')).toBeUndefined()
-    expect(baselineDeclarationFor(config, workflowRecord())).toBeUndefined()
+    // 2026-11-27 恢复:OA 工作流面重新有基线。
+    expect(findBaselineDeclaration(config, 'workflow', 'patent_oa_response_v1')).toBe(declaredOaWorkflow)
+    expect(baselineDeclarationFor(config, workflowRecord())).toBe(declaredOaWorkflow)
     const promptOnly: GateConfig = { ...config, baselines: [declaredPrompt] }
     expect(baselineDeclarationFor(promptOnly, workflowRecord())).toBeUndefined()
   })

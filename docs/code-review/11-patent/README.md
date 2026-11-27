@@ -30,7 +30,7 @@
 | B2 | patent-core 权项/检查/IPC 等纯函数层 | 59 | 完成 |
 | B3 | patent-core 其余（atoms、ModelPort、evidence、workflow 等） | 114 | 完成 |
 | B4 | patent-tools 检索与数据通道 | 42 | 完成 |
-| B5 | patent-tools 撰写与校核 | 21 | 待开始 |
+| B5 | patent-tools 撰写与校核 | 21 | 完成 |
 | B6 | patent-tools 分析、附图、工作流与评审 | 102 | 待开始 |
 | B7 | 六个服务接缝包 | 109 | 待开始 |
 | B8 | 法律底座与交付链八包 | 94 | 待开始 |
@@ -58,9 +58,10 @@
 - 2026-11-27：专档建立；B0 完成，564 个文件全部有归属、无未分配项。分布：B2 59、B3 114、B4 42、B5 21、B6 102、B7 109、B8 94、B9 23。基线命令与退出码见 [02-batches/B0.md](02-batches/B0.md)。
 - 基线实测：单测 430 文件 / 7525 用例通过，typecheck 与 lint 通过；`verify-export-jsdoc` 与 `verify-npm-install-layout` 为既有红。
 - 已修：`patent-tools` 两处导出函数的 JSDoc 缺漏（F-PAT-061）；纯 Host 包缺少产物级依赖门禁（F-PAT-063），新增 `verify-published-imports`，实测 365 个入口 0 违规。
-- 已更正：F-PAT-059、F-PAT-060 原判为依赖错置，复核为误报并回退（`0ccfa1a864`）——tsdown 把未声明导入内联进产物，发布安装本可正常加载。
+- 已更正：F-PAT-059、F-PAT-060 原判为依赖错置，复核为误报并已回退（提交主题 `Revert "fix(patent-data,patent-document): declare dsh-value as a runtime dependency"`）——tsdown 把未声明导入内联进产物，发布安装本可正常加载。
 - 未修：`verify-npm-install-layout` 超预算（F-PAT-062，待决策）。
 - B1 完成：装配探针 `patent-preset-mount.spec.ts` 真实装载 16 个插件行，六个接缝服务全部可解析、15 个代表性工具全部可见，并附一条会变红的负控制；见 [02-batches/B1.md](02-batches/B1.md)。
 - B2 完成：59/59 文件签收（精读 34、关键段 10、类型与再导出 15），四条 P2 已修（F-PAT-064 规则报告拼行、F-PAT-065 节点硬上界临界失效、F-PAT-066 缺失章节被读成「无缺失」、F-PAT-067 数值节点不转发取消信号），patent-core 95 文件 / 1874 用例全绿；见 [02-batches/B2.md](02-batches/B2.md)。
 - B3 完成：114/114 文件签收（本人精读 9、代理评审 105，代理结论逐条复核），四条 P2 已修（F-PAT-068 权重 NaN、F-PAT-069 8 位数字误判日期、F-PAT-070 取消后计时器未清、F-PAT-071 黑板反序列化不校验），F-PAT-072 模糊词表误伤待决策；见 [02-batches/B3.md](02-batches/B3.md)。
 - B4 完成：42/42 文件签收（精读 2、关键段复核 9、代理评审 31），五条已修（F-PAT-073 缓存腿丢弃 timeout/signal、F-PAT-074 留档非原子、F-PAT-075 退避不可中止、F-PAT-076 PDF 超时文案、F-PAT-077 `[object Object]`），F-PAT-078/079 未修；见 [02-batches/B4.md](02-batches/B4.md)。
+- B5 完成：21/21 文件签收（精读 4、代理评审 17），五条已修（F-PAT-080 部分附图未分析却报悬空、F-PAT-081 中文单位在数值路径完全不识别、F-PAT-082 权项特征单位写法不一致即报缺失、F-PAT-083 权利要求引用正则漏写法、F-PAT-084 模糊词子串误伤），F-PAT-085..088 未修/待决策；专利两包 223 文件 / 4,293 用例全绿，改动源文件覆盖率 100%；见 [02-batches/B5.md](02-batches/B5.md)。

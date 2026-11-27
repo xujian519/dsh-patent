@@ -4,7 +4,7 @@
 
 ## F-PAT-059 patent-data 运行时导入未声明运行时依赖（复核为误报，已回退）
 
-- 结论：**不成立**。回退提交 `0ccfa1a864`。
+- 结论：**不成立**。已回退，提交主题为 `Revert "fix(patent-data,patent-document): declare dsh-value as a runtime dependency"`。
 - 原始判断：`packages/patent/patent-data/src/cnipr-receipt.ts:1` 运行时 `import { asRecord } from '@deepseek-ai/dsh-value'`，而 `package.json` 只在 `devDependencies` 声明，判定发布安装无法解析。
 - 复核证据：tsdown 会把**未在运行时依赖段声明**的导入内联进产物。主检出已构建的 `packages/patent/patent-data/lib/index.js` 里，该包只剩一处 JSDoc 注释，`asRecord` 以本地函数形式存在，没有任何裸 `import`。同一产物中 `@deepseek-ai/cordis`、`@deepseek-ai/schemastery`、`@deepseek-ai/nuo-patent`、`@deepseek-ai/dsh-patent-core` 都以 `import ... from "..."` 形式外置——规则是「已声明则外置，未声明则打包」。
 - 影响：原判不存在。把该依赖移入 `dependencies` 会让它转为外置，改变分发形态而无收益。
@@ -12,7 +12,7 @@
 
 ## F-PAT-060 patent-document 运行时导入未声明运行时依赖（复核为误报，已回退）
 
-- 结论：**不成立**。回退提交 `0ccfa1a864`。
+- 结论：**不成立**。已回退，提交主题为 `Revert "fix(patent-data,patent-document): declare dsh-value as a runtime dependency"`。
 - 原始判断：`documentCompliance.ts:21` 与 `paragraphNumbering.ts:13` 使用 `escapeRegExp`，`package.json` 只在 `devDependencies` 声明。
 - 复核证据：与 F-PAT-059 同因。构建产物中该依赖被内联，发布安装可正常加载。
 - 教训：同 F-PAT-059。
@@ -220,3 +220,94 @@
 - 严重度：P2。
 - 证据：按文件路径的 Promise 队列只覆盖单进程；两个进程（或外部进程改了同一索引）并发 upsert 时各自读到同一份 `entries`，先后 rename，后者覆盖前者，被覆盖的条目静默丢失且无告警。
 - 状态：**未修**。修法同样是 `withFileLock`，但该模块被附图检索与化学索引共用，需要连同其测试一起改，留待下一轮。
+
+## F-PAT-080 部分附图未参与分析时，附图说明中的标号被判成悬空 error（B5）
+
+- 位置：`packages/patent/patent-tools/src/tool/spec-figure-marks.ts`（`checkFigureMarkConsistency`）。
+- 维度：模型可见判定。
+- 严重度：P2。
+- 证据：`figureMarks` 只收集 `usable` 图的组件；`unusable` 仅产生一条「分析结果不可用」warning。但 `dangling = listedMarks - figureMarks` 与权利要求括号标号照常计算，于是在没读出来的那张图上，附图说明里的标号会被报 error「附图说明中的标记 N 在附图中不存在」。
+- 影响：客户只提供部分图，或某张图 OCR 失败时，校验工具给出 error 级、指向文本的缺陷结论（`passed=false`），而真实情况是数据缺口。错误方向与「不可用」提示相反。
+- 最小修复：存在不可用图时跳过悬空与权利要求标号缺失判定，保留「分析结果不完整」warning。
+- 工作量：10 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B5）；新增用例「一张可用 + 一张不可用、权利要求引用 (9)」，断言无 error 且保留不可用 warning。
+
+## F-PAT-081 规格校验的两条数值路径完全不识别中文单位（B5）
+
+- 位置：`spec-numeric.ts` 的 `RANGE_PATTERN`／`VALUE_PATTERN`；`spec-claim-coverage.ts` 的 `CLAIM_VALUE_PATTERN`。
+- 维度：覆盖面（漏报）。
+- 严重度：P2。
+- 证据：共享词表 `NUMERIC_UNIT_ALTERNATION` 只有拉丁单位，而同一模块的 `NUMERIC_UNIT_SCALES` 与新颖性轨的 `HAN_UNITS` 都收了中文单位。新颖性轨先匹配数值、再从片段末尾读单位，所以读得到；规格校验要求单位紧跟数值，只能依赖 alternation。实测 `extractNumericRanges('厚度为20毫米至90毫米。')` 返回 `[]`，端点与中点两条检查静默不跑。
+- 影响：中文写法是中文专利的常见形式，这些文本的数值范围检查整体失效，报告仍显示「通过」。
+- 最小修复：词表新增 `NUMERIC_HAN_UNIT_ALTERNATION` 与合并串 `NUMERIC_ANY_UNIT_ALTERNATION`，两条路径改用合并串。
+- 工作量：30 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B5）；含中文区间、中文单值、混合写法与端到端校验四类用例。
+
+## F-PAT-082 权项特征按原文单位写法比对，10mm 与 10毫米 互判缺失（B5）
+
+- 位置：`spec-claim-coverage.ts`（`checkClaimCoverage`）。
+- 维度：正确性（误报）。
+- 严重度：P2。
+- 证据：特征键是 `数值 + 归一单位`，而归一函数只统一摄氏度与全角百分号，随后用 `text.includes(feature)` 在说明书中查找。权利要求写 `10mm`、说明书写 `10毫米` 时判定为「技术特征未记载」。
+- 影响：error 级误报，且这类「权利要求用代号、说明书用中文」的混写在实务中很常见。
+- 最小修复：两侧都按 `canonicalNumericUnit` 建键比对（说明书侧改为抽取数值后建键，不再用子串查找），不做量纲换算——`10cm` 不覆盖 `100mm`，避免用静默换算掩盖真实的数值不一致。
+- 工作量：40 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B5）；含覆盖与未覆盖两条用例。
+
+## F-PAT-083 权利要求引用正则漏多种实际写法（B5）
+
+- 位置：`spec-prohibitions.ts`（`CLAIM_CITATION_RE`）。
+- 维度：覆盖面（漏报，法条检查）。
+- 严重度：P2。
+- 证据：中间字符类只有数字、中文数字与「或／至／、／,／空白」：「如权利要求1和2所述」「根据权利要求1至3中任一项所述」「如权利要求第1项所述」「根据权利要求1-3所述」「参见上述权利要求2所述」都不匹配，而这些都属于细则第二十条第三款禁止的引用语。
+- 影响：说明书引用了权利要求却报「无违规」，是法条级漏报。
+- 最小修复：扩字符类（和／与／及／第／项／之／任／中、范围连接符、全角逗号），前缀允许「上述／前述」，动词补「参见」。
+- 工作量：15 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B5）；5 种写法各一条断言，另加一条「非引用语不误报」。
+
+## F-PAT-084 模糊词「可能」按子串匹配，误伤「尽可能」「不可能」「可能性」（B5）
+
+- 位置：`spec-clarity.ts`。
+- 维度：正确性（误报）。
+- 严重度：P3。
+- 证据：模块自述「按上下文而非子串匹配」，实现却是 `text.includes('可能')`。「尽可能提高精度」「不可能脱落」「失效的可能性」都会报警。另有一处位置偏差：命中后仍用 `locateMatch` 找首个出现位置，若前面出现过「尽可能」，报的行号会指到那里。
+- 最小修复：改用 `(?<![尽不])可能(?!性)`；位置由匹配下标与 `locationAt` 计算，不再二次查找子串。
+- 工作量：20 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B5）；含「三种合法用法不报」与「位置落在自身行」两条用例。
+
+## F-PAT-085 摘要未加括号的标号检测前瞻过窄（B5，未修）
+
+- 位置：`spec-abstract.ts`（`unparenthesizedMark`）。
+- 维度：覆盖面。
+- 严重度：P3。
+- 证据：前瞻只认 `[，。；、\s]|$`，句中写法「壳体1设置在底座上」不报。
+- 为什么不修：去掉前瞻会把「包括2个」「含有5份」读成标号，而 `QUANTITY_WORDS` 只覆盖度量名。扩字符集属于打地鼠，先要定「什么才算组件标号」的口径。
+- 状态：**未修**，待决策。
+
+## F-PAT-086 背景技术把裸「标准」当作文献引证（B5，未修）
+
+- 位置：`spec-description-extras.ts`（`CITATION_CLAIM`）。
+- 维度：正确性（误报口径）。
+- 严重度：P3。
+- 证据：「符合国家标准」「按行业标准设计」都会进入引证分支，再因缺少字面「标准号」报 warning。
+- 为什么不修：要求补出处的方向本身正确，只是判据偏宽；是否必须写标准号需要产品口径。
+- 状态：**未修**，待决策。
+
+## F-PAT-087 SMILES 校验是空实现，且未列入未评估项（B5，未修）
+
+- 位置：`spec-quantification.ts`（`checkSmilesValidity`）、`validate-specification.ts`（`notAssessedItems`）。
+- 维度：模型可见输出。
+- 严重度：P3。
+- 证据：函数恒返回 `[]`（RDKit 未打包），报告里没有任何「化学结构式未核」的痕迹。
+- 影响：化学领域用户会认为结构式已被检查。
+- 为什么不修：需要先有可靠的 SMILES 候选抽取，否则「未评估」本身也无法给出判据。
+- 状态：**未修**。
+
+## F-PAT-088 新颖性轨把中文单位的数值区间读成两个数值点（B5 发现，属 patent-core）
+
+- 位置：`packages/patent/patent-core/src/novelty/numeric-range.ts`（`RANGE_PATTERN`）与 `numeric-vocabulary.ts`。
+- 维度：正确性（判定方向）。
+- 严重度：P2。
+- 证据：探针 `温度为20毫米至90毫米` 的 `extractNumericFindings` 返回 20、90、50 三个 `isPoint`。两侧都用中文单位写区间时，「权利要求 20 毫米至 90 毫米 vs 对比文件 25 毫米至 30 毫米」会判 `no_overlap`，正确结论应是覆盖（`overlapped`）。
+- 为什么不随本批修：把中文单位并进共享 alternation 会改变新颖性判定输出（模型可见摘要），需要同批更新 `numeric-range` 用例与相关快照，属于独立变更。
+- 状态：**未修**，建议单独一批处理。

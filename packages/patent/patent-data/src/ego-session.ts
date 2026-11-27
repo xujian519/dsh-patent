@@ -196,12 +196,17 @@ export class EgoBrowserSession {
    * Environment passed to one ego-browser spawn.
    * Copies HOME, LANG, LANGUAGE, every `LC_*` name, and the display names
    * from `base`, then sets PATH to `base.PATH` plus this session's path entries.
-   * Every other name is omitted.
+   * Every other name is written as an `undefined` tombstone: the subprocess seam
+   * merges `env` onto its scrubbed parent base, so omitting a name would leave
+   * the ambient value (`GH_PAT`, `SSH_AUTH_SOCK`, `AWS_PROFILE`, …) in the child.
    * @param base - session or per-run environment to copy from.
    * @returns the spawn environment.
    */
   private buildEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     const env: NodeJS.ProcessEnv = {}
+    for (const name of Object.keys(process.env)) {
+      if (name !== 'PATH' && !isEgoChildEnvName(name)) env[name] = undefined
+    }
     for (const [name, value] of Object.entries(base)) {
       if (value !== undefined && isEgoChildEnvName(name)) env[name] = value
     }

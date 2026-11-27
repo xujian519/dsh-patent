@@ -5,6 +5,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
 import type { EgoSpawnResult, EgoSpawnRunner, EgoSpawnSpec } from '@deepseek-ai/dsh-patent-data'
 import { EgoBrowserSession, normalizePatentNumber } from '@deepseek-ai/dsh-patent-data'
 
@@ -188,6 +189,26 @@ describe('EgoBrowserSession.runScript', () => {
       'XAUTHORITY',
       'XDG_RUNTIME_DIR',
     ])
+  })
+
+  it('tombstones non-allowlisted names so the subprocess seam cannot re-add them', async () => {
+    const runner = new FakeRunner()
+    // GH_PAT / SSH_AUTH_SOCK 不被 scrubbedParentEnv 的凭据模式擦除，省略即泄漏。
+    process.env.GH_PAT = 'ghp_secret'
+    process.env.SSH_AUTH_SOCK = '/tmp/ssh-agent.sock'
+    try {
+      const session = new EgoBrowserSession({ runner, homeDir: '/Users/tester', platform: 'darwin' })
+      await session.runScript("cliLog('x')", { cwd: '/tmp' })
+      const specEnv = runner.calls[0]?.env ?? {}
+      // seam 把 spec.env 合并到 scrubbedParentEnv() 之上；没有墓碑时这两个名字会进入子进程。
+      const merged = { ...scrubbedParentEnv(), ...specEnv }
+      expect(merged.GH_PAT).toBeUndefined()
+      expect(merged.SSH_AUTH_SOCK).toBeUndefined()
+      expect(merged.HOME).toBeDefined()
+    } finally {
+      delete process.env.GH_PAT
+      delete process.env.SSH_AUTH_SOCK
+    }
   })
 
   it('uses the per-run environment as the allowlist source', async () => {

@@ -94,6 +94,17 @@ describe('mapPatentData', () => {
     expect(mapped.assigneesOriginal).toEqual([])
   })
 
+  it('tolerates null elements in the engine JSON arrays', () => {
+    const data = makePatentData()
+    data.inventor_name = JSON.stringify([null, { inventor_name: 'Alice Zhang' }])
+    data.assignee_name_current = JSON.stringify([null])
+    data.classifications = JSON.stringify([null, 'H04L9/40', 42])
+    const mapped = mapPatentData(data, 'US11452699B2', 'url')
+    expect(mapped.inventors).toEqual(['Alice Zhang'])
+    expect(mapped.assigneesCurrent).toEqual([])
+    expect(mapped.classifications).toEqual(['H04L9/40'])
+  })
+
   it('uses explicit patent/url params and tolerates extra keys', () => {
     const data = makePatentData()
     const withExtras = data as PatentData & { url?: string; patent?: string }

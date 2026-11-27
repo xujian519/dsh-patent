@@ -44,6 +44,7 @@ const EXECUTABLE_SOURCE_ALLOWLIST = new Map<string, string>([
   ['packages/patent/patent-rule/tests/fixtures/warn-driver.ts', 'test-only subprocess driver'],
   ['packages/sdk/client/tests/fake-runtime.ts', 'test-only SDK runtime peer'],
   ['packages/self-evolve/self-evolve-benchmark/examples/patent-oas/seed.mjs', 'benchmark example seed script'],
+  ['packages/self-evolve/self-evolve-benchmark/examples/patent-oas-heldout/seed.mjs', 'benchmark example seed script'],
   ['packages/session/session-telemetry-otel/tests/fixtures/driver.ts', 'test-only subprocess driver'],
   ['packages/shell/tool-pwsh/tests/fixtures/loader/driver.ts', 'test-only subprocess driver'],
   ['packages/subagent/subagent-acp/tests/fixtures/loader/driver.ts', 'test-only subprocess driver'],

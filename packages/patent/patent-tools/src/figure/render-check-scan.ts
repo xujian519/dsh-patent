@@ -153,12 +153,13 @@ type Frame = {
 }
 
 /**
- * 扫描选项。缺省时曲线仍按端点弦近似，复核结论与以前一致。
+ * 扫描选项。
  */
 export type ScanOptions = {
   /**
    * 把 C/S/Q/T/A 折成弦高不超过该毫米数的折线。
-   * 只给 DXF 用；复核不要传，否则「未量测」说明会消失。
+   * 缺省时不折线，曲线只取端点并在 `unmeasured` 里声明端点弦近似；需要曲线几何的
+   * 调用方（渲染复核、DXF 转换、墨迹范围校验）都应显式传入。
    */
   curveToleranceMm?: number
 }
@@ -413,25 +414,49 @@ type PathGroup = { readonly name: string; readonly args: readonly number[] }
 /** 各路径命令的参数个数（小写名）。 */
 const PATH_ARITY: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 }
 
-/** 路径解析结果：子路径与是否含曲线（曲线按端点弦近似）。 */
+/** 路径解析结果：子路径与是否按端点弦近似（只有未给折线公差时为 true）。 */
 type PathData = { readonly subpaths: readonly SubPath[]; readonly approximate: boolean }
+
+/** SVG 路径命令字母。`e`/`E` 只作十进制指数，不能切成命令。 */
+const PATH_COMMAND = /[a-df-zA-DF-Z]/
+/** 路径数值（粘性）：整数/小数加可选十进制指数，与 SVG 数字文法一致。 */
+const PATH_NUMBER = /[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?/y
+/** 路径数值之间的分隔符。 */
+const PATH_SEPARATOR = /[\s,]/
 
 /**
  * 把 `d` 切成命令组：每个命令字母带其后的数值，命令前出现裸数值或参数非数值时 undefined。
+ *
+ * 不用「字母 + 非字母」的正则切分：TechDraw 会写出 `1.5e-05` 这类指数记法，把 `e`
+ * 当成命令会让整条路径不可量测。
  * @param source - 已去首尾空白的 `d` 原文。
  * @returns 命令组；无法切分时 undefined。
  */
 function pathGroups(source: string): PathGroup[] | undefined {
   const groups: PathGroup[] = []
-  let consumed = 0
-  for (const match of source.matchAll(/([a-zA-Z])([^a-zA-Z]*)/g)) {
-    if (match.index !== consumed) return undefined
-    consumed = match.index + match[0].length
-    /* v8 ignore next -- the path-group pattern always captures group 2. */
-    const raw = (match[2] ?? '').trim()
-    const args = raw === '' ? [] : raw.split(/[\s,]+/).map(Number)
-    if (args.some(value => !Number.isFinite(value))) return undefined
-    groups.push({ name: match[1] as string, args })
+  let index = 0
+  /** 跳过数值/命令之间的空白与逗号。 */
+  const skipSeparators = (): void => {
+    while (index < source.length && PATH_SEPARATOR.test(source.charAt(index))) index += 1
+  }
+  while (index < source.length) {
+    const name = source.charAt(index)
+    if (!PATH_COMMAND.test(name)) return undefined
+    index += 1
+    const args: number[] = []
+    for (;;) {
+      skipSeparators()
+      if (index >= source.length) break
+      if (PATH_COMMAND.test(source.charAt(index))) break
+      PATH_NUMBER.lastIndex = index
+      const match = PATH_NUMBER.exec(source)
+      if (match === null) return undefined
+      const value = Number(match[0])
+      if (!Number.isFinite(value)) return undefined
+      args.push(value)
+      index = PATH_NUMBER.lastIndex
+    }
+    groups.push({ name, args })
   }
   return groups
 }
@@ -572,7 +597,7 @@ function flattenArc(
  * 未给 `toleranceUser` 时，曲线命令 C/S/Q/T/A 只取末点连弦并置 `approximate`。
  * 给了公差时折成弦高不超过该用户单位的折线，且不再标记近似。
  * @param d - `d` 属性原文。
- * @param toleranceUser - 曲线弦高上限（用户单位）；缺省则按端点弦。
+ * @param toleranceUser - 曲线弦高上限（用户单位）；缺省则只取端点并按端点弦近似。
  * @returns 子路径与近似标记；无法解析时 undefined。
  */
 function parsePathData(d: string, toleranceUser?: number): PathData | undefined {
@@ -904,7 +929,7 @@ export function quadCorners(quad: GlyphQuad): Quad {
  * 的矩阵，故此后所有坐标与长度都是毫米：落版页、拼版页、px 级用户单位的导出文件都换算
  * 到同一口径。
  * @param svg - 完整 SVG 文本。
- * @param options - 曲线折线化公差；缺省时曲线仍按端点弦。
+ * @param options - 曲线折线化公差；缺省时曲线只取端点并按端点弦近似。
  * @returns 画布尺寸、图形、文字与未量测原因。
  */
 export function scanSvg(svg: string, options?: ScanOptions): Scan {

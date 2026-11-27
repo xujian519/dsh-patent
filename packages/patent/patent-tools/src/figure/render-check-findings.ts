@@ -111,6 +111,13 @@ const OVERLAP_MIN_MM = 0.2
  */
 const DEFAULT_TEXT_CLEARANCE_MM = 1.5
 /**
+ * 渲染复核的曲线折线化弦高上限（毫米）。
+ *
+ * 取 0.05：远小于叠压判定的 0.2 毫米与默认文字净距 1.5 毫米，折线误差不会改变任何
+ * 判据的结论；TechDraw 的圆弧与字形轮廓按此折线化后点数仍在数十量级。
+ */
+const RENDER_CURVE_TOLERANCE_MM = 0.05
+/**
  * 按图型分档的净距下限（毫米）。各图型按自己的合法排版间距取值：阈值只抓真正的
  * 贴靠与重叠，不把工具自己的正确输出判负。
  *
@@ -773,6 +780,7 @@ function inkOutsideCanvas(scan: Scan): RenderCheckFinding | undefined {
 
 /**
  * 量测一张 SVG 的墨迹包围盒（毫米，根坐标系）：全部子路径顶点与文字占位框的并集。
+ * 曲线按 0.05 毫米弦高折线化，弧顶等外凸部分计入包围盒。
  *
  * 供「转换/改写后几何是否走样」的护栏使用（文字转轮廓路径后墨迹必须仍落在原范围内）；
  * 与 {@link checkFigureRendering} 共用同一遍历，故两处口径一致。
@@ -783,7 +791,7 @@ function inkOutsideCanvas(scan: Scan): RenderCheckFinding | undefined {
  */
 export function measureInkBounds(svg: string, options: { maxBytes?: number } = {}): InkBounds | undefined {
   assertSafeSvg(svg, options.maxBytes ?? DEFAULT_SVG_MAX_BYTES)
-  return inkBounds(scanSvg(svg))
+  return inkBounds(scanSvg(svg, { curveToleranceMm: RENDER_CURVE_TOLERANCE_MM }))
 }
 
 /**
@@ -800,7 +808,8 @@ export function blockingFindings(report: RenderCheckReport): RenderCheckFinding[
 /**
  * 量测一张已生成的附图并报告渲染层面才可见的问题。
  *
- * 元素按嵌套逐层继承变换与样式（见模块文档的量测范围）；凡不在范围内的结构，报告
+ * 元素按嵌套逐层继承变换与样式（见模块文档的量测范围）；曲线命令按 0.05 毫米弦高
+ * 折线化后参与量测，不再只取端点。凡不在范围内的结构，报告
  * `not-measured` 而不是略过。本模块只读文本、不解析实体也不执行任何内容，输入仍过
  * {@link assertSafeSvg} 的实体/CDATA、体量与根元素检查，被拒时抛出。
  *
@@ -824,7 +833,7 @@ export function checkFigureRendering(
   } = {},
 ): RenderCheckReport {
   assertSafeSvg(svg, options.maxBytes ?? DEFAULT_SVG_MAX_BYTES)
-  const scan = scanSvg(svg)
+  const scan = scanSvg(svg, { curveToleranceMm: RENDER_CURVE_TOLERANCE_MM })
   const outlines: Poly[] = []
   const outlineGroups: (number | undefined)[] = []
   const outlineStroked: boolean[] = []

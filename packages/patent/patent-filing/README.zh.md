@@ -37,6 +37,8 @@ build_patent_filing 接收受控 `draft`（与 `render_patent_document` 的 clai
 
 `contentFromDraft(draft)` 是确定性的 `SpecDraft` → `FilingContent` 桥：内容模型没有列表节点，一个 `list` 块落成逐项正文段；表题全文档连续编号（「表 N · 名称」），表题段在前、`table` 节点（首行表头）在后。`tests/from-draft.spec.ts` 里的一致性测试把同一份草案的权项项号、表题与附图说明图号与 HTML 通道 `renderSpecDraftSections` 的输出逐一对齐钉住。
 
+`filingTextsFromDraft(draft)` 把同一份映射投影为纯文本，供交付时的同一性核对：说明书摊平为 `### ` 标题行与正文段、按空行相连，权项带项号逐行，摘要逐段一行，外加发明名称。预置的交付前置门禁对这些投影取 digest，证明前置检查读过的就是本次交付的文本；`patent-tools` 的成文形式预检扫描的也是这份摊平结果，被校验的文本与被写出的文本因此同源。
+
 无附图发明（《专利审查指南》第二部分第二章 2.3）传 `figureFiles: []` 与空的 `drawingDescriptions` 部分：`contentFromDraft` 省略「附图说明」标题，成文时删掉「摘要附图」「说明书附图」两个可选节，验收按三节成品核对并把「附图说明」视为可选标题。实用新型仍必须有附图；该要求由 `spec-check` 执行，不在本包。
 
 <a id="verify_patent_filing-tool"></a>

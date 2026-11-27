@@ -75,6 +75,7 @@ interface DeliveryEvidenceDeclaration {
   field?: string
   equals?: string | boolean | string[]
   minItems?: number
+  matchesDraftTexts?: string[]
 }
 
 /** One `deliveryGate` entry as the `patent` preset declares it. */
@@ -363,8 +364,14 @@ describe('patent preset composition', () => {
     // armed and never fires.
     const rows = await patentRows()
     const row = rows.find(entry => entry.id === 'patent-rule')
-    const gate = (row?.config as { deliveryGate?: DeliveryGateDeclaration[] } | undefined)?.deliveryGate ?? []
-    expect(gate).toHaveLength(10)
+    const config = row?.config as {
+      deliveryGate?: DeliveryGateDeclaration[]
+      deliveryGateDigestMode?: string
+    } | undefined
+    const gate = config?.deliveryGate ?? []
+    expect(gate).toHaveLength(11)
+    // 投影 digest 核对先以 shadow 运行:误拒只进日志,回放归因后才切 enforce。
+    expect(config?.deliveryGateDigestMode).toBe('shadow')
 
     const compliance = gate.find(entry => entry.tool === 'render_patent_document'
       && entry.requires?.includes('matter_log_append') === true)
@@ -378,14 +385,25 @@ describe('patent preset composition', () => {
     const filing = gate.find(entry => entry.tool === 'build_patent_filing')
     expect(filing?.requires).toEqual(['rule_check', 'law_verify', 'matter_log_append', 'validate_specification'])
     expect(filing?.whenArgs).toBeUndefined()
-    expect(filing?.evidence?.rule_check).toEqual([{ field: 'evaluated', minItems: 1 }])
+    // 两个前置的 digest 证据把「跑过」收窄到「读过本次 draft」:rule_check 核说明书
+    // 全文投影,validate_specification 核全文、权项与摘要。
+    expect(filing?.evidence?.rule_check).toEqual([{ field: 'evaluated', minItems: 1, matchesDraftTexts: ['text'] }])
     // rule_check runs the compliance rule library, which does not judge the form items the
     // office rejects a filing over (parenthesized figure marks, figure number spacing,
     // abstract length). patent-tools' guard blocks those same-source at build time, so the
     // gate only has to prove the model ran the form report over real text — not that the
     // report passed: its description and claims families judge substance, and a form-clean
     // filing can still trip them.
-    expect(filing?.evidence?.validate_specification).toEqual([{ field: 'evaluated', minItems: 1 }])
+    expect(filing?.evidence?.validate_specification).toEqual([
+      { field: 'evaluated', minItems: 1, matchesDraftTexts: ['text', 'claims', 'abstract'] },
+    ])
+
+    // claims-spec 渲染交付的就是权项文本本身:rule_check 必须读过本次 draft 的权项投影
+    // (按 digest 匹配,不看 evaluated 条目的字段名)。
+    const claimsSpec = gate.find(entry => entry.tool === 'render_patent_document'
+      && entry.requires?.length === 1 && entry.requires[0] === 'rule_check')
+    expect(claimsSpec?.whenArgs?.template).toEqual(['claims-spec'])
+    expect(claimsSpec?.evidence?.rule_check).toEqual([{ field: 'evaluated', matchesDraftTexts: ['claims'] }])
 
     // Citation-bearing deliverables require a law_verify run that actually recognized
     // at least one citation; an application document or form may legitimately cite none.

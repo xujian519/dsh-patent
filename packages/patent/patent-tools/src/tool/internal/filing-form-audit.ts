@@ -14,7 +14,7 @@
  * @module @deepseek-ai/dsh-patent-tools/tool/internal/filing-form-audit
  */
 
-import { contentFromDraft } from '@deepseek-ai/dsh-patent-filing'
+import { filingTextsFromDraft } from '@deepseek-ai/dsh-patent-filing'
 import type { SpecDraft } from '@deepseek-ai/dsh-patent-core'
 import { validateSpecification } from '../validate-specification.ts'
 import type { SpecFamily, SpecViolation } from '../spec-types.ts'
@@ -31,29 +31,16 @@ const FORM_FAMILIES: ReadonlySet<SpecFamily> = new Set(['structure', 'figures', 
 /**
  * 说明书正文按 docx 通道的节点顺序摊平为带 Markdown 标题的全文。
  *
- * 形式规则按行扫描标题与图号，因此各部分标题必须写成标题行。`contentFromDraft`
- * 只产出 `h3` 标题与 `p` 正文：`table` 节点不带文字，行内容不进文本，形式规则
- * 也不看表格内容，表题段（`p` 节点）照常进入。
+ * 形式规则按行扫描标题与图号，因此各部分标题必须写成标题行。投影由
+ * {@link filingTextsFromDraft} 生成（h3 标题 + p 正文；`table` 节点不带文字，
+ * 行内容不进文本，形式规则也不看表格内容，表题段照常进入），与交付门禁的
+ * digest 核对消费同一份摊平结果。
  * @param draft - 已通过 `validateSpecDraft` 的草案。
  * @returns 说明书全文、权利要求全文与摘要全文。
  */
 export function formTextFromDraft(draft: SpecDraft): { text: string; claims: string; abstract: string } {
-  const content = contentFromDraft(draft)
-  const lines: string[] = []
-  for (const node of content.specification) {
-    if (node.kind === 'h3') {
-      /* v8 ignore next -- contentFromDraft 的 h3 标题由 SPEC_PART_HEADINGS 生成，text 必然存在 */
-      lines.push(`### ${node.text ?? ''}`)
-    } else if (node.kind === 'p') {
-      /* v8 ignore next -- p 节点的 text 来自草案正文、列表项或表题，必然存在 */
-      lines.push(node.text ?? '')
-    }
-  }
-  return {
-    text: lines.join('\n\n'),
-    claims: content.claims.join('\n'),
-    abstract: content.abstract.join('\n'),
-  }
+  const { text, claims, abstract } = filingTextsFromDraft(draft)
+  return { text, claims, abstract }
 }
 
 /**

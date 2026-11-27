@@ -367,6 +367,11 @@
                   # 会话内成功返回的调用；未满足即拒绝该次调用，使缺闸门证据的件不落盘。
                   # evidence 再核结果字段：零字节 rule_check、没有识别到引用的 law_verify、
                   # 另一个 manifest 的收口记录都不算本次交付的证据。
+                  # matchesDraftTexts 再把证据绑到内容上：前置结果 evaluated 里的 digest 必须
+                  # 覆盖本次 draft 的规范文本投影（与 docx 通道同一份 contentFromDraft 摊平），
+                  # 对旧稿跑过的检查不能给新稿交付作证。先 shadow 观测误拒（只记日志不拒绝），
+                  # 回放确认误拒可归因后切 enforce；缺省值是 enforce，此处显式写 shadow。
+                  deliveryGateDigestMode: shadow
                   deliveryGate:
                     # 所有交付渲染与提交格式成文：合规规则库逐条 + 法条引用形式与索引收录，各一次。
                     # build_patent_filing 写出的正是交给 CNIPA 的申请文件 docx，与渲染件同属交付物；
@@ -380,6 +385,16 @@
                         rule_check:
                           - field: evaluated
                             minItems: 1
+                    # claims-spec 渲染交付的就是权项文本本身：rule_check 必须读过本次 draft
+                    # 的权项投影（按 digest 匹配，不看 evaluated 条目的字段名）。
+                    - tool: render_patent_document
+                      requires: [rule_check]
+                      whenArgs:
+                        template: [claims-spec]
+                      evidence:
+                        rule_check:
+                          - field: evaluated
+                            matchesDraftTexts: [claims]
                     # 申请文件还要过形式审查：rule_check 判的是合规规则库，不覆盖附图标记
                     # 括号、图号空格、摘要篇幅这些体例项。形式项的阻断由 patent-tools 的
                     # tools.guard 同源保证：成文前它用 docx 通道同一份 contentFromDraft 重建
@@ -388,15 +403,19 @@
                     # （与 rule_check 的「跑过」语义一致），不要求 passed：passed 为
                     # errors === 0，而完整报告的 description 与 claims 族是实质撰写质量项，
                     # 一份形式合格的申请文件也会命中。门禁保证的是模型看过完整报告。
+                    # 两个前置的 digest 证据把「跑过」收窄到「读过本次 draft」：
+                    # rule_check 核说明书全文投影，validate_specification 核全文、权项与摘要。
                     - tool: build_patent_filing
                       requires: [rule_check, law_verify, matter_log_append, validate_specification]
                       evidence:
                         rule_check:
                           - field: evaluated
                             minItems: 1
+                            matchesDraftTexts: [text]
                         validate_specification:
                           - field: evaluated
                             minItems: 1
+                            matchesDraftTexts: [text, claims, abstract]
                     # 成文类交付（意见、答复、报告）以法条论证为主体：law_verify 必须真的
                     # 识别到引用，空文本之外的「无引用可查」同样不满足前置。申请文件、
                     # 检索报告表格、侵权比对与补正件不在此列，它们可以合法地不引用法条。

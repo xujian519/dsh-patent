@@ -36,6 +36,8 @@ Section headings, claim item numbers, figure captions, and table captions are ge
 
 `contentFromDraft(draft)` is the deterministic `SpecDraft` → `FilingContent` bridge. Lists have no node kind in the content model, so a `list` block becomes one paragraph per item. Table captions are numbered continuously across the document (`表 N · 名称`) and the caption paragraph precedes the `table` node whose first row is the header. The consistency test in `tests/from-draft.spec.ts` pins the same draft's claim numbers, table captions, and figure captions against the HTML channel's `renderSpecDraftSections` output.
 
+`filingTextsFromDraft(draft)` projects the same mapping into plain text for delivery-time identity checks: the specification flattened into `### ` heading and paragraph lines joined by blank lines, the numbered claims one per line, the abstract one paragraph per line, and the title. The preset's delivery gate hashes these projections to prove a prerequisite check read the text being delivered, and `patent-tools`' filing form pre-check scans the same flattening, so the checked text and the written text share one source.
+
 A drawing-free invention (Examination Guidelines Part II Chapter 2 §2.3) passes `figureFiles: []` and an empty `drawingDescriptions` part: `contentFromDraft` omits the 附图说明 heading, the build drops both optional figure sections, and the verifier expects a three-section document and treats 附图说明 as an optional heading. A utility model still needs drawings; that requirement is enforced by `spec-check`, not by this package.
 
 ## verify_patent_filing tool

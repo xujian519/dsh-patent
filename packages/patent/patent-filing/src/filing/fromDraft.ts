@@ -70,6 +70,48 @@ function drawingNodes(blocks: readonly DraftBlock[], counter: CaptionCounter): S
 }
 
 /**
+ * 交付核对用的规范文本投影：与 docx 通道同一份 {@link contentFromDraft} 映射摊平出的
+ * 纯文本形态。交付前置门禁（dsh-patent-rule）按它对「前置检查读过的文本」与「本次交付的
+ * draft」做 digest 比对，形式预检（dsh-patent-tools）按它重建形式规则的全文输入；两处
+ * 消费同一投影，核对文本与成文文本必然同源。
+ */
+export interface FilingTexts {
+  /** 说明书全文：h3 标题（`### ` 前缀）与正文段按空行摊平；表格节点不带文字，不进文本。 */
+  text: string
+  /** 权利要求全文：带项号（「1. 」前缀）逐行。 */
+  claims: string
+  /** 摘要全文：逐段一行。 */
+  abstract: string
+  /** 发明名称（`draft.meta.title`）。 */
+  title: string
+}
+
+/**
+ * 把 claims-spec 受控草案投影为规范文本。
+ * @param draft - 已通过 validateSpecDraft 的草案。
+ * @returns 说明书、权利要求、摘要与发明名称的纯文本投影；同一草案投影稳定。
+ */
+export function filingTextsFromDraft(draft: SpecDraft): FilingTexts {
+  const content = contentFromDraft(draft)
+  const lines: string[] = []
+  for (const node of content.specification) {
+    if (node.kind === 'h3') {
+      /* v8 ignore next -- contentFromDraft 的 h3 标题由 SPEC_PART_HEADINGS 生成，text 必然存在 */
+      lines.push(`### ${node.text ?? ''}`)
+    } else if (node.kind === 'p') {
+      /* v8 ignore next -- p 节点的 text 来自草案正文、列表项或表题，必然存在 */
+      lines.push(node.text ?? '')
+    }
+  }
+  return {
+    text: lines.join('\n\n'),
+    claims: content.claims.join('\n'),
+    abstract: content.abstract.join('\n'),
+    title: draft.meta.title,
+  }
+}
+
+/**
  * 把 claims-spec 受控草案转换为内容模型。
  * @param draft - 已通过 validateSpecDraft 的草案。
  * @returns 可直接交给 buildFiling 的内容模型（再经 validateContent 交叉校验）。

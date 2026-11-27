@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SpecDraft } from '@deepseek-ai/dsh-patent-core'
 import { renderSpecDraftSections } from '@deepseek-ai/dsh-patent-document'
-import { contentFromDraft } from '@deepseek-ai/dsh-patent-filing'
+import { contentFromDraft, filingTextsFromDraft } from '@deepseek-ai/dsh-patent-filing'
 
 /** 最小可转换 claims-spec 草案（与 patent-document 用例同形）。 */
 function specDraft(overrides: Partial<SpecDraft> = {}): SpecDraft {
@@ -183,6 +183,46 @@ describe('contentFromDraft', () => {
     const texts = contentFromDraft(draft).specification.map(node => node.text ?? '')
     expect(texts).toContain('表 1 · 参数表')
     expect(texts).toContain('表 2 · 部件表')
+  })
+})
+
+describe('filingTextsFromDraft', () => {
+  it('说明书全文按 h3 标题 + 正文段以空行摊平，与 contentFromDraft 同源', () => {
+    const draft = specDraft()
+    const { text } = filingTextsFromDraft(draft)
+    const expected = contentFromDraft(draft).specification
+      .filter(node => node.kind === 'h3' || node.kind === 'p')
+      .map(node => (node.kind === 'h3' ? `### ${node.text ?? ''}` : node.text ?? ''))
+      .join('\n\n')
+    expect(text).toBe(expected)
+    expect(text).toContain('### 技术领域')
+    expect(text).toContain('图1为智能保温杯的整体结构示意图；')
+    // 表格节点不带文字：表体行不进投影，表题段（p 节点）进。
+    expect(text).toContain('表 1 · 附图标记说明')
+    expect(text).not.toContain('杯盖')
+  })
+
+  it('权项带项号逐行、摘要逐段一行、title 取发明名称', () => {
+    const texts = filingTextsFromDraft(specDraft())
+    expect(texts.claims).toBe([
+      '1. 一种智能保温杯，其特征在于，包括杯体、温度显示模块和加热单元。',
+      '2. 如权利要求 1 所述的智能保温杯，其特征在于，还包括控制模块。',
+    ].join('\n'))
+    expect(texts.abstract).toBe('本发明公开一种智能保温杯，主要用途是恒温饮水。')
+    expect(texts.title).toBe('一种智能保温杯')
+  })
+
+  it('同一草案投影稳定；任一字符变化投影即变', () => {
+    const draft = specDraft()
+    expect(filingTextsFromDraft(draft)).toEqual(filingTextsFromDraft(specDraft()))
+    const changed = specDraft()
+    changed.claims = [...changed.claims]
+    changed.claims[0] = `${changed.claims[0]}此外还包括密封圈。`
+    const before = filingTextsFromDraft(draft)
+    const after = filingTextsFromDraft(changed)
+    expect(after.claims).not.toBe(before.claims)
+    expect(after.text).toBe(before.text)
+    expect(after.abstract).toBe(before.abstract)
   })
 })
 

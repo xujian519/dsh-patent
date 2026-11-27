@@ -1223,10 +1223,6 @@ flowchart TD
   pkg_patent_filing --> pkg_util_values
   pkg_patent_law --> pkg_error
   pkg_patent_law --> pkg_tools
-  pkg_patent_rule --> pkg_llm
-  pkg_patent_rule --> pkg_patent_core
-  pkg_patent_rule --> pkg_tools
-  pkg_patent_rule --> pkg_user_approval
   pkg_tool_literature --> pkg_error
   pkg_tool_literature --> pkg_tools
   pkg_writing_patterns --> pkg_system_prompt
@@ -1375,21 +1371,11 @@ flowchart TD
   pkg_mcp_client --> pkg_system_prompt
   pkg_mcp_client --> pkg_timeout
   pkg_mcp_client --> pkg_tools
-  pkg_patent_tools --> pkg_attachment
-  pkg_patent_tools --> pkg_error
-  pkg_patent_tools --> pkg_jobs
-  pkg_patent_tools --> pkg_llm
-  pkg_patent_tools --> pkg_patent_core
-  pkg_patent_tools --> pkg_patent_data
-  pkg_patent_tools --> pkg_patent_deadline
-  pkg_patent_tools --> pkg_patent_document
-  pkg_patent_tools --> pkg_patent_filing
-  pkg_patent_tools --> pkg_patent_knowledge
-  pkg_patent_tools --> pkg_patent_rule
-  pkg_patent_tools --> pkg_patent_workflow
-  pkg_patent_tools --> pkg_subprocess
-  pkg_patent_tools --> pkg_tools
-  pkg_patent_tools --> pkg_user_approval
+  pkg_patent_rule --> pkg_llm
+  pkg_patent_rule --> pkg_patent_core
+  pkg_patent_rule --> pkg_patent_filing
+  pkg_patent_rule --> pkg_tools
+  pkg_patent_rule --> pkg_user_approval
   pkg_agent_preset --> pkg_agent_preset_registry
   pkg_session_telemetry_otel --> pkg_anonymous_user_id
   pkg_session_telemetry_otel --> pkg_command_feedback
@@ -1565,6 +1551,21 @@ flowchart TD
   pkg_openviking --> pkg_skill
   pkg_openviking --> pkg_system_prompt
   pkg_openviking --> pkg_tools
+  pkg_patent_tools --> pkg_attachment
+  pkg_patent_tools --> pkg_error
+  pkg_patent_tools --> pkg_jobs
+  pkg_patent_tools --> pkg_llm
+  pkg_patent_tools --> pkg_patent_core
+  pkg_patent_tools --> pkg_patent_data
+  pkg_patent_tools --> pkg_patent_deadline
+  pkg_patent_tools --> pkg_patent_document
+  pkg_patent_tools --> pkg_patent_filing
+  pkg_patent_tools --> pkg_patent_knowledge
+  pkg_patent_tools --> pkg_patent_rule
+  pkg_patent_tools --> pkg_patent_workflow
+  pkg_patent_tools --> pkg_subprocess
+  pkg_patent_tools --> pkg_tools
+  pkg_patent_tools --> pkg_user_approval
   pkg_goal_round_driver --> pkg_agent
   pkg_goal_round_driver --> pkg_goal
   pkg_goal_round_driver --> pkg_llm
@@ -2217,7 +2218,6 @@ flowchart TD
 | [`patent-fees`](../packages/patent/patent-fees) | `patent` | [`error`](../packages/util/error), [`tools`](../packages/core/tools) |
 | [`patent-filing`](../packages/patent/patent-filing) | `patent` | [`error`](../packages/util/error), [`home-paths`](../packages/util/home-paths), [`patent-core`](../packages/patent/patent-core), [`subprocess`](../packages/subprocess/subprocess), [`tools`](../packages/core/tools), [`util-values`](../packages/util/values) |
 | [`patent-law`](../packages/patent/patent-law) | `patent` | [`error`](../packages/util/error), [`tools`](../packages/core/tools) |
-| [`patent-rule`](../packages/patent/patent-rule) | `patent` | [`llm`](../packages/llm/llm), [`patent-core`](../packages/patent/patent-core), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval) |
 | [`tool-literature`](../packages/patent/tool-literature) | `patent` | [`error`](../packages/util/error), [`tools`](../packages/core/tools) |
 | [`writing-patterns`](../packages/patent/writing-patterns) | `patent` | [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
 | [`agent-preset-registry`](../packages/preset/agent-preset-registry) | `preset` | [`agent`](../packages/core/agent), [`scope`](../packages/core/scope), [`session`](../packages/core/session), [`session-projection`](../packages/session/session-projection), [`settings`](../packages/settings/settings), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools), [`typert-protocol`](../packages/typert/protocol) |
@@ -2244,7 +2244,7 @@ flowchart TD
 | [`tool-cordis`](../packages/extensions/tool-cordis) | `extensions` | [`agent`](../packages/core/agent), [`app-boot`](../packages/boot/app-boot), [`cordis-host-runner`](../packages/extensions/cordis-host-runner), [`tools`](../packages/core/tools) |
 | [`host-plugin-inventory`](../packages/host/plugin-inventory) | `host` | [`agent-preset-registry`](../packages/preset/agent-preset-registry), [`brand`](../packages/util/brand), [`typert-protocol`](../packages/typert/protocol) |
 | [`mcp-client`](../packages/mcp/mcp-client) | `mcp` | [`agent`](../packages/core/agent), [`attachment`](../packages/attachment/attachment), [`authorization`](../packages/credentials/authorization), [`credentials`](../packages/credentials/credentials), [`error`](../packages/util/error), [`host-webserver`](../packages/host/webserver), [`llm`](../packages/llm/llm), [`mcp-resources`](../packages/mcp/mcp-resources), [`output-retention`](../packages/util/output-retention), [`scope`](../packages/core/scope), [`subprocess`](../packages/subprocess/subprocess), [`system-prompt`](../packages/core/system-prompt), [`timeout`](../packages/util/timeout), [`tools`](../packages/core/tools) |
-| [`patent-tools`](../packages/patent/patent-tools) | `patent` | [`attachment`](../packages/attachment/attachment), [`error`](../packages/util/error), [`jobs`](../packages/jobs/jobs), [`llm`](../packages/llm/llm), [`patent-core`](../packages/patent/patent-core), [`patent-data`](../packages/patent/patent-data), [`patent-deadline`](../packages/patent/patent-deadline), [`patent-document`](../packages/patent/patent-document), [`patent-filing`](../packages/patent/patent-filing), [`patent-knowledge`](../packages/patent/patent-knowledge), [`patent-rule`](../packages/patent/patent-rule), [`patent-workflow`](../packages/patent/patent-workflow), [`subprocess`](../packages/subprocess/subprocess), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval) |
+| [`patent-rule`](../packages/patent/patent-rule) | `patent` | [`llm`](../packages/llm/llm), [`patent-core`](../packages/patent/patent-core), [`patent-filing`](../packages/patent/patent-filing), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval) |
 | [`agent-preset`](../packages/preset/agent-preset) | `preset` | [`agent-preset-registry`](../packages/preset/agent-preset-registry) |
 | [`session-telemetry-otel`](../packages/session/session-telemetry-otel) | `session` | [`anonymous-user-id`](../packages/identity/anonymous-user-id), [`command-feedback`](../packages/feedback/command-feedback), [`llm`](../packages/llm/llm), [`message-feedback`](../packages/feedback/message-feedback), [`otel`](../packages/telemetry/otel), [`session`](../packages/core/session), [`session-telemetry`](../packages/session/session-telemetry) |
 | [`tool-bash`](../packages/shell/tool-bash) | `shell` | [`agent`](../packages/core/agent), [`jobs`](../packages/jobs/jobs), [`llm`](../packages/llm/llm), [`sandbox`](../packages/sandbox/sandbox), [`sandbox-policy`](../packages/sandbox/sandbox-policy), [`shell`](../packages/shell/shell), [`shell-env`](../packages/shell/shell-env), [`subprocess`](../packages/subprocess/subprocess), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval), [`working-directory`](../packages/session/working-directory) |
@@ -2269,6 +2269,7 @@ flowchart TD
 | [`webhook-github`](../packages/experimental/webhook-github) | `experimental` | [`credentials`](../packages/credentials/credentials), [`host-webserver`](../packages/host/webserver), [`session`](../packages/core/session), [`webhook`](../packages/experimental/webhook) |
 | [`mcp-manager`](../packages/mcp/mcp-manager) | `mcp` | [`credentials`](../packages/credentials/credentials), [`mcp-client`](../packages/mcp/mcp-client), [`tools`](../packages/core/tools), [`typert-protocol`](../packages/typert/protocol), [`util-values`](../packages/util/values) |
 | [`openviking`](../packages/memory/openviking) | `memory` | [`agent`](../packages/core/agent), [`commands`](../packages/interaction/commands), [`host-webserver`](../packages/host/webserver), [`llm`](../packages/llm/llm), [`mcp-client`](../packages/mcp/mcp-client), [`session`](../packages/core/session), [`settings`](../packages/settings/settings), [`skill`](../packages/skill/skill), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
+| [`patent-tools`](../packages/patent/patent-tools) | `patent` | [`attachment`](../packages/attachment/attachment), [`error`](../packages/util/error), [`jobs`](../packages/jobs/jobs), [`llm`](../packages/llm/llm), [`patent-core`](../packages/patent/patent-core), [`patent-data`](../packages/patent/patent-data), [`patent-deadline`](../packages/patent/patent-deadline), [`patent-document`](../packages/patent/patent-document), [`patent-filing`](../packages/patent/patent-filing), [`patent-knowledge`](../packages/patent/patent-knowledge), [`patent-rule`](../packages/patent/patent-rule), [`patent-workflow`](../packages/patent/patent-workflow), [`subprocess`](../packages/subprocess/subprocess), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval) |
 | [`goal-round-driver`](../packages/goal/goal-round-driver) | `goal` | [`agent`](../packages/core/agent), [`goal`](../packages/goal/goal), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`subagent`](../packages/subagent/subagent) |
 | [`subagent-acp`](../packages/subagent/subagent-acp) | `subagent` | [`agent`](../packages/core/agent), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`subagent`](../packages/subagent/subagent), [`subprocess`](../packages/subprocess/subprocess), [`timeout`](../packages/util/timeout) |
 | [`subagent-claude-code`](../packages/subagent/subagent-claude-code) | `subagent` | [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`subagent`](../packages/subagent/subagent), [`subprocess`](../packages/subprocess/subprocess), [`timeout`](../packages/util/timeout) |

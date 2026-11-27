@@ -53,6 +53,7 @@ import {
   type RunRecord,
 } from './patent-oas-gate-core.ts'
 import { loadPublicGrantCorpus } from './patent-oas-corpus.ts'
+import { evaluationDigest } from './patent-oas-protocol.ts'
 
 const root = resolve(import.meta.dirname, '..')
 const exampleDir = resolve(root, PATENT_OAS_EXAMPLE_DIR)
@@ -60,16 +61,27 @@ const gatePath = resolve(root, GATE_FILE)
 const problemSpacePath = resolve(root, PROBLEM_SPACE_FILE)
 
 /**
- * 用当前金标重录 gate.yaml 的 goldDigest 行,保留文件其余内容与注释。
+ * 用当前金标与测量协议重录 gate.yaml 的 goldDigest 与 evaluationDigest 行,保留文件
+ * 其余内容与注释。
  *
  * @param cases 当前金标 case 集。
+ * @param space 当前问题空间。
  */
-async function writeGoldDigest(cases: readonly GoldCase[]): Promise<void> {
+async function writeGoldDigest(cases: readonly GoldCase[], space: ProblemSpace): Promise<void> {
   const digest = goldDigest(cases)
+  const protocolDigest = evaluationDigest({ problemSpace: space })
   const text = await readFile(gatePath, 'utf8')
   if (!/^goldDigest:/mu.test(text)) throw new Error(`${GATE_FILE}: 没有 goldDigest 行可重录`)
-  await writeFile(gatePath, text.replace(/^goldDigest:.*$/mu, `goldDigest: "${digest}"`), 'utf8')
+  if (!/^evaluationDigest:/mu.test(text)) throw new Error(`${GATE_FILE}: 没有 evaluationDigest 行可重录`)
+  await writeFile(
+    gatePath,
+    text
+      .replace(/^goldDigest:.*$/mu, `goldDigest: "${digest}"`)
+      .replace(/^evaluationDigest:.*$/mu, `evaluationDigest: "${protocolDigest}"`),
+    'utf8',
+  )
   console.log(`verify-patent-oas-gold: 已重录 goldDigest ${digest}`)
+  console.log(`verify-patent-oas-gold: 已重录 evaluationDigest ${protocolDigest}`)
 }
 
 /**
@@ -211,7 +223,7 @@ export async function main(args: string[]): Promise<number> {
   const config = await loadGateConfig(gatePath)
 
   if (args.includes('--write')) {
-    await writeGoldDigest(gold)
+    await writeGoldDigest(gold, space)
     return 0
   }
 

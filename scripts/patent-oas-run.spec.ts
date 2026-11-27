@@ -58,6 +58,7 @@ import {
   type RunCallUsage,
   type RunPricing,
 } from './patent-oas-run-core.ts'
+import { evaluationDigest } from './patent-oas-protocol.ts'
 import { main as runCapture } from './run-patent-oas.ts'
 
 const root = resolve(import.meta.dirname, '..')
@@ -277,6 +278,10 @@ describe('提示词契约', () => {
     expect(prompt).toContain(SCORE_FILENAME)
     expect(prompt).not.toContain(other.label)
     expect(prompt).not.toContain(other.body)
+    // 模板填充不残留槽位,槽位内容里的花括号字面量不被二次替换。
+    expect(prompt).not.toContain('{statement}')
+    expect(evaluatorPrompt('含 {deliverable} 字面量的任务', dimension, '交付物正文'))
+      .toContain('含 {deliverable} 字面量的任务')
   })
 
 })
@@ -405,6 +410,10 @@ describe('编排', () => {
     expect(record.cases.length).toBe(7)
     expect(record.benchmarkId).toBe('patent-oas')
     expect(record.runsPerCase).toBe(1)
+    // 测量协议身份与采集时长:新记录必须带 evaluationDigest 与非负整数 durationMs。
+    expect(record.evaluationDigest).toBe(evaluationDigest({ problemSpace: space }))
+    expect(Number.isInteger(record.durationMs)).toBe(true)
+    expect(record.durationMs).toBeGreaterThanOrEqual(0)
     expect(validateRunRecord(record, space, gold, 'collected')).toEqual([])
     expect(record.cases.find(entry => entry.caseId === 'oa-answer')?.retrieval).toBe('oracle')
     expect(record.cases.find(entry => entry.caseId === 'claim-drafting')?.retrieval).toBe('none')

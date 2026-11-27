@@ -76,6 +76,17 @@ describe('patent_case_search', () => {
     expect(text(result)).toContain('database is locked')
   })
 
+  it('names a non-Error corpus-read failure with its string form', async () => {
+    const tool = createPatentCaseSearchTool({
+      search: () => [hit],
+      corpusInfo: () => { throw 'offline' },
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_case_search', { query: 'x' }, 'c-corpus-fail-string')
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('offline')
+  })
+
   it('fails loud when the db is absent', async () => {
     const tool = createPatentCaseSearchTool({ search: () => [hit], dbPath: '/nonexistent/knowledge.db' })
     const ctx = await ctxWith(tool)

@@ -20,6 +20,7 @@ import { createNextSnapshot } from './snapshot.ts'
 import { loadBenchmark } from './store.ts'
 import type {
   BenchmarkEngineOptions,
+  BoundBenchmark,
   CandidateAttempt,
   CandidateProposal,
   CaseAggregate,
@@ -113,6 +114,21 @@ function latestKeptEntry(entries: readonly ScoreboardEntry[]): ScoreboardEntry |
   return undefined
 }
 
+/**
+ * Refuse optimization of a measurement-only benchmark before its public cases
+ * enter the optimizer context. Baseline measurement remains available.
+ *
+ * @param benchmark The loaded benchmark configuration and cases.
+ * @param benchmarkId Benchmark id for the diagnostic.
+ * @throws when `optimizable` is false.
+ */
+function assertBenchmarkOptimizable(benchmark: BoundBenchmark, benchmarkId: BenchmarkId): void {
+  if (benchmark.optimizable) return
+  throw new Error(
+    `optimizeLoop: benchmark "${benchmarkId}" is measurement-only (optimizable: false in benchmark_config.yaml) — held-out benchmarks are never optimized; run optimizeLoop on the dev benchmark and measure this one with establishBaseline`,
+  )
+}
+
 /** Pure orchestration core over injected evaluation and optimization seams. */
 export class BenchmarkEngineCore {
   constructor(private readonly options: BenchmarkEngineOptions) {}
@@ -200,6 +216,7 @@ export class BenchmarkEngineCore {
       )
     }
     const benchmark = await loadBenchmark(this.options.baseDir, benchmarkId)
+    assertBenchmarkOptimizable(benchmark, benchmarkId)
     const publicView = publicBenchmarkView(benchmark)
     assertNoPrivateLeak(publicView, `optimizer-context:${benchmarkId}`)
     const statement = publicView.cases.map(spec => `[${spec.caseId}]\n${spec.statement}`).join('\n\n---\n\n')

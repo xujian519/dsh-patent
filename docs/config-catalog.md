@@ -4707,7 +4707,7 @@ export interface WorkspaceVerifierConfig {
 
 ## `@deepseek-ai/dsh-self-evolve-benchmark`
 
-- `source`: [`packages/self-evolve/self-evolve-benchmark/src/types.ts:359`](../packages/self-evolve/self-evolve-benchmark/src/types.ts)
+- `source`: [`packages/self-evolve/self-evolve-benchmark/src/types.ts:366`](../packages/self-evolve/self-evolve-benchmark/src/types.ts)
 
 ```ts config-catalog
 /** Public configuration for the benchmark-driven provider. */

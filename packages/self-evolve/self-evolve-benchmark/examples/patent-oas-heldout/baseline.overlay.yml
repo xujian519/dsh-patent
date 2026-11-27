@@ -1,0 +1,32 @@
+# One-shot baseline overlay for the shipped `self-evolve` profile, measuring
+# the held-out benchmark `patent-oas-heldout`.
+#
+#   node seed.mjs
+#   pnpm dsh --profile self-evolve \
+#     --patch packages/self-evolve/self-evolve-benchmark/examples/patent-oas-heldout/baseline.overlay.yml \
+#     baseline
+#
+# Same composition as the patent-oas baseline overlay: the headless runner is
+# disabled (the positional is parsed but consumed by nobody), the benchmark
+# provider mounts over the seeded data root, and the driver calls
+# `establishBaseline` once, prints the scoreboard entry as JSON, and exits.
+# `optimizable: false` does not affect measurement — only `optimizeLoop`
+# refuses this benchmark. `agentStateDir` points at the same `patent-state`
+# the dev benchmark optimizes, so the held-out reading before and after an
+# optimize loop measures the same state.
+
+- id: headless-runner
+  disabled: true
+
+- insert:
+    - id: self-evolve-benchmark
+      name: '@deepseek-ai/dsh-self-evolve-benchmark'
+      config:
+        agentStateDir: !!js "process.getBuiltinModule('node:path').join(process.env.DSH_HOME && process.env.DSH_HOME.trim() ? process.env.DSH_HOME : process.getBuiltinModule('node:os').homedir() + '/.dsh', 'self-evolve-benchmark', 'patent-state')"
+        targetScore: 80
+
+    - id: self-evolve-benchmark-baseline
+      name: '@deepseek-ai/dsh-self-evolve-benchmark/baseline-driver'
+      config:
+        benchmarkId: patent-oas-heldout
+        runsPerCase: 1

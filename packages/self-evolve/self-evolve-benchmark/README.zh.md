@@ -63,7 +63,7 @@ kind: "package-reference"
 ```
 <baseDir>/
 ├── benchmarks/<id>/
-│   ├── benchmark_config.yaml   # { title }
+│   ├── benchmark_config.yaml   # { title, optimizable? } — optimizable: false holds the benchmark out of optimizeLoop
 │   ├── <caseId>/statement      # public task text — the only input a target agent sees
 │   ├── <caseId>/rubric         # private scoring standard — a physically separate file
 │   └── scoreboard.yaml         # versioned entry history
@@ -78,6 +78,10 @@ kind: "package-reference"
 ## Statement/rubric 分离(C2)
 
 用例的 `statement` 是 target 或优化 agent 能看到的唯一 benchmark 内容;`rubric` 是私有的,存为物理上不同的文件。optimizer prompt 声明评分标准不存在,并指示子代理如果看到评分标准就停止并上报污染;`publicBenchmarkView`/`assertNoPrivateLeak` 从面向 optimizer 的面上机械地剔除并守护私有词汇(`rubric`、`rubrics`、`gold`、`goldAnswer`、`expectedAnswer`)。evaluator 是唯一允许接收 rubric 的角色。
+
+## 留出 benchmark
+
+statement/rubric 分离对优化器隐藏了评分标准,但优化回路仍读它优化的那个 benchmark 的全部 statement 与逐 case 分数——同时充当门禁与优化目标的 benchmark,分数上涨可能只是 agent state 被调到了它的固定 case 上。`benchmark_config.yaml` 声明 `optimizable: false` 的 benchmark 只用于测量:`optimizeLoop` 在 `loadBenchmark` 之后、第一个快照之前拒绝它,其 statement 与分数因此永远到不了 optimizer 的 prompt 与 history,而 `establishBaseline` 与 `runBenchmark` 照常测量。该标志在加载 benchmark 处读取,非布尔取值直接报错——静默优化一个本想留出的 benchmark,正是这道守卫要防的事故。该保证是 prompt/history 隔离,不是物理密封:带文件工具的 agent 进程仍可能读到数据根下的 benchmark 目录。[examples/patent-oas-heldout](examples/patent-oas-heldout/README.zh.md) 随包提供 `patent-oas` 的两 case 留出对照与前后测量口径。
 
 ## Model Experience
 

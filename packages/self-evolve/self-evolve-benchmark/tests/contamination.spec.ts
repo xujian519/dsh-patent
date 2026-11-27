@@ -13,11 +13,13 @@ describe('public benchmark view', () => {
     const benchmark: BoundBenchmark = {
       id: BenchmarkId('b'),
       title: 'Bench',
+      optimizable: true,
       cases: [
         { caseId: CaseId('c1'), statement: 'Task', rubric: 'secret rubric' },
         { caseId: CaseId('c2'), statement: 'Task two' },
       ],
     }
+    // optimizable 是引擎在优化前读取的元数据，不进 optimizer 面向的视图。
     expect(publicBenchmarkView(benchmark)).toEqual({
       id: BenchmarkId('b'),
       title: 'Bench',

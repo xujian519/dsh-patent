@@ -39,6 +39,13 @@ function hasCaseLawFilters(options: CaseLawSearchOptions): boolean {
   return Boolean(options.docType || options.court || options.excludeSource)
 }
 
+/**
+ * The document kinds this engine serves. `documents` also holds law articles,
+ * guideline rules, concepts, and notes for the other engines; without this
+ * predicate a full-text search would return a statute as a case-law hit.
+ */
+const CASE_LAW_DOC_TYPE_SQL = "d.doc_type IN ('case', 'judgment')"
+
 type CaseLawRow = {
   document_id: string
   doc_type: string
@@ -123,7 +130,8 @@ export class CaseLawSearchEngine extends KnowledgeFtsSearchBase<CaseLawSearchOpt
             SELECT d.id AS document_id, d.doc_type, d.title, d.decision_number, d.case_number,
                    d.court, d.source, d.module, d.char_count
             FROM documents d
-            WHERE (d.title LIKE ? ESCAPE '\\' OR d.search_prefix LIKE ? ESCAPE '\\')
+            WHERE ${CASE_LAW_DOC_TYPE_SQL}
+              AND (d.title LIKE ? ESCAPE '\\' OR d.search_prefix LIKE ? ESCAPE '\\')
             LIMIT ?
           `),
           longestChunk: this.db.prepare(
@@ -141,7 +149,8 @@ export class CaseLawSearchEngine extends KnowledgeFtsSearchBase<CaseLawSearchOpt
         FROM documents d
         JOIN chunks c ON c.id = (
           SELECT id FROM chunks WHERE document_id = d.id ORDER BY char_count DESC LIMIT 1)
-        WHERE (d.title LIKE ? ESCAPE '\\' OR sati_uncompress(c.content) LIKE ? ESCAPE '\\')
+        WHERE ${CASE_LAW_DOC_TYPE_SQL}
+          AND (d.title LIKE ? ESCAPE '\\' OR sati_uncompress(c.content) LIKE ? ESCAPE '\\')
         LIMIT ?
       `)
 
@@ -187,7 +196,7 @@ export class CaseLawSearchEngine extends KnowledgeFtsSearchBase<CaseLawSearchOpt
         FROM docs_fts
         JOIN chunks c ON c.id = docs_fts.rowid
         JOIN documents d ON d.id = c.document_id
-        WHERE docs_fts MATCH ?
+        WHERE docs_fts MATCH ? AND ${CASE_LAW_DOC_TYPE_SQL}
         ORDER BY bm25(docs_fts) LIMIT ?
       `)
         } catch (error) {
@@ -196,7 +205,7 @@ export class CaseLawSearchEngine extends KnowledgeFtsSearchBase<CaseLawSearchOpt
         }
       }
 
-      this.stmtCount = this.db.prepare('SELECT COUNT(*) AS c FROM documents')
+      this.stmtCount = this.db.prepare(`SELECT COUNT(*) AS c FROM documents d WHERE ${CASE_LAW_DOC_TYPE_SQL}`)
     } catch (error) {
       this.db.close()
       throw error
@@ -306,13 +315,16 @@ export class CaseLawSearchEngine extends KnowledgeFtsSearchBase<CaseLawSearchOpt
     if (options.docType) {
       result += ' AND d.doc_type = ?'
       params.push(options.docType)
+    } else {
+      result += ` AND ${CASE_LAW_DOC_TYPE_SQL}`
     }
     if (options.court) {
       result += " AND d.court LIKE ? ESCAPE '\\'"
       params.push(`%${options.court.replace(/[%_\\]/g, m => `\\${m}`)}%`)
     }
     if (options.excludeSource) {
-      result += ' AND d.source != ?'
+      // 排除某来源时 NULL 来源的判例仍然合法，不能因 `NULL != ?` 为 NULL 被丢行。
+      result += ' AND (d.source IS NULL OR d.source != ?)'
       params.push(options.excludeSource)
     }
     return result

@@ -77,7 +77,7 @@ export { introspectKgStore } from './shared/kg/schema-introspector.ts'
 export type { KgSchema, KgStoreIntrospection, KgStoreStatements } from './shared/kg/schema-introspector.ts'
 export { parseLawRefsCount, toNode } from './shared/kg/row-mapper.ts'
 export type { FtsHit, NodeRow } from './shared/kg/row-mapper.ts'
-export { PatentKgAdapter, resolveNodeTypes } from './patent/patent-kg-adapter.ts'
+export { CITE_RELATIONS, PatentKgAdapter, resolveNodeTypes } from './patent/patent-kg-adapter.ts'
 export type { PatentKgSearchOptions, RelevantHit } from './patent/patent-kg-adapter.ts'
 
 // Patent IPC / wiki surface.

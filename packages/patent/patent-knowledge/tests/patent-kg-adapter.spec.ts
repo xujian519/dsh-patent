@@ -27,6 +27,8 @@ function makeStore(): { adapter: PatentKgAdapter; dir: string } {
   insNode.run('n1', 'Concept', '创造性', '创造性是指与现有技术相比具有突出的实质性特点。')
   insNode.run('n2', 'Concept', '新颖性', '新颖性是指不属于现有技术。')
   insNode.run('n3', 'SupremeCourtJudgment', '判决', '判决书正文。')
+  // 真库（knowledge-lite.db）里这类节点的 node_type 就是 Judgment，不带法院前缀。
+  insNode.run('n5', 'Judgment', '某判决', '判决书正文。')
   const insFts = db.prepare('INSERT INTO kg_nodes_fts (rowid, name, title) VALUES (?, ?, NULL)')
   insFts.run(1, '创造性')
   insFts.run(2, '新颖性')
@@ -52,12 +54,20 @@ describe('resolveNodeTypes', () => {
   it('maps aliases exactly, case-insensitively, and passes through unknown types', () => {
     expect(resolveNodeTypes('')).toEqual([])
     expect(resolveNodeTypes('  ')).toEqual([])
-    expect(resolveNodeTypes('Judgment')).toEqual(['SupremeCourtJudgment', 'RegionalCourtJudgment'])
-    expect(resolveNodeTypes('LawArticle')).toEqual(['Clause', 'Chapter'])
-    expect(resolveNodeTypes('lawarticle')).toEqual(['Clause', 'Chapter'])
-    expect(resolveNodeTypes('judgment')).toEqual(['SupremeCourtJudgment', 'RegionalCourtJudgment'])
+    expect(resolveNodeTypes('Judgment')).toEqual(['Judgment', 'SupremeCourtJudgment', 'RegionalCourtJudgment'])
+    expect(resolveNodeTypes('LawArticle')).toEqual(['LawArticle', 'Clause', 'Chapter'])
+    expect(resolveNodeTypes('lawarticle')).toEqual(['lawarticle', 'Clause', 'Chapter'])
+    expect(resolveNodeTypes('judgment')).toEqual(['judgment', 'SupremeCourtJudgment', 'RegionalCourtJudgment'])
     expect(resolveNodeTypes('IPC')).toEqual(['IPC'])
     expect(resolveNodeTypes('  Concept  ')).toEqual(['Concept', 'ConceptDetail', '一级概念', '二级概念', '三级概念'])
+  })
+
+  it('browses the requested type even when the corpus stores it under that exact name', () => {
+    const { adapter } = makeStore()
+    // 消费方（patent_kg_query 的类型浏览）逐个 listByType(resolveNodeTypes(...))；
+    // 展开结果不含原名 'Judgment' 时这里的浏览会恒为 0 条。
+    const found = resolveNodeTypes('Judgment').flatMap(type => adapter.listByType(type))
+    expect(found.some(node => node.id === 'n5')).toBe(true)
   })
 })
 

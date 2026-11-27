@@ -563,7 +563,8 @@ describe('patent_kg_query deeper paths', () => {
       { targetId: 'CASE_2', relation: 'CITES' },
       { targetId: 'MISSING', relation: 'CITES' },
     ],
-    listByType: type => (type === 'SupremeCourtJudgment' ? [node, node2, node] : [node2]),
+    // 语料的 node_type 就叫 Judgment；SupremeCourtJudgment 是历史别名，两者都要返回。
+    listByType: type => (type === 'Judgment' || type === 'SupremeCourtJudgment' ? [node, node2, node] : [node2]),
   }
 
   it('queries by keyword without expansion and truncates long content', async () => {

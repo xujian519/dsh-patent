@@ -177,6 +177,8 @@ describe('patent-tools plugin wiring', () => {
       'get:kg:n1',
       'similar',
       'neighbors:CITES',
+      'neighbors:CITES_EVIDENCE',
+      'neighbors:APPLIES_LAW',
       'neighbors:CITES_LAW',
       'neighbors:FREQUENTLY_CITES',
       'neighbors:REFERENCES',

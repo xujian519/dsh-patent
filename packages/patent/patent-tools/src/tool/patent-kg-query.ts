@@ -8,14 +8,11 @@
 import { existsSync } from 'node:fs'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { resolveNodeTypes } from '@deepseek-ai/dsh-patent-knowledge'
+import { CITE_RELATIONS, resolveNodeTypes } from '@deepseek-ai/dsh-patent-knowledge'
 import type { KgNode, RelevantHit } from '@deepseek-ai/dsh-patent-knowledge'
 import { PatentToolError } from '../error.ts'
 import { knowledgeInstallGuidance, truncateSnippet } from './internal/knowledge.ts'
 import { resolveResultLimit } from './internal/query-limit.ts'
-
-/** Citation-class relations used for id-mode neighbor expansion. */
-const CITE_RELATIONS = ['CITES', 'CITES_LAW', 'FREQUENTLY_CITES', 'REFERENCES'] as const
 
 /** Hit-path ordering (keyword → similar → cites). */
 const VIA_ORDER: Record<RelevantHit['via'], number> = { keyword: 0, similar: 1, cites: 2 }

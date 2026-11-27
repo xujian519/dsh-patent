@@ -66,6 +66,26 @@ export const FIGURE_ANALYSIS_INPUT_SCHEMA = {
 } as const
 
 /**
+ * 复核 findings 数组的 schema：渲染复核与交付复核两个字段的结构相同。
+ * @param description - 该字段的说明。
+ * @returns 带该说明的检查项数组 schema。
+ */
+function checkFindingsSchema(description: string) {
+  return {
+    type: 'array',
+    description,
+    items: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        check: { type: 'string', required: true },
+        message: { type: 'string', required: true },
+      },
+    },
+  } as const
+}
+
+/**
  * 附图形式证据（`review_patent_application` 的 `figures` 参数）：生成与复核
  * 工具给出的落版尺寸、色彩策略、图号与图面检查项。
  */
@@ -87,30 +107,8 @@ export const FIGURE_FORM_EVIDENCE_SCHEMA = {
       char_height_mm: { type: 'number', description: '落版后正文数字与字母的字高（毫米）' },
       placed_width_mm: { type: 'number', description: '落版后图形占用的宽（毫米）' },
       placed_height_mm: { type: 'number', description: '落版后图形占用的高（毫米）' },
-      render_findings: {
-        type: 'array',
-        description: '`verify_patent_figure` 的 findings（check 与 message 原样给出）',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            check: { type: 'string', required: true },
-            message: { type: 'string', required: true },
-          },
-        },
-      },
-      delivery_findings: {
-        type: 'array',
-        description: '交付复核（`delivery_review=true`）的 findings',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            check: { type: 'string', required: true },
-            message: { type: 'string', required: true },
-          },
-        },
-      },
+      render_findings: checkFindingsSchema('`verify_patent_figure` 的 findings（check 与 message 原样给出）'),
+      delivery_findings: checkFindingsSchema('交付复核（`delivery_review=true`）的 findings'),
     },
   },
 } as const

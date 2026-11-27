@@ -7,6 +7,9 @@
  * 膨胀），输入有大小上限；未命中任何元素的参考列为 warning 返回而非
  * 静默——与图面「标号缺失」可追溯原则一致。
  *
+ * 可重复执行：标注前先移除上一次写入的引线组，并对命中的文本移除既有
+ * 内嵌标号，因此对同一 SVG 反复标注只会得到一份标号，不会叠加。
+ *
  * @module @deepseek-ai/dsh-patent-tools/figure/svg-annotate
  */
 
@@ -42,6 +45,42 @@ type SvgAnnotateResult = {
 
 /** 默认 SVG 输入大小上限（字节）。 */
 export const DEFAULT_SVG_MAX_BYTES = 2_000_000
+
+/** 引线模式写入的标号组 id；重跑时整组移除。 */
+const LEADER_GROUP_PATTERN = /<g\b[^>]*\bid="leader-lines"[^>]*>[\s\S]*?<\/g>/g
+
+/**
+ * 文本末尾由本模块写入的内嵌标号：括号内为含阿拉伯数字的标号词（`20`、
+ * `S101`、`A-1`），允许标号两侧空白。纯文字括号（如「(优选)」「(A)」）
+ * 不是标号，保留原样，避免误删组件名称。
+ */
+const EMBEDDED_NUMERAL_PATTERN = /\s*\(\s*(?=[A-Za-z0-9._\-/]*[0-9])[A-Za-z0-9._\-/]+\s*\)\s*$/
+
+/**
+ * 移除引线模式此前写入的标号组，使同一 SVG 可重复标注。
+ * @param svgText - SVG 文本。
+ * @returns 不含 `<g id="leader-lines">` 组的 SVG 文本。
+ */
+export function stripLeaderAnnotations(svgText: string): string {
+  return svgText.replace(LEADER_GROUP_PATTERN, '')
+}
+
+/**
+ * 从单个 `<text>` 元素尾部移除此前内嵌的「 (标号)」。
+ *
+ * 标号含阿拉伯数字时均视为既有标号（`20`、`S101`、`A-1`）；移除位置与
+ * {@link annotateSvg} 的插入位置一致（最后一个 `<tspan>` 前，否则
+ * `</text>` 前）。调用方只对命中的文本调用，未匹配文本原样保留。
+ * @param textElement - 单个 `<text>...</text>` 片段。
+ * @returns 不含尾部标号的片段；无既有标号时原样返回。
+ */
+export function stripEmbeddedNumeral(textElement: string): string {
+  const lastTspan = textElement.lastIndexOf('</tspan>')
+  const insertAt = lastTspan >= 0 ? lastTspan : textElement.length - '</text>'.length
+  const prefix = textElement.slice(0, insertAt)
+  const stripped = prefix.replace(EMBEDDED_NUMERAL_PATTERN, '')
+  return stripped === prefix ? textElement : stripped + textElement.slice(insertAt)
+}
 
 /**
  * 转义 XML 文本（插入内容仅允许出现在文本节点）。
@@ -122,6 +161,7 @@ export function validateSvgReferences(references: readonly SvgAnnotateReference[
  *
  * 每个 `<text>` 元素至多命中一个参考（按 references 传入顺序取首个匹配），
  * 同一个参考可命中多个文本元素（同一组件在图内多处出现时同号标注）。
+ * 重跑幂等：先移除上一次写入的引线组，命中文本尾部的既有标号被替换而非叠加。
  * @param svgText - 原始 SVG 文本（Graphviz 输出或同结构 SVG）。
  * @param references - 参考标号列表。
  * @param maxBytes - 输入大小上限（默认 {@link DEFAULT_SVG_MAX_BYTES}）。
@@ -136,12 +176,13 @@ export function annotateSvg(
   validateSvgReferences(references)
   if (references.length === 0) return { svg: svgText, warnings: [] }
 
+  const source = stripLeaderAnnotations(svgText)
   const matched = new Set<number>()
   let cursor = 0
   let result = ''
   const textPattern = /<text\b[^>]*>([\s\S]*?)<\/text>/gi
   let match: RegExpExecArray | null
-  while ((match = textPattern.exec(svgText)) !== null) {
+  while ((match = textPattern.exec(source)) !== null) {
     const whole = match[0]
     /* v8 ignore start -- the regex group always matches (empty text allowed); ?? guards only against hypothetical undefined */
     const content = textElementContent(match[1] ?? '').toLowerCase()
@@ -155,7 +196,7 @@ export function annotateSvg(
       }
     }
     if (hit === undefined) {
-      result += svgText.slice(cursor, match.index + whole.length)
+      result += source.slice(cursor, match.index + whole.length)
       cursor = match.index + whole.length
       continue
     }
@@ -163,12 +204,13 @@ export function annotateSvg(
     const reference = references[hit] as SvgAnnotateReference
     const suffix = ` (${escapeXmlText(reference.numeral.trim())})`
     // 在当前 <text> 尾部追加：优先最后一个 <tspan> 文本末尾；否则 <text> 自身末尾。
-    const lastTspan = whole.lastIndexOf('</tspan>')
-    const insertAt = lastTspan >= 0 ? lastTspan : whole.length - '</text>'.length
-    result += svgText.slice(cursor, match.index) + whole.slice(0, insertAt) + suffix + whole.slice(insertAt)
+    const cleaned = stripEmbeddedNumeral(whole)
+    const lastTspan = cleaned.lastIndexOf('</tspan>')
+    const insertAt = lastTspan >= 0 ? lastTspan : cleaned.length - '</text>'.length
+    result += source.slice(cursor, match.index) + cleaned.slice(0, insertAt) + suffix + cleaned.slice(insertAt)
     cursor = match.index + whole.length
   }
-  result += svgText.slice(cursor)
+  result += source.slice(cursor)
 
   const warnings = references
     .map((ref, index) => ({ ref, index }))

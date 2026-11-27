@@ -28,6 +28,8 @@ import {
   DEFAULT_SVG_MAX_BYTES,
   assertSafeSvg,
   escapeXmlText,
+  stripEmbeddedNumeral,
+  stripLeaderAnnotations,
   textElementContent,
   validateSvgReferences,
 } from './svg-annotate.ts'
@@ -629,6 +631,26 @@ function embedNumeralInGroup(groupRaw: string, numeral: string): string {
   return groupRaw.slice(0, last.index) + whole.slice(0, insertAt) + escaped + whole.slice(insertAt) + tail
 }
 
+/**
+ * 移除组内最后一个文本元素尾部的既有内嵌标号（上一次内嵌模式留下的），
+ * 使内嵌→引线切换时不会同时出现两处标号。
+ * @param groupRaw - 节点组片段原文。
+ * @returns 已清理既有标号的组片段；无 `<text>` 或无既有标号时原样返回。
+ */
+function stripEmbeddedNumeralsInGroup(groupRaw: string): string {
+  const textPattern = /<text\b[^>]*>[\s\S]*?<\/text>/gi
+  let last: RegExpExecArray | null = null
+  let match: RegExpExecArray | null
+  while ((match = textPattern.exec(groupRaw)) !== null) last = match
+  /* v8 ignore start -- the caller only invokes this on a group that matched via its text elements */
+  if (last === null) return groupRaw
+  /* v8 ignore stop */
+  const whole = last[0]
+  const stripped = stripEmbeddedNumeral(whole)
+  if (stripped === whole) return groupRaw
+  return groupRaw.slice(0, last.index) + stripped + groupRaw.slice(last.index + whole.length)
+}
+
 /** 解析根元素声明的 width/height：数值 + 单位 + 单位到 px 的换算。 */
 function sizeAttribute(tag: string, name: string): { value: number; unit: string; px: number } | undefined {
   const match = new RegExp(`(?:^|\\s)${name}="([0-9.]+)([a-z%]*)"`, 'i').exec(tag)
@@ -749,6 +771,9 @@ function expandCanvas(svgText: string, canvas: Canvas, geometry: readonly Rect[]
  * 组至多命中一个参考，同一参考可命中多个组（同号多处标注）。命中组缺
  * 轮廓、所在组坐标不可换算或四向候选均冲突时退化为内嵌标号并告警。
  * 标号越出根元素声明画布时按需扩边，保证引线与标号完整可见。
+ *
+ * 重跑幂等：先移除上一次写入的 `<g id="leader-lines">` 组，命中组内既有
+ * 的内嵌标号一并清理，因此对同一 SVG 反复标注只保留一份标号。
  * @param svgText - Graphviz 渲染的 SVG 文本（WASM 与 CLI 输出同构）。
  * @param references - 参考标号列表（label 匹配组内可见文本）。
  * @param options - 大小上限等选项。
@@ -765,11 +790,12 @@ export function annotateSvgWithLeaderLines(
   validateSvgReferences(references)
   if (references.length === 0) return { svg: svgText, warnings: [] }
 
-  const scopes = groupScopes(svgText)
+  const source = stripLeaderAnnotations(svgText)
+  const scopes = groupScopes(source)
   const groups: ParsedNodeGroup[] = []
   const groupPattern = /<g\b[^>]*\bclass="node"[^>]*>[\s\S]*?<\/g>/g
   let groupMatch: RegExpExecArray | null
-  while ((groupMatch = groupPattern.exec(svgText)) !== null) {
+  while ((groupMatch = groupPattern.exec(source)) !== null) {
     const raw = groupMatch[0]
     const titleMatch = /<title>([\s\S]*?)<\/title>/.exec(raw)
     const textParts: string[] = []
@@ -807,7 +833,7 @@ export function annotateSvgWithLeaderLines(
   }
 
   const warnings: string[] = []
-  const obstacles = edgeObstacles(svgText, scopes)
+  const obstacles = edgeObstacles(source, scopes)
   const nodeRects = groups
     .filter((group): group is ParsedNodeGroup & { bbox: Rect; frame: Frame } => group.bbox !== undefined && group.frame !== undefined)
     .map(group => translateRect(group.bbox, group.frame))
@@ -824,12 +850,12 @@ export function annotateSvgWithLeaderLines(
     if (group.referenceIndex < 0) continue
     const numeral = (references[group.referenceIndex] as SvgAnnotateReference).numeral.trim()
     if (group.frame === undefined) {
-      embedded.set(index, embedNumeralInGroup(group.raw, numeral))
+      embedded.set(index, embedNumeralInGroup(stripEmbeddedNumeralsInGroup(group.raw), numeral))
       warnings.push(`节点 "${group.title}" 所在组的坐标含缩放/旋转，标号 ${numeral} 已内嵌`)
       continue
     }
     if (group.bbox === undefined) {
-      embedded.set(index, embedNumeralInGroup(group.raw, numeral))
+      embedded.set(index, embedNumeralInGroup(stripEmbeddedNumeralsInGroup(group.raw), numeral))
       warnings.push(`节点 "${group.title}" 缺少形状轮廓，标号 ${numeral} 已内嵌`)
       continue
     }
@@ -848,7 +874,7 @@ export function annotateSvgWithLeaderLines(
     const chosen = diagonalPlacements(item.bbox, item.numeral, item.group.fontSize, gap).find(candidate =>
       isFree(candidate, nodeRects, placed, obstacles))
     if (chosen === undefined) {
-      embedded.set(item.index, embedNumeralInGroup(item.group.raw, item.numeral))
+      embedded.set(item.index, embedNumeralInGroup(stripEmbeddedNumeralsInGroup(item.group.raw), item.numeral))
       warnings.push(`节点 "${item.group.title}" 周边无引线空间，标号 ${item.numeral} 已内嵌`)
       continue
     }
@@ -865,10 +891,12 @@ export function annotateSvgWithLeaderLines(
   let cursor = 0
   for (const [index, group] of groups.entries()) {
     const end = group.offset + group.raw.length
-    result += svgText.slice(cursor, group.offset) + (embedded.get(index) ?? group.raw)
+    const base = embedded.get(index)
+      ?? (group.referenceIndex >= 0 ? stripEmbeddedNumeralsInGroup(group.raw) : group.raw)
+    result += source.slice(cursor, group.offset) + base
     cursor = end
   }
-  result += svgText.slice(cursor)
+  result += source.slice(cursor)
   if (fragments.length === 0) return { svg: result, warnings }
   const closeIndex = result.toLowerCase().lastIndexOf('</svg>')
   const fragment = `<g id="leader-lines">\n${fragments.join('\n')}\n</g>\n`

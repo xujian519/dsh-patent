@@ -531,6 +531,13 @@ describe('patent_workflow_run', () => {
       category: 'extract',
       execute: () => { throw new PatentToolError('setup_required', 'stage handler exploded') },
     })
+    // The manifest also carries an approval gate; it must have a handler before
+    // the run starts, or the run fails at that check instead of reaching extract.
+    handlers.register({
+      name: 'approval-gate',
+      category: 'gate',
+      execute: async () => ({ approval: 'APPROVED' }),
+    })
     const { jobs, started, hooks } = fakeJobRegistry()
     const tool = createPatentWorkflowRunTool({ model: fakeModel(), search: fakeSearch, handlers, jobs: () => jobs })
     await tool.execute(

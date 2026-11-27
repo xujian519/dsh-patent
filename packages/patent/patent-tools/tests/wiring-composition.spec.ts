@@ -341,6 +341,29 @@ describe('registerPatentTools 缺省配置', () => {
     expect(outcome).toMatchObject({ ok: false, code: 'not_installed' })
   })
 
+  it('注册的模型可见工具集合等于包清单，且不含 render_patent_document', async () => {
+    const ctx = await mount({})
+    // 与服务接线无关的分支（知识库缺席、渲染端口缺省）都必须仍注册同名工具：
+    // 计数写进模块 JSDoc 与目录，任何一侧少一个都要在这里变红。
+    const expected = [
+      'add_patent_figure_references', 'analyze_patent_figure', 'check_patent_figure_consistency',
+      'claim_chart_build', 'claim_lint', 'compare_patent_figure_analysis', 'domain_check',
+      'draft_claims', 'draft_specification', 'evaluate_evidence', 'flexible_plan',
+      'generate_patent_figure', 'generate_structure_figure', 'knowledge_note_save', 'law_search',
+      'matter_log_append', 'parse_office_action', 'patent_analysis_report', 'patent_case_search',
+      'patent_corpus_status', 'patent_eval', 'patent_kg_query', 'patent_legal_status',
+      'patent_metadata', 'patent_pdf_download', 'patent_plan_task', 'patent_search',
+      'patent_wiki_search', 'patent_worker_validate', 'patent_workflow', 'patent_workflow_run',
+      'recognize_chemical_structure', 'review_patent_application', 'rule_check',
+      'search_patent_figure', 'triz_contradiction_analysis', 'validate_specification',
+      'verify_patent_figure', 'workbench_link_patent_case',
+    ]
+    expect(expected).toHaveLength(39)
+    const missing = expected.filter(name => ctx.tools.get(name) === undefined)
+    expect(missing).toEqual([])
+    expect(ctx.tools.get('render_patent_document')).toBeUndefined()
+  })
+
   it('未挂知识服务时 law_search 走 fail-loud 依赖（查询闭包仍接线到缺省）', async () => {
     await mount({})
     const law = mock.law.at(-1)
@@ -669,6 +692,11 @@ describe('输出路径锚定部署工作区根', () => {
     expect(mock.figures.at(-1)?.workRoot).toBe(join(root, 'matters'))
     expect(mock.structures.at(-1)?.outputDir).toBeUndefined()
     expect(mock.structures.at(-1)?.workRoot).toBe(join(root, 'matters'))
+  })
+
+  it('provider 与 model 只配置一个时加载失败，不静默改用宿主默认模型', async () => {
+    await expect(mount({ provider: 'only-provider' })).rejects.toThrow(/必须同时配置/)
+    await expect(mount({ model: 'only-model' })).rejects.toThrow(/必须同时配置/)
   })
 
   it('没有工作区根且路径缺省时加载失败', async () => {

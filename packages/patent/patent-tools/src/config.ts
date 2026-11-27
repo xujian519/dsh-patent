@@ -17,9 +17,13 @@ export interface Config {
   /**
    * LLM provider route for the LLM-consuming tools (claim_chart_build / workflow run / figure analysis).
    * When this and `model` are unset, the route comes from the host `agentDefaultModel` selection.
+   * Setting only this or only `model` fails plugin load instead of falling back silently.
    */
   provider?: string
-  /** LLM model id for the LLM-consuming tools; resolved with `provider` and falling back to `agentDefaultModel`. */
+  /**
+   * LLM model id for the LLM-consuming tools; resolved with `provider` and falling back to
+   * `agentDefaultModel`. Setting only one of the two fails plugin load.
+   */
   model?: string
   /** Dedicated figure/image model route whose input modalities gate analyze_patent_figure. */
   imageModel?: ImageModelConfig

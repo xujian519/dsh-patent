@@ -103,10 +103,25 @@ function resolveRenderBudgets(config: Config): {
   }
 }
 
-/** 从 Config 或部署默认路由解析 provider/model（agent-default-model 宿主服务）。 */
+/**
+ * 从 Config 或部署默认路由解析 provider/model（agent-default-model 宿主服务）。
+ * @param ctx - 插件上下文，用来读取宿主默认模型。
+ * @param config - 插件配置。
+ * @returns 解析出的路由；两者都未配置且宿主没有默认选择时为 undefined。
+ * @throws PatentToolError `setup_required` 当 provider 与 model 只配置了一个——
+ * 只配一半的意图无法猜，静默改用宿主默认模型会让调用落到错误的模型上。
+ */
 function resolveModelRoute(ctx: Context, config: Config): { provider: string; model: string } | undefined {
   if (config.provider !== undefined && config.model !== undefined) {
     return { provider: config.provider, model: config.model }
+  }
+  if (config.provider !== undefined || config.model !== undefined) {
+    throw new PatentToolError(
+      'setup_required',
+      `provider 与 model 必须同时配置（当前只配置了 ${config.provider === undefined ? 'model' : 'provider'}）：`
+      + '只配一半会被静默忽略并改用宿主默认模型，可能落到未预期的模型上。',
+      { provider: config.provider, model: config.model },
+    )
   }
   const defaults = ctx.get('agentDefaultModel') as { currentSelection: () => { provider: string; model: string } } | undefined
   const selection = defaults?.currentSelection()

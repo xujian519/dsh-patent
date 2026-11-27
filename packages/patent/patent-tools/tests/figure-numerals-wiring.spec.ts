@@ -140,6 +140,7 @@ describe('resolveFamilySeeds 标号表优先', () => {
   it('读取标号表抛出非 Error 值时错误消息取字符串形式', async () => {
     await expect(resolveFamilySeeds('CN2024-0001', blocks, {
       render: () => Promise.reject(new Error('unused')),
+      // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- 刻意模拟非 Error 抛出，覆盖错误消息的 String(error) 分支
       loadNumerals: () => Promise.reject('坏掉了'),
     })).rejects.toThrow(/读取附图标记表失败：坏掉了/u)
   })
@@ -270,6 +271,7 @@ describe('generate_patent_figure 写入标号表', () => {
         outputDir: dir,
         cwd: dir,
         loadNumerals: () => Promise.resolve([]),
+        // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- 刻意模拟非 Error 抛出，覆盖错误消息的 String(error) 分支
         upsertNumerals: () => Promise.reject('坏掉了'),
       }))
       const result = await execute(ctx, 'generate_patent_figure', {
@@ -344,6 +346,7 @@ describe('add_patent_figure_references 标号表补全', () => {
       writeFileSync(join(dir, 'src.svg'), svg)
       const ctx = await ctxWith(createAddPatentFigureReferencesTool({
         cwd: dir,
+        // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- 刻意模拟非 Error 抛出，覆盖错误消息的 String(error) 分支
         loadNumerals: () => Promise.reject('坏掉了'),
       }))
       const result = await execute(ctx, 'add_patent_figure_references', {

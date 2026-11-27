@@ -18,19 +18,21 @@ import type {
 /** 严重度顺序：必须修改在前，未评估在后。 */
 const SEVERITY_RANK: Readonly<Record<ReviewSeverity, number>> = { error: 0, warning: 1, info: 2 }
 
-/** 来源顺序：权项形式在前，完整说明书检查在后，范围说明最后。 */
+/** 来源顺序：权项形式在前，完整说明书检查其次，附图形式再次，范围说明最后。 */
 const SOURCE_RANK: Readonly<Record<ReviewSource, number>> = {
   claim_lint: 0,
   claim_check: 1,
   spec_check: 2,
-  review: 3,
+  figure_check: 3,
+  review: 4,
 }
 
-/** 定位顺序：权项、章节、全篇。 */
-const LOCATOR_RANK: Readonly<Record<'claim' | 'section' | 'document', number>> = {
+/** 定位顺序：权项、附图、章节、全篇。 */
+const LOCATOR_RANK: Readonly<Record<'claim' | 'figure' | 'section' | 'document', number>> = {
   claim: 0,
-  section: 1,
-  document: 2,
+  figure: 1,
+  section: 2,
+  document: 3,
 }
 
 /**
@@ -55,6 +57,15 @@ function claimOf(finding: ReviewFinding): number {
 }
 
 /**
+ * 取 finding 的图号；非附图定位按 0。
+ * @param finding - 待比较的 finding。
+ * @returns 图号或 0。
+ */
+function figureOf(finding: ReviewFinding): number {
+  return finding.locator.kind === 'figure' ? finding.locator.figure : 0
+}
+
+/**
  * 取 finding 的章节名；非章节定位按空串。
  * @param finding - 待比较的 finding。
  * @returns 章节名或空串。
@@ -74,6 +85,7 @@ export function compareReviewFindings(left: ReviewFinding, right: ReviewFinding)
     || SOURCE_RANK[left.source] - SOURCE_RANK[right.source]
     || LOCATOR_RANK[left.locator.kind] - LOCATOR_RANK[right.locator.kind]
     || claimOf(left) - claimOf(right)
+    || figureOf(left) - figureOf(right)
     || compareText(sectionOf(left), sectionOf(right))
     || compareText(left.rule, right.rule)
     || compareText(left.message, right.message)
@@ -106,7 +118,7 @@ export function buildReviewReport(
     if (finding.severity === 'error') counts.error += 1
     else counts.warning += 1
   }
-  const reviewed = reviewed_scope.claims || reviewed_scope.specification
+  const reviewed = reviewed_scope.claims || reviewed_scope.specification || reviewed_scope.figures
   return {
     passed: reviewed && counts.error === 0,
     findings: reportFindings,

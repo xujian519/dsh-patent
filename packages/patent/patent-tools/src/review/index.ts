@@ -23,4 +23,11 @@ export {
   type AggregateReviewResult,
 } from './aggregate.ts'
 
+export { figureFormFindings } from './figure-findings.ts'
+export type {
+  FigureCheckEvidence,
+  FigureFormEvidence,
+  FigureFormFindingsInput,
+} from './figure-findings.ts'
+
 export { buildReviewReport, compareReviewFindings } from './report.ts'

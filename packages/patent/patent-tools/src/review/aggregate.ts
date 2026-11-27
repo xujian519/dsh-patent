@@ -13,6 +13,8 @@ import {
   type TechDomain,
 } from '@deepseek-ai/dsh-patent-core'
 import { evaluatedTexts, type EvaluatedText } from '../internal/evaluated-input.ts'
+import { figureFormFindings } from './figure-findings.ts'
+import type { FigureFormEvidence } from './figure-findings.ts'
 // `validate-specification.ts` owns the deterministic spec engine. The intra-package
 // import keeps the aggregator off the package entry; do not re-export these functions
 // from the entry.
@@ -51,6 +53,8 @@ export type AggregateReviewInput = {
   abstractFigureNumber?: number
   /** 附图分析结果；提供时启用图面标号一致性检查。 */
   figureAnalysis?: FigureAnalysisResult[]
+  /** 各幅附图的形式证据（生成/复核工具的输出）；提供时评审附图形式。 */
+  figures?: readonly FigureFormEvidence[]
   /** 权利要求项数上限；超出时 `claim_lint` 报 `claim-count`。 */
   maxClaims?: number
 }
@@ -60,7 +64,7 @@ export type AggregateReviewResult = {
   /** 按引擎顺序排列的 findings。 */
   findings: ReviewFinding[]
   /** 本次实际评审的输入。 */
-  reviewed_scope: { claims: boolean; specification: boolean }
+  reviewed_scope: { claims: boolean; specification: boolean; figures: boolean }
   /** 本次实际读到的文本与指纹。 */
   evaluated: EvaluatedText[]
 }
@@ -216,7 +220,12 @@ export function aggregateReviewFindings(input: AggregateReviewInput): AggregateR
   const specification = normalizeText(input.specification)
   const abstract = normalizeText(input.abstract)
   const title = normalizeText(input.title)
-  const reviewedScope = { claims: claims !== undefined, specification: specification !== undefined }
+  const figures = input.figures !== undefined && input.figures.length > 0 ? input.figures : undefined
+  const reviewedScope = {
+    claims: claims !== undefined,
+    specification: specification !== undefined,
+    figures: figures !== undefined,
+  }
   const findings: ReviewFinding[] = []
 
   if (claims !== undefined) {
@@ -235,6 +244,24 @@ export function aggregateReviewFindings(input: AggregateReviewInput): AggregateR
     // 避免 validateSpecification 把空说明书报成“缺少必要章节”。
     const violations = checkClaimViolations(toValidateInput(input, undefined, claims, abstract, title), '')
     for (const violation of violations) findings.push(reviewFindingFromSpecViolation(violation, 'claim_check'))
+  }
+
+  if (figures !== undefined) {
+    for (const finding of figureFormFindings({
+      figures,
+      ...(input.drawingCount === undefined ? {} : { drawingCount: input.drawingCount }),
+    })) {
+      findings.push(finding)
+    }
+  } else if (input.hasDrawings === true) {
+    findings.push({
+      source: 'review',
+      rule: 'review_scope',
+      severity: 'info',
+      not_assessed: true,
+      message: '提供了附图但未提供附图形式证据（色彩、图号、字高、渲染复核）：附图形式未评审',
+      locator: { kind: 'document' },
+    })
   }
 
   if (!reviewedScope.specification) findings.push(missingScopeFinding('specification'))

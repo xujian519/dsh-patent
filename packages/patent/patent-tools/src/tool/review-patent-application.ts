@@ -14,11 +14,14 @@ import { PatentToolError } from '../error.ts'
 import { EVALUATED_TEXT_SCHEMA, renderEvaluatedTexts } from '../internal/evaluated-input.ts'
 import { aggregateReviewFindings } from '../review/aggregate.ts'
 import { buildReviewReport } from '../review/report.ts'
+import type { FigureFormEvidence } from '../review/figure-findings.ts'
 import type {
   ReviewReport,
   ReviewReportFindingView,
   ReviewReportView,
 } from '../review/types.ts'
+import type { TargetOffice } from '../figure/office-profile.ts'
+import { FIGURE_FORM_EVIDENCE_SCHEMA } from './internal/figure-schemas.ts'
 
 /** `review_patent_application` 的入参。 */
 export type ReviewPatentApplicationInput = {
@@ -40,8 +43,34 @@ export type ReviewPatentApplicationInput = {
   drawing_count?: number
   /** 请求书中的摘要附图号。 */
   abstract_figure_number?: number
+  /** 各幅附图的形式证据（生成/复核工具的输出）；提供时评审附图形式。 */
+  figures?: ReviewFigureFormInput[]
   /** 权利要求项数上限；超出时报 `claim-count`。 */
   max_claims?: number
+}
+
+/** `figures` 参数的单幅证据（工具入参形状）。 */
+export type ReviewFigureFormInput = {
+  /** 图号（1 起）。 */
+  figure_number: number
+  /** 目标法域。 */
+  office: TargetOffice
+  /** 色彩策略；缺省 grayscale。 */
+  style?: 'grayscale' | 'semantic'
+  /** 落版页上是否已标注图号。 */
+  has_caption: boolean
+  /** 本幅是否为请求书指定的摘要附图。 */
+  abstract_figure?: boolean
+  /** 落版后正文数字与字母的字高（毫米）。 */
+  char_height_mm?: number
+  /** 落版后图形占用的宽（毫米）。 */
+  placed_width_mm?: number
+  /** 落版后图形占用的高（毫米）。 */
+  placed_height_mm?: number
+  /** `verify_patent_figure` 的 findings。 */
+  render_findings?: { check: string; message: string }[]
+  /** 交付复核的 findings。 */
+  delivery_findings?: { check: string; message: string }[]
 }
 
 /** `review_patent_application` 的规范输出。 */
@@ -58,7 +87,9 @@ const TOOL_NAME = 'review_patent_application'
 function renderFinding(finding: ReviewReportFindingView): string[] {
   const where = finding.locator.kind === 'claim'
     ? `权利要求 ${String(finding.locator.claim ?? 0)}`
-    : finding.locator.kind === 'section' ? `说明书·${finding.locator.section ?? ''}` : '全篇'
+    : finding.locator.kind === 'figure'
+      ? `附图 ${String(finding.locator.figure ?? 0)}`
+      : finding.locator.kind === 'section' ? `说明书·${finding.locator.section ?? ''}` : '全篇'
   const basis = finding.basis === undefined ? '' : `（依据：${finding.basis}）`
   const lines = [`- [${finding.id}] ${where}｜${finding.rule}：${finding.message}${basis}`]
   if (finding.evidence !== undefined) lines.push(`  命中：${finding.evidence}`)
@@ -75,6 +106,7 @@ export function renderReviewReport(value: ReviewReportView): string {
   const scope = [
     value.reviewed_scope.claims ? '权利要求' : '',
     value.reviewed_scope.specification ? '说明书' : '',
+    value.reviewed_scope.figures ? '附图' : '',
   ].filter(part => part !== '').join('+')
   const header = `申请文件评审：${value.passed ? '通过（未发现 error）' : '未通过'}`
     + `（error ${String(value.counts.error)}、warning ${String(value.counts.warning)}；`
@@ -99,6 +131,48 @@ export function renderReviewReport(value: ReviewReportView): string {
 }
 
 /**
+ * 把工具入参的附图证据归一为评审层类型。
+ * @param figures - 模型给出的逐幅证据。
+ * @param hasDrawings - 模型是否声明有附图。
+ * @returns 归一后的证据；未提供时 undefined。
+ * @throws PatentToolError 图号不是正整数，或证据与 `has_drawings=false` 矛盾时。
+ */
+function normalizeFigureEvidence(
+  figures: ReviewFigureFormInput[] | undefined,
+  hasDrawings: boolean | undefined,
+): FigureFormEvidence[] | undefined {
+  if (figures === undefined) return undefined
+  if (figures.length > 0 && hasDrawings === false) {
+    throw new PatentToolError(
+      'invalid_tool_input',
+      'figures 与 has_drawings 矛盾：给了附图形式证据却声明没有附图，请去掉 has_drawings=false 或修正证据',
+      { tool: TOOL_NAME },
+    )
+  }
+  return figures.map((figure): FigureFormEvidence => {
+    if (!Number.isInteger(figure.figure_number) || figure.figure_number < 1) {
+      throw new PatentToolError(
+        'invalid_tool_input',
+        `figures[].figure_number 必须是正整数：${String(figure.figure_number)}`,
+        { tool: TOOL_NAME },
+      )
+    }
+    return {
+      figureNumber: figure.figure_number,
+      office: figure.office,
+      style: figure.style ?? 'grayscale',
+      hasCaption: figure.has_caption,
+      ...(figure.abstract_figure === undefined ? {} : { abstractFigure: figure.abstract_figure }),
+      ...(figure.char_height_mm === undefined ? {} : { charHeightMm: figure.char_height_mm }),
+      ...(figure.placed_width_mm === undefined ? {} : { placedWidthMm: figure.placed_width_mm }),
+      ...(figure.placed_height_mm === undefined ? {} : { placedHeightMm: figure.placed_height_mm }),
+      ...(figure.render_findings === undefined ? {} : { renderFindings: figure.render_findings }),
+      ...(figure.delivery_findings === undefined ? {} : { deliveryFindings: figure.delivery_findings }),
+    }
+  })
+}
+
+/**
  * 构建 `review_patent_application` 工具。
  * @returns 可注册的工具定义。
  */
@@ -110,6 +184,7 @@ export function createReviewPatentApplicationTool(): ToolDefinition {
       '- 权利要求：claim_lint 的编号、引用方向、多项从属、引用基础、主题名称、两部分式、功能性/工艺限定、结尾标点等；',
       '- 说明书与摘要：validate_specification 的五部分结构、标题集合、附图引用形式、名称/摘要长度、禁止性内容、模糊表述、实施例、数值范围与领域规则等；',
       '- 两者都给时同时跑权项—说明书特征覆盖（A26.4）。',
+      '- 附图：给 `figures` 形式证据时，按目标法域核对色彩策略、图号、字高与摘要附图缩放，并把渲染/交付复核的发现并入同一报告；声明有附图却未给证据时只声明附图形式未评审，不读成通过。',
       '至少提供 claims 或 specification 之一；只给一半时，报告用未评估项声明另一半未评审，不会把它读成通过。',
       '每条 finding 带报告内唯一的 F 编号、定位、命中原文与法条依据；passed 只表示已运行的确定性规则未发现 error，不表示符合专利法；未评估项单列。',
       '结果末尾给出实际读到的文本字数与指纹，便于另一次评审对照是否读的是同一份文本。',
@@ -132,6 +207,10 @@ export function createReviewPatentApplicationTool(): ToolDefinition {
       },
       drawing_count: { type: 'number', description: '声明的附图数量（可选），与附图说明条目数比对。' },
       abstract_figure_number: { type: 'number', description: '请求书中的摘要附图号（可选）。' },
+      figures: {
+        ...FIGURE_FORM_EVIDENCE_SCHEMA,
+        description: '各幅附图的形式证据（可选）：把 generate_patent_figure 返回的落版尺寸、verify_patent_figure 的 findings 与交付复核结果按图给出；不给时附图形式不评审。',
+      },
       max_claims: { type: 'number', description: '权利要求项数上限（可选）；超出时报 claim-count。' },
     },
     output: {
@@ -157,6 +236,7 @@ export function createReviewPatentApplicationTool(): ToolDefinition {
             properties: {
               claims: { type: 'boolean', required: true },
               specification: { type: 'boolean', required: true },
+              figures: { type: 'boolean', required: true },
             },
           },
           findings: {
@@ -170,7 +250,7 @@ export function createReviewPatentApplicationTool(): ToolDefinition {
                 source: {
                   type: 'string',
                   required: true,
-                  enum: ['claim_lint', 'claim_check', 'spec_check', 'review'],
+                  enum: ['claim_lint', 'claim_check', 'spec_check', 'figure_check', 'review'],
                 },
                 rule: { type: 'string', required: true },
                 severity: { type: 'string', required: true, enum: ['error', 'warning', 'info'] },
@@ -182,8 +262,9 @@ export function createReviewPatentApplicationTool(): ToolDefinition {
                   additionalProperties: false,
                   required: true,
                   properties: {
-                    kind: { type: 'string', required: true, enum: ['claim', 'section', 'document'] },
+                    kind: { type: 'string', required: true, enum: ['claim', 'figure', 'section', 'document'] },
                     claim: { type: 'number' },
+                    figure: { type: 'number' },
                     section: { type: 'string' },
                   },
                 },
@@ -210,6 +291,7 @@ export function createReviewPatentApplicationTool(): ToolDefinition {
           { tool: TOOL_NAME },
         )
       }
+      const figures = normalizeFigureEvidence(args.figures, args.has_drawings)
       const aggregated = aggregateReviewFindings({
         ...(claims === undefined ? {} : { claims }),
         ...(specification === undefined ? {} : { specification }),
@@ -222,6 +304,7 @@ export function createReviewPatentApplicationTool(): ToolDefinition {
         ...(args.abstract_figure_number === undefined
           ? {}
           : { abstractFigureNumber: args.abstract_figure_number }),
+        ...(figures === undefined ? {} : { figures }),
         ...(args.max_claims === undefined ? {} : { maxClaims: args.max_claims }),
       })
       return Promise.resolve(

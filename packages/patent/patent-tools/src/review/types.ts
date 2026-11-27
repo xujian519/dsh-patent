@@ -14,9 +14,10 @@ import type { EvaluatedText } from '../internal/evaluated-input.ts'
  * - `claim_lint`：权利要求形式自检。
  * - `claim_check`：只跑 `checkClaimViolations`（没有说明书可做覆盖比对）。
  * - `spec_check`：完整的 `validateSpecification`（可能含 `claims` 族的覆盖/单一性记录）。
+ * - `figure_check`：附图形式核算与渲染复核结果的映射（不读 SVG，只消费生成/复核工具给出的证据）。
  * - `review`：评审层自己的范围说明（例如某一半输入未提供）。
  */
-export type ReviewSource = 'claim_lint' | 'claim_check' | 'spec_check' | 'review'
+export type ReviewSource = 'claim_lint' | 'claim_check' | 'spec_check' | 'figure_check' | 'review'
 
 /**
  * 一条 finding 的严重度。
@@ -26,9 +27,10 @@ export type ReviewSource = 'claim_lint' | 'claim_check' | 'spec_check' | 'review
  */
 export type ReviewSeverity = 'error' | 'warning' | 'info'
 
-/** finding 的定位：具体权项、说明书章节，或全篇。 */
+/** finding 的定位：具体权项、具体附图、说明书章节，或全篇。 */
 export type ReviewLocator =
   | { kind: 'claim'; claim: number }
+  | { kind: 'figure'; figure: number }
   | { kind: 'section'; section: string }
   | { kind: 'document' }
 
@@ -40,9 +42,11 @@ export type ReviewLocator =
  */
 export type ReviewLocatorView = {
   /** 定位种类。 */
-  kind: 'claim' | 'section' | 'document'
+  kind: 'claim' | 'figure' | 'section' | 'document'
   /** 权项号；`kind` 为 `claim` 时提供。 */
   claim?: number
+  /** 图号（1 起）；`kind` 为 `figure` 时提供。 */
+  figure?: number
   /** 说明书章节名；`kind` 为 `section` 时提供。 */
   section?: string
 }
@@ -96,7 +100,7 @@ export type ReviewReport = {
   /** error/warning/未评估项计数；未评估项不计入前两者。 */
   counts: { error: number; warning: number; not_assessed: number }
   /** 本次实际评审的输入。 */
-  reviewed_scope: { claims: boolean; specification: boolean }
+  reviewed_scope: { claims: boolean; specification: boolean; figures: boolean }
   /** 本次实际读到的文本与指纹，供另一次评审对照是否读的是同一份文本。 */
   evaluated: EvaluatedText[]
 }

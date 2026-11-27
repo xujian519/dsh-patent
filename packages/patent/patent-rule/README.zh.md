@@ -48,6 +48,8 @@ kind: "package-reference"
 
 条目还可声明 `evidence`，按前置工具名分组，给出该工具规范结果上的条件：每个条件点名一个顶层结果字段，并给出可接受的精确值（`equals`，字符串数组表示取其中任一值）或数组最小长度（`minItems`）。成功返回但不满足全部声明条件的调用仍算缺失，因此零字节 `rule_check`、没有识别到引用的 `law_verify`、或另一个模板的收口记录都不能冒充本次交付欠的那次运行。台账只保留声明过的字段，由 `deliveryEvidence` 从结果中提取。证据声明挂在条目未 require 的工具上会在加载期失败，因为该条件永远不会被读取。
 
+证据条件还可声明 `matchesDraftTexts`：一组草案投影（`text`、`claims`、`abstract`、`title`），前置记录留存的 `evaluated` 条目里必须存在与每个投影 digest 相同的条目。门禁把本次调用的 `draft` 入参经 `filingTextsFromDraft` 投影——与 docx 通道成文所用的是同一份 `contentFromDraft` 映射——再用 `contentHash` 逐投影取摘要，因此对旧稿跑过的 `rule_check` 不能为本次交付的草案作证。匹配按 digest 值而非条目的 `field` 名，且全部投影必须落在同一条前置记录内，沿用不可跨记录拼凑的语义。草案过不了 `validateSpecDraft` 时该条件无法核对：门禁不据此拒绝，交由成文工具自己的结构报告作答。不符的处置由 `deliveryGateDigestMode` 选择：`enforce`（缺省）拒绝并在理由里点名不符的投影与应重跑的前置工具；`shadow` 只把不符（以及无法核对的情形）写进日志，部署据此观测误拒后再切 `enforce`。随包 `patent` 预置在回放归因完成前显式运行 `shadow`。
+
 这道门禁存在的原因是：只写在提示词里的纪律与没有纪律，在调用记录上无法区分——跑过的那次与没跑过的那次留下同样的痕迹，若没有任何环节核对。台账记录**成功返回**的调用（含声明过的结果字段），由 `tools/post-execute` 登记，因为派发前作出的拒绝无法知道它即将放行的调用会不会成功。登记与判定因此分开：guard 读的是 post-execute 监听器填写的台账。
 
 台账按调用方（agent）与调用声明的案卷键（`caseId`、`case_id`、`case_dir` 或 `caseDir`）归属。声明了案卷的前置调用只满足该案卷的交付；未声明案卷的前置调用属于会话级记录，只在交付的案卷没有该工具的专属记录时才被采用。没有 agent 的调用无法归属到任何会话，一律按未满足处理：无法归属的交付件同样拿不出本会话的记录。随包默认不声明任何条目——一次交付欠哪些闸门调用，是本部署的交付政策，不是本包的政策。
@@ -104,7 +106,8 @@ Schemastery 配置。
 | `gateToolNames` | string[] | 交付物工具 | 结果经输出门禁评估的工具名。 |
 | `gateCheckTypes` | string[] | `keyword_blocklist` | 结果门禁保留的检查族；点名缺失即违规族会告警拒绝。 |
 | `structuralGate` | object[] | `[]` | 制品门禁条目（`tool`、`textArgs`、`ruleIds`，可选 `whenArgs` 与 `strict`）：制品文本命中 block 级规则即在调用前拒绝；`strict` 让无法生效的条目使加载失败，而不是被丢弃。 |
-| `deliveryGate` | object[] | `[]` | 交付门禁条目（`tool`、`requires`，可选 `whenArgs` 与 `evidence`）：前置工具未在本会话成功执行、结果声明了 `blocked: true`、或声明过的结果证据缺失/不符的调用由单调 guard 拒绝。 |
+| `deliveryGate` | object[] | `[]` | 交付门禁条目（`tool`、`requires`，可选 `whenArgs` 与 `evidence`）：前置工具未在本会话成功执行、结果声明了 `blocked: true`、或声明过的结果证据缺失/不符的调用由单调 guard 拒绝。证据条件的 `matchesDraftTexts` 把核对绑到内容上：前置记录的 digest 必须覆盖本次交付草案的指定投影。 |
+| `deliveryGateDigestMode` | `'shadow' \| 'enforce'` | `enforce` | `matchesDraftTexts` 不符时的处置：`enforce` 拒绝调用，`shadow` 只记录不符（及无法核对的草案）供误拒观测。 |
 | `approvalDisabled` | boolean | `false` | 对 review 级违规直接拦截，不经审批往返。 |
 
 <a id="model-experience"></a>

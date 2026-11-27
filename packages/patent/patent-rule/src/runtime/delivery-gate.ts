@@ -10,9 +10,15 @@
  * `blocked: true` 的前置调用才算数，跨会话不继承。声明了案卷的调用只满足同一案卷的交付；
  * 未声明案卷的调用是会话级记录，只在交付的案卷没有专属记录时采用。归属不明的调用
  * （无 agent）一律按未满足处理——无法归属的交付件同样拿不出本会话的闸门证据。
+ *
+ * 证据条件除字段存在、数组长度与精确值外，还可声明 `matchesDraftTexts`：把交付入参
+ * `draft` 经 `filingTextsFromDraft` 投影后的 digest 与前置结果 `evaluated` 里的 digest
+ * 比对，证明前置检查读过的文本就是本次交付的文本。`shadow` 模式下不符只观测不拒绝。
  * @module @deepseek-ai/dsh-patent-rule/runtime/delivery-gate
  */
 
+import { contentHash, DraftValidationError, validateSpecDraft, type SpecDraft } from '@deepseek-ai/dsh-patent-core'
+import { filingTextsFromDraft } from '@deepseek-ai/dsh-patent-filing'
 import { declaredArgsMatch, jsonRecord, type DeclaredArgValue } from './args-match.ts'
 
 /**
@@ -29,6 +35,57 @@ export type DeliveryEvidenceRequirement = {
   equals?: string | boolean | string[]
   /** 字段为数组时要求的最小长度。 */
   minItems?: number
+  /**
+   * 要求该字段（`evaluated` 形态的 `{ digest }` 条目数组）里为每个列出的草案投影
+   * 找到 digest 相同的条目：前置检查读过的文本与本次交付的 draft 必须一致。
+   * 按 digest 值匹配，不看条目的 `field` 名——`rule_check` 的字段名只有 `text`，
+   * 内容可能是权项文本，字段名不可靠。草案缺失或未通过 validateSpecDraft 时无法
+   * 核对，该条件不生效（成文工具自己会报结构错误）。空数组与未声明同义
+   * （Config 解析给未声明的数组补 `[]`）。
+   */
+  matchesDraftTexts?: string[]
+}
+
+/** 可参与 digest 核对的草案投影名，与 `filingTextsFromDraft` 的返回字段一一对应。 */
+export const DRAFT_TEXT_PROJECTIONS = ['text', 'claims', 'abstract', 'title'] as const
+
+/** 草案投影名。 */
+export type DraftTextProjection = (typeof DRAFT_TEXT_PROJECTIONS)[number]
+
+/** digest 核对模式：enforce 把不符计入拒绝，shadow 只观测不拒绝。 */
+export type DeliveryGateDigestMode = 'shadow' | 'enforce'
+
+/** shadow 模式下一次「仅 digest 不符」的观测细节（交付工具与前置工具名由调用方补上）。 */
+export type DeliveryDigestMismatch = {
+  /** 未匹配上的投影名。 */
+  projections: string[]
+  /** 投影名 → 本次 draft 的期望 digest。 */
+  expected: Record<string, string>
+  /** 前置结果实际携带的 digest。 */
+  actual: string[]
+}
+
+/** 门禁 digest 核对的一次观测：shadow 下的不符，或草案非法导致的无法核对。 */
+export type DeliveryDigestObservation =
+  | ({ kind: 'mismatch'; tool: string; prerequisite: string; caseKey?: string } & DeliveryDigestMismatch)
+  | { kind: 'unverifiable'; tool: string; prerequisite: string; caseKey?: string }
+
+/** `deliveryGateMissing` 的 digest 核对选项。 */
+export type DeliveryGateDigestOptions = {
+  /** digest 核对模式；缺省 `enforce`。 */
+  mode?: DeliveryGateDigestMode
+  /** shadow 模式下的观测回调（不符与无法核对各上报一次）；enforce 不调用。 */
+  onObservation?: (observation: DeliveryDigestObservation) => void
+}
+
+/** `DeliveryAttemptLedger.evidenceFailure` 的 digest 核对上下文。 */
+export type DeliveryDigestCheck = {
+  /** 投影名 → 本次 draft 的期望 digest；缺省表示草案无法核对，digest 条件不生效。 */
+  expected?: ReadonlyMap<string, string>
+  /** digest 核对模式；缺省 `enforce`。 */
+  mode?: DeliveryGateDigestMode
+  /** shadow 模式下「仅 digest 不符」的上报。 */
+  onMismatch?: (mismatch: DeliveryDigestMismatch) => void
 }
 
 /** 一次前置调用留下的结果字段，按字段名索引。 */
@@ -140,11 +197,13 @@ export class DeliveryAttemptLedger {
    * 是否有一次记录的結果同时满足全部证据条件。
    *
    * 条件不可跨记录拼凑：一次 `ok: true` 的 disclosure 收口与另一次 `ok: false` 的
-   * OA 收口不能合起来冒充一次成功的 OA 收口。
+   * OA 收口不能合起来冒充一次成功的 OA 收口。声明了 `matchesDraftTexts` 的条件按
+   * digest 与本次 draft 的投影比对，同样只在同一条记录内成立。
    * @param agent - 调用归属单位。
    * @param tool - 被查询的前置工具名。
    * @param caseKey - 本次交付声明的案卷键。
    * @param requirements - 该前置工具在本次门禁条目上必须携带的证据。
+   * @param digests - digest 核对上下文；`expected` 缺省时 digest 条件不生效。
    * @returns 未满足时最近一条记录的模型可读理由；满足或未声明条件时为 undefined。
    */
   evidenceFailure(
@@ -152,16 +211,33 @@ export class DeliveryAttemptLedger {
     tool: string,
     caseKey: string | undefined,
     requirements: readonly DeliveryEvidenceRequirement[],
+    digests?: DeliveryDigestCheck,
   ): string | undefined {
     if (requirements.length === 0) return undefined
     const records = this.#records(agent, tool, caseKey)
-    if (records.some(record => requirements.every(requirement => matchesEvidence(record.evidence, requirement)))) {
+    if (records.some(record => requirements.every(requirement => (
+      evidenceFailureReason(record.evidence, requirement, digests?.expected) === undefined
+    )))) {
       return undefined
+    }
+    // shadow 下「非 digest 条件都满足、仅 digest 不符」不判失败：上报观测后放行，
+    // 误拒归因材料就是这次观测。观测取最近一条满足非 digest 条件的记录——它才是
+    // enforce 语义下「本会通过」的那次前置运行。
+    if (digests?.mode === 'shadow' && digests.expected !== undefined) {
+      const satisfied = records.findLast(record => requirements.every(requirement => (
+        evidenceFailureReason(record.evidence, requirement) === undefined
+      )))
+      if (satisfied !== undefined) {
+        digests.onMismatch?.(digestMismatch(satisfied.evidence, requirements, digests.expected))
+        return undefined
+      }
     }
     const latest = records.at(-1)?.evidence
     return requirements
-      .filter(requirement => !matchesEvidence(latest, requirement))
-      .map(requirement => describeEvidenceFailure(latest, requirement))
+      .flatMap((requirement) => {
+        const reason = evidenceFailureReason(latest, requirement, digests?.expected)
+        return reason === undefined ? [] : [reason]
+      })
       .join('；')
   }
 
@@ -185,41 +261,84 @@ export class DeliveryAttemptLedger {
   }
 }
 
-/** 一条证据条件是否由该结果满足。 */
-function matchesEvidence(
-  evidence: DeliveryEvidence | undefined,
-  requirement: DeliveryEvidenceRequirement,
-): boolean {
-  const actual = evidence?.[requirement.field]
-  if (actual === undefined) return false
-  if (requirement.minItems !== undefined && (!Array.isArray(actual) || actual.length < requirement.minItems)) {
-    return false
+/** `equals` 条件是否命中：字符串为精确匹配，字符串数组为取值集合。 */
+function matchesEquals(actual: unknown, equals: string | boolean | string[]): boolean {
+  if (Array.isArray(equals)) {
+    return typeof actual === 'string' && equals.includes(actual)
   }
-  if (requirement.equals !== undefined) {
-    if (Array.isArray(requirement.equals)) {
-      return typeof actual === 'string' && requirement.equals.includes(actual)
-    }
-    return actual === requirement.equals
-  }
-  return true
+  return actual === equals
 }
 
-/** 把未满足的条件渲染成模型据此补证据的理由。 */
-function describeEvidenceFailure(
+/** 从 `evaluated` 形态的字段值里取出全部 digest 字符串；非数组或条目无 digest 时跳过。 */
+function digestEntries(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const digests: string[] = []
+  for (const entry of value) {
+    const record = jsonRecord(entry)
+    if (typeof record?.digest === 'string') digests.push(record.digest)
+  }
+  return digests
+}
+
+/** `matchesDraftTexts` 里未在证据中找到相同 digest 的投影名。 */
+function unmatchedProjections(
+  actual: unknown,
+  projections: readonly string[],
+  expected: ReadonlyMap<string, string>,
+): string[] {
+  const digests = digestEntries(actual)
+  return projections.filter((name) => {
+    const want = expected.get(name)
+    return want === undefined || !digests.includes(want)
+  })
+}
+
+/** 一条证据条件未满足时的模型可读理由；满足时为 undefined。 */
+function evidenceFailureReason(
   evidence: DeliveryEvidence | undefined,
   requirement: DeliveryEvidenceRequirement,
-): string {
+  expected?: ReadonlyMap<string, string>,
+): string | undefined {
   const actual = evidence?.[requirement.field]
   if (actual === undefined) return `结果未携带 ${requirement.field}`
   if (requirement.minItems !== undefined && (!Array.isArray(actual) || actual.length < requirement.minItems)) {
     return `结果的 ${requirement.field} 不足 ${requirement.minItems} 项`
   }
-  // Called only after a failed match: with `minItems` absent, `equals` is the bound
-  // that failed, so there is no third case to describe.
-  const expected = Array.isArray(requirement.equals)
-    ? requirement.equals.join(' / ')
-    : String(requirement.equals)
-  return `结果的 ${requirement.field} 为 ${JSON.stringify(actual)}，需要 ${expected}`
+  if (requirement.equals !== undefined && !matchesEquals(actual, requirement.equals)) {
+    const expectedValue = Array.isArray(requirement.equals)
+      ? requirement.equals.join(' / ')
+      : String(requirement.equals)
+    return `结果的 ${requirement.field} 为 ${JSON.stringify(actual)}，需要 ${expectedValue}`
+  }
+  if (requirement.matchesDraftTexts !== undefined && expected !== undefined) {
+    const mismatched = unmatchedProjections(actual, requirement.matchesDraftTexts, expected)
+    if (mismatched.length > 0) {
+      return `结果的 ${requirement.field} 与本次 draft 的 ${mismatched.join('、')} 投影不一致，用本次 draft 重跑该前置工具后再交付`
+    }
+  }
+  return undefined
+}
+
+/** shadow 观测内容：最近一条记录上未匹配的投影、期望 digest 与实际 digest。 */
+function digestMismatch(
+  evidence: DeliveryEvidence | undefined,
+  requirements: readonly DeliveryEvidenceRequirement[],
+  expected: ReadonlyMap<string, string>,
+): DeliveryDigestMismatch {
+  const projections: string[] = []
+  const expectedDigests: Record<string, string> = {}
+  let actual: string[] = []
+  for (const requirement of requirements) {
+    if (requirement.matchesDraftTexts === undefined) continue
+    const value = evidence?.[requirement.field]
+    actual = digestEntries(value)
+    for (const name of unmatchedProjections(value, requirement.matchesDraftTexts, expected)) {
+      projections.push(name)
+      const want = expected.get(name)
+      if (want !== undefined) expectedDigests[name] = want
+    }
+  }
+  return { projections, expected: expectedDigests, actual }
 }
 
 /**
@@ -250,7 +369,16 @@ export function resolveDeliveryGate(entries: readonly DeliveryGateEntry[]): Deli
         fields = new Set()
         evidenceFields.set(tool, fields)
       }
-      for (const requirement of requirements) fields.add(requirement.field)
+      for (const requirement of requirements) {
+        fields.add(requirement.field)
+        for (const name of requirement.matchesDraftTexts ?? []) {
+          if (!(DRAFT_TEXT_PROJECTIONS as readonly string[]).includes(name)) {
+            throw new Error(
+              `交付前置门禁 ${entry.tool}: matchesDraftTexts 声明了未知投影 ${name}（可用：${DRAFT_TEXT_PROJECTIONS.join(' / ')}）`,
+            )
+          }
+        }
+      }
     }
     resolved.push(entry)
   }
@@ -278,12 +406,38 @@ export function deliveryEvidence(
 }
 
 /**
+ * 本次交付 draft 的投影 digest；无法核对（未传 draft 或未通过 validateSpecDraft）时为 null。
+ *
+ * 草案非法不在这里拦：成文工具自己会给出逐条结构错误，门禁把 digest 条件整组跳过，
+ * 由调用方按模式决定观测（shadow）还是放行给工具报错（enforce）。
+ */
+function projectDraftDigests(args: unknown): ReadonlyMap<string, string> | null {
+  const record = jsonRecord(args)
+  if (record === null || record.draft === undefined) return null
+  let draft: SpecDraft
+  try {
+    draft = validateSpecDraft(record.draft)
+  } catch (error) {
+    if (error instanceof DraftValidationError) return null
+    throw error
+  }
+  const texts = filingTextsFromDraft(draft)
+  return new Map<string, string>([
+    ['text', contentHash(texts.text)],
+    ['claims', contentHash(texts.claims)],
+    ['abstract', contentHash(texts.abstract)],
+    ['title', contentHash(texts.title)],
+  ])
+}
+
+/**
  * 本次调用尚未满足的前置工具名。
  * @param plan - 运行计划。
  * @param ledger - 本会话成功调用台账。
  * @param agent - 调用归属单位；缺省表示无法归属，按未满足处理。
  * @param tool - 本次调用的工具名。
- * @param args - 本次调用的入参（判定 `whenArgs`）。
+ * @param args - 本次调用的入参（判定 `whenArgs`，并从中取 `draft` 做 digest 核对）。
+ * @param digestOptions - digest 核对模式与 shadow 观测回调；缺省按 enforce。
  * @returns 尚未成功执行过的前置工具名（按声明顺序去重）；无缺口时为空数组。
  */
 export function deliveryGateMissing(
@@ -292,9 +446,17 @@ export function deliveryGateMissing(
   agent: object | undefined,
   tool: string,
   args: unknown,
+  digestOptions?: DeliveryGateDigestOptions,
 ): string[] {
   const missing = new Map<string, string>()
   const caseKey = caseKeyOfArguments(args)
+  const mode = digestOptions?.mode ?? 'enforce'
+  // 投影一次调用只算一次：多条门禁条目命中同一交付工具时共用。
+  let projected: ReadonlyMap<string, string> | null | undefined
+  const draftDigests = (): ReadonlyMap<string, string> | null => {
+    if (projected === undefined) projected = projectDraftDigests(args)
+    return projected
+  }
   for (const entry of plan.entries) {
     if (entry.tool !== tool || !declaredArgsMatch(entry.whenArgs, args)) continue
     for (const required of entry.requires) {
@@ -303,7 +465,30 @@ export function deliveryGateMissing(
         missing.set(required, required)
         continue
       }
-      const failure = ledger.evidenceFailure(agent, required, caseKey, entry.evidence?.[required] ?? [])
+      const requirements = entry.evidence?.[required] ?? []
+      // Config 解析给未声明的 matchesDraftTexts 补 []（schemastery 的数组缺省），
+      // 空数组与未声明同义：不做 digest 核对，也不算「无法核对」。
+      const expectsDigests = requirements.some(requirement => (requirement.matchesDraftTexts?.length ?? 0) > 0)
+      const expected = expectsDigests ? draftDigests() : null
+      if (expectsDigests && expected === null && mode === 'shadow') {
+        digestOptions?.onObservation?.({
+          kind: 'unverifiable',
+          tool,
+          prerequisite: required,
+          ...(caseKey !== undefined ? { caseKey } : {}),
+        })
+      }
+      const failure = ledger.evidenceFailure(agent, required, caseKey, requirements, {
+        ...(expected !== null ? { expected } : {}),
+        mode,
+        onMismatch: mismatch => digestOptions?.onObservation?.({
+          kind: 'mismatch',
+          tool,
+          prerequisite: required,
+          ...(caseKey !== undefined ? { caseKey } : {}),
+          ...mismatch,
+        }),
+      })
       if (failure !== undefined) missing.set(required, `${required}（${failure}）`)
     }
   }
@@ -321,4 +506,22 @@ export function renderDeliveryGateDenial(tool: string, missing: readonly string[
     `交付前置门禁拒绝 ${tool}：前置证据不满足 ${missing.join('、')}。`,
     '先执行这些工具并确认其结论通过、结果与本次交付所需的内容一致，再重新调用该工具；门禁认的是本会话内成功返回且证据匹配的调用记录，缺记录即为未跑。',
   ].join('\n')
+}
+
+/**
+ * 渲染一次 digest 观测（shadow 模式的日志行）：点名交付工具、前置工具、案卷与不符的
+ * 投影，附上期望与实际 digest，误拒归因不需要重放会话。
+ * @param observation - digest 核对的一次观测。
+ * @returns 单行日志文本。
+ */
+export function renderDeliveryDigestObservation(observation: DeliveryDigestObservation): string {
+  const scope = observation.caseKey === undefined ? '' : `（案卷 ${observation.caseKey}）`
+  if (observation.kind === 'unverifiable') {
+    return `交付前置门禁 digest 观测${scope}：${observation.tool} 的草案未通过结构校验，${observation.prerequisite} 的文本一致性无法核对，按无法核对放行`
+  }
+  const expected = Object.entries(observation.expected).map(([name, digest]) => `${name}=${digest}`).join('，')
+  return [
+    `交付前置门禁 digest 观测${scope}：${observation.tool} 与 ${observation.prerequisite} 的文本不一致`,
+    `缺失投影：${observation.projections.join('、')}；期望 ${expected}；实际 ${observation.actual.join('，') || '（无 digest 条目）'}`,
+  ].join('；')
 }

@@ -17773,6 +17773,9 @@ importers:
       '@deepseek-ai/dsh-patent-core':
         specifier: workspace:*
         version: link:../patent-core
+      '@deepseek-ai/dsh-patent-filing':
+        specifier: workspace:*
+        version: link:../patent-filing
       '@deepseek-ai/dsh-session':
         specifier: workspace:*
         version: link:../../core/session

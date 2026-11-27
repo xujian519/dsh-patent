@@ -27,6 +27,9 @@
       "path": "../patent-core"
     },
     {
+      "path": "../patent-filing"
+    },
+    {
       "path": "../patent-law"
     },
     {

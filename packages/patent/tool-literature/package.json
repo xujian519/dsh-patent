@@ -33,6 +33,7 @@
   "license": "MIT",
   "dependencies": {
     "@deepseek-ai/schemastery": "workspace:~",
+    "@deepseek-ai/dsh-atomic-write": "workspace:*",
     "@deepseek-ai/dsh-browser-backend": "workspace:*",
     "@deepseek-ai/dsh-patent-core": "workspace:*"
   },

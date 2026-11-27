@@ -17992,6 +17992,9 @@ importers:
 
   packages/patent/tool-literature:
     dependencies:
+      '@deepseek-ai/dsh-atomic-write':
+        specifier: workspace:*
+        version: link:../../util/atomic-write
       '@deepseek-ai/dsh-browser-backend':
         specifier: workspace:*
         version: link:../../browser/browser-backend

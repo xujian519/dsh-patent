@@ -48,6 +48,19 @@ function isErrorEntry(e: Entry): boolean {
   return e.id.startsWith('http://arxiv.org/api/errors') || e.title === 'Error'
 }
 
+/**
+ * A feed worth caching: a real Atom document that is not an error entry.
+ * arXiv answers a throttled or malformed query with 200 + an error entry inside
+ * a well-formed `<feed>`, so the plain root check would cache the failure for
+ * the whole TTL and every retry would read it back.
+ * @param xml - the response body.
+ * @returns whether the body is a usable feed.
+ */
+function isUsableFeed(xml: string): boolean {
+  if (!isAtomFeed(xml)) return false
+  return !/arxiv\.org\/api\/errors/i.test(xml) && !/<title>\s*Error\s*<\/title>/i.test(xml)
+}
+
 /** 裸查询包 `all:`；已 fielded 的查询原样透传。 */
 function searchExpr(query: string): string {
   const q = query.trim()
@@ -82,7 +95,7 @@ function parse(xml: string): Entry[] {
  */
 async function feed(client: LiteratureHttpClient, url: string, http: LiteratureFetchOptions): Promise<Entry[]> {
   // rateLimit/retry/fetchImpl 已在连接器构造时并入 http；signal 每次调用可变。
-  const xml = await client.getText(url, { ...http, looksValid: isAtomFeed })
+  const xml = await client.getText(url, { ...http, looksValid: isUsableFeed })
   if (!isAtomFeed(xml)) {
     throw new Error('arXiv returned a non-Atom response (likely rate-limited or unavailable); retry shortly.')
   }

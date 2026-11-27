@@ -47,6 +47,24 @@ describe('patent_analysis_report', () => {
     expect(value.searchStrategy?.ipc?.length).toBeGreaterThan(0)
   })
 
+  it('states the two model dimensions were not scored when no model is configured', async () => {
+    const tool = createPatentAnalysisReportTool()
+    const value = (await tool.execute(ARGS, exec)) as PatentAnalysisReportOutput
+    const text = tool.output.render({}, value as never)
+      .map(block => ('text' in block && typeof block.text === 'string' ? block.text : '')).join('')
+    // 缺分不能表现为「没有这一项」：报告必须点明这两维未评估。
+    expect(text).toContain('- novelty、technical_strength：未评分')
+  })
+
+  it('names only the model dimension the call did not fill', async () => {
+    const tool = createPatentAnalysisReportTool({ model: jsonModel({ novelty: { score: 61, rationale: '初判' } }) })
+    const value = (await tool.execute(ARGS, exec)) as PatentAnalysisReportOutput
+    const text = tool.output.render({}, value as never)
+      .map(block => ('text' in block && typeof block.text === 'string' ? block.text : '')).join('')
+    expect(text).toContain('- technical_strength：未评分')
+    expect(text).not.toContain('- novelty、technical_strength：未评分')
+  })
+
   it('renders every model-facing section with its sources', async () => {
     const tool = createPatentAnalysisReportTool({
       model: jsonModel({ novelty: { score: 80, rationale: '初判具有新颖性' }, technical_strength: { score: 75, rationale: '技术效果明确' } }),

@@ -582,7 +582,11 @@ export class AdmissibilityHandler implements StageHandler {
         ].join('\n'),
         admissibility_passed: true,
         admissibility_violations: [],
-        admissibility_pending: [],
+        // 未执行必须落成待核项：只读过 admissibility_passed 的下游会把它读成「通过且无待核」。
+        admissibility_pending: [{
+          code: 'ADM-UNASSESSED',
+          message: `未识别程序理由（state.${DEFAULT_ADMISSIBILITY_GROUNDS_KEY}），请求期限、理由援引、一事不再理与主体资格均未核对`,
+        }],
       }
     }
 

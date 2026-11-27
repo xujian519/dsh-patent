@@ -107,12 +107,14 @@ describe('admissibility 输入边界', () => {
     }
   })
 
-  it('缺少 grounds 时报告未执行并放行', async () => {
+  it('缺少 grounds 时报告未执行并放行，且待核项不为空', async () => {
     const result = await run(reexamination({ grounds: undefined }))
     expect(result.degraded).toBe(false)
     expect(result.report).toContain('未执行')
     expect(result.passed).toBe(true)
     expect(result.violations).toEqual([])
+    // 未执行不能与「无待核」同时成立：只读 passed 的下游否则会把它读成通过。
+    expect(result.pending.map(item => item.code)).toEqual(['ADM-UNASSESSED'])
   })
 
   it('grounds 不是合法 JSON 时降级', async () => {

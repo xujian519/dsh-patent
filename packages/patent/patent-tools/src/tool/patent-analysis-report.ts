@@ -5,8 +5,10 @@
  * come from `@deepseek-ai/dsh-patent-core`'s analysis-report aggregator; the
  * novelty / technical_strength scores are optionally filled by a ModelPort LLM
  * call. When no LLM route is configured (or the call fails) the report falls
- * back to the deterministic dimensions only. The canonical result is written to
- * the session log via the `tools/result` observation point.
+ * back to the deterministic dimensions and the rendered report says those two
+ * dimensions were not scored, so a missing score never reads as a passed one.
+ * The canonical result is written to the session log via the `tools/result`
+ * observation point.
  * @module @deepseek-ai/dsh-patent-tools/tool/patent-analysis-report
  */
 
@@ -45,6 +47,9 @@ export type PatentAnalysisReportOutput = PatentAnalysisReport
 
 /** An LLM score-entry placeholder used for the optional model-fill. */
 type ModelScoreEntry = { score: number; rationale: string }
+
+/** Score domains only the model fills; when absent the report must say they were not scored. */
+const MODEL_SCORE_DOMAINS = ['novelty', 'technical_strength'] as const
 
 /** Dependencies: the optional ModelPort used for novelty / technical_strength. */
 export type PatentAnalysisReportDeps = {
@@ -130,8 +135,16 @@ function renderReport(report: {
     lines.push(`- 权${recordDisplay(feature, 'claimNo')} [${recordText(feature, 'type')}/${recordText(feature, 'importance')}] ${recordText(feature, 'text')}`)
   }
   lines.push('', '## 质量评分')
+  const scoredDomains = new Set<string>()
   for (const score of dataList(report.scores)) {
-    lines.push(`- ${recordText(score, 'domain')}：${recordDisplay(score, 'score')}/100（${recordText(score, 'basis') === 'model' ? 'LLM' : '规则'}）— ${recordText(score, 'rationale')}`)
+    const domain = recordText(score, 'domain')
+    scoredDomains.add(domain)
+    lines.push(`- ${domain}：${recordDisplay(score, 'score')}/100（${recordText(score, 'basis') === 'model' ? 'LLM' : '规则'}）— ${recordText(score, 'rationale')}`)
+  }
+  // 缺分不能表现为「没有这一项」：模型只看到四条里的两条，会以为报告完整。
+  const unscored = MODEL_SCORE_DOMAINS.filter(domain => !scoredDomains.has(domain))
+  if (unscored.length > 0) {
+    lines.push(`- ${unscored.join('、')}：未评分（LLM 未配置或调用失败，本次未评估）`)
   }
   lines.push('', '## 创新性洞察')
   for (const insight of textList(report.innovationInsights)) lines.push(`- ${insight}`)

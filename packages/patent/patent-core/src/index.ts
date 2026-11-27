@@ -50,7 +50,7 @@ export {
   validateSpecDraft,
   validateTemplateDraft,
 } from './draft/index.ts'
-export { DisclosureAssemblyError } from './draft/index.ts'
+export { DisclosureAssemblyError, DraftValidationError } from './draft/index.ts'
 export type {
   DraftBlock,
   DraftGroundItem,

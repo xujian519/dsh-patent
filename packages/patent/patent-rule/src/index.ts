@@ -77,6 +77,7 @@ import {
   deliveryEvidence,
   deliveryGateMissing,
   DeliveryAttemptLedger,
+  renderDeliveryDigestObservation,
   renderDeliveryGateDenial,
   resolveDeliveryGate,
   type DeliveryGateEntry,
@@ -178,10 +179,16 @@ export {
   deliveryGateMissing,
   renderDeliveryGateDenial,
   resolveDeliveryGate,
+  type DeliveryDigestCheck,
+  type DeliveryDigestMismatch,
+  type DeliveryDigestObservation,
   type DeliveryEvidence,
   type DeliveryEvidenceRequirement,
+  type DeliveryGateDigestMode,
+  type DeliveryGateDigestOptions,
   type DeliveryGateEntry,
   type DeliveryGatePlan,
+  type DraftTextProjection,
 } from './runtime/delivery-gate.ts'
 export {
   loadRulePack,
@@ -292,11 +299,23 @@ export interface Config {
    * session's call record. `whenArgs` narrows an entry to matching calls, which
    * lets one tool's forms carry different prerequisites. `evidence` requires
    * fields on a prerequisite's result as well, so a zero-byte run or another
-   * template's closure cannot stand in for the run this delivery owes. No entry
-   * ships: the prerequisites a deployment requires are its delivery policy, not
-   * this package's.
+   * template's closure cannot stand in for the run this delivery owes. A
+   * requirement's `matchesDraftTexts` binds the check to content: the
+   * prerequisite's recorded digests must cover the named projections of the
+   * draft being delivered, so a run over an older revision does not count
+   * (see {@link Config.deliveryGateDigestMode} for shadow observation). No
+   * entry ships: the prerequisites a deployment requires are its delivery
+   * policy, not this package's.
    */
   deliveryGate: DeliveryGateEntry[]
+  /**
+   * Digest check mode for `matchesDraftTexts` evidence: `enforce` denies a
+   * delivery whose prerequisite read different text than the submitted draft;
+   * `shadow` only logs the mismatch (and the unverifiable-draft case) so a
+   * deployment can measure false rejections before enforcing. Defaults to
+   * `enforce` so an unset mode never silently downgrades the gate.
+   */
+  deliveryGateDigestMode: 'shadow' | 'enforce'
   /**
    * Citation gate: before a listed delivery tool runs, every citation in its
    * text arguments must pass the shipped patent index and, for 民法典 and
@@ -330,8 +349,10 @@ export const Config: z<Partial<Config>, Config> = z.object({
       field: z.string().required(),
       equals: z.union([z.string(), z.boolean(), z.array(z.string())]),
       minItems: z.number(),
+      matchesDraftTexts: z.array(z.string()),
     }))),
   })).default([]),
+  deliveryGateDigestMode: z.union([z.const('shadow'), z.const('enforce')]).default('enforce'),
   citationGate: z.array(z.object({
     tool: z.string().required(),
     textArgs: z.array(z.string()).required(),
@@ -537,7 +558,12 @@ export function apply(ctx: Context, config: Config): void {
   if (deliveryGate.entries.length > 0) {
     ctx.tools.guard((exec) => {
       if (!gatedTools.has(exec.name)) return undefined
-      const missing = deliveryGateMissing(deliveryGate, deliveryLedger, exec.agent, exec.name, exec.arguments)
+      const missing = deliveryGateMissing(deliveryGate, deliveryLedger, exec.agent, exec.name, exec.arguments, {
+        mode: config.deliveryGateDigestMode,
+        onObservation: (observation) => {
+          ctx.logger.warn(`patent-rule: ${renderDeliveryDigestObservation(observation)}`)
+        },
+      })
       return missing.length === 0 ? undefined : renderDeliveryGateDenial(exec.name, missing)
     })
   }

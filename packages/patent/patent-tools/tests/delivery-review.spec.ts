@@ -48,6 +48,16 @@ describe('checkFigureDelivery', () => {
     expect(findings.filter(finding => finding.check === 'figure-wording')).toEqual([])
   })
 
+  it('弧线弯到图号基线以下时不再豁免图号', () => {
+    // 弦只看端点（y=40），弧的真实最低点在 y=70；图号基线 60 落在弧内。
+    // 不展平曲线时底边被低估成 40，图号会被错误地当成「在图形正下方」而豁免。
+    const findings = checkFigureDelivery(svg([
+      '<path d="M 20 40 A 30 30 0 0 0 80 40" fill="none" stroke="#000"/>',
+      '<text x="50" y="60" data-dsh-role="caption">图1</text>',
+    ].join('')))
+    expect(findings.find(finding => finding.check === 'figure-wording')?.message).toContain('"图1" 是图号')
+  })
+
   it('基线落在墨迹内的图号仍报 figure-wording', () => {
     const findings = checkFigureDelivery(svg([
       '<rect x="10" y="10" width="40" height="70" fill="none" stroke="#000"/>',

@@ -12,12 +12,14 @@
  * `~/Library/Preferences`、`~/Library/Caches` 的写失败仅告警、非致命（本机实测
  * STEP 载入/投影/导出均成功），故 stderr 文本不作为失败依据。子进程 HOME/临时
  * 目录 best-effort 指向 outputDir 内子目录以隔离副作用（Linux 生效；macOS 下
- * FreeCAD 缓存路径不随 HOME 迁移，属已知无害局限）。
+ * FreeCAD 缓存路径不随 HOME 迁移，属已知无害局限），渲染结束后删除该隔离目录
+ * 与脚本，不在交付目录留下隐藏残留。
  *
  * @module @deepseek-ai/dsh-patent-tools/figure/freecad-renderer
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { startSpawnDeadline } from '@deepseek-ai/dsh-patent-core'
 import { errorMessage } from '@deepseek-ai/dsh-value'
@@ -291,6 +293,10 @@ async function runFreeCadScript(
     return { ok: false, ...describeRenderThrow(request.tool, error, request.signal) }
   } finally {
     deadline.dispose()
+    // HOME/缓存/临时目录与脚本都写在交付目录里：不清理会在客户目录中累积隐藏残留，
+    // 与交付产物混在一起。清理失败不改变本次渲染结论（产物已生成或错误已分类）。
+    await rm(homeDir, { recursive: true, force: true }).catch(() => undefined)
+    await rm(scriptPath, { force: true }).catch(() => undefined)
   }
 }
 

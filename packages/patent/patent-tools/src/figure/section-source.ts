@@ -612,5 +612,5 @@ function regionInventory(modelPath: string, regions: readonly LocatedRegion[]): 
       + `y ${fmtNumber(Math.min(...ys))}–${fmtNumber(Math.max(...ys))}）`
   })
   return `剖切几何：模型 ${basename(modelPath)} 在剖切面上切出 ${String(regions.length)} 个材料区域 —— ${items.join('；')}。`
-    + 'parts 按 anchor 逐点匹配区域，标号落点与引线起点用这些图面坐标给出'
+    + '标号落点须落在对应材料区域内，标号位置与引线起点取自上述图面坐标。'
 }

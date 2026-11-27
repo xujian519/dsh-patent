@@ -582,7 +582,7 @@ export function createAnalyzePatentFigureTool(deps: AnalyzePatentFigureDeps): To
     description: DESCRIPTION,
     parameters: {
       image_path: { type: 'string', required: true, description: '附图图片路径（工作区相对或绝对路径，支持 jpg/png/gif/webp）' },
-      figure_number: { type: 'number', description: '附图编号（默认 1，用于附图说明「图N」）' },
+      figure_number: { type: 'integer', description: '附图编号（正整数，默认 1，用于附图说明「图N」）' },
       claim_context: { type: 'string', description: '权利要求或技术方案文本（图文对齐，可显著提高组件识别准确率）' },
       invention_name: { type: 'string', description: '发明名称（用于附图说明模板，如「一种供热管道电位采集装置」）' },
     },
@@ -643,6 +643,15 @@ export function createAnalyzePatentFigureTool(deps: AnalyzePatentFigureDeps): To
         )
       }
 
+      // 图号会进入附图说明「图N」与索引键：非正整数必须在这里拒绝，不能让它成为「图2.5」。
+      const figureNumber = args.figure_number ?? 1
+      if (!Number.isInteger(figureNumber) || figureNumber < 1) {
+        throw new PatentToolError(
+          'invalid_tool_input',
+          `figure_number 必须是正整数（收到 ${String(figureNumber)}）`,
+          { tool: 'analyze_patent_figure' },
+        )
+      }
       const cwd = deps.cwd ?? process.cwd()
       const mediaType = figureMediaType(args.image_path)
       const absPath = resolve(cwd, args.image_path)
@@ -663,7 +672,6 @@ export function createAnalyzePatentFigureTool(deps: AnalyzePatentFigureDeps): To
         )
       }
 
-      const figureNumber = args.figure_number ?? 1
       // 分析引擎按部署模式在组合点注入（figureAnalysisMode）；缺省为包装既有
       // 单步逻辑的默认引擎。门控与附件入库在引擎之前完成，与模式无关；模型端口按调用
       // 传入（会话绑定后的记录端口），故注入引擎也不会绕开 `patent/model-call`。

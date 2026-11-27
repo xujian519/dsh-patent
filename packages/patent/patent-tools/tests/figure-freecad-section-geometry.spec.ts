@@ -245,6 +245,28 @@ describe('readSectionGeometry 产物结构核对', () => {
   })
 })
 
+describe('section geometry leaf fields', () => {
+  it('模型路径、实体数与剖切距离不是合法值时都报错', () => {
+    const badPath = captureError(() => readSectionGeometry({
+      ...payload([ring(rect(4, 4))]),
+      model: { path: '  ', solids: 1, bound_box_mm: { min: [-1, -1, 0], max: [1, 1, 1] } },
+    }))
+    expect(badPath.message).toContain('模型路径')
+
+    const badSolids = captureError(() => readSectionGeometry({
+      ...payload([ring(rect(4, 4))]),
+      model: { path: '/tmp/m.step', solids: 1.5, bound_box_mm: { min: [-1, -1, 0], max: [1, 1, 1] } },
+    }))
+    expect(badSolids.message).toContain('实体数')
+
+    const badDistance = captureError(() => readSectionGeometry({
+      ...payload([ring(rect(4, 4))]),
+      plane: { origin: [0, 0, 0], normal: [0, 0, 1], right: [1, 0, 0], down: [0, 1, 0], distance: Number.POSITIVE_INFINITY },
+    }))
+    expect(badDistance.message).toContain('距离')
+  })
+})
+
 describe('pointInPolygon', () => {
   it('内外判定与凹多边形', () => {
     const square = rect(10, 10)

@@ -556,7 +556,7 @@ export function createGeneratePatentFigureTool(deps: GeneratePatentFigureDeps): 
       numeral_step: { type: 'integer', description: '标号步进，默认 2' },
       figure_family: { type: 'string', description: '发明家族标识（跨图续号）：声明后同名组件沿用既有标号、新组件续接空闲号；缺省每图独立编号' },
       style: { type: 'string', enum: ['grayscale', 'semantic'], description: '色彩策略，默认 grayscale' },
-      filename: { type: 'string', description: '输出文件名（不含扩展名）' },
+      filename: { type: 'string', description: '输出文件名（不含扩展名）；只保留字母、数字、下划线与连字符，其余字符（含中文、空格）会被替换为 _，模型应按实际返回的文件名引用产物' },
       format: { type: 'string', enum: DOT_FORMATS, description: '输出格式，默认 svg；png/pdf 在给定 target_office（或图型只有 SVG 通路）时经本机 Inkscape 从 SVG 全链导出，缺 Inkscape 时退回渲染器直接出图' },
       engine: { type: 'string', enum: DOT_ENGINES, description: '布局引擎，默认 dot' },
       page_size: { type: 'string', enum: ['a4', 'letter'], description: '页面尺寸（提交规格）；默认取部署配置' },

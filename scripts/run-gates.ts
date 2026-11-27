@@ -488,6 +488,10 @@ function ciPrimaryGates(): Gate[] {
     // neither races tsbuildinfo nor replaces declarations while they are read.
     ciBuildGate('build', { needs: ['typecheck', 'lint', 'doc-typecheck'] }),
     pnpmScript('publint', 'publint', { needs: ['build'] }),
+    pnpmScript('published-imports', 'verify-published-imports', {
+      label: 'published imports',
+      needs: ['build'],
+    }),
     pnpmScript('node-next-types', 'verify-node-next-types', {
       label: 'node-next types',
       needs: ['build'],

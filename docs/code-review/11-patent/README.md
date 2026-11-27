@@ -57,6 +57,7 @@
 
 - 2026-11-27：专档建立；B0 完成，564 个文件全部有归属、无未分配项。分布：B2 59、B3 114、B4 42、B5 21、B6 102、B7 109、B8 94、B9 23。基线命令与退出码见 [02-batches/B0.md](02-batches/B0.md)。
 - 基线实测：单测 430 文件 / 7525 用例通过，typecheck 与 lint 通过；`verify-export-jsdoc` 与 `verify-npm-install-layout` 为既有红。
-- 已修：`patent-data` 与 `patent-document` 的 `dsh-value` 运行时依赖错置（F-PAT-059、F-PAT-060）；`patent-tools` 两处导出函数的 JSDoc 缺漏（F-PAT-061）。
-- 未修：`verify-npm-install-layout` 超预算（F-PAT-062，待决策）；`verify-package-dependencies` 对内部模块运行时引用的盲区（F-PAT-063，需先量全仓存量）。
+- 已修：`patent-tools` 两处导出函数的 JSDoc 缺漏（F-PAT-061）；纯 Host 包缺少产物级依赖门禁（F-PAT-063），新增 `verify-published-imports`，实测 365 个入口 0 违规。
+- 已更正：F-PAT-059、F-PAT-060 原判为依赖错置，复核为误报并回退（`0ccfa1a864`）——tsdown 把未声明导入内联进产物，发布安装本可正常加载。
+- 未修：`verify-npm-install-layout` 超预算（F-PAT-062，待决策）。
 - B1 完成：装配探针 `patent-preset-mount.spec.ts` 真实装载 16 个插件行，六个接缝服务全部可解析、15 个代表性工具全部可见，并附一条会变红的负控制；见 [02-batches/B1.md](02-batches/B1.md)。

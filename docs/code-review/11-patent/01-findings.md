@@ -311,3 +311,153 @@
 - 证据：探针 `温度为20毫米至90毫米` 的 `extractNumericFindings` 返回 20、90、50 三个 `isPoint`。两侧都用中文单位写区间时，「权利要求 20 毫米至 90 毫米 vs 对比文件 25 毫米至 30 毫米」会判 `no_overlap`，正确结论应是覆盖（`overlapped`）。
 - 为什么不随本批修：把中文单位并进共享 alternation 会改变新颖性判定输出（模型可见摘要），需要同批更新 `numeric-range` 用例与相关快照，属于独立变更。
 - 状态：**未修**，建议单独一批处理。
+
+## F-PAT-089 模块 JSDoc 的工具数与实际注册数不一致（B6）
+
+- 位置：`packages/patent/patent-tools/src/index.ts`（模块 JSDoc）。
+- 维度：文档与接线一致性（验收标准「工具数三方一致」）。
+- 严重度：P3。
+- 证据：JSDoc 写「38 model-facing patent tools」，而 `wiring.ts` 实际注册 39 个工厂、`docs/tool-catalog.md` 也列 39 个（单独是 TRIZ 工具后加的，未同步计数）。
+- 影响：维护者按 JSDoc 判断工具面会少算一个。
+- 最小修复：计数改为 39 并点名 TRIZ；新增用例钉住 39 个注册工具名（含「不含 render_patent_document」）。
+- 状态：已修（2026-11-27，B6）；`wiring-composition.spec.ts` 新增断言。
+
+## F-PAT-090 跨图一致性把后图名称记到首图号下（B6，P2）
+
+- 位置：`packages/patent/patent-tools/src/figure/figure-set-consistency.ts`（冲突归属）。
+- 维度：正确性（错误结论 + 错误位置）。
+- 严重度：P2。
+- 证据：首图该标号没有名称时，后图的名称会回填到 `existing.name`；第三图出现不同名称时，冲突报告把已回填的名称冠到「首个出现该标号的图号」之下。于是「标记 10 在图 1、图 3 中名称不一致：立柱 / 立柱体」里的「立柱」其实是图 2 的名字，图 1 根本没有名字。
+- 影响：模型按报告去改图 1 的附图说明或权利要求，改错了地方。
+- 最小修复：为每个标记冻结「首个非空名称 + 其所在图号」，冲突的原值用该快照。
+- 状态：已修（2026-11-27，B6）；新增用例（首图空名 + 图 2/3 异名），断言 `values` 归属 2/3 且消息不含图 1。
+
+## F-PAT-091 FreeCAD 渲染的隔离目录与脚本不清理（B6）
+
+- 位置：`packages/patent/patent-tools/src/figure/freecad-renderer.ts`（`runFreeCadScript`）。
+- 维度：资源与残留。
+- 严重度：P3。
+- 证据：`HOME`/XDG/临时目录与渲染脚本都写在 `request.outputDir`（交付目录，非临时目录），`finally` 只释放计时器；同族的 Inkscape 渲染器会删掉自己的临时目录。
+- 影响：每次结构/剖切/剖面线渲染都在客户交付目录累积 `.freecad-home/` 与 `.py` 残留，与 `manifest.json` 混在一起。
+- 最小修复：`finally` 里删除隔离目录与脚本；清理失败不改变渲染结论。
+- 状态：已修（2026-11-27，B6）；新增用例（成功路径断言清理、rm 失败路径仍返回成功）。
+
+## F-PAT-092 交付检查未展平曲线，图号可被错误豁免（B6）
+
+- 位置：`packages/patent/patent-tools/src/figure/delivery-review.ts`。
+- 维度：覆盖面（假通过）。
+- 严重度：P3。
+- 证据：`scanSvg(svg)` 未传 `curveToleranceMm`，曲线只取端点弦；而 `render-check-findings` 用 0.05mm 展平。弧形墨迹底边被低估后，`baseline > inkBottom` 的图号豁免判据会把压在弧内的图号当成「在图形正下方」而跳过用词检查。
+- 最小修复：导出 `RENDER_CURVE_TOLERANCE_MM` 并在交付检查传入。
+- 状态：已修（2026-11-27，B6）；新增用例（半圆弧最低点 70、图号基线 60，断言仍报用词违规）。
+
+## F-PAT-093 模型可见警告含实现词汇（B6）
+
+- 位置：`figure/analysis-engine.ts`（两步分析降级警告）、`figure/section-source.ts`（区域清单提示）。
+- 维度：模型可见文案。
+- 严重度：P3。
+- 证据：警告直接写「两步分析第一步（结构抽取）…跳过第二步说明生成」与「parts 按 anchor 逐点匹配区域」，把引擎内部步骤和数据字段名暴露给模型。
+- 最小修复：改为任务视角的表述（附图结构未能识别 / 标号落点须落在对应材料区域内）。
+- 状态：已修（2026-11-27，B6）；同步降级用例断言。
+
+## F-PAT-094 analyze_patent_figure 的 figure_number 契约与实现不一致（B6）
+
+- 位置：`packages/patent/patent-tools/src/tool/analyze-patent-figure.ts`。
+- 维度：模型可见契约。
+- 严重度：P3。
+- 证据：输入 schema 为 `type: 'number'`、输出为 `integer`，execute 直接 `?? 1` 后交给引擎，无正整数校验；同族工具已用 `integer` 或运行时校验收口。
+- 影响：`0`/`-1` 会进入附图说明「图N」与索引键；`2.5` 由 schema 拒绝，但直调方绕过 schema 时不拒绝。
+- 最小修复：schema 改 `integer`，execute 校验正整数并报 `invalid_tool_input`。
+- 状态：已修（2026-11-27，B6）；同步工具目录中英两版与 `patent-oa-response` 的工具 schema 快照（回放通过）。
+
+## F-PAT-095 附图文件名静默改名且未披露（B6）
+
+- 位置：`packages/patent/patent-tools/src/tool/generate-patent-figure.ts`（`filename`）。
+- 维度：模型可见契约。
+- 严重度：P3。
+- 证据：schema 只写「输出文件名（不含扩展名）」，实现经 `sanitizeDotFilename` 把 `[^\w\-]` 全部替换为 `_`；同族的 `add_patent_figure_references` 明确拒绝静默改名。
+- 影响：模型给中文或带空格的文件名时拿到一串下划线，需要猜实际产物名。
+- 最小修复：schema 描述写明替换规则。
+- 状态：已修（2026-11-27，B6，选择「披露」而非「fail-loud」以免破坏既有调用）；同步目录与快照。备选强化：改为拒绝并报 `invalid_tool_input`。
+
+## F-PAT-096 受理条件未执行时待核项为空（B6）
+
+- 位置：`packages/patent/patent-tools/src/atoms/admissibility.ts`（缺 `grounds` 分支）。
+- 维度：投影层语义（未检查读成通过）。
+- 严重度：P3。
+- 证据：该分支返回 `admissibility_passed: true` 与 `admissibility_pending: []`，报告文本写「未执行」；下游 `legal-gaps` 靠字符串匹配「未执行」兜住，一旦改词就会变成「通过且无待核」。
+- 最小修复：待核项填一条 `ADM-UNASSESSED`，让 pending 路径稳健兜住。
+- 状态：已修（2026-11-27，B6）；用例断言 pending 只含 `ADM-UNASSESSED`。
+
+## F-PAT-097 未提供要求清单时仍报「覆盖度 100%」（B6）
+
+- 位置：`packages/patent/patent-tools/src/tool/patent-eval.ts`（`evaluateCitations`）。
+- 维度：模型可见文案（自相矛盾）。
+- 严重度：P3。
+- 证据：`required_citations` 为空时退化为「正文是否出现第X条」的抽查，命中即 `passed=true`，而 details 打印「要求 0 条引用，覆盖度 100%」。
+- 最小修复：空清单时 details 明示「未提供 required_citations：按正文是否引用法条抽查，未核对覆盖度」。
+- 状态：已修（2026-11-27，B6）；用例断言不含「覆盖度 100」。
+
+## F-PAT-098 分析报告在 LLM 补分失败时静默缺两维（B6）
+
+- 位置：`packages/patent/patent-tools/src/tool/patent-analysis-report.ts`（`renderReport`）。
+- 维度：模型可见输出（缺省读成没有）。
+- 严重度：P3。
+- 证据：模型路由缺失或调用失败时 `modelScores` 为 undefined，报告只渲染清晰度/完整性两维，没有任何「未评分」标记，而工具描述承诺给出新颖性与技术强度评分。
+- 最小修复：渲染时对缺席的模型维度逐项输出「未评分（LLM 未配置或调用失败）」。
+- 状态：已修（2026-11-27，B6）；两条用例（全缺、只缺一维）。
+
+## F-PAT-099 provider 与 model 只配置一半时被静默丢弃（B6）
+
+- 位置：`packages/patent/patent-tools/src/wiring.ts`（`resolveModelRoute`）。
+- 维度：装配（误配置静默回落）。
+- 严重度：P3。
+- 证据：`provider`/`model` 是相互独立的可选字段，只配其一时整条配置被忽略并回落到宿主默认模型；`config.ts` 的 JSDoc 却暗示只在「两者都未设置」时才回落。
+- 影响：运维显式指定的 provider 被无声丢弃，调用可能落到未预期的模型上。
+- 最小修复：只配一半时在插件加载期报 `setup_required`。
+- 状态：已修（2026-11-27，B6）；两条用例（只配 provider / 只配 model）。
+
+## F-PAT-100 剖切几何的三个叶子字段未校验（B6）
+
+- 位置：`packages/patent/patent-tools/src/figure/freecad-section-geometry.ts`（`readSectionGeometry`）。
+- 维度：边界校验（子进程产物）。
+- 严重度：P3。
+- 证据：环坐标、面积与视图帧向量都逐项校验，而 `model.path`、`model.solids`、`plane.distance` 原样赋值；`distance` 为 `null` 或字符串时会静默成为 `distanceMm`。
+- 最小修复：三个字段分别校验非空字符串、非负整数、有限数。
+- 状态：已修（2026-11-27，B6）；新增用例覆盖三种坏值。
+
+## F-PAT-101 add_patent_figure_references 的「参考标号：N」报的是请求数（B6，未修）
+
+- 位置：`packages/patent/patent-tools/src/tool/add-patent-figure-references.ts`（render 与 `numReferences`）。
+- 维度：模型可见文案。
+- 严重度：P3。
+- 证据：`numReferences` 取 `args.references.length`，未命中项只进 warnings；render 输出「参考标号：2」与「未命中：Ghost」并列，读起来像两个标号都已落图。
+- 为什么不修：字段语义（参考数）与 render 措辞都有既有消费者，改动会牵动输出契约；warnings 已列出未命中，影响有限。留待与附图标注的返回契约一起调整。
+- 状态：**未修**，待决策。
+
+## F-PAT-102 workbench_link_patent_case 的 stages 未做枚举校验（B6，待确认）
+
+- 位置：`packages/patent/patent-tools/src/tool/workbench-link-patent-case.ts`。
+- 维度：边界校验（模型 JSON → 远端 API）。
+- 严重度：P3。
+- 证据：`stages` 的 items 为 `additionalProperties: true`，`stage` 与 `statusCode` 无枚举约束，非法值透传到工作台 `PATCH` 才由远端报错。
+- 待确认：工作台 API 是最终校验边界，若它稳定拒绝非法值，这只是错误码不友好而非缺陷。
+- 状态：**未修**。
+
+## F-PAT-103 电路图结点阈值与计数口径不一致（B6，待决策）
+
+- 位置：`packages/patent/patent-tools/src/figure/circuit-diagram.ts`。
+- 维度：图面正确性。
+- 严重度：P3。
+- 证据：JSDoc 写「≥3 条连线共用一点必须有结点」，实现 `count >= 2` 即画结点；且只统计连线起止引脚，折点处的 T 形交点不计数。
+- 为什么不修：正确阈值是领域判定（两条线相交是否按结点处理、折点是否算交点），需要与电路图绘制规范一起定。
+- 状态：**未修**，待决策。
+
+## F-PAT-104 归属匹配窗口上限 8 字（B6，待确认）
+
+- 位置：`packages/patent/patent-tools/src/figure/hierarchy-check.ts`。
+- 维度：覆盖面（启发式漏报）。
+- 严重度：P3。
+- 证据：正则 `(\d+)[^\d，。；：、（）()]{0,8}?的…(\d+)` 把「的」两侧的非数字字符限制在 8 个以内，长修饰语的归属关系不命中。
+- 待确认：上限可能是为了压误报而设；放宽前需要一组真实句子的误报率。
+- 状态：**未修**。

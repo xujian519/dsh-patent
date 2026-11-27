@@ -535,15 +535,34 @@ describe('checkFigureRendering 未量测发现', () => {
     expect(report.strokeWidthMm).toEqual([])
   })
 
-  it('曲线路径按端点弦近似，并说明近似范围', () => {
+  it('曲线路径按弦高上限折线化，不再报端点弦近似', () => {
     const report = checkFigureRendering(svg([
       '<path d="M 10 20 a 5 5 0 0 1 10 0" stroke-width="0.25"/>',
       '<text x="60" y="10" font-size="3.5" text-anchor="middle" fill="#000000" stroke="none">1</text>',
     ].join('\n')))
-    expect(report.findings.map(finding => finding.check)).toEqual(['not-measured'])
-    expect(report.findings[0]?.message).toContain('曲线段按端点弦近似')
-    // 弦被计入量测：取向分布里能看到这条 0° 的弦。
-    expect(report.orientationDeg).toEqual([{ orientationDeg: 0, count: 1 }])
+    expect(report.findings).toEqual([])
+    // 半圆折线化后取向不止一条 0° 弦，弧顶也进入量测。
+    expect(report.orientationDeg.length).toBeGreaterThan(1)
+    expect(report.orientationDeg.some(entry => entry.orientationDeg !== 0)).toBe(true)
+  })
+
+  it('路径数值接受十进制指数，TechDraw 的 e 记法不误判为命令', () => {
+    const report = checkFigureRendering(svg([
+      '<path d="M 1.0e1 2.0e1 L 2.0e1 2.0e1 L 2.0e1 3.0e1" stroke-width="0.25"/>',
+    ].join('\n')))
+    expect(report.findings).toEqual([])
+    expect(report.orientationDeg).toEqual([
+      { orientationDeg: 0, count: 1 },
+      { orientationDeg: 90, count: 1 },
+    ])
+  })
+
+  it('曲线折线化后弧顶越出画布能被检出，而不是只量端点弦', () => {
+    const report = checkFigureRendering(svg(
+      '<path d="M 1 11 C 6 -10 6 -10 11 11" stroke-width="0.25"/>',
+      'width="12mm" height="12mm" viewBox="0 0 12 12"',
+    ))
+    expect(report.findings.map(finding => finding.check)).toContain('ink-outside-canvas')
   })
 
   it('定义容器的子元素不渲染也不量测，引用之外的结构仍量测', () => {
@@ -985,6 +1004,7 @@ describe('scanSvg 解析边界补充', () => {
     const scan = scanSvg(svg([
       '<path d="1 2 L 3 4" stroke-width="0.5"/>',
       '<path d="L 1 ? 2" stroke-width="0.5"/>',
+      '<path d="L 1e999 0" stroke-width="0.5"/>',
       '<path d="X 1 2" stroke-width="0.5"/>',
       '<path d="L" stroke-width="0.5"/>',
       '<path d="L 1" stroke-width="0.5"/>',

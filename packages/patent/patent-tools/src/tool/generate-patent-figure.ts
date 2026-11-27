@@ -324,12 +324,8 @@ async function generateSingleFigure(
       await finishDirectRender({ ...directRenderArgs, outcomePath: direct.path, check: false })
     }
   } else {
-    await finishDirectRender({
-      ...directRenderArgs,
-      outcomePath: rendered.path,
-      // SVG 交付物总能复核；png/pdf 直绘没有可量测的图面。
-      check: vector || format === 'svg',
-    })
+    // SVG 交付物总能复核；png/pdf 直绘没有可量测的图面。
+    await finishDirectRender({ ...directRenderArgs, outcomePath: rendered.path, check: vector || format === 'svg' })
   }
   const analysis = indexAnalysis(result, context.style, normalized.figure_family)
   const indexed = (normalized.persist_index ?? true) && deps.upsertIndex !== undefined

@@ -13,7 +13,7 @@ import { figureWordingWarnings } from '../figure/wording-rules.ts'
 import { collectComponents, collectFigureWording, dotDocumentTitle, figureViewName, inferFigureType, presentStructuralFields, presentVectorFields, readNumerals, resolveFamilySeeds, toFigureType } from './figure-input.ts'
 import type { DotFigureType, GeneratePatentFigureInput, GeneratePatentFigureOutput, GeneratePatentFigurePanelInput, StructuralFigureInput } from './figure-input.ts'
 import { buildOutput, indexAnalysis, registerFigureNumerals, upsertFigureIndex } from './figure-output.ts'
-import { annotateRenderedSvg, buildFigureDot } from './figure-render-plan.ts'
+import { annotateRenderedSvg, buildFigureDot, resolveLeaderOptions } from './figure-render-plan.ts'
 import { assertRendered } from './internal/render-outcome.ts'
 import { finishDirectRender, finishSvgChain, needsSvgChain, stampDotDocumentTitle } from './figure-delivery.ts'
 import { resolveFigureWriteDir } from './figure-write-dir.ts'
@@ -233,7 +233,7 @@ async function renderPanel(
     ...(run.input.view_name === undefined ? {} : { viewName: run.input.view_name }),
   })
   if (leaderLinesActive) {
-    await annotateRenderedSvg(outcome.path, output.numeralMap, output.warnings)
+    await annotateRenderedSvg(outcome.path, output.numeralMap, output.warnings, resolveLeaderOptions(deps, panel.figureType))
   }
   const documentTitle = dotDocumentTitle(run.input.invention_name, toFigureType(panel.figureType), run.input.view_name)
   await stampDotDocumentTitle(outcome.path, chain ? 'svg' : format, documentTitle)

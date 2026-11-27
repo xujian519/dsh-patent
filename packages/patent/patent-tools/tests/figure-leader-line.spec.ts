@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { annotateSvgWithLeaderLines } from '../src/figure/leader-line.ts'
+import { resolveLeaderOptions } from '../src/tool/figure-render-plan.ts'
 
 /**
  * 引线几何：坐标帧（组平移）、图内线条避让（边路径/箭头/边标签）与画布扩边。
@@ -444,5 +445,133 @@ ${wall('top', '25,0 25,15 55,15 55,0')}
     const { svg: out, warnings } = annotateSvgWithLeaderLines(svg, [{ label: '核心', numeral: '10' }])
     expect(warnings).toEqual([])
     expect(out).toContain('viewBox="0 0 100 104"')
+  })
+})
+
+describe('annotateSvgWithLeaderLines 真实轮廓锚点', () => {
+  it('平行四边形右向锚点落在斜边上，不悬空于包围盒右侧', () => {
+    const svg = `<svg width="200mm" height="100mm" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
+<g id="node1" class="node"><title>p</title><polygon fill="none" stroke="black" points="56,22 136,22 116,78 36,78"/><text text-anchor="middle" x="86" y="54" font-size="10.00">主板</text></g>
+</svg>`
+    const { svg: out, warnings } = annotateSvgWithLeaderLines(svg, [{ label: '主板', numeral: '10' }])
+    expect(warnings).toEqual([])
+    // 中线 y=50 处右斜边 x=126（包围盒右侧为 136）；引线从真实边出发，不悬空。
+    expect(out).toContain('<line x1="126" y1="50" x2="146" y2="50"')
+    expect(out).toContain('<text x="149" y="53.5"')
+  })
+
+  it('菱形斜向锚点落在真实斜边上，而非包围盒角点', () => {
+    const svg = `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+<g id="node1" class="node"><title>core</title><polygon fill="none" stroke="black" points="100,30 150,80 100,130 50,80"/><text text-anchor="middle" x="100" y="84" font-size="10.00">主控板</text></g>
+<g id="node2" class="node"><title>wall-r</title><polygon fill="none" stroke="black" points="155,70 155,90 190,90 190,70"/><text text-anchor="middle" x="172" y="84" font-size="10.00">右墙</text></g>
+<g id="node3" class="node"><title>wall-l</title><polygon fill="none" stroke="black" points="20,70 20,90 32,90 32,70"/><text text-anchor="middle" x="26" y="84" font-size="10.00">左墙</text></g>
+<g id="node4" class="node"><title>wall-t</title><polygon fill="none" stroke="black" points="90,20 90,25 120,25 120,20"/><text text-anchor="middle" x="105" y="18" font-size="10.00">顶墙</text></g>
+<g id="node5" class="node"><title>wall-b</title><polygon fill="none" stroke="black" points="90,135 90,140 120,140 120,135"/><text text-anchor="middle" x="105" y="149" font-size="10.00">底墙</text></g>
+</svg>`
+    const { svg: out, warnings } = annotateSvgWithLeaderLines(svg, [{ label: '主控板', numeral: '10' }])
+    expect(warnings).toEqual([])
+    // 右上 45° 与上右边交于 (125,55)，沿 45° 外向 gap*√½≈7.1 → (132.1,47.9)。
+    expect(out).toContain('<line x1="125" y1="55" x2="132.1" y2="47.9"')
+    expect(out).not.toContain('主控板 (10)')
+  })
+
+  it('椭圆按解析轮廓取锚点；退化椭圆按缺少轮廓内嵌', () => {
+    const ellipse = `<svg width="100mm" height="100mm" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<g id="node1" class="node"><title>e</title><ellipse cx="50" cy="50" rx="30" ry="20"/><text text-anchor="middle" x="50" y="54" font-size="10.00">圆盘</text></g>
+</svg>`
+    const annotated = annotateSvgWithLeaderLines(ellipse, [{ label: '圆盘', numeral: '10' }])
+    expect(annotated.warnings).toEqual([])
+    expect(annotated.svg).toContain('<line x1="80" y1="50" x2="90" y2="50"')
+
+    const degenerate = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<g id="node1" class="node"><title>y</title><ellipse cx="50" cy="50" rx="0" ry="20"/><text x="50" y="54" font-size="10.00">退化</text></g>
+</svg>`
+    const embedded = annotateSvgWithLeaderLines(degenerate, [{ label: '退化', numeral: '10' }])
+    expect(embedded.warnings).toHaveLength(1)
+    expect(embedded.warnings[0]).toContain('缺少形状轮廓')
+  })
+
+  it('射线与轮廓边无交点时回退包围盒边中点', () => {
+    // 两个点构成退化线段，中心到右侧的射线与其共线，无法求交。
+    const svg = `<svg width="100mm" height="100mm" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<g id="node1" class="node"><title>d</title><polygon fill="none" points="0,0 10,10"/><text x="5" y="5" font-size="10.00">退化线</text></g>
+</svg>`
+    const { svg: out, warnings } = annotateSvgWithLeaderLines(svg, [{ label: '退化线', numeral: '10' }])
+    expect(warnings).toEqual([])
+    expect(out).toContain('<line x1="10" y1="5" x2="20" y2="5"')
+  })
+
+  it('根元素声明零尺寸时无法换算毫米，净距与外推关闭但标注照常', () => {
+    const svg = `<svg width="0pt" height="0pt" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<g id="node1" class="node"><title>a</title><polygon fill="none" stroke="black" points="30,40 30,60 70,60 70,40"/><text x="50" y="54" font-size="10.00">主板</text></g>
+</svg>`
+    const { svg: out, warnings } = annotateSvgWithLeaderLines(svg, [{ label: '主板', numeral: '10' }])
+    expect(warnings).toEqual([])
+    expect(out).toContain('<line x1="70" y1="50" x2="80" y2="50"')
+  })
+})
+
+describe('annotateSvgWithLeaderLines 净距与外推', () => {
+  it('净距不足时放弃该方向；关闭净距时仍用基准位置', () => {
+    const svg = `<svg width="100mm" height="100mm" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<g id="node1" class="node"><title>a</title><polygon fill="none" stroke="black" points="30,40 30,60 70,60 70,40"/><text x="50" y="54" font-size="10.00">主板</text></g>
+<g id="node2" class="node"><title>b</title><polygon fill="none" stroke="black" points="78,57 78,70 90,70 90,57"/><text x="84" y="68" font-size="10.00">相邻件</text></g>
+</svg>`
+    const zero = annotateSvgWithLeaderLines(svg, [{ label: '主板', numeral: '10' }], { clearanceMm: 0 })
+    expect(zero.warnings).toEqual([])
+    expect(zero.svg).toContain('<line x1="70" y1="50" x2="80" y2="50"')
+
+    // 3 毫米净距下右侧标号贴近相邻件（零重叠但净距不足），改走左侧。
+    const spaced = annotateSvgWithLeaderLines(svg, [{ label: '主板', numeral: '10' }], { clearanceMm: 3 })
+    expect(spaced.warnings).toEqual([])
+    expect(spaced.svg).not.toContain('<line x1="70" y1="50" x2="80" y2="50"')
+    expect(spaced.svg).toContain('<line x1="30" y1="50" x2="20" y2="50"')
+  })
+
+  it('方向冲突时按步长逐级外推，净距满足后采用外推位置', () => {
+    const svg = `<svg width="100mm" height="100mm" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<g id="node1" class="node"><title>a</title><polygon fill="none" stroke="black" points="30,40 30,60 70,60 70,40"/><text x="50" y="54" font-size="10.00">主板</text></g>
+<g id="node2" class="node"><title>sliver</title><polygon fill="none" stroke="black" points="85,51 85,53 90,53 90,51"/><text x="87" y="55" font-size="10.00">薄片</text></g>
+<g id="node3" class="node"><title>left</title><polygon fill="none" stroke="black" points="10,40 10,60 20,60 20,40"/><text x="15" y="54" font-size="10.00">左挡</text></g>
+<g id="node4" class="node"><title>top</title><polygon fill="none" stroke="black" points="40,20 40,35 60,35 60,20"/><text x="50" y="31" font-size="10.00">上挡</text></g>
+<g id="node5" class="node"><title>bottom</title><polygon fill="none" stroke="black" points="40,65 40,85 60,85 60,65"/><text x="50" y="78" font-size="10.00">下挡</text></g>
+</svg>`
+    const { svg: out, warnings } = annotateSvgWithLeaderLines(svg, [{ label: '主板', numeral: '10' }], {
+      clearanceMm: 0.5,
+      pushStepMm: 2,
+      pushLimitMm: 30,
+    })
+    expect(warnings).toEqual([])
+    // 基准右侧标号压到薄片；外推 8 毫米后标号离开薄片，引线止于 88。
+    expect(out).toContain('<line x1="70" y1="50" x2="88" y2="50"')
+    expect(out).toContain('<text x="91" y="53.5"')
+  })
+
+  it('外推步长或上限为 0 时只尝试基准位置', () => {
+    const svg = `<svg width="100mm" height="100mm" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<g id="node1" class="node"><title>a</title><polygon fill="none" stroke="black" points="30,40 30,60 70,60 70,40"/><text x="50" y="54" font-size="10.00">主板</text></g>
+<g id="node2" class="node"><title>sliver</title><polygon fill="none" stroke="black" points="85,51 85,53 90,53 90,51"/><text x="87" y="55" font-size="10.00">薄片</text></g>
+<g id="node3" class="node"><title>left</title><polygon fill="none" stroke="black" points="10,40 10,60 20,60 20,40"/><text x="15" y="54" font-size="10.00">左挡</text></g>
+<g id="node4" class="node"><title>top</title><polygon fill="none" stroke="black" points="40,20 40,35 60,35 60,20"/><text x="50" y="31" font-size="10.00">上挡</text></g>
+<g id="node5" class="node"><title>bottom</title><polygon fill="none" stroke="black" points="40,65 40,85 60,85 60,65"/><text x="50" y="78" font-size="10.00">下挡</text></g>
+</svg>`
+    for (const options of [{ pushStepMm: 0 }, { pushStepMm: 2, pushLimitMm: 0 }]) {
+      const { svg: out, warnings } = annotateSvgWithLeaderLines(svg, [{ label: '主板', numeral: '10' }], options)
+      expect(warnings).toEqual([])
+      // 不进入外推：四向基准均冲突，改用斜向基准锚点 (70,40) → (77.1,32.9)。
+      expect(out).toContain('<line x1="70" y1="40" x2="77.1" y2="32.9"')
+    }
+  })
+})
+
+describe('resolveLeaderOptions', () => {
+  it('净距取部署配置与图型复核档位的较大值，外推参数按配置透传', () => {
+    expect(resolveLeaderOptions({}, 'flowchart')).toEqual({ clearanceMm: 1.5 })
+    expect(resolveLeaderOptions({ leaderClearanceMm: 2, leaderPushStepMm: 3, leaderPushLimitMm: 20 }, 'block_diagram'))
+      .toEqual({ clearanceMm: 2, pushStepMm: 3, pushLimitMm: 20 })
+  })
+
+  it('未知图型回落引线标号档位默认值', () => {
+    expect(resolveLeaderOptions({}, 'timeline')).toEqual({ clearanceMm: 0.5 })
   })
 })

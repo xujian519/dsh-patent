@@ -133,6 +133,12 @@ export type GeneratePatentFigureDeps = {
    * fontsize 由它定，落版核算的字高也用它；模型显式给的字号优先。缺省时不改历史默认。
    */
   figureFontMm?: number
+  /** 引线标号净距（毫米，Config.figureLeaderClearanceMm）：放置期与渲染复核同一口径。 */
+  leaderClearanceMm?: number
+  /** 引线放置冲突时的外推步长（毫米，Config.figureLeaderPushStepMm）。 */
+  leaderPushStepMm?: number
+  /** 引线外推距离上限（毫米，Config.figureLeaderPushLimitMm）。 */
+  leaderPushLimitMm?: number
   /** 提交规格页面尺寸默认（Config.figurePageSize）。 */
   pageSize?: DotPageSize
   /** 提交规格方向默认（Config.figureOrientation）。 */

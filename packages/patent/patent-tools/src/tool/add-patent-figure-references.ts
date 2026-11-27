@@ -25,11 +25,18 @@ import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
 
 /** 依赖注入。cwd 为路径基准，默认 process.cwd()。 */
 export type AddPatentFigureReferencesDeps = {
+  /** 工作目录（缺省 process.cwd()）。 */
   cwd?: string
   /** 可选读取作用域标号表（`figure_family` 即作用域），用于补全调用方未给出的标号。 */
   loadNumerals?: (scope: string) => Promise<FigureNumeralItem[]>
   /** 可选合并写入作用域标号表；登记调用方本次显式给出的标号。 */
   upsertNumerals?: (scope: string, items: readonly FigureNumeralItem[]) => Promise<NumeralMergeConflict[]>
+  /** 引线标号净距（毫米，Config.figureLeaderClearanceMm）。 */
+  leaderClearanceMm?: number
+  /** 引线放置冲突时的外推步长（毫米，Config.figureLeaderPushStepMm）。 */
+  leaderPushStepMm?: number
+  /** 引线外推距离上限（毫米，Config.figureLeaderPushLimitMm）。 */
+  leaderPushLimitMm?: number
 }
 
 /** 输入：SVG 路径 + 参考标号表。 */
@@ -68,6 +75,8 @@ const DESCRIPTION = [
   '引线模式：标号置于组件轮廓外侧，引线避开图内已绘的边线与箭头，并在越出画布时扩展画布使之完整可见；无可放置位置或缺轮廓时退化为内嵌标号并警告。',
   '',
   '标号作用域：给出 figure_family 时，用该作用域已有的附图标记表补全 references 未列出的部件（调用方给出的标签优先），并把本次给出的标号登记进表；不给出时行为不变——纯回填，不读写标号表。',
+  '',
+  '可重复执行：对已标注的 SVG 再次标注时，先移除上一次写入的引线组与命中文本尾部的内嵌标号，不会叠加或重复编号。',
 ].join('\n')
 
 /**
@@ -126,7 +135,11 @@ export function createAddPatentFigureReferencesTool(deps: AddPatentFigureReferen
       let result
       try {
         result = args.leader_lines === true
-          ? annotateSvgWithLeaderLines(svg, references)
+          ? annotateSvgWithLeaderLines(svg, references, {
+            ...(deps.leaderClearanceMm === undefined ? {} : { clearanceMm: deps.leaderClearanceMm }),
+            ...(deps.leaderPushStepMm === undefined ? {} : { pushStepMm: deps.leaderPushStepMm }),
+            ...(deps.leaderPushLimitMm === undefined ? {} : { pushLimitMm: deps.leaderPushLimitMm }),
+          })
           : annotateSvg(svg, references)
       } catch (error) {
         /* v8 ignore start -- annotateSvg only throws SvgAnnotateError; the rethrow keeps unknown failures loud */

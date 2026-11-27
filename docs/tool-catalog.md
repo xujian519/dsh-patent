@@ -3399,6 +3399,8 @@ The media tool selects an image, video, or speech model through the provider sea
 
 标号作用域：给出 figure_family 时，用该作用域已有的附图标记表补全 references 未列出的部件（调用方给出的标签优先），并把本次给出的标号登记进表；不给出时行为不变——纯回填，不读写标号表。
 
+可重复执行：对已标注的 SVG 再次标注时，先移除上一次写入的引线组与命中文本尾部的内嵌标号，不会叠加或重复编号。
+
 ```json
 {
   "type": "object",

@@ -3948,6 +3948,15 @@ export interface Config {
   structureFigureScale?: number
   /** 结构线稿缺省视图集；缺省 iso/front/top/right。元素受限为受支持视图名（非法值在加载时被 schema 拒绝）。 */
   structureFigureViews?: StructureViewName[]
+  /**
+   * 引线标号与已放标号、图元之间的净距（毫米）；默认 0.5，与渲染复核对引线
+   * 标号图型使用的下限一致。设 0 关闭净距外扩（只判零重叠）。
+   */
+  figureLeaderClearanceMm?: number
+  /** 引线放置冲突时每次向外推的步长（毫米）；默认 2。必须为非负数。 */
+  figureLeaderPushStepMm?: number
+  /** 引线向外推的距离上限（毫米）；默认 30，超出即换方向、换斜向或退化为内嵌标号。 */
+  figureLeaderPushLimitMm?: number
 }
 
 /** Figure/image model route used by the figure-analysis tool. */

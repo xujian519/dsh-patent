@@ -17,25 +17,49 @@ import {
   resolvePageBundle,
 } from '../figure/dot-builder.ts'
 import type { HierarchyNode } from '../figure/dot-builder.ts'
-import { annotateSvgWithLeaderLines } from '../figure/leader-line.ts'
+import { DEFAULT_LEADER_CLEARANCE_MM, annotateSvgWithLeaderLines } from '../figure/leader-line.ts'
+import { clearanceMmForFigure } from '../figure/render-check-findings.ts'
 import { SvgAnnotateError } from '../figure/svg-annotate.ts'
 import { RAW_DOT_MAX_BYTES, STRUCTURAL_MAX_ITEMS } from './figure-input.ts'
 import type { DotFigureType, StructuralFigureInput } from './figure-input.ts'
+
+/** 引线放置选项（毫米）：净距、外推步长与上限。 */
+type LeaderOptions = { clearanceMm?: number; pushStepMm?: number; pushLimitMm?: number }
+
+/**
+ * 由部署配置与图型解析引线放置选项：净距取部署配置与该图型渲染复核档位的较大值，
+ * 避免放置期按 0.5 毫米而复核期按 1.5 毫米判负；外推参数直接透传部署值。
+ * @param deps - 附图工具依赖（含 Config 注入的引线参数）。
+ * @param figureType - 图型名（决定渲染复核的净距档位）。
+ * @returns 传给引线放置的选项。
+ */
+export function resolveLeaderOptions(
+  deps: { leaderClearanceMm?: number; leaderPushStepMm?: number; leaderPushLimitMm?: number },
+  figureType: string,
+): LeaderOptions {
+  return {
+    clearanceMm: Math.max(deps.leaderClearanceMm ?? DEFAULT_LEADER_CLEARANCE_MM, clearanceMmForFigure(figureType)),
+    ...(deps.leaderPushStepMm === undefined ? {} : { pushStepMm: deps.leaderPushStepMm }),
+    ...(deps.leaderPushLimitMm === undefined ? {} : { pushLimitMm: deps.leaderPushLimitMm }),
+  }
+}
 
 /**
  * 读回渲染 SVG 做引线标注并写回；安全校验失败降级为警告（图已生成，不吞工件）。
  * @param outcomePath - 渲染产物路径，原地改写。
  * @param references - 标号与组件名，供引线选择落点。
  * @param warnings - 收集提示的警告数组。
+ * @param options - 引线净距与外推（毫米）；缺省用模块默认。
  */
 export async function annotateRenderedSvg(
   outcomePath: string,
   references: readonly { label: string; numeral: string }[],
   warnings: string[],
+  options: LeaderOptions = {},
 ): Promise<void> {
   try {
     const rendered = await readFile(outcomePath, 'utf8')
-    const annotated = annotateSvgWithLeaderLines(rendered, references)
+    const annotated = annotateSvgWithLeaderLines(rendered, references, options)
     if (annotated.svg !== rendered) await writeFile(outcomePath, annotated.svg, 'utf8')
     warnings.push(...annotated.warnings.map(w => `引线标注：${w}`))
   } catch (error) {

@@ -41,7 +41,7 @@ import { assertViewName, collectComponents, collectFigureWording, dotDocumentTit
 import type { DotFigureType, GeneratePatentFigureDeps, GeneratePatentFigureInput, GeneratePatentFigureOutput, NormalizedFigureInput, StructuralFigureInput } from './figure-input.ts'
 import type { SectionFigureJson } from '../figure/vector-figure-build.ts'
 import { buildOutput, indexAnalysis, registerFigureNumerals, renderGenerateFigureResult, upsertFigureIndex } from './figure-output.ts'
-import { annotateRenderedSvg, buildFigureDot } from './figure-render-plan.ts'
+import { annotateRenderedSvg, buildFigureDot, resolveLeaderOptions } from './figure-render-plan.ts'
 import {
   APPEARANCE_INPUT_SCHEMA,
   BLOCK_SCHEMA,
@@ -264,7 +264,12 @@ async function generateSingleFigure(
       ? `引线标号（leader_lines）对直绘图型（${normalized.figure_type}）不生效：本图型的标号由输入决定——剖视图用 sections.labels 给出标号落点与引线起点`
       : `引线标号仅支持 SVG 矢量输出；本次 ${format} 保持内嵌标号`)
   } else if (leaderLinesActive) {
-    await annotateRenderedSvg(rendered.path, result.numeralMap, result.warnings)
+    await annotateRenderedSvg(
+      rendered.path,
+      result.numeralMap,
+      result.warnings,
+      resolveLeaderOptions(deps, normalized.figure_type),
+    )
   }
   result.warnings.push(...expanded.warnings)
   result.warnings.push(...rendered.vectorWarnings)

@@ -37,10 +37,10 @@ describe('installKnowledgeDb', () => {
     const before = statSync(output).size
 
     // 裁剪步骤（第二步）在临时副本上的二次 VACUUM 失败：旧输出必须原样保留。
-    const original = DatabaseSync.prototype.exec
+    const original = Reflect.get(DatabaseSync.prototype, 'exec')
     const spy = vi.spyOn(DatabaseSync.prototype, 'exec').mockImplementation(function (this: DatabaseSync, sql: string) {
       if (sql === 'VACUUM') throw new Error('disk full')
-      return original.call(this, sql)
+      original.call(this, sql)
     })
     try {
       await expect(installKnowledgeDb({ sourceDbPath: input, output, skipVerify: true }))

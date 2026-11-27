@@ -102,6 +102,39 @@ describe('review_patent_application: 工具边界', () => {
     expect(text).toContain('附图 1｜figure-color-policy')
   })
 
+  it('附图证据的落版度量与复核 findings 并入同一报告', async () => {
+    const value = await run({
+      claims: CLAIMS,
+      has_drawings: true,
+      figures: [{
+        figure_number: 1,
+        office: 'pct',
+        style: 'grayscale',
+        has_caption: true,
+        abstract_figure: true,
+        char_height_mm: 2.5,
+        placed_width_mm: 120,
+        placed_height_mm: 80,
+        render_findings: [{ check: 'text-clearance', message: '标号与轮廓净距不足' }],
+        delivery_findings: [{ check: 'figure-photo', message: '交付件含照片影调' }],
+      }],
+    })
+    expect(value.reviewed_scope).toEqual({ claims: true, specification: false, figures: true })
+    const figureRules = value.findings
+      .filter(finding => finding.source === 'figure_check')
+      .map(finding => finding.rule)
+      .sort()
+    expect(figureRules).toEqual([
+      'figure-abstract-figure-legibility',
+      'figure-char-height',
+      'figure-delivery-photo',
+      'figure-render-text-clearance',
+    ])
+    expect(value.findings.every(
+      finding => finding.locator.kind !== 'figure' || finding.locator.figure === 1,
+    )).toBe(true)
+  })
+
   it('附图证据与 has_drawings=false 矛盾时拒绝调用', async () => {
     await expect(run({
       claims: CLAIMS,
@@ -265,13 +298,22 @@ describe('review_patent_application: 渲染', () => {
           message: '表述模糊',
           locator: { kind: 'section' },
         },
+        {
+          id: 'F3',
+          source: 'figure_check',
+          rule: 'figure-char-height',
+          severity: 'warning',
+          message: '字高不足',
+          locator: { kind: 'figure' },
+        },
       ],
-      counts: { error: 1, warning: 1, not_assessed: 0 },
+      counts: { error: 1, warning: 2, not_assessed: 0 },
       reviewed_scope: { claims: true, specification: true, figures: false },
       evaluated: [],
     }
     const text = renderReviewReport(flat)
     expect(text).toContain('权利要求 0｜numbering')
+    expect(text).toContain('附图 0｜figure-char-height')
     expect(text).toContain('说明书·｜clarity')
   })
 })

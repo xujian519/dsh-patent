@@ -225,6 +225,7 @@ describe('buildReviewReport: 排序与判定', () => {
       [finding({ source: 'claim_lint' }), finding({ source: 'spec_check' })],
       [finding({ locator: { kind: 'claim', claim: 1 } }), finding({ locator: { kind: 'section', section: 'A' } })],
       [finding({ locator: { kind: 'claim', claim: 1 } }), finding({ locator: { kind: 'claim', claim: 2 } })],
+      [finding({ locator: { kind: 'figure', figure: 1 } }), finding({ locator: { kind: 'figure', figure: 2 } })],
       [finding({ locator: { kind: 'section', section: 'A' } }), finding({ locator: { kind: 'section', section: 'B' } })],
       [finding({ rule: 'a' }), finding({ rule: 'b' })],
       [finding({ message: 'a' }), finding({ message: 'b' })],

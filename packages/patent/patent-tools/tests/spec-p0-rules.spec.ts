@@ -178,6 +178,22 @@ describe('prohibitions and title', () => {
     expect(violations.every(v => v.family === 'prohibitions')).toBe(true)
   })
 
+  it('reports claim citations written as a combination, a range, or an ordinal', () => {
+    for (const phrase of [
+      '如权利要求1和2所述',
+      '根据权利要求1至3中任一项所述',
+      '如权利要求第1项所述',
+      '根据权利要求1-3所述',
+      '参见上述权利要求2所述',
+    ]) {
+      expect(checkSpecProhibitions(`${phrase}的装置。`).map(v => v.rule), phrase).toEqual(['claim_citation_phrase'])
+    }
+  })
+
+  it('does not report a mention of the claims that is not a citation phrase', () => {
+    expect(checkSpecProhibitions('权利要求书的保护范围以权利要求的内容为准。')).toEqual([])
+  })
+
   it('reports nothing in clean text', () => {
     expect(checkSpecProhibitions('本发明提供一种检测装置。')).toEqual([])
   })

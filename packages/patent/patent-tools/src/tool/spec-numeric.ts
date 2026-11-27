@@ -7,27 +7,31 @@
  */
 
 import {
+  NUMERIC_ANY_UNIT_ALTERNATION,
   NUMERIC_RANGE_SEPARATOR_CLASS,
-  NUMERIC_UNIT_ALTERNATION,
+  canonicalNumericUnit,
   normalizeNumericUnit,
 } from '@deepseek-ai/dsh-patent-core'
 import type { NumericRange } from './spec-types.ts'
 
 /**
- * Numeric range (e.g. 20-90℃, 20℃至90℃, 20~90℃, 20–90℃).
+ * Numeric range (e.g. 20-90℃, 20℃至90℃, 20毫米至90毫米).
  *
  * Separators and units come from the vocabulary shared with the novelty
  * numeric-range track, so the two paths cannot read the same text differently.
  * The trailing unit stays required here: endpoint and midpoint coverage compares
- * single values of the same unit, which needs the range unit to be stated.
+ * single values of the same unit, which needs the range unit to be stated. The
+ * alternation carries the Chinese spellings too, because this path can only see
+ * a unit that follows the number: a range written 20毫米至90毫米 would otherwise
+ * match nothing and the endpoint/midpoint checks would silently not run.
  */
 const RANGE_PATTERN = new RegExp(
-  `(\\d+(?:\\.\\d+)?)\\s*(?:${NUMERIC_UNIT_ALTERNATION})?\\s*(?:[${NUMERIC_RANGE_SEPARATOR_CLASS}])\\s*(\\d+(?:\\.\\d+)?)\\s*(${NUMERIC_UNIT_ALTERNATION})`,
+  `(\\d+(?:\\.\\d+)?)\\s*(?:${NUMERIC_ANY_UNIT_ALTERNATION})?\\s*(?:[${NUMERIC_RANGE_SEPARATOR_CLASS}])\\s*(\\d+(?:\\.\\d+)?)\\s*(${NUMERIC_ANY_UNIT_ALTERNATION})`,
   'g',
 )
 
-/** Single value with a unit (e.g. 60℃, 5mm). */
-const VALUE_PATTERN = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(${NUMERIC_UNIT_ALTERNATION})`, 'g')
+/** Single value with a unit (e.g. 60℃, 5mm, 60毫米). */
+const VALUE_PATTERN = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(${NUMERIC_ANY_UNIT_ALTERNATION})`, 'g')
 
 /**
  * Extract numeric ranges from the text (kept only when min < max).
@@ -78,7 +82,10 @@ export function checkNumericRangeCoverage(text: string): {
   const endpointMissing: NumericRange[] = []
   const midpointMissing: NumericRange[] = []
   for (const range of ranges) {
-    const sameUnit = values.filter(v => v.unit === range.unit)
+    // 同一单位的中英文写法（20毫米至90毫米 / 50mm）算同一个单位：比对看规范键，
+    // 展示仍用原文写法。
+    const rangeUnit = canonicalNumericUnit(range.unit)
+    const sameUnit = values.filter(v => canonicalNumericUnit(v.unit) === rangeUnit)
     const hasEndpoint = sameUnit.some(v => v.value === range.min || v.value === range.max)
     const hasMidpoint = sameUnit.some(v => v.value > range.min && v.value < range.max)
     if (!hasEndpoint) endpointMissing.push(range)

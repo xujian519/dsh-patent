@@ -118,6 +118,18 @@ describe('validateSpecification', () => {
     expect(v?.matchedSentence).toBe('本实施例中温度约为 60℃，时间为 2 小时。')
   })
 
+  it('does not treat 尽可能、不可能 or 可能性 as vague wording', () => {
+    const text = '## 技术领域\n本发明涉及一种装置。\n## 具体实施方式\n应尽可能提高精度，不可能脱落，也不存在失效的可能性。'
+    expect(validateSpecification({ text }).violations.find(x => x.rule === 'clarity')).toBeUndefined()
+  })
+
+  it('locates a hedge 可能 at its own line when an excluded 尽可能 appears earlier', () => {
+    const text = '## 技术领域\n本发明涉及一种装置。\n## 具体实施方式\n应尽可能提高精度。\n所述温度可能为60℃。'
+    const v = validateSpecification({ text }).violations.find(x => x.rule === 'clarity')
+    expect(v?.line).toBe(5)
+    expect(v?.matchedSentence).toBe('所述温度可能为60℃。')
+  })
+
   it('reports where an unquantified effect statement is', () => {
     const text = '## 发明内容\n本发明显著提高了熬制效率，改善了药材利用率。\n## 具体实施方式\n实施例1：一种装置。'
     const v = validateSpecification({ text }).violations.find(x => x.rule === 'effect_data_quantified')
@@ -177,6 +189,24 @@ describe('validateSpecification', () => {
     expect(v?.severity).toBe('error')
     expect(v?.message).toContain('2/3')
   })
+
+  it('runs the numeric-range checks on a range written with Chinese units', () => {
+    const out = validateSpecification({ text: VALID_SPEC + '\n所述厚度为20毫米至90毫米。' })
+    const v = out.violations.find(x => x.rule === 'numeric_range_endpoints')
+    expect(v?.severity).toBe('error')
+    expect(v?.message).toContain('20-90毫米')
+  })
+
+  it('treats the Chinese and Latin spellings of a unit as the same claim feature', () => {
+    const claims = '一种检测装置，包括所述壳体、所述支架、所述电路，厚度为10mm。'
+    const covered = validateSpecification({ text: VALID_SPEC + '\n壳体、支架、电路，厚度为10毫米。', claims })
+    expect(covered.violations.find(x => x.rule === 'claim_coverage')).toBeUndefined()
+
+    const uncovered = validateSpecification({ text: VALID_SPEC + '\n壳体、支架、电路，厚度为12毫米。', claims })
+    const v = uncovered.violations.find(x => x.rule === 'claim_coverage')
+    expect(v?.severity).toBe('warning')
+    expect(v?.message).toContain('10mm')
+  })
 })
 
 describe('numeric range helpers', () => {
@@ -205,6 +235,23 @@ describe('numeric range helpers', () => {
       { min: 20, max: 30, unit: 'MPa' },
     ])
     expect(extractNumericRanges('重量比50-80')).toEqual([])
+  })
+
+  it('reads ranges and values written with Chinese units', () => {
+    expect(extractNumericRanges('厚度为20毫米至90毫米。')).toEqual([{ min: 20, max: 90, unit: '毫米' }])
+    expect(checkNumericRangeCoverage('厚度为20毫米至90毫米。')).toEqual({
+      endpointMissing: [{ min: 20, max: 90, unit: '毫米' }],
+      midpointMissing: [{ min: 20, max: 90, unit: '毫米' }],
+    })
+    expect(checkNumericRangeCoverage('厚度为20毫米至90毫米，优选20毫米、55毫米、90毫米。')).toEqual({
+      endpointMissing: [],
+      midpointMissing: [],
+    })
+  })
+
+  it('compares a Chinese-unit range with values written in the same unit in Latin letters', () => {
+    const r = checkNumericRangeCoverage('厚度为20毫米至90毫米，优选20mm、55mm、90mm。')
+    expect(r).toEqual({ endpointMissing: [], midpointMissing: [] })
   })
 })
 
@@ -289,6 +336,18 @@ describe('figure mark consistency', () => {
     const figures = [{ usable: false, components: [] }]
     const out = checkFigureMarkConsistency(FIGURE_SPEC, figures)
     expect(out[0]?.message).toContain('不可用')
+  })
+
+  it('does not call a mark dangling when its figure was not analysed', () => {
+    // 图2 的分析结果不可用：它的标号 9 没有被读出来，但这不等于图面上没有 9。
+    const figures = [
+      { usable: true, components: [{ refNumber: '1' }] },
+      { usable: false, components: [{ refNumber: '9' }] },
+    ]
+    const text = '## 附图说明\n图1是结构示意图；图中：1-壳体；9-轴；\n## 具体实施方式\n实施例1：壳体1与轴9。'
+    const out = checkFigureMarkConsistency(text, figures, '一种装置，包括壳体（1）和轴（9）。')
+    expect(out.map(v => v.severity)).not.toContain('error')
+    expect(out.map(v => v.message).join('\n')).toContain('不可用')
   })
 
   it('图面标号未在正文与权利要求中提及时报 warning', () => {

@@ -7,7 +7,7 @@
  * permits, so they are not reported.
  */
 
-import { locateMatch } from '@deepseek-ai/dsh-patent-core'
+import { locationAt } from '@deepseek-ai/dsh-patent-core'
 import type { SpecViolation } from './spec-types.ts'
 
 /** A number token the vague quantifier may modify. */
@@ -19,27 +19,41 @@ const VAGUE_QUANTITY_RES = [
   new RegExp(`${QUANTITY}\\s*左右`, 'g'),
 ] as const
 
-/** Words that stay vague in any context. */
-const VAGUE_WORDS = ['可能', '较好'] as const
+/**
+ * Words that stay vague in context, ordered as written.
+ *
+ * 「可能」 is vague as a hedge (可能为10%), but 「尽可能」「不可能」 are ordinary
+ * wording and 「可能性」 is a noun, so the match is contextual rather than a bare
+ * substring — the same distinction the quantity patterns above make.
+ */
+const VAGUE_WORD_RES = [
+  /(?<![尽不])可能(?!性)/g,
+  /较好/g,
+] as const
 
 /**
  * Report vague wording with the location of its earliest hit.
+ *
+ * The location comes from the earliest match index, not from searching the hit
+ * texts: 「可能」 matched at one offset can appear earlier in the text inside an
+ * excluded 「尽可能」, and a substring search would report that line instead.
  * @param text - the specification text.
  * @returns the clarity violation, or empty when no vague wording is present.
  */
 export function checkClarity(text: string): SpecViolation[] {
   const hits: string[] = []
-  for (const pattern of VAGUE_QUANTITY_RES) {
-    for (const match of text.matchAll(pattern)) {
-      if (!hits.includes(match[0])) hits.push(match[0])
-    }
+  let earliest = Number.POSITIVE_INFINITY
+  const record = (matched: string, index: number): void => {
+    if (!hits.includes(matched)) hits.push(matched)
+    if (index < earliest) earliest = index
   }
-  for (const word of VAGUE_WORDS) {
-    if (text.includes(word)) hits.push(word)
+  for (const pattern of [...VAGUE_QUANTITY_RES, ...VAGUE_WORD_RES]) {
+    pattern.lastIndex = 0
+    let match: RegExpExecArray | null
+    while ((match = pattern.exec(text)) !== null) record(match[0], match.index)
   }
   if (hits.length === 0) return []
-  // oxlint-disable-next-line typescript/no-non-null-assertion -- hits are substrings of text, so a location exists
-  const location = locateMatch(text, hits)!
+  const location = locationAt(text, earliest)
   return [{
     rule: 'clarity',
     family: 'description',

@@ -474,8 +474,9 @@ export {
 
 // Deterministic numeric-range novelty check, run beside the LLM semantic track.
 export {
+  NUMERIC_ANY_UNIT_ALTERNATION,
   NUMERIC_RANGE_SEPARATOR_CLASS,
-  NUMERIC_UNIT_ALTERNATION,
+  canonicalNumericUnit,
   extractNumericFindings,
   normalizeNumericUnit,
 } from './novelty/index.ts'

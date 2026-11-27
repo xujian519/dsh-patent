@@ -538,6 +538,7 @@ function deliverableWorkers(): WorkerContract[] {
         'add_patent_figure_references',
         'analyze_patent_figure',
         'search_patent_figure',
+        'check_claim_figure_coverage',
         'validate_specification',
       ],
       outputs: [

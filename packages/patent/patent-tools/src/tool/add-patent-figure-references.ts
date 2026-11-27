@@ -17,6 +17,8 @@ import { PatentToolError } from '../error.ts'
 import { SvgAnnotateError, annotateSvg } from '../figure/svg-annotate.ts'
 import { annotateSvgWithLeaderLines } from '../figure/leader-line.ts'
 import { figureWordingWarnings } from '../figure/wording-rules.ts'
+import type { FigureNumeralItem, NumeralMergeConflict } from '../figure/numeral-store.ts'
+import { registerFigureNumerals } from './figure-output.ts'
 import { SVG_PATH_PARAM, SVG_PATH_RESULT_FIELDS, readSvgInput } from './internal/svg-input.ts'
 import type { SvgAnnotateReference } from '../figure/svg-annotate.ts'
 import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
@@ -25,6 +27,10 @@ import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
 export type AddPatentFigureReferencesDeps = {
   /** 工作目录（缺省 process.cwd()）。 */
   cwd?: string
+  /** 可选读取作用域标号表（`figure_family` 即作用域），用于补全调用方未给出的标号。 */
+  loadNumerals?: (scope: string) => Promise<FigureNumeralItem[]>
+  /** 可选合并写入作用域标号表；登记调用方本次显式给出的标号。 */
+  upsertNumerals?: (scope: string, items: readonly FigureNumeralItem[]) => Promise<NumeralMergeConflict[]>
   /** 引线标号净距（毫米，Config.figureLeaderClearanceMm）。 */
   leaderClearanceMm?: number
   /** 引线放置冲突时的外推步长（毫米，Config.figureLeaderPushStepMm）。 */
@@ -43,6 +49,8 @@ export type AddPatentFigureReferencesInput = {
   output_filename?: string
   /** true 时改用引线模式：标号置于组件外侧并以引线相连；默认 false 内嵌「 (标号)」。 */
   leader_lines?: boolean
+  /** 标号作用域（与 generate_patent_figure 的 figure_family 同义）：给出时用标号表补全 references，并登记本次给出的标号。 */
+  figure_family?: string
 }
 
 /** 输出：标注后路径 + 未命中警告。 */
@@ -65,6 +73,8 @@ const DESCRIPTION = [
   '标号形式：非阿拉伯数字标号（如 S101）按《专利审查指南》第一部分第一章 4.3「附图标记应当使用阿拉伯数字编号」返回警告（照常标注）。',
   '',
   '引线模式：标号置于组件轮廓外侧，引线避开图内已绘的边线与箭头，并在越出画布时扩展画布使之完整可见；无可放置位置或缺轮廓时退化为内嵌标号并警告。',
+  '',
+  '标号作用域：给出 figure_family 时，用该作用域已有的附图标记表补全 references 未列出的部件（调用方给出的标签优先），并把本次给出的标号登记进表；不给出时行为不变——纯回填，不读写标号表。',
   '',
   '可重复执行：对已标注的 SVG 再次标注时，先移除上一次写入的引线组与命中文本尾部的内嵌标号，不会叠加或重复编号。',
 ].join('\n')
@@ -95,6 +105,10 @@ export function createAddPatentFigureReferencesTool(deps: AddPatentFigureReferen
       },
       output_filename: { type: 'string', description: '输出文件名（不含扩展名，默认 <原名>_annotated）' },
       leader_lines: { type: 'boolean', description: 'true 时改用引线模式（标号置于组件外侧并以引线相连）；默认 false 内嵌「 (标号)」' },
+      figure_family: {
+        type: 'string',
+        description: '标号作用域（与 generate_patent_figure 的 figure_family 同义）：给出时用附图标记表补全 references 未列出的部件，并把本次给出的标号登记进表',
+      },
     },
     output: {
       schema: {
@@ -116,15 +130,17 @@ export function createAddPatentFigureReferencesTool(deps: AddPatentFigureReferen
     async execute(args) {
       const cwd = deps.cwd ?? process.cwd()
       const { absolutePath: absPath, svg } = await readSvgInput(args.svg_path, cwd, 'add_patent_figure_references')
+      const tableWarnings: string[] = []
+      const references = await resolveReferences(args, deps, tableWarnings)
       let result
       try {
         result = args.leader_lines === true
-          ? annotateSvgWithLeaderLines(svg, args.references, {
+          ? annotateSvgWithLeaderLines(svg, references, {
             ...(deps.leaderClearanceMm === undefined ? {} : { clearanceMm: deps.leaderClearanceMm }),
             ...(deps.leaderPushStepMm === undefined ? {} : { pushStepMm: deps.leaderPushStepMm }),
             ...(deps.leaderPushLimitMm === undefined ? {} : { pushLimitMm: deps.leaderPushLimitMm }),
           })
-          : annotateSvg(svg, args.references)
+          : annotateSvg(svg, references)
       } catch (error) {
         /* v8 ignore start -- annotateSvg only throws SvgAnnotateError; the rethrow keeps unknown failures loud */
         if (error instanceof SvgAnnotateError) {
@@ -140,11 +156,51 @@ export function createAddPatentFigureReferencesTool(deps: AddPatentFigureReferen
       // 图面用语检查：标号由调用方给出，非阿拉伯数字标号违反指南 4.3。
       const warnings = [
         ...result.warnings,
-        ...figureWordingWarnings([], args.references.map(reference => reference.numeral)),
+        ...figureWordingWarnings([], references.map(reference => reference.numeral)),
+        ...tableWarnings,
       ]
-      return { path: relative(cwd, outPath), absolutePath: outPath, numReferences: args.references.length, warnings }
+      // 只登记调用方显式给出的标号：表内既有项不是本次新增的事实。
+      await registerFigureNumerals(deps.upsertNumerals, args.figure_family, {
+        numeralMap: args.references.map(reference => ({
+          componentId: reference.label,
+          label: reference.label,
+          numeral: reference.numeral,
+        })),
+        warnings,
+      })
+      return { path: relative(cwd, outPath), absolutePath: outPath, numReferences: references.length, warnings }
     },
   })
+}
+
+/**
+ * 合并调用方给出的标号与标号表中尚未列出的部件。
+ *
+ * 表只读：调用方给出的标签优先，表里同标签的项被忽略；读取失败时退回调用方的
+ * 清单并记警告，而不是退化成「没有标号」。
+ * @param args - 工具输入。
+ * @param deps - 工具依赖。
+ * @param warnings - 表读取失败的警告去处。
+ * @returns 用于标注的标号清单。
+ */
+async function resolveReferences(
+  args: AddPatentFigureReferencesInput,
+  deps: AddPatentFigureReferencesDeps,
+  warnings: string[],
+): Promise<SvgAnnotateReference[]> {
+  if (args.figure_family === undefined || deps.loadNumerals === undefined) return [...args.references]
+  let table: FigureNumeralItem[]
+  try {
+    table = await deps.loadNumerals(args.figure_family)
+  } catch (error) {
+    warnings.push(`读取附图标记表失败：${error instanceof Error ? error.message : String(error)}；本次只用调用方给出的标号`)
+    return [...args.references]
+  }
+  const given = new Set(args.references.map(reference => reference.label))
+  const appended = table
+    .filter(item => item.label.trim() !== '' && !given.has(item.label))
+    .map(item => ({ label: item.label, numeral: item.numeral }))
+  return [...args.references, ...appended]
 }
 
 /** 提取文件名（不含扩展名）。 */

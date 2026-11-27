@@ -42,6 +42,7 @@ const EXPECTED_TOOLS = [
   'triz_contradiction_analysis',
   'analyze_patent_figure',
   'check_patent_figure_consistency',
+  'check_claim_figure_coverage',
   'compare_patent_figure_analysis',
   'evaluate_evidence',
   'patent_workflow',

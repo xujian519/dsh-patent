@@ -6871,7 +6871,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 ### `review_patent_application`
 
-按专利法/实施细则/审查指南的形式口径，对一份专利申请文件跑确定性评审（不调用模型）。- 权利要求：claim_lint 的编号、引用方向、多项从属、引用基础、主题名称、两部分式、功能性/工艺限定、结尾标点等；- 说明书与摘要：validate_specification 的五部分结构、标题集合、附图引用形式、名称/摘要长度、禁止性内容、模糊表述、实施例、数值范围与领域规则等；- 两者都给时同时跑权项—说明书特征覆盖（A26.4）。至少提供 claims 或 specification 之一；只给一半时，报告用未评估项声明另一半未评审，不会把它读成通过。每条 finding 带报告内唯一的 F 编号、定位、命中原文与法条依据；passed 只表示已运行的确定性规则未发现 error，不表示符合专利法；未评估项单列。结果末尾给出实际读到的文本字数与指纹，便于另一次评审对照是否读的是同一份文本。
+按专利法/实施细则/审查指南的形式口径，对一份专利申请文件跑确定性评审（不调用模型）。- 权利要求：claim_lint 的编号、引用方向、多项从属、引用基础、主题名称、两部分式、功能性/工艺限定、结尾标点等；- 说明书与摘要：validate_specification 的五部分结构、标题集合、附图引用形式、名称/摘要长度、禁止性内容、模糊表述、实施例、数值范围与领域规则等；- 两者都给时同时跑权项—说明书特征覆盖（A26.4）。- 附图：给 `figures` 形式证据时，按目标法域核对色彩策略、图号、字高与摘要附图缩放，并把渲染/交付复核的发现并入同一报告；声明有附图却未给证据时只声明附图形式未评审，不读成通过。至少提供 claims 或 specification 之一；只给一半时，报告用未评估项声明另一半未评审，不会把它读成通过。每条 finding 带报告内唯一的 F 编号、定位、命中原文与法条依据；passed 只表示已运行的确定性规则未发现 error，不表示符合专利法；未评估项单列。结果末尾给出实际读到的文本字数与指纹，便于另一次评审对照是否读的是同一份文本。
 
 ```json
 {
@@ -6923,6 +6923,102 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
     "abstract_figure_number": {
       "type": "number",
       "description": "请求书中的摘要附图号（可选）。"
+    },
+    "figures": {
+      "type": "array",
+      "description": "各幅附图的形式证据（可选）：把 generate_patent_figure 返回的落版尺寸、verify_patent_figure 的 findings 与交付复核结果按图给出；不给时附图形式不评审。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "figure_number": {
+            "type": "integer",
+            "description": "图号（1 起）"
+          },
+          "office": {
+            "type": "string",
+            "description": "目标法域",
+            "enum": [
+              "cnipa",
+              "pct",
+              "uspto"
+            ]
+          },
+          "style": {
+            "type": "string",
+            "description": "色彩策略（缺省 grayscale）",
+            "enum": [
+              "grayscale",
+              "semantic"
+            ]
+          },
+          "has_caption": {
+            "type": "boolean",
+            "description": "落版页上是否已标注图号"
+          },
+          "abstract_figure": {
+            "type": "boolean",
+            "description": "本幅是否为请求书指定的摘要附图"
+          },
+          "char_height_mm": {
+            "type": "number",
+            "description": "落版后正文数字与字母的字高（毫米）"
+          },
+          "placed_width_mm": {
+            "type": "number",
+            "description": "落版后图形占用的宽（毫米）"
+          },
+          "placed_height_mm": {
+            "type": "number",
+            "description": "落版后图形占用的高（毫米）"
+          },
+          "render_findings": {
+            "type": "array",
+            "description": "`verify_patent_figure` 的 findings（check 与 message 原样给出）",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "check": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "check",
+                "message"
+              ]
+            }
+          },
+          "delivery_findings": {
+            "type": "array",
+            "description": "交付复核（`delivery_review=true`）的 findings",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "check": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "check",
+                "message"
+              ]
+            }
+          }
+        },
+        "required": [
+          "figure_number",
+          "office",
+          "has_caption"
+        ]
+      }
     },
     "max_claims": {
       "type": "number",

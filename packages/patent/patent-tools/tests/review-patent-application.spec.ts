@@ -53,14 +53,14 @@ describe('review_patent_application: 工具边界', () => {
 
   it('只给权项时声明说明书未评审', async () => {
     const value = await run({ claims: CLAIMS })
-    expect(value.reviewed_scope).toEqual({ claims: true, specification: false })
+    expect(value.reviewed_scope).toEqual({ claims: true, specification: false, figures: false })
     expect(value.findings.some(finding => finding.rule === 'review_scope')).toBe(true)
     expect(value.counts.not_assessed).toBeGreaterThanOrEqual(1)
   })
 
   it('只给说明书时声明权项未评审', async () => {
     const value = await run({ specification: SPEC })
-    expect(value.reviewed_scope).toEqual({ claims: false, specification: true })
+    expect(value.reviewed_scope).toEqual({ claims: false, specification: true, figures: false })
     expect(value.findings.every(finding => finding.source !== 'claim_lint')).toBe(true)
     expect(value.findings.some(finding => finding.rule === 'review_scope')).toBe(true)
   })
@@ -78,10 +78,43 @@ describe('review_patent_application: 工具边界', () => {
       abstract_figure_number: 1,
       max_claims: 10,
     })
-    expect(value.reviewed_scope).toEqual({ claims: true, specification: true })
+    expect(value.reviewed_scope).toEqual({ claims: true, specification: true, figures: false })
     expect(value.evaluated.map(entry => entry.field).sort()).toEqual(
       ['abstract', 'claims', 'specification', 'title'].sort(),
     )
+  })
+
+  it('给附图证据时评审附图形式并以图号定位', async () => {
+    const value = await run({
+      claims: CLAIMS,
+      has_drawings: true,
+      drawing_count: 2,
+      figures: [
+        { figure_number: 1, office: 'pct', style: 'semantic', has_caption: true },
+        { figure_number: 2, office: 'pct', has_caption: false },
+      ],
+    })
+    expect(value.reviewed_scope).toEqual({ claims: true, specification: false, figures: true })
+    expect(value.findings.filter(finding => finding.source === 'figure_check').map(finding => finding.rule))
+      .toEqual(['figure-color-policy', 'figure-caption-missing'])
+    const text = render(value)
+    expect(text).toContain('已评审 权利要求+附图')
+    expect(text).toContain('附图 1｜figure-color-policy')
+  })
+
+  it('附图证据与 has_drawings=false 矛盾时拒绝调用', async () => {
+    await expect(run({
+      claims: CLAIMS,
+      has_drawings: false,
+      figures: [{ figure_number: 1, office: 'cnipa', has_caption: true }],
+    })).rejects.toThrow(/figures 与 has_drawings 矛盾/)
+  })
+
+  it('图号非正整数时拒绝调用', async () => {
+    await expect(run({
+      claims: CLAIMS,
+      figures: [{ figure_number: 0, office: 'cnipa', has_caption: true }],
+    })).rejects.toThrow(/figure_number 必须是正整数/)
   })
 
   it('max_claims 透传触发 claim-count', async () => {
@@ -102,6 +135,7 @@ describe('review_patent_application: 工具边界', () => {
         'abstract_figure_number',
         'claims',
         'drawing_count',
+        'figures',
         'has_drawings',
         'max_claims',
         'patent_type',
@@ -119,7 +153,7 @@ describe('review_patent_application: 工具边界', () => {
       passed: true,
       findings: [],
       counts: { error: 0, warning: 0, not_assessed: 0 },
-      reviewed_scope: { claims: true, specification: true },
+      reviewed_scope: { claims: true, specification: true, figures: false },
       evaluated: [],
     }) as Array<{ type: string; text?: string }>
     expect(blocks.map(block => block.text ?? '').join('')).toContain('申请文件评审：通过')
@@ -160,7 +194,7 @@ describe('review_patent_application: 渲染', () => {
       },
     ],
     counts: { error: 1, warning: 1, not_assessed: 1 },
-    reviewed_scope: { claims: true, specification: false },
+    reviewed_scope: { claims: true, specification: false, figures: false },
     evaluated: [],
   }
 
@@ -183,7 +217,7 @@ describe('review_patent_application: 渲染', () => {
       passed: true,
       findings: [],
       counts: { error: 0, warning: 0, not_assessed: 0 },
-      reviewed_scope: { claims: true, specification: true },
+      reviewed_scope: { claims: true, specification: true, figures: false },
       evaluated: [],
     })
     expect(text).toContain('申请文件评审：通过（未发现 error）')
@@ -205,7 +239,7 @@ describe('review_patent_application: 渲染', () => {
       passed: true,
       findings: [],
       counts: { error: 0, warning: 0, not_assessed: 0 },
-      reviewed_scope: { claims: false, specification: true },
+      reviewed_scope: { claims: false, specification: true, figures: false },
       evaluated: [],
     })
     expect(text).toContain('已评审 说明书）')
@@ -233,7 +267,7 @@ describe('review_patent_application: 渲染', () => {
         },
       ],
       counts: { error: 1, warning: 1, not_assessed: 0 },
-      reviewed_scope: { claims: true, specification: true },
+      reviewed_scope: { claims: true, specification: true, figures: false },
       evaluated: [],
     }
     const text = renderReviewReport(flat)

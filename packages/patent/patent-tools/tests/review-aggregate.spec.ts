@@ -63,7 +63,7 @@ describe('aggregateReviewFindings: 输入分支', () => {
       figureAnalysis: [],
       maxClaims: 10,
     })
-    expect(result.reviewed_scope).toEqual({ claims: true, specification: true })
+    expect(result.reviewed_scope).toEqual({ claims: true, specification: true, figures: false })
     expect(result.evaluated.map(entry => entry.field).sort()).toEqual(
       ['abstract', 'claims', 'specification', 'title'].sort(),
     )
@@ -78,7 +78,7 @@ describe('aggregateReviewFindings: 输入分支', () => {
 
   it('只给权项时走 claim_check，不伪造缺少章节', () => {
     const result = aggregateReviewFindings({ claims: METHOD_CLAIMS, patentType: 'utility_model' })
-    expect(result.reviewed_scope).toEqual({ claims: true, specification: false })
+    expect(result.reviewed_scope).toEqual({ claims: true, specification: false, figures: false })
     expect(result.findings.some(
       entry => entry.source === 'claim_check' && entry.rule === 'utility_model_method_claim',
     )).toBe(true)
@@ -88,7 +88,7 @@ describe('aggregateReviewFindings: 输入分支', () => {
 
   it('只给说明书时不产生 claim_lint 记录，并声明权项未评审', () => {
     const result = aggregateReviewFindings({ specification: SPEC, title: '一种检测装置' })
-    expect(result.reviewed_scope).toEqual({ claims: false, specification: true })
+    expect(result.reviewed_scope).toEqual({ claims: false, specification: true, figures: false })
     expect(result.findings.every(entry => entry.source !== 'claim_lint')).toBe(true)
     expect(result.findings.some(entry => entry.message.includes('权利要求未提供'))).toBe(true)
     expect(result.findings.some(
@@ -98,7 +98,7 @@ describe('aggregateReviewFindings: 输入分支', () => {
 
   it('两者都缺失时返回两条范围说明，而不是空报告', () => {
     const result = aggregateReviewFindings({})
-    expect(result.reviewed_scope).toEqual({ claims: false, specification: false })
+    expect(result.reviewed_scope).toEqual({ claims: false, specification: false, figures: false })
     expect(result.evaluated).toEqual([])
     expect(result.findings).toHaveLength(2)
     expect(result.findings.every(entry => entry.source === 'review' && entry.not_assessed === true)).toBe(true)
@@ -106,7 +106,7 @@ describe('aggregateReviewFindings: 输入分支', () => {
 
   it('空白文本按缺失处理', () => {
     const result = aggregateReviewFindings({ claims: '   ', specification: '' })
-    expect(result.reviewed_scope).toEqual({ claims: false, specification: false })
+    expect(result.reviewed_scope).toEqual({ claims: false, specification: false, figures: false })
     expect(result.evaluated).toEqual([])
   })
 
@@ -190,16 +190,16 @@ describe('buildReviewReport: 排序与判定', () => {
       finding({ severity: 'info', rule: 'unassessed', not_assessed: true, locator: { kind: 'document' } }),
       finding({ severity: 'info', rule: 'info-only' }),
       finding({ severity: 'error', rule: 'error-rule' }),
-    ], { claims: true, specification: false }, [])
+    ], { claims: true, specification: false, figures: false }, [])
     expect(report.findings.map(entry => entry.id)).toEqual(['F1', 'F2', 'F3', 'F4'])
     expect(report.findings[0]?.rule).toBe('error-rule')
     expect(report.counts).toEqual({ error: 1, warning: 1, not_assessed: 2 })
     expect(report.passed).toBe(false)
-    expect(report.reviewed_scope).toEqual({ claims: true, specification: false })
+    expect(report.reviewed_scope).toEqual({ claims: true, specification: false, figures: false })
   })
 
   it('只有 warning 时通过', () => {
-    const report = buildReviewReport([finding({ severity: 'warning' })], { claims: true, specification: false }, [])
+    const report = buildReviewReport([finding({ severity: 'warning' })], { claims: true, specification: false, figures: false }, [])
     expect(report.passed).toBe(true)
     expect(report.counts).toEqual({ error: 0, warning: 1, not_assessed: 0 })
   })
@@ -207,14 +207,14 @@ describe('buildReviewReport: 排序与判定', () => {
   it('同一规则与定位的两条 finding 获得不同编号', () => {
     const report = buildReviewReport(
       [finding({ rule: 'same' }), finding({ rule: 'same' })],
-      { claims: true, specification: false },
+      { claims: true, specification: false, figures: false },
       [],
     )
     expect(report.findings.map(entry => entry.id)).toEqual(['F1', 'F2'])
   })
 
   it('未评审任何输入时不通过', () => {
-    const report = buildReviewReport([], { claims: false, specification: false }, [])
+    const report = buildReviewReport([], { claims: false, specification: false, figures: false }, [])
     expect(report.passed).toBe(false)
     expect(report.findings).toEqual([])
   })

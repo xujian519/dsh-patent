@@ -1471,6 +1471,23 @@ describe('authorization and edge branches', () => {
     expect(removed.requeued_tasks).toEqual([])
   })
 
+  it('does not requeue a task the captain already cancelled', async () => {
+    const h = await makeService({ maxMembers: 2 })
+    const captain = fakeAgent('captain-1', h.workspace)
+    await createTeam(h, captain)
+    await addMember(h, captain, 'alice')
+    await h.ctx.patentTeams.createTask(captain, { subject: 'cancelled', assignee: 'alice' })
+    const claim = await h.ctx.patentTeams.claimTask(captain, { task_id: 't1', assignee: 'alice' })
+    await h.ctx.patentTeams.updateTask(fakeAgent('member-1', h.workspace), {
+      task_id: 't1', status: 'cancelled', attempt_id: claim.attempt_id!,
+    })
+    const removed = await h.ctx.patentTeams.removeMember(captain, 'alice', new AbortController().signal)
+    // 终态任务在状态机里没有出边；移除成员不能把它改回 pending 再派发出去。
+    expect(removed.requeued_tasks).toEqual([])
+    const team = await readTeam(join(h.workspace, h.stateDir), 'alpha')
+    expect(team?.tasks[0]?.status).toBe('cancelled')
+  })
+
   it('cleans up members with open tasks and removed members on delete', async () => {
     const h = await makeService()
     const captain = fakeAgent('captain-1', h.workspace)

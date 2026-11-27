@@ -227,6 +227,12 @@ export type WorkflowRunOptions = {
    * `guidelineRevision`，否则校验失败；用于在加载/运行前拦截按旧版条文编写的清单。
    */
   guidelineRevision?: string
+  /**
+   * 收口重放专用：允许审批门阶段在没有 handler 时退回 executor 填充。
+   * 缺省 false——门必须由 handler 询问，否则调用方给的一段文本就能顶替
+   * 「门已问过」，而结果仍报 completed。
+   */
+  atomStagesMayUseExecutor?: boolean
 }
 
 /** 单个阶段执行结果：阶段 id、策略、输出、降级标记、重试次数与原子名。 */

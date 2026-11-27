@@ -24,6 +24,7 @@ import {
   type RetrySignal,
   type RevisionRecord,
   type StageExecutor,
+  type StageHandlerRegistry,
   type WorkflowContext,
   type WorkflowInterrupt,
   type WorkflowManifest,
@@ -91,14 +92,15 @@ export async function runWorkflow(
   })
   assertApprovalGrants(manifest, options.approvalGrants)
   const atoms = options.atoms ?? globalAtomRegistry
-  assertKnownAtoms(manifest, atoms)
+  const handlers = options.handlers ?? globalStageHandlerRegistry
+  assertKnownAtoms(manifest, atoms, handlers, options.atomStagesMayUseExecutor === true)
   const resumed = options.resumeFrom === undefined ? undefined : restoreRun(manifest, options.resumeFrom)
   const run: StageRun = {
     manifest,
     options,
     state: resumed === undefined ? { ...ctx } : { ...resumed.state, ...ctx },
     stageOptions: {
-      handlers: options.handlers ?? globalStageHandlerRegistry,
+      handlers,
       atoms,
       provider: options.provider,
       executor,
@@ -222,16 +224,32 @@ type StageStep = {
 
 /**
  * 原子契约存在性 fail-fast：声明了未知 atom（连契约都没有）直接抛错；
- * 已知 atom 但 handler 未注册时回退 executor（atom 是契约，handler 是实现，可延迟注册）。
+ * 已知 atom 但 handler 未注册时，只有在收口重放（`allowExecutorForAtoms`）才回退 executor。
  * @param manifest - 工作流清单。
  * @param atoms - atom 契约注册表。
- * @throws WorkflowError 阶段声明了未注册的 atom。
+ * @param handlers - 本次运行的阶段处理器注册表。
+ * @param allowExecutorForAtoms - 收口重放时为 true，允许 atom 阶段退回 executor。
+ * @throws WorkflowError 阶段声明了未注册的 atom，或 atom 阶段缺少 handler。
  */
-function assertKnownAtoms(manifest: WorkflowManifest, atoms: StageAtoms): void {
+function assertKnownAtoms(
+  manifest: WorkflowManifest,
+  atoms: StageAtoms,
+  handlers: StageHandlerRegistry,
+  allowExecutorForAtoms: boolean,
+): void {
   for (const stage of manifest.stages) {
-    if (stage.atom !== undefined && !atoms.lookup(stage.atom)) {
+    if (stage.atom === undefined) continue
+    if (!atoms.lookup(stage.atom)) {
       throw new WorkflowError(
         `阶段 ${stage.id} 声明了未知 atom "${stage.atom}"（请先 RegisterAtom；若为内置 manifest，请确认已加载提供该原子的插件）`,
+      )
+    }
+    // 审批门必须由 handler 执行：否则 executor 填的一段文本会被记成「门已放行」，
+    // 运行仍报 completed。其余 atom 允许回退 executor（契约可先注册、实现延迟）。
+    if (stage.atom === 'approval-gate' && !allowExecutorForAtoms && !handlers.lookup(stage.atom)) {
+      throw new WorkflowError(
+        `阶段 ${stage.id} 是审批门，但本次运行没有注册 approval-gate handler；`
+          + '门必须由 handler 询问（收口重放请显式传 atomStagesMayUseExecutor: true）',
       )
     }
   }
@@ -303,7 +321,11 @@ function stageResult(
   }
 }
 
-function pushStageResult(run: StageRun, stage: WorkflowStage, outcome: { output: string; retries: number }): void {
+function pushStageResult(
+  run: StageRun,
+  stage: WorkflowStage,
+  outcome: { output: string; retries: number; degraded?: boolean },
+): void {
   // 回退后第一个落地的阶段就是回退目标：用它的产出补 before/after 里的 after。
   if (run.pendingRevisions.length > 0) {
     const digest = digestText(outcome.output)
@@ -314,7 +336,8 @@ function pushStageResult(run: StageRun, stage: WorkflowStage, outcome: { output:
   }
   run.results.push(stageResult(run, stage, {
     output: outcome.output,
-    degraded: outcome.output.trim().length === 0 || outcome.output.startsWith('[WORKFLOW_DEGRADED]'),
+    degraded: outcome.degraded
+      ?? (outcome.output.trim().length === 0 || outcome.output.startsWith('[WORKFLOW_DEGRADED]')),
     retries: outcome.retries,
   }))
 }
@@ -449,8 +472,8 @@ async function runSingleStage(run: StageRun, index: number): Promise<StageStep> 
       for (const record of records) appendRevision(run, record)
 
       if (exhausted) {
-        // 文本信号沿用旧语义：保留不一致输出并标记 degraded。结构化信号是确定性
-        // 缺口的「再试一次」，耗尽时保留阶段原产出，由缺口报告本身说明未覆盖项。
+        // 两种信号都在耗尽时标记 degraded：缺口仍未解决时把阶段记成通过，
+        // 摘要与工具文本会写「N/N 阶段完成」，掩盖掉那份未覆盖报告。
         if (textMatched) {
           run.results.push(stageResult(run, stage, {
             output: `[WORKFLOW_RETRY_EXHAUSTED] ${stage.id}: ${output}`,
@@ -458,7 +481,11 @@ async function runSingleStage(run: StageRun, index: number): Promise<StageStep> 
             retries,
           }))
         } else {
-          pushStageResult(run, stage, { output, retries })
+          pushStageResult(run, stage, {
+            output: `[WORKFLOW_REVISION_EXHAUSTED] ${stage.id}: ${output}`,
+            retries,
+            degraded: true,
+          })
         }
         return { nextIndex: index + 1 }
       }

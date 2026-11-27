@@ -606,12 +606,15 @@ describe('workflow retry validation', () => {
     })
 
     const result = await runWorkflow(manifest, { input: 'x' }, undefined, { atoms, handlers })
-    expect(result.completed).toBe(true)
-    expect(result.degradedSteps).toHaveLength(0)
+    // 缺口重试耗尽仍未解决：保留产出但标记降级，不能记成 completed。
+    expect(result.completed).toBe(false)
+    expect(result.degradedSteps).toContain('check')
     expect(result.revisions?.map(record => record.outcome)).toEqual(['applied', 'exhausted'])
     expect(result.revisions?.[1]).toMatchObject({ gapId: 'gap-2', evidence: 'state.evidence' })
     expect(result.revisions?.[1]?.after).toBeUndefined()
-    expect(result.stages.find(stage => stage.stageId === 'check')?.degraded).toBe(false)
+    const check = result.stages.find(stage => stage.stageId === 'check')
+    expect(check?.degraded).toBe(true)
+    expect(check?.output).toContain('[WORKFLOW_REVISION_EXHAUSTED]')
   })
 
   it('runWorkflow: draft review stops after two rewinds and enters the approval stage', async () => {
@@ -680,8 +683,9 @@ describe('workflow retry validation', () => {
     expect(reviewRounds).toBe(3)
     expect(result.revisions?.map(record => record.outcome)).toEqual(['applied', 'applied', 'exhausted'])
     expect(gateRounds).toBe(1)
-    expect(result.completed).toBe(true)
-    expect(result.degradedSteps).toHaveLength(0)
+    // 第三次审查仍失败：阶段保留产出但标记降级，运行不算完成。
+    expect(result.completed).toBe(false)
+    expect(result.degradedSteps).toContain('draft_review')
   })
 
   it('runWorkflow: structured retry without a signal advances without rewinding', async () => {
@@ -929,6 +933,8 @@ describe('workflow retry validation', () => {
 
     const result = await runWorkflow(patentDisclosureManifest, { input: '交底书' }, executor, {
       handlers: new StageHandlerRegistry(),
+      // 这些用例用 executor 模拟审批门产出，显式声明允许 executor 填充门阶段。
+      atomStagesMayUseExecutor: true,
     })
     // 权利要求由确定性渲染产出，回退重跑同一份策略表不会改分；门只报告。
     expect(draftRounds).toBe(1)
@@ -978,6 +984,8 @@ describe('patentOaResponseManifest 的反套话回路', () => {
 
     const result = await runWorkflow(patentOaResponseManifest, { input: '通知书' }, executor, {
       handlers: new StageHandlerRegistry(),
+      // 这些用例用 executor 模拟审批门产出，显式声明允许 executor 填充门阶段。
+      atomStagesMayUseExecutor: true,
     })
     expect(draftRound).toBe(2)
     const gate = result.stages.find(s => s.stageId === 'slop_gate')!
@@ -1002,6 +1010,8 @@ describe('patentOaResponseManifest 的反套话回路', () => {
 
     const result = await runWorkflow(patentOaResponseManifest, { input: '通知书' }, executor, {
       handlers: new StageHandlerRegistry(),
+      // 这些用例用 executor 模拟审批门产出，显式声明允许 executor 填充门阶段。
+      atomStagesMayUseExecutor: true,
     })
     expect(draftRound).toBe(2) // 初次 + 一次回退（maxRetries=1），此后耗尽
     const gate = result.stages.find(s => s.stageId === 'slop_gate')!

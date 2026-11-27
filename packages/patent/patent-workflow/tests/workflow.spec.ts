@@ -49,6 +49,16 @@ describe('runWorkflow — fail-fast and cancellation', () => {
       runWorkflow(manifest('unknown-atom', [stage('a', { atom: 'no-such-atom' })]), { input: 'x' }, okExecutor),
     ).rejects.toThrow(/请确认已加载提供该原子的插件/)
   })
+
+  it('rejects an approval gate with no handler unless the caller opts into executor fill', async () => {
+    const gateManifest = manifest('gate', [stage('gate', { atom: 'approval-gate' })])
+    const atoms = atomRegistry(['approval-gate'])
+    // 没有 handler 时 executor 的一段文本会被记成「门已放行」，结果仍报 completed。
+    await expect(runWorkflow(gateManifest, { input: 'x' }, okExecutor, { atoms }))
+      .rejects.toThrow(/approval-gate handler/)
+    const filled = await runWorkflow(gateManifest, { input: 'x' }, okExecutor, { atoms, atomStagesMayUseExecutor: true })
+    expect(filled.completed).toBe(true)
+  })
 })
 
 describe('runWorkflow — sparse stages defensive guards', () => {

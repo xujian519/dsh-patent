@@ -157,6 +157,24 @@ export function validateSvgReferences(references: readonly SvgAnnotateReference[
 }
 
 /**
+ * 两个标注入口（内嵌与引线）共用的输入前置：安全校验、参考字段校验，并报告是否有可标注参考。
+ * @param svgText - 原始 SVG 文本。
+ * @param references - 参考标号列表。
+ * @param maxBytes - 输入大小上限（字节）。
+ * @returns 有参考需要标注时 true；空列表时 false，调用方原样返回输入。
+ * @throws SvgAnnotateError 输入不安全/非 SVG/过大或参考字段为空。
+ */
+export function assertAnnotationInput(
+  svgText: string,
+  references: readonly SvgAnnotateReference[],
+  maxBytes: number,
+): boolean {
+  assertSafeSvg(svgText, maxBytes)
+  validateSvgReferences(references)
+  return references.length > 0
+}
+
+/**
  * 在 SVG 文本元素的匹配文本末尾追加参考标号。
  *
  * 每个 `<text>` 元素至多命中一个参考（按 references 传入顺序取首个匹配），
@@ -172,9 +190,7 @@ export function annotateSvg(
   references: readonly SvgAnnotateReference[],
   maxBytes: number = DEFAULT_SVG_MAX_BYTES,
 ): SvgAnnotateResult {
-  assertSafeSvg(svgText, maxBytes)
-  validateSvgReferences(references)
-  if (references.length === 0) return { svg: svgText, warnings: [] }
+  if (!assertAnnotationInput(svgText, references, maxBytes)) return { svg: svgText, warnings: [] }
 
   const source = stripLeaderAnnotations(svgText)
   const matched = new Set<number>()

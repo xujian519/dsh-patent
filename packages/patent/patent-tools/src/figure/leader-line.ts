@@ -23,19 +23,18 @@
  * 帧（含 Graphviz 15 的 `scale(1 1) rotate(0) translate(4 40)` 恒等形态），
  * 其余变换下坐标不可换算，退化为内嵌标号并告警。
  *
- * 输入安全检查复用 svg-annotate 的 assertSafeSvg。
+ * 输入安全检查复用 svg-annotate 的 assertAnnotationInput。
  *
  * @module @deepseek-ai/dsh-patent-tools/figure/leader-line
  */
 
 import {
   DEFAULT_SVG_MAX_BYTES,
-  assertSafeSvg,
+  assertAnnotationInput,
   escapeXmlText,
   stripEmbeddedNumeral,
   stripLeaderAnnotations,
   textElementContent,
-  validateSvgReferences,
 } from './svg-annotate.ts'
 import { boundsOfPoints, formatMm } from './mm-primitives.ts'
 import { raySegmentIntersection, segmentsIntersect } from './geometry.ts'
@@ -620,34 +619,49 @@ function pushOffsets(push: { step: number; limit: number }): number[] {
   return offsets
 }
 
+/** 标号排版度量：文本框宽、基线中点偏移与文本间距（均由节点实读 font-size 推导）。 */
+type LabelMetrics = { width: number; midOffset: number; textGap: number }
+
+/** 正交与斜向候选共用的入参：轮廓、标号文本、字号、归一 gap 与外推参数。 */
+type PlacementInput = {
+  outline: Outline
+  numeral: string
+  fontSize: number
+  gap: number
+  push: { step: number; limit: number }
+}
+
+/**
+ * 由标号文本与节点字号推导排版度量；正交与斜向候选共用同一口径。
+ * @param numeral - 标号文本。
+ * @param fontSize - 节点实读 font-size。
+ * @returns 标号文本框宽、基线中点偏移与文本间距。
+ */
+function labelMetrics(numeral: string, fontSize: number): LabelMetrics {
+  return {
+    width: estimateTextWidth(numeral, fontSize) + fontSize * NUMERAL_PAD_RATIO,
+    midOffset: fontSize * TEXT_BASELINE_MID_RATIO,
+    textGap: fontSize * TEXT_GAP_RATIO,
+  }
+}
+
 /**
  * 为节点轮廓生成右/左/上/下四个正交候选锚点（引线从真实轮廓边缘出发，标号在线端外侧）。
  * 每个方向按 0、step、2·step…逐级外推，先试近处再试远处：外推优先于换方向、
  * 换方向优先于内嵌，避免密集图里把本可外移的标号直接挤成内嵌。
  * 标号文本框宽/高与基线微调均由节点实读 font-size 推导（与边标签宽共用
  * {@link estimateTextWidth}），引线长度与走廊用图面 scale 归一的 gap。
- * @param outline - 节点轮廓（根坐标系）。
- * @param numeral - 标号文本。
- * @param fontSize - 节点实读 font-size（标号与之一致）。
- * @param gap - 已按图面 scale 归一的引线长度。
- * @param push - 已按毫米换算的外推步长与上限（SVG 用户单位）。
+ * @param input - 轮廓、标号文本、节点实读 font-size、归一 gap 与外推参数。
  * @returns 按尝试顺序排列的正交候选。
  */
-function candidatePlacements(
-  outline: Outline,
-  numeral: string,
-  fontSize: number,
-  gap: number,
-  push: { step: number; limit: number },
-): AnchorPlacement[] {
+function candidatePlacements(input: PlacementInput): AnchorPlacement[] {
+  const { outline, numeral, fontSize, gap, push } = input
   const { rect } = outline
-  const width = estimateTextWidth(numeral, fontSize) + fontSize * NUMERAL_PAD_RATIO
+  const { width, midOffset, textGap } = labelMetrics(numeral, fontSize)
   const cx = (rect.minX + rect.maxX) / 2
   const cy = (rect.minY + rect.maxY) / 2
   const textHeight = fontSize * NUMERAL_TEXT_HEIGHT_RATIO
   const halfH = textHeight / 2
-  const midOffset = fontSize * TEXT_BASELINE_MID_RATIO
-  const textGap = fontSize * TEXT_GAP_RATIO
   const bottomDrop = fontSize * TEXT_BOTTOM_DROP_RATIO
   const placements: AnchorPlacement[] = []
   for (const extra of pushOffsets(push)) {
@@ -701,23 +715,12 @@ function candidatePlacements(
  * 时的二次扫描（B4）：密集图中先占位者可能把后处理节点挤成正交内嵌，斜向锚点
  * 多一个逃逸方向。引线自真实轮廓边（不再固定是包围盒角点）沿 45° 外向，
  * 标号在线端外侧；同样按外推步长逐级远离。
- * @param outline - 节点轮廓（根坐标系）。
- * @param numeral - 标号文本。
- * @param fontSize - 节点实读 font-size。
- * @param gap - 已按图面 scale 归一的引线长度（斜向取 45° 分量）。
- * @param push - 已按毫米换算的外推步长与上限（SVG 用户单位）。
+ * @param input - 轮廓、标号文本、节点实读 font-size、归一 gap（斜向取 45° 分量）与外推参数。
  * @returns 按尝试顺序排列的斜向候选。
  */
-function diagonalPlacements(
-  outline: Outline,
-  numeral: string,
-  fontSize: number,
-  gap: number,
-  push: { step: number; limit: number },
-): AnchorPlacement[] {
-  const width = estimateTextWidth(numeral, fontSize) + fontSize * NUMERAL_PAD_RATIO
-  const midOffset = fontSize * TEXT_BASELINE_MID_RATIO
-  const textGap = fontSize * TEXT_GAP_RATIO
+function diagonalPlacements(input: PlacementInput): AnchorPlacement[] {
+  const { outline, numeral, fontSize, gap, push } = input
+  const { width, midOffset, textGap } = labelMetrics(numeral, fontSize)
   const component = gap * Math.SQRT1_2
   const directions: { dx: number; dy: number; anchor: 'start' | 'end' }[] = [
     { dx: 1, dy: -1, anchor: 'start' },
@@ -805,6 +808,26 @@ function leaderLineFragment(placement: AnchorPlacement, numeral: string, fontSiz
 }
 
 /**
+ * 在组内最后一个文本元素上做原位替换。
+ *
+ * 内嵌标号的插入与清理共用同一个落点，避免两处各自查找后逐渐走样。
+ * @param groupRaw - 节点组片段原文。
+ * @param transform - 该文本元素到替换文本的变换。
+ * @returns 替换后的组片段；组内无 `<text>` 时原样返回。
+ */
+function rewriteLastText(groupRaw: string, transform: (textElement: string) => string): string {
+  const textPattern = /<text\b[^>]*>[\s\S]*?<\/text>/gi
+  let last: RegExpExecArray | null = null
+  let match: RegExpExecArray | null
+  while ((match = textPattern.exec(groupRaw)) !== null) last = match
+  /* v8 ignore start -- the callers only invoke this on a group that matched via its text elements */
+  if (last === null) return groupRaw
+  /* v8 ignore stop */
+  const whole = last[0]
+  return groupRaw.slice(0, last.index) + transform(whole) + groupRaw.slice(last.index + whole.length)
+}
+
+/**
  * 引线无放置空间时的退化路径：在组内最后一个文本元素尾部内嵌 ` (numeral)`
  * （插位规则与 annotateSvg 一致：优先最后一个 `</tspan>` 前）。
  * @param groupRaw - 节点组片段原文。
@@ -813,18 +836,11 @@ function leaderLineFragment(placement: AnchorPlacement, numeral: string, fontSiz
  */
 function embedNumeralInGroup(groupRaw: string, numeral: string): string {
   const escaped = ` (${escapeXmlText(numeral)})`
-  const textPattern = /<text\b[^>]*>[\s\S]*?<\/text>/gi
-  let last: RegExpExecArray | null = null
-  let match: RegExpExecArray | null
-  while ((match = textPattern.exec(groupRaw)) !== null) last = match
-  /* v8 ignore start -- the caller only invokes this on a group that matched via its text elements */
-  if (last === null) return groupRaw
-  /* v8 ignore stop */
-  const whole = last[0]
-  const lastTspan = whole.lastIndexOf('</tspan>')
-  const insertAt = lastTspan >= 0 ? lastTspan : whole.length - '</text>'.length
-  const tail = groupRaw.slice(last.index + whole.length)
-  return groupRaw.slice(0, last.index) + whole.slice(0, insertAt) + escaped + whole.slice(insertAt) + tail
+  return rewriteLastText(groupRaw, (whole) => {
+    const lastTspan = whole.lastIndexOf('</tspan>')
+    const insertAt = lastTspan >= 0 ? lastTspan : whole.length - '</text>'.length
+    return whole.slice(0, insertAt) + escaped + whole.slice(insertAt)
+  })
 }
 
 /**
@@ -834,17 +850,7 @@ function embedNumeralInGroup(groupRaw: string, numeral: string): string {
  * @returns 已清理既有标号的组片段；无 `<text>` 或无既有标号时原样返回。
  */
 function stripEmbeddedNumeralsInGroup(groupRaw: string): string {
-  const textPattern = /<text\b[^>]*>[\s\S]*?<\/text>/gi
-  let last: RegExpExecArray | null = null
-  let match: RegExpExecArray | null
-  while ((match = textPattern.exec(groupRaw)) !== null) last = match
-  /* v8 ignore start -- the caller only invokes this on a group that matched via its text elements */
-  if (last === null) return groupRaw
-  /* v8 ignore stop */
-  const whole = last[0]
-  const stripped = stripEmbeddedNumeral(whole)
-  if (stripped === whole) return groupRaw
-  return groupRaw.slice(0, last.index) + stripped + groupRaw.slice(last.index + whole.length)
+  return rewriteLastText(groupRaw, stripEmbeddedNumeral)
 }
 
 /** 解析根元素声明的 width/height：数值 + 单位 + 单位到 px 的换算。 */
@@ -866,7 +872,7 @@ function sizeAttribute(tag: string, name: string): { value: number; unit: string
  */
 function parseCanvas(svgText: string): Canvas | undefined {
   const tagMatch = /<svg\b[^>]*>/i.exec(svgText)
-  /* v8 ignore next -- annotateSvgWithLeaderLines runs assertSafeSvg, which requires an <svg…> open tag. */
+  /* v8 ignore next -- annotateSvgWithLeaderLines asserts a safe SVG, which requires an <svg…> open tag. */
   if (tagMatch === null) return undefined
   const tag = tagMatch[0]
   const width = sizeAttribute(tag, 'width')
@@ -990,9 +996,7 @@ export function annotateSvgWithLeaderLines(
   options: LeaderLineOptions = {},
 ): LeaderLineResult {
   const maxBytes = options.maxBytes ?? DEFAULT_SVG_MAX_BYTES
-  assertSafeSvg(svgText, maxBytes)
-  validateSvgReferences(references)
-  if (references.length === 0) return { svg: svgText, warnings: [] }
+  if (!assertAnnotationInput(svgText, references, maxBytes)) return { svg: svgText, warnings: [] }
 
   const source = stripLeaderAnnotations(svgText)
   const scopes = groupScopes(source)
@@ -1047,6 +1051,12 @@ export function annotateSvgWithLeaderLines(
   const fragments: string[] = []
   const placedLabels: Rect[] = []
   const placedCorridors: Rect[] = []
+  /** 记下一次可用放置：走廊与标号进入已占集合，引线片段进入输出。 */
+  const accept = (chosen: AnchorPlacement, numeral: string, fontSize: number): void => {
+    placedCorridors.push(chosen.occupied[0])
+    placedLabels.push(chosen.occupied[1])
+    fragments.push(leaderLineFragment(chosen, numeral, fontSize))
+  }
   // 正交四向均无空间的节点暂缓，待首轮放置完成后二次扫描斜向锚点（B4）。
   const pending: { index: number; group: ParsedNodeGroup; outline: Outline; numeral: string }[] = []
   for (const [index, group] of groups.entries()) {
@@ -1064,29 +1074,30 @@ export function annotateSvgWithLeaderLines(
     }
     const outline = translateOutline(group.outline, group.frame)
     const others = nodeRectsExcept(nodeRects, index)
-    const chosen = candidatePlacements(outline, numeral, group.fontSize, gap, push).find(candidate =>
+    const chosen = candidatePlacements({ outline, numeral, fontSize: group.fontSize, gap, push }).find(candidate =>
       isFree(candidate, others, placedLabels, placedCorridors, obstacles, clearance))
     if (chosen === undefined) {
       pending.push({ index, group, outline, numeral })
       continue
     }
-    placedCorridors.push(chosen.occupied[0])
-    placedLabels.push(chosen.occupied[1])
-    fragments.push(leaderLineFragment(chosen, numeral, group.fontSize))
+    accept(chosen, numeral, group.fontSize)
   }
   // 二次扫描：正交方向失败的节点改试斜向锚点，仍无空间才退化为内嵌标号。
   for (const item of pending) {
     const others = nodeRectsExcept(nodeRects, item.index)
-    const chosen = diagonalPlacements(item.outline, item.numeral, item.group.fontSize, gap, push).find(candidate =>
-      isFree(candidate, others, placedLabels, placedCorridors, obstacles, clearance))
+    const chosen = diagonalPlacements({
+      outline: item.outline,
+      numeral: item.numeral,
+      fontSize: item.group.fontSize,
+      gap,
+      push,
+    }).find(candidate => isFree(candidate, others, placedLabels, placedCorridors, obstacles, clearance))
     if (chosen === undefined) {
       embedded.set(item.index, embedNumeralInGroup(stripEmbeddedNumeralsInGroup(item.group.raw), item.numeral))
       warnings.push(`节点 "${item.group.title}" 周边无引线空间，标号 ${item.numeral} 已内嵌`)
       continue
     }
-    placedCorridors.push(chosen.occupied[0])
-    placedLabels.push(chosen.occupied[1])
-    fragments.push(leaderLineFragment(chosen, item.numeral, item.group.fontSize))
+    accept(chosen, item.numeral, item.group.fontSize)
   }
   references.forEach((ref, index) => {
     if (!groups.some(group => group.referenceIndex === index)) {

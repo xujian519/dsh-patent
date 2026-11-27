@@ -95,3 +95,58 @@
 - 最小修复：解构 `signal` 并作为第三个实参传递。
 - 工作量：5 分钟。可自动化：部分。
 - 状态：已修（2026-11-27，B2）。
+
+## F-PAT-068 证据权重只校验 typeof，NaN 与负数直接进入加权平均（B3）
+
+- 位置：`packages/patent/patent-core/src/evidence/rule-set.ts`（`weights` 读取）；消费方 `evidence/judgment.ts` 的 `computeOverallScore`。
+- 维度：正确性与边界（配置边界）。
+- 严重度：P2。
+- 证据：三个权重用 `typeof value === 'number'` 判定；YAML 可写 `.nan` / `.inf` 与负数，全部通过。`computeOverallScore` 只兜底 `weightSum === 0`：NaN 权重使 `total / weightSum` 与 `Math.min(1, base)` 均为 NaN，负权重可把综合分压成负数，随后 `confidence` 的阈值比较静默失真。
+- 影响：部署侧改坏一个权重字段，整条证据链的综合分变成 NaN 而不报错。
+- 最小修复：权重要求有限非负，否则回退默认值并累积警告；同级的分级分数也加 `Number.isFinite`。
+- 工作量：15 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B3）；用例覆盖 `.nan` 与负数两种写法。
+
+## F-PAT-069 文本日期提取把任意 8 位数字当日期（B3）
+
+- 位置：`packages/patent/patent-core/src/evidence/date.ts`（`extractDateFromText`）。
+- 维度：正确性与边界。
+- 严重度：P2。
+- 证据：`\d{8}` 无边界约束。中国申请号是 12 位（如 `202310123456`），正则从第 1 位截出 `20231012`，`parseDateFlexible` 以 `yyyyMMdd` 接受，于是申请号被当成公开日，并据此计算 `isPriorArt`。
+- 影响：使用公开类证据的日期认定与现有技术判定被污染。
+- 最小修复：8 位分支加零宽断言 `(?<!\d)\d{8}(?!\d)`。
+- 工作量：5 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B3）。
+
+## F-PAT-070 调用方取消后内部计时器未清除，超时判定被污染（B3）
+
+- 位置：`packages/patent/patent-core/src/subprocess-deadline.ts`（`onCallerAbort`）。
+- 维度：正确性与边界（并发/取消）。
+- 严重度：P2。
+- 证据：`onCallerAbort` 只 `controller.abort()`，计时器要到 `dispose()` 才清除。子进程收尾慢于剩余超时时，计时器仍会触发并把 `timedOut` 置真，`timedOut()` 于是把用户主动取消报成内部超时。既有用例只在取消后立刻查一次，没有推进时间，因此没抓到。
+- 影响：错误文案与错误归类出错（取消被当作超时）。
+- 最小修复：`onCallerAbort` 内一并 `clearTimeout(timer)`；用例推进到超时点之后再断言。
+- 工作量：10 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B3）。
+
+## F-PAT-071 事实黑板反序列化不校验，损坏记录抛原始 TypeError（B3）
+
+- 位置：`packages/patent/patent-core/src/reasoning/fact-blackboard.ts`（`FactBlackboard.fromJSON`）。
+- 维度：正确性与边界（持久化边界）。
+- 严重度：P2。
+- 证据：`JSON.parse(text) as {...}` 后直接 `for...of data.facts` 等四个数组。字段缺失或类型错误时抛 `TypeError: undefined is not iterable`，恢复方拿不到「这是损坏记录」的信号；同级 `patent-workflow` 的 `flexible-plan.ts` 是逐字段校验并抛领域错误的。
+- 影响：外部消费者从损坏记录恢复时得到无信息的崩溃。
+- 最小修复：顶层用 `isJsonRecord` 判定，四个数组逐个断言，错误信息点名坏字段。
+- 工作量：15 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B3）；新增损坏记录用例。说明：该方法当前无生产消费者，仅公开 API 的健壮性加固。
+
+## F-PAT-072 清晰度评分的模糊词表按子串匹配，误伤合法术语（B3，待决策）
+
+- 位置：`packages/patent/patent-core/src/analysis-report/build.ts`（`FUZZY_TERMS` 与 `computeClarityScore`）。
+- 维度：正确性与边界（模型可见输出）。
+- 严重度：P2。
+- 证据：`claim.includes(term)` 逐词子串匹配。「约束」「约定」「节约」含「约」，「左右两侧」「左右对称」含「左右」，均被计为模糊限定词：每个词扣 5 分，并在报告里写明「检出模糊限定词：约」。
+- 影响：机械类权利要求常见写法被系统性误判，清晰度评分与理由都失真。
+- 可能的修复方向：把判定改成带上下文的模式（「约」限定在数值前后、「左右」要求前接数值或单位），或改为排除已知复合词。
+- 工作量：0.5 小时（含口径确认）。可自动化：是。
+- 状态：**未修，待决策**。中文没有词边界，改判定就是改领域口径；这一项属于代理师判断，不擅自调整。

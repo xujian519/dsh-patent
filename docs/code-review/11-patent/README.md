@@ -28,7 +28,7 @@
 | B0 | 逐文件台账与门禁基线 | 564（登记） | 完成 |
 | B1 | 接线、依赖方向、装配探针 | 配置面 + 4 个探针文件 | 完成 |
 | B2 | patent-core 权项/检查/IPC 等纯函数层 | 59 | 完成 |
-| B3 | patent-core 其余（atoms、ModelPort、evidence、workflow 等） | 114 | 待开始 |
+| B3 | patent-core 其余（atoms、ModelPort、evidence、workflow 等） | 114 | 完成 |
 | B4 | patent-tools 检索与数据通道 | 42 | 待开始 |
 | B5 | patent-tools 撰写与校核 | 21 | 待开始 |
 | B6 | patent-tools 分析、附图、工作流与评审 | 102 | 待开始 |
@@ -62,3 +62,4 @@
 - 未修：`verify-npm-install-layout` 超预算（F-PAT-062，待决策）。
 - B1 完成：装配探针 `patent-preset-mount.spec.ts` 真实装载 16 个插件行，六个接缝服务全部可解析、15 个代表性工具全部可见，并附一条会变红的负控制；见 [02-batches/B1.md](02-batches/B1.md)。
 - B2 完成：59/59 文件签收（精读 34、关键段 10、类型与再导出 15），四条 P2 已修（F-PAT-064 规则报告拼行、F-PAT-065 节点硬上界临界失效、F-PAT-066 缺失章节被读成「无缺失」、F-PAT-067 数值节点不转发取消信号），patent-core 95 文件 / 1874 用例全绿；见 [02-batches/B2.md](02-batches/B2.md)。
+- B3 完成：114/114 文件签收（本人精读 9、代理评审 105，代理结论逐条复核），四条 P2 已修（F-PAT-068 权重 NaN、F-PAT-069 8 位数字误判日期、F-PAT-070 取消后计时器未清、F-PAT-071 黑板反序列化不校验），F-PAT-072 模糊词表误伤待决策；见 [02-batches/B3.md](02-batches/B3.md)。

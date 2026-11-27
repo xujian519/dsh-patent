@@ -395,6 +395,14 @@ it('黑板：chains/addReasoningChain/constraints/getConfirmedRules 与序列化
   expect(restored.constraints().length).toBe(1)
 })
 
+it('FactBlackboard.fromJSON: 损坏记录给出点名错误，而不是原始 TypeError', () => {
+  expect(() => FactBlackboard.fromJSON('[]')).toThrow(/顶层不是 JSON 对象/)
+  const base = { caseId: 'c', caseType: 't', createdAt: 'T', updatedAt: 'T', locked: false }
+  expect(() => FactBlackboard.fromJSON(JSON.stringify({
+    ...base, facts: [], reasoningChains: [], ruleConstraints: [],
+  }))).toThrow(/articleJudgments 不是数组/)
+})
+
 // ---------------------------------------------------------------------------
 // checker：claim 维度 / pathElements / 未知类型 / 报告兜底
 // ---------------------------------------------------------------------------

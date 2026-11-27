@@ -8,6 +8,8 @@
  * TS 单线程无需互斥锁，但保留 locked 语义与 Go 版对齐。
  */
 
+import { isJsonRecord } from '../llm-json.ts'
+
 export type FactCategory = 'technical' | 'legal' | 'procedural' | 'temporal'
 
 /** 单条事实（对齐 Mady FactEntry）。 */
@@ -355,7 +357,16 @@ export class FactBlackboard {
    * @returns 反序列化得到的黑板实例。
    */
   static fromJSON(text: string, now?: () => string): FactBlackboard {
-    const data = JSON.parse(text) as {
+    const parsed: unknown = JSON.parse(text)
+    if (!isJsonRecord(parsed)) {
+      throw new Error('fact blackboard 记录损坏：顶层不是 JSON 对象')
+    }
+    // 持久化边界：缺字段时 `for...of undefined` 会抛原始 TypeError，恢复方拿不到
+    // "这是损坏记录"的信号；先按字段校验，错误信息直接点名坏在哪里。
+    const requireArray = (key: string): void => {
+      if (!Array.isArray(parsed[key])) throw new Error(`fact blackboard 记录损坏：${key} 不是数组`)
+    }
+    const data = parsed as {
       caseId: string
       caseType: string
       technicalField?: string
@@ -368,6 +379,10 @@ export class FactBlackboard {
       articleJudgments: Array<[string, ArticleJudgment]>
       confirmedRules?: { entries: ConfirmedRuleEntry[]; confirmedAt: string }
     }
+    requireArray('facts')
+    requireArray('reasoningChains')
+    requireArray('ruleConstraints')
+    requireArray('articleJudgments')
     const bb = new FactBlackboard({
       caseId: data.caseId,
       caseType: data.caseType,

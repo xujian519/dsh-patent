@@ -3325,7 +3325,7 @@ export interface AutoCommitConfig {
 ## `@deepseek-ai/dsh-patent-data`
 
 - `inject`: `subprocess`
-- `source`: [`packages/patent/patent-data/src/index.ts:138`](../packages/patent/patent-data/src/index.ts)
+- `source`: [`packages/patent/patent-data/src/index.ts:139`](../packages/patent/patent-data/src/index.ts)
 
 ```ts config-catalog
 /**
@@ -3580,7 +3580,7 @@ export type CitationPolicy = 'block' | 'warn' | 'allow'
 ## `@deepseek-ai/dsh-patent-rule`
 
 - `inject`: `tools`
-- `source`: [`packages/patent/patent-rule/src/index.ts:239`](../packages/patent/patent-rule/src/index.ts)
+- `source`: [`packages/patent/patent-rule/src/index.ts:246`](../packages/patent/patent-rule/src/index.ts)
 
 ```ts config-catalog
 /** Plugin config. */
@@ -3640,11 +3640,23 @@ export interface Config {
    * session's call record. `whenArgs` narrows an entry to matching calls, which
    * lets one tool's forms carry different prerequisites. `evidence` requires
    * fields on a prerequisite's result as well, so a zero-byte run or another
-   * template's closure cannot stand in for the run this delivery owes. No entry
-   * ships: the prerequisites a deployment requires are its delivery policy, not
-   * this package's.
+   * template's closure cannot stand in for the run this delivery owes. A
+   * requirement's `matchesDraftTexts` binds the check to content: the
+   * prerequisite's recorded digests must cover the named projections of the
+   * draft being delivered, so a run over an older revision does not count
+   * (see {@link Config.deliveryGateDigestMode} for shadow observation). No
+   * entry ships: the prerequisites a deployment requires are its delivery
+   * policy, not this package's.
    */
   deliveryGate: DeliveryGateEntry[]
+  /**
+   * Digest check mode for `matchesDraftTexts` evidence: `enforce` denies a
+   * delivery whose prerequisite read different text than the submitted draft;
+   * `shadow` only logs the mismatch (and the unverifiable-draft case) so a
+   * deployment can measure false rejections before enforcing. Defaults to
+   * `enforce` so an unset mode never silently downgrades the gate.
+   */
+  deliveryGateDigestMode: 'shadow' | 'enforce'
   /**
    * Citation gate: before a listed delivery tool runs, every citation in its
    * text arguments must pass the shipped patent index and, for 民法典 and
@@ -3725,6 +3737,15 @@ export type DeliveryEvidenceRequirement = {
   equals?: string | boolean | string[]
   /** 字段为数组时要求的最小长度。 */
   minItems?: number
+  /**
+   * 要求该字段（`evaluated` 形态的 `{ digest }` 条目数组）里为每个列出的草案投影
+   * 找到 digest 相同的条目：前置检查读过的文本与本次交付的 draft 必须一致。
+   * 按 digest 值匹配，不看条目的 `field` 名——`rule_check` 的字段名只有 `text`，
+   * 内容可能是权项文本，字段名不可靠。草案缺失或未通过 validateSpecDraft 时无法
+   * 核对，该条件不生效（成文工具自己会报结构错误）。空数组与未声明同义
+   * （Config 解析给未声明的数组补 `[]`）。
+   */
+  matchesDraftTexts?: string[]
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-patent-rule -->
@@ -4688,7 +4709,7 @@ export interface WorkspaceVerifierConfig {
 
 ## `@deepseek-ai/dsh-self-evolve-benchmark`
 
-- `source`: [`packages/self-evolve/self-evolve-benchmark/src/types.ts:359`](../packages/self-evolve/self-evolve-benchmark/src/types.ts)
+- `source`: [`packages/self-evolve/self-evolve-benchmark/src/types.ts:366`](../packages/self-evolve/self-evolve-benchmark/src/types.ts)
 
 ```ts config-catalog
 /** Public configuration for the benchmark-driven provider. */

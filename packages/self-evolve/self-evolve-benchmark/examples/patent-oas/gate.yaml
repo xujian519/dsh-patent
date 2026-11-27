@@ -24,6 +24,12 @@ benchmarkId: patent-oas
 
 goldDigest: "sha256:429e7cf6eb7c3728d6bee9e6a80eefc012e5574cdb0e473e11947b0ce15509ba"
 
+# evaluationDigest 把测量协议(canonical 问题空间 + evaluator 提示词模板 + 协议版本)钉住:
+# 改 evaluator 措辞、增删节点或映射都必须显式重录摘要并重录基线;只改注释或键顺序摘要不变。
+# 门槛不进入摘要——门槛是策略不是测量,其变更由本文件的 diff 审计。与 goldDigest 一样用
+# `pnpm run verify-patent-oas-gold -- --write` 重录。
+evaluationDigest: "sha256:2c399dd0945fbfce34eb0c6495386151f0f9a865e42d0121714e4ae36065830c"
+
 # 基线按被测面各一条:提示词调用(`prompt`)与工作流调用(`workflow`)测的不是同一能力面,
 # 读数不能互比,所以 `--accept` 按记录自己的 `execution`/`workflowId` 找落点,找不到就拒绝。
 # 一条基线由一次实测产生,再由门禁提升:
@@ -35,9 +41,10 @@ goldDigest: "sha256:429e7cf6eb7c3728d6bee9e6a80eefc012e5574cdb0e473e11947b0ce155
 baselines:
   - execution: prompt
     path: packages/self-evolve/evaluation/patent-oas-baseline.json
-  - execution: workflow
-    workflowId: patent_oa_response_v1
-    path: packages/self-evolve/evaluation/patent-oas-workflow-baseline.json
+  # patent_oa_response_v1 的基线声明暂时撤出:简洁链(2026-10-31)修订轮的
+  # amendment-grounding 稳定低于 node 下限,按新协议重录的采集无法满足门槛。
+  # 修复与重录见 #979;修好前该面没有基线,--run/--accept 会拒绝这个被测面。
+  # 旧基线文件 patent-oas-workflow-baseline.json 保留作参考。
   - execution: workflow
     workflowId: patent_disclosure_v1
     path: packages/self-evolve/evaluation/patent-oas-disclosure-workflow-baseline.json

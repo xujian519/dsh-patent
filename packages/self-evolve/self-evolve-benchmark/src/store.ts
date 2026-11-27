@@ -3,7 +3,7 @@
  *
  * ```
  * <baseDir>/benchmarks/<id>/
- * ├── benchmark_config.yaml   # { title }
+ * ├── benchmark_config.yaml   # { title, optimizable? } — optimizable: false holds the benchmark out of optimizeLoop
  * └── <caseId>/
  *     ├── statement           # public task text — the only input a target agent sees
  *     └── rubric              # private scoring standard — physically a different file
@@ -137,22 +137,40 @@ export async function ensureBenchmark(baseDir: string, benchmarkId: BenchmarkId,
 }
 
 /**
- * Read the benchmark title; a missing document defaults to the benchmark id.
+ * Read a benchmark's config document; a missing document defaults to the
+ * benchmark id and an optimizable benchmark.
+ *
+ * `optimizable: false` marks a held-out benchmark: `establishBaseline` still
+ * measures it, but `optimizeLoop` refuses it, so the optimizer never sees its
+ * statements or per-case scores. A present-but-non-boolean `optimizable` is a
+ * misconfiguration and fails loud rather than silently optimizing a benchmark
+ * someone meant to hold out.
  *
  * @param baseDir Data root for benchmark stores.
  * @param benchmarkId Benchmark id.
- * @returns The title, or the benchmark id when no title is recorded.
+ * @returns The title (defaulting to the benchmark id) and the optimizable flag.
  */
-export async function readBenchmarkTitle(baseDir: string, benchmarkId: BenchmarkId): Promise<string> {
+export async function readBenchmarkConfig(
+  baseDir: string,
+  benchmarkId: BenchmarkId,
+): Promise<{ title: string; optimizable: boolean }> {
   let raw: string
   try {
     raw = await readFile(benchmarkConfigPath(baseDir, benchmarkId), 'utf8')
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return benchmarkId
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { title: benchmarkId, optimizable: true }
     throw error
   }
-  const parsed = parseYaml(raw) as { title?: unknown } | null
-  return typeof parsed?.title === 'string' ? parsed.title : benchmarkId
+  const parsed = parseYaml(raw) as { title?: unknown; optimizable?: unknown } | null
+  if (parsed?.optimizable !== undefined && typeof parsed.optimizable !== 'boolean') {
+    throw new Error(
+      `self-evolve-benchmark: benchmark "${benchmarkId}" has a non-boolean optimizable in ${CONFIG_FILENAME} — expected true or false, got ${JSON.stringify(parsed.optimizable)}`,
+    )
+  }
+  return {
+    title: typeof parsed?.title === 'string' ? parsed.title : benchmarkId,
+    optimizable: parsed?.optimizable !== false,
+  }
 }
 
 /**
@@ -212,7 +230,7 @@ export async function listCaseIds(baseDir: string, benchmarkId: BenchmarkId): Pr
  */
 export async function loadBenchmark(baseDir: string, benchmarkId: BenchmarkId): Promise<BoundBenchmark> {
   assertSafeId(benchmarkId, 'benchmarkId')
-  const title = await readBenchmarkTitle(baseDir, benchmarkId)
+  const config = await readBenchmarkConfig(baseDir, benchmarkId)
   const caseIds = await listCaseIds(baseDir, benchmarkId)
   const cases: CaseSpec[] = []
   for (const caseId of caseIds) {
@@ -230,5 +248,5 @@ export async function loadBenchmark(baseDir: string, benchmarkId: BenchmarkId): 
     // starts rather than emitting a NaN entry.
     throw new Error(`benchmark "${benchmarkId}" has no cases under ${benchmarkDir(baseDir, benchmarkId)}`)
   }
-  return { id: benchmarkId, title, cases }
+  return { id: benchmarkId, title: config.title, optimizable: config.optimizable, cases }
 }

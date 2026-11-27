@@ -1,6 +1,6 @@
 {
   "benchmarkId": "patent-oas",
-  "recordedAt": "2026-11-07T16:14:10.338Z",
+  "recordedAt": "2026-11-27T05:58:32.226Z",
   "execution": "prompt",
   "runsPerCase": 3,
   "cases": [
@@ -12,77 +12,77 @@
           "index": 1,
           "label": "独立权利要求的必要技术特征",
           "points": 30,
-          "score": 98.33,
+          "score": 94.33,
           "scores": [
-            100,
-            100,
-            95
+            90,
+            93,
+            100
           ]
         },
         {
           "index": 2,
           "label": "保护范围适中",
           "points": 20,
-          "score": 91.67,
+          "score": 93.33,
           "scores": [
-            95,
-            95,
-            85
+            90,
+            92,
+            98
           ]
         },
         {
           "index": 3,
           "label": "从属权利要求布局",
           "points": 20,
-          "score": 96,
+          "score": 100,
           "scores": [
             100,
             100,
-            88
+            100
           ]
         },
         {
           "index": 4,
           "label": "引用关系与层次",
           "points": 15,
-          "score": 97.67,
+          "score": 100,
           "scores": [
             100,
             100,
-            93
+            100
           ]
         },
         {
           "index": 5,
           "label": "形式与说明书支持",
           "points": 15,
-          "score": 86.67,
+          "score": 87,
           "scores": [
-            90,
-            95,
-            75
+            87,
+            87,
+            87
           ]
         }
       ],
       "concision": [
         {
-          "proseChars": 1130,
-          "paragraphs": 10,
+          "proseChars": 926,
+          "paragraphs": 8,
           "sections": 0,
           "emptySections": 0,
           "repeatedSentences": 0
         },
         {
-          "proseChars": 1298,
-          "paragraphs": 18,
+          "proseChars": 1380,
+          "paragraphs": 15,
           "sections": 0,
           "emptySections": 0,
           "repeatedSentences": 0
         },
         {
-          "proseChars": 1355,
-          "paragraphs": 12,
-          "sections": 0,
+          "proseChars": 2600,
+          "paragraphs": 24,
+          "sections": 1,
           "emptySections": 0,
           "repeatedSentences": 0
         }
@@ -107,88 +107,88 @@
           "index": 2,
           "label": "保护范围适中",
           "points": 15,
-          "score": 92.67,
+          "score": 94,
           "scores": [
-            100,
             90,
-            88
+            100,
+            92
           ]
         },
         {
           "index": 3,
           "label": "从属权利要求布局",
           "points": 15,
-          "score": 100,
+          "score": 96,
           "scores": [
+            93,
             100,
-            100,
-            100
+            95
           ]
         },
         {
           "index": 4,
           "label": "引用关系与层次",
           "points": 10,
-          "score": 90,
+          "score": 90.67,
           "scores": [
-            85,
-            90,
-            95
+            88,
+            92,
+            92
           ]
         },
         {
           "index": 5,
           "label": "形式与说明书支持",
           "points": 10,
-          "score": 91.67,
+          "score": 88.67,
           "scores": [
             90,
-            90,
-            95
+            88,
+            88
           ]
         },
         {
           "index": 6,
           "label": "充分公开与可实施",
           "points": 15,
-          "score": 91,
+          "score": 91.33,
           "scores": [
-            93,
-            90,
-            90
+            94,
+            88,
+            92
           ]
         },
         {
           "index": 7,
           "label": "概括范围得到说明书支持",
           "points": 10,
-          "score": 94,
+          "score": 95,
           "scores": [
-            90,
-            96,
-            96
+            100,
+            85,
+            100
           ]
         }
       ],
       "concision": [
         {
-          "proseChars": 6874,
-          "paragraphs": 80,
+          "proseChars": 6545,
+          "paragraphs": 71,
+          "sections": 15,
+          "emptySections": 0,
+          "repeatedSentences": 10
+        },
+        {
+          "proseChars": 6091,
+          "paragraphs": 55,
           "sections": 8,
           "emptySections": 0,
-          "repeatedSentences": 7
+          "repeatedSentences": 4
         },
         {
-          "proseChars": 6712,
-          "paragraphs": 54,
+          "proseChars": 6504,
+          "paragraphs": 70,
           "sections": 5,
-          "emptySections": 0,
-          "repeatedSentences": 0
-        },
-        {
-          "proseChars": 6893,
-          "paragraphs": 73,
-          "sections": 12,
           "emptySections": 0,
           "repeatedSentences": 1
         }
@@ -213,11 +213,11 @@
           "index": 2,
           "label": "等同原则运用",
           "points": 25,
-          "score": 94.67,
+          "score": 89.67,
           "scores": [
-            90,
-            100,
-            94
+            85,
+            92,
+            92
           ]
         },
         {
@@ -246,35 +246,35 @@
           "index": 5,
           "label": "法律依据",
           "points": 10,
-          "score": 100,
+          "score": 98.67,
           "scores": [
             100,
-            100,
+            96,
             100
           ]
         }
       ],
       "concision": [
         {
-          "proseChars": 4003,
-          "paragraphs": 29,
-          "sections": 19,
+          "proseChars": 6635,
+          "paragraphs": 51,
+          "sections": 32,
           "emptySections": 0,
           "repeatedSentences": 0
         },
         {
-          "proseChars": 5785,
-          "paragraphs": 52,
+          "proseChars": 4700,
+          "paragraphs": 44,
           "sections": 27,
           "emptySections": 0,
           "repeatedSentences": 0
         },
         {
-          "proseChars": 6045,
-          "paragraphs": 54,
-          "sections": 30,
+          "proseChars": 10691,
+          "paragraphs": 85,
+          "sections": 36,
           "emptySections": 0,
-          "repeatedSentences": 0
+          "repeatedSentences": 3
         }
       ]
     },
@@ -286,9 +286,9 @@
           "index": 1,
           "label": "无效宣告请求范围与法定理由",
           "points": 20,
-          "score": 99,
+          "score": 96.67,
           "scores": [
-            97,
+            90,
             100,
             100
           ]
@@ -297,33 +297,33 @@
           "index": 2,
           "label": "最接近的现有技术与对比方式",
           "points": 15,
-          "score": 100,
+          "score": 96.33,
           "scores": [
+            97,
             100,
-            100,
-            100
+            92
           ]
         },
         {
           "index": 3,
           "label": "技术方案的具体比较",
           "points": 20,
-          "score": 90.33,
+          "score": 89.67,
           "scores": [
-            90,
-            93,
-            88
+            92,
+            87,
+            90
           ]
         },
         {
           "index": 4,
           "label": "证据清单与证据形式",
           "points": 10,
-          "score": 96.67,
+          "score": 98.33,
           "scores": [
-            95,
-            95,
-            100
+            100,
+            100,
+            95
           ]
         },
         {
@@ -341,35 +341,35 @@
           "index": 6,
           "label": "请求书结构与请求事项、落款",
           "points": 15,
-          "score": 100,
+          "score": 95.33,
           "scores": [
             100,
-            100,
-            100
+            93,
+            93
           ]
         }
       ],
       "concision": [
         {
-          "proseChars": 10426,
-          "paragraphs": 96,
-          "sections": 39,
-          "emptySections": 0,
-          "repeatedSentences": 1
-        },
-        {
-          "proseChars": 9365,
-          "paragraphs": 99,
-          "sections": 34,
+          "proseChars": 9191,
+          "paragraphs": 98,
+          "sections": 32,
           "emptySections": 0,
           "repeatedSentences": 0
         },
         {
-          "proseChars": 6959,
-          "paragraphs": 76,
-          "sections": 28,
+          "proseChars": 8933,
+          "paragraphs": 84,
+          "sections": 45,
           "emptySections": 0,
           "repeatedSentences": 0
+        },
+        {
+          "proseChars": 9219,
+          "paragraphs": 101,
+          "sections": 31,
+          "emptySections": 0,
+          "repeatedSentences": 2
         }
       ]
     },
@@ -403,22 +403,22 @@
           "index": 3,
           "label": "实际解决的技术问题",
           "points": 15,
-          "score": 92.33,
+          "score": 100,
           "scores": [
-            90,
-            92,
-            95
+            100,
+            100,
+            100
           ]
         },
         {
           "index": 4,
           "label": "结合启示分析",
           "points": 20,
-          "score": 93.33,
+          "score": 95.33,
           "scores": [
-            92,
-            93,
-            95
+            100,
+            90,
+            96
           ]
         },
         {
@@ -435,23 +435,23 @@
       ],
       "concision": [
         {
-          "proseChars": 5013,
-          "paragraphs": 41,
-          "sections": 23,
+          "proseChars": 7610,
+          "paragraphs": 63,
+          "sections": 28,
           "emptySections": 0,
           "repeatedSentences": 0
         },
         {
-          "proseChars": 5047,
-          "paragraphs": 47,
-          "sections": 20,
+          "proseChars": 6800,
+          "paragraphs": 52,
+          "sections": 31,
           "emptySections": 0,
           "repeatedSentences": 0
         },
         {
-          "proseChars": 4630,
-          "paragraphs": 43,
-          "sections": 14,
+          "proseChars": 8410,
+          "paragraphs": 68,
+          "sections": 34,
           "emptySections": 0,
           "repeatedSentences": 0
         }
@@ -465,10 +465,10 @@
           "index": 1,
           "label": "区别特征认定",
           "points": 28,
-          "score": 95,
+          "score": 100,
           "scores": [
-            90,
-            95,
+            100,
+            100,
             100
           ]
         },
@@ -476,55 +476,55 @@
           "index": 2,
           "label": "实际解决的技术问题",
           "points": 18,
-          "score": 91.33,
+          "score": 93.67,
           "scores": [
-            96,
-            85,
-            93
+            100,
+            92,
+            89
           ]
         },
         {
           "index": 3,
           "label": "技术启示分析",
           "points": 18,
-          "score": 91.33,
+          "score": 91.67,
           "scores": [
             90,
-            94,
-            90
+            93,
+            92
           ]
         },
         {
           "index": 4,
           "label": "结论与法律依据",
           "points": 13,
-          "score": 98.67,
+          "score": 98.33,
           "scores": [
             100,
             100,
-            96
+            95
           ]
         },
         {
           "index": 5,
           "label": "检索策略与答复格式",
           "points": 13,
-          "score": 94,
+          "score": 87,
           "scores": [
-            96,
-            90,
-            96
+            92,
+            92,
+            77
           ]
         },
         {
           "index": 6,
           "label": "修改接地与幅度",
           "points": 10,
-          "score": 87.67,
+          "score": 78.67,
           "scores": [
+            78,
             90,
-            85,
-            88
+            68
           ]
         }
       ],
@@ -534,89 +534,89 @@
           "dimensions": [
             {
               "index": 1,
-              "score": 97.33,
+              "score": 98.67,
               "scores": [
-                96,
+                100,
                 100,
                 96
               ]
             },
             {
               "index": 2,
-              "score": 84,
+              "score": 92,
               "scores": [
-                90,
-                62,
-                100
+                95,
+                89,
+                92
               ]
             },
             {
               "index": 3,
-              "score": 91,
+              "score": 95,
               "scores": [
-                100,
-                88,
-                85
+                94,
+                96,
+                95
               ]
             },
             {
               "index": 4,
-              "score": 97.33,
+              "score": 100,
               "scores": [
                 100,
                 100,
-                92
+                100
               ]
             },
             {
               "index": 5,
-              "score": 94.67,
+              "score": 98,
               "scores": [
-                100,
-                92,
-                92
+                97,
+                97,
+                100
               ]
             },
             {
               "index": 6,
-              "score": 84.67,
+              "score": 73,
               "scores": [
-                88,
-                80,
-                86
+                60,
+                87,
+                72
               ]
             }
           ],
           "deliverableDigests": [
-            "sha256:e004cc3df75374bd3f51dd0c700e2473dd0445d93fcc53a5341bd3c05d43517a",
-            "sha256:9edae5bc5b78a45de09137431e7a4028559ea0756adc1ecfc39bc1dcbd267f43",
-            "sha256:a479745cf3c9ca4eede004116412266d05ea1b5bfe5eaf227609c2ec7472db0c"
+            "sha256:863c81a94f7c8838975f3cb9843e1749455ace8eaf7faefe3dd3aedcd97bfcea",
+            "sha256:849e1ec8ac4493489f4e9509b1cd6a5bd53334ce68f2ca058fb2687153a98d02",
+            "sha256:e5daeb7caaf4ab786a8bdbc4651af20a312742a75933524e8d1900071039b18a"
           ],
           "concision": [
             {
-              "proseChars": 9557,
+              "proseChars": 6316,
               "budget": 4000,
-              "overBudget": 5557,
-              "paragraphs": 69,
-              "sections": 30,
+              "overBudget": 2316,
+              "paragraphs": 57,
+              "sections": 27,
               "emptySections": 0,
               "repeatedSentences": 0
             },
             {
-              "proseChars": 8471,
+              "proseChars": 6178,
               "budget": 4000,
-              "overBudget": 4471,
-              "paragraphs": 69,
-              "sections": 25,
+              "overBudget": 2178,
+              "paragraphs": 58,
+              "sections": 29,
               "emptySections": 0,
               "repeatedSentences": 0
             },
             {
-              "proseChars": 7662,
+              "proseChars": 8384,
               "budget": 4000,
-              "overBudget": 3662,
-              "paragraphs": 63,
-              "sections": 28,
+              "overBudget": 4384,
+              "paragraphs": 66,
+              "sections": 31,
               "emptySections": 0,
               "repeatedSentences": 0
             }
@@ -628,89 +628,89 @@
           "dimensions": [
             {
               "index": 1,
-              "score": 95,
+              "score": 100,
               "scores": [
-                90,
-                95,
+                100,
+                100,
                 100
               ]
             },
             {
               "index": 2,
-              "score": 91.33,
+              "score": 93.67,
               "scores": [
-                96,
-                85,
-                93
+                100,
+                92,
+                89
               ]
             },
             {
               "index": 3,
-              "score": 91.33,
+              "score": 91.67,
               "scores": [
                 90,
-                94,
-                90
+                93,
+                92
               ]
             },
             {
               "index": 4,
-              "score": 98.67,
+              "score": 98.33,
               "scores": [
                 100,
                 100,
-                96
+                95
               ]
             },
             {
               "index": 5,
-              "score": 94,
+              "score": 87,
               "scores": [
-                96,
-                90,
-                96
+                92,
+                92,
+                77
               ]
             },
             {
               "index": 6,
-              "score": 87.67,
+              "score": 78.67,
               "scores": [
+                78,
                 90,
-                85,
-                88
+                68
               ]
             }
           ],
           "deliverableDigests": [
-            "sha256:3bec9ff84a352bb8a8604b383d6dd1ad1eaeb0069a86123d51f1d55574679169",
-            "sha256:cab40a09b271051f900952f55abf280d51ae5011b39fd2e5efda360105a6dc9b",
-            "sha256:b0f9e5250f0c6dd4385b19153d8f5b8386f70e680effde9802724cf43aa143dd"
+            "sha256:215bdfd20f40dd6bbe40efaaee069ad2fabdaec6cd879f83227fd52ec72f2302",
+            "sha256:26f6589fa6ff6d69aae21f334092652a97e598afbedd07494065a910725097e6",
+            "sha256:ece22d04763d10cdbfe1ea0be99b0652efa8f27aebb52c96a03f366dfedec8ec"
           ],
           "concision": [
             {
-              "proseChars": 10875,
+              "proseChars": 8411,
               "budget": 4000,
-              "overBudget": 6875,
-              "paragraphs": 90,
+              "overBudget": 4411,
+              "paragraphs": 63,
               "sections": 38,
               "emptySections": 0,
               "repeatedSentences": 0
             },
             {
-              "proseChars": 7118,
+              "proseChars": 10653,
               "budget": 4000,
-              "overBudget": 3118,
-              "paragraphs": 67,
-              "sections": 21,
+              "overBudget": 6653,
+              "paragraphs": 98,
+              "sections": 40,
               "emptySections": 0,
               "repeatedSentences": 0
             },
             {
-              "proseChars": 9112,
+              "proseChars": 9733,
               "budget": 4000,
-              "overBudget": 5112,
-              "paragraphs": 76,
-              "sections": 35,
+              "overBudget": 5733,
+              "paragraphs": 75,
+              "sections": 26,
               "emptySections": 0,
               "repeatedSentences": 0
             }
@@ -726,9 +726,9 @@
           "index": 1,
           "label": "逐条回应驳回理由",
           "points": 25,
-          "score": 95.33,
+          "score": 97.33,
           "scores": [
-            90,
+            96,
             100,
             96
           ]
@@ -737,11 +737,11 @@
           "index": 2,
           "label": "修改的针对性与幅度",
           "points": 20,
-          "score": 98,
+          "score": 100,
           "scores": [
             100,
-            98,
-            96
+            100,
+            100
           ]
         },
         {
@@ -770,43 +770,43 @@
           "index": 5,
           "label": "请求书结构与请求事项、落款",
           "points": 15,
-          "score": 98.33,
+          "score": 97.67,
           "scores": [
+            93,
             100,
-            95,
             100
           ]
         }
       ],
       "concision": [
         {
-          "proseChars": 8269,
-          "paragraphs": 76,
-          "sections": 22,
+          "proseChars": 6688,
+          "paragraphs": 69,
+          "sections": 35,
           "emptySections": 0,
           "repeatedSentences": 0
         },
         {
-          "proseChars": 7553,
-          "paragraphs": 87,
-          "sections": 26,
+          "proseChars": 7593,
+          "paragraphs": 65,
+          "sections": 19,
           "emptySections": 0,
-          "repeatedSentences": 0
+          "repeatedSentences": 1
         },
         {
-          "proseChars": 9193,
-          "paragraphs": 83,
-          "sections": 23,
+          "proseChars": 8472,
+          "paragraphs": 96,
+          "sections": 24,
           "emptySections": 0,
-          "repeatedSentences": 0
+          "repeatedSentences": 11
         }
       ]
     }
   ],
-  "provider": "deepseek-official",
-  "modelId": "deepseek-flash",
+  "evaluationDigest": "sha256:2c399dd0945fbfce34eb0c6495386151f0f9a865e42d0121714e4ae36065830c",
+  "durationMs": 6181634,
   "tokens": {
-    "input": 35839850,
-    "output": 976367
+    "input": 37222466,
+    "output": 1051748
   }
 }

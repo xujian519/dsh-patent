@@ -12,6 +12,7 @@
  * @module @deepseek-ai/dsh-self-evolve-benchmark/contamination
  */
 
+import type { BenchmarkId, CaseId } from './brand.ts'
 import type { BoundBenchmark } from './types.ts'
 
 /** Field names that must never appear in an optimizer context. */
@@ -26,6 +27,21 @@ export class ContaminationError extends Error {
 }
 
 /**
+ * The optimizer-facing projection of a benchmark: identity and public case
+ * text only. Benchmark metadata the engine reads before optimizing (such as
+ * `optimizable`) is not part of the surface handed to proposal and
+ * optimization prompts.
+ */
+export type PublicBenchmarkView = {
+  /** Benchmark identifier. */
+  id: BenchmarkId
+  /** Human-readable title. */
+  title: string
+  /** Cases with their public statement only. */
+  cases: { caseId: CaseId; statement: string }[]
+}
+
+/**
  * The public face of a benchmark: case ids and statements only, with every
  * private field dropped. This is the value handed to proposal and optimization
  * prompts.
@@ -33,7 +49,7 @@ export class ContaminationError extends Error {
  * @param benchmark Loaded benchmark.
  * @returns A copy with every private field dropped.
  */
-export function publicBenchmarkView(benchmark: BoundBenchmark): BoundBenchmark {
+export function publicBenchmarkView(benchmark: BoundBenchmark): PublicBenchmarkView {
   return {
     id: benchmark.id,
     title: benchmark.title,

@@ -197,6 +197,9 @@ export const EXISTING_PLUGIN_ENTRY_EXPORTS = {
     'DEFAULT_ENGINE_TIMEOUT_MS', 'DEFAULT_OUTPUT_DIR', 'PRIMARY_RUNTIME_REL', 'SPEC_FILENAME', 'TEMPLATE_FILENAME',
     'assertSafeOutputName', 'buildFiling', 'contentFromDraft', 'createBuildPatentFilingTool',
     'createVerifyPatentFilingTool', 'defaultSpecPath', 'defaultTemplatePath', 'fileFingerprint', 'findPython',
+    // filingTextsFromDraft：2026-11-27 领域所有者确认的例外（#964）——交付门禁与形式预检
+    // 共用 contentFromDraft 同源的规范文本投影，与 contentFromDraft 同模块同形态。
+    'filingTextsFromDraft',
     'getAssetRoot', 'getEngineDir', 'interpreterRel', 'pathNames', 'renderBuildResult', 'renderVerifyResult',
     'requirePython', 'resolveAssetRoot', 'resolveOutputDir', 'unpackedFsPath', 'validateContent', 'verifyFiling',
   ],

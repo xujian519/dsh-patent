@@ -15,7 +15,7 @@ import {
   ensureBenchmark,
   listCaseIds,
   loadBenchmark,
-  readBenchmarkTitle,
+  readBenchmarkConfig,
   rubricPath,
   statementPath,
   writeCase,
@@ -49,27 +49,41 @@ describe('benchmark store persistence', () => {
   it('ensures a benchmark directory and its title document', async () => {
     await ensureBenchmark(dir, benchmarkId, 'Summarizer')
     await ensureBenchmark(dir, benchmarkId, 'Summarizer')
-    await expect(readBenchmarkTitle(dir, benchmarkId)).resolves.toBe('Summarizer')
+    await expect(readBenchmarkConfig(dir, benchmarkId)).resolves.toEqual({ title: 'Summarizer', optimizable: true })
     const config = await readFile(benchmarkConfigPath(dir, benchmarkId), 'utf8')
     expect(config).toContain('Summarizer')
   })
 
   it('defaults a missing title document to the benchmark id', async () => {
-    await expect(readBenchmarkTitle(dir, benchmarkId)).resolves.toBe(benchmarkId)
+    await expect(readBenchmarkConfig(dir, benchmarkId)).resolves.toEqual({ title: benchmarkId, optimizable: true })
     await mkdir(benchmarkDir(dir, benchmarkId), { recursive: true })
     await writeFile(benchmarkConfigPath(dir, benchmarkId), 'null', 'utf8')
-    await expect(readBenchmarkTitle(dir, benchmarkId)).resolves.toBe(benchmarkId)
+    await expect(readBenchmarkConfig(dir, benchmarkId)).resolves.toEqual({ title: benchmarkId, optimizable: true })
   })
 
   it('fails loud when the title document cannot be read for a non-missing reason', async () => {
     await writeFile(join(dir, 'benchmarks'), 'not a directory', 'utf8')
-    await expect(readBenchmarkTitle(dir, benchmarkId)).rejects.toThrow()
+    await expect(readBenchmarkConfig(dir, benchmarkId)).rejects.toThrow()
   })
 
   it('falls back to the benchmark id when the title is not a string', async () => {
     await mkdir(benchmarkDir(dir, benchmarkId), { recursive: true })
     await writeFile(benchmarkConfigPath(dir, benchmarkId), 'title: 123', 'utf8')
-    await expect(readBenchmarkTitle(dir, benchmarkId)).resolves.toBe(benchmarkId)
+    await expect(readBenchmarkConfig(dir, benchmarkId)).resolves.toEqual({ title: benchmarkId, optimizable: true })
+  })
+
+  it('reads an explicit optimizable: false and defaults the flag to true', async () => {
+    await mkdir(benchmarkDir(dir, benchmarkId), { recursive: true })
+    await writeFile(benchmarkConfigPath(dir, benchmarkId), 'title: Held out\noptimizable: false\n', 'utf8')
+    await expect(readBenchmarkConfig(dir, benchmarkId)).resolves.toEqual({ title: 'Held out', optimizable: false })
+    await writeFile(benchmarkConfigPath(dir, benchmarkId), 'title: Dev\noptimizable: true\n', 'utf8')
+    await expect(readBenchmarkConfig(dir, benchmarkId)).resolves.toEqual({ title: 'Dev', optimizable: true })
+  })
+
+  it('fails loud on a non-boolean optimizable rather than silently optimizing a held-out benchmark', async () => {
+    await mkdir(benchmarkDir(dir, benchmarkId), { recursive: true })
+    await writeFile(benchmarkConfigPath(dir, benchmarkId), 'optimizable: no\n', 'utf8')
+    await expect(readBenchmarkConfig(dir, benchmarkId)).rejects.toThrow(/non-boolean optimizable/)
   })
 
   it('writes a case statement with and without a rubric', async () => {

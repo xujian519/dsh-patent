@@ -1,11 +1,11 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BenchmarkId, CaseId } from '../src/brand.ts'
 import { BenchmarkEngineCore } from '../src/engine.ts'
 import { appendScoreboard } from '../src/scoreboard.ts'
-import { ensureBenchmark, writeCase } from '../src/store.ts'
+import { benchmarkConfigPath, ensureBenchmark, writeCase } from '../src/store.ts'
 import type {
   ApplyCandidateOptions,
   BenchmarkEngineOptions,
@@ -217,6 +217,65 @@ describe('BenchmarkEngineCore', () => {
       await prepareBenchmark()
       const engine = new BenchmarkEngineCore(options())
       await expect(engine.optimizeLoop(benchmarkId, { signal: signal() })).rejects.toThrow(/no reference entry/)
+    })
+
+    it('refuses a measurement-only (held-out) benchmark before any snapshot or candidate', async () => {
+      await prepareBenchmark()
+      await writeFile(benchmarkConfigPath(dir, benchmarkId), 'title: Held out\noptimizable: false\n', 'utf8')
+      const executeCase = vi.fn(async (_request: ExecuteCaseRequest) => ({ output: 'deliverable' }))
+      const proposeCandidate = vi.fn(async (_options: ProposeCandidateOptions) => candidate())
+      const applyCandidate = vi.fn(async (_options: ApplyCandidateOptions) => ({ agentStatePath: agentDir }))
+      const restoreSnapshot = vi.fn(async (_options: { version: number; signal: AbortSignal }) => {})
+      const engine = new BenchmarkEngineCore(
+        options({ executeCase, proposeCandidate, applyCandidate, restoreSnapshot }),
+      )
+
+      await expect(engine.optimizeLoop(benchmarkId, {
+        reference: { version: 0, score: 60, cases: [] },
+        signal: signal(),
+      })).rejects.toThrow(/measurement-only \(optimizable: false/)
+      // 拒绝发生在快照与候选之前：optimizer 从未看到 statement，history 为空。
+      expect(proposeCandidate).not.toHaveBeenCalled()
+      expect(applyCandidate).not.toHaveBeenCalled()
+      expect(executeCase).not.toHaveBeenCalled()
+      expect(restoreSnapshot).not.toHaveBeenCalled()
+
+      // 测量不受 optimizable 影响：held-out benchmark 仍可 establishBaseline 并写出 scoreboard。
+      const baseline = await engine.establishBaseline(benchmarkId, { signal: signal() })
+      expect(baseline.score).toBe(50)
+      await expect(engine.readScoreboard(benchmarkId)).resolves.toHaveLength(1)
+    })
+
+    it('optimizer inputs never cross benchmarks: statement and history carry only the optimized benchmark', async () => {
+      const devId = BenchmarkId('dev-bench')
+      const heldoutId = BenchmarkId('heldout-bench')
+      await ensureBenchmark(dir, devId, 'Dev')
+      await writeCase(dir, devId, CaseId('dev-case'), { statement: 'Dev task text', rubric: 'Dev rubric' })
+      await ensureBenchmark(dir, heldoutId, 'Held out')
+      await writeCase(dir, heldoutId, CaseId('heldout-case'), { statement: 'Heldout task text', rubric: 'Heldout rubric' })
+      const proposeCandidate = vi.fn(async (_options: ProposeCandidateOptions) => candidate())
+      const evaluateCase = vi.fn(async (_request: EvaluateCaseRequest) => ({ score: 90 }))
+      const engine = new BenchmarkEngineCore(options({ proposeCandidate, evaluateCase }))
+
+      await engine.optimizeLoop(devId, {
+        reference: { version: 0, score: 60, cases: [] },
+        maxRounds: 2,
+        signal: signal(),
+      })
+
+      expect(proposeCandidate).toHaveBeenCalledTimes(2)
+      for (const call of proposeCandidate.mock.calls) {
+        const proposeOptions = call[0]
+        expect(proposeOptions.statement).toContain('dev-case')
+        expect(proposeOptions.statement).toContain('Dev task text')
+        expect(proposeOptions.statement).not.toContain('heldout-case')
+        expect(proposeOptions.statement).not.toContain('Heldout task text')
+        for (const attempt of proposeOptions.history) {
+          expect(attempt.cases.map(entry => entry.caseId)).toEqual(['dev-case'])
+        }
+      }
+      // 第二轮的 history 只含本 benchmark 第一轮已评估的尝试。
+      expect(proposeCandidate.mock.calls[1]![0].history).toHaveLength(1)
     })
 
     it('accepts an improving candidate and stops early at the target score', async () => {

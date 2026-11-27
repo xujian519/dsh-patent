@@ -63,7 +63,7 @@ The service is programmatic only, so the package also subpath-exports a function
 ```
 <baseDir>/
 ├── benchmarks/<id>/
-│   ├── benchmark_config.yaml   # { title }
+│   ├── benchmark_config.yaml   # { title, optimizable? } — optimizable: false holds the benchmark out of optimizeLoop
 │   ├── <caseId>/statement      # public task text — the only input a target agent sees
 │   ├── <caseId>/rubric         # private scoring standard — a physically separate file
 │   └── scoreboard.yaml         # versioned entry history
@@ -77,6 +77,10 @@ Each round of `optimizeLoop` mints the round's opening snapshot, then proposes `
 ## Statement/rubric separation (C2)
 
 A case's `statement` is the only benchmark content a target or optimizing agent ever sees; the `rubric` is private and stored as a physically different file. The optimizer prompt states that the scoring standard is absent and instructs the child to stop and report contamination if it ever sees one, and `publicBenchmarkView`/`assertNoPrivateLeak` mechanically strip and guard the private vocabulary (`rubric`, `rubrics`, `gold`, `goldAnswer`, `expectedAnswer`) from optimizer-facing surfaces. The evaluator is the only role allowed to receive the rubric.
+
+## Held-out benchmarks
+
+Statement/rubric separation hides the scoring standard from the optimizer, but the optimize loop still reads every case statement and every per-case score of the benchmark it optimizes — so a benchmark that is both the gate and the optimization target can rise because the agent state was tuned to its fixed cases. A benchmark whose `benchmark_config.yaml` declares `optimizable: false` is measurement-only: `optimizeLoop` refuses it after `loadBenchmark` and before the first snapshot, so its statements and scores never reach the optimizer prompt or history, while `establishBaseline` and `runBenchmark` measure it normally. The flag is read where the benchmark is loaded and a non-boolean value fails loud, because silently optimizing a benchmark someone meant to hold out is the failure this guard exists to prevent. The guarantee is prompt/history isolation, not physical sealing: an agent process with file tools may still read the benchmark's directory under the data root. [examples/patent-oas-heldout](examples/patent-oas-heldout/README.md) ships a two-case held-out companion to `patent-oas` with the before/after measurement protocol.
 
 ## Model Experience
 

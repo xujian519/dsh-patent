@@ -17,6 +17,27 @@ import { EVIDENCE_TYPES } from './types.ts'
 /** 三维度权重缺省值：资产未给出权重，或给出的不是数值时逐字段回退到本表。 */
 export const DEFAULT_WEIGHTS = { relevance: 0.35, legality: 0.3, authenticity: 0.35 }
 
+/**
+ * 读取一个维度权重：有限非负数才接受，否则回退默认值并累积警告。
+ *
+ * YAML 可以写 `.nan` / `.inf` / 负数，`typeof === 'number'` 会把它们全部放过；
+ * 一个 NaN 权重会让 `computeOverallScore` 的加权平均变成 NaN（`weightSum === 0`
+ * 的兜底拦不住 NaN），负权重则可能把综合分压成负数。
+ */
+function readWeight(
+  value: unknown,
+  key: keyof typeof DEFAULT_WEIGHTS,
+  source: string,
+  warnings: string[],
+): number {
+  const fallback = DEFAULT_WEIGHTS[key]
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return value
+  if (value !== undefined) {
+    warnings.push(`证据规则权重 ${key} 必须是有限非负数（实际 ${JSON.stringify(value)}）${source}，已回退 ${fallback}`)
+  }
+  return fallback
+}
+
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return value.filter((v): v is string => typeof v === 'string')
@@ -30,7 +51,8 @@ function parseLevels(raw: unknown): AssessmentDimension['levels'] {
     .filter((lv): lv is Record<string, unknown> => lv !== null)
     .map(lv => ({
       value: typeof lv.value === 'string' ? lv.value : '',
-      score: typeof lv.score === 'number' ? lv.score : 0,
+      // 同一道防线：YAML 的 `.nan` 会让分级分数变成 NaN 并污染判定分。
+      score: typeof lv.score === 'number' && Number.isFinite(lv.score) ? lv.score : 0,
       ...(typeof lv.description === 'string' ? { description: lv.description } : {}),
     }))
     .filter(lv => lv.value !== '')
@@ -57,9 +79,9 @@ export function parseRuleSet(yamlText: string, source: string): { ruleSet: Evide
   }
   const weightsRaw = asRecord(root.weights)
   const weights = {
-    relevance: typeof weightsRaw?.relevance === 'number' ? weightsRaw.relevance : DEFAULT_WEIGHTS.relevance,
-    legality: typeof weightsRaw?.legality === 'number' ? weightsRaw.legality : DEFAULT_WEIGHTS.legality,
-    authenticity: typeof weightsRaw?.authenticity === 'number' ? weightsRaw.authenticity : DEFAULT_WEIGHTS.authenticity,
+    relevance: readWeight(weightsRaw?.relevance, 'relevance', source, warnings),
+    legality: readWeight(weightsRaw?.legality, 'legality', source, warnings),
+    authenticity: readWeight(weightsRaw?.authenticity, 'authenticity', source, warnings),
   }
   const rules: EvidenceRule[] = []
   const rawRules = root.rules

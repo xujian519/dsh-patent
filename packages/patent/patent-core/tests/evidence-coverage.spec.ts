@@ -540,6 +540,16 @@ it('loadRules：非法 YAML / 顶层非对象 / 缺 rules 数组', () => {
   expect(noRules.getWarnings().some(w => w.includes('缺少 rules 数组'))).toBe(true)
   // weights 非数字 → 默认权重（同文件验证）
   expect(noRules.getRules().length).toBe(0)
+
+  // YAML 可写 .nan 与负数：typeof 拦不住它们，NaN 权重会让加权平均变成 NaN。
+  const badWeights = new EvidenceEngine(`
+weights:
+  relevance: .nan
+  legality: -1
+rules: []
+`)
+  expect(badWeights.getWarnings().some(w => w.includes('权重 relevance 必须是有限非负数'))).toBe(true)
+  expect(badWeights.getWarnings().some(w => w.includes('权重 legality 必须是有限非负数'))).toBe(true)
 })
 
 it('规则解析：未知证据类型跳过 / 无 check 规则 / 字段缺省', () => {

@@ -1,6 +1,6 @@
 {
   "benchmarkId": "patent-oas",
-  "recordedAt": "2026-11-04T16:14:12.834Z",
+  "recordedAt": "2026-11-27T06:54:04.008Z",
   "execution": "workflow",
   "workflowId": "patent_disclosure_v1",
   "runsPerCase": 1,
@@ -19,19 +19,19 @@
           "index": 2,
           "label": "保护范围适中",
           "points": 15,
-          "score": 100
+          "score": 88
         },
         {
           "index": 3,
           "label": "从属权利要求布局",
           "points": 15,
-          "score": 95
+          "score": 100
         },
         {
           "index": 4,
           "label": "引用关系与层次",
           "points": 10,
-          "score": 82
+          "score": 85
         },
         {
           "index": 5,
@@ -43,30 +43,30 @@
           "index": 6,
           "label": "充分公开与可实施",
           "points": 15,
-          "score": 85
+          "score": 80
         },
         {
           "index": 7,
           "label": "概括范围得到说明书支持",
           "points": 10,
-          "score": 90
+          "score": 86
         }
       ],
       "concision": [
         {
-          "proseChars": 6191,
-          "paragraphs": 55,
+          "proseChars": 3990,
+          "paragraphs": 46,
           "sections": 5,
           "emptySections": 0,
-          "repeatedSentences": 3
+          "repeatedSentences": 7
         }
       ]
     }
   ],
-  "provider": "deepseek-official",
-  "modelId": "deepseek-flash",
+  "evaluationDigest": "sha256:2c399dd0945fbfce34eb0c6495386151f0f9a865e42d0121714e4ae36065830c",
+  "durationMs": 1824752,
   "tokens": {
-    "input": 4220332,
-    "output": 58923
+    "input": 3059529,
+    "output": 48262
   }
 }

@@ -57,6 +57,7 @@ import {
   type SurfacePolicy,
 } from './patent-oas-gate-core.ts'
 import { acceptBaseline, acceptTarget } from './verify-patent-oas-gold.ts'
+import { canonicalJson, evaluationDigest, EVALUATOR_PROMPT_TEMPLATE } from './patent-oas-protocol.ts'
 
 const root = resolve(import.meta.dirname, '..')
 const exampleDir = resolve(root, PATENT_OAS_EXAMPLE_DIR)
@@ -120,6 +121,8 @@ function recordFrom(
         score: score(goldCase.caseId, dimension.index),
       })),
     })),
+    // 测量协议身份:与当前协议同版,比较路径才不把它当 legacy 拒绝。
+    evaluationDigest: evaluationDigest({ problemSpace: space }),
   }
   return withGoldRounds(cases, record)
 }
@@ -467,6 +470,24 @@ describe('门槛策略', () => {
     expect(validateGateConfig(missing, space, gold, []).join('\n')).toContain('未记录 goldDigest')
   })
 
+  it('测量协议摘要过期或未记录即失败', () => {
+    const stale: GateConfig = { ...config, evaluationDigest: `sha256:${'0'.repeat(64)}` }
+    expect(validateGateConfig(stale, space, gold, []).join('\n')).toContain('evaluationDigest 与当前测量协议不符')
+    const missing: GateConfig = { ...config, evaluationDigest: null }
+    expect(validateGateConfig(missing, space, gold, []).join('\n')).toContain('未记录 evaluationDigest')
+  })
+
+  it('基线缺测量协议摘要(legacy)或由另一版协议测得即失败', () => {
+    const legacyRecord = recordFrom(gold, () => 90)
+    delete legacyRecord.evaluationDigest
+    expect(validateGateConfig(config, space, gold, [declared(legacyRecord, 'legacy-baseline')]).join('\n'))
+      .toContain('缺 evaluationDigest(legacy 测量)')
+    const otherProtocol = recordFrom(gold, () => 90)
+    otherProtocol.evaluationDigest = `sha256:${'0'.repeat(64)}`
+    expect(validateGateConfig(config, space, gold, [declared(otherProtocol, 'other-baseline')]).join('\n'))
+      .toContain('由另一版测量协议测得')
+  })
+
   it('门槛取值越界或为负即失败', () => {
     const outOfRange: GateConfig = {
       ...config,
@@ -523,13 +544,10 @@ describe('门槛策略', () => {
   })
 
   it('每条声明的被测面就是它自己的基线', () => {
+    // patent_oa_response_v1 的声明已暂时撤出(简洁链修订轮 amendment-grounding 低于下限,
+    // 修复与重录见 #979);恢复时把它的声明加回这里。
     expect(config.baselines).toEqual([
       { execution: 'prompt', path: 'packages/self-evolve/evaluation/patent-oas-baseline.json' },
-      {
-        execution: 'workflow',
-        workflowId: 'patent_oa_response_v1',
-        path: 'packages/self-evolve/evaluation/patent-oas-workflow-baseline.json',
-      },
       {
         execution: 'workflow',
         workflowId: 'patent_disclosure_v1',
@@ -565,6 +583,21 @@ describe('run 记录校验', () => {
   it('分数越界即失败', () => {
     const outOfRange = recordFrom(gold, (caseId, index) => caseId === 'oa-answer' && index === 1 ? 120 : 90)
     expect(validateRunRecord(outOfRange, space, gold, 'run.json').join('\n')).toContain('超出 0–100')
+  })
+
+  it('durationMs 必须是非负整数,evaluationDigest 必须是 sha256:<hex>', () => {
+    const negative = recordFrom(gold, () => 90)
+    negative.durationMs = -1
+    expect(validateRunRecord(negative, space, gold, 'run.json').join('\n')).toContain('durationMs 必须是非负整数')
+    const fractional = recordFrom(gold, () => 90)
+    fractional.durationMs = 1.5
+    expect(validateRunRecord(fractional, space, gold, 'run.json').join('\n')).toContain('durationMs 必须是非负整数')
+    const valid = recordFrom(gold, () => 90)
+    valid.durationMs = 1200
+    expect(validateRunRecord(valid, space, gold, 'run.json')).toEqual([])
+    const badDigest = recordFrom(gold, () => 90)
+    badDigest.evaluationDigest = 'sha256:short'
+    expect(validateRunRecord(badDigest, space, gold, 'run.json').join('\n')).toContain('evaluationDigest 不是 sha256:<hex>')
   })
 
   it('逐次分数与均值一致即通过,旧记录没有该字段也通过', () => {
@@ -626,6 +659,55 @@ describe('检索设置的可比性', () => {
       .toContain('检索环境为 未记录,基线为 oracle')
     const legacyBaseline = structuredClone(legacy)
     expect(comparisonSettingProblems(legacy, legacyBaseline, 'run.json')).toEqual([])
+  })
+
+  it('缺测量协议摘要的记录不与基线比较,摘要不一致报另一版协议', () => {
+    const baseline = recordFrom(gold, () => 90)
+    const legacyRun = structuredClone(baseline)
+    delete legacyRun.evaluationDigest
+    expect(comparisonSettingProblems(legacyRun, baseline, 'run.json').join('\n'))
+      .toContain('本次记录缺 evaluationDigest(legacy 测量)')
+    const legacyBaseline = structuredClone(baseline)
+    delete legacyBaseline.evaluationDigest
+    expect(comparisonSettingProblems(baseline, legacyBaseline, 'run.json').join('\n'))
+      .toContain('基线缺 evaluationDigest(legacy 测量)')
+    const otherProtocol = structuredClone(baseline)
+    otherProtocol.evaluationDigest = `sha256:${'0'.repeat(64)}`
+    expect(comparisonSettingProblems(otherProtocol, baseline, 'run.json').join('\n'))
+      .toContain('基线由另一版测量协议测得')
+  })
+})
+
+describe('测量协议摘要(evaluationDigest)', () => {
+  it('evaluator 模板改一个字符即变', () => {
+    const current = evaluationDigest({ problemSpace: space })
+    expect(evaluationDigest({ problemSpace: space, evaluatorTemplate: `${EVALUATOR_PROMPT_TEMPLATE} ` })).not.toBe(current)
+  })
+
+  it('问题空间增删节点或映射即变;键顺序不同而内容相同则不变', () => {
+    const current = evaluationDigest({ problemSpace: space })
+    const added = cloneSpace()
+    added.nodes['brand-new-node'] = {
+      id: 'brand-new-node',
+      domain: '交付物',
+      label: '新节点',
+      observable: 'x',
+      dependsOn: [],
+    }
+    expect(evaluationDigest({ problemSpace: added })).not.toBe(current)
+    // 键顺序不同、内容相同:canonicalJson 排序后摘要一致(注释与格式本就不进解析结果)。
+    const reordered = { nodes: space.nodes, cases: space.cases, benchmarkId: space.benchmarkId }
+    expect(evaluationDigest({ problemSpace: reordered })).toBe(current)
+  })
+
+  it('evaluator 与 scorer 协议版本进入摘要', () => {
+    const current = evaluationDigest({ problemSpace: space })
+    expect(evaluationDigest({ problemSpace: space, evaluatorVersion: 99 })).not.toBe(current)
+    expect(evaluationDigest({ problemSpace: space, scorerVersion: 99 })).not.toBe(current)
+  })
+
+  it('canonicalJson 递归排序键名、数组保持顺序、undefined 属性跳过', () => {
+    expect(canonicalJson({ b: 1, a: { d: [2, 1], c: undefined } })).toBe('{"a":{"d":[2,1]},"b":1}')
   })
 })
 
@@ -736,9 +818,11 @@ describe('被测面的可比性', () => {
     const declaredWorkflow = first(config.baselines.filter(entry => entry.execution === 'workflow'))
     expect(findBaselineDeclaration(config, 'prompt')).toBe(declaredPrompt)
     expect(baselineDeclarationFor(config, recordFrom(gold, () => 90))).toBe(declaredPrompt)
-    expect(findBaselineDeclaration(config, 'workflow', 'patent_oa_response_v1')).toBe(declaredWorkflow)
-    expect(baselineDeclarationFor(config, workflowRecord())).toBe(declaredWorkflow)
+    expect(findBaselineDeclaration(config, 'workflow', 'patent_disclosure_v1')).toBe(declaredWorkflow)
     expect(findBaselineDeclaration(config, 'workflow', 'patent_novelty_v1')).toBeUndefined()
+    // patent_oa_response_v1 的声明已撤出(#979):该面的记录路由不到基线。
+    expect(findBaselineDeclaration(config, 'workflow', 'patent_oa_response_v1')).toBeUndefined()
+    expect(baselineDeclarationFor(config, workflowRecord())).toBeUndefined()
     const promptOnly: GateConfig = { ...config, baselines: [declaredPrompt] }
     expect(baselineDeclarationFor(promptOnly, workflowRecord())).toBeUndefined()
   })

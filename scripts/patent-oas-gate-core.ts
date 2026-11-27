@@ -17,6 +17,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
 import { JSON_SCHEMA, load as loadYaml } from 'js-yaml'
 import type { ConcisionObservation } from './patent-oas-concision.ts'
+import { evaluationDigest } from './patent-oas-protocol.ts'
 
 /** 问题空间图上的一个节点:一个可被交付物观测的实务切面。 */
 export interface ProblemSpaceNode {
@@ -136,6 +137,12 @@ export interface GateConfig {
   benchmarkId: string
   /** 金标内容摘要;未记录时为 null,门禁据此判定「金标未钉住」。 */
   goldDigest: string | null
+  /**
+   * 测量协议摘要(canonical 问题空间 + evaluator 模板 + 协议版本);未记录时为 null。
+   * 与 goldDigest 分工:goldDigest 钉金标文本,本摘要钉评分器。门槛不进入摘要——
+   * 门槛是策略不是测量,其变更由 gate.yaml 的 diff 审计。
+   */
+  evaluationDigest: string | null
   /** 各被测面的基线声明,按配置顺序;同一被测面不得重复声明。 */
   baselines: BaselineDeclaration[]
   /** 逐被测面的评分范围,按配置顺序;未声明的面全部参评。 */
@@ -291,6 +298,16 @@ export interface RunRecord {
   tokens?: { input: number; output: number }
   /** 逐 case 的原始观测。 */
   cases: RunCase[]
+  /**
+   * 采集本条记录时的测量协议摘要({@link evaluationDigest});旧记录没有该字段。
+   * 缺摘要的记录是 legacy 测量:不与新记录静默比较,由比较路径显式拒绝。
+   */
+  evaluationDigest?: string
+  /**
+   * `collectRunRecord` 的墙钟时长(整数毫秒,非负);进程启动、seed 与门禁判定不计入。
+   * 旧记录没有该字段;无法测量时省略,不写 0。
+   */
+  durationMs?: number
 }
 
 /** 单节点判定结果。 */
@@ -812,6 +829,7 @@ export async function loadGateConfig(path: string): Promise<GateConfig> {
     throw new Error(`${path}: surfaces 重复声明被测面 ${settingKey(duplicatedSurface)};一个被测面只有一条评分范围`)
   }
   const digest = optionalString(root, 'goldDigest', path) ?? null
+  const protocolDigest = optionalString(root, 'evaluationDigest', path) ?? null
   const rawThresholds = requireRecord(root, 'thresholds', path)
   const noiseMultiple = optionalNumber(rawThresholds, 'noiseMultiple', `${path}: thresholds`)
   const readThreshold = (value: unknown, where: string): Required<GateThreshold> => {
@@ -831,6 +849,7 @@ export async function loadGateConfig(path: string): Promise<GateConfig> {
   return {
     benchmarkId,
     goldDigest: digest,
+    evaluationDigest: protocolDigest,
     baselines,
     surfaces,
     thresholds: {
@@ -975,6 +994,9 @@ export async function loadRunRecord(path: string): Promise<RunRecord> {
   }
   const modelId = optionalString(parsed, 'modelId', path)
   if (modelId !== undefined) record.modelId = modelId
+  const protocolDigest = optionalString(parsed, 'evaluationDigest', path)
+  if (protocolDigest !== undefined) record.evaluationDigest = protocolDigest
+  if (parsed.durationMs !== undefined) record.durationMs = requireNumber(parsed, 'durationMs', path)
   if (parsed.cost !== undefined) record.cost = requireNumber(parsed, 'cost', path)
   if (parsed.tokens !== undefined) {
     const tokens = parsed.tokens
@@ -1392,6 +1414,12 @@ export function validateRunRecord(
     problems.push(`${label}: benchmarkId "${run.benchmarkId}" 与问题空间 "${space.benchmarkId}" 不一致`)
   }
   if (!Number.isInteger(run.runsPerCase) || run.runsPerCase < 1) problems.push(`${label}: runsPerCase 必须是正整数`)
+  if (run.evaluationDigest !== undefined && !DIGEST_PATTERN.test(run.evaluationDigest)) {
+    problems.push(`${label}: evaluationDigest 不是 sha256:<hex>`)
+  }
+  if (run.durationMs !== undefined && (!Number.isInteger(run.durationMs) || run.durationMs < 0)) {
+    problems.push(`${label}: durationMs 必须是非负整数`)
+  }
   if (run.cost !== undefined && (!Number.isFinite(run.cost) || run.cost < 0)) problems.push(`${label}: cost 必须是非负数`)
   if (run.tokens !== undefined
     && (!Number.isFinite(run.tokens.input) || run.tokens.input < 0
@@ -1535,6 +1563,17 @@ export function comparisonSettingProblems(run: RunRecord, baseline: RunRecord, l
       + '两条记录的分数不可比,请在同一被测面下重录基线或运行',
     )
   }
+  // 测量协议一致才谈得上分数可比:缺摘要的记录是 legacy 测量,不静默视为同版本。
+  if (baseline.evaluationDigest === undefined) {
+    problems.push(`${label}: 基线缺 evaluationDigest(legacy 测量);按当前协议重录基线后再比较`)
+  } else if (run.evaluationDigest === undefined) {
+    problems.push(`${label}: 本次记录缺 evaluationDigest(legacy 测量);按当前协议重新采集后再比较`)
+  } else if (run.evaluationDigest !== baseline.evaluationDigest) {
+    problems.push(
+      `${label}: 基线由另一版测量协议测得(基线 ${baseline.evaluationDigest},本次 ${run.evaluationDigest});`
+      + '按当前协议重录基线后再比较',
+    )
+  }
   const baselineSettings = new Map(baseline.cases.map(entry => [entry.caseId, entry.retrieval] as const))
   for (const runCase of run.cases) {
     if (!baselineSettings.has(runCase.caseId)) continue
@@ -1605,6 +1644,12 @@ export function validateGateConfig(
   } else if (config.goldDigest !== digest) {
     problems.push(`gate: goldDigest 与当前金标不符(记录 ${config.goldDigest},实际 ${digest})`)
   }
+  const protocolDigest = evaluationDigest({ problemSpace: space })
+  if (config.evaluationDigest === null) {
+    problems.push(`gate: 未记录 evaluationDigest;测量协议(evaluator 模板、问题空间、协议版本)改动无法被察觉。用 --write 重录(${protocolDigest})`)
+  } else if (config.evaluationDigest !== protocolDigest) {
+    problems.push(`gate: evaluationDigest 与当前测量协议不符(记录 ${config.evaluationDigest},实际 ${protocolDigest});测量协议已变,用 --write 重记并重录基线`)
+  }
   const thresholds: Array<[string, Required<GateThreshold> | GateThreshold]> = [
     ['thresholds.node', config.thresholds.node],
     ['thresholds.case', config.thresholds.case],
@@ -1653,6 +1698,12 @@ export function validateGateConfig(
         `gate: ${entry.label} 的被测面是 ${surfaceOf(baseline)},`
         + `配置声明的是 ${surfaceOf(entry.declaration)};基线记录与被测面串了`,
       )
+    }
+    // 基线必须绑定测量协议:缺摘要的旧记录是 legacy 测量,不能静默当作同版本继续比较。
+    if (baseline.evaluationDigest === undefined) {
+      problems.push(`gate: 基线 ${entry.label} 缺 evaluationDigest(legacy 测量);按当前协议重录该基线`)
+    } else if (baseline.evaluationDigest !== protocolDigest) {
+      problems.push(`gate: 基线 ${entry.label} 由另一版测量协议测得(记录 ${baseline.evaluationDigest},当前 ${protocolDigest});按当前协议重录该基线`)
     }
     problems.push(...validateRunRecord(baseline, space, gold, entry.label))
     const baselineVerdict = evaluateRun(space, config, baseline, undefined)

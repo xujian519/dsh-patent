@@ -63,6 +63,7 @@ import {
   type WorkflowDeliverable,
 } from './patent-oas-gate-core.ts'
 import { budgetOf, observeConcision, type ConcisionObservation } from './patent-oas-concision.ts'
+import { evaluationDigest, fillEvaluatorPrompt } from './patent-oas-protocol.ts'
 
 /** 执行者写出的交付物文件名,相对于该次调用的工作目录。 */
 export const DELIVERABLE_FILENAME = 'deliverable.md'
@@ -585,18 +586,18 @@ export function workflowExecutorPrompt(options: {
  * 评估者提示词:只给公开任务、该维度的评分标准与交付物。
  *
  * 一次调用只拿到一个维度,其他维度既不出现也不被暗示,因此维度分之间不会互相锚定。
+ * 文本由 {@link EVALUATOR_PROMPT_TEMPLATE} 填充,模板本身是测量协议的一部分
+ * (`evaluationDigest` 覆盖它);这里的填充逻辑不得改变输出文本。
  */
 export function evaluatorPrompt(statement: string, dimension: RubricDimension, deliverable: string): string {
-  return [
-    '你是基准评估者。请只依据下列评分维度,对交付物打分,而不是对配置或过程打分。',
-    '任务(statement):',
+  return fillEvaluatorPrompt({
     statement,
-    `评分维度(${dimension.label},满分 ${dimension.points}):`,
-    dimension.body,
-    '交付物(deliverable):',
+    dimensionLabel: dimension.label,
+    dimensionPoints: String(dimension.points),
+    dimensionBody: dimension.body,
     deliverable,
-    `要求:只输出一个 JSON 对象,形如 {"score": 0 到 100 的数};score 是交付物在该维度上的得分率(满分对应 100)。把该 JSON 写入当前工作目录的 ${SCORE_FILENAME},不要输出其他内容。`,
-  ].join('\n')
+    scoreFilename: SCORE_FILENAME,
+  })
 }
 
 /**
@@ -806,6 +807,8 @@ interface RoundAccumulator {
  * @returns 可直接交给门禁判定的 run 记录。
  */
 export async function collectRunRecord(options: CollectRunOptions): Promise<RunRecord> {
+  // durationMs 只测采集本身的墙钟:进程启动、seed 与门禁判定都不计入。
+  const startedAt = performance.now()
   const plan = planRun(options)
   const cases: RunCase[] = []
   // 用量汇总:只有每次调用都报告同一项时才写出合计,部分报告不能被当成完整值。
@@ -968,6 +971,8 @@ export async function collectRunRecord(options: CollectRunOptions): Promise<RunR
     ...(workflowId === undefined ? {} : { workflowId }),
     runsPerCase: plan.runsPerCase,
     cases,
+    evaluationDigest: evaluationDigest({ problemSpace: options.space }),
+    durationMs: Math.round(performance.now() - startedAt),
   }
   if (options.provider !== undefined) record.provider = options.provider
   if (options.modelId !== undefined) record.modelId = options.modelId

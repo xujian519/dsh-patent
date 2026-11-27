@@ -75,3 +75,31 @@ export function pointSegmentDistance(point: GeoPoint, segment: GeoSegment): numb
     : Math.max(0, Math.min(1, ((point[0] - segment.x1) * dx + (point[1] - segment.y1) * dy) / lengthSquared))
   return Math.hypot(point[0] - (segment.x1 + dx * t), point[1] - (segment.y1 + dy * t))
 }
+
+/**
+ * 射线与线段的交点参数。
+ *
+ * 射线为 `origin + t · direction`（t > 0），线段为 `a + u · (b - a)`（0 ≤ u ≤ 1）。
+ * 用于从节点中心沿候选方向求真实轮廓边上的锚点：斜边形状的包围盒角点落在
+ * 轮廓之外，直接用作引线起点会让引线悬空。
+ * @param origin - 射线起点。
+ * @param direction - 射线方向（无须单位化）。
+ * @param segment - 目标线段。
+ * @returns 沿 direction 的参数 t（> 0）；平行、共线或交点在线段外时 undefined。
+ */
+export function raySegmentIntersection(
+  origin: GeoPoint,
+  direction: GeoPoint,
+  segment: GeoSegment,
+): number | undefined {
+  const edgeX = segment.x2 - segment.x1
+  const edgeY = segment.y2 - segment.y1
+  const denominator = direction[0] * edgeY - direction[1] * edgeX
+  if (denominator === 0) return undefined
+  const offsetX = segment.x1 - origin[0]
+  const offsetY = segment.y1 - origin[1]
+  const t = (offsetX * edgeY - offsetY * edgeX) / denominator
+  const u = (offsetX * direction[1] - offsetY * direction[0]) / denominator
+  if (t <= 0 || u < 0 || u > 1) return undefined
+  return t
+}

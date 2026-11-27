@@ -5,9 +5,13 @@
  * class="node">` + `<title>`=DOT 节点 id + `<polygon>`/`<ellipse>` 轮廓
  * + `<text>` 标签；节点组内不嵌套 `<g>`——若出现则组解析在首个 `</g>`
  * 截断，退化为内嵌标号告警，不会越界），把参考标号绘制在节点轮廓之外
- * 并用 `<line>` 引线指向节点。候选锚点按右/左/上/下尝试，取第一个与
- * 节点轮廓、已放置标号、图内已绘线条（`<g class="edge">` 内的边路径、
- * 箭头与边标签）都不相交的位置——《专利审查指南》第一部分第一章 4.3
+ * 并用 `<line>` 引线指向节点。锚点取自节点真实轮廓：多边形保留顶点，按
+ * 「中心 → 候选方向」的射线与边求交（平行四边形、梯形、菱形的包围盒角点
+ * 不在轮廓上，不能直接当起点），椭圆按解析式求交。候选按右/左/上/下尝试，
+ * 冲突时先按配置的毫米步长逐级外推，外推仍无空间再换方向、换斜向；候选
+ * 位置要求与节点轮廓、已放置标号、图内已绘线条（`<g class="edge">` 内的
+ * 边路径、箭头与边标签）都不相交，标号文本框还要与其他节点、已放标号保持
+ * 配置的净距——与渲染复核同一口径——《专利审查指南》第一部分第一章 4.3
  * 要求剖面线不得妨碍附图标记线和主线条的清楚识别，故引线不与其他线条
  * 共线或压盖。无可用位置、节点缺轮廓或所在组含缩放/旋转/翻转时退化为在
  * 匹配文本尾部内嵌标号并输出警告，绝不画出压盖图面的引线。
@@ -19,26 +23,34 @@
  * 帧（含 Graphviz 15 的 `scale(1 1) rotate(0) translate(4 40)` 恒等形态），
  * 其余变换下坐标不可换算，退化为内嵌标号并告警。
  *
- * 输入安全检查复用 svg-annotate 的 assertSafeSvg。
+ * 输入安全检查复用 svg-annotate 的 assertAnnotationInput。
  *
  * @module @deepseek-ai/dsh-patent-tools/figure/leader-line
  */
 
 import {
   DEFAULT_SVG_MAX_BYTES,
-  assertSafeSvg,
+  assertAnnotationInput,
   escapeXmlText,
+  stripEmbeddedNumeral,
+  stripLeaderAnnotations,
   textElementContent,
-  validateSvgReferences,
 } from './svg-annotate.ts'
 import { boundsOfPoints, formatMm } from './mm-primitives.ts'
-import { segmentsIntersect } from './geometry.ts'
+import { raySegmentIntersection, segmentsIntersect } from './geometry.ts'
+import { resolveSvgViewport } from './svg-viewport.ts'
 import type { SvgAnnotateReference } from './svg-annotate.ts'
 
 /** 引线标号选项。 */
 type LeaderLineOptions = {
   /** 输入大小上限（字节），默认 {@link DEFAULT_SVG_MAX_BYTES}。 */
   maxBytes?: number
+  /** 标号与已放标号、图元的净距（毫米），默认 {@link DEFAULT_LEADER_CLEARANCE_MM}；0 关闭。 */
+  clearanceMm?: number
+  /** 放置冲突时每次向外推的步长（毫米），默认 {@link DEFAULT_LEADER_PUSH_STEP_MM}。 */
+  pushStepMm?: number
+  /** 向外推的距离上限（毫米），默认 {@link DEFAULT_LEADER_PUSH_LIMIT_MM}；0 不外推。 */
+  pushLimitMm?: number
 }
 
 /** 引线标注结果：新 SVG 文本 + 警告（未命中参考、退化内嵌的节点）。 */
@@ -52,6 +64,17 @@ type Rect = { minX: number; minY: number; maxX: number; maxY: number }
 
 /** SVG 用户单位下的线段。 */
 type Segment = { x1: number; y1: number; x2: number; y2: number }
+
+/** SVG 用户单位下的点。 */
+type Point = { x: number; y: number }
+
+/**
+ * 节点轮廓：多边形保留真实顶点（斜边形状按射线与边求交取锚点），椭圆按解析式求交。
+ * `rect` 是轮廓的包围盒，用于标号排布与画布核算。
+ */
+type Outline =
+  | { kind: 'polygon'; rect: Rect; points: readonly Point[] }
+  | { kind: 'ellipse'; rect: Rect; cx: number; cy: number; rx: number; ry: number }
 
 /** 根坐标系下的平移帧；undefined 表示该组含缩放/旋转/翻转，坐标不可换算。 */
 type Frame = { tx: number; ty: number }
@@ -73,8 +96,8 @@ type ParsedNodeGroup = {
   title: string
   /** 组内全部文本元素的可见拼接（小写，用于参考匹配）。 */
   text: string
-  /** 轮廓 bbox（组坐标系）；组内无 polygon/ellipse 时 undefined。 */
-  bbox: Rect | undefined
+  /** 节点轮廓（组坐标系）；组内无 polygon/ellipse 时 undefined。 */
+  outline: Outline | undefined
   /** 组内首个文本元素的 font-size（无文本时 {@link FALLBACK_FONT_SIZE}）；标号几何与图面 scale 的依据。 */
   fontSize: number
   /** 组坐标系到根坐标系的平移帧。 */
@@ -101,10 +124,24 @@ type Canvas = {
   widthAttr: { value: number; unit: string; ratio: number } | undefined
   /** 根元素声明的 height（数值/单位 + 数值到用户单位的比例）；未声明时 undefined。 */
   heightAttr: { value: number; unit: string; ratio: number } | undefined
+  /** 用户单位 → 毫米的换算（取两轴中较小的比例，净距按更保守的一侧换算）；无法解析时为 0。 */
+  unitsPerMm: number
 }
 
 /** 引线长度基线（SVG 用户单位，scale=1）；实际长度随图面 scale 归一（见 {@link drawingScale}）。 */
 const LEADER_GAP = 10
+
+/**
+ * 标号净距默认值（毫米）：与渲染复核对引线标号图型使用的下限一致，放置期就
+ * 留出复核期要求的空白，避免工具产出被自己的复核判负。
+ */
+export const DEFAULT_LEADER_CLEARANCE_MM = 0.5
+
+/** 放置冲突时每次向外推的步长默认值（毫米）。 */
+export const DEFAULT_LEADER_PUSH_STEP_MM = 2
+
+/** 向外推的距离上限默认值（毫米）：超过即认为该方向无空间，交给下一方向或内嵌。 */
+export const DEFAULT_LEADER_PUSH_LIMIT_MM = 30
 
 /** 画布扩边安全边距基线（用户单位，scale=1），保证标号与引线不贴边。 */
 const CANVAS_PAD = 2
@@ -196,6 +233,34 @@ function translateRect(rect: Rect, frame: Frame): Rect {
   }
 }
 
+/**
+ * 轮廓按平移换算到根坐标系。
+ * @param outline - 组坐标系下的轮廓。
+ * @param frame - 组到根坐标系的平移。
+ * @returns 根坐标系下的轮廓。
+ */
+function translateOutline(outline: Outline, frame: Frame): Outline {
+  const rect = translateRect(outline.rect, frame)
+  if (outline.kind === 'polygon') {
+    return { kind: 'polygon', rect, points: outline.points.map(point => ({ x: point.x + frame.tx, y: point.y + frame.ty })) }
+  }
+  return { kind: 'ellipse', rect, cx: outline.cx + frame.tx, cy: outline.cy + frame.ty, rx: outline.rx, ry: outline.ry }
+}
+
+/**
+ * 取除当前节点外的其余节点包围盒。
+ * @param rects - 与节点组一一对应的包围盒（缺轮廓/不可换算时为 undefined）。
+ * @param index - 当前节点下标。
+ * @returns 其余节点的包围盒。
+ */
+function nodeRectsExcept(rects: readonly (Rect | undefined)[], index: number): Rect[] {
+  const others: Rect[] = []
+  rects.forEach((rect, otherIndex) => {
+    if (rect !== undefined && otherIndex !== index) others.push(rect)
+  })
+  return others
+}
+
 /** 取标签的数值属性；缺失或非有限值时 undefined。 */
 function numberAttr(tag: string, name: string): number | undefined {
   const match = new RegExp(`\\b${name}="([^"]+)"`).exec(tag)
@@ -204,19 +269,25 @@ function numberAttr(tag: string, name: string): number | undefined {
   return Number.isFinite(value) ? value : undefined
 }
 
-/** 从 `<polygon>` 的 points 属性解析轮廓 bbox；点对非法时 undefined。 */
-function polygonBBox(pointsAttr: string): Rect | undefined {
+/** 从 `<polygon>` 的 points 属性解析轮廓顶点；点对非法时 undefined。 */
+function polygonPoints(pointsAttr: string): Point[] | undefined {
   const pairs = pointsAttr.trim().split(/\s+/).filter(pair => pair !== '')
   if (pairs.length === 0) return undefined
-  const points: [number, number][] = []
+  const points: Point[] = []
   for (const pair of pairs) {
     const parts = pair.split(',')
     const x = Number(parts[0])
     const y = Number(parts[1])
     if (!Number.isFinite(x) || !Number.isFinite(y)) return undefined
-    points.push([x, y])
+    points.push({ x, y })
   }
-  return boundsOfPoints(points)
+  return points
+}
+
+/** 从 `<polygon>` 的 points 属性解析轮廓 bbox；点对非法时 undefined。 */
+function polygonBBox(pointsAttr: string): Rect | undefined {
+  const points = polygonPoints(pointsAttr)
+  return points === undefined ? undefined : boundsOfPoints(points.map(point => [point.x, point.y]))
 }
 
 /** 从 `<ellipse ...>` 标签解析轮廓 bbox；属性缺失/非法时 undefined。 */
@@ -227,6 +298,77 @@ function ellipseBBox(ellipseTag: string): Rect | undefined {
   const ry = numberAttr(ellipseTag, 'ry')
   if (cx === undefined || cy === undefined || rx === undefined || ry === undefined) return undefined
   return { minX: cx - rx, minY: cy - ry, maxX: cx + rx, maxY: cy + ry }
+}
+
+/**
+ * 解析节点组轮廓：多边形保留真实顶点（斜边形状不能只用包围盒），椭圆保留中心与半径。
+ * @param raw - 节点组片段。
+ * @returns 轮廓；组内无 polygon/ellipse 或属性非法时 undefined。
+ */
+function nodeOutline(raw: string): Outline | undefined {
+  const polygonMatch = /<polygon\b[^>]*\bpoints="([^"]*)"/.exec(raw)
+  if (polygonMatch !== null) {
+    const points = polygonPoints(polygonMatch[1] as string)
+    if (points === undefined) return undefined
+    return { kind: 'polygon', rect: boundsOfPoints(points.map(point => [point.x, point.y])), points }
+  }
+  const ellipseMatch = /<ellipse\b[^>]*>/.exec(raw)
+  if (ellipseMatch === null) return undefined
+  const rect = ellipseBBox(ellipseMatch[0])
+  if (rect === undefined) return undefined
+  const rx = (rect.maxX - rect.minX) / 2
+  const ry = (rect.maxY - rect.minY) / 2
+  if (rx <= 0 || ry <= 0) return undefined
+  return {
+    kind: 'ellipse',
+    rect,
+    cx: (rect.minX + rect.maxX) / 2,
+    cy: (rect.minY + rect.maxY) / 2,
+    rx,
+    ry,
+  }
+}
+
+/** 包围盒在指定方向上的边中点（轮廓求交失败时的回退）。 */
+function bboxAnchor(rect: Rect, dx: number, dy: number): Point {
+  const cx = (rect.minX + rect.maxX) / 2
+  const cy = (rect.minY + rect.maxY) / 2
+  if (dx !== 0) return { x: dx > 0 ? rect.maxX : rect.minX, y: cy }
+  return { x: cx, y: dy > 0 ? rect.maxY : rect.minY }
+}
+
+/**
+ * 沿「节点中心 → 候选方向」的射线与真实轮廓求交，作为引线起点。
+ *
+ * 斜边形状（平行四边形、梯形、菱形、六边形）的包围盒角点/边中点并不落在轮廓上，
+ * 直接用作起点会让引线悬空；矩形/平行四边形的包围盒角点恰是顶点时保留角点锚点，
+ * 以维持正交方向的既有落点。椭圆按解析式求交。
+ * @param outline - 节点轮廓（组坐标系）。
+ * @param dx - 方向 X 分量（-1/0/1）。
+ * @param dy - 方向 Y 分量（-1/0/1）。
+ * @returns 轮廓上的锚点（组坐标系）；轮廓退化时回退包围盒边中点。
+ */
+function outlineAnchor(outline: Outline, dx: number, dy: number): Point {
+  const { rect } = outline
+  const cx = (rect.minX + rect.maxX) / 2
+  const cy = (rect.minY + rect.maxY) / 2
+  if (outline.kind === 'ellipse') {
+    const t = 1 / Math.hypot(dx / outline.rx, dy / outline.ry)
+    return { x: outline.cx + dx * t, y: outline.cy + dy * t }
+  }
+  if (dx !== 0 && dy !== 0) {
+    const corner = { x: dx > 0 ? rect.maxX : rect.minX, y: dy > 0 ? rect.maxY : rect.minY }
+    if (outline.points.some(point => point.x === corner.x && point.y === corner.y)) return corner
+  }
+  let nearest: number | undefined
+  for (let index = 0; index < outline.points.length; index += 1) {
+    const from = outline.points[index] as Point
+    const to = outline.points[(index + 1) % outline.points.length] as Point
+    const t = raySegmentIntersection([cx, cy], [dx, dy], { x1: from.x, y1: from.y, x2: to.x, y2: to.y })
+    if (t !== undefined && (nearest === undefined || t < nearest)) nearest = t
+  }
+  if (nearest === undefined) return bboxAnchor(rect, dx, dy)
+  return { x: cx + dx * nearest, y: cy + dy * nearest }
 }
 
 /** 读取文本元素声明的 font-size；缺失或非法（≤ 0）时回退 {@link FALLBACK_FONT_SIZE}。 */
@@ -469,131 +611,190 @@ function drawingScale(fontSizes: readonly number[]): number {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, median / BASELINE_FONT_SIZE))
 }
 
-/**
- * 为节点 bbox 生成右/左/上/下四个正交候选锚点（引线从轮廓边缘出发，标号在线端外侧）。
- * 标号文本框宽/高与基线微调均由节点实读 font-size 推导（与边标签宽共用
- * {@link estimateTextWidth}），引线长度与走廊用图面 scale 归一的 gap。
- * @param bbox - 节点轮廓（根坐标系）。
- * @param numeral - 标号文本。
- * @param fontSize - 节点实读 font-size（标号与之一致）。
- * @param gap - 已按图面 scale 归一的引线长度。
- * @returns 按尝试顺序排列的正交候选。
- */
-function candidatePlacements(bbox: Rect, numeral: string, fontSize: number, gap: number): AnchorPlacement[] {
-  const width = estimateTextWidth(numeral, fontSize) + fontSize * NUMERAL_PAD_RATIO
-  const cx = (bbox.minX + bbox.maxX) / 2
-  const cy = (bbox.minY + bbox.maxY) / 2
-  const textHeight = fontSize * NUMERAL_TEXT_HEIGHT_RATIO
-  const halfH = textHeight / 2
-  const midOffset = fontSize * TEXT_BASELINE_MID_RATIO
-  const textGap = fontSize * TEXT_GAP_RATIO
-  const bottomDrop = fontSize * TEXT_BOTTOM_DROP_RATIO
-  const right: AnchorPlacement = {
-    line: { x1: bbox.maxX, y1: cy, x2: bbox.maxX + gap, y2: cy },
-    text: { x: bbox.maxX + gap + textGap, y: cy + midOffset, anchor: 'start' },
-    occupied: [
-      { minX: bbox.maxX, minY: cy - 1, maxX: bbox.maxX + gap, maxY: cy + 1 },
-      { minX: bbox.maxX + gap, minY: cy - halfH, maxX: bbox.maxX + gap + textGap + width, maxY: cy + halfH },
-    ],
-  }
-  const left: AnchorPlacement = {
-    line: { x1: bbox.minX, y1: cy, x2: bbox.minX - gap, y2: cy },
-    text: { x: bbox.minX - gap - textGap, y: cy + midOffset, anchor: 'end' },
-    occupied: [
-      { minX: bbox.minX - gap, minY: cy - 1, maxX: bbox.minX, maxY: cy + 1 },
-      { minX: bbox.minX - gap - textGap - width, minY: cy - halfH, maxX: bbox.minX - gap, maxY: cy + halfH },
-    ],
-  }
-  const top: AnchorPlacement = {
-    line: { x1: cx, y1: bbox.minY, x2: cx, y2: bbox.minY - gap },
-    text: { x: cx, y: bbox.minY - gap - textGap, anchor: 'middle' },
-    occupied: [
-      { minX: cx - 1, minY: bbox.minY - gap, maxX: cx + 1, maxY: bbox.minY },
-      {
-        minX: cx - width / 2,
-        minY: bbox.minY - gap - textGap - textHeight,
-        maxX: cx + width / 2,
-        maxY: bbox.minY - gap - textGap,
-      },
-    ],
-  }
-  const bottom: AnchorPlacement = {
-    line: { x1: cx, y1: bbox.maxY, x2: cx, y2: bbox.maxY + gap },
-    text: { x: cx, y: bbox.maxY + gap + bottomDrop, anchor: 'middle' },
-    occupied: [
-      { minX: cx - 1, minY: bbox.maxY, maxX: cx + 1, maxY: bbox.maxY + gap },
-      { minX: cx - width / 2, minY: bbox.maxY + gap, maxX: cx + width / 2, maxY: bbox.maxY + gap + textHeight },
-    ],
-  }
-  return [right, left, top, bottom]
+/** 外推距离序列：0、step、2·step……直到 limit（step/limit 非正时只取 0）。 */
+function pushOffsets(push: { step: number; limit: number }): number[] {
+  const offsets = [0]
+  if (!(push.step > 0) || !(push.limit > 0)) return offsets
+  for (let distance = push.step; distance <= push.limit; distance += push.step) offsets.push(distance)
+  return offsets
+}
+
+/** 标号排版度量：文本框宽、基线中点偏移与文本间距（均由节点实读 font-size 推导）。 */
+type LabelMetrics = { width: number; midOffset: number; textGap: number }
+
+/** 正交与斜向候选共用的入参：轮廓、标号文本、字号、归一 gap 与外推参数。 */
+type PlacementInput = {
+  outline: Outline
+  numeral: string
+  fontSize: number
+  gap: number
+  push: { step: number; limit: number }
 }
 
 /**
- * 为节点 bbox 生成四个斜向候选锚点（右上/左上/右下/左下），供正交四向均无空间
- * 时的二次扫描（B4）：密集图中先占位者可能把后处理节点挤成正交内嵌，斜向锚点
- * 多一个逃逸方向。引线自轮廓角点沿 45° 外向，标号在线端外侧。
- * @param bbox - 节点轮廓（根坐标系）。
+ * 由标号文本与节点字号推导排版度量；正交与斜向候选共用同一口径。
  * @param numeral - 标号文本。
  * @param fontSize - 节点实读 font-size。
- * @param gap - 已按图面 scale 归一的引线长度（斜向取 45° 分量）。
- * @returns 按尝试顺序排列的斜向候选。
+ * @returns 标号文本框宽、基线中点偏移与文本间距。
  */
-function diagonalPlacements(bbox: Rect, numeral: string, fontSize: number, gap: number): AnchorPlacement[] {
-  const width = estimateTextWidth(numeral, fontSize) + fontSize * NUMERAL_PAD_RATIO
-  const midOffset = fontSize * TEXT_BASELINE_MID_RATIO
-  const textGap = fontSize * TEXT_GAP_RATIO
-  const component = gap * Math.SQRT1_2
-  const corners: { x: number; y: number; dx: number; dy: number; anchor: 'start' | 'end' }[] = [
-    { x: bbox.maxX, y: bbox.minY, dx: 1, dy: -1, anchor: 'start' },
-    { x: bbox.minX, y: bbox.minY, dx: -1, dy: -1, anchor: 'end' },
-    { x: bbox.maxX, y: bbox.maxY, dx: 1, dy: 1, anchor: 'start' },
-    { x: bbox.minX, y: bbox.maxY, dx: -1, dy: 1, anchor: 'end' },
-  ]
-  return corners.map((corner) => {
-    const endX = corner.x + corner.dx * component
-    const endY = corner.y + corner.dy * component
-    const textX = endX + corner.dx * textGap
-    const textY = endY + corner.dy * textGap + midOffset
-    const boxMinX = corner.anchor === 'end' ? textX - width : textX
-    // 走廊取线段包围盒（不加厚）：斜向引线自角点出发，加厚会使走廊回推到轮廓内而与自身节点重叠。
-    const corridor: Rect = {
-      minX: Math.min(corner.x, endX),
-      minY: Math.min(corner.y, endY),
-      maxX: Math.max(corner.x, endX),
-      maxY: Math.max(corner.y, endY),
-    }
-    const textBox: Rect = {
-      minX: boxMinX,
-      minY: textY - fontSize * TEXT_ASCENT_RATIO,
-      maxX: boxMinX + width,
-      maxY: textY + fontSize * TEXT_DESCENT_RATIO,
-    }
-    return {
-      line: { x1: corner.x, y1: corner.y, x2: endX, y2: endY },
-      text: { x: textX, y: textY, anchor: corner.anchor },
-      occupied: [corridor, textBox] as const,
-    }
-  })
+function labelMetrics(numeral: string, fontSize: number): LabelMetrics {
+  return {
+    width: estimateTextWidth(numeral, fontSize) + fontSize * NUMERAL_PAD_RATIO,
+    midOffset: fontSize * TEXT_BASELINE_MID_RATIO,
+    textGap: fontSize * TEXT_GAP_RATIO,
+  }
 }
 
 /**
- * 候选是否可用：引线线段与标号文本框都不得压盖节点轮廓、已放置标号或图内已绘线条。
+ * 为节点轮廓生成右/左/上/下四个正交候选锚点（引线从真实轮廓边缘出发，标号在线端外侧）。
+ * 每个方向按 0、step、2·step…逐级外推，先试近处再试远处：外推优先于换方向、
+ * 换方向优先于内嵌，避免密集图里把本可外移的标号直接挤成内嵌。
+ * 标号文本框宽/高与基线微调均由节点实读 font-size 推导（与边标签宽共用
+ * {@link estimateTextWidth}），引线长度与走廊用图面 scale 归一的 gap。
+ * @param input - 轮廓、标号文本、节点实读 font-size、归一 gap 与外推参数。
+ * @returns 按尝试顺序排列的正交候选。
+ */
+function candidatePlacements(input: PlacementInput): AnchorPlacement[] {
+  const { outline, numeral, fontSize, gap, push } = input
+  const { rect } = outline
+  const { width, midOffset, textGap } = labelMetrics(numeral, fontSize)
+  const cx = (rect.minX + rect.maxX) / 2
+  const cy = (rect.minY + rect.maxY) / 2
+  const textHeight = fontSize * NUMERAL_TEXT_HEIGHT_RATIO
+  const halfH = textHeight / 2
+  const bottomDrop = fontSize * TEXT_BOTTOM_DROP_RATIO
+  const placements: AnchorPlacement[] = []
+  for (const extra of pushOffsets(push)) {
+    const distance = gap + extra
+    const rightAnchor = outlineAnchor(outline, 1, 0)
+    const rightEnd = rect.maxX + distance
+    placements.push({
+      line: { x1: rightAnchor.x, y1: rightAnchor.y, x2: rightEnd, y2: rightAnchor.y },
+      text: { x: rightEnd + textGap, y: cy + midOffset, anchor: 'start' },
+      occupied: [
+        { minX: rightAnchor.x, minY: cy - 1, maxX: rightEnd, maxY: cy + 1 },
+        { minX: rightEnd + textGap, minY: cy - halfH, maxX: rightEnd + textGap + width, maxY: cy + halfH },
+      ],
+    })
+    const leftAnchor = outlineAnchor(outline, -1, 0)
+    const leftEnd = rect.minX - distance
+    placements.push({
+      line: { x1: leftAnchor.x, y1: leftAnchor.y, x2: leftEnd, y2: leftAnchor.y },
+      text: { x: leftEnd - textGap, y: cy + midOffset, anchor: 'end' },
+      occupied: [
+        { minX: leftEnd, minY: cy - 1, maxX: leftAnchor.x, maxY: cy + 1 },
+        { minX: leftEnd - textGap - width, minY: cy - halfH, maxX: leftEnd - textGap, maxY: cy + halfH },
+      ],
+    })
+    const topAnchor = outlineAnchor(outline, 0, -1)
+    const topEnd = rect.minY - distance
+    placements.push({
+      line: { x1: topAnchor.x, y1: topAnchor.y, x2: topAnchor.x, y2: topEnd },
+      text: { x: cx, y: topEnd - textGap, anchor: 'middle' },
+      occupied: [
+        { minX: cx - 1, minY: topEnd, maxX: cx + 1, maxY: topAnchor.y },
+        { minX: cx - width / 2, minY: topEnd - textGap - textHeight, maxX: cx + width / 2, maxY: topEnd - textGap },
+      ],
+    })
+    const bottomAnchor = outlineAnchor(outline, 0, 1)
+    const bottomEnd = rect.maxY + distance
+    placements.push({
+      line: { x1: bottomAnchor.x, y1: bottomAnchor.y, x2: bottomAnchor.x, y2: bottomEnd },
+      text: { x: cx, y: bottomEnd + bottomDrop, anchor: 'middle' },
+      occupied: [
+        { minX: cx - 1, minY: bottomAnchor.y, maxX: cx + 1, maxY: bottomEnd },
+        { minX: cx - width / 2, minY: bottomEnd, maxX: cx + width / 2, maxY: bottomEnd + textHeight },
+      ],
+    })
+  }
+  return placements
+}
+
+/**
+ * 为节点轮廓生成四个斜向候选锚点（右上/左上/右下/左下），供正交方向均无空间
+ * 时的二次扫描（B4）：密集图中先占位者可能把后处理节点挤成正交内嵌，斜向锚点
+ * 多一个逃逸方向。引线自真实轮廓边（不再固定是包围盒角点）沿 45° 外向，
+ * 标号在线端外侧；同样按外推步长逐级远离。
+ * @param input - 轮廓、标号文本、节点实读 font-size、归一 gap（斜向取 45° 分量）与外推参数。
+ * @returns 按尝试顺序排列的斜向候选。
+ */
+function diagonalPlacements(input: PlacementInput): AnchorPlacement[] {
+  const { outline, numeral, fontSize, gap, push } = input
+  const { width, midOffset, textGap } = labelMetrics(numeral, fontSize)
+  const component = gap * Math.SQRT1_2
+  const directions: { dx: number; dy: number; anchor: 'start' | 'end' }[] = [
+    { dx: 1, dy: -1, anchor: 'start' },
+    { dx: -1, dy: -1, anchor: 'end' },
+    { dx: 1, dy: 1, anchor: 'start' },
+    { dx: -1, dy: 1, anchor: 'end' },
+  ]
+  const placements: AnchorPlacement[] = []
+  for (const extra of pushOffsets(push)) {
+    const offset = component + extra
+    for (const direction of directions) {
+      const anchor = outlineAnchor(outline, direction.dx, direction.dy)
+      const endX = anchor.x + direction.dx * offset
+      const endY = anchor.y + direction.dy * offset
+      const textX = endX + direction.dx * textGap
+      const textY = endY + direction.dy * textGap + midOffset
+      const boxMinX = direction.anchor === 'end' ? textX - width : textX
+      // 走廊取线段包围盒（不加厚）：斜向引线自轮廓边出发，加厚会使走廊回推到轮廓内。
+      const corridor: Rect = {
+        minX: Math.min(anchor.x, endX),
+        minY: Math.min(anchor.y, endY),
+        maxX: Math.max(anchor.x, endX),
+        maxY: Math.max(anchor.y, endY),
+      }
+      const textBox: Rect = {
+        minX: boxMinX,
+        minY: textY - fontSize * TEXT_ASCENT_RATIO,
+        maxX: boxMinX + width,
+        maxY: textY + fontSize * TEXT_DESCENT_RATIO,
+      }
+      placements.push({
+        line: { x1: anchor.x, y1: anchor.y, x2: endX, y2: endY },
+        text: { x: textX, y: textY, anchor: direction.anchor },
+        occupied: [corridor, textBox] as const,
+      })
+    }
+  }
+  return placements
+}
+
+/** 矩形按净距外扩（margin 为 0 时原样返回，保持既有零重叠判定）。 */
+function inflateRect(rect: Rect, margin: number): Rect {
+  if (margin === 0) return rect
+  return { minX: rect.minX - margin, minY: rect.minY - margin, maxX: rect.maxX + margin, maxY: rect.maxY + margin }
+}
+
+/**
+ * 候选是否可用：引线线段不得压盖其他节点轮廓、已放置标号或图内已绘线条；标号文本框
+ * 还要与这些元素保持 `clearance` 净距（与渲染复核同一口径），避免放置期判「不重叠」、
+ * 复核期却判「净距不足」。自身节点不计入阻挡：锚点取自自身真实轮廓，引线按构造向外。
  * @param candidate - 候选锚点。
- * @param nodeRects - 全部节点轮廓（根坐标系）。
- * @param placedRects - 已放置标号的占用区。
+ * @param otherNodeRects - 其他节点的轮廓包围盒（根坐标系，不含自身）。
+ * @param placedLabels - 已放置标号的文本框。
+ * @param placedCorridors - 已放置引线的走廊。
  * @param obstacles - 图内已绘线条的占用。
+ * @param clearance - 标号文本框的净距（SVG 用户单位）；0 时退化为零重叠判定。
  * @returns 位置可用时 true。
  */
 function isFree(
   candidate: AnchorPlacement,
-  nodeRects: readonly Rect[],
-  placedRects: readonly Rect[],
+  otherNodeRects: readonly Rect[],
+  placedLabels: readonly Rect[],
+  placedCorridors: readonly Rect[],
   obstacles: Obstacles,
+  clearance: number,
 ): boolean {
-  const blockers = [...nodeRects, ...placedRects, ...obstacles.rects]
-  if (!candidate.occupied.every(rect => blockers.every(other => !overlaps(rect, other)))) return false
+  const corridor = candidate.occupied[0]
+  const text = candidate.occupied[1]
+  const blockers = [...otherNodeRects, ...placedLabels, ...placedCorridors, ...obstacles.rects]
+  if (blockers.some(other => overlaps(corridor, other))) return false
+  const clearText = inflateRect(text, clearance)
+  if (blockers.some(other => overlaps(clearText, other))) return false
   if (obstacles.segments.some(segment => segmentsIntersect(candidate.line, segment))) return false
-  return !obstacles.segments.some(segment => segmentIntersectsRect(segment, candidate.occupied[1]))
+  return !obstacles.segments.some(segment => segmentIntersectsRect(segment, clearText))
 }
 
 /** 渲染一条引线 + 标号文本的 SVG 片段（标号 font-size 与节点实读一致）。 */
@@ -607,6 +808,26 @@ function leaderLineFragment(placement: AnchorPlacement, numeral: string, fontSiz
 }
 
 /**
+ * 在组内最后一个文本元素上做原位替换。
+ *
+ * 内嵌标号的插入与清理共用同一个落点，避免两处各自查找后逐渐走样。
+ * @param groupRaw - 节点组片段原文。
+ * @param transform - 该文本元素到替换文本的变换。
+ * @returns 替换后的组片段；组内无 `<text>` 时原样返回。
+ */
+function rewriteLastText(groupRaw: string, transform: (textElement: string) => string): string {
+  const textPattern = /<text\b[^>]*>[\s\S]*?<\/text>/gi
+  let last: RegExpExecArray | null = null
+  let match: RegExpExecArray | null
+  while ((match = textPattern.exec(groupRaw)) !== null) last = match
+  /* v8 ignore start -- the callers only invoke this on a group that matched via its text elements */
+  if (last === null) return groupRaw
+  /* v8 ignore stop */
+  const whole = last[0]
+  return groupRaw.slice(0, last.index) + transform(whole) + groupRaw.slice(last.index + whole.length)
+}
+
+/**
  * 引线无放置空间时的退化路径：在组内最后一个文本元素尾部内嵌 ` (numeral)`
  * （插位规则与 annotateSvg 一致：优先最后一个 `</tspan>` 前）。
  * @param groupRaw - 节点组片段原文。
@@ -615,18 +836,21 @@ function leaderLineFragment(placement: AnchorPlacement, numeral: string, fontSiz
  */
 function embedNumeralInGroup(groupRaw: string, numeral: string): string {
   const escaped = ` (${escapeXmlText(numeral)})`
-  const textPattern = /<text\b[^>]*>[\s\S]*?<\/text>/gi
-  let last: RegExpExecArray | null = null
-  let match: RegExpExecArray | null
-  while ((match = textPattern.exec(groupRaw)) !== null) last = match
-  /* v8 ignore start -- the caller only invokes this on a group that matched via its text elements */
-  if (last === null) return groupRaw
-  /* v8 ignore stop */
-  const whole = last[0]
-  const lastTspan = whole.lastIndexOf('</tspan>')
-  const insertAt = lastTspan >= 0 ? lastTspan : whole.length - '</text>'.length
-  const tail = groupRaw.slice(last.index + whole.length)
-  return groupRaw.slice(0, last.index) + whole.slice(0, insertAt) + escaped + whole.slice(insertAt) + tail
+  return rewriteLastText(groupRaw, (whole) => {
+    const lastTspan = whole.lastIndexOf('</tspan>')
+    const insertAt = lastTspan >= 0 ? lastTspan : whole.length - '</text>'.length
+    return whole.slice(0, insertAt) + escaped + whole.slice(insertAt)
+  })
+}
+
+/**
+ * 移除组内最后一个文本元素尾部的既有内嵌标号（上一次内嵌模式留下的），
+ * 使内嵌→引线切换时不会同时出现两处标号。
+ * @param groupRaw - 节点组片段原文。
+ * @returns 已清理既有标号的组片段；无 `<text>` 或无既有标号时原样返回。
+ */
+function stripEmbeddedNumeralsInGroup(groupRaw: string): string {
+  return rewriteLastText(groupRaw, stripEmbeddedNumeral)
 }
 
 /** 解析根元素声明的 width/height：数值 + 单位 + 单位到 px 的换算。 */
@@ -642,16 +866,20 @@ function sizeAttribute(tag: string, name: string): { value: number; unit: string
 
 /**
  * 解析根元素画布：viewBox 优先；缺省时按 width/height（长度单位换算为 px）合成等价视口。
+ * 同时给出用户单位到毫米的换算，供放置期净距与外推按物理毫米设置。
  * @param svgText - SVG 文本。
  * @returns 画布信息；根元素缺失或尺寸不可知时 undefined（调用方跳过扩边）。
  */
 function parseCanvas(svgText: string): Canvas | undefined {
   const tagMatch = /<svg\b[^>]*>/i.exec(svgText)
-  /* v8 ignore next -- annotateSvgWithLeaderLines runs assertSafeSvg, which requires an <svg…> open tag. */
+  /* v8 ignore next -- annotateSvgWithLeaderLines asserts a safe SVG, which requires an <svg…> open tag. */
   if (tagMatch === null) return undefined
   const tag = tagMatch[0]
   const width = sizeAttribute(tag, 'width')
   const height = sizeAttribute(tag, 'height')
+  const viewport = resolveSvgViewport(tag)
+  const scale = Math.min(viewport.scaleX, viewport.scaleY)
+  const unitsPerMm = scale > 0 ? 1 / scale : 0
   const box = /\bviewBox="([^"]*)"/i.exec(tag)
   if (box !== null) {
     const values = (box[1] as string).trim().split(/[\s,]+/).map(Number)
@@ -666,6 +894,7 @@ function parseCanvas(svgText: string): Canvas | undefined {
       height: boxHeight,
       widthAttr: width === undefined ? undefined : { value: width.value, unit: width.unit, ratio: width.value / boxWidth },
       heightAttr: height === undefined ? undefined : { value: height.value, unit: height.unit, ratio: height.value / boxHeight },
+      unitsPerMm,
     }
   }
   if (width === undefined || height === undefined) return undefined
@@ -677,6 +906,7 @@ function parseCanvas(svgText: string): Canvas | undefined {
     height: height.px,
     widthAttr: { value: width.px, unit: 'px', ratio: 1 },
     heightAttr: { value: height.px, unit: 'px', ratio: 1 },
+    unitsPerMm,
   }
 }
 
@@ -746,12 +976,17 @@ function expandCanvas(svgText: string, canvas: Canvas, geometry: readonly Rect[]
  * 在 Graphviz SVG 的节点组外侧绘制引线标号。
  *
  * 匹配语义与 annotateSvg 一致：按参考传入顺序取首个文本命中，每个节点
- * 组至多命中一个参考，同一参考可命中多个组（同号多处标注）。命中组缺
- * 轮廓、所在组坐标不可换算或四向候选均冲突时退化为内嵌标号并告警。
+ * 组至多命中一个参考，同一参考可命中多个组（同号多处标注）。锚点取自节点
+ * 真实轮廓（斜边形状不再用包围盒角点），候选方向冲突时先按配置步长逐级外推，
+ * 外推仍无空间再换方向、换斜向，最后才退化为内嵌标号并告警。标号文本框与
+ * 其他节点、已放标号保持配置的净距（毫米，按根元素视口换算）。
  * 标号越出根元素声明画布时按需扩边，保证引线与标号完整可见。
+ *
+ * 重跑幂等：先移除上一次写入的 `<g id="leader-lines">` 组，命中组内既有
+ * 的内嵌标号一并清理，因此对同一 SVG 反复标注只保留一份标号。
  * @param svgText - Graphviz 渲染的 SVG 文本（WASM 与 CLI 输出同构）。
  * @param references - 参考标号列表（label 匹配组内可见文本）。
- * @param options - 大小上限等选项。
+ * @param options - 大小上限、标号净距与外推步长/上限。
  * @returns 标注后的 SVG 文本与警告。
  * @throws SvgAnnotateError 输入不安全/非 SVG/过大或参考字段为空。
  */
@@ -761,15 +996,14 @@ export function annotateSvgWithLeaderLines(
   options: LeaderLineOptions = {},
 ): LeaderLineResult {
   const maxBytes = options.maxBytes ?? DEFAULT_SVG_MAX_BYTES
-  assertSafeSvg(svgText, maxBytes)
-  validateSvgReferences(references)
-  if (references.length === 0) return { svg: svgText, warnings: [] }
+  if (!assertAnnotationInput(svgText, references, maxBytes)) return { svg: svgText, warnings: [] }
 
-  const scopes = groupScopes(svgText)
+  const source = stripLeaderAnnotations(svgText)
+  const scopes = groupScopes(source)
   const groups: ParsedNodeGroup[] = []
   const groupPattern = /<g\b[^>]*\bclass="node"[^>]*>[\s\S]*?<\/g>/g
   let groupMatch: RegExpExecArray | null
-  while ((groupMatch = groupPattern.exec(svgText)) !== null) {
+  while ((groupMatch = groupPattern.exec(source)) !== null) {
     const raw = groupMatch[0]
     const titleMatch = /<title>([\s\S]*?)<\/title>/.exec(raw)
     const textParts: string[] = []
@@ -784,14 +1018,6 @@ export function annotateSvgWithLeaderLines(
         sawText = true
       }
     }
-    const polygonMatch = /<polygon\b[^>]*\bpoints="([^"]*)"/.exec(raw)
-    const ellipseMatch = /<ellipse\b[^>]*>/.exec(raw)
-    let bbox: Rect | undefined
-    if (polygonMatch !== null) {
-      bbox = polygonBBox(polygonMatch[1] as string)
-    } else if (ellipseMatch !== null) {
-      bbox = ellipseBBox(ellipseMatch[0])
-    }
     const text = textParts.join('').toLowerCase()
     const referenceIndex = references.findIndex(ref => text.includes(ref.label.trim().toLowerCase()))
     groups.push({
@@ -799,7 +1025,7 @@ export function annotateSvgWithLeaderLines(
       raw,
       title: titleMatch === null ? '' : titleMatch[1] as string,
       text,
-      bbox,
+      outline: nodeOutline(raw),
       fontSize,
       frame: frameAt(scopes, groupMatch.index),
       referenceIndex,
@@ -807,53 +1033,71 @@ export function annotateSvgWithLeaderLines(
   }
 
   const warnings: string[] = []
-  const obstacles = edgeObstacles(svgText, scopes)
-  const nodeRects = groups
-    .filter((group): group is ParsedNodeGroup & { bbox: Rect; frame: Frame } => group.bbox !== undefined && group.frame !== undefined)
-    .map(group => translateRect(group.bbox, group.frame))
+  const obstacles = edgeObstacles(source, scopes)
+  const nodeRects = groups.map(group =>
+    group.outline === undefined || group.frame === undefined ? undefined : translateRect(group.outline.rect, group.frame))
   // 图面 scale 归一：引线间隙与扩边边距按节点中位 font-size 缩放（scale=1 时取基线常量原值）。
   const scale = drawingScale(groups.map(group => group.fontSize))
   const gap = LEADER_GAP * scale
   const pad = CANVAS_PAD * scale
+  // 净距与外推按物理毫米配置，经根元素视口换算成用户单位；尺寸不可知时关闭（复核也无法按毫米判定）。
+  const unitsPerMm = parseCanvas(source)?.unitsPerMm ?? 0
+  const clearance = (options.clearanceMm ?? DEFAULT_LEADER_CLEARANCE_MM) * unitsPerMm
+  const push = {
+    step: (options.pushStepMm ?? DEFAULT_LEADER_PUSH_STEP_MM) * unitsPerMm,
+    limit: (options.pushLimitMm ?? DEFAULT_LEADER_PUSH_LIMIT_MM) * unitsPerMm,
+  }
   const embedded = new Map<number, string>()
   const fragments: string[] = []
-  const placed: Rect[] = []
+  const placedLabels: Rect[] = []
+  const placedCorridors: Rect[] = []
+  /** 记下一次可用放置：走廊与标号进入已占集合，引线片段进入输出。 */
+  const accept = (chosen: AnchorPlacement, numeral: string, fontSize: number): void => {
+    placedCorridors.push(chosen.occupied[0])
+    placedLabels.push(chosen.occupied[1])
+    fragments.push(leaderLineFragment(chosen, numeral, fontSize))
+  }
   // 正交四向均无空间的节点暂缓，待首轮放置完成后二次扫描斜向锚点（B4）。
-  const pending: { index: number; group: ParsedNodeGroup; bbox: Rect; numeral: string }[] = []
+  const pending: { index: number; group: ParsedNodeGroup; outline: Outline; numeral: string }[] = []
   for (const [index, group] of groups.entries()) {
     if (group.referenceIndex < 0) continue
     const numeral = (references[group.referenceIndex] as SvgAnnotateReference).numeral.trim()
     if (group.frame === undefined) {
-      embedded.set(index, embedNumeralInGroup(group.raw, numeral))
+      embedded.set(index, embedNumeralInGroup(stripEmbeddedNumeralsInGroup(group.raw), numeral))
       warnings.push(`节点 "${group.title}" 所在组的坐标含缩放/旋转，标号 ${numeral} 已内嵌`)
       continue
     }
-    if (group.bbox === undefined) {
-      embedded.set(index, embedNumeralInGroup(group.raw, numeral))
+    if (group.outline === undefined) {
+      embedded.set(index, embedNumeralInGroup(stripEmbeddedNumeralsInGroup(group.raw), numeral))
       warnings.push(`节点 "${group.title}" 缺少形状轮廓，标号 ${numeral} 已内嵌`)
       continue
     }
-    const bbox = translateRect(group.bbox, group.frame)
-    const chosen = candidatePlacements(bbox, numeral, group.fontSize, gap).find(candidate =>
-      isFree(candidate, nodeRects, placed, obstacles))
+    const outline = translateOutline(group.outline, group.frame)
+    const others = nodeRectsExcept(nodeRects, index)
+    const chosen = candidatePlacements({ outline, numeral, fontSize: group.fontSize, gap, push }).find(candidate =>
+      isFree(candidate, others, placedLabels, placedCorridors, obstacles, clearance))
     if (chosen === undefined) {
-      pending.push({ index, group, bbox, numeral })
+      pending.push({ index, group, outline, numeral })
       continue
     }
-    placed.push(...chosen.occupied)
-    fragments.push(leaderLineFragment(chosen, numeral, group.fontSize))
+    accept(chosen, numeral, group.fontSize)
   }
-  // 二次扫描：正交四向失败的节点改试斜向锚点，仍无空间才退化为内嵌标号。
+  // 二次扫描：正交方向失败的节点改试斜向锚点，仍无空间才退化为内嵌标号。
   for (const item of pending) {
-    const chosen = diagonalPlacements(item.bbox, item.numeral, item.group.fontSize, gap).find(candidate =>
-      isFree(candidate, nodeRects, placed, obstacles))
+    const others = nodeRectsExcept(nodeRects, item.index)
+    const chosen = diagonalPlacements({
+      outline: item.outline,
+      numeral: item.numeral,
+      fontSize: item.group.fontSize,
+      gap,
+      push,
+    }).find(candidate => isFree(candidate, others, placedLabels, placedCorridors, obstacles, clearance))
     if (chosen === undefined) {
-      embedded.set(item.index, embedNumeralInGroup(item.group.raw, item.numeral))
+      embedded.set(item.index, embedNumeralInGroup(stripEmbeddedNumeralsInGroup(item.group.raw), item.numeral))
       warnings.push(`节点 "${item.group.title}" 周边无引线空间，标号 ${item.numeral} 已内嵌`)
       continue
     }
-    placed.push(...chosen.occupied)
-    fragments.push(leaderLineFragment(chosen, item.numeral, item.group.fontSize))
+    accept(chosen, item.numeral, item.group.fontSize)
   }
   references.forEach((ref, index) => {
     if (!groups.some(group => group.referenceIndex === index)) {
@@ -865,15 +1109,17 @@ export function annotateSvgWithLeaderLines(
   let cursor = 0
   for (const [index, group] of groups.entries()) {
     const end = group.offset + group.raw.length
-    result += svgText.slice(cursor, group.offset) + (embedded.get(index) ?? group.raw)
+    const base = embedded.get(index)
+      ?? (group.referenceIndex >= 0 ? stripEmbeddedNumeralsInGroup(group.raw) : group.raw)
+    result += source.slice(cursor, group.offset) + base
     cursor = end
   }
-  result += svgText.slice(cursor)
+  result += source.slice(cursor)
   if (fragments.length === 0) return { svg: result, warnings }
   const closeIndex = result.toLowerCase().lastIndexOf('</svg>')
   const fragment = `<g id="leader-lines">\n${fragments.join('\n')}\n</g>\n`
   result = result.slice(0, closeIndex) + fragment + result.slice(closeIndex)
   const canvas = parseCanvas(result)
-  if (canvas !== undefined) result = expandCanvas(result, canvas, placed, pad, warnings)
+  if (canvas !== undefined) result = expandCanvas(result, canvas, [...placedCorridors, ...placedLabels], pad, warnings)
   return { svg: result, warnings }
 }

@@ -48,6 +48,21 @@ describe('内置 manifest 的阶段法律指引（guidance）', () => {
     expect(draft).not.toContain('逐条答复每项被驳')
   })
 
+  it('OA 答复：修订轮要求先认定第一次答复是否修改权利要求 1，不得沿用答复计划的机器默认', () => {
+    const draft = stageOf('patent_oa_response_v1', 'draft') ?? ''
+    // 上游 response-plan 在 claims 无行首编号时把权 1 当从属并给「删除」；
+    // 指引必须点名这是机器默认，并要求按 claims 与原权利要求比对后二选一。
+    expect(draft).toContain('第一次答复未修改权利要求 1，本次亦不修改')
+    expect(draft).toContain('权利要求1（从属）：删除')
+    expect(draft).toContain('没有独立权利要求被点出')
+    expect(draft).toContain('修改前文本、修改后文本与原说明书或原权利要求书的记载依据')
+    // 禁止把两种情形写进同一份答复；该禁令必须点名具体的附条件措辞。
+    expect(draft).toMatch(/不得写「删除前次答复中的进一步限定（如有）」/)
+    expect(draft).toContain('不得用「如审查员认为……」')
+    expect(draft).toContain('总体立场按①纯争辩（不修改）陈述')
+    expect(draft).toContain('未修改时写不修改的理由＋权利要求全文')
+  })
+
   it('创造性：closest 缺证据推断规则，diff 技术问题纪律，hint 软件与组合方案边界条件', () => {
     const closest = stageOf('patent_inventiveness_v1', 'closest')
     expect(closest).toContain('边界条件')

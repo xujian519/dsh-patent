@@ -175,6 +175,9 @@ describe('patent-tools real Loader composition', () => {
         '    figureTextToPath: true',
         // 指向不存在的路径：与机器上是否装了 Inkscape 无关，结果确定。
         '    inkscapeExecutable: "/nonexistent/inkscape-probe"',
+        '    figureLeaderClearanceMm: 0.8',
+        '    figureLeaderPushStepMm: 1',
+        '    figureLeaderPushLimitMm: 12',
         '    figureOutputDir: ' + JSON.stringify(figures),
         '    figureIndexFile: ' + JSON.stringify(join(notes, 'figures-index.json')),
       ])

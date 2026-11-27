@@ -175,8 +175,11 @@ describe.skipIf(!hasDot)('real Graphviz rendering (needs `dot` installed)', () =
       { label: '传感器', numeral: '20' },
       { label: '处理器', numeral: '30' },
     ])
-    expect(annotated.svg).toContain('传感器 (500) (20)')
-    expect(annotated.svg).toContain('处理器 (502) (30)')
+    // 重标注替换图内既有标号，而不是叠加成「(500) (20)」。
+    expect(annotated.svg).toContain('传感器 (20)')
+    expect(annotated.svg).toContain('处理器 (30)')
+    expect(annotated.svg).not.toContain('(500)')
+    expect(annotated.svg).not.toContain('(502)')
     expect(annotated.warnings).toEqual([])
   })
 
@@ -236,7 +239,9 @@ describe.skipIf(!vizAvailable)('real WASM rendering (bundled @viz-js/viz, no `do
     const annotated = annotateSvg(svg, [
       { label: '控制单元', numeral: '20' },
     ])
-    expect(annotated.svg).toContain('控制单元 (102) (20)')
+    // 生成时写入的 (102) 被本次标注替换，不叠加。
+    expect(annotated.svg).toContain('控制单元 (20)')
+    expect(annotated.svg).not.toContain('(102)')
     expect(annotated.warnings).toEqual([])
   })
 

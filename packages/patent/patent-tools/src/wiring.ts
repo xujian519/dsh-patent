@@ -588,12 +588,19 @@ function registerFigureTools(wiring: PatentToolWiring): void {
     ...(wiring.config.figureFailOnRenderFindings === undefined ? {} : { failOnRenderFindings: wiring.config.figureFailOnRenderFindings }),
     ...(wiring.config.figureMinSheetFillRatio === undefined ? {} : { minSheetFillRatio: wiring.config.figureMinSheetFillRatio }),
     ...(wiring.config.figureFontMm === undefined ? {} : { figureFontMm: wiring.config.figureFontMm }),
+    ...(wiring.config.figureLeaderClearanceMm === undefined ? {} : { leaderClearanceMm: wiring.config.figureLeaderClearanceMm }),
+    ...(wiring.config.figureLeaderPushStepMm === undefined ? {} : { leaderPushStepMm: wiring.config.figureLeaderPushStepMm }),
+    ...(wiring.config.figureLeaderPushLimitMm === undefined ? {} : { leaderPushLimitMm: wiring.config.figureLeaderPushLimitMm }),
     ...(wiring.config.figurePageSize === undefined ? {} : { pageSize: wiring.config.figurePageSize }),
     ...(wiring.config.figureOrientation === undefined ? {} : { orientation: wiring.config.figureOrientation }),
     ...(wiring.config.figureDpi === undefined ? {} : { dpi: wiring.config.figureDpi }),
     ...(wiring.config.figureMargin === undefined ? {} : { marginCm: wiring.config.figureMargin }),
   }))
-  wiring.ctx.tools.register(createAddPatentFigureReferencesTool({}))
+  wiring.ctx.tools.register(createAddPatentFigureReferencesTool({
+    ...(wiring.config.figureLeaderClearanceMm === undefined ? {} : { leaderClearanceMm: wiring.config.figureLeaderClearanceMm }),
+    ...(wiring.config.figureLeaderPushStepMm === undefined ? {} : { leaderPushStepMm: wiring.config.figureLeaderPushStepMm }),
+    ...(wiring.config.figureLeaderPushLimitMm === undefined ? {} : { leaderPushLimitMm: wiring.config.figureLeaderPushLimitMm }),
+  }))
   // 渲染复核:量测已生成的 SVG 附图(标号是否被线条贯穿、点划线是否被实线覆盖、相邻
   // 零件剖面线是否可区分、内容是否越出画布)。生成后的自动复核在生成工具内部完成,
   // 本工具供已交付/外部生成的 SVG 做交付前自检。

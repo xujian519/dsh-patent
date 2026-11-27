@@ -461,3 +461,163 @@
 - 证据：正则 `(\d+)[^\d，。；：、（）()]{0,8}?的…(\d+)` 把「的」两侧的非数字字符限制在 8 个以内，长修饰语的归属关系不命中。
 - 待确认：上限可能是为了压误报而设；放宽前需要一组真实句子的误报率。
 - 状态：**未修**。
+
+## F-PAT-105 判例检索不按文档类型收窄（B7，P1）
+
+- 位置：`packages/patent/patent-knowledge/src/case-law/case-law-search.ts`（三条静态热路径 SQL、`appendCaseLawFilters`、`stmtCount`）。
+- 维度：语义（把法条当判例返回）。
+- 严重度：P1。
+- 证据：`documents` 表同时存 case/judgment/law_article/guideline_rule/concept/personal_note，而 `CaseLawDocType` 类型只允许 `case`/`judgment`，SQL 却不加 `doc_type` 过滤。真库上搜「假冒专利的」前五条是 1 条 judgment + 4 条 `law_article`。
+- 影响：模型把法条、审查指南当作在先判例引用，证据归属错误。
+- 最小修复：静态 SQL 与动态过滤统一加 `d.doc_type IN ('case','judgment')`；`count()` 同步收窄。
+- 状态：已修（2026-11-27，B7）；FTS / LIKE / 前缀三条路径各一条用例。
+
+## F-PAT-106 node_type 别名把语料真实类型映射掉（B7，P1）
+
+- 位置：`packages/patent/patent-knowledge/src/patent/patent-kg-adapter.ts`（`resolveNodeTypes`）。
+- 维度：语义（按类型浏览恒为 0）。
+- 严重度：P1。
+- 证据：真库 `node_type` 取值是 `Judgment`(6,831) / `LawArticle`(3,500)，而别名表把二者映射成 `SupremeCourtJudgment`/`RegionalCourtJudgment` 与 `Clause`/`Chapter`——这四个类型在真库各 0 行；展开结果不含原名。
+- 影响：`patent_kg_query` 按 `node_type=Judgment` 浏览返回空，模型得出「图谱里没有判决」的错误结论。
+- 最小修复：展开结果以传入名为首项，后接历史别名。
+- 状态：已修（2026-11-27，B7）；别名断言与「语料用原名存储时仍能浏览」各一条用例。
+
+## F-PAT-107 知识库安装先提交再破坏性裁剪（B7，P2）
+
+- 位置：`packages/patent/patent-knowledge/src/install.ts`。
+- 维度：持久化（半成品覆盖可用产物）。
+- 严重度：P2。
+- 证据：`VACUUM INTO` 的紧凑副本先 `commitTempSibling` 到输出，随后在输出上执行建列、压缩、删表、二次 `VACUUM`；任一步失败都留下半裁剪库，且上一份可用库已被 rename 覆盖。最坏情形是 `search_prefix` 全为 NULL，判例短查询静默丧失正文召回。
+- 最小修复：全部裁剪在临时副本上完成，成功后才提交；失败时删除临时文件。
+- 状态：已修（2026-11-27，B7）；「裁剪步骤失败时旧输出原样保留且无残留临时文件」一条用例。
+
+## F-PAT-108 KG 引用关系词表漏掉语料里最多的两类边（B7，P2）
+
+- 位置：`packages/patent/patent-knowledge/src/patent/patent-kg-adapter.ts`（`CITE_RELATIONS`）与 `packages/patent/patent-tools/src/tool/patent-kg-query.ts`（同名单）。
+- 维度：覆盖面（引用链静默缺失）。
+- 严重度：P2。
+- 证据：真库 `kg_edges.relation` 有 `CITES_EVIDENCE`(74,151)、`APPLIES_LAW`(54,012)，词表只含 `CITES`/`CITES_LAW`/`FREQUENTLY_CITES`/`REFERENCES`，其中后两个在真库不存在。
+- 影响：约 12.8 万条「决定—证据」「决定—法条」边不展开，模型看不到引用链且无任何提示。
+- 最小修复：词表补齐两类边并保留旧写法；工具侧改为引用库包导出的同一常量。
+- 状态：已修（2026-11-27，B7）；工具邻居调用断言同步。
+
+## F-PAT-109 引用门把「本索引不管的法律」判成核验失败（B7，P1）
+
+- 位置：`packages/patent/patent-rule/src/runtime/citation-gate.ts`。
+- 维度：门禁（误拒合法交付）。
+- 严重度：P1。
+- 证据：`civilIndex()` 只载入民法典与民诉法，而抽取器无条件识别 `INITIAL_LAW_NAMES` 里的劳动合同法、公司法；`verifyLegalCitation` 对未载入法律返回 `not-indexed`，`BLOCKING` 含该值。实测「依据劳动合同法第39条」被拒，文案还劝模型删掉正确引用。
+- 影响：声明了 `citationGate` 的部署会拒掉职务发明/权属意见里的合法引用。
+- 最小修复：索引补齐四部常引法；对索引未覆盖的法律跳过而不是判失败。
+- 状态：已修（2026-11-27，B7）；四部法、越界、未索引法各一条用例。
+
+## F-PAT-110 显式 manifestPath 失效时静默退化为 base 包（B7，P1）
+
+- 位置：`packages/patent/patent-rule/src/runtime/rule-pack.ts`（`loadRulePack`）。
+- 维度：装配（误配置静默降级）。
+- 严重度：P1。
+- 证据：清单不存在或解析失败只 push 一条 warning，随后用 `{base:'base'}` 继续；实测路径拼错后规则数从 125 条降到 6 条，门禁「仍在跑」。
+- 影响：专利全量规则（含 31 条 block 级）整体不加载，且只有一行 warn。
+- 最小修复：显式配置的清单读不到或解析失败时抛错；仅未配置才走默认。
+- 状态：已修（2026-11-27，B7）；不存在与解析失败各一条用例，`apply-branches` 相应更新。
+
+## F-PAT-111 移除成员把已取消/失败的任务复活成 pending（B7，P1）
+
+- 位置：`packages/patent/patent-teams/src/member-runtime.ts`（`removeMember`）。
+- 维度：状态机（绕过终态）。
+- 严重度：P1。
+- 证据：requeue 循环只跳过 `completed`，随后对 `cancelled`/`failed` 调用 `invalidateTaskAttempt`，该函数无条件把状态改回 `pending` 并删除 output，末尾 `kickTeam` 随即重新派发。`TASK_TRANSITIONS` 里两者都是没有出边的终态。
+- 影响：队长显式取消的任务在移除成员时被静默重开并重跑。
+- 最小修复：终态任务只保留，不再 invalidate。
+- 状态：已修（2026-11-27，B7）；「已取消任务不被重新入队」一条用例。
+
+## F-PAT-112 审批门缺 handler 时被 executor 文本顶替（B7，P1）
+
+- 位置：`packages/patent/patent-workflow/src/workflow.ts`（`assertKnownAtoms`）、`workflow/executor.ts`。
+- 维度：门禁（未问过读成已放行）。
+- 严重度：P1。
+- 证据：`assertKnownAtoms` 只校验 atom 契约；handler 查不到时 `runStageOnce` 落到 executor 分支，把调用方给的文本记为阶段产出，`degraded=false`，事件里仍带 `atom:'approval-gate'` 且 `completed:true`。
+- 影响：下游无法区分「门已放行」与「门被一段文本填掉」。
+- 最小修复：审批门阶段必须注册 handler；收口重放显式传 `atomStagesMayUseExecutor: true`。
+- 状态：已修（2026-11-27，B7）；拒绝与显式放行各一条用例，`patent-tools` 的 recap 已显式声明。
+
+## F-PAT-113 结构化缺口重试耗尽被记成完成（B7，P2）
+
+- 位置：`packages/patent/patent-workflow/src/workflow.ts`（回退耗尽分支）。
+- 维度：语义（未完成读成完成）。
+- 严重度：P2。
+- 证据：文本信号耗尽标记 `degraded`，结构化信号耗尽直接 `pushStageResult`，输出非空即 `degraded=false`；`legal_gaps`/`draft_review` 类缺口门重试耗尽后运行报 `completed:true`、`degradedSteps:[]`，唯一痕迹是 `revisions[].outcome='exhausted'`。
+- 最小修复：结构化耗尽同样标记 degraded，并加 `[WORKFLOW_REVISION_EXHAUSTED]` 前缀。
+- 状态：已修（2026-11-27，B7）；两条既有用例改为断言 `completed === false` 与降级步骤。
+
+## F-PAT-114 引擎 JSON 数组里的 null 元素让整次元数据调用失败（B7，P2）
+
+- 位置：`packages/patent/patent-data/src/mapper.ts`。
+- 维度：边界校验（wire 输入）。
+- 严重度：P2。
+- 证据：`parseJsonArray('[null]')` 返回 `[null]`，`item[key]` 抛 `TypeError`；`classifications` 也未过滤非字符串。该缺陷原登记为 F-PAT-055，本轮复现。
+- 最小修复：`extractNames` 先判 `item` 是非空对象，`classifications` 过滤非字符串。
+- 状态：已修（2026-11-27，B7），F-PAT-055 随之关闭。
+
+## F-PAT-115 ego-browser 环境白名单在真实 subprocess 上不生效（B7，P2）
+
+- 位置：`packages/patent/patent-data/src/ego-session.ts`（`buildEnv`）。
+- 维度：最小权限（承诺未达成）。
+- 严重度：P2。
+- 证据：`buildEnv` 只复制白名单名字，注释写「其余名称省略」；但 `SubprocessSpawnSpec.env` 的契约是合并到 `scrubbedParentEnv()` 之上（`{ ...scrubbedParentEnv(), ...extra }`），省略不等于移除。`SENSITIVE_ENV_PATTERN` 只擦 `KEY|PASSWORD|SECRET|TOKEN`，`GH_PAT`/`SSH_AUTH_SOCK`/`NODE_OPTIONS`/`AWS_PROFILE` 会进入第三方浏览器进程。原登记为 F-PAT-016，其修复只改了断言层。
+- 影响：README 与 JSDoc 的最小权限承诺在出厂 bundle 上不成立。
+- 最小修复：对每个非白名单名字写 `undefined` 墓碑。
+- 状态：已修（2026-11-27，B7），F-PAT-016 随之关闭；用 `scrubbedParentEnv()` 合并后断言两条环境名消失。
+
+## F-PAT-116 CNIPR 通道的三处完整性缺口（B7，未修）
+
+- 位置：`packages/patent/patent-data/src/cnipr-script.ts`（逐号 catch、翻页 break、`resolveAppNumber`）、`cnipr-receipt.ts`（法律状态 total 不比对）。
+- 维度：通道完整性。
+- 严重度：P2。
+- 证据：逐号 catch 只取 `.message`，批量中途登录失效的 `login_required` 码丢失；翻页找不到链接时静默 `break`，`limit>10` 只返回 10 条且无告警；公开号转申请号取页面第一个匹配而不绑定结果行；法律状态 `total` 与 `records.length` 从不比对，页面改版会表现为「查询成功但无记录」。
+- 为什么不修：这四处都要连带改通道返回契约（批量失败提升、`page_state` 判据、行级绑定、`dropped` 对称检查），且多页路径没有真机用例；需要一次专门的通道维护。
+- 状态：**未修**，待决策。
+
+## F-PAT-117 知识库剩余的 P3 组（B7，未修）
+
+- 位置：`wiki-card-loader.ts`（card-index 合并把缺省写成 `undefined`、`titleFromFileName` 契约与实现不符）、`index.ts`（服务不注入 logger/stats）、`install.ts`（`verifyComponents` 失败不释放句柄）、`db-version.ts`（只在 `user_version=0` 补 `application_id`）、`config.ts`（查询库路径构造期固定，先启动后安装需重启）、`knowledge-law-search.ts`（`limit` 未归一化）。
+- 严重度：P3。
+- 为什么不修：均为潜伏缺陷或有更好的既有实现可对照，但单条影响限于诊断与可观测性；`limit` 归一化在仓内无生产调用点。留待知识库的下一次维护窗口统一处理。
+- 状态：**未修**。
+
+## F-PAT-118 工作流剩余的 P2/P3 组（B7，未修）
+
+- 位置：`workflow.ts`（续跑用本次 ctx 覆盖恢复态、executor 阶段收不到 AbortSignal、`completed` 未与阶段数对齐、续跑后 pending 回退记录丢 `after`、并行组一个阶段中断不停其它）、`flexible-plan.ts`（读回不校验 atom/params）、`role-contracts.ts`（`verify()` 生产路径不调用）、`index.ts`（构造器全局注册不受 ctx 生命周期）。
+- 严重度：P2（续跑材料覆盖与取消信号）/ P3（其余）。
+- 为什么不修：续跑一致性需要把 manifest 结构摘要与材料摘要写进 recovery，属协议扩展；取消信号要扩 `StageExecutor` 签名，跨 patent-core；其余为防御路径。留待与工作流恢复协议一起改。
+- 状态：**未修**，待决策。
+
+## F-PAT-119 团队剩余的 P2/P3 组（B7，未修）
+
+- 位置：`task-ops.ts`（质量门禁打回判据通过后不清除、`attemptId` 缺失时能力校验跳过、`updateTask` 无 `reassigning` 守卫）、`tools.ts`（`claim_task` 文案与执行相反）、`scheduler.ts`（派发失败回滚早退把成员留 `working`）、`member-runtime.ts`（孤儿成员 retire 失败静默吞）。
+- 严重度：P2（门禁判据、attempt 校验）/ P3（其余）。
+- 为什么不修：门禁判据要在 host 状态与客户端 fold 两侧同时加「门通过」事件，属事件契约扩展；`attempt_id` 强制会让既有「队长代填」路径失效，需先确认调用方；其余为并发窗口。留待团队事件契约的一次整体调整。
+- 状态：**未修**，待决策。
+
+## F-PAT-120 规则门禁剩余的 P2/P3 组（B7，未修）
+
+- 位置：`RuleLoader.ts`（空 `rules` 文件不计问题、缺 `action` 静默降级 `warn`）、`structural-gate.ts`（制品文本为空或不取字符串时整体不判、未知 rule id 文案说「整条已忽略」实际只剔除该 id）、`patent-compliance.ts`（资产损坏报「未找到」、基础规则绕过 activation-overrides）、`RuleEngine.ts`（无上限法条静默不检查）、`dual-input.ts`（漏「第22条第3款」「A33」写法、22.4 回退到整条族）、`index.ts`（`gateCheckTypes` 解析为空时静默不判）。
+- 严重度：P2（空规则文件、结构门空文本、action 降级）/ P3（其余）。
+- 为什么不修：空规则文件与 `action` 缺失要给规则资产加加载期校验，会连带失败现有资产（当前资产恰好都合规，属潜在缺陷）；结构门空文本的判定口径需要在 `strict` 语义里定；其余为文案与覆盖面。
+- 状态：**未修**，待决策。
+
+## F-PAT-121 writing-patterns 的模型可见契约与分词（B7，未修）
+
+- 位置：`tool/query-writing-patterns.ts`（`命中 N / M` 的 N 是截断后条数、`category` 在三种模式下语义不同但描述未披露、`limit` 非法抛裸 `Error`）、`pattern-store.ts`（构造器重复 id 文档与实际不符、被数字切出的孤立单字权重高于 bigram）。
+- 严重度：P2（前两条）/ P3（其余）。
+- 为什么不修：命中数文案要改输出字段并连带工具目录与快照；`category` 语义要么改成真过滤（行为变更）要么补描述（模型可见文案变更）；分词权重需要先量对检索排序的影响。
+- 状态：**未修**，待决策。
+
+## F-PAT-122 patent-teams 依赖 patent-tools 只为取一个纯函数（B7，P2）
+
+- 位置：`packages/patent/patent-teams/src/task-ops.ts:14`（`import { evaluatePatentContent } from '@deepseek-ai/dsh-patent-tools'`）。
+- 维度：依赖方向（服务层依赖模型工具层）。
+- 严重度：P2。
+- 证据：`evaluatePatentContent` 是 `patent-tools/src/tool/patent-eval.ts` 里的纯函数（JSDoc 自称 pure entry point），`patent-teams` 只用它做质量门禁评分。结果是安装闭包把 39 个模型工具、附图渲染与 FreeCAD 路径一并拖进团队服务。
+- 为什么不修：正确归属是 `patent-core`（`patent-tools` 与 `patent-teams` 都依赖它），需要移动约 290 行、更新两处导出与两条测试路径，并在 `patent-core` 的导出门禁下登记；这是独立的重构，不应与 B7 的缺陷修复混在一起。
+- 状态：**未修**，建议单列一次重构。

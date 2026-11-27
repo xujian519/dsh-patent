@@ -1,0 +1,3 @@
+title: 专利 OA 与撰写实务留出基准(patent-oas-heldout)
+# 留出集只用于测量:optimizeLoop 拒绝该 benchmark,优化只在 dev 面 patent-oas 上进行。
+optimizable: false

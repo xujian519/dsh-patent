@@ -34,6 +34,13 @@ export interface BoundBenchmark {
   id: BenchmarkId
   /** Human-readable title persisted in `benchmark_config.yaml`. */
   title: string
+  /**
+   * Whether `optimizeLoop` may optimize against this benchmark; `false` marks a
+   * held-out benchmark that only `establishBaseline` / `runBenchmark` measure,
+   * so the optimizer never sees its statements or per-case scores. Read from
+   * `benchmark_config.yaml`, defaulting to `true`.
+   */
+  optimizable: boolean
   /** Cases in stable order. */
   cases: CaseSpec[]
 }

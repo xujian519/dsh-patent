@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/self-evolve/self-evolve-benchmark/examples/patent-oas-heldout/README.md
+/patent-oas-heldout-example-benchmark:
+  en: 6b7096239a98d91d
+  zh: 2c930e0fdfd5e5c0
+/patent-oas-heldout-example-benchmark/why-it-exists:
+  en: 5363f14f315a0a16
+  zh: debfc730693dda4c
+/patent-oas-heldout-example-benchmark/cases:
+  en: 48ce538aa623ed16
+  zh: 12d67c48e10daee6
+/patent-oas-heldout-example-benchmark/boundary-prompt-history-isolation-not-a-sealed-set:
+  en: 20f08c982645d79b
+  zh: e33fbfe9ea73ecb6
+/patent-oas-heldout-example-benchmark/seeding-and-measuring:
+  en: 782e8073bb700084
+  zh: 8ffac5acf7aa55f0

@@ -5,9 +5,27 @@
  * @module @deepseek-ai/dsh-patent-tools/tool/internal/bounded-retry
  */
 
-/** Wait for the given delay; the retry never outlives the caller's patience. */
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+/**
+ * Wait for the given delay, ending early when the caller aborts.
+ *
+ * A plain `setTimeout` would keep the caller waiting out the whole backoff after
+ * it cancelled, which contradicts the contract below.
+ * @param ms - backoff duration.
+ * @param signal - caller cancellation; an already-aborted signal resolves at once.
+ * @returns a promise that settles at the deadline or on abort.
+ */
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const onAbort = (): void => {
+      clearTimeout(timer)
+      resolve()
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
 }
 
 /**
@@ -28,10 +46,25 @@ export async function retryBounded<T>(
   let result = await attempt()
   let attempts = 1
   for (const delayMs of retryDelaysMs) {
-    if (!retryable(result) || signal?.aborted === true) break
-    await delay(delayMs)
+    if (!retryable(result) || isAborted(signal)) break
+    await delay(delayMs, signal)
+    // 退避期间被取消：不再发起这次尝试。
+    if (isAborted(signal)) break
     result = await attempt()
     attempts += 1
   }
   return { result, attempts }
+}
+
+/**
+ * Read the abort state again after an `await`.
+ *
+ * A direct `signal?.aborted === true` after the first check is narrowed to
+ * `false` by the type checker, which then rejects the re-read as impossible —
+ * but the abort can arrive while the backoff is pending.
+ * @param signal - the caller's cancellation signal.
+ * @returns whether it is aborted now.
+ */
+function isAborted(signal: AbortSignal | undefined): boolean {
+  return signal?.aborted === true
 }

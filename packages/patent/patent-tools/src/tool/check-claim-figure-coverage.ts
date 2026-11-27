@@ -15,6 +15,7 @@ import { PatentToolError } from '../error.ts'
 import { checkClaimFigureCoverage } from '../figure/claim-figure-coverage.ts'
 import type { ClaimFigureCoverageReport, FigureMarkEntry } from '../figure/claim-figure-coverage.ts'
 import { MARK_COMPONENT_SCHEMA } from './internal/analysis-schemas.ts'
+import { assertUniqueFigureNumbers } from './internal/tool-input.ts'
 
 /** 输入：特征到标号的指认清单与各图标号清单。 */
 export type CheckClaimFigureCoverageInput = {
@@ -144,24 +145,7 @@ export function createCheckClaimFigureCoverageTool(): ToolDefinition {
       if (args.figures.length === 0) {
         throw new PatentToolError('invalid_tool_input', 'figures 至少需要一张附图', { tool: 'check_claim_figure_coverage' })
       }
-      const seen = new Set<number>()
-      for (const figure of args.figures) {
-        if (!Number.isInteger(figure.figure_number) || figure.figure_number < 1) {
-          throw new PatentToolError(
-            'invalid_tool_input',
-            `figure_number 必须是正整数：${String(figure.figure_number)}`,
-            { tool: 'check_claim_figure_coverage' },
-          )
-        }
-        if (seen.has(figure.figure_number)) {
-          throw new PatentToolError(
-            'invalid_tool_input',
-            `figure_number 重复：${String(figure.figure_number)}——每张附图只能出现一次`,
-            { tool: 'check_claim_figure_coverage' },
-          )
-        }
-        seen.add(figure.figure_number)
-      }
+      assertUniqueFigureNumbers(args.figures, 'check_claim_figure_coverage')
 
       const entries: FigureMarkEntry[] = args.figures.map(figure => ({
         figureNumber: figure.figure_number,

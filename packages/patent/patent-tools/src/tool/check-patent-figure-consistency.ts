@@ -14,6 +14,7 @@ import { PatentToolError } from '../error.ts'
 import { checkFigureSetConsistency } from '../figure/figure-set-consistency.ts'
 import type { FigureSetEntry, FigureSetReport } from '../figure/figure-set-consistency.ts'
 import { MARK_COMPONENT_SCHEMA, REPORT_TAIL_FIELDS } from './internal/analysis-schemas.ts'
+import { assertUniqueFigureNumbers } from './internal/tool-input.ts'
 
 /** 输入：各图的标记清单与可选的引用正文。 */
 export type CheckPatentFigureConsistencyInput = {
@@ -137,24 +138,7 @@ export function createCheckPatentFigureConsistencyTool(): ToolDefinition {
       if (args.figures.length === 0) {
         throw new PatentToolError('invalid_tool_input', 'figures 至少需要一张附图', { tool: 'check_patent_figure_consistency' })
       }
-      const seen = new Set<number>()
-      for (const figure of args.figures) {
-        if (!Number.isInteger(figure.figure_number) || figure.figure_number < 1) {
-          throw new PatentToolError(
-            'invalid_tool_input',
-            `figure_number 必须是正整数：${String(figure.figure_number)}`,
-            { tool: 'check_patent_figure_consistency' },
-          )
-        }
-        if (seen.has(figure.figure_number)) {
-          throw new PatentToolError(
-            'invalid_tool_input',
-            `figure_number 重复：${String(figure.figure_number)}——每张附图只能出现一次`,
-            { tool: 'check_patent_figure_consistency' },
-          )
-        }
-        seen.add(figure.figure_number)
-      }
+      assertUniqueFigureNumbers(args.figures, 'check_patent_figure_consistency')
 
       const entries: FigureSetEntry[] = args.figures.map(figure => ({
         figureNumber: figure.figure_number,

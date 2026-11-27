@@ -84,9 +84,7 @@ export { createCheckPatentFigureConsistencyTool } from './tool/check-patent-figu
 export type { CheckPatentFigureConsistencyInput } from './tool/check-patent-figure-consistency.ts'
 export { checkFigureSetConsistency, extractClaimNumeralRefs, hasNumeralPrefix } from './figure/figure-set-consistency.ts'
 export type { FigureSetEntry, FigureSetConflict, FigureSetReport } from './figure/figure-set-consistency.ts'
-export { createCheckClaimFigureCoverageTool } from './tool/check-claim-figure-coverage.ts'
 export type { CheckClaimFigureCoverageInput } from './tool/check-claim-figure-coverage.ts'
-export { checkClaimFigureCoverage } from './figure/claim-figure-coverage.ts'
 export type {
   ClaimFeatureBinding,
   FigureMarkEntry,

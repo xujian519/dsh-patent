@@ -41,10 +41,11 @@ evaluationDigest: "sha256:2c399dd0945fbfce34eb0c6495386151f0f9a865e42d0121714e4a
 baselines:
   - execution: prompt
     path: packages/self-evolve/evaluation/patent-oas-baseline.json
-  # patent_oa_response_v1 的基线声明暂时撤出:简洁链(2026-10-31)修订轮的
-  # amendment-grounding 稳定低于 node 下限,按新协议重录的采集无法满足门槛。
-  # 修复与重录见 #979;修好前该面没有基线,--run/--accept 会拒绝这个被测面。
-  # 旧基线文件 patent-oas-workflow-baseline.json 保留作参考。
+  # patent_oa_response_v1 的修订轮曾把答复计划的 A33 机器默认当成既成修改,
+  # amendment-grounding 稳定低于 node 下限;2026-11-27 修 manifest 指导后重录基线(#979)。
+  - execution: workflow
+    workflowId: patent_oa_response_v1
+    path: packages/self-evolve/evaluation/patent-oas-workflow-baseline.json
   - execution: workflow
     workflowId: patent_disclosure_v1
     path: packages/self-evolve/evaluation/patent-oas-disclosure-workflow-baseline.json

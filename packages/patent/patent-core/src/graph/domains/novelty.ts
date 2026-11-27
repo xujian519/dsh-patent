@@ -84,7 +84,7 @@ function priorArtInput(priorArt: readonly unknown[]): NumericRangeInput['priorAr
   }))
 }
 
-const numericRangeNode: GraphNode = async ({ state, provider }) => {
+const numericRangeNode: GraphNode = async ({ state, provider, signal }) => {
   const features = getStateArray(state, 'features').map(String).join('；')
   // 检测源：特征 + 权利要求 + 原始输入文本（数值范围常出现在说明书而非提炼后的特征）。
   const claim = resolveInput(state, ['claim', 'claim_text'])
@@ -139,7 +139,8 @@ const numericRangeNode: GraphNode = async ({ state, provider }) => {
     '请严格输出 JSON：verdict 为整体结论，assessments 为每个数值表述的 { range, category, disclosed, reasoning }。',
   ].join('\n')
   try {
-    const raw = await provider.callLLM(prompt, { jsonSchema: NUMERIC_RANGE_SCHEMA, temperature: 0.1 })
+    // 与 llmNode 一致地转发取消信号：否则图取消后仍会等这次调用结束。
+    const raw = await provider.callLLM(prompt, { jsonSchema: NUMERIC_RANGE_SCHEMA, temperature: 0.1 }, signal)
     const checked = crossCheckNumericVerdict(analysis, readNumericVerdict(raw))
     return {
       numeric_range_result: raw,

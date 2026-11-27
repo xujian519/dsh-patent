@@ -70,23 +70,34 @@ export function TeamsView({
     shallowEqual,
   )
   const hasMore = useSession(state => state.hasMore)
+  // Failures and no-progress pages both settle to `error` instead of
+  // rejecting, so this is the only signal that the drain cannot make progress.
+  const historyStatus = useSession(state => state.historyLoadStatus)
 
   // Drain history while no team has started: each loadOlder prepends one
   // window into the fold, so the snapshot re-evaluates between pages.
   const [drainTick, setDrainTick] = useState(0)
   const drainAttempts = useRef(0)
   useEffect(() => {
-    if (list.length > 0 || !hasMore || drainAttempts.current >= DRAIN_PAGE_LIMIT) return
+    if (list.length > 0 || !hasMore || historyStatus === 'error'
+      || drainAttempts.current >= DRAIN_PAGE_LIMIT) return
     drainAttempts.current += 1
     let cancelled = false
     void loadOlder().finally(() => {
       if (!cancelled) setDrainTick(tick => tick + 1)
     })
     return () => { cancelled = true }
-  }, [list.length, hasMore, loadOlder, drainTick])
+  }, [list.length, hasMore, historyStatus, loadOlder, drainTick])
 
   if (list.length === 0) {
-    return <p className={css.emptyState} data-patent-teams-empty>{t('view.empty')}</p>
+    // While older pages are still pending, "no team records" would be a false
+    // claim: the records may simply sit before the loaded window.
+    const stillPaging = hasMore && historyStatus !== 'error'
+    return (
+      <p className={css.emptyState} data-patent-teams-empty>
+        {stillPaging ? t('view.loading') : t('view.empty')}
+      </p>
+    )
   }
   return (
     <div className={css.root}>

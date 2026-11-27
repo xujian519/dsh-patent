@@ -34,9 +34,10 @@ describe('layoutTeamsDag', () => {
       ['t3', 2, 352],
     ])
     expect(layout.width).toBe(3 * (140 + 36) - 36)
-    expect(layout.height).toBe(52)
+    // 76: a head row, a two-line subject, and the assignee row plus padding.
+    expect(layout.height).toBe(76)
     expect(layout.edges.map(edge => [edge.from, edge.to])).toEqual([['t1', 't2'], ['t2', 't3']])
-    for (const edge of layout.edges) expect(edge.path).toMatch(/^M \d+ 26 C \d+ 26, \d+ 26, \d+ 26$/)
+    for (const edge of layout.edges) expect(edge.path).toMatch(/^M \d+ 38 C \d+ 38, \d+ 38, \d+ 38$/)
   })
 
   it('centers later columns when a depth holds several rows', () => {
@@ -49,8 +50,8 @@ describe('layoutTeamsDag', () => {
     const byId = new Map(layout.nodes.map(node => [node.task.taskId, node]))
     expect(byId.get('t4')!.depth).toBe(2)
     expect(byId.get('t2')!.y).toBe(0)
-    expect(byId.get('t3')!.y).toBe(52 + 14)
-    expect(byId.get('t4')!.y).toBe(33)
+    expect(byId.get('t3')!.y).toBe(76 + 14)
+    expect(byId.get('t4')!.y).toBe(45)
   })
 
   it('keeps a malformed dependency cycle finite', () => {

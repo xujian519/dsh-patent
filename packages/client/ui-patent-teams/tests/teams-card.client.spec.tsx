@@ -28,8 +28,8 @@ const TEAM: PatentTeamsCardData = {
   description: '查新检索',
   status: 'active',
   members: [
-    { memberId: 'child-1', name: 'alice', role: 'researcher', removed: false },
-    { memberId: 'child-2', name: 'bob', removed: true },
+    { memberId: CHILD_ID, name: 'alice', role: 'researcher', removed: false },
+    { memberId: 'child-2' as SessionId, name: 'bob', removed: true },
   ],
   tasks: [
     { taskId: 't1', subject: '检索 A', dependencies: [], assignee: 'alice', status: 'completed', gated: false },
@@ -110,11 +110,7 @@ function cardProps(
 interface ViewHarness {
   readonly loadOlder: ReturnType<typeof vi.fn<() => Promise<void>>>
   readonly hasMore: { current: boolean }
-}
-
-interface ViewHarness {
-  readonly loadOlder: ReturnType<typeof vi.fn<() => Promise<void>>>
-  readonly hasMore: { current: boolean }
+  readonly historyStatus?: { current: 'idle' | 'loading' | 'pendingConsumption' | 'error' }
 }
 
 function viewProps(
@@ -129,7 +125,8 @@ function viewProps(
     useConversation: (selector: (state: { views: Map<string, unknown> }) => unknown) =>
       selector({ views: new Map(snapshot === undefined ? [] : [[PATENT_TEAMS_TARGET, snapshot]]) }),
     useSessions: (selector: (state: SessionListState) => unknown) => selector(sessions),
-    useSession: (selector: (state: { hasMore: boolean }) => unknown) => selector({ hasMore: harness.hasMore.current }),
+    useSession: (selector: (state: { hasMore: boolean; historyLoadStatus: string }) => unknown) =>
+      selector({ hasMore: harness.hasMore.current, historyLoadStatus: harness.historyStatus?.current ?? 'idle' }),
     openSession,
     loadOlder: harness.loadOlder,
     t: makeTranslate(zh),
@@ -159,9 +156,9 @@ describe('TeamsCard', () => {
   it('opens a proven running member session and leaves others inert', () => {
     const openSession = vi.fn()
     render(<TeamsCard {...cardProps(TEAM, listState(), openSession)} />)
-    fireEvent.click(screen.getByRole('button', { name: '打开 alice' }))
+    fireEvent.click(screen.getByRole('button', { name: /打开 alice/ }))
     expect(openSession).toHaveBeenCalledWith('child-1')
-    expect(screen.queryByRole('button', { name: '打开 bob' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /打开 bob/ })).toBeNull()
     expect(screen.getByText('已离队')).toBeTruthy()
   })
 
@@ -216,14 +213,14 @@ describe('TeamsCard', () => {
 
   it('demotes the open button when the member row stops running', () => {
     const view = render(<TeamsCard {...cardProps(TEAM)} />)
-    expect(screen.getByRole('button', { name: '打开 alice' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /打开 alice/ })).toBeTruthy()
     view.rerender(<TeamsCard {...cardProps(TEAM, listState({
       byId: {
         ...listState().byId,
         [CHILD_ID]: { ...listState().byId[CHILD_ID]!, running: false },
       },
     }))} />)
-    expect(screen.queryByRole('button', { name: '打开 alice' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /打开 alice/ })).toBeNull()
   })
 })
 
@@ -274,6 +271,28 @@ describe('TeamsView shell', () => {
     await act(async () => { await Promise.resolve() })
     expect(loadOlder).toHaveBeenCalledTimes(1)
   })
+
+  it('stops draining and stops claiming "no teams" once history reports an error', async () => {
+    // The Session settles both failures and no-progress pages to `error`
+    // without rejecting, so the drain must read that status or it re-requests
+    // the same page until the attempt cap.
+    const harness: ViewHarness = {
+      loadOlder: vi.fn(async () => {}),
+      hasMore: { current: true },
+      historyStatus: { current: 'error' },
+    }
+    render(<TeamsView {...viewProps(undefined, listState(), vi.fn(), harness)} />)
+    await act(async () => { await Promise.resolve() })
+    expect(harness.loadOlder).not.toHaveBeenCalled()
+    expect(screen.getByText(zh['view.empty'])).toBeTruthy()
+  })
+
+  it('announces history paging instead of an empty session while pages remain', () => {
+    const harness: ViewHarness = { loadOlder: vi.fn(async () => {}), hasMore: { current: true } }
+    render(<TeamsView {...viewProps(undefined, listState(), vi.fn(), harness)} />)
+    expect(screen.getByText(zh['view.loading'])).toBeTruthy()
+    expect(screen.queryByText(zh['view.empty'])).toBeNull()
+  })
 })
 
 describe('TeamsDashboard', () => {
@@ -284,9 +303,10 @@ describe('TeamsDashboard', () => {
     expect(team!.getAttribute('data-team-status')).toBe('active')
     expect(screen.getByText('总进度')).toBeTruthy()
     expect(screen.getByText('1/2')).toBeTruthy()
-    expect(screen.getByText('已完成')).toBeTruthy()
+    // The legend label and the DAG node's screen-reader status both read 已完成.
+    expect(screen.getAllByText('已完成').length).toBeGreaterThan(0)
     // The proven running member is the only navigation button on the roster.
-    expect(screen.getByRole('button', { name: '打开 alice' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /打开 alice/ })).toBeTruthy()
     expect(screen.getByText('已离队')).toBeTruthy()
     expect(screen.getByText('队长')).toBeTruthy()
   })
@@ -347,7 +367,7 @@ describe('TeamsDashboard', () => {
   it('opens a running member session from the dashboard', () => {
     const openSession = vi.fn()
     render(<TeamsView {...viewProps({ teams: [TEAM] }, listState(), openSession)} />)
-    fireEvent.click(screen.getByRole('button', { name: '打开 alice' }))
+    fireEvent.click(screen.getByRole('button', { name: /打开 alice/ }))
     expect(openSession).toHaveBeenCalledWith('child-1')
   })
 
@@ -388,8 +408,8 @@ describe('TeamsDashboard', () => {
       name: '评审团队',
       status: 'active',
       members: [
-        { memberId: 'child-1', name: 'alice', role: 'examiner', removed: false },
-        { memberId: 'child-3', name: 'carol', removed: false },
+        { memberId: CHILD_ID, name: 'alice', role: 'examiner', removed: false },
+        { memberId: 'child-3' as SessionId, name: 'carol', removed: false },
       ],
       tasks: [
         { taskId: 't1', subject: '检索 A', dependencies: [], assignee: 'alice', status: 'completed', gated: false },
@@ -414,11 +434,13 @@ describe('TeamsDashboard', () => {
     expect(screen.getByText('t2「比对」→ 进行中')).toBeTruthy()
     expect(screen.getByText('t1「检索 A」通过契约校验')).toBeTruthy()
     expect(screen.getAllByText('未分配').length).toBe(2)
-    // Hover traces one chain and dims the off-chain branch edges.
-    const t2 = screen.getByRole('button', { name: /比对/ })
+    // Hover traces one chain and dims the off-chain branch edges. DAG nodes
+    // start their accessible name with the task id; the roster button carries
+    // the same words further in, so anchor on the id.
+    const t2 = screen.getByRole('button', { name: /^t2/ })
     fireEvent.focus(t2)
     expect(t2.getAttribute('data-dag-hot')).toBe('true')
-    const offBranch = screen.getByRole('button', { name: /旁支/ })
+    const offBranch = screen.getByRole('button', { name: /^t6/ })
     expect(offBranch.getAttribute('data-dag-dim')).toBe('true')
     // The SVG edges follow the same chain: on-path hot, off-path dimmed.
     const edgeClasses = [...document.querySelectorAll('path')].map(path => path.getAttribute('class') ?? '')

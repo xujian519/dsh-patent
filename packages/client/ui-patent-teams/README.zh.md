@@ -17,7 +17,7 @@ kind: "package-reference"
 - [持久状态与重放](#durable-state-and-replay)
 - [呈现与导航](#presentation-and-navigation)
 - [组合](#composition)
-- [Model Experience](#model-experience)
+- [模型体验](#model-experience)
 - [已知限制与后续工作](#known-limitations-and-deferred-work)
 
 <a id="durable-state-and-replay"></a>
@@ -25,7 +25,7 @@ kind: "package-reference"
 
 `patent-teams/team-created` 以 `teamId` 为键开启一个 Context；成员增删、任务创建、状态迁移、契约裁决、质量门拒绝、邮箱消息与团队删除按日志顺序更新该 Context。聊天 Definition 与视图源 Definition 跑的是 `teams-model.ts` 里的同一个 reducer，卡片与"团队"tab 是同一折叠的两个投影，不可能不一致。只含更新事件的历史尾页会保持 pending，直到更早的页补给唯一的 start；prepend、完整重放与增量 append 收敛到同一状态。后到的有效契约裁决会清掉先前的降级字段——最新裁决拥有任务视图。`patent-teams/team-deleted` 将团队标记为已解散但保留记录供复盘，与 host 的磁盘归档一致。折叠还为每个团队保留最近八条任务迁移与邮箱消息的动态流，供"团队"tab 使用。
 
-"团队"tab 经由按会话隔离的 `ConversationViewBuilder` 读取 `patentTeams` 视图快照，builder 在增量 upsert 间保持团队创建顺序。由于折叠依赖唯一的 start 事件，若打开时已加载窗口只含尾部，只要尚未出现任何团队，视图就会持续向前翻页会话历史（Session 面的 `loadOlder`，上限 400 页）——长会话不再出现假空态。没有团队记录的会话仍显示空态；tab 本身是每个会话视图中的固定入口（order 30，位于"轨迹"与"文档"之后）。
+"团队"tab 经由按会话隔离的 `ConversationViewBuilder` 读取 `patentTeams` 视图快照，builder 在增量 upsert 间保持团队创建顺序。由于折叠依赖唯一的 start 事件，若打开时已加载窗口只含尾部，只要尚未出现任何团队，视图就会持续向前翻页会话历史（Session 面的 `loadOlder`，上限 400 页）——长会话不再出现假空态。回溯期间显示加载态而非空态；历史加载失败或无法前进时（`historyLoadStatus` 为 `error`）停止回溯并回到空态。没有团队记录的会话仍显示空态；tab 本身是每个会话视图中的固定入口（order 30，位于"轨迹"与"文档"之后）。
 
 <a id="presentation-and-navigation"></a>
 ## 呈现与导航
@@ -37,13 +37,14 @@ kind: "package-reference"
 <a id="composition"></a>
 ## 组合
 
-包以 Cordis effect 注册两个 Conversation Node Definition、一个视图 Definition、locale 字典、keyed `patent-teams` Chat 渲染器与 `teams` 会话视图。移除 client 入口即收回全部贡献。发布的 Web bundle 在 `ui-workflow-run` 之后收录本插件；桌面 app 经同一 roster 自动继承。
+包以 Cordis effect 注册两个 Conversation Node Definition、一个视图 Definition、locale 字典、keyed `patent-teams` Chat 渲染器与 `patentTeams` 会话视图。移除 client 入口即收回全部贡献。发布的 Web bundle 在 `ui-workflow-run` 之后收录本插件；桌面 app 经同一 roster 自动继承。
 
-## Model Experience
+<a id="model-experience"></a>
+## 模型体验
 
 无：本包为人渲染持久会话事实，不新增 prompt、工具 schema、请求内容或模型可见结果。
 
-#### KV Cache effect
+#### KV Cache 影响
 
 无。
 

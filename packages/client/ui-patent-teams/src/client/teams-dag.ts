@@ -9,8 +9,14 @@ import type { PatentTeamsCardTask } from './teams-model.ts'
 
 /** Fixed node geometry: compact nodes with room for curved dependency edges. */
 const DAG_NODE_WIDTH = 140
-/** Node height in canvas units. */
-const DAG_NODE_HEIGHT = 52
+/**
+ * Node height in canvas units. The dashboard fixes `.dagNode` to this height
+ * with `box-sizing: border-box`: a head row, a two-line subject, and the
+ * assignee row need 63px, plus 12px padding and the 1px border. A shorter
+ * height let a two-line subject overflow into the next row and hid the
+ * dependency edges behind the node bodies.
+ */
+const DAG_NODE_HEIGHT = 76
 /** Minimum horizontal gap between dependency columns. */
 const DAG_COLUMN_GAP = 36
 /** Minimum vertical gap between sibling rows. */

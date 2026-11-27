@@ -1,5 +1,5 @@
 ---
-description: "DSH Patent 的品牌占位实现：侧栏标志与空白会话 hero，无条件注册，使 fork 构建显示自有标志而非官方鲸鱼；供选择或替换品牌呈现的用户与维护者阅读。"
+description: "DSH Patent 的品牌占位实现：侧栏标志与产品名、空白会话 hero，无条件注册，使 fork 构建显示自有标志而非官方鲸鱼；供选择或替换品牌呈现的用户与维护者阅读。"
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-本包为 fork 构建提供自己的标志，用于侧栏与空白会话 hero。`BRAND_GUIDELINES.md` 允许项目以 `DSH` 缩写命名，但要求项目不要把官方素材呈现成似乎得到 DeepSeek 背书；一个自称 `DSH Patent` 却随附鲸鱼标志的 fork 正是这种情况。为拥有自身身份的部署选择本包。与 `dsh-client-ui-brand-official` 不同，本包在每一个构建 profile 上都注册，因为 fork 的 profile 从不是 `official`，而 profile 门禁会让官方 fallback 留在原位。它没有运行时状态，也不影响模型请求。
+本包为 fork 构建提供自己的标志与产品名（侧栏），以及空白会话 hero 的标志。`BRAND_GUIDELINES.md` 允许项目以 `DSH` 缩写命名，但要求项目不要把官方素材呈现成似乎得到 DeepSeek 背书；一个自称 `DSH Patent` 却随附鲸鱼标志的 fork 正是这种情况。为拥有自身身份的部署选择本包。与 `dsh-client-ui-brand-official` 不同，本包在每一个构建 profile 上都注册，因为 fork 的 profile 从不是 `official`，而 profile 门禁会让官方 fallback 留在原位。它没有运行时状态，也不影响模型请求。
 
 ## 目录
 
@@ -25,7 +25,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-把本插件挂到拥有自身身份的部署的浏览器插件清单中。它占用 `sidebar.brand.mark` 与 `conversation.hero.brand.mark`，替换这两个插槽原本渲染的两个 fallback：侧栏的共享 `FishLogo` 与 hero 的动画 `HeroFish`。
+把本插件挂到拥有自身身份的部署的浏览器插件清单中。它占用 `sidebar.brand.mark`、`sidebar.brand.name` 与 `conversation.hero.brand.mark`，替换这三个插槽原本渲染的三个 fallback：侧栏的共享 `FishLogo`、本地构建产品名与 hero 的动画 `HeroFish`。
 
 ### 为什么不带 profile 门禁
 

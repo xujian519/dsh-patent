@@ -8,6 +8,7 @@ import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import { loadLegalLawBaselines } from '@deepseek-ai/dsh-legal-law'
 import * as PatentRule from '@deepseek-ai/dsh-patent-rule'
 import { defineContentToolFixture, executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import {
@@ -78,6 +79,31 @@ describe('blockingCitationDecisions', () => {
     const reasons = blockingCitationDecisions('民事诉讼法第999条')
     expect(reasons[0]).toContain('第999条')
     expect(blockingCitationDecisions('民事诉讼法第66条')).toEqual([])
+  })
+
+  it('verifies every statute the extractor recognizes unconditionally', () => {
+    // 职发明/权属意见常引劳动合同法、公司法；索引缺这两部时会把合法引用判成失败。
+    expect(blockingCitationDecisions('依据劳动合同法第39条。')).toEqual([])
+    expect(blockingCitationDecisions('依照公司法第1条。')).toEqual([])
+    expect(blockingCitationDecisions('依据劳动合同法第999条。')[0]).toContain('第999条')
+  })
+
+  it('does not flag a statute outside the shipped index as blocking', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'legal-law-criminal-'))
+    writeFileSync(join(dir, 'criminal-law.yaml'), [
+      'law: 刑法',
+      'document: 中华人民共和国刑法',
+      'revision: 2023-09-01 通过',
+      'maxArticle: 452',
+      'articles:',
+      '  - article: 264',
+      '    topics:',
+      '      - 刑法',
+    ].join('\n'))
+    // 另一个消费者（legal_law_verify）加载全部法名后，抽取器也会认识刑法；
+    // 本门禁没有它的基线，不能把「未索引」报成核验失败。
+    loadLegalLawBaselines(dir)
+    expect(blockingCitationDecisions('依据刑法第264条。')).toEqual([])
   })
 
   it('applies only to the declared tool and arguments', () => {

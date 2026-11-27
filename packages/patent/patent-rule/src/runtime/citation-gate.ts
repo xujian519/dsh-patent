@@ -45,15 +45,27 @@ function patentIndex(): Map<LawName, LawBaseline> {
 }
 
 /**
- * The two civil statutes the patent rules cite, parsed without the rest of the
- * legal-law corpus.
- * @returns baselines for 民法典 and 民事诉讼法.
+ * The civil statutes the patent rules cite most, parsed without the rest of
+ * the legal-law corpus. Every name in `INITIAL_LAW_NAMES` must be covered:
+ * the extractor recognizes those names unconditionally, so a statute missing
+ * here would turn a valid citation into a blocking `not-indexed` finding.
+ */
+const CIVIL_LAW_INDEX_FILES = [
+  'civil-code.yaml',
+  'civil-procedure-law.yaml',
+  'labor-contract-law.yaml',
+  'company-law.yaml',
+]
+
+/**
+ * Baselines for the statutes the patent rules cite.
+ * @returns baselines keyed by law name.
  */
 function civilIndex(): Map<LegalLawName, LegalLawBaseline> {
   if (civilBaselines !== undefined) return civilBaselines
   civilBaselines = new Map()
   const dir = legalLawBaselineDir()
-  for (const file of ['civil-code.yaml', 'civil-procedure-law.yaml']) {
+  for (const file of CIVIL_LAW_INDEX_FILES) {
     const path = join(dir, file)
     const baseline = parseLegalLawBaseline(readFileSync(path, 'utf8'), path)
     civilBaselines.set(baseline.law, baseline)
@@ -76,6 +88,9 @@ export function blockingCitationDecisions(text: string): string[] {
   }
   const civil = civilIndex()
   for (const reference of extractLegalLawReferences(text)) {
+    // 本索引只随包了常引的几部法；其余法名（刑法、著作权法…）不在这里核验，
+    // 不能把「没索引」报成核验失败——那会拒掉合法交付并劝模型删掉正确引用。
+    if (!civil.has(reference.law)) continue
     const finding = verifyLegalCitation(reference, civil)
     if (BLOCKING.has(finding.decision)) reasons.push(`${reference.raw}：${finding.reason}`)
   }

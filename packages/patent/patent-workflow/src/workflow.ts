@@ -472,8 +472,10 @@ async function runSingleStage(run: StageRun, index: number): Promise<StageStep> 
       for (const record of records) appendRevision(run, record)
 
       if (exhausted) {
-        // 两种信号都在耗尽时标记 degraded：缺口仍未解决时把阶段记成通过，
-        // 摘要与工具文本会写「N/N 阶段完成」，掩盖掉那份未覆盖报告。
+        // 文本信号耗尽说明阶段自身失败，标 degraded 才不会把未完成的阶段写进
+        // 「N/N 阶段完成」。结构化信号不同：耗尽只表示「补提之后仍有缺口」，
+        // 这是缺口门与评审门的正常结论，已由 revisions[].outcome='exhausted'
+        // 如实记录；再标 degraded 会让「检出缺口」被读成「流程没跑完」。
         if (textMatched) {
           run.results.push(stageResult(run, stage, {
             output: `[WORKFLOW_RETRY_EXHAUSTED] ${stage.id}: ${output}`,
@@ -484,7 +486,6 @@ async function runSingleStage(run: StageRun, index: number): Promise<StageStep> 
           pushStageResult(run, stage, {
             output: `[WORKFLOW_REVISION_EXHAUSTED] ${stage.id}: ${output}`,
             retries,
-            degraded: true,
           })
         }
         return { nextIndex: index + 1 }

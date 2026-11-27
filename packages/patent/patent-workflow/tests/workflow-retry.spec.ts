@@ -606,14 +606,14 @@ describe('workflow retry validation', () => {
     })
 
     const result = await runWorkflow(manifest, { input: 'x' }, undefined, { atoms, handlers })
-    // 缺口重试耗尽仍未解决：保留产出但标记降级，不能记成 completed。
-    expect(result.completed).toBe(false)
-    expect(result.degradedSteps).toContain('check')
+    // 缺口重试耗尽仍未解决：保留产出与 exhausted 记录，流程照常跑完。
+    expect(result.completed).toBe(true)
+    expect(result.degradedSteps).toEqual([])
     expect(result.revisions?.map(record => record.outcome)).toEqual(['applied', 'exhausted'])
     expect(result.revisions?.[1]).toMatchObject({ gapId: 'gap-2', evidence: 'state.evidence' })
     expect(result.revisions?.[1]?.after).toBeUndefined()
     const check = result.stages.find(stage => stage.stageId === 'check')
-    expect(check?.degraded).toBe(true)
+    expect(check?.degraded).toBe(false)
     expect(check?.output).toContain('[WORKFLOW_REVISION_EXHAUSTED]')
   })
 
@@ -683,9 +683,9 @@ describe('workflow retry validation', () => {
     expect(reviewRounds).toBe(3)
     expect(result.revisions?.map(record => record.outcome)).toEqual(['applied', 'applied', 'exhausted'])
     expect(gateRounds).toBe(1)
-    // 第三次审查仍失败：阶段保留产出但标记降级，运行不算完成。
-    expect(result.completed).toBe(false)
-    expect(result.degradedSteps).toContain('draft_review')
+    // 第三次审查仍失败：阶段保留产出与 exhausted 记录，结论交给下游审批门。
+    expect(result.completed).toBe(true)
+    expect(result.degradedSteps).toEqual([])
   })
 
   it('runWorkflow: structured retry without a signal advances without rewinding', async () => {

@@ -150,3 +150,73 @@
 - 可能的修复方向：把判定改成带上下文的模式（「约」限定在数值前后、「左右」要求前接数值或单位），或改为排除已知复合词。
 - 工作量：0.5 小时（含口径确认）。可自动化：是。
 - 状态：**未修，待决策**。中文没有词边界，改判定就是改领域口径；这一项属于代理师判断，不擅自调整。
+
+## F-PAT-073 缓存包装器丢弃 timeout 与 signal，工具声明的超时形同虚设（B4）
+
+- 位置：`packages/patent/patent-data/src/patent-cache.ts`（`cachedScrapePatent` / `cachedSearchPatents`）；受影响工具 `patent_metadata`、`patent_search`、pdf 下载的无浏览器腿。
+- 维度：无断链 / 正确性与边界（取消与超时）。
+- 严重度：P2。
+- 证据：两个包装器只透传 `limit` 或 `returnAbstract/returnLegal`，`cachedScrapePatent` 的入参类型里根本没有 `timeout`/`signal`。而 `patent_metadata` 的 schema 公开了 `timeout`（默认 30000）并在 execute 里传了 `{timeout, signal}`——生产路径走缓存包装器，两个字段在运行时被静默丢掉：调用方设 5 秒，引擎仍按自带 30 秒走；取消信号到不了底层 fetch。
+- 影响：一个文档化的参数完全无效；取消要等引擎默认超时（最坏三次重试约 90 秒）才收敛。
+- 最小修复：两个包装器接受并透传 `timeout`/`signal`（二者不参与缓存键）；`patent_metadata` 同时把 `exec.signal` 传给 `retryBounded`。
+- 工作量：30 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B4）；新增两条透传用例。
+
+## F-PAT-074 留档的「读—校验—追加」不是原子操作（B4）
+
+- 位置：`packages/patent/patent-tools/src/tool/matter-log-append.ts`（`execute`）。
+- 维度：正确性与边界（并发）。
+- 严重度：P2。
+- 证据：先 `readFile` 取快照，在快照上判定 `reused_artifact_path` / `forked_chain`，再 `appendFile`。两个并发留档读到同一份过期日志、都判无缺陷、各写一条：`_matter-log.md` 里同一产物被登记两次，或同一旧版出现两个后继。
+- 影响：案件"唯一事实源"的取代链确定性被破坏。
+- 最小修复：整段包进 `withFileLock(logPath, …)`（`@deepseek-ai/dsh-atomic-write` 已提供跨进程写者锁），锁内重读。
+- 工作量：20 分钟。可自动化：部分。
+- 状态：已修（2026-11-27，B4）。
+
+## F-PAT-075 重试的退避不可中止，取消后仍会多发一次上游请求（B4）
+
+- 位置：`packages/patent/patent-tools/src/tool/internal/bounded-retry.ts`。
+- 维度：正确性与边界（取消）。
+- 严重度：P2。
+- 证据：`delay` 是不可中止的 `setTimeout`，循环只在退避**前**检查 `signal.aborted`。调用方在退避窗口内取消，循环仍会走完等待并再发一次尝试，与模块头「the retry never outlives the caller's patience」相反。
+- 影响：取消延迟最多一个退避周期，且多一次无用上游请求。
+- 最小修复：退避监听 `signal` 并提前结束，退避后复查中止状态。
+- 工作量：15 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B4）；新增 3 条用例（含取消时不再重试）。
+
+## F-PAT-076 PDF 下载的 timeoutMs 文案与实现口径不一致（B4）
+
+- 位置：`packages/patent/patent-tools/src/tool/patent-pdf-download.ts`（schema 文案）。
+- 维度：模型可见契约。
+- 严重度：P3。
+- 证据：schema 写「整体执行超时」，而实现是每腿预算：`cniprBudgetMs` 取 `max(90s, 按比例份额)`，最坏两腿各用满预算。内部注释明确承认这一点。
+- 影响：模型按「整体上限」理解该参数，对实际耗时产生误判。
+- 最小修复：文案改为「单腿执行预算」并写明 CNIPR 腿的 90 秒下限。
+- 工作量：5 分钟。可自动化：否。
+- 状态：已修（2026-11-27，B4）；同步 `docs/tool-catalog.md` 与 `patent-oa-response` 的工具 schema 快照。
+
+## F-PAT-077 非 Error 抛值会以 `[object Object]` 进入模型可见文案（B4）
+
+- 位置：`tool/internal/approval-gate.ts`、`tool/knowledge-note-save.ts`。
+- 维度：模型可见输出。
+- 严重度：P3。
+- 证据：两处对未知抛值用 `String(error)`；普通对象会渲染成 `[object Object]`，审批暂停原因与保存失败文案因此不可读。
+- 最小修复：统一改用 `@deepseek-ai/dsh-value` 的 `errorMessage`（对敌意抛值也有固定占位）。
+- 工作量：5 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B4）。
+
+## F-PAT-078 无效宣告结论的 claimNo 缺省 0，损坏字段被捏造成「权项 0」（B4，未修）
+
+- 位置：`packages/patent/patent-tools/src/tool/internal/invalidity-json.ts`（多处 `recordNumberOr(value, 'claimNo', 0)`）。
+- 维度：正确性与边界（持久化边界）。
+- 严重度：P3。
+- 证据：`claimNo` 缺失或非法时一律回退 0，而权利要求从 1 起编号。损坏/旧版记录会以「权项 0」进入模型可见报告，且无法与合法数据区分。
+- 状态：**未修**。修法需要在读取处丢弃非法条目并记录缺陷，会改变数组长度与既有测试期望；留待下一轮与渲染侧一起处理。
+
+## F-PAT-079 索引存储的 upsert 只在进程内串行，跨进程并发会丢条目（B4，未修）
+
+- 位置：`packages/patent/patent-tools/src/internal/index-store.ts`（`upsert`）。
+- 维度：正确性与边界（并发）。
+- 严重度：P2。
+- 证据：按文件路径的 Promise 队列只覆盖单进程；两个进程（或外部进程改了同一索引）并发 upsert 时各自读到同一份 `entries`，先后 rename，后者覆盖前者，被覆盖的条目静默丢失且无告警。
+- 状态：**未修**。修法同样是 `withFileLock`，但该模块被附图检索与化学索引共用，需要连同其测试一起改，留待下一轮。

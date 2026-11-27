@@ -34,6 +34,7 @@ import { createPatentMetadataTool } from './tool/patent-metadata.ts'
 import { createPatentLegalStatusTool } from './tool/patent-legal-status.ts'
 import { createPatentCaseSearchTool } from './tool/patent-case-search.ts'
 import { createLawSearchTool } from './tool/law-search.ts'
+import { createPatentCorpusStatusTool } from './tool/patent-corpus-status.ts'
 import { createPatentWikiSearchTool } from './tool/patent-wiki-search.ts'
 import { createPatentKgQueryTool, type KgAdapter } from './tool/patent-kg-query.ts'
 import { createPatentEvalTool } from './tool/patent-eval.ts'
@@ -376,11 +377,17 @@ function registerKnowledgeTools(wiring: PatentToolWiring): void {
     wiring.ctx.tools.register(createPatentCaseSearchTool({
       search: (q, o) => knowledge.caseLawSearch(q, o),
       dbPath: knowledge.paths.queryDbPath,
+      corpusInfo: () => knowledge.corpusInfo(),
     }))
     // 规范原文检索：法规条文与《专利审查指南》全文同出一库（知识库 documents 的两类文档）。
     wiring.ctx.tools.register(createLawSearchTool({
       searchLaw: (q, o) => knowledge.legalSearch(q, o),
       searchGuideline: (q, o) => knowledge.guidelineSearch(q, o),
+      dbPath: knowledge.paths.queryDbPath,
+      corpusInfo: () => knowledge.corpusInfo(),
+    }))
+    wiring.ctx.tools.register(createPatentCorpusStatusTool({
+      corpusInfo: () => knowledge.corpusInfo(),
       dbPath: knowledge.paths.queryDbPath,
     }))
     wiring.ctx.tools.register(createPatentWikiSearchTool({
@@ -406,6 +413,7 @@ function registerKnowledgeTools(wiring: PatentToolWiring): void {
   } else {
     wiring.ctx.tools.register(createPatentCaseSearchTool({}))
     wiring.ctx.tools.register(createLawSearchTool({}))
+    wiring.ctx.tools.register(createPatentCorpusStatusTool({}))
     wiring.ctx.tools.register(createPatentWikiSearchTool({}))
     wiring.ctx.tools.register(createPatentKgQueryTool({}))
   }

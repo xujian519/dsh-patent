@@ -26,6 +26,9 @@
 /deepseek-ai-dsh-patent-knowledge/service/guidelinesearch-query-options:
   en: ae9c904be82e181e
   zh: c502b0e962aef7eb
+/deepseek-ai-dsh-patent-knowledge/service/corpusinfo:
+  en: 6a61d4f170da55c2
+  zh: a1f68656a59c4787
 /deepseek-ai-dsh-patent-knowledge/service/wikicards-query-limit-wikicardsin-prefix-keyword-limit:
   en: c7d0ed16e9a28efc
   zh: 11fec3a868cb0214
@@ -45,8 +48,8 @@
   en: 327c81fd47c20b5e
   zh: 57173c4fdce36cee
 /deepseek-ai-dsh-patent-knowledge/patent-knowledge-install:
-  en: 631ba6ab66303f9d
-  zh: 9315831a2c349fad
+  en: 1d5956b484108d55
+  zh: 92d67d74eb2879f7
 /deepseek-ai-dsh-patent-knowledge/model-experience:
   en: ad2798b1e52c4d75
   zh: ad2798b1e52c4d75

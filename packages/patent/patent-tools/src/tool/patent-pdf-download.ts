@@ -104,6 +104,8 @@ type PatentDownloadItem = {
   retryAfterMs?: number
   /** 产出该篇的通道名；报告据此写明原文取白哪个通道，不必从 pdfUrl 反推。 */
   channel: string
+  /** 该篇文件的取数时间（ISO-8601）：本次落盘的时间，或续传命中时 MANIFEST 记录的下载时间。 */
+  retrievedAt?: string
 }
 
 /** Output of the patent_pdf_download tool. */
@@ -167,6 +169,23 @@ type PatentManifestEntry = {
    * 本字段之前写下的条目没有它，那时既记不住也回不了头——缺省表示「该条未记录通道」。
    */
   channel?: string
+}
+
+/** A MANIFEST resume hit as a download result; `retrievedAt` is the recorded download time. */
+function resumedDownloadItem(patent: string, entry: PatentManifestEntry, path: string): PatentDownloadItem {
+  return {
+    patent,
+    status: 'ok',
+    path,
+    method: 'skip',
+    channel: entry.channel ?? '',
+    retrievedAt: new Date(entry.ts).toISOString(),
+  }
+}
+
+/** A freshly downloaded item carries this call's time; a failed item carries none. */
+function withRetrievalTime(item: PatentDownloadItem): PatentDownloadItem {
+  return item.status === 'ok' ? { ...item, retrievedAt: new Date().toISOString() } : item
 }
 
 /** Injected patent-PDF-download dependencies. */
@@ -480,6 +499,7 @@ const ITEM_SCHEMA = {
     networkErrorCode: { type: 'string' },
     retryAfterMs: { type: 'number' },
     channel: { type: 'string', required: true },
+    retrievedAt: { type: 'string' },
   },
 } as const
 
@@ -488,7 +508,8 @@ const DESCRIPTION = [
   '',
   'Usage notes:',
   '  - 每篇的 channel 是实际产出该篇的通道；某通道被咨询过但未能服务时，结果另在 warnings 里点名，报告据此区分「换通道」与「同通道重试」',
-  '  - 重复执行命中 MANIFEST 断点续传（size 匹配即跳过，method=skip），force=true 强制重下；续传条目的 channel 取自 MANIFEST 记录（本字段之前写下的条目没有记录，输出里该篇不带通道）',
+  '  - 重复执行命中 MANIFEST 断点续传（size 匹配即跳过，method=skip），force=true 强制重下；续传条目的 channel 与 retrievedAt 取自 MANIFEST 记录（本字段之前写下的条目没有记录，输出里该篇不带通道/取数时间）',
+  '  - retrievedAt 是该篇文件的取数时间（本次落盘时间，或续传命中时 MANIFEST 记录的下载时间），报告据此写明原文是何时取得的',
   '  - record=true 可额外截图留证（输出 `<outputDir>/evidence/`）',
   '  - HTTP 兜底对瞬时失败/限流（429/503）自动重试并按 Retry-After 退避；重试后仍 429 时 error 会注明限流与建议等待时长（并可结合 retryAfterMs），此时应等待后再重试而非立即重试',
 ].join('\n')
@@ -571,7 +592,7 @@ export function createPatentPdfDownloadTool(deps: PatentPdfDownloadDeps): ToolDe
         for (const patent of patents) {
           const entry = manifest.get(patent)
           if (entry?.path && entry.size !== undefined && (await fileSizeMatches(entry.path, entry.size))) {
-            skipped.push({ patent, status: 'ok', path: entry.path, method: 'skip', channel: entry.channel ?? '' })
+            skipped.push(resumedDownloadItem(patent, entry, entry.path))
           } else {
             pending.push(patent)
           }
@@ -635,7 +656,7 @@ export function createPatentPdfDownloadTool(deps: PatentPdfDownloadDeps): ToolDe
         }
       }
 
-      const allResults = [...skipped, ...results]
+      const allResults = [...skipped, ...results.map(withRetrievalTime)]
       const summary = summarize(allResults, patents.length)
       return {
         results: allResults,

@@ -6,6 +6,7 @@ import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { createPatentCaseSearchTool } from '../src/tool/patent-case-search.ts'
+import { createPatentCorpusStatusTool } from '../src/tool/patent-corpus-status.ts'
 import { createPatentWikiSearchTool, PATENT_WIKI_DIRS } from '../src/tool/patent-wiki-search.ts'
 import { createPatentKgQueryTool } from '../src/tool/patent-kg-query.ts'
 import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
@@ -44,6 +45,46 @@ describe('patent_case_search', () => {
     if (result.isError) throw new Error('expected success')
     expect(text(result)).toContain('d1')
     expect(text(result)).toContain('snippet')
+  })
+
+  it('renders the corpus freshness the reader supplies', async () => {
+    const tool = createPatentCaseSearchTool({
+      search: () => [hit],
+      corpusInfo: () => ({
+        dbPath: '/tmp/knowledge.db',
+        lastIndexedAt: '2026-07-02T10:59:39.174Z',
+        version: 3,
+        documents: 81038,
+        chunks: 138609,
+        fileModifiedAt: '2026-08-19T11:00:00.000Z',
+      }),
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_case_search', { query: '创造性' }, 'c-corpus')
+    expect(result.isError).toBe(false)
+    expect(text(result)).toContain('语料：上游索引 2026-07-02T10:59:39.174Z · 版本 3 · 81038 文档 / 138609 分块')
+  })
+
+  it('fails loud when the corpus reader throws', async () => {
+    const tool = createPatentCaseSearchTool({
+      search: () => [hit],
+      corpusInfo: () => { throw new Error('database is locked') },
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_case_search', { query: 'x' }, 'c-corpus-fail')
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('database is locked')
+  })
+
+  it('names a non-Error corpus-read failure with its string form', async () => {
+    const tool = createPatentCaseSearchTool({
+      search: () => [hit],
+      corpusInfo: () => { throw 'offline' },
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_case_search', { query: 'x' }, 'c-corpus-fail-string')
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('offline')
   })
 
   it('fails loud when the db is absent', async () => {
@@ -154,5 +195,80 @@ describe('patent_kg_query', () => {
     const result = await execute(ctx, 'patent_kg_query', { query: 'x', limit: 2.9 }, 'k-4')
     expect(result.isError).toBe(false)
     expect(seen).toEqual([2])
+  })
+})
+
+describe('patent_corpus_status', () => {
+  const corpus = {
+    dbPath: '/tmp/knowledge.db',
+    lastIndexedAt: '2026-07-02T10:59:39.174Z',
+    version: 3,
+    versionCreatedAt: '2026-07-02T10:00:00.000Z',
+    documents: 81038,
+    chunks: 138609,
+    fileModifiedAt: '2026-08-19T11:00:00.000Z',
+  }
+
+  it('reports the corpus facts without running a search', async () => {
+    const tool = createPatentCorpusStatusTool({ corpusInfo: () => corpus })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_corpus_status', {}, 'cs-1')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    const out = text(result)
+    expect(out).toContain('上游索引 2026-07-02T10:59:39.174Z')
+    expect(out).toContain('本机副本 2026-08-19T11:00:00.000Z')
+    expect(out).toContain('版本创建：2026-07-02T10:00:00.000Z')
+    expect(result.value).toMatchObject({ dbPath: '/tmp/knowledge.db', documents: 81038, chunks: 138609 })
+  })
+
+  it('omits the version-created line and unknown chunk count when the database does not record them', async () => {
+    const tool = createPatentCorpusStatusTool({
+      corpusInfo: () => ({
+        dbPath: '/tmp/knowledge.db',
+        lastIndexedAt: '2026-07-02T10:59:39.174Z',
+        documents: 1,
+        fileModifiedAt: '2026-08-19T11:00:00.000Z',
+      }),
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_corpus_status', {}, 'cs-partial')
+    expect(result.isError).toBe(false)
+    const out = text(result)
+    expect(out).not.toContain('版本创建')
+    expect(out).toContain('1 文档 / ? 分块')
+  })
+
+  it('fails loud when the corpus reader throws', async () => {
+    const tool = createPatentCorpusStatusTool({ corpusInfo: () => { throw new Error('database is locked') } })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_corpus_status', {}, 'cs-throw')
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('database is locked')
+  })
+
+  it('names a non-Error corpus-read failure with its string form', async () => {
+    const tool = createPatentCorpusStatusTool({ corpusInfo: () => { throw 'offline' } })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_corpus_status', {}, 'cs-throw-string')
+    expect(result.isError).toBe(true)
+    expect(text(result)).toContain('offline')
+  })
+
+  it('fails loud when the knowledge service is not mounted', async () => {
+    const tool = createPatentCorpusStatusTool({})
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_corpus_status', {}, 'cs-2')
+    expect(result.isError).toBe(true)
+  })
+
+  it('fails loud when the db is absent', async () => {
+    const tool = createPatentCorpusStatusTool({
+      corpusInfo: () => corpus,
+      dbPath: '/nonexistent/knowledge.db',
+    })
+    const ctx = await ctxWith(tool)
+    const result = await execute(ctx, 'patent_corpus_status', {}, 'cs-3')
+    expect(result.isError).toBe(true)
   })
 })

@@ -35,6 +35,10 @@ Full-text search over the `law_article` documents of `knowledge.db` via `Knowled
 
 Full-text search over the `guideline_rule` documents of `knowledge.db` (the 《专利审查指南》 chapters), through a second `KnowledgeLawSearch` scoped with `docTypes: ['guideline_rule']`. The engine indexes whichever normative document types it is constructed with (`law_article` by default), so the statute corpus and the guideline corpus stay separate while sharing one query path; a database whose `documents` table predates the `file_path` column still searches, and then reports no source path.
 
+### corpusInfo()
+
+Reads the resolved database's freshness without running a query: `lastIndexedAt` (the upstream pipeline's build time, from `index_meta.last_indexed_at` when present), the latest `version_history` row's `version` and `versionCreatedAt`, document/chunk counts (index metadata first, then the latest version row), and `fileModifiedAt` for the local copy. A field the database does not record is omitted rather than defaulted; the build time and the local copy time stay separate because an index can be built months before it is installed.
+
 ### wikiCards(query, limit?) / wikiCardsIn(prefix, keyword, limit?)
 
 Keyword lookup over the wiki-card directory (title/concept/domain), either across every directory or under one prefix; in the prefix form an empty keyword lists that directory. Keyword-only in P1: the semantic/vector wiki index is deferred, so an absent wiki directory degrades to an empty result.
@@ -67,7 +71,7 @@ The query database resolves as `knowledgeDir/knowledge.db`, then `knowledgeDir/k
 
 ## patent-knowledge:install
 
-The install logic is an exported `installKnowledgeDb(options)` function plus the `patent-knowledge-install` bin; it never runs on plugin load. It trims the local source `knowledge.db` into `knowledgeDir/knowledge-lite.db` by vacuuming into a fresh copy, gzip-compressing `chunks.content` long bodies (readers decompress transparently), and dropping the embeddings tables. It also writes `documents.search_prefix` when you pass `--search-prefix`: the first 512 code points (configurable) of each document's longest chunk, stored as plaintext. The prefix makes two-character case-law queries scan a compact column instead of decompressing all 81K documents, at the cost of bounding recall to those prefixes; it adds about 120 MB for the bundled corpus. The default keeps full-body matching, and an install without the option drops a column inherited from a prefixed lite source. Run it once to prepare the data:
+The install logic is an exported `installKnowledgeDb(options)` function plus the `patent-knowledge-install` bin; it never runs on plugin load. It trims the local source `knowledge.db` into `knowledgeDir/knowledge-lite.db` by vacuuming into a fresh copy, gzip-compressing `chunks.content` long bodies (readers decompress transparently), and dropping the embedding tables (`index_meta` is kept because it records the corpus build time and size for `corpusInfo()`). It also writes `documents.search_prefix` when you pass `--search-prefix`: the first 512 code points (configurable) of each document's longest chunk, stored as plaintext. The prefix makes two-character case-law queries scan a compact column instead of decompressing all 81K documents, at the cost of bounding recall to those prefixes; it adds about 120 MB for the bundled corpus. The default keeps full-body matching, and an install without the option drops a column inherited from a prefixed lite source. Run it once to prepare the data:
 
 ```sh
 pnpm --filter @deepseek-ai/dsh-patent-knowledge exec patent-knowledge-install

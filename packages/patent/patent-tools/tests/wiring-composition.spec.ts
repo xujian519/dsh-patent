@@ -32,6 +32,7 @@ import type { GenerateStructureFigureDeps } from '../src/tool/generate-structure
 import type { ChemistryIndexEntry } from '../src/chemistry/index-store.ts'
 import type { RecognizeChemicalStructureDeps } from '../src/tool/recognize-chemical-structure.ts'
 import type { LawSearchDeps } from '../src/tool/law-search.ts'
+import type { PatentCorpusStatusDeps } from '../src/tool/patent-corpus-status.ts'
 import type { PatentLegalStatusDeps } from '../src/tool/patent-legal-status.ts'
 import type { PatentMetadataDeps } from '../src/tool/patent-metadata.ts'
 import type { PatentSearchDeps } from '../src/tool/patent-search.ts'
@@ -48,6 +49,7 @@ const mock = vi.hoisted(() => ({
   metadata: [] as PatentMetadataDeps[],
   legal: [] as PatentLegalStatusDeps[],
   law: [] as LawSearchDeps[],
+  corpusStatus: [] as PatentCorpusStatusDeps[],
   figures: [] as GeneratePatentFigureDeps[],
   structures: [] as GenerateStructureFigureDeps[],
   workflowRun: [] as PatentWorkflowRunDeps[],
@@ -95,6 +97,17 @@ vi.mock('../src/tool/law-search.ts', async (importOriginal) => {
     createLawSearchTool: (deps: LawSearchDeps) => {
       mock.law.push(deps)
       return actual.createLawSearchTool(deps)
+    },
+  }
+})
+
+vi.mock('../src/tool/patent-corpus-status.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/tool/patent-corpus-status.ts')>()
+  return {
+    ...actual,
+    createPatentCorpusStatusTool: (deps: PatentCorpusStatusDeps = {}) => {
+      mock.corpusStatus.push(deps)
+      return actual.createPatentCorpusStatusTool(deps)
     },
   }
 })
@@ -551,6 +564,23 @@ describe('registerPatentTools 知识服务接线', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(Error)
     }
+    await ctx.fiber.dispose()
+  })
+
+  it('law_search 与 patent_corpus_status 的语料读取闭包接到知识服务', async () => {
+    const ctx = await mount({}, { knowledge: true })
+    const law = mock.law.at(-1)
+    if (law === undefined) throw new Error('缺少 law_search deps')
+    const corpusStatus = mock.corpusStatus.at(-1)
+    if (corpusStatus === undefined) throw new Error('缺少 patent_corpus_status deps')
+    const dbPath = join(workspace(), 'knowledge', 'knowledge.db')
+    const fromLaw = law.corpusInfo?.()
+    const fromStatus = corpusStatus.corpusInfo?.()
+    // 夹具库只有 KG 表：上游索引时间未记录，语料事实退到本机副本时间。
+    expect(fromLaw?.dbPath).toBe(dbPath)
+    expect(fromLaw?.lastIndexedAt).toBeUndefined()
+    expect(fromStatus?.dbPath).toBe(dbPath)
+    expect(fromStatus?.fileModifiedAt).toBe(fromLaw?.fileModifiedAt)
     await ctx.fiber.dispose()
   })
 })

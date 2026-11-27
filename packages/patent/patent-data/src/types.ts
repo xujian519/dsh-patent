@@ -57,6 +57,20 @@ export interface PatentCacheOptions {
 }
 
 /**
+ * A cache lookup's value plus its retrieval facts. `retrievedAt` is the time the
+ * upstream answer was fetched, never the cache-read time, so a report can state
+ * when the facts were true even when the answer was served from cache.
+ */
+export interface CachedLookup<T> {
+  /** The cached or freshly loaded value. */
+  value: T
+  /** True when the value came from a live cache entry. */
+  cached: boolean
+  /** ISO-8601 UTC time of the original upstream fetch. */
+  retrievedAt: string
+}
+
+/**
  * CNIPR 通道的失败分类。`setup_required`（含脚本启动失败）、`timeout`、`receipt_missing`
  * 与畸形收据的 `page_state` 由通道判定；`login_required` 与脚本自报的 `page_state` 由脚本
  * 回传。调用方取消不属于通道失败：它按 `AbortError` 传播，不占用这里的分类码。

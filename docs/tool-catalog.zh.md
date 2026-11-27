@@ -58,7 +58,7 @@
 | `@deepseek-ai/dsh-tool-literature` | `paper_download`、`paper_list_sources`、`paper_search` | `ctx.tools` | `tool/call`、`tool/result` | - | paper_list_sources 与 paper_search 是对四个免 key 公开源（arXiv、OpenAlex、Semantic Scholar、Crossref）的无状态查询；连接器开关属于配置，只会收窄可用的 `db` id。 |
 | `@deepseek-ai/dsh-document-deliver` | `document_deliver` | `ctx.tools`、`ctx.fs` | `tool/call`、`tool/result` | - | document_deliver 把交付文件（path + format）、P0/P1 质量门状态与 brief 引用记录进会话日志；文件缺失即报错，工具本身不写任何文件。它还会读取每个交付文件并在工具结果里给出自己的确定性核验结论（残余占位符、未声明锚点、空章节、风格禁用词、声明字数预算），阻断级问题直接拒绝登记。交付工作室把该调用与结果元数据折叠进交付物清单、质量门徽标与机器核验徽标。 |
 | `@deepseek-ai/dsh-video-mode` | `media`, `video_assemble`, `video_deliver`, `video_project` | `ctx.tools`、`ctx.fs`、`ctx.subprocess` | `tool/call`、`tool/result` | - | 视频模式：media 选择图像/视频/语音模型并通过 ctx.fs 写入产物；video_project 拥有持久项目文档；video_assemble 通过 ffmpeg 渲染 EDL；video_deliver 检查声明文件并拒绝不完整或超预算的交付。随包提供确定性合成 provider、本地 ComfyUI provider（Wan 2.2 视频、Z-Image 图像），以及云端 MiniMax-H3（按秒计费）与 SiliconFlow Wan2.2（按条计费）视频 provider。 |
-| `@deepseek-ai/dsh-patent-tools` | `add_patent_figure_references`、`analyze_patent_figure`、`check_patent_figure_consistency`、`claim_chart_build`、`claim_lint`、`compare_patent_figure_analysis`、`domain_check`、`draft_claims`、`draft_specification`、`evaluate_evidence`、`flexible_plan`、`generate_patent_figure`、`generate_structure_figure`、`knowledge_note_save`、`matter_log_append`、`parse_office_action`、`patent_analysis_report`、`patent_case_search`、`patent_eval`、`patent_kg_query`、`patent_legal_status`、`patent_metadata`、`patent_pdf_download`、`patent_plan_task`、`law_search`、`patent_search`、`patent_wiki_search`、`patent_worker_validate`、`patent_workflow`、`patent_workflow_run`、`recognize_chemical_structure`、`review_patent_application`、`rule_check`、`search_patent_figure`、`triz_contradiction_analysis`、`validate_specification`、`verify_patent_figure`、`workbench_link_patent_case` | `ctx.tools` | `tool/call`、`tool/result` | - | Sati 专利领域工具集：检索/元数据/法律状态/规范原文（法规与审查指南全文）/判例/wiki/知识图谱查询，权利要求对照表、通知书解析、撰写、申请文件评审、分析报告、说明书校验、证据判定、规则检查、附图分析、PDF 下载、化学结构识别、知识笔记，以及工作流/计划状态机。render_patent_document 由 @deepseek-ai/dsh-patent-document 提供。 |
+| `@deepseek-ai/dsh-patent-tools` | `add_patent_figure_references`、`analyze_patent_figure`、`check_patent_figure_consistency`、`claim_chart_build`、`claim_lint`、`compare_patent_figure_analysis`、`domain_check`、`draft_claims`、`draft_specification`、`evaluate_evidence`、`flexible_plan`、`generate_patent_figure`、`generate_structure_figure`、`knowledge_note_save`、`matter_log_append`、`parse_office_action`、`patent_analysis_report`、`patent_case_search`、`patent_corpus_status`、`patent_eval`、`patent_kg_query`、`patent_legal_status`、`patent_metadata`、`patent_pdf_download`、`patent_plan_task`、`law_search`、`patent_search`、`patent_wiki_search`、`patent_worker_validate`、`patent_workflow`、`patent_workflow_run`、`recognize_chemical_structure`、`review_patent_application`、`rule_check`、`search_patent_figure`、`triz_contradiction_analysis`、`validate_specification`、`verify_patent_figure`、`workbench_link_patent_case` | `ctx.tools` | `tool/call`、`tool/result` | - | Sati 专利领域工具集：检索/元数据/法律状态/规范原文（法规与审查指南全文）/判例/wiki/知识图谱查询，权利要求对照表、通知书解析、撰写、申请文件评审、分析报告、说明书校验、证据判定、规则检查、附图分析、PDF 下载、化学结构识别、知识笔记，以及工作流/计划状态机。render_patent_document 由 @deepseek-ai/dsh-patent-document 提供。 |
 | `@deepseek-ai/dsh-patent-document` | `render_patent_document`、`verify_deliverable` | `ctx.tools`、`ctx.subprocess`、`ctx.workingDirectory (Agent executions)` | `tool/call`、`tool/result` | - | render_patent_document 从内置 HTML 模板渲染专利交付物（权利要求书/说明书/检索报告/OA 答复/无效意见），可选通过 ctx.subprocess 调用无头 Chrome 生成 PDF。 |
 | `@deepseek-ai/dsh-patent-filing` | `build_patent_filing`、`verify_patent_filing` | `ctx.tools`、`ctx.subprocess` | `tool/call`、`tool/result` | - | build_patent_filing 把一件 CNIPA 申请文件（说明书摘要、摘要附图、权利要求书、说明书、说明书附图）按随包模板的体例成文为一件 DOCX，段落编号按 spec 的节声明执行；verify_patent_filing 就同一模板对成品跑体例与内容断言（分节数与各节页眉、行距、首行缩进、字号、非黑色文字、说明书五部分、说明书名称、权项数、按节声明生效的编号连续性、残留内部痕迹）。 |
 | `@deepseek-ai/dsh-patent-deadline` | `patent_deadlines` | `ctx.tools` | `tool/call`、`tool/result` | - | patent_deadlines 报告一件中国专利案件的法定与指定期限，适用专利法实施细则的期限与送达规则，并把落在节假日的届满日顺延至其后第一个工作日；由通知起算的期限以待补项返回，并点名所缺的送达记录。 |
@@ -5951,7 +5951,7 @@ jpg/png 不是模型，读图用 analyze_patent_figure。用户确认后的零�
 
 ### `law_search`
 
-检索部署的外接 IP 知识库（knowledge.db 全文索引）里的规范原文：scope=law 取法律法规条文，scope=guideline 取《专利审查指南》全文。 这是**规则**的检索通道：`law_verify` 只按随包索引判定引用形式与是否转录（指南的节级条目已随包转录，其下各节都没有转录的条目才判「未核验」），指南条文要在这里取原文并把 sourcePath（语料内路径）记为引文来源；判例全文另有 patent_case_search。 命中为空不得下任何结论；引用格式：`<名称>` + `<条号/节号>` + `<sourcePath>`。
+检索部署的外接 IP 知识库（knowledge.db 全文索引）里的规范原文：scope=law 取法律法规条文，scope=guideline 取《专利审查指南》全文。 这是**规则**的检索通道：`law_verify` 只按随包索引判定引用形式与是否转录（指南的节级条目已随包转录，其下各节都没有转录的条目才判「未核验」），指南条文要在这里取原文并把 sourcePath（语料内路径）记为引文来源；判例全文另有 patent_case_search。 命中为空不得下任何结论；引用格式：`<名称>` + `<条号/节号>` + `<sourcePath>`。 输出另带 `corpus`：上游索引构建时间、schema 版本与本机副本时间——报告要写明所引条文出自哪一版语料时用它，不要用调用时间代替。
 
 ```json
 {
@@ -6123,7 +6123,7 @@ jpg/png 不是模型，读图用 analyze_patent_figure。用户确认后的零�
 
 ### `patent_case_search`
 
-检索本地专利判例全文（无效复审决定/专利判决，knowledge.db，FTS5 BM25 优先）。用于无效宣告分析、OA 答复时检索相似在先决定的理由论证与证据认定。支持 doc_type（case=无效决定/judgment=判决）与 court（法院）过滤。默认排除 wiki 审查标准卡片（审查标准请用 patent_wiki_search）。
+检索本地专利判例全文（无效复审决定/专利判决，knowledge.db，FTS5 BM25 优先）。用于无效宣告分析、OA 答复时检索相似在先决定的理由论证与证据认定。支持 doc_type（case=无效决定/judgment=判决）与 court（法院）过滤。默认排除 wiki 审查标准卡片（审查标准请用 patent_wiki_search）。输出另带 corpus（上游索引时间、schema 版本、规模与本机副本时间），报告要写明所引判例出自哪一版语料时用它，不要用调用时间代替。
 
 ```json
 {
@@ -6157,6 +6157,19 @@ jpg/png 不是模型，读图用 analyze_patent_figure。用户确认后的零�
   "required": [
     "query"
   ]
+}
+```
+
+来源：[`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-tools/src/index.ts)
+
+### `patent_corpus_status`
+
+报告本地专利知识库（knowledge.db：法条、审查指南、判例与知识图谱共用一库）的语料版本与新鲜度：上游索引构建时间、schema 版本、文档/分块数与本地副本时间。 检索命中为空、或报告要写明「所引条文/判例出自哪一版语料」时先查它；它不检索内容，只回答「这是哪一版」。
+
+```json
+{
+  "type": "object",
+  "properties": {}
 }
 ```
 
@@ -6247,6 +6260,7 @@ jpg/png 不是模型，读图用 analyze_patent_figure。用户确认后的零�
 
 使用说明：
   - 只读；每篇专利发起一次网络请求（默认并发 4，范围 1-20）
+  - retrievedAt 是本批的取数时间；channelsConsulted 记录本次调用咨询、跳过或失败的每个通道，报告据此写明状态是何时、从哪取得的
   - 每个结果点名服务它的 channel。中国申请号/公开(公告)号在 Google Patents 通道查不到时，部署启用 CNIPR 通道重查一次：该通道只出法律状态公告记录（announce_date / status / status_info），其余字段为空，status 取其中公告日最新的一条
   - 通道失败不是整批失败：失败的号保留 nuo 通道的原因，被咨询过但未能服务的通道写在 warnings 里
 
@@ -6283,7 +6297,8 @@ jpg/png 不是模型，读图用 analyze_patent_figure。用户确认后的零�
 
 使用说明：
   - 只读；每篇专利发起一次网络请求
-  - 一次调用点名实际服务它的通道，失败消息都点名出错的通道，报告据此写明实际所用的通道
+  - 一次调用点名实际服务它的通道、该记录的取数时间（retrievedAt；命中缓存时保留原始时间）与是否来自缓存，报告据此写明事实是何时、从哪取得的
+  - channelsConsulted 记录本次调用咨询、跳过或失败的每个通道及其原因；失败消息点名出错的通道
   - 中国公开(公告)号（如 CN218483312U）在 Google Patents 通道失败、抛错或查不到时，部署启用 CNIPR 通道会再按号检索一次；CNIPR 只发布标题、申请人、公开日与摘要，其余字段为空，被咨询过但未能服务的通道写在 warnings 里
   - 必须带国家码；裸申请号（202122978405）会被拒绝——请补 CN 或改用公开号
   - 未找到（专利不存在）以 success:false 的数据返回，而非错误
@@ -6325,7 +6340,8 @@ jpg/png 不是模型，读图用 analyze_patent_figure。用户确认后的零�
 
 Usage notes:
   - 每篇的 channel 是实际产出该篇的通道；某通道被咨询过但未能服务时，结果另在 warnings 里点名，报告据此区分「换通道」与「同通道重试」
-  - 重复执行命中 MANIFEST 断点续传（size 匹配即跳过，method=skip），force=true 强制重下；续传条目的 channel 取自 MANIFEST 记录（本字段之前写下的条目没有记录，输出里该篇不带通道）
+  - 重复执行命中 MANIFEST 断点续传（size 匹配即跳过，method=skip），force=true 强制重下；续传条目的 channel 与 retrievedAt 取自 MANIFEST 记录（本字段之前写下的条目没有记录，输出里该篇不带通道/取数时间）
+  - retrievedAt 是该篇文件的取数时间（本次落盘时间，或续传命中时 MANIFEST 记录的下载时间），报告据此写明原文是何时取得的
   - record=true 可额外截图留证（输出 `<outputDir>/evidence/`）
   - HTTP 兜底对瞬时失败/限流（429/503）自动重试并按 Retry-After 退避；重试后仍 429 时 error 会注明限流与建议等待时长（并可结合 retryAfterMs），此时应等待后再重试而非立即重试
 
@@ -6518,13 +6534,14 @@ Usage notes:
 ### `patent_search`
 
 - 按关键词或布尔表达式检索 Google Patents（如 (phase change OR PCM) AND thermal、assignee:(Samsung) after:20200101）
-- 返回结构化命中：专利号、标题、受让人、公开日、摘要、URL
+- 默认返回精简命中（专利号、标题、受让人、公开日、URL）；需要摘要来筛选时传 includeAbstract=true
 - 用于在先技术检索、新颖性预筛、竞争对手/受让人分析
 
 使用说明：
   - 只读；查询语法遵循 Google Patents 检索语法
   - 命中详情请继续用 patent_metadata 获取
-  - 一次调用只走一个通道，结果与失败消息都点名该通道，报告据此写明实际所用通道，而不必从命中的 URL 反推
+  - 结果点名服务它的通道、该答案的取数时间（retrievedAt；命中缓存时保留原始时间）与是否来自缓存，报告据此写明事实是何时、从哪取得的
+  - channelsConsulted 记录本次调用咨询、跳过或失败的每个通道及其原因；不在该列表里的通道就是没被咨询过
   - 当 Google Patents 通道失败、抛错或零命中时，部署启用 CNIPR 通道会再检索一次，结果里的 channel 写明这次实际由谁服务；CNIPR 只做关键词检索，命中含公开(公告)号、标题、申请人、公开日与摘要，没有 URL 与优先权，且带 assignee:/after:/CL: 这类字段语法的查询不咨询它
   - 网络失败以错误报告并点名该通道；真正的零结果检索返回空命中
   - 瞬时上游失败（超时、连接断开）会退避重试两次；退避耗尽仍失败的消息点名通道、上游错误与已尝试次数
@@ -6541,6 +6558,10 @@ Usage notes:
     "limit": {
       "type": "number",
       "description": "Max hits (1-50, default 10)"
+    },
+    "includeAbstract": {
+      "type": "boolean",
+      "description": "Include each hit's abstract (default false; lean rows omit it)"
     }
   },
   "required": [

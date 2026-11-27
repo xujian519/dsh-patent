@@ -84,6 +84,13 @@ legalSearch(query: string, options?: KnowledgeLawSearchOptions): LawSearchResult
 guidelineSearch(query: string, options?: KnowledgeLawSearchOptions): LawSearchResult[]
 
 /**
+ * Read the resolved corpus's freshness and size (upstream index build time,
+ * schema version, document/chunk counts, local copy time).
+ * @returns the corpus facts; fields the database does not record are omitted.
+ */
+corpusInfo(): CorpusInfo
+
+/**
  * Keyword lookup over the wiki-card directory (title/concept/domain).
  * @param query - the keyword.
  * @param limit - result cap.

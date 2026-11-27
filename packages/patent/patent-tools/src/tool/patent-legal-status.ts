@@ -8,7 +8,13 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { LegalStatusChecker } from '@deepseek-ai/nuo-patent'
 import type { CniprChannel, CniprLegalRecord, CniprLegalStatusItem } from '@deepseek-ai/dsh-patent-data'
-import { CNIPR_CHANNEL, GOOGLE_PATENTS_CHANNEL } from './internal/upstream-channel.ts'
+import {
+  CHANNEL_CONSULT_SCHEMA,
+  CNIPR_CHANNEL,
+  GOOGLE_PATENTS_CHANNEL,
+  renderChannelConsult,
+} from './internal/upstream-channel.ts'
+import type { ChannelConsult } from './internal/upstream-channel.ts'
 import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
 
 /** Input for the patent_legal_status tool. */
@@ -42,6 +48,10 @@ export type PatentLegalStatusItem = {
 /** Output of the patent_legal_status tool. */
 export type PatentLegalStatusOutput = {
   results: PatentLegalStatusItem[]
+  /** ISO-8601 UTC time this batch was fetched. */
+  retrievedAt: string
+  /** Every channel this call consulted: who served it, who was skipped, and why. */
+  channelsConsulted: ChannelConsult[]
   /** Number of patent numbers silently dropped over the 20-item cap. */
   truncatedCount?: number
   /** 通道级告警（某通道被咨询过但未能服务），例如 CNIPR 登录态失效。 */
@@ -73,6 +83,7 @@ const DESCRIPTION = [
   '',
   'Usage notes:',
   '  - Read-only; makes one network request per patent (concurrency 4 by default, 1-20)',
+  '  - retrievedAt is when this batch was fetched, and channelsConsulted records every channel this call queried, skipped, or failed on, so a report states when and from where the statuses came',
   '  - 每个结果点名服务它的 channel。中国申请号/公开(公告)号在 Google Patents 通道查不到时，部署启用 CNIPR 通道重查一次：该通道只出法律状态公告记录（announce_date / status / status_info），其余字段为空，status 取其中公告日最新的一条',
   '  - 通道失败不是整批失败：失败的号保留 nuo 通道的原因，被咨询过但未能服务的通道写在 warnings 里',
 ].join('\n')
@@ -90,7 +101,14 @@ function renderLegalStatus(value: PatentLegalStatusOutput): string {
     ? `\n⚠️ ${value.truncatedCount} 个专利号超出 20 条上限被截断，未查询。`
     : ''
   const warningLines = warningSection(value.warnings, '通道告警')
-  return [`patent_legal_status: ${value.results.length} result(s)`, '', lines.join('\n') + truncation, ...warningLines].join('\n')
+  return [
+    `patent_legal_status: ${value.results.length} result(s)`,
+    renderChannelConsult(value.channelsConsulted),
+    `取数：${value.retrievedAt}`,
+    '',
+    lines.join('\n') + truncation,
+    ...warningLines,
+  ].join('\n')
 }
 
 /** 一条 CNIPR 记录映射成通道无关的状态事件（该通道只出这四段）。 */
@@ -145,31 +163,47 @@ function needsCniprRetry(item: PatentLegalStatusItem): boolean {
  * @param deps - 工具依赖；`cnipr` 缺省或本部署未启用时不重查。
  * @param items - 本次调用的条目，成功的重查原地替换对应项。
  * @param signal - 调用方取消信号。
- * @returns 模型可见的通道告警；没有可重查的号或通道未接线时为空。
+ * @returns 模型可见的通道告警，以及该通道这次调用里的结局。
  */
 async function retryThroughCnipr(
   deps: PatentLegalStatusDeps,
   items: PatentLegalStatusItem[],
   signal: AbortSignal | undefined,
-): Promise<string[]> {
+): Promise<{ warnings: string[]; consult: ChannelConsult }> {
   const cnipr = deps.cnipr?.()
-  if (cnipr === undefined) return []
+  if (cnipr === undefined) {
+    return { warnings: [], consult: { name: CNIPR_CHANNEL, outcome: 'skipped', reason: '本部署未启用该通道' } }
+  }
   const retry = items.filter(needsCniprRetry).map(item => item.patentNumber)
-  if (retry.length === 0) return []
+  if (retry.length === 0) {
+    return { warnings: [], consult: { name: CNIPR_CHANNEL, outcome: 'skipped', reason: '第一通道均给出状态，未咨询' } }
+  }
   let reported: CniprLegalStatusItem[]
   try {
     /* v8 ignore next -- exec.signal is always present on the tool execution context */
     reported = await cnipr.legalStatus(retry, { ...(signal === undefined ? {} : { signal }) })
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error)
-    return [`${CNIPR_CHANNEL}不可用（${detail}），${retry.length} 个号只有 ${GOOGLE_PATENTS_CHANNEL} 的结果`]
+    return {
+      warnings: [`${CNIPR_CHANNEL}不可用（${detail}），${retry.length} 个号只有 ${GOOGLE_PATENTS_CHANNEL} 的结果`],
+      consult: { name: CNIPR_CHANNEL, outcome: 'failed', reason: detail },
+    }
   }
+  let served = 0
   for (const item of reported) {
     if (item.records.length === 0) continue
     const index = items.findIndex(existing => existing.patentNumber === item.number)
-    if (index >= 0) items[index] = cniprLegalStatusItem(item.number, item.records)
+    if (index >= 0) {
+      items[index] = cniprLegalStatusItem(item.number, item.records)
+      served += 1
+    }
   }
-  return []
+  return {
+    warnings: [],
+    consult: served > 0
+      ? { name: CNIPR_CHANNEL, outcome: 'served' }
+      : { name: CNIPR_CHANNEL, outcome: 'empty', reason: '重查的号均未返回状态记录' },
+  }
 }
 
 const EVENT_SCHEMA = {
@@ -224,6 +258,8 @@ export function createPatentLegalStatusTool(deps: PatentLegalStatusDeps = {}): T
               },
             },
           },
+          retrievedAt: { type: 'string', required: true },
+          channelsConsulted: { type: 'array', required: true, items: CHANNEL_CONSULT_SCHEMA },
           truncatedCount: { type: 'number', description: '超出 20 条上限被截断未查询的专利号数量' },
           warnings: WARNINGS_SCHEMA,
         },
@@ -263,8 +299,22 @@ export function createPatentLegalStatusTool(deps: PatentLegalStatusDeps = {}): T
           ...(r.error !== undefined ? { error: r.error } : {}),
         }
       })
-      const warnings = await retryThroughCnipr(deps, items, exec.signal)
-      return { results: items, warnings, ...(dropped > 0 ? { truncatedCount: dropped } : {}) }
+      // 第一通道的结局按重查前的条目判定：重查只覆盖没给出状态的号，不能把它的成功算到第一通道头上。
+      const googleAnswered = items.some(item => item.error === undefined && item.status !== '' && item.status !== 'UNKNOWN')
+      const { warnings, consult } = await retryThroughCnipr(deps, items, exec.signal)
+      const channelsConsulted: ChannelConsult[] = [
+        googleAnswered
+          ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'served' }
+          : { name: GOOGLE_PATENTS_CHANNEL, outcome: 'failed', reason: `全部 ${items.length} 个号未返回状态` },
+        consult,
+      ]
+      return {
+        results: items,
+        retrievedAt: new Date().toISOString(),
+        channelsConsulted,
+        warnings,
+        ...(dropped > 0 ? { truncatedCount: dropped } : {}),
+      }
     },
   })
 }

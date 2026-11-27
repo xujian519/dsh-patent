@@ -54,7 +54,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-literature` | `paper_download`, `paper_list_sources`, `paper_search` | `ctx.tools` | `tool/call`, `tool/result` | - | paper_list_sources and paper_search are stateless queries over four keyless public sources (arXiv, OpenAlex, Semantic Scholar, Crossref); connector enablement is config and only narrows which `db` ids are valid. |
 | `@deepseek-ai/dsh-document-deliver` | `document_deliver` | `ctx.tools`, `ctx.fs` | `tool/call`, `tool/result` | - | document_deliver records the delivered files (path + format), the P0/P1 quality-gate state, and the brief reference in the session log; it fails loud on a missing file and writes no file itself. It also reads each delivered file and reports its own deterministic findings (residual placeholders, undeclared anchors, empty sections, style forbidden words, declared length budget) on the tool result, and refuses the registration on a blocking finding. The delivery studio folds the logged call and that result metadata into its deliverable list, gate badges, and machine-check badge. |
 | `@deepseek-ai/dsh-video-mode` | `media`, `video_assemble`, `video_deliver`, `video_project` | `ctx.tools`, `ctx.fs`, `ctx.subprocess` | `tool/call`, `tool/result` | - | The media tool selects an image, video, or speech model through the provider seam and writes the artifact through ctx.fs; video_project owns the durable project document; video_assemble renders an EDL through ffmpeg; video_deliver checks the declared files and refuses incomplete or over-budget work. The synthetic provider makes the whole flow runnable without credentials; the local ComfyUI provider adds Wan 2.2 video and Z-Image images, and the cloud MiniMax-H3 and SiliconFlow Wan2.2 providers add per-second and per-video generation. |
-| `@deepseek-ai/dsh-patent-tools` | `add_patent_figure_references`, `analyze_patent_figure`, `check_patent_figure_consistency`, `claim_chart_build`, `claim_lint`, `compare_patent_figure_analysis`, `domain_check`, `draft_claims`, `draft_specification`, `evaluate_evidence`, `flexible_plan`, `generate_patent_figure`, `generate_structure_figure`, `knowledge_note_save`, `law_search`, `matter_log_append`, `parse_office_action`, `patent_analysis_report`, `patent_case_search`, `patent_eval`, `patent_kg_query`, `patent_legal_status`, `patent_metadata`, `patent_pdf_download`, `patent_plan_task`, `patent_search`, `patent_wiki_search`, `patent_worker_validate`, `patent_workflow`, `patent_workflow_run`, `recognize_chemical_structure`, `review_patent_application`, `rule_check`, `search_patent_figure`, `triz_contradiction_analysis`, `validate_specification`, `verify_patent_figure`, `workbench_link_patent_case` | `ctx.tools` | `tool/call`, `tool/result` | - | The Sati patent domain tool set: search/metadata/legal-status/case/wiki/kg knowledge queries, claim-chart, office-action parsing, drafting, application review, specification validation, evidence judgment, rule check, figure analysis, PDF download, chemical recognition, knowledge notes, and the workflow/plan state machines. render_patent_document is owned by @deepseek-ai/dsh-patent-document. |
+| `@deepseek-ai/dsh-patent-tools` | `add_patent_figure_references`, `analyze_patent_figure`, `check_patent_figure_consistency`, `claim_chart_build`, `claim_lint`, `compare_patent_figure_analysis`, `domain_check`, `draft_claims`, `draft_specification`, `evaluate_evidence`, `flexible_plan`, `generate_patent_figure`, `generate_structure_figure`, `knowledge_note_save`, `law_search`, `matter_log_append`, `parse_office_action`, `patent_analysis_report`, `patent_case_search`, `patent_corpus_status`, `patent_eval`, `patent_kg_query`, `patent_legal_status`, `patent_metadata`, `patent_pdf_download`, `patent_plan_task`, `patent_search`, `patent_wiki_search`, `patent_worker_validate`, `patent_workflow`, `patent_workflow_run`, `recognize_chemical_structure`, `review_patent_application`, `rule_check`, `search_patent_figure`, `triz_contradiction_analysis`, `validate_specification`, `verify_patent_figure`, `workbench_link_patent_case` | `ctx.tools` | `tool/call`, `tool/result` | - | The Sati patent domain tool set: search/metadata/legal-status/case/wiki/kg knowledge queries, claim-chart, office-action parsing, drafting, application review, specification validation, evidence judgment, rule check, figure analysis, PDF download, chemical recognition, knowledge notes, and the workflow/plan state machines. render_patent_document is owned by @deepseek-ai/dsh-patent-document. |
 | `@deepseek-ai/dsh-patent-document` | `render_patent_document`, `verify_deliverable` | `ctx.tools`, `ctx.subprocess`, `ctx.workingDirectory (Agent executions)` | `tool/call`, `tool/result` | - | render_patent_document renders patent deliverables (claims/specification/search report/OA response/invalidation opinion) from packaged HTML templates, with optional headless-Chrome PDF via ctx.subprocess. |
 | `@deepseek-ai/dsh-patent-filing` | `build_patent_filing`, `verify_patent_filing` | `ctx.tools`, `ctx.subprocess` | `tool/call`, `tool/result` | - | build_patent_filing assembles one CNIPA application document (abstract, abstract drawing, claims, specification, drawings) into a DOCX whose formatting is reverse-derived from the template shipped in the package, with paragraph numbering following the spec's per-section declaration; verify_patent_filing asserts the finished file against that template — section count and headers, spacing, indent, size, non-black text, the five specification parts, the specification title, claim count, numbering continuity where a section declares it, and surviving internal marks. |
 | `@deepseek-ai/dsh-patent-deadline` | `patent_deadlines` | `ctx.tools` | `tool/call`, `tool/result` | - | patent_deadlines reports the statutory and designated deadlines of one Chinese patent case, applying the period and delivery rules of 专利法实施细则 and rolling an end date off a holiday to the next working day; notice-driven periods come back as pending entries naming the missing delivery record. |
@@ -5943,7 +5943,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 ### `law_search`
 
-检索部署的外接 IP 知识库（knowledge.db 全文索引）里的规范原文：scope=law 取法律法规条文，scope=guideline 取《专利审查指南》全文。 这是**规则**的检索通道：`law_verify` 只按随包索引判定引用形式与是否转录（指南的节级条目已随包转录，其下各节都没有转录的条目才判「未核验」），指南条文要在这里取原文并把 sourcePath（语料内路径）记为引文来源；判例全文另有 patent_case_search。 命中为空不得下任何结论；引用格式：`<名称>` + `<条号/节号>` + `<sourcePath>`。 每条命中带 `时间效力`：已废止与尚未生效的条文不会返回；标为「未核验」表示库里缺少施行/失效时间，引用前须另行核对版本。
+检索部署的外接 IP 知识库（knowledge.db 全文索引）里的规范原文：scope=law 取法律法规条文，scope=guideline 取《专利审查指南》全文。 这是**规则**的检索通道：`law_verify` 只按随包索引判定引用形式与是否转录（指南的节级条目已随包转录，其下各节都没有转录的条目才判「未核验」），指南条文要在这里取原文并把 sourcePath（语料内路径）记为引文来源；判例全文另有 patent_case_search。 命中为空不得下任何结论；引用格式：`<名称>` + `<条号/节号>` + `<sourcePath>`。 每条命中带 `时间效力`：已废止与尚未生效的条文不会返回；标为「未核验」表示库里缺少施行/失效时间，引用前须另行核对版本。 输出另带 `corpus`：上游索引构建时间、schema 版本与本机副本时间——报告要写明所引条文出自哪一版语料时用它，不要用调用时间代替。
 
 ```json
 {
@@ -6115,7 +6115,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 ### `patent_case_search`
 
-检索本地专利判例全文（无效复审决定/专利判决，knowledge.db，FTS5 BM25 优先）。用于无效宣告分析、OA 答复时检索相似在先决定的理由论证与证据认定。支持 doc_type（case=无效决定/judgment=判决）与 court（法院）过滤。默认排除 wiki 审查标准卡片（审查标准请用 patent_wiki_search）。
+检索本地专利判例全文（无效复审决定/专利判决，knowledge.db，FTS5 BM25 优先）。用于无效宣告分析、OA 答复时检索相似在先决定的理由论证与证据认定。支持 doc_type（case=无效决定/judgment=判决）与 court（法院）过滤。默认排除 wiki 审查标准卡片（审查标准请用 patent_wiki_search）。输出另带 corpus（上游索引时间、schema 版本、规模与本机副本时间），报告要写明所引判例出自哪一版语料时用它，不要用调用时间代替。
 
 ```json
 {
@@ -6149,6 +6149,19 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
   "required": [
     "query"
   ]
+}
+```
+
+Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-tools/src/index.ts)
+
+### `patent_corpus_status`
+
+报告本地专利知识库（knowledge.db：法条、审查指南、判例与知识图谱共用一库）的语料版本与新鲜度：上游索引构建时间、schema 版本、文档/分块数与本地副本时间。 检索命中为空、或报告要写明「所引条文/判例出自哪一版语料」时先查它；它不检索内容，只回答「这是哪一版」。
+
+```json
+{
+  "type": "object",
+  "properties": {}
 }
 ```
 
@@ -6239,6 +6252,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 Usage notes:
   - Read-only; makes one network request per patent (concurrency 4 by default, 1-20)
+  - retrievedAt is when this batch was fetched, and channelsConsulted records every channel this call queried, skipped, or failed on, so a report states when and from where the statuses came
   - 每个结果点名服务它的 channel。中国申请号/公开(公告)号在 Google Patents 通道查不到时，部署启用 CNIPR 通道重查一次：该通道只出法律状态公告记录（announce_date / status / status_info），其余字段为空，status 取其中公告日最新的一条
   - 通道失败不是整批失败：失败的号保留 nuo 通道的原因，被咨询过但未能服务的通道写在 warnings 里
 
@@ -6275,7 +6289,8 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 Usage notes:
   - Read-only; makes one network request per patent
-  - One call names the channel that served it and every failure names the channel it failed on, so a report cites the channel it actually used
+  - One call names the channel that served it, the time that record was fetched (retrievedAt; a cache hit keeps the original fetch time), and whether it came from cache, so a report cites when and from where the facts came
+  - channelsConsulted records every channel this call queried, skipped, or failed on, with the reason; a failure names the channel it failed on
   - 中国公开(公告)号（如 CN218483312U）在 Google Patents 通道失败、抛错或查不到时，部署启用 CNIPR 通道会再按号检索一次；CNIPR 只发布标题、申请人、公开日与摘要，其余字段为空，被咨询过但未能服务的通道写在 warnings 里
   - A country code is required; a bare application number (202122978405) is rejected — prepend CN or use the publication number
   - A 'not found' result (patent does not exist) is returned as data with success:false — not an error
@@ -6317,7 +6332,8 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 Usage notes:
   - 每篇的 channel 是实际产出该篇的通道；某通道被咨询过但未能服务时，结果另在 warnings 里点名，报告据此区分「换通道」与「同通道重试」
-  - 重复执行命中 MANIFEST 断点续传（size 匹配即跳过，method=skip），force=true 强制重下；续传条目的 channel 取自 MANIFEST 记录（本字段之前写下的条目没有记录，输出里该篇不带通道）
+  - 重复执行命中 MANIFEST 断点续传（size 匹配即跳过，method=skip），force=true 强制重下；续传条目的 channel 与 retrievedAt 取自 MANIFEST 记录（本字段之前写下的条目没有记录，输出里该篇不带通道/取数时间）
+  - retrievedAt 是该篇文件的取数时间（本次落盘时间，或续传命中时 MANIFEST 记录的下载时间），报告据此写明原文是何时取得的
   - record=true 可额外截图留证（输出 `<outputDir>/evidence/`）
   - HTTP 兜底对瞬时失败/限流（429/503）自动重试并按 Retry-After 退避；重试后仍 429 时 error 会注明限流与建议等待时长（并可结合 retryAfterMs），此时应等待后再重试而非立即重试
 
@@ -6510,13 +6526,14 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 ### `patent_search`
 
 - Searches Google Patents by keyword or boolean query (e.g. '(phase change OR PCM) AND thermal', 'assignee:(Samsung) after:20200101')
-- Returns structured hits: patent number, title, assignee, publication date, abstract, URL
+- Returns lean hits by default (patent number, title, assignee, publication date, URL); set includeAbstract=true when the abstracts are needed to triage
 - Use for prior-art search, novelty pre-screening, competitor/assignee analysis
 
 Usage notes:
   - Read-only; query syntax follows Google Patents search grammar
   - Follow up with patent_metadata to fetch full details of a specific hit
-  - The result names the channel that served it and every failure names the channel it failed on, so a report cites the channel it actually used instead of inferring one from a hit URL
+  - The result names the channel that served it, the time that answer was fetched (retrievedAt; a cache hit keeps the original fetch time), and whether it came from cache, so a report cites when and from where the facts came
+  - channelsConsulted records every channel this call queried, skipped, or failed on, with the reason; a channel absent from that list was not consulted
   - 当 Google Patents 通道失败、抛错或零命中时，部署启用 CNIPR 通道会再检索一次，结果里的 channel 写明这次实际由谁服务；CNIPR 只做关键词检索，命中含公开(公告)号、标题、申请人、公开日与摘要，没有 URL 与优先权，且带 assignee:/after:/CL: 这类字段语法的查询不咨询它
   - A network failure is reported as an error naming that channel; a genuine zero-result search returns empty hits
   - A transient upstream failure (timeout, dropped connection) is retried twice; a failure that outlives the retries names the channel, the upstream error, and the attempts made
@@ -6533,6 +6550,10 @@ Usage notes:
     "limit": {
       "type": "number",
       "description": "Max hits (1-50, default 10)"
+    },
+    "includeAbstract": {
+      "type": "boolean",
+      "description": "Include each hit's abstract (default false; lean rows omit it)"
     }
   },
   "required": [

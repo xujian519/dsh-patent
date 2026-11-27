@@ -37,7 +37,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
       'knowledge_note_save', 'law_search', 'law_verify', 'legal_knowledge_search', 'legal_law_verify', 'list_agents', 'list_doc_templates', 'list_mcp_resource_templates', 'list_mcp_resources',
       'list_session', 'list_subagent_models', 'list_workspace', 'load_workspace_dependencies', 'lsp', 'macos_app', 'macos_clipboard_get', 'macos_clipboard_set', 'macos_notify', 'macos_open_path',
       'macos_open_url', 'macos_speak', 'market_plugin_preview', 'market_plugin_search', 'market_source_list', 'matter_log_append', 'media', 'office_convert',
-      'office_recalculate', 'office_render', 'paper_download', 'paper_list_sources', 'paper_search', 'parse_office_action', 'patent_analysis_report', 'patent_case_search',
+      'office_recalculate', 'office_render', 'paper_download', 'paper_list_sources', 'paper_search', 'parse_office_action', 'patent_analysis_report', 'patent_case_search', 'patent_corpus_status',
       'patent_deadlines', 'patent_eval', 'patent_fees', 'patent_kg_query', 'patent_legal_status', 'patent_metadata', 'patent_pdf_download', 'patent_plan_task',
       'patent_search', 'patent_teams_add_member', 'patent_teams_archive', 'patent_teams_claim_task', 'patent_teams_create', 'patent_teams_create_task', 'patent_teams_delete', 'patent_teams_reassign_task',
       'patent_teams_remove_member', 'patent_teams_send_message', 'patent_teams_status', 'patent_teams_update_task', 'patent_teams_wait', 'patent_wiki_search', 'patent_worker_validate', 'patent_workflow',

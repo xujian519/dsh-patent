@@ -17,9 +17,10 @@ import { errorMessage } from '@deepseek-ai/dsh-value'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
-import { resolveAsOf, type LawSearchResult, type LawValidity } from '@deepseek-ai/dsh-patent-knowledge'
+import { resolveAsOf, type CorpusInfo, type LawSearchResult, type LawValidity } from '@deepseek-ai/dsh-patent-knowledge'
 import type { SearchStrategy } from '@deepseek-ai/dsh-patent-core'
 import { PatentToolError } from '../error.ts'
+import { CORPUS_SCHEMA, renderCorpusLine } from './internal/corpus.ts'
 import { knowledgeInstallGuidance, truncateSnippet } from './internal/knowledge.ts'
 import { resolveResultLimit } from './internal/query-limit.ts'
 
@@ -62,6 +63,8 @@ export type LawSearchOutput = {
     snippet?: string
   }>
   dbPath?: string
+  /** 语料新鲜度（上游索引时间、schema 版本、规模与本机副本时间）；知识库未接线时省略。 */
+  corpus?: CorpusInfo
   /** 标准化检索策略记录（形状同 `SearchStrategy`；字段类型放宽到 JSON 值以对齐工具输出 schema）。 */
   searchStrategy: JsonValue
 }
@@ -82,6 +85,8 @@ export type LawSearchDeps = {
   searchGuideline?: (query: string, options?: LawSearchPortOptions) => LawSearchResult[]
   /** Resolved knowledge.db path, used for the setup-required check and surfaced as the output's `dbPath` field. */
   dbPath?: string
+  /** Corpus freshness reader (production: ctx.patentKnowledge.corpusInfo). */
+  corpusInfo?: () => CorpusInfo
 }
 
 const INSTALL_GUIDANCE = knowledgeInstallGuidance('本地规范库', '（Config.knowledgeDir）')
@@ -91,6 +96,7 @@ const DESCRIPTION = [
   '这是**规则**的检索通道：`law_verify` 只按随包索引判定引用形式与是否转录（指南的节级条目已随包转录，其下各节都没有转录的条目才判「未核验」），指南条文要在这里取原文并把 sourcePath（语料内路径）记为引文来源；判例全文另有 patent_case_search。',
   '命中为空不得下任何结论；引用格式：`<名称>` + `<条号/节号>` + `<sourcePath>`。',
   '每条命中带 `时间效力`：已废止与尚未生效的条文不会返回；标为「未核验」表示库里缺少施行/失效时间，引用前须另行核对版本。',
+  '输出另带 `corpus`：上游索引构建时间、schema 版本与本机副本时间——报告要写明所引条文出自哪一版语料时用它，不要用调用时间代替。',
 ].join(' ')
 
 const VALIDITY_LABELS: Record<LawValidity, string> = {
@@ -112,6 +118,7 @@ function renderLawSearch(value: LawSearchOutput, query: string): string {
     `**law_search**（${label}）— ${String(value.results.length)} 条命中：`,
     `检索式：${query}`,
     `时间效力判定时点：${value.asOf}`,
+    ...(value.corpus === undefined ? [] : [renderCorpusLine(value.corpus)]),
   ]
   if (value.results.length === 0) {
     return [...header, '', `0 条${label}命中；换个检索词或改 scope 再查，命中为空不得据此下结论。`].join('\n')
@@ -174,6 +181,7 @@ export function createLawSearchTool(deps: LawSearchDeps): ToolDefinition {
           total: { type: 'integer', required: true },
           results: { type: 'array', required: true, items: RESULT_SCHEMA },
           dbPath: { type: 'string' },
+          corpus: CORPUS_SCHEMA,
           searchStrategy: { type: 'json', required: true },
         },
       },
@@ -224,6 +232,18 @@ export function createLawSearchTool(deps: LawSearchDeps): ToolDefinition {
         score: hit.score,
         ...(includeContent && hit.content !== undefined ? { snippet: truncateSnippet(hit.content) } : {}),
       }))
+      let corpus: CorpusInfo | undefined
+      if (deps.corpusInfo !== undefined) {
+        try {
+          corpus = deps.corpusInfo()
+        } catch (err) {
+          throw new PatentToolError('setup_required', `${INSTALL_GUIDANCE}（读取语料信息失败：${errorMessage(err)}）`, {
+            tool: 'law_search',
+            scope,
+            cause: errorMessage(err),
+          })
+        }
+      }
       const searchStrategy: SearchStrategy = {
         query: args.query,
         ...(args.level === undefined ? {} : { level: args.level }),
@@ -235,6 +255,7 @@ export function createLawSearchTool(deps: LawSearchDeps): ToolDefinition {
         results,
         searchStrategy: { ...searchStrategy },
         ...(deps.dbPath === undefined ? {} : { dbPath: deps.dbPath }),
+        ...(corpus === undefined ? {} : { corpus }),
       }
     },
   })

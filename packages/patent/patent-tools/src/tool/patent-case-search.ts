@@ -11,9 +11,10 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { recordText, recordValue, textList } from './internal/json-read.ts'
 import { toJsonValue } from './internal/json-value.ts'
-import type { CaseLawDocType, CaseLawHit, CaseLawSearchOptions } from '@deepseek-ai/dsh-patent-knowledge'
+import type { CaseLawDocType, CaseLawHit, CaseLawSearchOptions, CorpusInfo } from '@deepseek-ai/dsh-patent-knowledge'
 import type { SearchStrategy } from '@deepseek-ai/dsh-patent-core'
 import { PatentToolError } from '../error.ts'
+import { CORPUS_SCHEMA, renderCorpusLine } from './internal/corpus.ts'
 import { knowledgeInstallGuidance, truncateSnippet } from './internal/knowledge.ts'
 import { resolveResultLimit } from './internal/query-limit.ts'
 
@@ -48,6 +49,8 @@ export type PatentCaseSearchOutput = {
     via: 'fts' | 'like'
   }>
   dbPath?: string
+  /** 语料新鲜度（上游索引时间、schema 版本、规模与本机副本时间）；知识库未接线时省略。 */
+  corpus?: CorpusInfo
   /** 标准化检索策略记录。 */
   searchStrategy: SearchStrategy
 }
@@ -57,6 +60,8 @@ export type PatentCaseSearchDeps = {
   search?: (query: string, options?: CaseLawSearchOptions) => CaseLawHit[]
   /** Resolved knowledge.db path, used for the setup-required check and surfaced as the output's `dbPath` field. */
   dbPath?: string
+  /** Corpus freshness reader (production: ctx.patentKnowledge.corpusInfo). */
+  corpusInfo?: () => CorpusInfo
 }
 
 const INSTALL_GUIDANCE = knowledgeInstallGuidance('判例库')
@@ -77,7 +82,7 @@ function toResult(hit: CaseLawHit, includeContent: boolean): PatentCaseSearchOut
   }
 }
 
-const DESCRIPTION = '检索本地专利判例全文（无效复审决定/专利判决，knowledge.db，FTS5 BM25 优先）。用于无效宣告分析、OA 答复时检索相似在先决定的理由论证与证据认定。支持 doc_type（case=无效决定/judgment=判决）与 court（法院）过滤。默认排除 wiki 审查标准卡片（审查标准请用 patent_wiki_search）。'
+const DESCRIPTION = '检索本地专利判例全文（无效复审决定/专利判决，knowledge.db，FTS5 BM25 优先）。用于无效宣告分析、OA 答复时检索相似在先决定的理由论证与证据认定。支持 doc_type（case=无效决定/judgment=判决）与 court（法院）过滤。默认排除 wiki 审查标准卡片（审查标准请用 patent_wiki_search）。输出另带 corpus（上游索引时间、schema 版本、规模与本机副本时间），报告要写明所引判例出自哪一版语料时用它，不要用调用时间代替。'
 
 /** Render the canonical case-search value into model-facing prose. */
 function renderCaseSearch(value: {
@@ -93,8 +98,12 @@ function renderCaseSearch(value: {
     snippet?: string
   }[]
   searchStrategy: unknown
+  corpus?: CorpusInfo
 }): string {
-  const header = [`**patent_case_search** — ${value.results.length} result(s):`]
+  const header = [
+    `**patent_case_search** — ${value.results.length} result(s):`,
+    ...(value.corpus === undefined ? [] : [renderCorpusLine(value.corpus)]),
+  ]
   let line = `检索式：${recordText(value.searchStrategy, 'query')}`
   const ipc = textList(recordValue(value.searchStrategy, 'ipc'))
   /* v8 ignore next -- this tool never writes an IPC field into its search strategy */
@@ -158,6 +167,7 @@ export function createPatentCaseSearchTool(deps: PatentCaseSearchDeps): ToolDefi
           total: { type: 'integer', required: true },
           results: { type: 'array', required: true, items: RESULT_SCHEMA },
           dbPath: { type: 'string' },
+          corpus: CORPUS_SCHEMA,
           searchStrategy: { type: 'json', required: true },
         },
       },
@@ -194,10 +204,23 @@ export function createPatentCaseSearchTool(deps: PatentCaseSearchDeps): ToolDefi
           : {}),
         ...(hits.length > 0 ? { hits: hits.length } : {}),
       }
+      let corpus: CorpusInfo | undefined
+      if (deps.corpusInfo !== undefined) {
+        try {
+          corpus = deps.corpusInfo()
+        } catch (err) {
+          const detail = err instanceof Error ? err.message : String(err)
+          throw new PatentToolError('setup_required', `${INSTALL_GUIDANCE}（读取语料信息失败：${detail}）`, {
+            tool: 'patent_case_search',
+            cause: detail,
+          })
+        }
+      }
       return {
         total: hits.length,
         results: hits.map(hit => toResult(hit, includeContent)),
         ...(deps.dbPath !== undefined ? { dbPath: deps.dbPath } : {}),
+        ...(corpus === undefined ? {} : { corpus }),
         searchStrategy: toJsonValue(searchStrategy),
       }
     },

@@ -9,8 +9,8 @@
   en: 9ce9c17eea4ddeb6
   zh: 82f2293612b9000b
 /tool-schema-catalog/tool-package-map:
-  en: db69e7efb51ea8ad
-  zh: 4267e1e0cf96d270
+  en: e63e2a11d5a1bd0e
+  zh: e921628e0d59b9bb
 /tool-schema-catalog/deepseek-ai-dsh-tool-session-control:
   en: 79ab575ea6da86e2
   zh: 79ab575ea6da86e2
@@ -432,8 +432,8 @@
   en: 1b6d123015df161f
   zh: cfc5be2cab864355
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/law-search:
-  en: dde92ea436de5478
-  zh: 191a2de02cf43bb0
+  en: 4ecce6d9be263bef
+  zh: 51c7aabb3bc6b44f
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/matter-log-append:
   en: 16efd1198beec321
   zh: 17ba169a6cfb114b
@@ -444,8 +444,11 @@
   en: 62aa46d834b55eb8
   zh: 490101ad2c499809
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/patent-case-search:
-  en: 782ee083de08314e
-  zh: 018881bf870fe00d
+  en: a3f5e740d2fa617d
+  zh: bb5913e982342c10
+/tool-schema-catalog/deepseek-ai-dsh-patent-tools/patent-corpus-status:
+  en: 68a493aa18d865f2
+  zh: 24f787ec28532375
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/patent-eval:
   en: 9c4c20c11ffb8a20
   zh: b53c780a605db61e
@@ -453,20 +456,20 @@
   en: 91da802ef497201d
   zh: eee534b36b1d44cc
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/patent-legal-status:
-  en: 8b0d2e50332cc617
-  zh: 33fdbc3b16224553
+  en: e82d1779e684cfbb
+  zh: edb1eefa69677c5e
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/patent-metadata:
-  en: ac48a1ea2ec541cf
-  zh: f599ffc2fd1df07d
+  en: 13bbc08726b1a475
+  zh: 750a75df26739314
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/patent-pdf-download:
-  en: a831588d4ea27925
-  zh: 8f87d884936e4381
+  en: 14444624f81f4b6d
+  zh: 9409a4a6adf7342f
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/patent-plan-task:
   en: 27a14aae3a1511e3
   zh: 4db8acd1844ccf47
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/patent-search:
-  en: f4b62b8031fd3b76
-  zh: 3ca4477127b0f72c
+  en: 800c1914234e8ab2
+  zh: f061ea8b3ddb1d79
 /tool-schema-catalog/deepseek-ai-dsh-patent-tools/patent-wiki-search:
   en: 843987da83d629a2
   zh: 27d89d49ced05168

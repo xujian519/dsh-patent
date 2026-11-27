@@ -6,7 +6,7 @@
  */
 
 import type { PatentSearchResult, ScrapeResult } from '@deepseek-ai/nuo-patent'
-import type { PatentCacheOptions } from './types.ts'
+import type { CachedLookup, PatentCacheOptions } from './types.ts'
 
 /** Default search/scrape cache TTL in milliseconds (10 minutes). */
 const DEFAULT_CACHE_TTL_MS = 10 * 60 * 1000
@@ -14,17 +14,19 @@ const DEFAULT_CACHE_TTL_MS = 10 * 60 * 1000
 /** Default search/scrape cache capacity in entries. */
 const DEFAULT_CACHE_MAX_ENTRIES = 100
 
-type CacheNode<T> = { value: T; expiresAt: number }
+type CacheNode<T> = { value: T; expiresAt: number; retrievedAt: number }
 
 /**
  * Generic async-result cache: LRU eviction, per-entry TTL, and in-flight merge.
- * Only a loader's resolved value is cached; rejections never are.
+ * Only a loader's resolved value is cached; rejections never are. Every lookup
+ * reports whether the value came from a live entry and when the value was
+ * originally fetched, so consumers can state retrieval time instead of call time.
  */
 export class AsyncResultCache<T> {
   private readonly ttlMs: number
   private readonly maxEntries: number
   private readonly map = new Map<string, CacheNode<T>>()
-  private readonly inflight = new Map<string, Promise<T>>()
+  private readonly inflight = new Map<string, Promise<CachedLookup<T>>>()
 
   constructor(options: PatentCacheOptions = {}) {
     this.ttlMs = options.ttlMs ?? DEFAULT_CACHE_TTL_MS
@@ -36,9 +38,9 @@ export class AsyncResultCache<T> {
    * @param key - cache key.
    * @param loader - the underlying load to run on a miss.
    * @param shouldCache - optional predicate; false passes the value through without caching.
-   * @returns the cached or freshly loaded value.
+   * @returns the value with its cache-hit flag and original fetch time.
    */
-  async getOrLoad(key: string, loader: () => Promise<T>, shouldCache?: (value: T) => boolean): Promise<T> {
+  async getOrLoad(key: string, loader: () => Promise<T>, shouldCache?: (value: T) => boolean): Promise<CachedLookup<T>> {
     const pending = this.inflight.get(key)
     if (pending) return pending
 
@@ -47,16 +49,17 @@ export class AsyncResultCache<T> {
       if (Date.now() < node.expiresAt) {
         this.map.delete(key)
         this.map.set(key, node)
-        return node.value
+        return { value: node.value, cached: true, retrievedAt: new Date(node.retrievedAt).toISOString() }
       }
       this.map.delete(key)
     }
 
     const promise = loader().then((value) => {
+      const retrievedAt = Date.now()
       if (shouldCache === undefined || shouldCache(value)) {
-        this.set(key, value)
+        this.set(key, value, retrievedAt)
       }
-      return value
+      return { value, cached: false, retrievedAt: new Date(retrievedAt).toISOString() }
     })
     this.inflight.set(key, promise)
     try {
@@ -66,7 +69,7 @@ export class AsyncResultCache<T> {
     }
   }
 
-  private set(key: string, value: T): void {
+  private set(key: string, value: T, retrievedAt: number): void {
     const existing = this.map.get(key)
     if (existing) {
       this.map.delete(key)
@@ -76,7 +79,7 @@ export class AsyncResultCache<T> {
       if (oldestKey === undefined) break
       this.map.delete(oldestKey)
     }
-    this.map.set(key, { value, expiresAt: Date.now() + this.ttlMs })
+    this.map.set(key, { value, expiresAt: Date.now() + this.ttlMs, retrievedAt })
   }
 
   /** Clear the cache and the in-flight merge table (tests / explicit invalidation). */
@@ -137,12 +140,12 @@ export function scrapeCacheKey(patent: string, opts: { returnAbstract: boolean; 
  * Wrap a search implementation with LRU cache + in-flight merge.
  * @param impl - the underlying search function.
  * @param options - optional cache tuning.
- * @returns the same-signature cached search function.
+ * @returns the cached search function, whose lookups carry cache-hit and fetch-time facts.
  */
 export function cachedSearchPatents(
   impl: (query: string, options?: { limit?: number }) => Promise<PatentSearchResult>,
   options: PatentCacheOptions = {},
-): (query: string, options?: { limit?: number }) => Promise<PatentSearchResult> {
+): (query: string, options?: { limit?: number }) => Promise<CachedLookup<PatentSearchResult>> {
   const cache = new AsyncResultCache<PatentSearchResult>(options)
   return async (query, opts) => {
     const limit = opts?.limit ?? 10
@@ -154,12 +157,12 @@ export function cachedSearchPatents(
  * Wrap a scrape implementation with LRU cache + in-flight merge (success only).
  * @param impl - the underlying scrape function.
  * @param options - optional cache tuning.
- * @returns the same-signature cached scrape function.
+ * @returns the cached scrape function, whose lookups carry cache-hit and fetch-time facts.
  */
 export function cachedScrapePatent(
   impl: (patent: string, options?: { returnAbstract?: boolean; returnLegal?: boolean }) => Promise<ScrapeResult>,
   options: PatentCacheOptions = {},
-): (patent: string, options?: { returnAbstract?: boolean; returnLegal?: boolean }) => Promise<ScrapeResult> {
+): (patent: string, options?: { returnAbstract?: boolean; returnLegal?: boolean }) => Promise<CachedLookup<ScrapeResult>> {
   const cache = new AsyncResultCache<ScrapeResult>(options)
   return async (patent, opts) => {
     const returnAbstract = opts?.returnAbstract ?? true

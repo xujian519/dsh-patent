@@ -55,3 +55,46 @@ export function renderUpstreamFailure(detail: string, attempts: number): string 
 export function appendSecondChannel(report: string, warnings: readonly string[]): string {
   return warnings.length === 0 ? report : `${report}；${warnings.join('；')}`
 }
+
+/**
+ * 一次调用里某个检索通道的结局：`served` 给出了可用答案，`empty` 被咨询但零命中，
+ * `failed` 被咨询但失败，`skipped` 根本没被咨询（通常是前一通道已给出答案，或查询形态
+ * 不适用该通道）。
+ */
+export const CHANNEL_OUTCOMES = ['served', 'empty', 'failed', 'skipped'] as const
+
+/** 一个通道的结局，见 {@link CHANNEL_OUTCOMES}。 */
+export type ChannelOutcome = (typeof CHANNEL_OUTCOMES)[number]
+
+/**
+ * 模型可见的通道咨询记录。检索报告要写明「哪些通道被问过、谁服务的、没问的原因」，
+ * 这份事实不能只靠 `warnings` 的自由文本推断（没写进 warnings 的通道会被读成「不需要」）。
+ */
+export interface ChannelConsult {
+  /** 通道的模型可见名称（见本模块的通道常量）。 */
+  name: string
+  /** 该通道在这次调用里的结局。 */
+  outcome: ChannelOutcome
+  /** `empty` / `failed` / `skipped` 的原因；`served` 时省略。 */
+  reason?: string
+}
+
+/** 通道咨询记录的输出 schema，与 {@link ChannelConsult} 一一对应。 */
+export const CHANNEL_CONSULT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    name: { type: 'string', required: true },
+    outcome: { type: 'string', required: true, enum: [...CHANNEL_OUTCOMES] },
+    reason: { type: 'string' },
+  },
+} as const
+
+/**
+ * 渲染通道咨询记录为一行模型可见文本。
+ * @param channels - 本次调用的通道记录。
+ * @returns 形如 `通道：A（served）；B（skipped：…）` 的一行。
+ */
+export function renderChannelConsult(channels: readonly ChannelConsult[]): string {
+  return `通道：${channels.map(c => `${c.name}（${c.outcome}${c.reason === undefined ? '' : `：${c.reason}`}）`).join('；')}`
+}

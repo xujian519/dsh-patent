@@ -73,9 +73,18 @@ describe('AsyncResultCache', () => {
       calls += 1
       return `v${calls}`
     }
-    expect(await cache.getOrLoad('k', loader)).toBe('v1')
-    expect(await cache.getOrLoad('k', loader)).toBe('v1')
+    expect((await cache.getOrLoad('k', loader)).value).toBe('v1')
+    expect((await cache.getOrLoad('k', loader)).value).toBe('v1')
     expect(calls).toBe(1)
+  })
+
+  it('reports cache hits with the original fetch time', async () => {
+    const cache = new AsyncResultCache<string>({ ttlMs: 60_000 })
+    const first = await cache.getOrLoad('k', async () => 'v1')
+    const second = await cache.getOrLoad('k', async () => 'v2')
+    expect(first).toMatchObject({ value: 'v1', cached: false })
+    expect(second).toMatchObject({ value: 'v1', cached: true, retrievedAt: first.retrievedAt })
+    expect(Number.isNaN(Date.parse(first.retrievedAt))).toBe(false)
   })
 
   it('deduplicates concurrent same-key loads', async () => {
@@ -92,7 +101,10 @@ describe('AsyncResultCache', () => {
     const p2 = cache.getOrLoad('k', loader)
     const p3 = cache.getOrLoad('k', loader)
     release()
-    expect(await Promise.all([p1, p2, p3])).toEqual(['done', 'done', 'done'])
+    const settled = await Promise.all([p1, p2, p3])
+    expect(settled.map(r => r.value)).toEqual(['done', 'done', 'done'])
+    // Concurrent callers share one live fetch, so none of them is a cache hit.
+    expect(settled.map(r => r.cached)).toEqual([false, false, false])
     expect(calls).toBe(1)
   })
 
@@ -103,9 +115,9 @@ describe('AsyncResultCache', () => {
       calls += 1
       return `v${calls}`
     }
-    expect(await cache.getOrLoad('k', loader)).toBe('v1')
+    expect((await cache.getOrLoad('k', loader)).value).toBe('v1')
     await new Promise(resolve => setTimeout(resolve, 5))
-    expect(await cache.getOrLoad('k', loader)).toBe('v2')
+    expect((await cache.getOrLoad('k', loader)).value).toBe('v2')
     expect(calls).toBe(2)
   })
 
@@ -120,8 +132,8 @@ describe('AsyncResultCache', () => {
     await cache.getOrLoad('b', () => loader('b'))
     await cache.getOrLoad('a', () => loader('a'))
     await cache.getOrLoad('c', () => loader('c'))
-    expect(await cache.getOrLoad('a', () => loader('a'))).toBe('va')
-    expect(await cache.getOrLoad('b', () => loader('b'))).toBe('vb')
+    expect((await cache.getOrLoad('a', () => loader('a'))).value).toBe('va')
+    expect((await cache.getOrLoad('b', () => loader('b'))).value).toBe('vb')
     expect(calls).toBe(4)
   })
 
@@ -134,7 +146,7 @@ describe('AsyncResultCache', () => {
       return 'ok'
     }
     await expect(cache.getOrLoad('k', loader)).rejects.toThrow(/network down/)
-    expect(await cache.getOrLoad('k', loader)).toBe('ok')
+    expect((await cache.getOrLoad('k', loader)).value).toBe('ok')
     expect(calls).toBe(2)
   })
 
@@ -145,8 +157,8 @@ describe('AsyncResultCache', () => {
       calls += 1
       return 'transient'
     }
-    expect(await cache.getOrLoad('k', loader, () => false)).toBe('transient')
-    expect(await cache.getOrLoad('k', loader, () => false)).toBe('transient')
+    expect((await cache.getOrLoad('k', loader, () => false)).value).toBe('transient')
+    expect((await cache.getOrLoad('k', loader, () => false)).value).toBe('transient')
     expect(calls).toBe(2)
   })
 
@@ -160,11 +172,11 @@ describe('AsyncResultCache', () => {
     })
     expect(cache.size).toBe(0)
     release()
-    expect(await loading).toBe('v1')
+    expect((await loading).value).toBe('v1')
     expect(cache.size).toBe(1)
     cache.clear()
     expect(cache.size).toBe(0)
-    expect(await cache.getOrLoad('k', async () => 'v2')).toBe('v2')
+    expect((await cache.getOrLoad('k', async () => 'v2')).value).toBe('v2')
   })
 
   it('lets a same-key store settle before the outer store when the loader re-enters', async () => {
@@ -175,13 +187,13 @@ describe('AsyncResultCache', () => {
       void cache.getOrLoad('k', async () => 'nested')
       return 'outer'
     })
-    expect(await outer).toBe('outer')
-    expect(await cache.getOrLoad('k', async () => 'again')).toBe('outer')
+    expect((await outer).value).toBe('outer')
+    expect((await cache.getOrLoad('k', async () => 'again')).value).toBe('outer')
   })
 
   it('stops evicting when the cache holds no entries (zero-capacity config)', async () => {
     const cache = new AsyncResultCache<string>({ maxEntries: 0, ttlMs: 60_000 })
-    expect(await cache.getOrLoad('k', async () => 'v')).toBe('v')
+    expect((await cache.getOrLoad('k', async () => 'v')).value).toBe('v')
     expect(cache.size).toBe(1)
   })
 })
@@ -273,8 +285,8 @@ describe('cachedSearchPatents / cachedScrapePatent', () => {
         : makeScrapeResult()
     }
     const wrapped = cachedScrapePatent(impl)
-    expect((await wrapped('US11452699B2')).success).toBe(false)
-    expect((await wrapped('US11452699B2')).success).toBe(true)
+    expect((await wrapped('US11452699B2')).value.success).toBe(false)
+    expect((await wrapped('US11452699B2')).value.success).toBe(true)
     expect(calls).toBe(2)
   })
 

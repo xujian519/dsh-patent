@@ -3051,6 +3051,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the de-duplicated hits in rank order, each with its `filename` (file_path) for citation.',
       },
       {
+        signature: 'corpusInfo(): CorpusInfo',
+        description: 'Read the resolved corpus\'s freshness and size (upstream index build time, schema version, document/chunk counts, local copy time).',
+        parameters: [],
+        returns: 'the corpus facts; fields the database does not record are omitted.',
+      },
+      {
         signature: 'wikiCards(query: string, limit: number = 10): WikiCardMeta[]',
         description: 'Keyword lookup over the wiki-card directory (title/concept/domain).',
         parameters: [{ name: 'query', description: 'the keyword.' }, { name: 'limit', description: 'result cap.' }],
@@ -7992,6 +7998,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'CordisRuntimeTreeReader',
     declaration: 'export interface CordisRuntimeTreeReader {\n    getTree(): Promise<CordisRuntimeTree>;\n}',
+  },
+  {
+    name: 'CorpusInfo',
+    declaration: 'export interface CorpusInfo {\n    dbPath: string;\n    lastIndexedAt?: string;\n    version?: number;\n    versionCreatedAt?: string;\n    documents?: number;\n    chunks?: number;\n    fileModifiedAt: string;\n}',
   },
   {
     name: 'CotTranslationPreferences',

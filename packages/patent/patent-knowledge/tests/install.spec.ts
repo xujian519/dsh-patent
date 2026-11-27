@@ -42,7 +42,7 @@ describe('installKnowledgeDb', () => {
     })
 
     expect(result.output).toBe(output)
-    expect(result.dropped).toEqual(['embeddings', 'ivf_index', 'index_meta'])
+    expect(result.dropped).toEqual(['embeddings', 'ivf_index'])
     // Only the long chunk is compressed; the single-pass helper must not change the count.
     expect(result.compressedChunks).toBe(1)
 
@@ -299,7 +299,7 @@ describe('installKnowledgeDb verify + option branches', () => {
     const log: string[] = []
     const result = await installKnowledgeDb({ sourceDbPath: input, output, noFts: true, log: line => log.push(line) })
 
-    expect(result.dropped).toEqual(['embeddings', 'ivf_index', 'index_meta', 'docs_fts', 'kg_nodes_fts'])
+    expect(result.dropped).toEqual(['embeddings', 'ivf_index', 'docs_fts', 'kg_nodes_fts'])
     expect(log.some(l => l.includes('KgStore 关键词检索: 无命中'))).toBe(true)
     expect(log.some(l => l.includes('KnowledgeLawSearch count=1') && l.includes('无命中'))).toBe(true)
     expect(log.some(l => l.includes('检索"创造性"') && l.includes('无命中'))).toBe(true)

@@ -36,6 +36,10 @@ knowledge.db 查询接缝的服务定义（`ctx.patentKnowledge`）：判例全�
 
 对 `knowledge.db` 的 `guideline_rule` 文档（《专利审查指南》全文）做全文检索，由第二个以 `docTypes: ['guideline_rule']` 限定的 `KnowledgeLawSearch` 提供。引擎索引哪类规范文档由构造时的文档类型决定（缺省 `law_article`），因此法规语料与指南语料各自独立、共用同一条检索通路；`documents` 表早于 `file_path` 列的库仍可检索，只是命中不带来源路径。
 
+### corpusInfo()
+
+不检索内容即可读出所解析数据库的新鲜度：`lastIndexedAt`（上游管线构建时间，取 `index_meta.last_indexed_at`）、最新 `version_history` 行的 `version` 与 `versionCreatedAt`、文档/分块数（优先取索引元数据，其次取最新版本行），以及本机副本的 `fileModifiedAt`。库里没有记录的字段一律省略而不给默认值；构建时间与本机副本时间分开报告，因为索引可能在几个月前构建、直到最近才安装。
+
 ### wikiCards(query, limit?) / wikiCardsIn(prefix, keyword, limit?)
 
 对 wiki 卡片目录做关键词查询（标题/概念/领域），可跨全部目录或限定一个目录前缀；前缀形式下关键词为空时列出该目录。P1 仅关键词路径：语义/向量 wiki 索引已延后，wiki 目录缺失时降级为空结果。
@@ -70,7 +74,7 @@ knowledge.db 查询接缝的服务定义（`ctx.patentKnowledge`）：判例全�
 <a id="patent-knowledgeinstall"></a>
 ## patent-knowledge:install
 
-安装逻辑为导出的 `installKnowledgeDb(options)` 函数加 `patent-knowledge-install` 可执行入口；插件加载时不会自动运行。它把本机源 `knowledge.db` 裁剪为 `knowledgeDir/knowledge-lite.db`：VACUUM 生成紧凑副本、gzip 压缩 `chunks.content` 长正文（读取端透明解压）、删除 embeddings 表。传入 `--search-prefix` 时同时写入 `documents.search_prefix`：每个文档最长 chunk 的前 512 个码点（可配置），以明文存储。该前缀让两字判例查询扫描紧凑列而无需解压全部 8.1 万篇文档，代价是召回被限制在前缀内；随包语料约增加 120 MB。默认保留全文匹配；不带该选项重新 install 会删除从带前缀 lite 库继承的列。运行一次以准备数据：
+安装逻辑为导出的 `installKnowledgeDb(options)` 函数加 `patent-knowledge-install` 可执行入口；插件加载时不会自动运行。它把本机源 `knowledge.db` 裁剪为 `knowledgeDir/knowledge-lite.db`：VACUUM 生成紧凑副本、gzip 压缩 `chunks.content` 长正文（读取端透明解压）、删除 embeddings 表（保留 `index_meta`：它是 `corpusInfo()` 读取语料构建时间与规模的唯一来源）。传入 `--search-prefix` 时同时写入 `documents.search_prefix`：每个文档最长 chunk 的前 512 个码点（可配置），以明文存储。该前缀让两字判例查询扫描紧凑列而无需解压全部 8.1 万篇文档，代价是召回被限制在前缀内；随包语料约增加 120 MB。默认保留全文匹配；不带该选项重新 install 会删除从带前缀 lite 库继承的列。运行一次以准备数据：
 
 ```sh
 pnpm --filter @deepseek-ai/dsh-patent-knowledge exec patent-knowledge-install

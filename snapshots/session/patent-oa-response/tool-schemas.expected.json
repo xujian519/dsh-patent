@@ -3145,7 +3145,7 @@
           },
           "timeoutMs": {
             "type": "number",
-            "description": "整体执行超时（毫秒）；默认 clamp(篇数 × (pageTimeoutSec × 1000 + downloadTimeoutMs) + 15000, 60000, 300000)，上限 300000"
+            "description": "单腿执行预算（毫秒）：CNIPR 腿与 Google 腿各自按它设期限，不是整批墙钟上限，最坏情形两腿各用满预算；CNIPR 腿另有 90 秒下限（ego 会话冷启动）。默认 clamp(篇数 × (pageTimeoutSec × 1000 + downloadTimeoutMs) + 15000, 60000, 300000)，上限 300000"
           },
           "record": {
             "type": "boolean",

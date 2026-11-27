@@ -528,7 +528,7 @@ export function createPatentPdfDownloadTool(deps: PatentPdfDownloadDeps): ToolDe
       outputDir: { type: 'string', description: '输出目录（相对当前工作目录；越出工作目录的路径会被拒绝）；默认 <cwd>/专利原文/YYYY-MM-DD' },
       pageTimeoutSec: { type: 'number', description: '每页打开超时（秒），默认 20' },
       downloadTimeoutMs: { type: 'number', description: '每篇取回 PDF 响应体的超时（毫秒），默认 60000' },
-      timeoutMs: { type: 'number', description: '整体执行超时（毫秒）；默认 clamp(篇数 × (pageTimeoutSec × 1000 + downloadTimeoutMs) + 15000, 60000, 300000)，上限 300000' },
+      timeoutMs: { type: 'number', description: '单腿执行预算（毫秒）：CNIPR 腿与 Google 腿各自按它设期限，不是整批墙钟上限，最坏情形两腿各用满预算；CNIPR 腿另有 90 秒下限（ego 会话冷启动）。默认 clamp(篇数 × (pageTimeoutSec × 1000 + downloadTimeoutMs) + 15000, 60000, 300000)，上限 300000' },
       record: { type: 'boolean', description: '是否截图留证（默认 false）' },
       force: { type: 'boolean', description: '忽略 MANIFEST 断点续传，强制重下全部（默认 false）' },
     },

@@ -137,6 +137,13 @@ describe('resolveFamilySeeds 标号表优先', () => {
     })).rejects.toMatchObject({ code: 'tool_execution_failed' })
   })
 
+  it('读取标号表抛出非 Error 值时错误消息取字符串形式', async () => {
+    await expect(resolveFamilySeeds('CN2024-0001', blocks, {
+      render: () => Promise.reject(new Error('unused')),
+      loadNumerals: () => Promise.reject('坏掉了'),
+    })).rejects.toThrow(/读取附图标记表失败：坏掉了/u)
+  })
+
   it('两个读取端口都未注入时报 invalid_tool_input', async () => {
     await expect(resolveFamilySeeds('CN2024-0001', blocks, {
       render: () => Promise.reject(new Error('unused')),
@@ -207,6 +214,77 @@ describe('generate_patent_figure 写入标号表', () => {
     }
   })
 
+  it('标号表写入冲突时保留旧号并告警', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-num-wiring-'))
+    try {
+      const ctx = await ctxWith(createGeneratePatentFigureTool({
+        render: okRenderer(dir),
+        outputDir: dir,
+        cwd: dir,
+        loadNumerals: () => Promise.resolve([]),
+        upsertNumerals: () => Promise.resolve([{ componentId: 'shell', kept: '10', dropped: '100' }]),
+      }))
+      const result = await execute(ctx, 'generate_patent_figure', {
+        figure_type: 'block_diagram',
+        blocks,
+        figure_family: 'CN2024-0001',
+        filename: 'fig1',
+      }, 'gen-conflict')
+
+      expect((result as { isError: boolean }).isError).toBe(false)
+      expect((result as { value: { warnings: string[] } }).value.warnings.join('\n')).toContain('已是 10')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('标号表写入失败不阻断生成，只告警', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-num-wiring-'))
+    try {
+      const ctx = await ctxWith(createGeneratePatentFigureTool({
+        render: okRenderer(dir),
+        outputDir: dir,
+        cwd: dir,
+        loadNumerals: () => Promise.resolve([]),
+        upsertNumerals: () => Promise.reject(new Error('磁盘错误')),
+      }))
+      const result = await execute(ctx, 'generate_patent_figure', {
+        figure_type: 'block_diagram',
+        blocks,
+        figure_family: 'CN2024-0001',
+        filename: 'fig1',
+      }, 'gen-write-fail')
+
+      expect((result as { isError: boolean }).isError).toBe(false)
+      expect((result as { value: { warnings: string[] } }).value.warnings.join('\n')).toContain('附图标记表写入失败：磁盘错误')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('写入抛出非 Error 值时告警取字符串形式', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-num-wiring-'))
+    try {
+      const ctx = await ctxWith(createGeneratePatentFigureTool({
+        render: okRenderer(dir),
+        outputDir: dir,
+        cwd: dir,
+        loadNumerals: () => Promise.resolve([]),
+        upsertNumerals: () => Promise.reject('坏掉了'),
+      }))
+      const result = await execute(ctx, 'generate_patent_figure', {
+        figure_type: 'block_diagram',
+        blocks,
+        figure_family: 'CN2024-0001',
+        filename: 'fig1',
+      }, 'gen-write-string-fail')
+
+      expect((result as { value: { warnings: string[] } }).value.warnings.join('\n')).toContain('附图标记表写入失败：坏掉了')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('未声明 figure_family 时不写表', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-num-wiring-'))
     try {
@@ -255,6 +333,49 @@ describe('add_patent_figure_references 标号表补全', () => {
       }, 'annotate-table')
 
       expect((result as { value: { numReferences: number } }).value.numReferences).toBe(2)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('读表失败时退回调用方给出的标号并告警', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-num-annotate-'))
+    try {
+      writeFileSync(join(dir, 'src.svg'), svg)
+      const ctx = await ctxWith(createAddPatentFigureReferencesTool({
+        cwd: dir,
+        loadNumerals: () => Promise.reject('坏掉了'),
+      }))
+      const result = await execute(ctx, 'add_patent_figure_references', {
+        svg_path: 'src.svg',
+        references: [{ label: '壳体', numeral: '10' }],
+        figure_family: 'CN2024-0001',
+      }, 'annotate-load-fail')
+
+      const value = (result as { value: { numReferences: number; warnings: string[] } }).value
+      expect(value.numReferences).toBe(1)
+      expect(value.warnings.join('\n')).toContain('读取附图标记表失败')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('读表抛出 Error 时告警带该错误的 message', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-num-annotate-'))
+    try {
+      writeFileSync(join(dir, 'src.svg'), svg)
+      const ctx = await ctxWith(createAddPatentFigureReferencesTool({
+        cwd: dir,
+        loadNumerals: () => Promise.reject(new Error('磁盘错误')),
+      }))
+      const result = await execute(ctx, 'add_patent_figure_references', {
+        svg_path: 'src.svg',
+        references: [{ label: '壳体', numeral: '10' }],
+        figure_family: 'CN2024-0001',
+      }, 'annotate-load-error')
+
+      const value = (result as { value: { warnings: string[] } }).value
+      expect(value.warnings.join('\n')).toContain('读取附图标记表失败：磁盘错误')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -324,6 +445,42 @@ describe('validate_specification 标号表核对', () => {
       text: '# 说明书\n\n## 附图说明\n\n图1是结构示意图。\n',
       figure_analysis: analysis,
       numeral_table: [],
+    })
+
+    expect(output.violations.filter(item => item.rule === 'figure_numeral_table')).toEqual([])
+  })
+
+  it('表内空标号被跳过，其余仍参与核对', () => {
+    const output = validateSpecification({
+      text: '# 说明书\n\n## 附图说明\n\n图1是结构示意图。\n',
+      figure_analysis: analysis,
+      numeral_table: [{ numeral: '  ' }, { numeral: '10' }],
+    })
+
+    const finding = output.violations.find(item => item.rule === 'figure_numeral_table')
+    expect(finding?.message).toContain('99')
+    expect(finding?.message).not.toContain('10')
+  })
+
+  it('表内没有有效标号时不产发现', () => {
+    const output = validateSpecification({
+      text: '# 说明书\n\n## 附图说明\n\n图1是结构示意图。\n',
+      figure_analysis: analysis,
+      numeral_table: [{ numeral: '' }],
+    })
+
+    expect(output.violations.filter(item => item.rule === 'figure_numeral_table')).toEqual([])
+  })
+
+  it('不可用图与非数字标号不参与核对', () => {
+    const output = validateSpecification({
+      text: '# 说明书\n\n## 附图说明\n\n图1是结构示意图。\n',
+      figure_analysis: [
+        { figureNumber: 1, usable: false, components: [{ refNumber: '77' }] },
+        { figureNumber: 2, usable: true, components: [{ refNumber: 'U1' }] },
+        { figureNumber: 3, usable: true },
+      ],
+      numeral_table: [{ numeral: '10' }],
     })
 
     expect(output.violations.filter(item => item.rule === 'figure_numeral_table')).toEqual([])

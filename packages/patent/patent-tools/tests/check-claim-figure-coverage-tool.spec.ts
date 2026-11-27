@@ -44,7 +44,7 @@ type ToolValue = {
 const figures = [
   {
     figure_number: 1,
-    components: [{ ref_number: '10', name: '壳体' }, { ref_number: '20', name: '盖板' }],
+    components: [{ ref_number: '10', name: '壳体' }, { ref_number: '20' }],
   },
 ]
 

@@ -168,7 +168,7 @@ function renderLookup(value: LookupOutput): string {
         ...value.separations.map(separation => `- ${separation.name} — ${separation.description} Signals: ${separation.signals.join('; ')}`),
       ].join('\n')
     }
-    const empty = 'The classical matrix lists no recommendation for this pair. This is not a diagonal cell, so a separation move does not apply; check whether the pair names the parameters actually in conflict.'
+    const empty = 'This transcription records no recommendation for this pair: a gap in this matrix edition, not a claim that classical TRIZ has none. This is not a diagonal cell, so a separation move does not apply; check whether the pair names the parameters actually in conflict.'
     return `${header}\n\nRecommended principles: none. ${empty}`
   }
   const lines = [

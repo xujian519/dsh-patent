@@ -295,6 +295,9 @@ describe('dsh-methodology plugin-registered triz tool', () => {
     expect(value.separations).toEqual([])
     const rendered = text(result)
     expect(rendered).toContain('Recommended principles: none.')
+    // 空格是本次转录的缺口，不是「经典矩阵对该参数对无解」——后者会把模型引向错误结论。
+    expect(rendered).toContain('gap in this matrix edition')
+    expect(rendered).not.toContain('classical matrix lists no recommendation')
     expect(rendered).not.toContain('physical contradiction')
     expect(rendered).not.toContain('Separation principles:')
   })

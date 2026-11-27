@@ -6,7 +6,7 @@
  * @module @deepseek-ai/dsh-patent-document/document/pdfRenderer
  */
 
-import { existsSync } from 'node:fs'
+import { existsSync, rmSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { startSpawnDeadline } from '@deepseek-ai/dsh-patent-core'
@@ -102,6 +102,10 @@ export async function renderPdf(
   if (callerCancelled()) {
     return { ok: false, error: '已取消：未启动 Chrome' }
   }
+
+  // 同名旧 PDF 会让「退出 0 且文件存在」骗过下面那次检查：先删掉，existsSync
+  // 才能证明这次确实写出了新文件，而不是把上次的产物当本次结果交付。
+  rmSync(pdfPath, { force: true })
 
   // Chrome 在 Windows 上返回的是 chrome.exe 而非目录，dirname 可能为空。
   const cwd = dirname(chrome) || process.cwd()

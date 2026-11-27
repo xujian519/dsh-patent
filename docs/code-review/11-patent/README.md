@@ -25,8 +25,8 @@
 
 | 批次 | 范围 | 文件数 | 状态 |
 |---|---|---|---|
-| B0 | 逐文件台账与门禁基线 | 564（登记） | 进行中 |
-| B1 | 接线、依赖方向、装配探针 | 配置面 | 待开始 |
+| B0 | 逐文件台账与门禁基线 | 564（登记） | 完成 |
+| B1 | 接线、依赖方向、装配探针 | 配置面 + 4 个探针文件 | 完成 |
 | B2 | patent-core 权项/检查/IPC 等纯函数层 | 59 | 待开始 |
 | B3 | patent-core 其余（atoms、ModelPort、evidence、workflow 等） | 114 | 待开始 |
 | B4 | patent-tools 检索与数据通道 | 42 | 待开始 |
@@ -59,4 +59,4 @@
 - 基线实测：单测 430 文件 / 7525 用例通过，typecheck 与 lint 通过；`verify-export-jsdoc` 与 `verify-npm-install-layout` 为既有红。
 - 已修：`patent-data` 与 `patent-document` 的 `dsh-value` 运行时依赖错置（F-PAT-059、F-PAT-060）；`patent-tools` 两处导出函数的 JSDoc 缺漏（F-PAT-061）。
 - 未修：`verify-npm-install-layout` 超预算（F-PAT-062，待决策）；`verify-package-dependencies` 对内部模块运行时引用的盲区（F-PAT-063，需先量全仓存量）。
-- B1 未完成：装配探针尚未实现；模板已确认可用 `packages/patent/patent-rule/tests/fixtures/warn-driver.ts` 的 `bootProductionProfile` 模式。
+- B1 完成：装配探针 `patent-preset-mount.spec.ts` 真实装载 16 个插件行，六个接缝服务全部可解析、15 个代表性工具全部可见，并附一条会变红的负控制；见 [02-batches/B1.md](02-batches/B1.md)。

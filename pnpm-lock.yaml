@@ -17488,6 +17488,9 @@ importers:
 
   packages/patent/patent-data:
     dependencies:
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       '@deepseek-ai/nuo-patent':
         specifier: workspace:~
         version: link:../../../vendor/nuo-patent
@@ -17513,9 +17516,6 @@ importers:
       '@deepseek-ai/dsh-subprocess-local':
         specifier: workspace:*
         version: link:../../subprocess/subprocess-local
-      '@deepseek-ai/dsh-value':
-        specifier: workspace:*
-        version: link:../../util/value
 
   packages/patent/patent-deadline:
     dependencies:
@@ -17556,6 +17556,9 @@ importers:
       '@deepseek-ai/dsh-atomic-write':
         specifier: workspace:*
         version: link:../../util/atomic-write
+      '@deepseek-ai/dsh-value':
+        specifier: workspace:*
+        version: link:../../util/value
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -17590,9 +17593,6 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:*
         version: link:../../util/values
-      '@deepseek-ai/dsh-value':
-        specifier: workspace:*
-        version: link:../../util/value
       '@deepseek-ai/dsh-working-directory':
         specifier: workspace:*
         version: link:../../session/working-directory

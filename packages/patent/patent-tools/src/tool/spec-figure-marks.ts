@@ -5,7 +5,7 @@
  */
 
 import { parseCnNumber } from '@deepseek-ai/dsh-patent-core'
-import type { FigureAnalysisResult, SpecViolation } from './spec-types.ts'
+import type { FigureAnalysisResult, NumeralTableItem, SpecViolation } from './spec-types.ts'
 import { sectionBodies } from './spec-placeholder.ts'
 
 /** Figure number token: Arabic digits or a Chinese numeral up to 999. */
@@ -247,6 +247,48 @@ export function checkFigureMarkConsistency(
   }
 
   return violations
+}
+
+/**
+ * 图面标号必须已在当前作用域的附图标记表中登记。
+ *
+ * 表为空（未提供）或没有可用标号时不产发现，与 `figure_analysis` 的空数组口径一致：
+ * 空表是「没有核对依据」，不是「所有标号都未登记」。只核数字标号，`U1` 这类结构图
+ * 占位标号不参与——它们本来就不是登记在表里的部件标号。
+ * @param figureAnalysis - 各图的识别结果。
+ * @param numeralTable - 调用方从附图标记表读出的当前作用域条目。
+ * @returns 未登记标号的发现；全部登记时为空。
+ */
+export function checkNumeralTableCoverage(
+  figureAnalysis: readonly FigureAnalysisResult[],
+  numeralTable: readonly NumeralTableItem[],
+): SpecViolation[] {
+  if (numeralTable.length === 0) return []
+  const registered = new Set<string>()
+  for (const item of numeralTable) {
+    const numeral = item.numeral.trim()
+    if (numeral !== '') registered.add(numeral)
+  }
+  if (registered.size === 0) return []
+
+  const figureMarks = new Set<string>()
+  for (const figure of figureAnalysis) {
+    if (!figure.usable) continue
+    for (const component of figure.components ?? []) {
+      const ref = component.refNumber.trim()
+      if (/^\d+$/.test(ref)) figureMarks.add(ref)
+    }
+  }
+  const missing = [...figureMarks].filter(ref => !registered.has(ref))
+  if (missing.length === 0) return []
+  return [{
+    rule: 'figure_numeral_table',
+    family: 'figures',
+    severity: 'warning',
+    section: '附图说明',
+    message: `图面标记 ${missing.join('、')} 未在附图标记表中登记`,
+    suggestion: '用 generate_patent_figure 重新出图以登记标号，或把该标号补进附图标记表',
+  }]
 }
 
 /**

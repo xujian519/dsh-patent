@@ -28,3 +28,20 @@ export const FINDING_FIELDS = {
   check: { type: 'string', required: true },
   message: { type: 'string', required: true },
 } as const
+
+/**
+ * 构造 findings 数组的 schema：外层固定（必填数组、条目禁止额外字段），字段由调用方给。
+ * @param properties - 该工具发现条目的字段表。
+ * @returns 可直接放进输出 schema 的 findings 片段。
+ */
+export function findingListSchema<const P extends Record<string, unknown>>(properties: P) {
+  return {
+    type: 'array',
+    required: true,
+    items: {
+      type: 'object',
+      additionalProperties: false,
+      properties,
+    },
+  } as const
+}

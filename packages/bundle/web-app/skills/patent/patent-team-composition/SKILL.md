@@ -76,7 +76,7 @@ description: 专利案持久团队组建模板，仅在用户明确要求组队�
 |---|---|---|---|---|
 | t1 | 交底书理解：PFIE 四元组 + 发明点分级（成员自读，校验 manifest 的 `merge` 结果） | 团队 | 撰写员 | — |
 | t2 | 现有技术检索：对比文件 + 布局依据（校验 `search`/`prior_art_filter`/`novelty` 结果） | 团队 | 检索员 | t1 |
-| t3 | 附图与附图标记表：按图面类型出图（`generate_patent_figure`，标号随 `labels[]` 内嵌；三维模型走 `generate_structure_figure`）、外部 SVG 标号回填（`add_patent_figure_references`，仅自绘/外部来源图需要）、图文双向一致性核验（`validate_specification` + `analyze_patent_figure`），产出 `figure-deliverable.md` | 团队 | 制图员 | t1 |
+| t3 | 附图与附图标记表：按图面类型出图（`generate_patent_figure`，标号随 `labels[]` 内嵌；三维模型走 `generate_structure_figure`）、外部 SVG 标号回填（`add_patent_figure_references`，仅自绘/外部来源图需要）、图文双向一致性核验（`validate_specification` + `analyze_patent_figure`；权项技术特征到图面元素的覆盖另用 `check_claim_figure_coverage` 逐特征指认标号），产出 `figure-deliverable.md` | 团队 | 制图员 | t1 |
 | t4 | 披露链执行：`preprocess` → `eligibility` → `extract_problem/features/effects` → `merge` → `groundedness` → `consistency` → `generate_keywords` → `time_baseline` → `search` → `prior_art_filter` → `novelty` → `citation_check` → `report` → `claim_strategy` → `draft_claims` → `figure_analysis`/`figure_analysis_parse` → `draft_specification` → `spec_check` → `enablement_report` → `claim_breadth` → `slop_clean` → `draft_review` → `revision_ledger` → `legal_gaps` → `draft_quality`，停在 `review_gate` | manifest | captain | t2, t3 |
 | t5 | 权项复核：只读 `claim_strategy` 策略表与 `draft_claims` 草稿，核对特征编号、原文锚点、多路从权引用方向；指出越界或漏特征，**不重写权项** | 团队 | 申请人代理 | t4 |
 | t6 | 说明书互证：`enablement_report`（A26.3 充分公开）与 `claim_breadth`（A26.4 概括范围）逐条复核，核对实施例摘录与原文锚点，并核对实施例索引只收录交底原文已定位的替代，缺口不补写 | 团队 | 对立审查员 | t4 |

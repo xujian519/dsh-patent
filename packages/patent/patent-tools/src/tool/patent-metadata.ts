@@ -286,8 +286,8 @@ const DESCRIPTION = [
  * Warnings render on both outcomes: a failed lookup still carries the warnings
  * the scrape collected before it gave up, and the description promises the model
  * sees them.
- * @param value - the metadata tool's canonical result.
- * @returns the Markdown fragment shown to the model.
+ * @param value - metadata lookup result (success flag, patent number, channel and data).
+ * @returns model-facing Markdown.
  */
 export function renderMetadata(value: {
   success: boolean

@@ -668,12 +668,13 @@ describe('输出路径锚定部署工作区根', () => {
     expect(mock.figures.at(-1)?.outputDir).toBe(resolve(root, 'out'))
   })
 
-  it('四个路径都是绝对路径时不读取工作区服务', async () => {
+  it('五个路径都是绝对路径时不读取工作区服务', async () => {
     const root = workspace()
     await mount({
       noteDir: join(root, 'notes'),
       figureOutputDir: join(root, 'figures'),
       figureIndexFile: join(root, 'figures-index.json'),
+      figureNumeralsFile: join(root, 'figure-numerals.json'),
       chemistryIndexFile: join(root, 'chemistry-index.json'),
     }, { workspaceRoot: false })
     expect(mock.noteDirs.at(-1)).toBe(join(root, 'notes'))
@@ -685,6 +686,7 @@ describe('输出路径锚定部署工作区根', () => {
     await mount({
       noteDir: join(root, 'notes'),
       figureIndexFile: join(root, 'figures-index.json'),
+      figureNumeralsFile: join(root, 'figure-numerals.json'),
       chemistryIndexFile: join(root, 'chemistry-index.json'),
       workbenchCaseRoot: join(root, 'matters'),
     }, { workspaceRoot: false })

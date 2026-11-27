@@ -262,8 +262,8 @@ const DESCRIPTION = [
  * Warnings are rendered, not merely carried: the description promises the model
  * sees them, and a zero-hit render would otherwise state `0 result(s)` without
  * the reason the upstream reported.
- * @param value - the search tool's canonical result.
- * @returns the Markdown fragment shown to the model.
+ * @param value - search result (hits and warnings).
+ * @returns model-facing Markdown.
  */
 export function renderSearch(value: PatentSearchOutput): string {
   const hits = value.hits.map(h =>

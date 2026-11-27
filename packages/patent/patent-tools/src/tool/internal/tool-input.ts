@@ -46,6 +46,28 @@ export function requireNonBlankText(text: string, tool: string, message: string)
 }
 
 /**
+ * Assert a figure list carries positive, non-repeating figure numbers.
+ *
+ * Both figure-set tools accept the same per-figure entry, so the validation of
+ * that entry lives here rather than in each tool's `execute`.
+ * @param figures - the figure entries to check; only `figure_number` is read.
+ * @param tool - the registered tool name carried in the error context.
+ * @throws PatentToolError('invalid_tool_input') when a number is not a positive integer or repeats.
+ */
+export function assertUniqueFigureNumbers(figures: readonly { figure_number: number }[], tool: string): void {
+  const seen = new Set<number>()
+  for (const figure of figures) {
+    if (!Number.isInteger(figure.figure_number) || figure.figure_number < 1) {
+      throw new PatentToolError('invalid_tool_input', `figure_number 必须是正整数：${String(figure.figure_number)}`, { tool })
+    }
+    if (seen.has(figure.figure_number)) {
+      throw new PatentToolError('invalid_tool_input', `figure_number 重复：${String(figure.figure_number)}——每张附图只能出现一次`, { tool })
+    }
+    seen.add(figure.figure_number)
+  }
+}
+
+/**
  * Create field readers whose errors name one tool.
  * @param tool - the registered tool name carried in the error context.
  * @returns the field readers.

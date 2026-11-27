@@ -10,10 +10,47 @@ import { sanitizeId } from '../figure/dot-builder.ts'
 import type { DotEngine, DotFormat, HierarchyNode } from '../figure/dot-builder.ts'
 import { figureDescription as buildFigureDescription } from '../figure/figure-description.ts'
 import type { FigureIndexEntry } from '../figure/index-store.ts'
+import type { FigureNumeralItem, NumeralMergeConflict } from '../figure/numeral-store.ts'
 import type { FigureAnalysisResult, FigureComponent, FigureConnection, FigureType } from './analyze-patent-figure.ts'
 import { FIGURE_GENERATOR_MODEL_USED, figureViewName, singleLine } from './figure-input.ts'
 import type { GeneratePatentFigureOutput, StructuralFigureInput } from './figure-input.ts'
 import { warningSection } from './internal/tool-output.ts'
+
+/**
+ * 把本次出图的标号合并进作用域标号表。
+ *
+ * 只登记声明了作用域的调用；写入失败不阻断已完成的生成，转为警告——图已落盘，
+ * 失败的是登记，跨图续号会因此不完整。表内已有不同标号时保留旧号并告警，调用方
+ * 可用显式 `numerals` 表达改号意图。
+ * @param upsertNumerals - 合并写入端口；缺省时不登记（宿主未接线）。
+ * @param scope - 标号作用域（`figure_family`）；缺省时不登记。
+ * @param output - 本次输出：标号清单与警告去处。
+ */
+export async function registerFigureNumerals(
+  upsertNumerals: ((scope: string, items: readonly FigureNumeralItem[]) => Promise<NumeralMergeConflict[]>) | undefined,
+  scope: string | undefined,
+  output: {
+    /** 本次输出的标号清单。 */
+    numeralMap: readonly { componentId: string; label: string; numeral: string }[]
+    /** 追加警告的去处。 */
+    warnings: string[]
+  },
+): Promise<void> {
+  if (upsertNumerals === undefined || scope === undefined) return
+  const incoming: FigureNumeralItem[] = output.numeralMap.map(item => ({
+    componentId: item.componentId,
+    label: item.label,
+    numeral: item.numeral,
+  }))
+  try {
+    const conflicts = await upsertNumerals(scope, incoming)
+    for (const conflict of conflicts) {
+      output.warnings.push(`标号 ${conflict.componentId} 在附图标记表 ${scope} 中已是 ${conflict.kept}，本次 ${conflict.dropped} 未登记`)
+    }
+  } catch (error) {
+    output.warnings.push(`附图标记表写入失败：${error instanceof Error ? error.message : String(error)}；本次标号未登记，跨图续号可能不完整`)
+  }
+}
 
 /**
  * 构造索引用 analysis（确定性生成：组件/连接由输入还原，置信度 1）。

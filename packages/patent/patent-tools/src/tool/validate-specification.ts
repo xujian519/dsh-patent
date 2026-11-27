@@ -43,6 +43,7 @@ import {
   checkFigureNumberDuplicate,
   checkFigureNumberSequence,
   checkFigureReferenceMissing,
+  checkNumeralTableCoverage,
   checkDrawingCount,
   countInDrawingSection,
   figureNumbersIn,
@@ -220,6 +221,9 @@ function drawingViolations(input: ValidateSpecificationInput, text: string): Spe
   )
   if (input.figure_analysis?.length) {
     violations.push(...checkFigureMarkConsistency(text, input.figure_analysis, input.claims))
+  }
+  if (input.figure_analysis?.length && input.numeral_table !== undefined) {
+    violations.push(...checkNumeralTableCoverage(input.figure_analysis, input.numeral_table))
   }
   return violations
 }
@@ -409,7 +413,7 @@ const DESCRIPTION = [
   '- 化学领域（tech_domain=chemical 时）：产物表征数据缺失、参数缺单位、实施例编号断裂或重复、马库什「任选取代」未限定取代基、组合物百分含量无法配平（下限合计超过 100%，或封闭式组合物上限合计不足 100%）、药物权项缺适应症、中药缺基源、生物材料缺保藏信息、协同效果缺对比例；权利要求主题写成疾病的治疗/诊断方法报 error，第二医药用途未采用制备药物的用途形式报 warning',
   '- 背景技术引证的国别/公开号/日期、有益效果与现有技术的对比、序列表引用、正文图片与表格位置、术语与附图标记一致性、实用新型附图内容（均为 warning，启发式）',
   '',
-  '用法：说明书初稿完成后调用；传入 text（说明书全文）即可，另可传 title / abstract / claims / tech_domain / patent_type / has_drawings / drawing_count / abstract_figure_number / figure_analysis / claim_units / coverage_entries 启用相应校验。',
+  '用法：说明书初稿完成后调用；传入 text（说明书全文）即可，另可传 title / abstract / claims / tech_domain / patent_type / has_drawings / drawing_count / abstract_figure_number / figure_analysis / numeral_table / claim_units / coverage_entries 启用相应校验。',
   '',
   'patent_type 未传时按发明检查并给出 warning；has_drawings 未传时从图号与附图分析推断。',
   '',
@@ -450,6 +454,17 @@ export function createValidateSpecificationTool(deps?: ValidateSpecificationDeps
       figure_analysis: {
         ...FIGURE_ANALYSIS_INPUT_SCHEMA,
         description: '附图智能分析结果（可选）：提供时执行图文一致性校验',
+      },
+      numeral_table: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            numeral: { type: 'string', required: true, description: '附图标记号' },
+          },
+        },
+        description: '当前作用域的附图标记表（可选）：提供时核对图面标号是否都已在表中登记；与 figure_analysis 同时给出才生效',
       },
       claim_units: {
         type: 'array',

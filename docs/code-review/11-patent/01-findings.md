@@ -741,3 +741,196 @@
 - 严重度：P3。
 - 为什么不修：错误类要新增 `TrizToolError extends HarnessError`；`verifiedOn` 配对校验会改变现有费用资产的合法组合；文档漂移随下一次该包维护一起更新。
 - 状态：**未修**。
+
+## F-PAT-137 DAG 几何有两个主人，两行标题节点重叠、依赖边线被节点吞掉（B9，P1，已修）
+
+- 位置：`packages/client/ui-patent-teams/src/client/teams-dag.ts`（`DAG_NODE_HEIGHT`）、`src/client/TeamsDashboard.module.css`（`.dagNode`）。
+- 维度：布局正确性（同一份尺寸写在两处且互不一致）。
+- 严重度：P1。
+- 证据：JS 按 140×52 计算节点坐标与边线锚点；`.dagNode` 是 `<button>`，`width: 140px; min-height: 52px; padding: 6px 9px 6px 11px; border: 0.5px`，且仓库没有全局 `box-sizing`（全仓 242 处 `border-box` 均为组件自声明，本包一处都没有）。content-box 下实宽 161px、`-webkit-line-clamp: 2` 使两行标题成为常态时实高 76px。行距只有 66px → 节点重叠约 10px；列距 36px 被吃掉 21px → 边线起点落在节点内部，可见段只剩约 9px。
+- 最小修复：`DAG_NODE_HEIGHT` 52→76；`.dagNode` 加 `box-sizing: border-box` 与 `min-height: 76px`；`.dagNodeGated` 改用 `border-width` 保持 0.5px，避免门拒态挤动几何。依据 `docs/ui-radius.md:48`「Use `box-sizing: border-box` for fixed outer dimensions」。
+- 状态：已修（2026-11-28，B9）；`teams-dag.client.spec.ts` 的几何断言同步更新。
+
+## F-PAT-138 Teams 标签页把任务状态压成 8px 色点，屏幕阅读器与色觉障碍用户读不到（B9，P1，已修）
+
+- 位置：`TeamsDashboard.tsx`（`nodeStateClass`、`<span className={css.nodeState …} />`）、`TeamsDashboard.module.css`。
+- 维度：无障碍（WCAG 1.4.1 仅用颜色传达信息）。
+- 严重度：P1。
+- 证据：DAG 节点按钮里没有任务状态文本，状态只由 8px `<span>` 的背景色表达（绿/蓝/灰/红），该 span 无内容、无 `aria-label`；`title` 是任务主题而非状态。逐任务状态恰是该页面的主要信息，而聊天卡片走 `TeamsTaskList` 有文本状态，Teams 标签页没有。
+- 最小修复：新增 `.srOnly`，在节点内补 `statusLabel(task.status, t)` 的视觉隐藏文本；`.nodeState` 标 `aria-hidden`。
+- 状态：已修（2026-11-28，B9）。
+
+## F-PAT-139 两个包共 21 处 `font-weight > 500`，是全仓最集中的一处违规（B9，P2，已修）
+
+- 位置：`TeamsDashboard.module.css` 18 处（510×5、620×4、640×8、700×1）、`TeamsCard.module.css` 3 处（510）。
+- 维度：视觉规范（字重）。
+- 严重度：P2。
+- 证据：`dsh-client-ui-ux` 规则要求 feature CSS 的 font-weight ≤500；`ui-theme/src/styles/design-platform.css:1-3` 更明确写着「Figma font-weight 510 always renders as `font-weight: 500` in this UI — non-variable webfonts snap intermediate weights unpredictably across platforms」。620/640/700 均为无依据的中间值，且集中落在 9.5–11px 的微标签上（`.gateBadge` 9.5px/640、`.nodeId` 10px/640）。同包 `TeamsSections.module.css` 一处字重都不设，两套视觉语言并存。
+- 最小修复：全部降到 500（强调改用字号与墨色）。
+- 状态：已修（2026-11-28，B9）。
+
+## F-PAT-140 `.teamName` 的省略号从未生效，长团队名溢出并挤掉状态胶囊（B9，P2，已修）
+
+- 位置：`TeamsDashboard.module.css`（`.teamName`）、`TeamsDashboard.tsx`（`<span>` 行内元素）。
+- 维度：布局正确性（CSS 写法正确但作用于错误的盒类型）。
+- 严重度：P2。
+- 证据：`.teamName` 是 `<span>`，规则写了 `overflow: hidden; text-overflow: ellipsis; white-space: nowrap`，但 `overflow` 对非替换行内盒无效，于是没有裁剪、没有省略号；`white-space: nowrap` 仍生效，长中文团队名把同一行盒里的 `.statusPill` 一起推出 `.team` 的圆角边框（`.team` 无 `overflow: hidden`）。
+- 最小修复：`display: inline-block; max-width: 100%`，保持与状态胶囊同行流，超长时省略并让胶囊换行。
+- 状态：已修（2026-11-28，B9）。
+
+## F-PAT-141 浅色主题下三层嵌套卡片可视分离为零（B9，P2，已修）
+
+- 位置：`TeamsDashboard.module.css`（`.metric`、`.memberCard`、`.memberButton`、`.dagNode`、`.segBar`、`.stateIdle`、`.feedIconMessageSent`）。
+- 维度：设计系统 token 使用。
+- 严重度：P2。
+- 证据：浅色主题下 `--dsw-alias-bg-base`、`bg-layer-1`、`bg-layer-2` 三者同为 `neutral-bluish-00`（纯白），`--dsw-alias-border-l1` 仅 `rgba(0,0,0,0.04)`。于是 `.metric`/`.memberCard`/`.dagNode` 用 layer-2 铺在 `.team` 的 layer-1 上只剩一条几乎不可见的 4% 描边；`.dagNode` 的阴影色是 `bg-base`，浅色下即白色阴影，等于没有。`docs/ui-radius.md` 的 settings-card 材质规定描边用 `--dsw-alias-border-l4`（16%）。暗色下三者有差异，属「只在一个主题成立」。
+- 最小修复：三处卡片描边 l1→l4；`.dagNode` 去掉阴影（普通卡片不加阴影，hot 态保留）；轨道类填充 l1→l2。
+- 状态：已修（2026-11-28，B9）。
+
+## F-PAT-142 `--dsw-alias-label-quaternary` 全仓未定义，小节标题退回主墨色（B9，P2，已修）
+
+- 位置：`TeamsCard.module.css`（`.sectionLabel`）、`TeamsDashboard.module.css`（`.dagNote`）。
+- 维度：主题 token。
+- 严重度：P2。
+- 证据：label 阶梯只到 `tertiary`（另有 `caption`/`dimmed` 等），全仓无任何 `--dsw-alias-label-quaternary` 定义，仅 4 处引用。`TeamsCard.module.css` 那处无 fallback，`color` 声明在 computed-value 阶段失效后继承主墨色，「成员 / 任务」两个 `<h4>` 因此比 `.description` 还重；`TeamsDashboard.module.css` 同 token 却写了 fallback 到 `tertiary`，同包内一处有兜底一处没有。
+- 最小修复：两处统一改用 `--dsw-alias-label-tertiary`。
+- 状态：已修（2026-11-28，B9）。
+
+## F-PAT-143 「执行中」标签的扫光画在文字之上，reduced-motion 下永久压字（B9，P2，已修）
+
+- 位置：`TeamsDashboard.module.css`（`.stateRunning::after`、`prefers-reduced-motion` 块）。
+- 维度：可读性 / 无障碍。
+- 严重度：P2。
+- 证据：`::after` 是 `position: absolute; inset: 0` 的半透明 `bg-layer-1` 渐变，绘制在同元素文本之后，周期性冲淡 10.5px 的标签；`prefers-reduced-motion` 下只写 `animation: none`，扫光停在原位，成为一条永久压在文字中部的浅色带——正是最需要读的状态 chip。对照 `ui-primitives/TextShimmer` 用的是复制文本层而非色块覆盖。
+- 最小修复：reduced-motion 下 `display: none`；进度条上的同类扫光只压色块不压字，保留 `animation: none` 即可。
+- 状态：已修（2026-11-28，B9）。
+
+## F-PAT-144 固定某个 DAG 节点后，hover 与焦点预览彻底失效（B9，P2，已修）
+
+- 位置：`TeamsDashboard.tsx`（`activeId`）。
+- 维度：交互承诺。
+- 严重度：P2。
+- 证据：`const activeId = pinnedId ?? hoveredId`。一旦固定，`hoveredId` 被完全遮蔽：移到或 Tab 到别的节点不再高亮、依赖链不切换、其余节点保持 0.28 变暗，唯一绕法是再点一次取消固定。`dag.hint` 承诺「悬停高亮依赖链 · 点击固定」在固定态下不成立，键盘用户尤其受影响。
+- 最小修复：改为 `hoveredId ?? pinnedId`（悬停优先预览，离开后回到固定链）。
+- 状态：已修（2026-11-28，B9）。
+
+## F-PAT-145 历史回溯失败时无终止，且回溯期间断言「暂无团队记录」（B9，P2，已修）
+
+- 位置：`TeamsView.tsx`（drain effect、空态分支）。
+- 维度：健壮性 + 用户可见的错误断言。
+- 严重度：P2。
+- 证据：`loadOlder` 的失败与无进展都不 reject（`session.ts` 内部 catch 后静默置 `historyLoadStatus='error'`，也不改 `hasMore`），而 drain 只在 `.finally` 里递增 tick，判定条件不看加载状态，于是失败场景会无间隔重发最多 400 次真实分页请求；同时 `list.length === 0` 立即渲染「本会话暂无团队记录」，而此刻可能正在回溯。
+- 最小修复：读 `useSession(s => s.historyLoadStatus)`，`error` 即停；回溯期间显示新增的 `view.loading` 文案。
+- 状态：已修（2026-11-28，B9）；新增两条用例（失败即停、回溯期间不报空态）。
+
+## F-PAT-146 运行中成员的按钮 `aria-label` 覆盖了可见内容（B9，P2，已修）
+
+- 位置：`TeamsDashboard.tsx`、`TeamsSections.tsx`（成员按钮）。
+- 维度：无障碍。
+- 严重度：P2。
+- 证据：仅运行中成员渲染为 `<button aria-label={t('member.open', { name })}>`，`aria-label` 覆盖内部文本，屏幕阅读器只读到「打开 alice」，职责、运行状态、当前任务、完成数全部丢失；而不可点击的空闲成员是 `<div>`，内容反而完整可读——最有价值的行信息最少。
+- 最小修复：去掉 `aria-label`，在内容后追加 `srOnly` 的「打开 {name}」。
+- 状态：已修（2026-11-28，B9）。
+
+## F-PAT-147 hero 指标把计数渲染两次（B9，P2，已修）
+
+- 位置：`TeamsDashboard.tsx`（hero 指标）、`locales.ts`（`card.members`/`card.messages`）。
+- 维度：文案语义。
+- 严重度：P2。
+- 证据：`metricLabel` 用带计数的 `card.members`（「{count} 名成员」），紧邻的 `metricValue` 又渲染同一个数，读作「2 名成员 2」；web 金标 `apps/web/tests/snapshots/patent-teams-panel/teams-view.expected.md` 直接把 `2 members 2 1 messages 1` 录成了期望值。
+- 最小修复：新增不带计数的 `metric.members`/`metric.messages` 供指标标签使用；`card.*` 仍供折叠摘要使用。
+- 状态：已修（2026-11-28，B9）；web 金标已重录。
+
+## F-PAT-148 `memberId` 在折叠层被降级为裸 `string`，迫使三处断言回 `SessionId`（B9，P3，已修）
+
+- 位置：`teams-model.ts`（`TeamsMemberState`、`PatentTeamsCardMember`）、`TeamsCard.tsx`、`TeamsSections.tsx`、`TeamsDashboard.tsx`。
+- 维度：类型安全 / 不透明 id。
+- 严重度：P3。
+- 证据：host 的 `patent-teams/src/event-types.ts` 把 `memberId` 声明为 `SessionId` 并注明「The member's durable child session id」，`member-runtime.ts` 以 `SessionId(member.id)` 发出；UI 折叠却把它拓宽成 `string`，注释还写着「The host contract types memberId as a plain string」——与 host 契约直接矛盾，并在三处用 `as SessionId` 断言回来。
+- 最小修复：`TeamsMemberState.memberId` 与 `PatentTeamsCardMember.memberId` 保留 `SessionId`，删除三处断言并更正注释。
+- 状态：已修（2026-11-28，B9）。
+
+## F-PAT-149 品牌包 README 把三个插槽写成两个（B9，P3，已修）
+
+- 位置：`packages/client/ui-brand-patent/README.md`、`README.zh.md`（frontmatter、Summary、Use this package）。
+- 维度：文档与实现一致。
+- 严重度：P3。
+- 证据：实现注册 `sidebar.brand.mark`、`sidebar.brand.name`、`conversation.hero.brand.mark` 三个插槽（测试 `HOLES` 也是三个），README 正文只写前两个并称「两个 fallback」，漏掉侧栏产品名这一处用户可见的品牌替换；同族的 `ui-brand-official` README 写的是「mark and name」。
+- 最小修复：中英同步改为三插槽三 fallback（含本地构建产品名）。
+- 状态：已修（2026-11-28，B9）；`README.i18n.yaml` 已重录。
+
+## F-PAT-150 无障碍与一致性打磨六项（B9，P3，已修）
+
+- 位置：`TeamsDashboard.tsx`（`★`/`⊘`）、`TeamsDashboard.module.css`（`.nodeId`、`.memberButton`）、`TeamsSections.module.css`（`.root`）、`TeamsView.tsx`。
+- 维度：无障碍 / 一致性。
+- 严重度：P3。
+- 证据：`★`（队长）与 `⊘`（门拒）裸露给屏幕阅读器，而同类装饰 glyph 都包在 `aria-hidden` 内；`.nodeId` 写了 `text-overflow: ellipsis` 却缺 `white-space: nowrap`，超长 taskId 会折行并撑高节点；`TeamsDashboard` 的 `.memberButton` 缺 `cursor: pointer`（`TeamsSections` 的同名类有）；`TeamsSections.module.css` 的 `.root` 无人引用。
+- 最小修复：两处 glyph 加 `aria-hidden`；补 `nowrap`、`cursor`；删除死样式。
+- 状态：已修（2026-11-28，B9）。
+
+## F-PAT-151 中文 README 的 `Model Experience` 未译、视图名写成 `teams`（B9，P3，已修）
+
+- 位置：`packages/client/ui-patent-teams/README.zh.md`、`README.md`。
+- 维度：文档一致性。
+- 严重度：P3。
+- 证据：85 个 `packages/client/*/README.zh.md` 中 84 个用「模型体验」，只有本包保留 `## Model Experience` / `#### KV Cache effect`；两版 README 又把会话视图称作 `teams`，而实际 target 与 slot id 是 `patentTeams`（按反引号标识符 grep 找不到）。
+- 最小修复：标题译回中文；视图名改为 `patentTeams`；同时补上新增的回溯加载态说明。
+- 状态：已修（2026-11-28，B9）。
+
+## F-PAT-152 分段进度条的「等待」段包含失败与已取消（B9，P3，未修）
+
+- 位置：`teams-dag.ts`（`taskSegments`）、`locales.ts`（`dash.legendWaiting`）、两版 README。
+- 严重度：P3。
+- 证据：除 `completed`/`claimed`/`in_progress` 外全部计入 `waiting`，因此 `failed`/`cancelled` 显示为「等待中」，而同一批任务在 DAG 节点上染红。
+- 为什么不修：要么再加一段颜色（需重新设计四段语义并同步图例与金标），要么改文案（「其他」仍不精确）——属产品口径决策。
+- 状态：**未修**，待决策。
+
+## F-PAT-153 「上一任务」按创建顺序而非完成时间取（B9，P3，未修）
+
+- 位置：`teams-dag.ts`（`memberTaskBinding`）。
+- 严重度：P3。
+- 证据：在 fold（创建）顺序上迭代并覆盖 `last`，得到的是「最后创建的已完成任务」，不是「最近完成的」；同项目的任务常按依赖顺序创建，两者可能不同。
+- 为什么不修：需要 `task-validated`/`task-updated` 的时间戳或 seq 参与，会改变折叠数据形状。
+- 状态：**未修**，待决策。
+
+## F-PAT-154 队长摘要的计数口径含未分配任务与已离队成员（B9，P3，未修）
+
+- 位置：`TeamsDashboard.tsx`（`member.captainSummary` 实参）。
+- 严重度：P3。
+- 证据：`count` 取 `team.tasks.length`（含未分配任务），`members` 取 `team.members.length`（含已离队）；文案读作「已派发 N 项任务给 M 名成员」。
+- 为什么不修：需要先定义「派发」的口径（有 assignee 的任务？未离队成员？），属产品决策。
+- 状态：**未修**，待决策。
+
+## F-PAT-155 六种已发布语言没有 UI 字典（B9，P2，未修）
+
+- 位置：`ui-patent-teams/src/client/locales.ts`、`ctx.locale.register(NS, { zh, en })`。
+- 严重度：P2。
+- 证据：只注册 zh/en；`ja/es/fr/de/ru/pt` 六种语言缺全部 UI 键，卡片与 tab 的操作文案回退英文。`scripts/locale-dictionary-parity.spec.ts` 的 `PENDING_LOCALE_PACKAGES` 已把本包（连同 ui-document-studio、ui-plugin-catalog、ui-todo-board）书面豁免。
+- 为什么不修：补六语言是 52×6 条翻译工作量，非本轮审查范围；但 README 未披露该限制。
+- 建议：要么补翻译，要么在包 README 的 Known Limitations 登记该豁免。
+- 状态：**未修**，待决策。
+
+## F-PAT-156 品牌包英文元数据是包名且缺描述（B9，P3，未修）
+
+- 位置：`packages/client/ui-brand-patent/locale/en.json`。
+- 严重度：P3。
+- 证据：`meta.title` 为 `ui-brand-patent`（slug）、无 `meta.description`；其余 7 种语言都是人类标题加描述。插件管理器缺描述时直接不渲染。
+- 为什么不修：仓库 81 个 client 包中 57 个英文 title 是 slug、62 个无 description，`ui-brand-official` 同样如此，属主流写法而非本包独有；与本批另一个包不一致，但修正它需要同时改仓库惯例。
+- 状态：**未修**，待决策。
+
+## F-PAT-157 dim 幅度与头像字母对比度需要实机确认（B9，P2，未修）
+
+- 位置：`TeamsDashboard.module.css`（`.dagNodeDim` 0.28、`.dagEdgeDim` 0.22）、`teams-avatar.ts`（`hsl(hue 72% 52%)`）+ `.avatar` 的文字色。
+- 严重度：P2（潜在不可读）。
+- 证据：`dagEdgeDim` 的 `border-l3` 本身的透明度再乘 0.22，估算不足 3% 不透明度，等价于消失；节点 dim 后其余任务难以扫视。头像背景色相由 memberId 哈希决定、明度固定在 52–60%，而字母色取 `label-primary-inverted`（浅色白 / 暗色深），因此同一名单里总有几位首字母在其中一个主题下对比度不足 2:1。
+- 为什么不修：两者都需要真实渲染评估（哪几位成员、哪个主题），本批无法启动 Web 端逐项比对；数值调整也应与设计确认。
+- 建议：dim 提到 0.45–0.55；头像渐变随主题收敛明度，或给字母加固定对比度的描边。
+- 状态：**未修**，待实机。
+
+## F-PAT-158 回溯上限 400 页在真实超长会话下的成本未验证（B9，P2，未修）
+
+- 位置：`TeamsView.tsx`（`DRAIN_PAGE_LIMIT`）。
+- 严重度：P2。
+- 证据：打开一个团队记录位于极早期的会话时，最多连续拉 400 个窗口（每窗约 500 条消息）并把整段历史压进客户端共享窗口。本批修掉了失败与无进展时的空转，但成功路径的 400 页上限仍在。
+- 为什么不修：需要真实超长会话测量耗时与内存，再决定是否改为显式「继续加载历史」入口。
+- 状态：**未修**，待实机。

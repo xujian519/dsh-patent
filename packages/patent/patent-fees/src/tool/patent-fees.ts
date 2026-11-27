@@ -12,7 +12,7 @@
 import { HarnessError } from '@deepseek-ai/dsh-error'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { computeFees } from '../compute.ts'
+import { computeFees, TYPE_FILTER_NOTE_PREFIX } from '../compute.ts'
 import type { FeePolicy } from '../compute.ts'
 import type {
   AmountStatus,
@@ -366,6 +366,10 @@ function renderFeeReport(report: PatentFeesOutput): string {
 /** The priced items as a Markdown table. */
 function renderFeeTable(report: PatentFeesOutput): string {
   if (report.lines.length === 0) {
+    // 点名的阶段全被类型排除时，零是确定结论；只有「一条都没匹配到」才是待核对。
+    if (report.notes.some(note => note.startsWith(TYPE_FILTER_NOTE_PREFIX))) {
+      return '本次点名的收费阶段对该专利类型不适用，无需缴纳：合计为零。'
+    }
     return '本次没有可计价的费用条目：所给 triggers 与专利类型在索引中没有匹配项。这不等于本案没有费用——请核对 triggers 是否漏了环节。'
   }
   const rows = report.lines.map((line) => {

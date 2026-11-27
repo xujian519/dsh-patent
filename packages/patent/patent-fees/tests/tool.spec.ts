@@ -243,6 +243,17 @@ describe('patent_fees tool', () => {
     expect(rendered(result)).toContain('本次没有可计价的费用条目')
   })
 
+  it('renders a trigger inapplicable to the patent type as a settled zero', async () => {
+    // 外观设计没有实审费：这是确定的零，不是「未核对」，文案不能与合计自相矛盾。
+    const result = await execute(await host(), {
+      patentType: 'design',
+      triggers: ['substantive-examination'],
+    })
+    const text = rendered(result)
+    expect(text).toContain('对该专利类型不适用，无需缴纳')
+    expect(text).not.toContain('这不等于本案没有费用')
+  })
+
   it('renders the annual fee of each named year and the surcharge on it', async () => {
     const annual = tableOf('annual-fee', '年费', 'annual-fee', {
       basis: 'per-annuity-year',

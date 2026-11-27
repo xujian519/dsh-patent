@@ -50,6 +50,11 @@ export type ValidateSpecificationInput = {
   abstract_figure_number?: number
   /** Figure-analysis results (optional); enables figure-mark consistency. */
   figure_analysis?: FigureAnalysisResult[]
+  /**
+   * 当前作用域的附图标记表（可选）：图面标号须已在表中登记，否则报告未登记标号。
+   * 由调用方读取标号表后传入，本工具不做文件访问。
+   */
+  numeral_table?: NumeralTableItem[]
   /** Structured claims (optional); enables the independent-claim unity check. */
   claim_units?: ClaimUnitInput[]
   /** Claim-to-embodiment entries (optional); enables the coverage matrix. */
@@ -131,6 +136,12 @@ export type NumericRange = { min: number; max: number; unit: string }
 type FigureComponentRef = {
   /** Reference mark from the figure (Arabic numerals only). */
   refNumber: string
+}
+
+/** 附图标记表的一项；文本核对只关心标号本身。 */
+export type NumeralTableItem = {
+  /** 附图标记号。 */
+  numeral: string
 }
 
 /**

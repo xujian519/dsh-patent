@@ -20,6 +20,7 @@ import type { GenerateOptions, LlmResolvedModelInfo, ModelModality, StreamChunk 
 import { resolveBrowserBackend } from '@deepseek-ai/dsh-browser-backend'
 import { chemistryIndexStore, DEFAULT_CHEMISTRY_INDEX_RELATIVE_PATH } from './chemistry/index-store.ts'
 import { figureIndexStore, DEFAULT_FIGURE_INDEX_RELATIVE_PATH } from './figure/index-store.ts'
+import { DEFAULT_FIGURE_NUMERALS_RELATIVE_PATH, loadNumerals, mergeNumerals } from './figure/numeral-store.ts'
 import { createTwoStepAnalysisEngine } from './figure/analysis-engine.ts'
 import { resolveImageInputModalities } from './figure/image-capability.ts'
 import { DEFAULT_GRAPHVIZ_RENDER_TIMEOUT_MS } from './figure/graphviz-renderer.ts'
@@ -53,6 +54,7 @@ import { createDomainCheckTool } from './tool/domain-check.ts'
 import { createAnalyzePatentFigureTool } from './tool/analyze-patent-figure.ts'
 import { createSearchPatentFigureTool } from './tool/search-patent-figure.ts'
 import { createCheckPatentFigureConsistencyTool } from './tool/check-patent-figure-consistency.ts'
+import { createCheckClaimFigureCoverageTool } from './tool/check-claim-figure-coverage.ts'
 import { createComparePatentFigureAnalysisTool } from './tool/compare-patent-figure-analysis.ts'
 import { createGeneratePatentFigureTool } from './tool/generate-patent-figure.ts'
 import { createGenerateStructureFigureTool } from './tool/generate-structure-figure.ts'
@@ -248,9 +250,9 @@ function resolveOutputPath(
   return resolve(root, configured ?? relative)
 }
 
-/** True when any of the four output paths still needs the deployment workspace root. */
+/** True when any of the five output paths still needs the deployment workspace root. */
 function outputPathsNeedWorkspace(config: Config): boolean {
-  const pending = [config.noteDir, config.figureIndexFile, config.chemistryIndexFile]
+  const pending = [config.noteDir, config.figureIndexFile, config.figureNumeralsFile, config.chemistryIndexFile]
   if (config.figureOutputDir !== undefined) pending.push(config.figureOutputDir)
   return pending.some(value => value === undefined || !isAbsolute(value))
 }
@@ -343,6 +345,7 @@ interface PatentToolWiring {
   attachments: ReturnType<typeof resolveAttachments>
   resolveImageInputModalitiesFor: ReturnType<typeof buildImageGateResolver>
   figureIndexFile: string
+  figureNumeralsFile: string
   chemistryIndexFile: string
   figureOutputDir: string | undefined
   noteDir: string
@@ -524,6 +527,10 @@ function registerFigureTools(wiring: PatentToolWiring): void {
   // 权利要求引用齐全）。纯函数、无模型调用；电学符号与网表不在范围。
   wiring.ctx.tools.register(createCheckPatentFigureConsistencyTool())
 
+  // 权项要素覆盖：核对权利要求的技术特征能否在图面指认到标号。纯函数、无模型调用；
+  // 只验指认的标号真实存在，不判断该标号是否在语义上体现了该特征。
+  wiring.ctx.tools.register(createCheckClaimFigureCoverageTool())
+
   // 图文比对：把出图时声明的标号清单与 analyze_patent_figure 的识别结果对齐，闭合
   // 「生成 → 识图 → 比对」。确定性比对，不调用模型；连接关系暂不比对。
   wiring.ctx.tools.register(createComparePatentFigureAnalysisTool())
@@ -583,6 +590,9 @@ function registerFigureTools(wiring: PatentToolWiring): void {
     ...(wiring.config.workbenchCaseRoot === undefined ? {} : { workRoot: wiring.config.workbenchCaseRoot }),
     upsertIndex: entry => figureIndexStore.upsert(wiring.figureIndexFile, entry),
     loadIndex: async () => (await figureIndexStore.load(wiring.figureIndexFile)).entries,
+    loadNumerals: scope => loadNumerals(wiring.figureNumeralsFile, scope),
+    upsertNumerals: async (scope, items) =>
+      (await mergeNumerals(wiring.figureNumeralsFile, scope, items)).conflicts,
     resolveFont: labels => resolveDotFont(wiring.config, labels),
     ...(wiring.config.figureRequireCuttingMarks === undefined ? {} : { requireCuttingMarks: wiring.config.figureRequireCuttingMarks }),
     ...(wiring.config.figureFailOnRenderFindings === undefined ? {} : { failOnRenderFindings: wiring.config.figureFailOnRenderFindings }),
@@ -593,7 +603,11 @@ function registerFigureTools(wiring: PatentToolWiring): void {
     ...(wiring.config.figureDpi === undefined ? {} : { dpi: wiring.config.figureDpi }),
     ...(wiring.config.figureMargin === undefined ? {} : { marginCm: wiring.config.figureMargin }),
   }))
-  wiring.ctx.tools.register(createAddPatentFigureReferencesTool({}))
+  wiring.ctx.tools.register(createAddPatentFigureReferencesTool({
+    loadNumerals: scope => loadNumerals(wiring.figureNumeralsFile, scope),
+    upsertNumerals: async (scope, items) =>
+      (await mergeNumerals(wiring.figureNumeralsFile, scope, items)).conflicts,
+  }))
   // 渲染复核:量测已生成的 SVG 附图(标号是否被线条贯穿、点划线是否被实线覆盖、相邻
   // 零件剖面线是否可区分、内容是否越出画布)。生成后的自动复核在生成工具内部完成,
   // 本工具供已交付/外部生成的 SVG 做交付前自检。
@@ -738,6 +752,7 @@ export function registerPatentTools(ctx: Context, config: Config): void {
     attachments: resolveAttachments(ctx),
     resolveImageInputModalitiesFor: buildImageGateResolver(ctx),
     figureIndexFile: resolveOutputPath(config.figureIndexFile, DEFAULT_FIGURE_INDEX_RELATIVE_PATH, workspaceRoot, 'figureIndexFile'),
+    figureNumeralsFile: resolveOutputPath(config.figureNumeralsFile, DEFAULT_FIGURE_NUMERALS_RELATIVE_PATH, workspaceRoot, 'figureNumeralsFile'),
     chemistryIndexFile: resolveOutputPath(config.chemistryIndexFile, DEFAULT_CHEMISTRY_INDEX_RELATIVE_PATH, workspaceRoot, 'chemistryIndexFile'),
     figureOutputDir: config.figureOutputDir === undefined
       ? undefined

@@ -25,6 +25,7 @@ import type {
 } from '../figure/dot-builder.ts'
 import type { GraphvizRenderOutcome, GraphvizRenderSpec } from '../figure/graphviz-renderer.ts'
 import type { FigureIndexEntry } from '../figure/index-store.ts'
+import type { FigureNumeralItem, NumeralMergeConflict } from '../figure/numeral-store.ts'
 import type { ExportFigurePort, OutlineTextPort } from '../figure/inkscape-renderer.ts'
 import type { TargetOffice } from '../figure/office-profile.ts'
 import type { SectionSourcePorts } from '../figure/section-source.ts'
@@ -102,6 +103,10 @@ export type GeneratePatentFigureDeps = {
   upsertIndex?: (entry: GeneratePatentFigureIndexEntry) => Promise<void>
   /** 可选读取附图索引（figure_family 跨图续号用；声明家族而缺省时调用报错）。 */
   loadIndex?: () => Promise<GeneratePatentFigureIndexEntry[]>
+  /** 可选读取作用域标号表（`figure_family` 即作用域）；优先于附图索引。 */
+  loadNumerals?: (scope: string) => Promise<FigureNumeralItem[]>
+  /** 可选合并写入作用域标号表；返回保留旧号而丢弃的新值。 */
+  upsertNumerals?: (scope: string, items: readonly FigureNumeralItem[]) => Promise<NumeralMergeConflict[]>
   /** 工作目录（相对路径基准），默认 process.cwd()。 */
   cwd?: string
   /** 平台字体解析（含 CJK 时选平台字体），默认 Helvetica。 */
@@ -608,6 +613,33 @@ export function readNumerals(raw: unknown, label: string): Record<string, string
   return numerals
 }
 
+/**
+ * 把「匹配键 → 标号」拆成本图种子：本图命中的组件 → explicit（沿用同号），
+ * 其余 → reserved（占用号段）。标号表按组件 id 对齐、索引按组件名对齐，两处的
+ * 拆分规则相同，差异只在取自组件的哪个字段。
+ * @param pairs - 匹配键到标号的映射。
+ * @param components - 本图组件。
+ * @param keyOf - 从组件取匹配键。
+ * @returns 沿用既有标号的显式映射，与本图未出现组件的已占用标号。
+ */
+function seedAssignment(
+  pairs: Iterable<readonly [string, string]>,
+  components: readonly { id: string; label: string }[],
+  keyOf: (component: { id: string; label: string }) => string,
+): { explicit: Record<string, string>; reserved: string[] } {
+  const explicit: Record<string, string> = {}
+  const reserved: string[] = []
+  for (const [key, numeral] of pairs) {
+    const match = components.find(component => keyOf(component) === key)
+    if (match === undefined) {
+      reserved.push(numeral)
+    } else {
+      explicit[match.id] = numeral
+    }
+  }
+  return { explicit, reserved }
+}
+
 /** 从既有家族条目收集 组件名 → 标号（索引按图号升序，首个出现优先）。 */
 function familyNumeralsByLabel(
   entries: readonly GeneratePatentFigureIndexEntry[],
@@ -625,32 +657,21 @@ function familyNumeralsByLabel(
   return byLabel
 }
 
-/** 把家族既有标号拆成本图种子：本图出现的组件 → explicit（沿用同号），其余 → reserved（占用号段）。 */
-function familySeedAssignment(
-  byLabel: ReadonlyMap<string, string>,
-  components: readonly { id: string; label: string }[],
-): { explicit: Record<string, string>; reserved: string[] } {
-  const explicit: Record<string, string> = {}
-  const reserved: string[] = []
-  for (const [label, numeral] of byLabel) {
-    const match = components.find(c => singleLine(c.label).toLowerCase() === label)
-    if (match === undefined) {
-      reserved.push(numeral)
-    } else {
-      explicit[match.id] = numeral
-    }
-  }
-  return { explicit, reserved }
+/** 组件名归一口径：跨图对齐与索引兜底都按这个键比较。 */
+function componentNameKey(component: { label: string }): string {
+  return singleLine(component.label).toLowerCase()
 }
 
 /**
- * 解析跨图续号种子：未声明家族 → 空种子（零读盘）；声明家族 → 读索引并按组件名拆分沿用/占用。
- * @param figureFamily - 发明家族标识；缺省时返回空种子。
+ * 解析跨图续号种子。未声明作用域 → 空种子（零读盘）；声明作用域时按两层取种子：
+ * 作用域标号表（按组件 id 命中，权威）优先，识图索引（按组件名命中，既有数据兜底）
+ * 其次。表存在但为空是正常首次出图，不报错。
+ * @param figureFamily - 标号作用域；缺省时返回空种子。
  * @param components - 本图组件（id + 标签）。
- * @param deps - 工具依赖，声明家族时需要其 `loadIndex`。
+ * @param deps - 工具依赖；声明作用域时至少需要 `loadNumerals` 或 `loadIndex` 之一。
  * @returns 沿用既有标号的显式映射，与本图未出现组件的已占用标号。
- * @throws PatentToolError(`invalid_tool_input`) 声明家族但宿主未注入 `loadIndex` 时。
- * @throws PatentToolError(`tool_execution_failed`) 读取附图索引失败时。
+ * @throws PatentToolError(`invalid_tool_input`) 声明作用域但宿主未注入任何读取端口时。
+ * @throws PatentToolError(`tool_execution_failed`) 读取标号表或附图索引失败时。
  */
 export async function resolveFamilySeeds(
   figureFamily: string | undefined,
@@ -658,14 +679,29 @@ export async function resolveFamilySeeds(
   deps: GeneratePatentFigureDeps,
 ): Promise<{ explicit: Record<string, string>; reserved: string[] }> {
   if (figureFamily === undefined) return { explicit: {}, reserved: [] }
-  if (deps.loadIndex === undefined) {
-    throw new PatentToolError('invalid_tool_input', '声明 figure_family 需要宿主注入 loadIndex 依赖（附图索引读取）', { tool: 'generate_patent_figure' })
+  if (deps.loadNumerals === undefined && deps.loadIndex === undefined) {
+    throw new PatentToolError('invalid_tool_input', '声明 figure_family 需要宿主注入 loadNumerals 或 loadIndex 依赖（标号表/附图索引读取）', { tool: 'generate_patent_figure' })
   }
+
+  if (deps.loadNumerals !== undefined) {
+    let items: FigureNumeralItem[]
+    try {
+      items = await deps.loadNumerals(figureFamily)
+    } catch (error) {
+      throw new PatentToolError('tool_execution_failed', `读取附图标记表失败：${error instanceof Error ? error.message : String(error)}`, { tool: 'generate_patent_figure' })
+    }
+    // 表里有该作用域的标号才用表；空表是首次出图，继续走索引兜底或空种子。
+    if (items.length > 0) {
+      return seedAssignment(items.map(item => [item.componentId, item.numeral] as const), components, component => component.id)
+    }
+  }
+
+  if (deps.loadIndex === undefined) return { explicit: {}, reserved: [] }
   let entries: GeneratePatentFigureIndexEntry[]
   try {
     entries = await deps.loadIndex()
   } catch (error) {
     throw new PatentToolError('tool_execution_failed', `读取附图索引失败：${error instanceof Error ? error.message : String(error)}`, { tool: 'generate_patent_figure' })
   }
-  return familySeedAssignment(familyNumeralsByLabel(entries, figureFamily), components)
+  return seedAssignment(familyNumeralsByLabel(entries, figureFamily), components, componentNameKey)
 }

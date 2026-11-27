@@ -54,7 +54,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-literature` | `paper_download`, `paper_list_sources`, `paper_search` | `ctx.tools` | `tool/call`, `tool/result` | - | paper_list_sources and paper_search are stateless queries over four keyless public sources (arXiv, OpenAlex, Semantic Scholar, Crossref); connector enablement is config and only narrows which `db` ids are valid. |
 | `@deepseek-ai/dsh-document-deliver` | `document_deliver` | `ctx.tools`, `ctx.fs` | `tool/call`, `tool/result` | - | document_deliver records the delivered files (path + format), the P0/P1 quality-gate state, and the brief reference in the session log; it fails loud on a missing file and writes no file itself. It also reads each delivered file and reports its own deterministic findings (residual placeholders, undeclared anchors, empty sections, style forbidden words, declared length budget) on the tool result, and refuses the registration on a blocking finding. The delivery studio folds the logged call and that result metadata into its deliverable list, gate badges, and machine-check badge. |
 | `@deepseek-ai/dsh-video-mode` | `media`, `video_assemble`, `video_deliver`, `video_project` | `ctx.tools`, `ctx.fs`, `ctx.subprocess` | `tool/call`, `tool/result` | - | The media tool selects an image, video, or speech model through the provider seam and writes the artifact through ctx.fs; video_project owns the durable project document; video_assemble renders an EDL through ffmpeg; video_deliver checks the declared files and refuses incomplete or over-budget work. The synthetic provider makes the whole flow runnable without credentials; the local ComfyUI provider adds Wan 2.2 video and Z-Image images, and the cloud MiniMax-H3 and SiliconFlow Wan2.2 providers add per-second and per-video generation. |
-| `@deepseek-ai/dsh-patent-tools` | `add_patent_figure_references`, `analyze_patent_figure`, `check_patent_figure_consistency`, `claim_chart_build`, `claim_lint`, `compare_patent_figure_analysis`, `domain_check`, `draft_claims`, `draft_specification`, `evaluate_evidence`, `flexible_plan`, `generate_patent_figure`, `generate_structure_figure`, `knowledge_note_save`, `law_search`, `matter_log_append`, `parse_office_action`, `patent_analysis_report`, `patent_case_search`, `patent_corpus_status`, `patent_eval`, `patent_kg_query`, `patent_legal_status`, `patent_metadata`, `patent_pdf_download`, `patent_plan_task`, `patent_search`, `patent_wiki_search`, `patent_worker_validate`, `patent_workflow`, `patent_workflow_run`, `recognize_chemical_structure`, `review_patent_application`, `rule_check`, `search_patent_figure`, `triz_contradiction_analysis`, `validate_specification`, `verify_patent_figure`, `workbench_link_patent_case` | `ctx.tools` | `tool/call`, `tool/result` | - | The Sati patent domain tool set: search/metadata/legal-status/case/wiki/kg knowledge queries, claim-chart, office-action parsing, drafting, application review, specification validation, evidence judgment, rule check, figure analysis, PDF download, chemical recognition, knowledge notes, and the workflow/plan state machines. render_patent_document is owned by @deepseek-ai/dsh-patent-document. |
+| `@deepseek-ai/dsh-patent-tools` | `add_patent_figure_references`, `analyze_patent_figure`, `check_claim_figure_coverage`, `check_patent_figure_consistency`, `claim_chart_build`, `claim_lint`, `compare_patent_figure_analysis`, `domain_check`, `draft_claims`, `draft_specification`, `evaluate_evidence`, `flexible_plan`, `generate_patent_figure`, `generate_structure_figure`, `knowledge_note_save`, `law_search`, `matter_log_append`, `parse_office_action`, `patent_analysis_report`, `patent_case_search`, `patent_corpus_status`, `patent_eval`, `patent_kg_query`, `patent_legal_status`, `patent_metadata`, `patent_pdf_download`, `patent_plan_task`, `patent_search`, `patent_wiki_search`, `patent_worker_validate`, `patent_workflow`, `patent_workflow_run`, `recognize_chemical_structure`, `review_patent_application`, `rule_check`, `search_patent_figure`, `triz_contradiction_analysis`, `validate_specification`, `verify_patent_figure`, `workbench_link_patent_case` | `ctx.tools` | `tool/call`, `tool/result` | - | The Sati patent domain tool set: search/metadata/legal-status/case/wiki/kg knowledge queries, claim-chart, office-action parsing, drafting, application review, specification validation, evidence judgment, rule check, figure analysis, PDF download, chemical recognition, knowledge notes, and the workflow/plan state machines. render_patent_document is owned by @deepseek-ai/dsh-patent-document. |
 | `@deepseek-ai/dsh-patent-document` | `render_patent_document`, `verify_deliverable` | `ctx.tools`, `ctx.subprocess`, `ctx.workingDirectory (Agent executions)` | `tool/call`, `tool/result` | - | render_patent_document renders patent deliverables (claims/specification/search report/OA response/invalidation opinion) from packaged HTML templates, with optional headless-Chrome PDF via ctx.subprocess. |
 | `@deepseek-ai/dsh-patent-filing` | `build_patent_filing`, `verify_patent_filing` | `ctx.tools`, `ctx.subprocess` | `tool/call`, `tool/result` | - | build_patent_filing assembles one CNIPA application document (abstract, abstract drawing, claims, specification, drawings) into a DOCX whose formatting is reverse-derived from the template shipped in the package, with paragraph numbering following the spec's per-section declaration; verify_patent_filing asserts the finished file against that template — section count and headers, spacing, indent, size, non-black text, the five specification parts, the specification title, claim count, numbering continuity where a section declares it, and surviving internal marks. |
 | `@deepseek-ai/dsh-patent-deadline` | `patent_deadlines` | `ctx.tools` | `tool/call`, `tool/result` | - | patent_deadlines reports the statutory and designated deadlines of one Chinese patent case, applying the period and delivery rules of 专利法实施细则 and rolling an end date off a holiday to the next working day; notice-driven periods come back as pending entries naming the missing delivery record. |
@@ -3397,6 +3397,8 @@ The media tool selects an image, video, or speech model through the provider sea
 
 引线模式：标号置于组件轮廓外侧，引线避开图内已绘的边线与箭头，并在越出画布时扩展画布使之完整可见；无可放置位置或缺轮廓时退化为内嵌标号并警告。
 
+标号作用域：给出 figure_family 时，用该作用域已有的附图标记表补全 references 未列出的部件（调用方给出的标签优先），并把本次给出的标号登记进表；不给出时行为不变——纯回填，不读写标号表。
+
 ```json
 {
   "type": "object",
@@ -3434,6 +3436,10 @@ The media tool selects an image, video, or speech model through the provider sea
     "leader_lines": {
       "type": "boolean",
       "description": "true 时改用引线模式（标号置于组件外侧并以引线相连）；默认 false 内嵌「 (标号)」"
+    },
+    "figure_family": {
+      "type": "string",
+      "description": "标号作用域（与 generate_patent_figure 的 figure_family 同义）：给出时用附图标记表补全 references 未列出的部件，并把本次给出的标号登记进表"
     }
   },
   "required": [
@@ -3474,6 +3480,93 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
   },
   "required": [
     "image_path"
+  ]
+}
+```
+
+Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-tools/src/index.ts)
+
+### `check_claim_figure_coverage`
+
+核对权利要求技术特征在图面的覆盖：bindings 逐条给出「权利要求标识 + 技术特征 + 该特征对应的附图标记」，figures 给出各图识别到的标号。工具检查 ① 是否有特征没指定任何标号；② 指定的标号是否真的出现在某张附图中。它不判断标号是否在语义上体现了该特征——那由人工确认；也不做特征拆分，特征由调用方逐条给出。纯确定性校验，不调用模型。全部指认且标号都在图面时返回 covered=true。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "bindings": {
+      "type": "array",
+      "description": "特征到标号的指认清单；至少一条",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "description": "权利要求标识（如 claim_1）"
+          },
+          "feature": {
+            "type": "string",
+            "description": "技术特征原文"
+          },
+          "ref_numbers": {
+            "type": "array",
+            "description": "该特征在图面上的附图标记（至少一个）",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "claim_id",
+          "feature",
+          "ref_numbers"
+        ]
+      }
+    },
+    "figures": {
+      "type": "array",
+      "description": "各图的标号清单；至少一张，图号不得重复",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "figure_number": {
+            "type": "integer",
+            "description": "图号（1 起，同一案件内唯一）"
+          },
+          "components": {
+            "type": "array",
+            "description": "本图识别出的标号清单",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ref_number": {
+                  "type": "string",
+                  "description": "附图标记号（与图面一致）"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "该标号的部件名称"
+                }
+              },
+              "required": [
+                "ref_number"
+              ]
+            }
+          }
+        },
+        "required": [
+          "figure_number",
+          "components"
+        ]
+      }
+    }
+  },
+  "required": [
+    "bindings",
+    "figures"
   ]
 }
 ```
@@ -7030,7 +7123,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 - 化学领域（tech_domain=chemical 时）：产物表征数据缺失、参数缺单位、实施例编号断裂或重复、马库什「任选取代」未限定取代基、组合物百分含量无法配平（下限合计超过 100%，或封闭式组合物上限合计不足 100%）、药物权项缺适应症、中药缺基源、生物材料缺保藏信息、协同效果缺对比例；权利要求主题写成疾病的治疗/诊断方法报 error，第二医药用途未采用制备药物的用途形式报 warning
 - 背景技术引证的国别/公开号/日期、有益效果与现有技术的对比、序列表引用、正文图片与表格位置、术语与附图标记一致性、实用新型附图内容（均为 warning，启发式）
 
-用法：说明书初稿完成后调用；传入 text（说明书全文）即可，另可传 title / abstract / claims / tech_domain / patent_type / has_drawings / drawing_count / abstract_figure_number / figure_analysis / claim_units / coverage_entries 启用相应校验。
+用法：说明书初稿完成后调用；传入 text（说明书全文）即可，另可传 title / abstract / claims / tech_domain / patent_type / has_drawings / drawing_count / abstract_figure_number / figure_analysis / numeral_table / claim_units / coverage_entries 启用相应校验。
 
 patent_type 未传时按发明检查并给出 warning；has_drawings 未传时从图号与附图分析推断。
 
@@ -7122,6 +7215,23 @@ passed 只表示已运行的确定性规则未发现 error，不表示符合专�
         },
         "required": [
           "usable"
+        ]
+      }
+    },
+    "numeral_table": {
+      "type": "array",
+      "description": "当前作用域的附图标记表（可选）：提供时核对图面标号是否都已在表中登记；与 figure_analysis 同时给出才生效",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "numeral": {
+            "type": "string",
+            "description": "附图标记号"
+          }
+        },
+        "required": [
+          "numeral"
         ]
       }
     },

@@ -2,7 +2,7 @@
   "initial": [
     {
       "name": "add_patent_figure_references",
-      "description": "为已有 SVG 附图追加专利参考标号：按组件文本匹配标注，输出 *_annotated.svg（不改动原图）。默认在匹配文本末尾内嵌「 (标号)」；leader_lines=true 时改用引线模式，标号置于组件外侧并以引线相连（仅 Graphviz/同构节点组 SVG 支持）。用户提供了自绘流程图/框图或已渲染 SVG，需要补标记、与说明书标号对齐时使用。\n\n匹配规则：子串匹配（大小写不敏感）；每个文本元素至多命中一个参考；同名组件出现在多个位置时全部同号标注；未命中的参考列为警告返回。\n\n标号形式：非阿拉伯数字标号（如 S101）按《专利审查指南》第一部分第一章 4.3「附图标记应当使用阿拉伯数字编号」返回警告（照常标注）。\n\n引线模式：标号置于组件轮廓外侧，引线避开图内已绘的边线与箭头，并在越出画布时扩展画布使之完整可见；无可放置位置或缺轮廓时退化为内嵌标号并警告。",
+      "description": "为已有 SVG 附图追加专利参考标号：按组件文本匹配标注，输出 *_annotated.svg（不改动原图）。默认在匹配文本末尾内嵌「 (标号)」；leader_lines=true 时改用引线模式，标号置于组件外侧并以引线相连（仅 Graphviz/同构节点组 SVG 支持）。用户提供了自绘流程图/框图或已渲染 SVG，需要补标记、与说明书标号对齐时使用。\n\n匹配规则：子串匹配（大小写不敏感）；每个文本元素至多命中一个参考；同名组件出现在多个位置时全部同号标注；未命中的参考列为警告返回。\n\n标号形式：非阿拉伯数字标号（如 S101）按《专利审查指南》第一部分第一章 4.3「附图标记应当使用阿拉伯数字编号」返回警告（照常标注）。\n\n引线模式：标号置于组件轮廓外侧，引线避开图内已绘的边线与箭头，并在越出画布时扩展画布使之完整可见；无可放置位置或缺轮廓时退化为内嵌标号并警告。\n\n标号作用域：给出 figure_family 时，用该作用域已有的附图标记表补全 references 未列出的部件（调用方给出的标签优先），并把本次给出的标号登记进表；不给出时行为不变——纯回填，不读写标号表。",
       "parameters": {
         "type": "object",
         "properties": {
@@ -39,6 +39,10 @@
           "leader_lines": {
             "type": "boolean",
             "description": "true 时改用引线模式（标号置于组件外侧并以引线相连）；默认 false 内嵌「 (标号)」"
+          },
+          "figure_family": {
+            "type": "string",
+            "description": "标号作用域（与 generate_patent_figure 的 figure_family 同义）：给出时用附图标记表补全 references 未列出的部件，并把本次给出的标号登记进表"
           }
         },
         "required": [
@@ -145,6 +149,88 @@
         "required": [
           "description",
           "command"
+        ]
+      }
+    },
+    {
+      "name": "check_claim_figure_coverage",
+      "description": "核对权利要求技术特征在图面的覆盖：bindings 逐条给出「权利要求标识 + 技术特征 + 该特征对应的附图标记」，figures 给出各图识别到的标号。工具检查 ① 是否有特征没指定任何标号；② 指定的标号是否真的出现在某张附图中。它不判断标号是否在语义上体现了该特征——那由人工确认；也不做特征拆分，特征由调用方逐条给出。纯确定性校验，不调用模型。全部指认且标号都在图面时返回 covered=true。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "bindings": {
+            "type": "array",
+            "description": "特征到标号的指认清单；至少一条",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "claim_id": {
+                  "type": "string",
+                  "description": "权利要求标识（如 claim_1）"
+                },
+                "feature": {
+                  "type": "string",
+                  "description": "技术特征原文"
+                },
+                "ref_numbers": {
+                  "type": "array",
+                  "description": "该特征在图面上的附图标记（至少一个）",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "claim_id",
+                "feature",
+                "ref_numbers"
+              ]
+            }
+          },
+          "figures": {
+            "type": "array",
+            "description": "各图的标号清单；至少一张，图号不得重复",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "figure_number": {
+                  "type": "integer",
+                  "description": "图号（1 起，同一案件内唯一）"
+                },
+                "components": {
+                  "type": "array",
+                  "description": "本图识别出的标号清单",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "ref_number": {
+                        "type": "string",
+                        "description": "附图标记号（与图面一致）"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "该标号的部件名称"
+                      }
+                    },
+                    "required": [
+                      "ref_number"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "figure_number",
+                "components"
+              ]
+            }
+          }
+        },
+        "required": [
+          "bindings",
+          "figures"
         ]
       }
     },
@@ -4709,7 +4795,7 @@
     },
     {
       "name": "validate_specification",
-      "description": "验证专利说明书是否符合撰写要求（确定性规则，无 LLM 调用）。\n- 结构完整性：按专利类型与有无附图计算必要章节，且顺序符合《专利法实施细则》第二十条；实用新型必须有附图；占位标记与空章节报 error\n- 标题集合：说明书只允许规定章节标题（正文内的「要解决的技术问题／技术方案／有益效果／实施例一」等一律不是标题）\n- 附图引用形式：说明书记载标记不加括号（指南第二部分第二章 §2.2.6）、图号写作图1、图号连续且不重复、附图说明有图名、正文引用可解析、段落编号提示\n- 发明名称长度（>40 字 error、26–40 字 warning）与摘要长度（≤300 字）、摘要关键词、摘要附图号、摘要不得引用权利要求或使用宣传语\n- 禁止性条款：说明书不得引用权利要求编号，不得使用商业宣传用语或残留内部流程标记（细则第二十条第三款）\n- 模糊表述（按上下文匹配「约 10%」「10% 左右」，不误伤「约束」「左右两侧」）、附图说明与图引用一致性、实施例存在性\n- 权利要求-说明书特征覆盖（A26.4）、数值范围端点与中间值实施例\n- 独立权利要求之间的单一性（A31.1，传 claim_units 时）\n- 权项—实施例覆盖矩阵（A26.3/A26.4，传 coverage_entries 时；覆盖度由 features 与 embodiment_refs 计算，不接受调用方给定的覆盖度结论）\n- 实用新型客体（A2.3，patent_type=utility_model 且传 claims 时）：权利要求主题名称是方法／工艺，或落在组合物与无固定形状产品上，报 error\n- 软件客体与模型公开（tech_domain=software 时）：算法／程序本身作主题、信号或比特流作载体报 error；技术载体缺失、商业规则词汇、训练数据与模型结构未公开、缩写未定义报 warning\n- 化学领域（tech_domain=chemical 时）：产物表征数据缺失、参数缺单位、实施例编号断裂或重复、马库什「任选取代」未限定取代基、组合物百分含量无法配平（下限合计超过 100%，或封闭式组合物上限合计不足 100%）、药物权项缺适应症、中药缺基源、生物材料缺保藏信息、协同效果缺对比例；权利要求主题写成疾病的治疗/诊断方法报 error，第二医药用途未采用制备药物的用途形式报 warning\n- 背景技术引证的国别/公开号/日期、有益效果与现有技术的对比、序列表引用、正文图片与表格位置、术语与附图标记一致性、实用新型附图内容（均为 warning，启发式）\n\n用法：说明书初稿完成后调用；传入 text（说明书全文）即可，另可传 title / abstract / claims / tech_domain / patent_type / has_drawings / drawing_count / abstract_figure_number / figure_analysis / claim_units / coverage_entries 启用相应校验。\n\npatent_type 未传时按发明检查并给出 warning；has_drawings 未传时从图号与附图分析推断。\n\npassed 只表示已运行的确定性规则未发现 error，不表示符合专利法；not_assessed 列出确定性规则不能判断的事项，需人工或实体审查。\n\n注意：SMILES 合法性抽检依赖 RDKit（本环境未内置），自动跳过，不影响其余规则。\n\n结果末尾的「评估输入」给出本次实际读到的各文本字段的字数与指纹：转述结果时请一并保留，便于与另一次运行对照是否读的是同一份文本。",
+      "description": "验证专利说明书是否符合撰写要求（确定性规则，无 LLM 调用）。\n- 结构完整性：按专利类型与有无附图计算必要章节，且顺序符合《专利法实施细则》第二十条；实用新型必须有附图；占位标记与空章节报 error\n- 标题集合：说明书只允许规定章节标题（正文内的「要解决的技术问题／技术方案／有益效果／实施例一」等一律不是标题）\n- 附图引用形式：说明书记载标记不加括号（指南第二部分第二章 §2.2.6）、图号写作图1、图号连续且不重复、附图说明有图名、正文引用可解析、段落编号提示\n- 发明名称长度（>40 字 error、26–40 字 warning）与摘要长度（≤300 字）、摘要关键词、摘要附图号、摘要不得引用权利要求或使用宣传语\n- 禁止性条款：说明书不得引用权利要求编号，不得使用商业宣传用语或残留内部流程标记（细则第二十条第三款）\n- 模糊表述（按上下文匹配「约 10%」「10% 左右」，不误伤「约束」「左右两侧」）、附图说明与图引用一致性、实施例存在性\n- 权利要求-说明书特征覆盖（A26.4）、数值范围端点与中间值实施例\n- 独立权利要求之间的单一性（A31.1，传 claim_units 时）\n- 权项—实施例覆盖矩阵（A26.3/A26.4，传 coverage_entries 时；覆盖度由 features 与 embodiment_refs 计算，不接受调用方给定的覆盖度结论）\n- 实用新型客体（A2.3，patent_type=utility_model 且传 claims 时）：权利要求主题名称是方法／工艺，或落在组合物与无固定形状产品上，报 error\n- 软件客体与模型公开（tech_domain=software 时）：算法／程序本身作主题、信号或比特流作载体报 error；技术载体缺失、商业规则词汇、训练数据与模型结构未公开、缩写未定义报 warning\n- 化学领域（tech_domain=chemical 时）：产物表征数据缺失、参数缺单位、实施例编号断裂或重复、马库什「任选取代」未限定取代基、组合物百分含量无法配平（下限合计超过 100%，或封闭式组合物上限合计不足 100%）、药物权项缺适应症、中药缺基源、生物材料缺保藏信息、协同效果缺对比例；权利要求主题写成疾病的治疗/诊断方法报 error，第二医药用途未采用制备药物的用途形式报 warning\n- 背景技术引证的国别/公开号/日期、有益效果与现有技术的对比、序列表引用、正文图片与表格位置、术语与附图标记一致性、实用新型附图内容（均为 warning，启发式）\n\n用法：说明书初稿完成后调用；传入 text（说明书全文）即可，另可传 title / abstract / claims / tech_domain / patent_type / has_drawings / drawing_count / abstract_figure_number / figure_analysis / numeral_table / claim_units / coverage_entries 启用相应校验。\n\npatent_type 未传时按发明检查并给出 warning；has_drawings 未传时从图号与附图分析推断。\n\npassed 只表示已运行的确定性规则未发现 error，不表示符合专利法；not_assessed 列出确定性规则不能判断的事项，需人工或实体审查。\n\n注意：SMILES 合法性抽检依赖 RDKit（本环境未内置），自动跳过，不影响其余规则。\n\n结果末尾的「评估输入」给出本次实际读到的各文本字段的字数与指纹：转述结果时请一并保留，便于与另一次运行对照是否读的是同一份文本。",
       "parameters": {
         "type": "object",
         "properties": {
@@ -4791,6 +4877,23 @@
               },
               "required": [
                 "usable"
+              ]
+            }
+          },
+          "numeral_table": {
+            "type": "array",
+            "description": "当前作用域的附图标记表（可选）：提供时核对图面标号是否都已在表中登记；与 figure_analysis 同时给出才生效",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "numeral": {
+                  "type": "string",
+                  "description": "附图标记号"
+                }
+              },
+              "required": [
+                "numeral"
               ]
             }
           },

@@ -12,7 +12,7 @@ import { figureSentence } from '../figure/figure-description.ts'
 import { figureWordingWarnings } from '../figure/wording-rules.ts'
 import { collectComponents, collectFigureWording, dotDocumentTitle, figureViewName, inferFigureType, presentStructuralFields, presentVectorFields, readNumerals, resolveFamilySeeds, toFigureType } from './figure-input.ts'
 import type { DotFigureType, GeneratePatentFigureInput, GeneratePatentFigureOutput, GeneratePatentFigurePanelInput, StructuralFigureInput } from './figure-input.ts'
-import { buildOutput, indexAnalysis, upsertFigureIndex } from './figure-output.ts'
+import { buildOutput, indexAnalysis, registerFigureNumerals, upsertFigureIndex } from './figure-output.ts'
 import { annotateRenderedSvg, buildFigureDot } from './figure-render-plan.ts'
 import { assertRendered } from './internal/render-outcome.ts'
 import { finishDirectRender, finishSvgChain, needsSvgChain, stampDotDocumentTitle } from './figure-delivery.ts'
@@ -336,6 +336,7 @@ async function mergePanelOutputs(args: {
       }
     }
   }
+  await registerFigureNumerals(deps.upsertNumerals, input.figure_family, { numeralMap: mergedNumerals, warnings })
   /* v8 ignore start -- panels is validated non-empty above, so the first panel always exists */
   return {
     path: panelOutputs[0]?.output.path ?? '',

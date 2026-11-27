@@ -362,7 +362,11 @@ describe('patent-tools plugin wiring', () => {
 
   it('renders generate_patent_figure through the bundled WASM engine without a subprocess service', async () => {
     temp = await mkdtemp(join(tmpdir(), 'dsh-patent-tools-wasm-'))
-    const ctx = await mounted({ figureOutputDir: join(temp, 'figs'), figureIndexFile: join(temp, 'figures-index.json') })
+    const ctx = await mounted({
+      figureOutputDir: join(temp, 'figs'),
+      figureIndexFile: join(temp, 'figures-index.json'),
+      figureNumeralsFile: join(temp, 'figure-numerals.json'),
+    })
     const result = await exec(ctx, 'generate_patent_figure', {
       figure_type: 'flowchart',
       steps: [{ id: 's1', label: '接收输入', next: [] }],
@@ -376,11 +380,15 @@ describe('patent-tools plugin wiring', () => {
     expect(svg).toContain('<svg')
   })
 
-  it('wires loadIndex so a declared family continues numerals across generations', async () => {
-    // figure_family 续号走真实接线：gen1 经 upsertIndex 写入 figureIndexStore，
-    // gen2 经 loadIndex 读回，同名组件沿用既有标号。
+  it('wires the numeral table so a declared family continues numerals across generations', async () => {
+    // figure_family 续号走真实接线：gen1 把标号写进作用域标号表，gen2 从表读回并沿用。
+    // 标号表文件显式指向临时目录，否则会落到工作区根的 .sati/。
     temp = await mkdtemp(join(tmpdir(), 'dsh-patent-tools-family-'))
-    const ctx = await mounted({ figureOutputDir: join(temp, 'figs'), figureIndexFile: join(temp, 'figures-index.json') })
+    const ctx = await mounted({
+      figureOutputDir: join(temp, 'figs'),
+      figureIndexFile: join(temp, 'figures-index.json'),
+      figureNumeralsFile: join(temp, 'figure-numerals.json'),
+    })
     const gen1 = await exec(ctx, 'generate_patent_figure', {
       blocks: [{ id: 'sensor', label: '温度传感器' }, { id: 'controller', label: '控制器' }],
       figure_family: 'acme',

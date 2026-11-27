@@ -3325,7 +3325,7 @@ export interface AutoCommitConfig {
 ## `@deepseek-ai/dsh-patent-data`
 
 - `inject`: `subprocess`
-- `source`: [`packages/patent/patent-data/src/index.ts:138`](../packages/patent/patent-data/src/index.ts)
+- `source`: [`packages/patent/patent-data/src/index.ts:139`](../packages/patent/patent-data/src/index.ts)
 
 ```ts config-catalog
 /**
@@ -3834,6 +3834,8 @@ export interface Config {
   workflowLlmStageBudget?: number
   /** 附图索引文件。绝对路径原样使用；相对路径以及缺省的 `.sati/figures-index.json` 相对于 `sandboxPolicy.workspaceRoot`。没有工作区根时插件加载失败。 */
   figureIndexFile?: string
+  /** 附图标记表文件（作用域级权威标号源）。绝对路径原样使用；相对路径以及缺省的 `.sati/figure-numerals.json` 相对于 `sandboxPolicy.workspaceRoot`。 */
+  figureNumeralsFile?: string
   /** 化学结构索引文件。绝对路径原样使用；相对路径以及缺省的 `.sati/chemistry-index.json` 相对于 `sandboxPolicy.workspaceRoot`。没有工作区根时插件加载失败。 */
   chemistryIndexFile?: string
   /** Graphviz dot 可执行路径覆盖；默认自动探测（候选路径 + PATH）。 */

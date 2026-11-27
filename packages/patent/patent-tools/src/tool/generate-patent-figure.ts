@@ -40,7 +40,7 @@ import { FIGURE_TYPES } from './analyze-patent-figure.ts'
 import { assertViewName, collectComponents, collectFigureWording, dotDocumentTitle, inferFigureType, readNumerals, resolveFamilySeeds, toFigureType, vectorTitle } from './figure-input.ts'
 import type { DotFigureType, GeneratePatentFigureDeps, GeneratePatentFigureInput, GeneratePatentFigureOutput, NormalizedFigureInput, StructuralFigureInput } from './figure-input.ts'
 import type { SectionFigureJson } from '../figure/vector-figure-build.ts'
-import { buildOutput, indexAnalysis, renderGenerateFigureResult, upsertFigureIndex } from './figure-output.ts'
+import { buildOutput, indexAnalysis, registerFigureNumerals, renderGenerateFigureResult, upsertFigureIndex } from './figure-output.ts'
 import { annotateRenderedSvg, buildFigureDot } from './figure-render-plan.ts'
 import {
   APPEARANCE_INPUT_SCHEMA,
@@ -326,16 +326,12 @@ async function generateSingleFigure(
       check: vector || format === 'svg',
     })
   }
-  let indexed = false
-  if ((normalized.persist_index ?? true) && deps.upsertIndex !== undefined) {
-    indexed = await upsertFigureIndex({
-      upsertIndex: deps.upsertIndex,
-      imagePath: result.path,
-      analysis: indexAnalysis(result, context.style, normalized.figure_family),
-      warnings: result.warnings,
-      label: '',
+  const analysis = indexAnalysis(result, context.style, normalized.figure_family)
+  const indexed = (normalized.persist_index ?? true) && deps.upsertIndex !== undefined
+    && await upsertFigureIndex({
+      upsertIndex: deps.upsertIndex, imagePath: result.path, analysis, warnings: result.warnings, label: '',
     })
-  }
+  await registerFigureNumerals(deps.upsertNumerals, normalized.figure_family, result)
   return { ...result, indexed }
 }
 

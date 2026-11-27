@@ -41,7 +41,8 @@
  *
  * 量测范围：根元素的画布尺寸与 `viewBox`/`preserveAspectRatio`（`svg-viewport` 解析成
  * 用户单位 → 毫米的映射，故 px 级用户单位的导出文件与落版页同一口径）；`line`/`polyline`/
- * `polygon`/`rect`/`circle`/`ellipse`/`path`（M/L/H/V/Z，含相对形式）的几何；`text` 的内容、
+ * `polygon`/`rect`/`circle`/`ellipse`/`path`（M/L/H/V/Z 与 C/S/Q/T/A，含相对形式；
+ * 曲线按 0.05 毫米弦高折线化）的几何；`text` 的内容、
  * 字号与 `text-anchor`（含自 `<g>` 继承与行内 `style`；未声明字号按 CSS 初值 16 用户单位）；
  * 线段的取向与线宽；`stroke-dasharray` 只用于点划线判定（按虚线段展开）。元素按嵌套逐层
  * 继承 `transform`（translate/scale/rotate/matrix）与线宽/描边/字号，故落版页与拼版页的
@@ -51,8 +52,8 @@
  * 不在量测范围内的结构各记一条 `not-measured` 发现（同一原因只记一条）：CSS 类样式
  * （`<style>`，含 `<defs>` 内的样式表）、`<use>`/`<image>` 引用、嵌套 `<svg>` 的内层视口、
  * 端头标记（`marker-*`）、`<tspan>` 的 x/y/dx/dy 偏移、`dominant-baseline`/
- * `alignment-baseline`、相对视口的百分比长度、无法解析的 `transform`/路径 `d`/`viewBox`，
- * 以及按端点弦近似的曲线段；视口两轴缩放不等或 `slice` 裁剪时另记一条近似说明。
+ * `alignment-baseline`、相对视口的百分比长度、无法解析的 `transform`/路径 `d`/`viewBox`；
+ * 视口两轴缩放不等或 `slice` 裁剪时另记一条近似说明。
  * **报告里没有 `not-measured` 时，「未发现问题」才等于逐类量测过。**
  *
  * 判据与公开入口在 `render-check-findings.ts`；本模块只保留模块文档并再导出该入口。

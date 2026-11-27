@@ -541,14 +541,15 @@
 - 最小修复：审批门阶段必须注册 handler；收口重放显式传 `atomStagesMayUseExecutor: true`。
 - 状态：已修（2026-11-27，B7）；拒绝与显式放行各一条用例，`patent-tools` 的 recap 已显式声明。
 
-## F-PAT-113 结构化缺口重试耗尽被记成完成（B7，P2）
+## F-PAT-113 结构化缺口重试耗尽被记成完成（B7 发现，P2，结论修正）
 
 - 位置：`packages/patent/patent-workflow/src/workflow.ts`（回退耗尽分支）。
 - 维度：语义（未完成读成完成）。
 - 严重度：P2。
-- 证据：文本信号耗尽标记 `degraded`，结构化信号耗尽直接 `pushStageResult`，输出非空即 `degraded=false`；`legal_gaps`/`draft_review` 类缺口门重试耗尽后运行报 `completed:true`、`degradedSteps:[]`，唯一痕迹是 `revisions[].outcome='exhausted'`。
-- 最小修复：结构化耗尽同样标记 degraded，并加 `[WORKFLOW_REVISION_EXHAUSTED]` 前缀。
-- 状态：已修（2026-11-27，B7）；两条既有用例改为断言 `completed === false` 与降级步骤。
+- 证据：文本信号耗尽标记 `degraded`，结构化信号耗尽直接 `pushStageResult`，输出非空即 `degraded=false`；`legal_gaps`/`draft_review` 类缺口门重试耗尽后运行报 `completed:true`、`degradedSteps:[]`，痕迹只有 `revisions[].outcome='exhausted'` 与阶段输出文本。
+- 最终修法（B9 收口后修正 B7 的处置）：保留 `[WORKFLOW_REVISION_EXHAUSTED]` 前缀，**不**标 `degraded`。理由是结构化耗尽只表示「补提之后仍有缺口」，这是缺口门与评审门的正常结论，`revisions[].outcome='exhausted'` 已是可消费的结构化记录；标成降级会让「检出缺口」被读成「流程没跑完」，与 `legal_gaps` 的既有语义冲突。文本信号耗尽仍标 `degraded`（那才是阶段自身失败）。
+- 为什么修正：B7 的改法把两条 `patent-workflow` 用例改成 `completed === false`，但没有跑作为消费者的 `patent-tools`，其 `legal-gaps-feedback.spec.ts` 一直断言 `completed === true`、`degraded === false`；两个 spec 对同一行为期望相反，直到 B9 收口后跑全量才暴露。
+- 状态：已修（2026-11-28，B9 收口后）；两条 `workflow-retry` 用例改回 `completed === true` 与空 `degradedSteps`，前缀断言保留。
 
 ## F-PAT-114 引擎 JSON 数组里的 null 元素让整次元数据调用失败（B7，P2）
 
@@ -688,15 +689,15 @@
 - 最小修复：改用 `@deepseek-ai/dsh-atomic-write` 的 `writeFileAtomic`（新增 workspace 依赖）。
 - 状态：已修（2026-11-28，B8）；`package.json` 与 lockfile 已更新，模块图重生成无变化。
 
-## F-PAT-130 15/18 个法源未登记 `paragraphs`，款/项不核验（B8，P1，未修）
+## F-PAT-130 15/18 个法源未登记 `paragraphs`，款/项不核验（B8 发现，P1，已修）
 
 - 位置：`packages/patent/patent-law/assets/law/*.yaml`（配合 `packages/law/law-core/src/article-decision.ts:464`）。
 - 维度：覆盖面（不存在的款/项被判「已核验」）。
 - 严重度：P1。
-- 证据：只有《专利法》《实施细则》部分登记了 `paragraphs`；7 个司法解释与 8 个部门规章**全部 0 条**登记。`entry.paragraphs === undefined` 时款/项校验直接跳过，实测「专利法第1条第3款」「专利代理管理办法第4条第5项」均判 `valid`。
-- 为什么不修：修复必须补 125+ 条多段条文的 `paragraphs` 数据（需逐条对照法条原文数段落），或改共享的 `law-core` 判定——后者会让 15 个法源的所有带款引用一起变成「未核验」，且 `citation-conformance.spec.ts` 明确要求 patent-law 与 law-core 结论逐字一致。本批只做过一次「结论里附注款号未核验」的尝试，因破坏该一致性门禁而回滚。
-- 建议：按正文分段机械生成 `paragraphs` 并逐条抽检；或在 `law-core` 引入「款/项无法核验」的第三种判定并同步两个消费方。
-- 状态：**未修**，待决策。
+- 证据：只有《专利法》《实施细则》部分登记了 `paragraphs`；7 个司法解释与 8 个部门规章**全部 0 条**登记。`entry.paragraphs === undefined` 时款/项校验直接跳过，实测「专利法第1条第3款」判 `valid`。
+- 修法：`text` 是逐款转录（每款一行），款数可由正文机械推出——款是分段，款内以「（一）」或「1.」编号的各项是项。按此规则为全部 577 条有条文的条文登记 `paragraphs`（单款条为 `[1]`），并修正《专利法》第 24、25、44、53、69、75 条把分项当成款的既有错误（第 25 条实际 2 款，此前登记 8 款）。规则先由《实施细则》149 条中已登记的 77 条交叉验证（0 分歧），再抽样人工核对，最后由 `citator.spec.ts` 的两条用例锁住：款号越界判未核验、每条数据的款数与正文分段一致。
+- 未覆盖：**项号仍只报不查**（README 已声明「An item number is reported, not checked」），「第 4 条第 5 项」这类项级引用不在本次修复范围，需要项级索引或单独检查。
+- 状态：已修（2026-11-28，B9 收口后）。
 
 ## F-PAT-131 期限引擎剩余的 PCT 与日历缺口（B8，P2，未修）
 

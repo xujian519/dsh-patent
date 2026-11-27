@@ -621,3 +621,123 @@
 - 证据：`evaluatePatentContent` 是 `patent-tools/src/tool/patent-eval.ts` 里的纯函数（JSDoc 自称 pure entry point），`patent-teams` 只用它做质量门禁评分。结果是安装闭包把 39 个模型工具、附图渲染与 FreeCAD 路径一并拖进团队服务。
 - 为什么不修：正确归属是 `patent-core`（`patent-tools` 与 `patent-teams` 都依赖它），需要移动约 290 行、更新两处导出与两条测试路径，并在 `patent-core` 的导出门禁下登记；这是独立的重构，不应与 B7 的缺陷修复混在一起。
 - 状态：**未修**，建议单列一次重构。
+
+## F-PAT-123 类型不适用的费用阶段被渲染成「未核对」（B8，P2）
+
+- 位置：`packages/patent/patent-fees/src/tool/patent-fees.ts`（`renderFeeTable` 的空表分支）、`src/compute.ts`（类型过滤 note）。
+- 维度：模型可见文案（结论与合计自相矛盾）。
+- 严重度：P2。
+- 证据：查询 `patentType: 'design'` 且只点名 `substantive-examination` 时，唯一条目被类型过滤，`lines` 为空而 `total.complete` 为真、合计 `0.00`；同一份渲染里表格上方写「这不等于本案没有费用——请核对 triggers 是否漏了环节」。外观设计本就没有实审费，零是确定结论。
+- 最小修复：`compute.ts` 导出 `TYPE_FILTER_NOTE_PREFIX`，渲染器据此在「全部被类型排除」时改说「对该专利类型不适用，无需缴纳」。
+- 状态：已修（2026-11-28，B8）；一次点名的阶段全被类型排除时断言新文案且不含旧句。
+
+## F-PAT-124 rule-lock 把已转录的关键条文报成「未判定」（B8，P1）
+
+- 位置：`packages/patent/patent-law/src/citator.ts`（lineage 分支）。
+- 维度：语义（已核验读成未判定）。
+- 严重度：P1。
+- 证据：随包 lineage 把专利法第 62/67/71/77 条标为 `currentStatus: unverified`（因 1984/1992 版本未转录），`decideArticleValidity` 直接采用该状态覆盖 baseline；实测第 71 条（损害赔偿）输出「未判定」，而同一次 `verifyCitation` 判 `valid`。
+- 影响：接入 rule-lock 的 workflow 对最常引用的条文给出「无法判定」，且解释与事实相反。
+- 最小修复：`unverified` 只表示沿革链的历史版本不可考，不覆盖现行条文的转录判定。
+- 状态：已修（2026-11-28，B8）；已转录→按转录判定、未转录→仍 unverified 两条用例。
+
+## F-PAT-125 PCT 效力终止时点写成 30 个月（B8，P2）
+
+- 位置：`packages/patent/patent-deadline/src/report.ts`。
+- 维度：法律规则（可能致案件被放弃）。
+- 严重度：P2。
+- 证据：只要 `pct-national-entry`（30 个月）逾期就输出「效力终止、不适用恢复」，紧接着又说「可缴宽限费延至 32 个月」。细则第122条第(二)项的终止点是未在 32 个月内办理。
+- 影响：在「30 个月已过、32 个月未满」这一正是缴宽限费能救回案件的窗口里，模型会被告知效力已终止。
+- 最小修复：按 30/32 两个条目分别措辞，终止警示只在宽限期届满时给出。
+- 状态：已修（2026-11-28，B8）；宽限期内不含「效力终止」、宽限期后含。
+
+## F-PAT-126 TRIZ 空格被说成「经典矩阵无解」（B8，P2）
+
+- 位置：`packages/patent/methodology/src/tool/triz.ts`（`renderLookup` 非对角空单元分支）。
+- 维度：模型可见文案。
+- 严重度：P2。
+- 证据：渲染写 `The classical matrix lists no recommendation for this pair`，而 `assets/README.md` 明确 234 个非对角空格是转写缺口。
+- 最小修复：改为「本次转录未记录推荐（matrix gap），不代表经典矩阵无解」。
+- 状态：已修（2026-11-28，B8）；用例正向钉住新文案并排除旧句。
+
+## F-PAT-127 旧 PDF 被当作本次渲染产物（B8，P2）
+
+- 位置：`packages/patent/patent-document/src/document/pdfRenderer.ts`。
+- 维度：交付件正确性。
+- 严重度：P2。
+- 证据：Chrome 退出码 0 后只做 `existsSync(pdfPath)` 判成功；同名旧 PDF 存在时会把上次的产物当本次结果返回。
+- 影响：正是 `verify_deliverable` 存在的理由（读者打开主路径看到旧文本）所针对的交付件错配。
+- 最小修复：spawn 前删除同名旧 PDF，让 `existsSync` 只可能命中本次写出。
+- 状态：已修（2026-11-28，B8）；预置旧 PDF + Chrome 不写文件时断言报失败且文件已删。
+
+## F-PAT-128 arXiv 的 200+Error 响应被缓存（B8，P2）
+
+- 位置：`packages/patent/tool-literature/src/runtime/connectors/arxiv.ts`。
+- 维度：缓存（一次瞬时限流变成整段 TTL 必然失败）。
+- 严重度：P2。
+- 证据：`looksValid` 只判根元素是否 `<feed>`，而 arXiv 的限流/畸形查询错误条目同样在 `<feed>` 里；缓存 5 分钟后，`describeSourceError` 建议的「稍等几秒重试」永远读到同一错误。
+- 最小修复：`looksValid` 同时排除 `/api/errors` 与 `Error` 标题条目。
+- 状态：已修（2026-11-28，B8）；连续两次调用断言都到达网络。
+
+## F-PAT-129 paper_download 直接写最终文件（B8，P2）
+
+- 位置：`packages/patent/tool-literature/src/tool/paper-download.ts`（`writePdf`）。
+- 维度：持久化（截断文件被当作已下载原文）。
+- 严重度：P2。
+- 证据：文件体已完整在内存里却用 `writeFile` 直写最终路径，兄弟工具 `patent_pdf_download` 用的是 `writeFileAtomic`；进程在写入窗口被中断会留下截断 PDF。
+- 最小修复：改用 `@deepseek-ai/dsh-atomic-write` 的 `writeFileAtomic`（新增 workspace 依赖）。
+- 状态：已修（2026-11-28，B8）；`package.json` 与 lockfile 已更新，模块图重生成无变化。
+
+## F-PAT-130 15/18 个法源未登记 `paragraphs`，款/项不核验（B8，P1，未修）
+
+- 位置：`packages/patent/patent-law/assets/law/*.yaml`（配合 `packages/law/law-core/src/article-decision.ts:464`）。
+- 维度：覆盖面（不存在的款/项被判「已核验」）。
+- 严重度：P1。
+- 证据：只有《专利法》《实施细则》部分登记了 `paragraphs`；7 个司法解释与 8 个部门规章**全部 0 条**登记。`entry.paragraphs === undefined` 时款/项校验直接跳过，实测「专利法第1条第3款」「专利代理管理办法第4条第5项」均判 `valid`。
+- 为什么不修：修复必须补 125+ 条多段条文的 `paragraphs` 数据（需逐条对照法条原文数段落），或改共享的 `law-core` 判定——后者会让 15 个法源的所有带款引用一起变成「未核验」，且 `citation-conformance.spec.ts` 明确要求 patent-law 与 law-core 结论逐字一致。本批只做过一次「结论里附注款号未核验」的尝试，因破坏该一致性门禁而回滚。
+- 建议：按正文分段机械生成 `paragraphs` 并逐条抽检；或在 `law-core` 引入「款/项无法核验」的第三种判定并同步两个消费方。
+- 状态：**未修**，待决策。
+
+## F-PAT-131 期限引擎剩余的 PCT 与日历缺口（B8，P2，未修）
+
+- 位置：`packages/patent/patent-deadline/src/report.ts`、`src/deadline-entries.ts`、`assets/work-calendar/cn-holidays.yaml`。
+- 维度：规则覆盖与数据维护。
+- 严重度：P2。
+- 证据：①PCT 案的 `application-fee` 与 `pct-national-entry` 是同一 30 个月期限，但前者落入「可恢复」、后者落入「效力终止」，救济指引互相矛盾；②PCT 案恢复优先权应适用细则第128条（自进入日起 2 个月），引擎仍按第36条以国际申请日为基；③随包日历只有 2025/2026，2027 起的届满日一律只能给未顺延日期加 caveat。
+- 为什么不修：①需要在期限条目模型里给 PCT 费用行标注「同属进入手续」；②要新增一条基于 `nationalPhaseEntryDate` 的恢复条目并在缺失时报 pending；③法定节假日安排需按国务院公告逐年录入，不能由代码推断。
+- 状态：**未修**，待决策。
+
+## F-PAT-132 文书渲染剩余的四条（B8，P2/P3，未修）
+
+- 位置：`sectionFold.ts`（重编号与合规检查对「标题序号在行内标签里」判定不一致）、`renderPatentDocument.ts` + `genericDraft.ts`（blocks 槽位落在 `<ol>/<ul>` 上产生非法嵌套）、`documentCompliance.ts`（修改对照表的权项核对在全文无标签时静默通过、多提及即误报）、`paragraphNumbering.ts`（标签扫描不跳过注释与 `<script>/<style>`）。
+- 严重度：P2（前两条）/ P3（后两条）。
+- 为什么不修：①统一判定要改重编号的定位方式并补 span 序号用例；②槽位模型要区分列表容器与行容器，属模板契约调整；③权项核对要重新定义「块领起权项」的取法；④注释剔除要统一到 `htmlScan` 一个实现，且会连带让一条 `v8 ignore` 变为可达。
+- 状态：**未修**，待决策。
+
+## F-PAT-133 文献工具剩余的五条（B8，P2/P3，未修）
+
+- 位置：`arxiv.ts`（自由文本查询未转义/加引号，含 `:` 的普通查询被当 Lucene 语法）、`openalex.ts`（`score` 混用相关度与引文数）、`source-error.ts`（限流判定靠正则匹配错误消息，状态码在工具层已丢）、`paper-download.ts`（PDF 响应体无字节上限）、`openalex.ts`（DOI 形式 id 无法被自身 `fetch` 解析）。
+- 严重度：P2（查询转义）/ P3（其余）。
+- 为什么不修：查询转义要先定义「用户写 arXiv 原生语法」与「自由文本」两类输入的边界；限流判定要导出 `LiteratureHttpError` 并把状态码结构化带进工具错误；PDF 上限要改流式读取；DOI 归一要同时改 `toHit` 与 `fetch` 两侧。
+- 状态：**未修**，待决策。
+
+## F-PAT-134 费用表剩余的三条（B8，P2/P3，未修）
+
+- 位置：`assets/fees/cn-fees.yaml`（著录项目变更费按单一 200 元记录，官方为当事人 200 / 代理机构 50 两档）、`compute.ts`（`reducible === null` 时按全额计并计入合计）、`patent-filing/src/filing/engine.ts`（返回的 `figures` 是已删除的临时位图路径）、`build-patent-filing.ts`（同一消息里「附图 N 张」与「验收：附图 N+1」并存）。
+- 严重度：P2。
+- 为什么不修：变更费需要查询新增「变更类型」这项案头事实；`reducible === null` 改扣留会推翻既有用例的语义（需要连同该用例一起改）；`figures` 的契约要重新定义返回源件还是入文位图。
+- 状态：**未修**，待决策。
+
+## F-PAT-135 法条索引剩余的四条（B8，P2/P3，未修）
+
+- 位置：`reference.ts`（同一法条两种写法重复引用时第二处被误报未识别）、`verify.ts`（部分/章级引用未登记容器条目被判「索引中不存在」）、`tool/law-verify.ts`（「未核验」被统一解释为「条目及其子节都未转录」，对旧编号/未知版本是错的）、`baseline.ts`（成文法接受 `supersededBy` 却不使用）。
+- 严重度：P2。
+- 为什么不修：覆盖判定要按条文身份保留每个出现区间；指南容器条目要补 31 个前缀；「未核验」文案要按 finding 原因分类；`supersededBy` 要么拒绝要么实现取代语义，属索引格式决策。
+- 状态：**未修**，待决策。
+
+## F-PAT-136 方法论与索引资产的剩余三条（B8，P3，未修）
+
+- 位置：`methodology/src/tool/triz.ts`（参数错误用裸 `Error`，丢失错误码）、`patent-index-asset/src/source.ts`（`verifiedOn` 可脱离 `sourceDoc` 存在）、`patent-index-asset/src/index.ts` + README（文档只写两个消费方，实际 legal-law 也在用）。
+- 严重度：P3。
+- 为什么不修：错误类要新增 `TrizToolError extends HarnessError`；`verifiedOn` 配对校验会改变现有费用资产的合法组合；文档漂移随下一次该包维护一起更新。
+- 状态：**未修**。

@@ -71,5 +71,27 @@
 - 证据：`withDeadline(promise, ms)` 在 `ms <= 0` 时返回原 promise（用于「无截止」语义）；而调用点传入的 `remaining = Math.max(0, deadline - Date.now())` 在截止前最后一毫秒可算出 0，此时硬上界被关闭。若节点不响应 abort 信号，图执行会无限挂起——而硬上界存在的目的正是兜住这种节点。
 - 影响：极窄时间窗下的挂死风险；正常路径不受影响。
 - 最小修复：有截止时按 `Math.max(1, remaining)` 传参，保留「无截止传 0」的语义。
-- 工作量：5 分钟。可自动化：否（毫秒级竞态，测试只能覆盖语义而非时序）。
+- 工作量：5 分钟。可自动化：否（毫秒级竞态，测试只能覆盖时序）。
+- 状态：已修（2026-11-27，B2）。
+
+## F-PAT-066 充分公开子图把数组当字符串读，缺失章节被说成「无缺失」（B2）
+
+- 位置：`packages/patent/patent-core/src/graph/domains/enablement.ts`（`completeness` 与 `conclude` 的提示词拼装）。
+- 维度：正确性与边界 / 模型可见输入。
+- 严重度：P2。
+- 证据：`load` 节点把 `spec_sections_missing` 与 `domain_rules` 节点把 `domain_requirements` 都写成 `string[]`；提示词用 `getStateString` 读取，而该函数对非字符串返回空串。于是完整性提示词恒显示「（无缺失）」——把确定性检测到的缺失章节反过来告诉模型「没有缺失」；领域特殊要求则整段消失。
+- 影响：两个确定性节点的产出对模型不可见，A26.3 审查的结构完整性输入被一条恒真的假阴性覆盖。
+- 最小修复：改用 `getStateArray(...).join(...)`。
+- 工作量：10 分钟。可自动化：是。
+- 状态：已修（2026-11-27，B2）；新增用例喂入缺章节的说明书，断言提示词含缺失章节名与领域要求。
+
+## F-PAT-067 数值范围节点的 LLM 调用不转发取消信号（B2）
+
+- 位置：`packages/patent/patent-core/src/graph/domains/novelty.ts`（`numericRangeNode`）。
+- 维度：正确性与边界（并发/取消）。
+- 严重度：P2。
+- 证据：该节点只解构 `{ state, provider }`，调用 `provider.callLLM(prompt, opts)` 时缺少第三个 `signal` 参数；`shared.ts` 的 `llmNode` 与子图其它 LLM 路径都会传。
+- 影响：图被取消时，在途的数值范围判定请求不会被中止，调用方要等到该请求自己结束；无节点策略时没有硬上界兜底。
+- 最小修复：解构 `signal` 并作为第三个实参传递。
+- 工作量：5 分钟。可自动化：部分。
 - 状态：已修（2026-11-27，B2）。

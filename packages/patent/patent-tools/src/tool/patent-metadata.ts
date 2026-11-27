@@ -426,6 +426,7 @@ export function createPatentMetadataTool(deps: PatentMetadataDeps = {}): ToolDef
           }),
           lookup => scrapeRetryable(lookup.value),
           retryDelaysMs,
+          exec.signal,
         )
       } catch (error) {
         thrown = error

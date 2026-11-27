@@ -306,4 +306,33 @@ describe('cachedSearchPatents / cachedScrapePatent', () => {
     expect(scrapeCacheKey('US11452699B2', { returnAbstract: false, returnLegal: true })).toBe('scrape\u0000US11452699B2\u000001')
     expect(scrapeCacheKey('US11452699B2', { returnAbstract: true, returnLegal: false })).toBe('scrape\u0000US11452699B2\u000010')
   })
+
+  it('forwards the per-call timeout and signal without caching them', async () => {
+    const controller = new AbortController()
+    const seen: Array<{ timeout?: number; signal?: AbortSignal }> = []
+    const impl = async (_patent: string, opts?: { timeout?: number; signal?: AbortSignal }) => {
+      seen.push(opts ?? {})
+      return makeScrapeResult()
+    }
+    const wrapped = cachedScrapePatent(impl)
+    await wrapped('US11452699B2', { timeout: 1_234, signal: controller.signal })
+    await wrapped('US11452699B2')
+    // Second call is a cache hit, so the engine saw the forwarded options once.
+    expect(seen).toHaveLength(1)
+    expect(seen[0]?.timeout).toBe(1_234)
+    expect(seen[0]?.signal).toBe(controller.signal)
+  })
+
+  it('forwards the per-call timeout and signal on the search cache too', async () => {
+    const controller = new AbortController()
+    const seen: Array<{ timeout?: number; signal?: AbortSignal }> = []
+    const impl = async (_query: string, opts?: { timeout?: number; signal?: AbortSignal }) => {
+      seen.push(opts ?? {})
+      return makeSearchResult()
+    }
+    const wrapped = cachedSearchPatents(impl)
+    await wrapped('thermal', { timeout: 999, signal: controller.signal })
+    expect(seen[0]?.timeout).toBe(999)
+    expect(seen[0]?.signal).toBe(controller.signal)
+  })
 })

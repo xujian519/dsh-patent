@@ -143,13 +143,20 @@ export function scrapeCacheKey(patent: string, opts: { returnAbstract: boolean; 
  * @returns the cached search function, whose lookups carry cache-hit and fetch-time facts.
  */
 export function cachedSearchPatents(
-  impl: (query: string, options?: { limit?: number }) => Promise<PatentSearchResult>,
+  impl: (query: string, options?: { limit?: number; timeout?: number; signal?: AbortSignal }) => Promise<PatentSearchResult>,
   options: PatentCacheOptions = {},
-): (query: string, options?: { limit?: number }) => Promise<CachedLookup<PatentSearchResult>> {
+): (query: string, options?: { limit?: number; timeout?: number; signal?: AbortSignal }) => Promise<CachedLookup<PatentSearchResult>> {
   const cache = new AsyncResultCache<PatentSearchResult>(options)
   return async (query, opts) => {
     const limit = opts?.limit ?? 10
-    return cache.getOrLoad(searchCacheKey(query, limit), () => impl(query, { limit }), isSearchResultCacheable)
+    // timeout 与 signal 是单次调用属性，不进缓存键（同一查询同一内容），但必须透传：
+    // 否则调用方设置的超时与取消在缓存腿上全部失效。
+    const forward = {
+      limit,
+      ...(opts?.timeout !== undefined ? { timeout: opts.timeout } : {}),
+      ...(opts?.signal !== undefined ? { signal: opts.signal } : {}),
+    }
+    return cache.getOrLoad(searchCacheKey(query, limit), () => impl(query, forward), isSearchResultCacheable)
   }
 }
 
@@ -160,16 +167,33 @@ export function cachedSearchPatents(
  * @returns the cached scrape function, whose lookups carry cache-hit and fetch-time facts.
  */
 export function cachedScrapePatent(
-  impl: (patent: string, options?: { returnAbstract?: boolean; returnLegal?: boolean }) => Promise<ScrapeResult>,
+  impl: (patent: string, options?: {
+    returnAbstract?: boolean
+    returnLegal?: boolean
+    timeout?: number
+    signal?: AbortSignal
+  }) => Promise<ScrapeResult>,
   options: PatentCacheOptions = {},
-): (patent: string, options?: { returnAbstract?: boolean; returnLegal?: boolean }) => Promise<CachedLookup<ScrapeResult>> {
+): (patent: string, options?: {
+  returnAbstract?: boolean
+  returnLegal?: boolean
+  timeout?: number
+  signal?: AbortSignal
+}) => Promise<CachedLookup<ScrapeResult>> {
   const cache = new AsyncResultCache<ScrapeResult>(options)
   return async (patent, opts) => {
     const returnAbstract = opts?.returnAbstract ?? true
     const returnLegal = opts?.returnLegal ?? true
+    // 同 cachedSearchPatents：超时与取消必须透传到引擎，且不参与缓存键。
+    const forward = {
+      returnAbstract,
+      returnLegal,
+      ...(opts?.timeout !== undefined ? { timeout: opts.timeout } : {}),
+      ...(opts?.signal !== undefined ? { signal: opts.signal } : {}),
+    }
     return cache.getOrLoad(
       scrapeCacheKey(patent, { returnAbstract, returnLegal }),
-      () => impl(patent, { returnAbstract, returnLegal }),
+      () => impl(patent, forward),
       isScrapeResultCacheable,
     )
   }

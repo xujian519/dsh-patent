@@ -23,11 +23,16 @@ describe('startSpawnDeadline', () => {
   })
 
   it('follows a caller abort without claiming an internal timeout', () => {
+    vi.useFakeTimers()
     const caller = new AbortController()
     const deadline = startSpawnDeadline(60_000, caller.signal)
     try {
       caller.abort()
       expect(deadline.signal.aborted).toBe(true)
+      expect(deadline.timedOut()).toBe(false)
+      // 子进程收尾可能慢于剩余超时：计时器若没被取消，这里会翻成内部超时，
+      // 把用户主动取消误报成超时。
+      vi.advanceTimersByTime(60_000)
       expect(deadline.timedOut()).toBe(false)
     } finally {
       deadline.dispose()

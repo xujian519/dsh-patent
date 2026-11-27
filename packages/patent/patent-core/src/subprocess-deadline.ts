@@ -32,7 +32,12 @@ export function startSpawnDeadline(timeoutMs: number, callerSignal?: AbortSignal
     controller.abort()
   }, timeoutMs)
   timer.unref()
-  const onCallerAbort = (): void => { controller.abort() }
+  // 调用方取消后内部计时器已无意义：留着它会让 `timedOut()` 在子进程收尾期间
+  // 翻成 true，把用户主动取消误报成内部超时。
+  const onCallerAbort = (): void => {
+    clearTimeout(timer)
+    controller.abort()
+  }
   callerSignal?.addEventListener('abort', onCallerAbort, { once: true })
   if (callerSignal?.aborted === true) controller.abort()
   return {

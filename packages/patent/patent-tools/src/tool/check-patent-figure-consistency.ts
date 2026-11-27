@@ -10,11 +10,11 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { PatentToolError } from '../error.ts'
 import { checkFigureSetConsistency } from '../figure/figure-set-consistency.ts'
 import type { FigureSetEntry, FigureSetReport } from '../figure/figure-set-consistency.ts'
-import { MARK_COMPONENT_SCHEMA, REPORT_TAIL_FIELDS } from './internal/analysis-schemas.ts'
-import { assertUniqueFigureNumbers } from './internal/tool-input.ts'
+import { REPORT_TAIL_FIELDS } from './internal/analysis-schemas.ts'
+import { figureMarkListParameter, requireFigureList, toFigureMarkEntries } from './internal/figure-mark-list.ts'
+import { reportSection, textReport } from './internal/tool-output.ts'
 
 /** 输入：各图的标记清单与可选的引用正文。 */
 export type CheckPatentFigureConsistencyInput = {
@@ -47,24 +47,10 @@ export function createCheckPatentFigureConsistencyTool(): ToolDefinition {
     name: 'check_patent_figure_consistency',
     description: DESCRIPTION,
     parameters: {
-      figures: {
-        type: 'array',
-        required: true,
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            figure_number: { type: 'integer', required: true, description: '图号（1 起，同一案件内唯一）' },
-            components: {
-              type: 'array',
-              required: true,
-              items: MARK_COMPONENT_SCHEMA,
-              description: '本图识别出的组件列表（analyze_patent_figure 的结果）',
-            },
-          },
-        },
-        description: '各图的标记清单；至少一张，图号不得重复',
-      },
+      figures: figureMarkListParameter(
+        '本图识别出的组件列表（analyze_patent_figure 的结果）',
+        '各图的标记清单；至少一张，图号不得重复',
+      ),
       claim_context: {
         type: 'string',
         description: '权利要求书或说明书正文（可选）：给出时核对其中引用的数字标记是否都在附图中识别到',
@@ -126,27 +112,17 @@ export function createCheckPatentFigureConsistencyTool(): ToolDefinition {
         const missingNumberLines = value.missingFigureNumbers.map(number => `- 缺图号 ${String(number)}`)
         const missingRefLines = value.missingRefs.map(ref => `- 标记 ${String(ref)} 在权利要求/说明书中出现，但任何附图都未识别`)
         const sections = [
-          ...(conflictLines.length === 0 ? [] : ['', '## 跨图冲突', ...conflictLines]),
-          ...(missingNumberLines.length === 0 ? [] : ['', '## 缺失图号', ...missingNumberLines]),
-          ...(missingRefLines.length === 0 ? [] : ['', '## 未识别标记', ...missingRefLines]),
-          ...(value.consistent ? ['', '## 结论', '- 跨图一致性检查通过'] : []),
+          ...reportSection('跨图冲突', conflictLines),
+          ...reportSection('缺失图号', missingNumberLines),
+          ...reportSection('未识别标记', missingRefLines),
+          ...reportSection('结论', value.consistent ? ['- 跨图一致性检查通过'] : []),
         ]
-        return [{ type: 'text', text: [...lines, ...sections].join('\n') }]
+        return textReport(lines, sections)
       },
     },
     execute(args) {
-      if (args.figures.length === 0) {
-        throw new PatentToolError('invalid_tool_input', 'figures 至少需要一张附图', { tool: 'check_patent_figure_consistency' })
-      }
-      assertUniqueFigureNumbers(args.figures, 'check_patent_figure_consistency')
-
-      const entries: FigureSetEntry[] = args.figures.map(figure => ({
-        figureNumber: figure.figure_number,
-        components: figure.components.map(component => ({
-          refNumber: component.ref_number,
-          name: component.name ?? '',
-        })),
-      }))
+      requireFigureList(args.figures, 'check_patent_figure_consistency')
+      const entries: FigureSetEntry[] = toFigureMarkEntries(args.figures)
       const report = checkFigureSetConsistency(entries, args.claim_context)
       return Promise.resolve(toOutput(report))
     },

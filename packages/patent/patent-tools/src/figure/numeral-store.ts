@@ -47,6 +47,12 @@ export type NumeralMergeConflict = {
   dropped: string
 }
 
+/** 合并写入的结果：合并后的完整标号表与被丢弃的冲突值。 */
+export type NumeralMergeResult = {
+  merged: FigureNumeralItem[]
+  conflicts: NumeralMergeConflict[]
+}
+
 function isNumeralItem(value: unknown): value is FigureNumeralItem {
   if (typeof value !== 'object' || value === null) return false
   const item = value as Partial<FigureNumeralItem>
@@ -102,7 +108,7 @@ export async function mergeNumerals(
   filePath: string,
   scope: string,
   incoming: readonly FigureNumeralItem[],
-): Promise<{ merged: FigureNumeralItem[]; conflicts: NumeralMergeConflict[] }> {
+): Promise<NumeralMergeResult> {
   const previous = mergeQueues.get(filePath) ?? Promise.resolve()
   const run = previous.then(() => mergeOnce(filePath, scope, incoming))
   // 队列吞掉失败，避免一条失败阻塞后续写入；调用方 await run 感知自身失败。
@@ -121,7 +127,7 @@ async function mergeOnce(
   filePath: string,
   scope: string,
   incoming: readonly FigureNumeralItem[],
-): Promise<{ merged: FigureNumeralItem[]; conflicts: NumeralMergeConflict[] }> {
+): Promise<NumeralMergeResult> {
   const { entries } = await figureNumeralStore.load(filePath)
   const current = entries.find(candidate => candidate.scope === scope)?.numerals ?? []
   const byId = new Map<string, FigureNumeralItem>()

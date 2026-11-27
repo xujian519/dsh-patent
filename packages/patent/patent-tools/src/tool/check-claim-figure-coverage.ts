@@ -14,8 +14,9 @@ import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { PatentToolError } from '../error.ts'
 import { checkClaimFigureCoverage } from '../figure/claim-figure-coverage.ts'
 import type { ClaimFigureCoverageReport, FigureMarkEntry } from '../figure/claim-figure-coverage.ts'
-import { MARK_COMPONENT_SCHEMA } from './internal/analysis-schemas.ts'
-import { assertUniqueFigureNumbers } from './internal/tool-input.ts'
+import { findingListSchema } from './internal/analysis-schemas.ts'
+import { figureMarkListParameter, requireFigureList, toFigureMarkEntries } from './internal/figure-mark-list.ts'
+import { reportSection, textReport } from './internal/tool-output.ts'
 
 /** 输入：特征到标号的指认清单与各图标号清单。 */
 export type CheckClaimFigureCoverageInput = {
@@ -65,24 +66,7 @@ export function createCheckClaimFigureCoverageTool(): ToolDefinition {
         },
         description: '特征到标号的指认清单；至少一条',
       },
-      figures: {
-        type: 'array',
-        required: true,
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            figure_number: { type: 'integer', required: true, description: '图号（1 起，同一案件内唯一）' },
-            components: {
-              type: 'array',
-              required: true,
-              items: MARK_COMPONENT_SCHEMA,
-              description: '本图识别出的标号清单',
-            },
-          },
-        },
-        description: '各图的标号清单；至少一张，图号不得重复',
-      },
+      figures: figureMarkListParameter('本图识别出的标号清单', '各图的标号清单；至少一张，图号不得重复'),
     },
     output: {
       schema: {
@@ -91,25 +75,17 @@ export function createCheckClaimFigureCoverageTool(): ToolDefinition {
         properties: {
           boundFeatureCount: { type: 'integer', required: true },
           unboundFeatureCount: { type: 'integer', required: true },
-          findings: {
-            type: 'array',
-            required: true,
-            items: {
-              type: 'object',
-              additionalProperties: false,
-              properties: {
-                check: {
-                  type: 'string',
-                  required: true,
-                  enum: ['feature-empty', 'feature-unbound', 'ref-not-on-figure'],
-                },
-                claimId: { type: 'string', required: true },
-                feature: { type: 'string', required: true },
-                ref: { type: 'string' },
-                message: { type: 'string', required: true },
-              },
+          findings: findingListSchema({
+            check: {
+              type: 'string',
+              required: true,
+              enum: ['feature-empty', 'feature-unbound', 'ref-not-on-figure'],
             },
-          },
+            claimId: { type: 'string', required: true },
+            feature: { type: 'string', required: true },
+            ref: { type: 'string' },
+            message: { type: 'string', required: true },
+          }),
           summary: { type: 'string', required: true },
           covered: { type: 'boolean', required: true },
         },
@@ -130,30 +106,20 @@ export function createCheckClaimFigureCoverageTool(): ToolDefinition {
           .filter(finding => finding.check === 'ref-not-on-figure')
           .map(finding => `- ${finding.message}`)
         const sections = [
-          ...(emptyLines.length === 0 ? [] : ['', '## 空特征', ...emptyLines]),
-          ...(unboundLines.length === 0 ? [] : ['', '## 未指定标号', ...unboundLines]),
-          ...(missingLines.length === 0 ? [] : ['', '## 标号不在图面', ...missingLines]),
-          ...(value.covered ? ['', '## 结论', '- 权项要素图面覆盖检查通过'] : []),
+          ...reportSection('空特征', emptyLines),
+          ...reportSection('未指定标号', unboundLines),
+          ...reportSection('标号不在图面', missingLines),
+          ...reportSection('结论', value.covered ? ['- 权项要素图面覆盖检查通过'] : []),
         ]
-        return [{ type: 'text', text: [...lines, ...sections].join('\n') }]
+        return textReport(lines, sections)
       },
     },
     execute(args) {
       if (args.bindings.length === 0) {
         throw new PatentToolError('invalid_tool_input', 'bindings 至少需要一条技术特征', { tool: 'check_claim_figure_coverage' })
       }
-      if (args.figures.length === 0) {
-        throw new PatentToolError('invalid_tool_input', 'figures 至少需要一张附图', { tool: 'check_claim_figure_coverage' })
-      }
-      assertUniqueFigureNumbers(args.figures, 'check_claim_figure_coverage')
-
-      const entries: FigureMarkEntry[] = args.figures.map(figure => ({
-        figureNumber: figure.figure_number,
-        components: figure.components.map(component => ({
-          refNumber: component.ref_number,
-          name: component.name ?? '',
-        })),
-      }))
+      requireFigureList(args.figures, 'check_claim_figure_coverage')
+      const entries: FigureMarkEntry[] = toFigureMarkEntries(args.figures)
       const report = checkClaimFigureCoverage(
         args.bindings.map(binding => ({
           claimId: binding.claim_id,

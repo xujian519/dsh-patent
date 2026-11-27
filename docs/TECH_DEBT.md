@@ -358,7 +358,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 <!-- tech-debt-counters:start -->
 | 计数 | 值 |
 | --- | --- |
-| `structure.long-functions` | 208 |
+| `structure.long-functions` | 209 |
 | `structure.large-files` | 103 |
 | `structure.patent-large-files` | 10 |
 | `lint.v8-ignore` | 1360 |
@@ -380,7 +380,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-tools/src/figure/render-check-scan.ts` | 接受 | 1059 | 矢量扫描前端：按文档序把 SVG 源解析成根坐标系下的描边图形与文字，量测判据在 `render-check-findings.ts`。2026-11-26 附图复用键与 DXF 导出把路径/矩阵/文字量测补齐（位图拒绝、剖面来源与复用键）后由 798 推到 1034 行；2026-11-27 渲染复核把曲线按 0.05 毫米弦高折线化、并让路径数值接受十进制指数，同族解析逻辑由 1034 推到 1059 行；全是同族的解析与几何小谓词，无 I/O、无第二消费方 |
 | `packages/patent/patent-tools/src/figure/render-check-findings.ts` | 接受 | 988 | 纯几何判据：30+ 个小谓词 + 109 行编排，无 I/O，无第二消费方。2026-11-08 版面利用率判据（`sheet-underfill`，内容包围盒占该图画布比）加了 37 行，判据本身只读已量测的墨迹包围盒与画布尺寸 |
 | `packages/patent/patent-tools/src/figure/section-diagram.ts` | 接受 | 918 | 纯几何绘制：146 行主绘制 + 小工具，与 `leader-line` 同类 |
-| `packages/patent/patent-tools/src/figure/leader-line.ts` | 接受 | 908 | 纯几何：稳定在 906→908，无状态、无 I/O |
+| `packages/patent/patent-tools/src/figure/leader-line.ts` | 接受 | 1114 | 纯几何：轮廓求交、净距与外推都在放置阶段完成，无状态、无 I/O；`annotateSvgWithLeaderLines` 因新增两条放置策略超过 150 行，另计 long-function |
 | `packages/patent/patent-tools/src/tool/patent-workflow-run.ts` | 接受 | 1070 | 单一工具入口同时承载 manifest 与领域图两条执行路径，输入 schema、恢复/审批接线与解析器共享同一输出契约；拆分会把 schema 与分派分离而不减少分支。2026-11-04 新增审批门现场决策接线（运行级 handler 注册、`approveStageIds` 拒绝与中断文案）约 85 行；2026-11-18 新增 `ctx.patentWorkflow` 运行入口与「服务记录会话事件」分流约 17 行；2026-11-20 自动续跑新增 `runId`/`resumeNote` 输出字段与恢复说明，`createPatentWorkflowRunTool` 因两个 schema 字段达到 152 行，仅超阈值 2 行 |
 | `packages/patent/patent-workflow/src/workflow/manifests.ts` | 接受 | 983 | 内置 manifest 目录：每个阶段是一行数据（id/策略/描述/参数），答复链 15 阶段把文件从 782 推到 852、投影消耗说明再推 3 行，披露链的充分公开与概括范围阶段再推 12 行、权利要求策略阶段再推 7 行、撰写链换位审查阶段再推 20 行、审批门的 `review_keys` 再推 5 行；2026-11-15 带特征编号的实施例块可见字符预算常量再推 7 行（953 → 960），阶段说明仍各占一行。2026-11-25 披露链的修订对账与质量标量两个阶段连同其 maxRetries 与预算改动再推 19 行（960 → 979），阶段说明仍各占一行。2026-11-27 答复链 `draft` 的修订轮修改认定指导再推 4 行（979 → 983），仍是同一段提示文字。切分只是把数据挪到别处，不降复杂度 |
 | `packages/patent/patent-core/src/atoms/handlers/builtin/evidence-check.ts` | 接受 | 842 | 单个 atom handler 的五阶段，最大函数 123 行，仅超阈值 5% |
@@ -405,7 +405,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
-- **2026-11-27 附图标注幂等重跑**:`add_patent_figure_references` 新增重跑清理——引线模式先删除 `<g id="leader-lines">` 组，命中文本的既有 ` (数字)` 内嵌标号在重标时替换而非叠加；清理逻辑复用 `svg-annotate` 的导出函数，引线组内的私有清理函数对「无文本组」分支沿用既有豁免写法，`lint.v8-ignore` 由 1358 升至 **1360**；`leader-line.ts` 仍在上限 908 行以内，结构债三项不变。
+- **2026-11-27 引线放置：真实轮廓锚点 + 净距/外推**:引线锚点改取节点真实轮廓（多边形保留顶点，射线与边求交；椭圆按解析式），斜边形状不再从包围盒角点出发；放置期按 Config `figureLeaderClearanceMm` / `figureLeaderPushStepMm` / `figureLeaderPushLimitMm` 强制净距并逐级外推，净距取部署值与 `clearanceMmForFigure` 的较大者，避免工具产出被自身渲染复核判负；`leader-line.ts` 由 907 升至 **1114** 行并重定接受上限，`annotateSvgWithLeaderLines` 超过 150 行使 `structure.long-functions` 由 208 升至 **209**；其余计数不变。
 - **2026-11-27 附图渲染复核曲线折线化**:`render-check-scan.ts` 的路径切分改为按 SVG 数字文法读取（`e`/`E` 只作十进制指数），渲染复核与墨迹范围量测传入 0.05 毫米弦高公差，曲线不再按端点弦近似；该文件由 1034 升至 **1059** 行并重定接受上限；路径切分正则的 `v8 ignore` 随旧实现删除，`lint.v8-ignore` 由 1359 降至 **1358**；其余计数不变。
 - **2026-11-26 附图拒绝栅格与 DXF 导出**:`render-check-scan.ts` 由 798 升至 **1034** 行并新增接受行（矢量扫描前端，位图拒绝、剖面来源与复用键的路径/矩阵/文字量测补齐，无 I/O、无第二消费方）；`structure.large-files` 由 102 升至 **103**、`structure.patent-large-files` 由 9 升至 **10**；`generate-patent-figure.ts` 的 `generateSingleFigure` 由 155 行回落到 150 行以下，`structure.long-functions` 由 209 降至 **208**；`lint.v8-ignore` 由 1345 升至 **1359**；其余计数不变。
 - **2026-11-25 附图视图名与页码关闭**:`generate-patent-figure.ts` 的 `generateSingleFigure` 新增 `view_name` 参数校验与传递后达到 155 行、`generate-structure-figure.ts` 的 `createGenerateStructureFigureTool` 新增 `sheet_number` schema 字段后达到 151 行，两个函数均越过 150 行阈值；`structure.long-functions` 由 207 升至 **209**；其余计数不变。

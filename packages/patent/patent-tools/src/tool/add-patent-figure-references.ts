@@ -23,7 +23,14 @@ import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
 
 /** 依赖注入。cwd 为路径基准，默认 process.cwd()。 */
 export type AddPatentFigureReferencesDeps = {
+  /** 工作目录（缺省 process.cwd()）。 */
   cwd?: string
+  /** 引线标号净距（毫米，Config.figureLeaderClearanceMm）。 */
+  leaderClearanceMm?: number
+  /** 引线放置冲突时的外推步长（毫米，Config.figureLeaderPushStepMm）。 */
+  leaderPushStepMm?: number
+  /** 引线外推距离上限（毫米，Config.figureLeaderPushLimitMm）。 */
+  leaderPushLimitMm?: number
 }
 
 /** 输入：SVG 路径 + 参考标号表。 */
@@ -112,7 +119,11 @@ export function createAddPatentFigureReferencesTool(deps: AddPatentFigureReferen
       let result
       try {
         result = args.leader_lines === true
-          ? annotateSvgWithLeaderLines(svg, args.references)
+          ? annotateSvgWithLeaderLines(svg, args.references, {
+            ...(deps.leaderClearanceMm === undefined ? {} : { clearanceMm: deps.leaderClearanceMm }),
+            ...(deps.leaderPushStepMm === undefined ? {} : { pushStepMm: deps.leaderPushStepMm }),
+            ...(deps.leaderPushLimitMm === undefined ? {} : { pushLimitMm: deps.leaderPushLimitMm }),
+          })
           : annotateSvg(svg, args.references)
       } catch (error) {
         /* v8 ignore start -- annotateSvg only throws SvgAnnotateError; the rethrow keeps unknown failures loud */

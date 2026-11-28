@@ -144,6 +144,16 @@ describe('PatentKnowledge service', () => {
     }
   })
 
+  it('validates the node-cache bound at construction', () => {
+    const ctx = new Context()
+    // The bound reaches a lazily built LruCache; validating here avoids a RangeError
+    // surfacing on the first graph query instead of while loading.
+    expect(() => new PatentKnowledge(ctx, { knowledgeDir: '/tmp/patent-knowledge-unused', nodeCacheMaxEntries: 1.5 }))
+      .toThrow(/nodeCacheMaxEntries must be a positive integer/)
+    expect(new PatentKnowledge(new Context(), { knowledgeDir: '/tmp/patent-knowledge-unused', nodeCacheMaxEntries: 8 }))
+      .toBeInstanceOf(PatentKnowledge)
+  })
+
   it('reports the corpus freshness of the resolved database', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-patent-knowledge-corpus-'))
     makeDb(dir)

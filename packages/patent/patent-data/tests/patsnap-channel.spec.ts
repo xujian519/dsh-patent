@@ -382,4 +382,26 @@ describe('PatsnapChannel defensive paths', () => {
     await expect(channel.pdfLinks(['CN115690481A'], { signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' })
     expect(calls).toBe(1)
   })
+
+  it('does not wait out the retry delay when the signal is already aborted', async () => {
+    const controller = new AbortController()
+    let calls = 0
+    const channel = new PatsnapChannel({
+      apiKey: 'sk-test',
+      fetchImpl: async () => {
+        calls += 1
+        return new Response('busy', { status: 429, headers: { 'retry-after': '30' } })
+      },
+    })
+    controller.abort()
+    const outcome = await Promise.race([
+      channel.pdfLinks(['CN115690481A'], { signal: controller.signal }).then(
+        () => 'resolved',
+        (error: unknown) => (error as Error).name,
+      ),
+      new Promise<string>((resolve) => { setTimeout(() => { resolve('still-waiting') }, 200) }),
+    ])
+    expect(outcome).toBe('AbortError')
+    expect(calls).toBe(1)
+  })
 })

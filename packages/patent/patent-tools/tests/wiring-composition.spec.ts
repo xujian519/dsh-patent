@@ -33,6 +33,7 @@ import type { ChemistryIndexEntry } from '../src/chemistry/index-store.ts'
 import type { RecognizeChemicalStructureDeps } from '../src/tool/recognize-chemical-structure.ts'
 import type { LawSearchDeps } from '../src/tool/law-search.ts'
 import type { PatentCorpusStatusDeps } from '../src/tool/patent-corpus-status.ts'
+import type { PatentWikiSearchDeps } from '../src/tool/patent-wiki-search.ts'
 import type { PatentLegalStatusDeps } from '../src/tool/patent-legal-status.ts'
 import type { PatentMetadataDeps } from '../src/tool/patent-metadata.ts'
 import type { PatentSearchDeps } from '../src/tool/patent-search.ts'
@@ -50,6 +51,7 @@ const mock = vi.hoisted(() => ({
   legal: [] as PatentLegalStatusDeps[],
   law: [] as LawSearchDeps[],
   corpusStatus: [] as PatentCorpusStatusDeps[],
+  wiki: [] as PatentWikiSearchDeps[],
   figures: [] as GeneratePatentFigureDeps[],
   structures: [] as GenerateStructureFigureDeps[],
   workflowRun: [] as PatentWorkflowRunDeps[],
@@ -108,6 +110,17 @@ vi.mock('../src/tool/patent-corpus-status.ts', async (importOriginal) => {
     createPatentCorpusStatusTool: (deps: PatentCorpusStatusDeps = {}) => {
       mock.corpusStatus.push(deps)
       return actual.createPatentCorpusStatusTool(deps)
+    },
+  }
+})
+
+vi.mock('../src/tool/patent-wiki-search.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/tool/patent-wiki-search.ts')>()
+  return {
+    ...actual,
+    createPatentWikiSearchTool: (deps: PatentWikiSearchDeps = {}) => {
+      mock.wiki.push(deps)
+      return actual.createPatentWikiSearchTool(deps)
     },
   }
 })
@@ -252,6 +265,8 @@ async function mount(
   options: {
     subprocess?: boolean
     knowledge?: boolean
+    /** Creates `<knowledgeDir>/wiki` next to the fixture db. */
+    wiki?: boolean
     webServerPort?: number
     patentData?: boolean
     /** `false` leaves the workspace service unpublished. */
@@ -270,6 +285,7 @@ async function mount(
   if (options.knowledge === true) {
     const dir = join(workspace(), 'knowledge')
     createKgDb(dir)
+    if (options.wiki === true) mkdirSync(join(dir, 'wiki'), { recursive: true })
     new PatentKnowledge(ctx, { knowledgeDir: dir, sourceDbPath: join(dir, 'knowledge.db') })
   }
   // 宿主 webserver 服务不在本包的声明合并里：用非字面量键让 ctx.provide 走通用重载。
@@ -604,6 +620,25 @@ describe('registerPatentTools 知识服务接线', () => {
     expect(fromLaw?.lastIndexedAt).toBeUndefined()
     expect(fromStatus?.dbPath).toBe(dbPath)
     expect(fromStatus?.fileModifiedAt).toBe(fromLaw?.fileModifiedAt)
+    await ctx.fiber.dispose()
+  })
+
+  it('wiki 目录缺失时不注入检索面，交给工具报 setup_required', async () => {
+    const ctx = await mount({}, { knowledge: true })
+    const wiki = mock.wiki.at(-1)
+    if (wiki === undefined) throw new Error('缺少 patent_wiki_search deps')
+    expect(wiki.searchIn).toBeUndefined()
+    expect(wiki.formatAsContext).toBeUndefined()
+    expect(wiki.wikiDir).toBe(join(workspace(), 'knowledge', 'wiki'))
+    await ctx.fiber.dispose()
+  })
+
+  it('wiki 目录存在时把检索闭包接到知识服务', async () => {
+    const ctx = await mount({}, { knowledge: true, wiki: true })
+    const wiki = mock.wiki.at(-1)
+    if (wiki === undefined) throw new Error('缺少 patent_wiki_search deps')
+    expect(wiki.searchIn?.('', '创造性', 5)).toEqual([])
+    expect(wiki.formatAsContext?.('专利实务/说明书/missing', 100)).toBe('')
     await ctx.fiber.dispose()
   })
 })

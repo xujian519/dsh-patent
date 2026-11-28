@@ -40,6 +40,15 @@
 | S-PAT-017 | P3 | `patent-core/src/graph/adapter.ts:173-182` | `execState[stage.id]` 用 `as string` 断言成字符串且未校验；`execState` 在读取前合并了 `stage.params`（键名不受校验），恢复时也来自检查点未逐键校验的 `state`。同名值非字符串时 `output.trim()` 抛 TypeError。 | 改为 `typeof … === 'string'` 读取；补 params 同名非字符用例。 | 已修复 |
 | S-PAT-018 | P3 | `patent-core/src/safe-path.ts:23,48` | 文档与错误文案只说拒绝尾部空白/点，代码同时拒绝首部空白（测试 `safe-path.spec.ts:20` 断言 `' a'` 被拒）；首部空白输入会收到解释不了原因的文案。 | 文案与 JSDoc 改为「首尾空白」；行为不变。 | 已修复 |
 
+## B6 服务接缝（patent-data、patent-knowledge）
+
+| ID | 级别 | 位置 | 证据与影响 | 最小修复 | 状态 |
+|---|---|---|---|---|---|
+| S-PAT-019 | P3 | `patent-data/src/patsnap-channel.ts:82-91`、`:176` | 重试等待只靠 `abort` 事件提前结束；信号在进入等待前已中止时事件不再触发，等待跑满 `Retry-After`（上限 5 s）才由 `throwIfAborted()` 抛出，取消延迟被放大（与 S-PAT-015 同类）。计时器先到时时监听器也不摘除。现有用例只覆盖「等待期间中止」。 | 进入等待前检查 `signal?.aborted`；`finish` 同时清理计时器与监听器；补「已中止信号不延迟」用例。 | 已修复 |
+| S-PAT-020 | P3 | `patent-knowledge/src/index.ts:124`、`:142`、`shared/lru-cache.ts:18-20`、`shared/kg-store.ts:76-79` | `nodeCacheMaxEntries` 的 schema 用 `z.number().min(1)`，接受 `1.5`/`Infinity`；构造期不复验，真正的整数约束在懒加载的 `LruCache` 上，配置错误会在首次 KG 查询时抛 `RangeError` 而非装载期失败。`patent-data` 同类字段全部 `z.natural().min(1)` 且构造期复验。 | schema 改 `z.natural().min(1)` 并按既有做法在构造器复验。 | 已修复 |
+| S-PAT-021 | P3 | `patent-tools/src/wiring.ts:412-416`、`:417`；`patent-tools/src/tool/patent-wiki-search.ts:143-145` | 同一接线块中 KG 分支按 `existsSync(queryDbPath)` 决定是否注入（缺库报 `setup_required`），wiki 分支无条件注入。wiki 目录缺失时加载器扫描失败（服务未注入 logger），`search` 返回空数组，工具给出 `total: 0` 而非自带的 install 诊断。 | 与 KG 分支对称，按 `existsSync(wikiDir)` 决定注入；改动在 `patent-tools` 接线，跨出 B6 包边界。 | 已修复 |
+| S-PAT-022 | P3 | `patent-knowledge/src/install.ts:27-43` | 同连接上 `SELECT id, content FROM chunks` 迭代期间 `UPDATE chunks`；SQLite 不保证同表游标扫描结果，可能跳过或重复行。跳过使部分 chunk 保持明文（可读、无数据损失），实际影响是 `compressedChunks` 计数与余量不符且无提示。fixture 只有 2 行，覆盖不到。 | 改为按 id 窗口分批查询再更新，保持流式内存占用。未在真实大库上复现。 | 已修复 |
+
 ## 实施记录
 
 用户授权后，S-PAT-001…013 已全部修复并补回归，实施要点如下。测试路径均相对于 `packages/patent`。B5 的 S-PAT-014…018 同样在用户确认后修复，见文末[B5 实施记录](#b5-实施记录)。
@@ -74,3 +83,14 @@
 | S-PAT-017 | `graph/adapter.ts` 兜底读取改为 `typeof … === 'string'`，非字符串按缺失处理。 | `patent-core/tests/graph/adapter.spec.ts` |
 | S-PAT-018 | `safe-path.ts` JSDoc 与错误文案改为「首尾空白」；校验逻辑不变。 | 既有 `safe-path.spec.ts` |
 | L1 | `graph/adapter.ts` 回退条件边改用 `workflow/signal.ts` 的 `compileSignal`。 | 既有回退路由用例 |
+
+### B6 实施记录
+
+用户确认「全部修复并补回归」后，S-PAT-019…022 已全部落地，既有用例未修改；另有 L0 三处（重复 JSDoc、文案空格、模块注释位置）见 [02-batches/B6.md](02-batches/B6.md)。
+
+| ID | 实施要点 | 回归测试 |
+|---|---|---|
+| S-PAT-019 | `patsnap-channel.ts` 的 `sleep` 进入等待前先看 `signal?.aborted`；`finish` 统一清理计时器与 `abort` 监听器。 | `patent-data/tests/patsnap-channel.spec.ts`（已中止信号 + `retry-after: 30`，200 ms 内以 `AbortError` 拒绝且只发一次请求） |
+| S-PAT-020 | `index.ts` schema 改 `z.natural().min(1)`，新增 `resolveNodeCacheMaxEntries` 在构造期拒绝非安全正整数。 | `patent-knowledge/tests/service.spec.ts`（`1.5` 构造抛错、显式正整数正常构造） |
+| S-PAT-021 | `wiring.ts` 仅当 `existsSync(wikiDir)` 时注入 `searchIn`/`formatAsContext`，缺目录时工具走既有 `setup_required`。 | `patent-tools/tests/wiring-composition.spec.ts`（目录缺失/存在两分支） |
+| S-PAT-022 | `install.ts` 的 `compressChunksTable` 改为 `ORDER BY id LIMIT ? OFFSET ?` 的 500 行窗口再更新。 | `patent-knowledge/tests/install.spec.ts`（跨窗口的长 chunk 被压缩，首行保持明文） |

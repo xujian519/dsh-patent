@@ -158,17 +158,12 @@ export {
   DEFAULT_AMENDMENT_ORIGINAL_TEXT_KEYS,
   type AmendmentBasisViolation,
 } from './amendment-basis.ts'
+// registerBuiltinAtoms reads evidenceCheckAtom and EvidenceCheckHandler through
+// the namespace import; the default-state keys and violation types have no
+// barrel consumer (tests import them from the source module).
 export {
   evidenceCheckAtom,
   EvidenceCheckHandler,
-  DEFAULT_EVIDENCE_KEY,
-  DEFAULT_EVIDENCE_DEADLINE_KEY,
-  DEFAULT_EVIDENCE_REFERENCE_DATE_KEY,
-  DEFAULT_EVIDENCE_FILING_DATE_KEY,
-  DEFAULT_EVIDENCE_PRIORITY_DATE_KEY,
-  type EvidenceCheckSeverity,
-  type EvidenceCheckViolation,
-  type EvidenceCheckPending,
 } from './evidence-check.ts'
 export {
   adversaryModelAtom,

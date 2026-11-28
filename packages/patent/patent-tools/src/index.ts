@@ -270,7 +270,7 @@ export type { EvaluatedText } from './internal/evaluated-input.ts'
 
 // 篇幅口径只此一处：`slop-gate` 与 `tighten` 用它判预算，评测读数也用它，
 // 否则「同一个 4000 字」在两处会算出不同的数。
-export { visibleChars } from './internal/slop-engine.ts'
+export { visibleChars } from '@deepseek-ai/dsh-patent-core'
 
 // 检索质量度量是纯算术库：语料与基线排序是测试资产，这里只发布指标函数。
 export { meanReciprocalRank, ndcgAtK, rankOfFirstRelevant } from './eval/ir-metrics.ts'

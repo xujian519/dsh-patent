@@ -212,3 +212,23 @@ it('传递闭包取引用链并集，不含自身', () => {
   expect(referencedClosure(refs, 1)).toEqual([])
   expect(referencedClosure(refs, 9)).toEqual([])
 })
+
+// ── S-PAT-004 回归：概括引用只在引言窗口生效，特征部分转述不算本权项引用 ──
+
+it('概括引用落在特征部分时不构成本权项的引用关系', () => {
+  const text = [
+    '1. 一种装置，其特征在于，包括壳体。',
+    '2. 一种装置，其特征在于，用于装配前述权利要求中任一项所述的装置。',
+  ].join('\n')
+  // 「前述权利要求中任一项所述」出现在「其特征在于」之后，属于特征部分转述，
+  // 不应被识别为权 2 的引用关系。
+  expect(deriveClaimRefs(text)[1]).toEqual({ claimNo: 2, claimType: 'independent', refersTo: [] })
+})
+
+it('概括引用落在引言部分时仍展开为全部在前权项', () => {
+  const text = [
+    '1. 一种装置，其特征在于，包括壳体。',
+    '2. 根据前述权利要求中任一项所述的装置，其特征在于，所述壳体为塑料。',
+  ].join('\n')
+  expect(deriveClaimRefs(text)[1]).toEqual({ claimNo: 2, claimType: 'dependent', refersTo: [1] })
+})

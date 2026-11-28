@@ -80,6 +80,14 @@ describe('deterministic quality scores', () => {
     expect(fuzzy.rationale).toContain('左右')
   })
 
+  it('only penalizes 约 and 左右 in numeric contexts', () => {
+    const compounds = computeClarityScore(['所述连接件受约束并可节约材料，左右两侧对称布置。'])
+    expect(compounds).toMatchObject({ score: 100, rationale: '未检出模糊限定词' })
+
+    const numeric = computeClarityScore(['厚度为 5 毫米左右，宽度约为 10 毫米。'])
+    expect(numeric).toMatchObject({ score: 90, rationale: '检出模糊限定词：约、左右' })
+  })
+
   it('returns a zero score when no claim text is available', () => {
     expect(computeClarityScore([])).toMatchObject({ score: 0, rationale: '缺少权利要求文本' })
     expect(computeCompletenessScore([])).toMatchObject({ score: 0, rationale: '缺少权利要求文本' })

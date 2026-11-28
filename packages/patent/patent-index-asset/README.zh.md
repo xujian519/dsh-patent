@@ -1,5 +1,5 @@
 ---
-description: "专利域的随包索引资产格式：YAML 映射读取、严格字段读取器、每个已转录条目都记录的来源与核验字段，以及索引格式错误时抛出的加载错误。"
+description: "专利域与法律域的随包索引资产格式：YAML 映射读取、严格字段读取器、每个已转录条目都记录的来源与核验字段，以及索引格式错误时抛出的加载错误。"
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-专利域的随包索引资产格式：YAML 映射读取、严格字段读取器、每个已转录条目都记录的来源与核验字段，以及索引格式错误时抛出的加载错误。
+专利域与法律域的随包索引资产格式：YAML 映射读取、严格字段读取器、每个已转录条目都记录的来源与核验字段，以及索引格式错误时抛出的加载错误。
 
 ## 目录
 
@@ -23,7 +23,7 @@ kind: "package-reference"
 <a id="why-it-exists"></a>
 ## 为什么有这个包
 
-`@deepseek-ai/dsh-patent-law` 与 `@deepseek-ai/dsh-patent-fees` 各自随包分发一份由人工转录、由插件在加载时读取的 YAML 索引；两者都拒绝格式错误的字段而不是强行转换，也都记录每个条目内容的来源。共用一份实现是为了让这条规则不会在两个包之间漂移——第二份副本会让两份索引在"null 是什么意思"上产生分歧，而任何门禁都不会察觉。
+`@deepseek-ai/dsh-patent-law`、`@deepseek-ai/dsh-patent-fees` 与 `@deepseek-ai/dsh-legal-law` 各自随包分发一份由人工转录、由插件在加载时读取的 YAML 索引；它们都拒绝格式错误的字段而不是强行转换，也都记录每个条目内容的来源。共用一份实现是为了让这条规则不会在几个包之间漂移——第二份副本会让索引在"null 是什么意思"上产生分歧，而任何门禁都不会察觉。
 
 <a id="field-readers"></a>
 ## 字段读取器
@@ -42,7 +42,7 @@ kind: "package-reference"
 <a id="error-contract"></a>
 ## 错误契约
 
-`IndexAssetError` 通过 `origin` 携带出问题的文件。读取器接收的是 `AssetFail`（调用方绑定到某个文件的工厂函数）而不是错误类，因此每个索引包保留自己可捕获的错误类型（`LawBaselineError`、`FeeTableError`），同时共用字段规则；两者都继承 `IndexAssetError`。
+`IndexAssetError` 通过 `origin` 携带出问题的文件。读取器接收的是 `AssetFail`（调用方绑定到某个文件的工厂函数）而不是错误类，因此每个索引包保留自己可捕获的错误类型（`LawBaselineError`、`FeeTableError`、`LegalLawBaselineError`），同时共用字段规则；三者都继承 `IndexAssetError`。
 
 <a id="model-experience"></a>
 ## 模型体验

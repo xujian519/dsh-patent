@@ -272,6 +272,7 @@ const SHARED_VOCABULARY_CASES: ReadonlyArray<{
   { text: '20℃至90℃', min: 20, max: 90, unit: '°', specSideRequiresUnit: false },
   { text: '厚度 5mg-10mg', min: 5, max: 10, unit: 'mg', specSideRequiresUnit: false },
   { text: '宽度 10mm~20mm', min: 10, max: 20, unit: 'mm', specSideRequiresUnit: false },
+  { text: '厚度 20毫米至90毫米', min: 20, max: 90, unit: '毫米', specSideRequiresUnit: false },
   { text: '厚度 1-3mm', min: 1, max: 3, unit: 'mm', specSideRequiresUnit: false },
   { text: '温度为20–90℃', min: 20, max: 90, unit: '°', specSideRequiresUnit: false },
   { text: '压力为20到30MPa', min: 20, max: 30, unit: 'MPa', specSideRequiresUnit: false },

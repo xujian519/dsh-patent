@@ -34,7 +34,11 @@ export const FINDING_FIELDS = {
  * @param properties - 该工具发现条目的字段表。
  * @returns 可直接放进输出 schema 的 findings 片段。
  */
-export function findingListSchema<const P extends Record<string, unknown>>(properties: P) {
+export function findingListSchema<const P extends Record<string, unknown>>(properties: P): {
+  type: 'array'
+  required: true
+  items: { type: 'object'; additionalProperties: false; properties: P }
+} {
   return {
     type: 'array',
     required: true,

@@ -66,6 +66,19 @@ describe('packaged evidence rules asset', () => {
     expect(engine.getRulesByType('public_use').map(r => r.ruleId)).toEqual(['EVI-015'])
   })
 
+  it('preserves the packaged platformCredibility map declared under evidenceAssessment (S-PAT-010)', () => {
+    const { engine } = loadPackagedEngine()
+    const evi010 = engine.getRules().find(r => r.ruleId === 'EVI-010')
+    expect(evi010?.evidenceType).toBe('electronic')
+    expect(evi010?.evidenceAssessment?.platformCredibility?.['gov.cn']).toEqual({
+      score: 0.95,
+      label: '政府官方',
+    })
+    // evidenceAssessment.conditions（Record<string,string>）同样必须保留
+    const evi020 = engine.getRules().find(r => r.ruleId === 'EVI-020')
+    expect(evi020?.evidenceAssessment?.conditions).toBeTruthy()
+  })
+
   /**
    * 资产里的每个条件名都必须由引擎实现。未实现的条件恒为 pending，规则永远不会 satisfied，
    * 且在模型的 rulesPending 里长期显示为"待外部输入"——条件名一旦与引擎脱节就会静默失效。

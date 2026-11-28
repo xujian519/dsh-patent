@@ -11,39 +11,11 @@
  * 基本相同）由人给出，本模块只核对该结论是否自洽、是否落到了图表上。
  */
 
-export {
-  deriveInfringementConclusion,
-  type InfringementConclusion,
-  type InfringementConclusionInput,
-  type InfringementScoringFacts,
-} from './conclusion.ts'
-
-export {
-  FULL_COVERAGE_BASIS,
-  deriveAllElementsCoverage,
-  type AllElementsCoverage,
-  type AllElementsOutcome,
-} from './all-elements.ts'
-
-export {
-  EQUIVALENCE_BASIS,
-  findEquivalenceContradictions,
-  type EquivalenceContradiction,
-  type EquivalenceContradictionKind,
-  type EquivalenceTriplet,
-} from './equivalence.ts'
-
-export {
-  DEFAULT_INFRINGEMENT_WEIGHTS,
-  INFRINGEMENT_DIMENSIONS,
-  RISK_HIGH_RATIO,
-  RISK_MEDIUM_RATIO,
-  riskLevel,
-  scoreInfringement,
-  type DefenseViability,
-  type InfringementDimension,
-  type InfringementRiskLevel,
-  type InfringementScore,
-  type InfringementScoreInput,
-  type InfringementWeights,
-} from './risk.ts'
+// Package root publishes deriveInfringementConclusion and its contract types.
+// The all-elements / equivalence / risk primitives are imported from their
+// source modules; FULL_COVERAGE_BASIS and EQUIVALENCE_BASIS stay in source
+// pending a legal-basis decision (S-PAT-B3-7).
+export { deriveInfringementConclusion, type InfringementConclusionInput } from './conclusion.ts'
+export type { AllElementsOutcome } from './all-elements.ts'
+export type { EquivalenceContradictionKind, EquivalenceTriplet } from './equivalence.ts'
+export type { DefenseViability } from './risk.ts'

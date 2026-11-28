@@ -892,7 +892,7 @@ const TOOL_PACKAGES: ToolPackage[] = [
     async mount(ctx) {
       // The plugin loads the packaged holiday calendar at load and registers
       // patent_deadlines from pure date arithmetic; no other service is needed.
-      await ctx.plugin(PatentDeadline, {})
+      await ctx.plugin(PatentDeadline, PatentDeadline.Config())
     },
     note:
       'patent_deadlines reports the statutory and designated deadlines of one Chinese patent case, applying the period and delivery rules of 专利法实施细则 and rolling an end date off a holiday to the next working day; notice-driven periods come back as pending entries naming the missing delivery record.',

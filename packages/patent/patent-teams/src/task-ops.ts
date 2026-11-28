@@ -11,7 +11,10 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { evaluatePatentContent } from '@deepseek-ai/dsh-patent-tools'
+import { evaluatePatentContent } from '@deepseek-ai/dsh-patent-core'
+// Loads patent-rule's `Context.patentRuleGate` augmentation; the service itself
+// stays optional and is read through `ctx.get`.
+import type {} from '@deepseek-ai/dsh-patent-rule'
 import { validateWorkerOutput, workerContract } from '@deepseek-ai/dsh-patent-workflow'
 import { type Session, SessionId } from '@deepseek-ai/dsh-session'
 import { appendTeamEvent, captainSessionOf } from './events.ts'

@@ -231,16 +231,19 @@ describe('lintClaimText: 结构性规则', () => {
     expect(messages.some(message => message.includes('「1-2000」') && message.includes('跨度超限'))).toBe(true)
   })
 
-  it('多项从属用「和」并列、或引用另一项多项从属时报 multiple-dependent', () => {
+  it('多项从属用「和」并列、或多项从属引用另一项多项从属时报 multiple-dependent', () => {
     const report = lintClaimText([
       '1. 一种装置。',
       '2. 一种装置。',
       '3. 根据权利要求 1 和 2 所述的装置，其特征在于，还包括壳体。',
       '4. 根据权利要求 1 或 2 所述的装置，其特征在于，还包括壳体。',
       '5. 根据权利要求 4 所述的装置，其特征在于，还包括转轴。',
+      '6. 根据权利要求 4 或 5 所述的装置，其特征在于，还包括端盖。',
     ].join('\n'))
     const messages = findingsOf(report, 'multiple-dependent').map(entry => entry.claim)
-    expect(messages).toEqual([3, 5])
+    // 权 3 用「和」并列、权 6 是多项从属并以多项从属权 4 为基础 → 报错；
+    // 权 5 是单项从属引用多项从属权 4，合法，不报错。
+    expect(messages).toEqual([3, 6])
   })
 
   it('择一引用接上引用链，不误报引用基础', () => {

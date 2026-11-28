@@ -35,7 +35,19 @@ export type FigureMarkListEntry = {
  * @param listDescription - `figures` 字段自身的模型可见描述。
  * @returns 可直接放进 `parameters` 的 schema 片段。
  */
-export function figureMarkListParameter(componentsDescription: string, listDescription: string) {
+export function figureMarkListParameter(componentsDescription: string, listDescription: string): {
+  type: 'array'
+  required: true
+  items: {
+    type: 'object'
+    additionalProperties: false
+    properties: {
+      figure_number: { type: 'integer'; required: true; description: string }
+      components: { type: 'array'; required: true; items: typeof MARK_COMPONENT_SCHEMA; description: string }
+    }
+  }
+  description: string
+} {
   return {
     type: 'array',
     required: true,

@@ -1206,6 +1206,7 @@ flowchart TD
   pkg_mcp_resources --> pkg_scope
   pkg_mcp_resources --> pkg_system_prompt
   pkg_mcp_resources --> pkg_tools
+  pkg_methodology --> pkg_error
   pkg_methodology --> pkg_system_prompt
   pkg_methodology --> pkg_tools
   pkg_patent_deadline --> pkg_error
@@ -1227,6 +1228,7 @@ flowchart TD
   pkg_patent_law --> pkg_tools
   pkg_tool_literature --> pkg_error
   pkg_tool_literature --> pkg_tools
+  pkg_writing_patterns --> pkg_error
   pkg_writing_patterns --> pkg_system_prompt
   pkg_writing_patterns --> pkg_tools
   pkg_agent_preset_registry --> pkg_agent
@@ -1717,7 +1719,8 @@ flowchart TD
   pkg_plugin_recommendations --> pkg_typert_protocol
   pkg_patent_teams --> pkg_agent
   pkg_patent_teams --> pkg_llm
-  pkg_patent_teams --> pkg_patent_tools
+  pkg_patent_teams --> pkg_patent_core
+  pkg_patent_teams --> pkg_patent_rule
   pkg_patent_teams --> pkg_patent_workflow
   pkg_patent_teams --> pkg_session
   pkg_patent_teams --> pkg_subagent
@@ -2214,14 +2217,14 @@ flowchart TD
 | [`legal-law`](../packages/legal/legal-law) | `legal` | [`error`](../packages/util/error), [`tools`](../packages/core/tools) |
 | [`tool-lsp`](../packages/lsp/tool-lsp) | `lsp` | [`llm`](../packages/llm/llm), [`lsp`](../packages/lsp/lsp), [`system-prompt`](../packages/core/system-prompt), [`timeout`](../packages/util/timeout), [`tools`](../packages/core/tools), [`working-directory`](../packages/session/working-directory) |
 | [`mcp-resources`](../packages/mcp/mcp-resources) | `mcp` | [`llm`](../packages/llm/llm), [`scope`](../packages/core/scope), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
-| [`methodology`](../packages/patent/methodology) | `patent` | [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
+| [`methodology`](../packages/patent/methodology) | `patent` | [`error`](../packages/util/error), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
 | [`patent-deadline`](../packages/patent/patent-deadline) | `patent` | [`error`](../packages/util/error), [`tools`](../packages/core/tools) |
 | [`patent-document`](../packages/patent/patent-document) | `patent` | [`error`](../packages/util/error), [`patent-core`](../packages/patent/patent-core), [`subprocess`](../packages/subprocess/subprocess), [`tools`](../packages/core/tools), [`working-directory`](../packages/session/working-directory) |
 | [`patent-fees`](../packages/patent/patent-fees) | `patent` | [`error`](../packages/util/error), [`tools`](../packages/core/tools) |
 | [`patent-filing`](../packages/patent/patent-filing) | `patent` | [`error`](../packages/util/error), [`home-paths`](../packages/util/home-paths), [`patent-core`](../packages/patent/patent-core), [`subprocess`](../packages/subprocess/subprocess), [`tools`](../packages/core/tools), [`util-values`](../packages/util/values) |
 | [`patent-law`](../packages/patent/patent-law) | `patent` | [`error`](../packages/util/error), [`tools`](../packages/core/tools) |
 | [`tool-literature`](../packages/patent/tool-literature) | `patent` | [`error`](../packages/util/error), [`tools`](../packages/core/tools) |
-| [`writing-patterns`](../packages/patent/writing-patterns) | `patent` | [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
+| [`writing-patterns`](../packages/patent/writing-patterns) | `patent` | [`error`](../packages/util/error), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
 | [`agent-preset-registry`](../packages/preset/agent-preset-registry) | `preset` | [`agent`](../packages/core/agent), [`scope`](../packages/core/scope), [`session`](../packages/core/session), [`session-projection`](../packages/session/session-projection), [`settings`](../packages/settings/settings), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools), [`typert-protocol`](../packages/typert/protocol) |
 | [`tool-self-evolve`](../packages/self-evolve/tool-self-evolve) | `self-evolve` | [`agent`](../packages/core/agent), [`llm`](../packages/llm/llm), [`self-evolve`](../packages/self-evolve/self-evolve), [`session`](../packages/core/session), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
 | [`session-checkpoint-policy`](../packages/session/session-checkpoint-policy) | `session` | [`agent`](../packages/core/agent), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`session-persistence`](../packages/session/session-persistence), [`tools`](../packages/core/tools) |
@@ -2293,7 +2296,7 @@ flowchart TD
 | [`tool-ralph`](../packages/experimental/tool-ralph) | `experimental` | [`agent`](../packages/core/agent), [`error`](../packages/util/error), [`llm`](../packages/llm/llm), [`subagent`](../packages/subagent/subagent), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools), [`workflow`](../packages/workflow/workflow) |
 | [`creation-recommendations`](../packages/extensions/creation-recommendations) | `extensions` | [`llm`](../packages/llm/llm), [`plugin-manager`](../packages/boot/plugin-manager), [`session`](../packages/core/session), [`skill`](../packages/skill/skill), [`tools`](../packages/core/tools) |
 | [`plugin-recommendations`](../packages/extensions/plugin-recommendations) | `extensions` | [`llm`](../packages/llm/llm), [`plugin-manager`](../packages/boot/plugin-manager), [`skill`](../packages/skill/skill), [`typert-protocol`](../packages/typert/protocol) |
-| [`patent-teams`](../packages/patent/patent-teams) | `patent` | [`agent`](../packages/core/agent), [`llm`](../packages/llm/llm), [`patent-tools`](../packages/patent/patent-tools), [`patent-workflow`](../packages/patent/patent-workflow), [`session`](../packages/core/session), [`subagent`](../packages/subagent/subagent), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval) |
+| [`patent-teams`](../packages/patent/patent-teams) | `patent` | [`agent`](../packages/core/agent), [`llm`](../packages/llm/llm), [`patent-core`](../packages/patent/patent-core), [`patent-rule`](../packages/patent/patent-rule), [`patent-workflow`](../packages/patent/patent-workflow), [`session`](../packages/core/session), [`subagent`](../packages/subagent/subagent), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval) |
 | [`sdk-protocol`](../packages/sdk/protocol) | `sdk` | [`commands`](../packages/interaction/commands), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`subagent`](../packages/subagent/subagent), [`user-questions`](../packages/interaction/user-questions) |
 | [`self-evolve-basic`](../packages/self-evolve/self-evolve-basic) | `self-evolve` | [`agent`](../packages/core/agent), [`compaction`](../packages/compaction/compaction), [`cordis-host-runner`](../packages/extensions/cordis-host-runner), [`fs`](../packages/fs/fs), [`llm`](../packages/llm/llm), [`self-evolve`](../packages/self-evolve/self-evolve), [`session`](../packages/core/session), [`session-projection`](../packages/session/session-projection), [`session-query`](../packages/session-query/session-query), [`shell`](../packages/shell/shell), [`skill`](../packages/skill/skill), [`subagent`](../packages/subagent/subagent), [`system-prompt`](../packages/core/system-prompt), [`workflow`](../packages/workflow/workflow) |
 | [`self-evolve-benchmark`](../packages/self-evolve/self-evolve-benchmark) | `self-evolve` | [`agent`](../packages/core/agent), [`agent-default-model`](../packages/core/agent-default-model), [`fs`](../packages/fs/fs), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`subagent`](../packages/subagent/subagent) |

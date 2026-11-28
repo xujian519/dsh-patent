@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analyzeSlop, visibleChars } from '../src/internal/slop-engine.ts'
+import { analyzeSlop, visibleChars } from '../src/quality/slop-engine.ts'
 
 describe('analyzeSlop structure-issue detection', () => {
   it('detects all six structure-issue categories and scores the document', () => {

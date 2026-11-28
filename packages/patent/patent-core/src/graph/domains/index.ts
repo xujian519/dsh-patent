@@ -5,7 +5,7 @@
  * 附提取结论的辅助函数（供工具层/评测读取结构化结果）。
  */
 
-import { buildNoveltyGraph, extractNumericRanges, type BuildNoveltyGraphOptions } from './novelty.ts'
+import { buildNoveltyGraph, type BuildNoveltyGraphOptions } from './novelty.ts'
 import {
   buildInventivenessGraph,
   extractInventivenessResult,
@@ -43,7 +43,7 @@ export type {
   RuleGateState,
   RuleGateStatus,
 } from './shared.ts'
-export { buildNoveltyGraph, extractNumericRanges, type BuildNoveltyGraphOptions }
+export { buildNoveltyGraph, type BuildNoveltyGraphOptions }
 export { buildInventivenessGraph, extractInventivenessResult, type BuildInventivenessGraphOptions }
 export { buildEnablementGraph, extractEnablementResult, detectTechnicalDomain, type BuildEnablementGraphOptions }
 export {

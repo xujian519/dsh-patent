@@ -6,7 +6,7 @@
  * @module @deepseek-ai/dsh-patent-core/evidence/public-use
  */
 
-import { isPreciseDate, parseDateFlexible } from './date.ts'
+import { extractDateFromText, isPreciseDate, parseDateFlexible } from './date.ts'
 import { hasText } from './signals.ts'
 import type { EvidenceSpan } from './span.ts'
 import type { ElementResult, EvidenceExternalInputs, FourElementsResult } from './types.ts'
@@ -115,16 +115,31 @@ export function evaluateFourElements(span: EvidenceSpan): FourElementsResult {
 }
 
 function evaluatePublicUseTime(span: EvidenceSpan): ElementResult {
-  if (span.docVersion === undefined || span.docVersion === '') {
+  const version = span.docVersion
+  if (version !== undefined && version !== '') {
+    if (parseDateFlexible(version) === null) {
+      // 主张日期不可解析时回退到片段文本提取，与 determinePublicUseDate 的 snippet 回退保持一致，
+      // 避免日期已被认定但时间要件仍判缺失。
+      return timeFromSnippet(span, version)
+    }
+    if (isPreciseDate(version)) {
+      return { met: true, score: 0.9, detail: `使用公开日期为 ${version}，格式完整` }
+    }
+    return { met: true, score: 0.7, detail: `使用公开日期为 ${version}，精度不足，需补充具体日期` }
+  }
+  return timeFromSnippet(span)
+}
+
+/** 从证据片段文本提取使用公开日期；提取不到时按缺失或不可识别报告。 */
+function timeFromSnippet(span: EvidenceSpan, claimed?: string): ElementResult {
+  const extracted = extractDateFromText(span.snippet ?? '')
+  if (extracted === '') {
+    if (claimed !== undefined) {
+      return { met: false, score: 0.3, detail: `日期格式无法识别: ${claimed}，且片段未提供可识别日期` }
+    }
     return { met: false, score: 0.25, detail: '未提供使用公开日期，无法判断是否在现有技术截止日之前' }
   }
-  if (parseDateFlexible(span.docVersion) === null) {
-    return { met: false, score: 0.3, detail: `日期格式无法识别: ${span.docVersion}` }
-  }
-  if (isPreciseDate(span.docVersion)) {
-    return { met: true, score: 0.9, detail: `使用公开日期为 ${span.docVersion}，格式完整` }
-  }
-  return { met: true, score: 0.7, detail: `使用公开日期为 ${span.docVersion}，精度不足，需补充具体日期` }
+  return { met: true, score: 0.7, detail: `从证据片段推定使用公开日期为 ${extracted}，精度不足，需补充具体日期` }
 }
 
 function evaluatePublicUsePlace(span: EvidenceSpan): ElementResult {

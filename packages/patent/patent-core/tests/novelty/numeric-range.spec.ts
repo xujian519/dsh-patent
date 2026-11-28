@@ -85,6 +85,13 @@ describe('extractNumericFindings: 连接符前的单位（词表与 validate_spe
     ])
   })
 
+  it('两侧都写中文单位时读成一个区间', () => {
+    const findings = extractNumericFindings('温度为20毫米至90毫米')
+    expect(findings).toEqual([
+      expect.objectContaining({ expression: '20毫米至90', lower: 20, upper: 90, unit: '毫米', isPoint: false, strong: true }),
+    ])
+  })
+
   it('连接符集含 en dash 与「到」', () => {
     const findings = extractNumericFindings('温度 20–90℃，压力 20到30MPa')
     expect(findings.map(f => [f.lower, f.upper, f.unit])).toEqual([
@@ -242,6 +249,14 @@ describe('analyzeNumericRanges: 带符号数值与单位换算', () => {
 
   it('中文单位与拉丁单位同量纲可比', () => {
     expect(analyze('厚度 5-10毫米', 'D1 公开厚度 0.5-1cm').verdict).toBe('overlapped')
+  })
+
+  it('两侧中文单位区间按范围判定而非拆成数值点', () => {
+    const analysis = analyze('厚度为20毫米至90毫米', '对比文件公开厚度为25毫米至30毫米')
+    expect(analysis.verdict).toBe('overlapped')
+    expect(analysis.claimRanges).toHaveLength(1)
+    expect(analysis.priorRanges).toHaveLength(1)
+    expect(analysis.overlaps).toHaveLength(1)
   })
 
   it('时间单位换算后比较', () => {

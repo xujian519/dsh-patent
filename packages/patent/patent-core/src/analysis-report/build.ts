@@ -11,6 +11,7 @@ import type { RuleCheckResult } from '../checker/types.ts'
 import { aggregate } from '../checker/engine.ts'
 import type { IpcClassification } from '../ipc/types.ts'
 import { getIpcDomain } from '../ipc/ipc-classifier.ts'
+import { NUMERIC_ANY_UNIT_ALTERNATION } from '../novelty/numeric-vocabulary.ts'
 import { computeFeatureStatistics, extractTechnicalFeatures } from './feature-extract.ts'
 import type {
   GraphConclusionSummary,
@@ -52,6 +53,16 @@ const BASE_SCORE = 100
 const FUZZY_TERM_PENALTY = 5
 /** 模糊限定词表（降低权利要求清晰度）。 */
 const FUZZY_TERMS = ['约', '大约', '左右', '大概', '若干', '优选地'] as const
+const SIGNED_NUMBER = '[+\\-−－]?\\d+(?:\\.\\d+)?'
+/** 「约」「左右」只在数值限定语境中计为模糊词，避免误伤「约束」「左右对称」等术语。 */
+const FUZZY_TERM_PATTERNS: Readonly<Record<(typeof FUZZY_TERMS)[number], RegExp>> = {
+  约: new RegExp(`(?:约\\s*(?:为|是)?\\s*(?=${SIGNED_NUMBER})|${SIGNED_NUMBER}\\s*约)`),
+  大约: /大约/,
+  左右: new RegExp(`${SIGNED_NUMBER}\\s*(?:${NUMERIC_ANY_UNIT_ALTERNATION})?\\s*左右`),
+  大概: /大概/,
+  若干: /若干/,
+  优选地: /优选地/,
+}
 const SINGLE_CLAIM_PENALTY = 20
 const MISSING_ABSTRACT_PENALTY = 15
 const NARROW_INDEPENDENT_PENALTY = 10
@@ -73,7 +84,7 @@ export function computeClarityScore(claims: readonly string[]): QualityScore {
   const fuzzyFound = new Set<string>()
   for (const claim of claims) {
     for (const term of FUZZY_TERMS) {
-      if (claim.includes(term)) fuzzyFound.add(term)
+      if (FUZZY_TERM_PATTERNS[term].test(claim)) fuzzyFound.add(term)
     }
   }
   const score = Math.max(0, BASE_SCORE - fuzzyFound.size * FUZZY_TERM_PENALTY)

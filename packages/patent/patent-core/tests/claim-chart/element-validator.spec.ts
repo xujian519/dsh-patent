@@ -183,3 +183,27 @@ it('R-41: validateElements 也能捕获重复编号', () => {
     expect(res.errors.some(e => e.includes('重复'))).toBeTruthy()
   }
 })
+
+it('R-41: 第 27 个要素使用 aa 后缀时通过连续性校验（双射 26 进制）', () => {
+  const suffixes = Array.from({ length: 27 }, (_, i) => {
+    let n = i + 1
+    let suffix = ''
+    while (n > 0) {
+      const remainder = (n - 1) % 26
+      suffix = String.fromCharCode('a'.charCodeAt(0) + remainder) + suffix
+      n = Math.floor((n - 1) / 26)
+    }
+    return suffix
+  })
+  const features = suffixes.map((_, i) => `特征${i + 1}`)
+  const claim = `1. 一种装置，${features.join('、')}。`
+  const elements: ClaimElement[] = features.map((text, i) => ({
+    id: `1${suffixes[i]}`,
+    claimNo: 1,
+    text,
+    kind: 'limitation',
+  }))
+  expect(suffixes[25]).toBe('z')
+  expect(suffixes[26]).toBe('aa')
+  expect(validateElements(elements, claim).ok).toBe(true)
+})

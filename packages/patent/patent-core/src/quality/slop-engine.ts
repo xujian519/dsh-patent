@@ -9,10 +9,10 @@
  * directness 的「前 200 字」、reason_pile 的引用次数、evidence 的段落数加分）在八节
  * 意见陈述书上会因文书结构本身而恒真或恒假，故分流为「有声明预算按预算」
  * 「按不同条款计数」「跳过抬头与标题找开头正文」三种口径，见各函数说明。
- * @module @deepseek-ai/dsh-patent-tools/internal/slop-engine
+ * @module @deepseek-ai/dsh-patent-core/quality/slop-engine
  */
 
-import { runeSlice } from '@deepseek-ai/dsh-patent-core'
+import { runeSlice } from '../rule/text-utils.ts'
 
 /** Rule groups the anti-slop phrase cleanup can act on. */
 type SlopGroup =

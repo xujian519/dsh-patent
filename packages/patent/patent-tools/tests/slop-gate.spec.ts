@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SlopGateHandler } from '../src/atoms/slop-gate.ts'
-import { analyzeSlop, type SlopAnalysis } from '../src/internal/slop-engine.ts'
+import { analyzeSlop, type SlopAnalysis } from '@deepseek-ai/dsh-patent-core'
 import { buildSlopRevisionHint } from '../src/internal/retry-hints.ts'
 
 const handler = new SlopGateHandler()

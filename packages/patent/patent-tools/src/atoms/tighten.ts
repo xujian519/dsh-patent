@@ -27,8 +27,8 @@ import {
   getStateString,
   parseLlmJson,
   requireLlm,
+  visibleChars,
 } from '@deepseek-ai/dsh-patent-core'
-import { visibleChars } from '../internal/slop-engine.ts'
 import { readCharBudget } from '../internal/stage-params.ts'
 
 /** 缺省受理文本键（`draft` 阶段的输出键）。 */

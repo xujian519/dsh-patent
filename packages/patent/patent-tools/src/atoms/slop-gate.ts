@@ -26,11 +26,13 @@ import {
   type PipelineState,
   type StageExecuteInput,
   type StageHandler,
+  analyzeSlop,
   degraded,
   getStateString,
   resolveKeyList,
+  SLOP_PASS_LINE,
+  visibleChars,
 } from '@deepseek-ai/dsh-patent-core'
-import { analyzeSlop, SLOP_PASS_LINE, visibleChars } from '../internal/slop-engine.ts'
 import { buildSlopRevisionHint } from '../internal/retry-hints.ts'
 import { readCharBudget, readEmbodimentCharBudget } from '../internal/stage-params.ts'
 

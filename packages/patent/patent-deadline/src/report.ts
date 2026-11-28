@@ -4,6 +4,12 @@
  */
 
 import {
+  PCT_NATIONAL_ENTRY_GRACE_ID,
+  PCT_NATIONAL_ENTRY_ID,
+  PATENT_TERM_ENTRY_ID,
+  PRIORITY_WINDOW_ENTRY_ID,
+} from './statutes-data.ts'
+import {
   describePatentKind,
   UNCOVERED_YEAR_CAVEAT_PREFIX,
   type ComputedDeadline,
@@ -35,13 +41,13 @@ const STATUS_LABEL = {
  * Periods that 专利法实施细则第6条第5款 excludes from restoration.
  * 第24条与第74条规定的期限不是本引擎计算的期限项。
  */
-const RECOVERY_EXCLUDED_IDS: ReadonlySet<string> = new Set(['patent-term', 'priority-window'])
+const RECOVERY_EXCLUDED_IDS: ReadonlySet<string> = new Set([PATENT_TERM_ENTRY_ID, PRIORITY_WINDOW_ENTRY_ID])
 
 /**
  * Periods whose lapse terminates the international application's effect in
  * China; 专利法实施细则第122条 excludes them from restoration.
  */
-const PCT_ENTRY_IDS: ReadonlySet<string> = new Set(['pct-national-entry', 'pct-national-entry-grace'])
+const PCT_ENTRY_IDS: ReadonlySet<string> = new Set([PCT_NATIONAL_ENTRY_ID, PCT_NATIONAL_ENTRY_GRACE_ID])
 
 /**
  * Render a deadline report as Markdown: computed deadlines in chronological

@@ -214,16 +214,20 @@ function lintClaim(
       clause,
     ))
   }
-  for (const reference of claim.references) {
-    const target = byNumber.get(reference)
-    if (target === undefined || target.references.length <= 1) continue
-    findings.push(finding(
-      'multiple-dependent',
-      number,
-      'error',
-      `所引用的权利要求 ${reference} 本身是多项从属权利要求，不得作为另一项多项从属权利要求引用的基础。`,
-      clause,
-    ))
+  // 单项从属权利要求引用多项从属权利要求是合法的（择一传接）；只有本项本身也是多项从属时，
+  // 才不得再以另一项多项从属权利要求为引用基础（审查指南第二部分第二章 3.3.2）。
+  if (claim.references.length > 1) {
+    for (const reference of claim.references) {
+      const target = byNumber.get(reference)
+      if (target === undefined || target.references.length <= 1) continue
+      findings.push(finding(
+        'multiple-dependent',
+        number,
+        'error',
+        `所引用的权利要求 ${reference} 本身是多项从属权利要求，不得作为另一项多项从属权利要求引用的基础。`,
+        clause,
+      ))
+    }
   }
 
   if (!claim.independent) {

@@ -193,4 +193,14 @@ describe('buildWorkflowEvidenceLedger — digest', () => {
     const changed = buildWorkflowEvidenceLedger({ ...state, input: '另一份交底书' }, OPTIONS)
     expect(changed.digest).not.toBe(first.digest)
   })
+
+  it('keeps field identity so title and sourceUri carrying the same value do not collide (S-PAT-009)', () => {
+    const byTitle = buildWorkflowEvidenceLedger({ prior_art: [{ title: 'x', snippet: 's' }] }, OPTIONS)
+    const byUrl = buildWorkflowEvidenceLedger({ prior_art: [{ url: 'x', snippet: 's' }] }, OPTIONS)
+    const titleHash = byTitle.receipts[0]!.contentHash
+    const urlHash = byUrl.receipts[0]!.contentHash
+    expect(titleHash).toBeTruthy()
+    expect(urlHash).toBeTruthy()
+    expect(titleHash).not.toBe(urlHash)
+  })
 })

@@ -206,11 +206,6 @@ function formatIsoDate(d: Date): string {
   return `${y}-${mo}-${day}`
 }
 
-/* v8 ignore next 2 -- reachable only from the dead else arm of determinePublicationDate */
-function formatYearMonth(d: Date): string {
-  return `${d.getUTCFullYear()}-${`${d.getUTCMonth() + 1}`.padStart(2, '0')}`
-}
-
 /**
  * 清理证据 URI 的自定义 scheme 前缀（web_pub: / http_archive: / patent: 等）。
  * @param uri - 原始证据 URI。
@@ -297,17 +292,12 @@ export function determinePublicationDate(
 
   const parsed = parseDateFlexible(claimedDate)
   if (parsed === null) return result
-  /* v8 ignore else -- every parseDateFlexible-parseable string is precise or month-only, so the else-if chain's else arm is dead */
   if (isPreciseDate(claimedDate)) {
     result.determined = formatIsoDate(parsed)
     result.reliability = 'high'
     result.sourceType = 'exact_page_date'
-  } else if (isMonthOnlyDate(claimedDate)) {
-    result.determined = inferredMonthEnd(parsed)
-    result.reliability = 'medium'
-    result.sourceType = 'claimed_date'
   } else {
-    result.determined = formatYearMonth(parsed)
+    result.determined = inferredMonthEnd(parsed)
     result.reliability = 'medium'
     result.sourceType = 'claimed_date'
   }

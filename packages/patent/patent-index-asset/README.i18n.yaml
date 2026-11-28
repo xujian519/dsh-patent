@@ -3,20 +3,20 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/patent/patent-index-asset/README.md
 /:
-  en: 708336f4e188dcdd
-  zh: 6068c806666d8f2f
+  en: 28e9bcd41b89bff8
+  zh: 4f37eee324725b22
 /deepseek-ai-dsh-patent-index-asset:
   en: 9e28a5dc9cac2452
   zh: 3b5dc6d9cec70487
 /deepseek-ai-dsh-patent-index-asset/summary:
-  en: 27a722e5126e5a46
-  zh: be274d743906a42b
+  en: 3bda1b77eacdc5a4
+  zh: 7fd9e06e634c0e11
 /deepseek-ai-dsh-patent-index-asset/table-of-contents:
   en: 2dae2931bd80b1cd
   zh: 8ca8856e463dc952
 /deepseek-ai-dsh-patent-index-asset/why-it-exists:
-  en: 4914f7f5bbe8e50a
-  zh: 31f9cf385f3fbda6
+  en: 12b63d6291bfd361
+  zh: 35a41688dae815a5
 /deepseek-ai-dsh-patent-index-asset/field-readers:
   en: 06a0d2c7f36aa277
   zh: 965c4d163c7fea16
@@ -24,8 +24,8 @@
   en: a95d148d5daa3f0f
   zh: 553def3c3e17ed69
 /deepseek-ai-dsh-patent-index-asset/error-contract:
-  en: 4cfde36cb1c053a6
-  zh: 63af7d18ed9c5112
+  en: 3964310d61b016e9
+  zh: 85cd816af4f86cd6
 /deepseek-ai-dsh-patent-index-asset/model-experience:
   en: dbe99cccaf1b4a4b
   zh: 7fbae243bfd194cd

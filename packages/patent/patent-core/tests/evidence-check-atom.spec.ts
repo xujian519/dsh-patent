@@ -296,6 +296,27 @@ describe('evidence-check atom', () => {
     expect(pending(out).map(item => item.code)).toContain('EVID-TIME-REFERENCE')
   })
 
+  it('现有技术截止日按来源分别渲染指定截止日/申请日/优先权日（S-PAT-013）', async () => {
+    const explicit = await handler.execute({
+      state: stateWith([priorArt({ publicationDate: '2024-05-01' })], { reference_date: '2024-06-01' }),
+    })
+    expect(String(explicit.evidence_check_report)).toContain('现有技术截止日：2024-06-01（指定截止日）')
+    expect(String(explicit.evidence_check_report)).not.toContain('2024-06-01（申请日）')
+
+    const filingOnly = await handler.execute({
+      state: stateWith([priorArt({ publicationDate: '2024-05-01' })], { filing_date: '2024-06-01' }),
+    })
+    expect(String(filingOnly.evidence_check_report)).toContain('现有技术截止日：2024-06-01（申请日）')
+
+    const priority = await handler.execute({
+      state: stateWith([priorArt({ publicationDate: '2024-05-01' })], {
+        filing_date: '2024-06-01',
+        priority_date: '2024-01-01',
+      }),
+    })
+    expect(String(priority.evidence_check_report)).toContain('现有技术截止日：2024-01-01（优先权日）')
+  })
+
   it('证据未关联理由或权项 → 提示关联性无法确认', async () => {
     const out = await handler.execute({
       state: stateWith([priorArt({ grounds: undefined })]),
@@ -319,6 +340,16 @@ describe('evidence-check atom', () => {
     expect(mismatch.evidence_check_passed).toBe(false)
     expect(codes(mismatch)).toContain('EVID-FORM-INTEGRITY')
     expect(violations(mismatch)[0]?.message).toMatch(/SHA-256/)
+  })
+
+  it('摘录首尾含空白时按原文重算 SHA-256，不误判完整性（S-PAT-011）', async () => {
+    const raw = '  证据原文摘录  '
+    const out = await handler.execute({
+      state: stateWith([priorArt({ contentHash: contentHash(raw), snippet: raw })]),
+    })
+    expect(out.evidence_check_passed).toBe(true)
+    expect(violations(out)).toEqual([])
+    expect(pending(out)).toEqual([])
   })
 
   it('sha256: 前缀缺失或摘要不合法 → 待核，不自动按内建哈希校验', async () => {

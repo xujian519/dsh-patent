@@ -14,11 +14,11 @@ import type { GraphNode } from '../types.ts'
 import { markDegraded } from '../degradation.ts'
 import { getStateArray, getStateString } from '../state.ts'
 import { globalStageHandlerRegistry, type StageHandlerRegistry } from '../../atoms/index.ts'
+import { callLlm } from '../../atoms/handlers/builtin/llm.ts'
 import { dataBlock } from '../../prompt-hygiene.ts'
 import {
   analyzeNumericRanges,
   crossCheckNumericVerdict,
-  extractNumericRanges,
   readNumericVerdict,
   type NumericRangeInput,
 } from '../../novelty/index.ts'
@@ -31,8 +31,6 @@ import {
   ruleGateNode,
   type RuleGateOptions,
 } from './shared.ts'
-
-export { extractNumericRanges }
 
 /** 构建新颖性分析子图的选项。 */
 export type BuildNoveltyGraphOptions = RuleGateOptions & {
@@ -138,22 +136,25 @@ const numericRangeNode: GraphNode = async ({ state, provider, signal }) => {
     '',
     '请严格输出 JSON：verdict 为整体结论，assessments 为每个数值表述的 { range, category, disclosed, reasoning }。',
   ].join('\n')
-  try {
-    // 与 llmNode 一致地转发取消信号：否则图取消后仍会等这次调用结束。
-    const raw = await provider.callLLM(prompt, { jsonSchema: NUMERIC_RANGE_SCHEMA, temperature: 0.1 }, signal)
-    const checked = crossCheckNumericVerdict(analysis, readNumericVerdict(raw))
-    return {
-      numeric_range_result: raw,
-      numeric_ranges: expressions,
-      numeric_range_verdict: checked.verdict,
-      numeric_range_agreement: checked.llmAgreement,
-      numeric_range_deterministic: checked.summary,
-    }
-  } catch (err) {
+  // 复用 callLlm：调用前检查中止，并将取消（abort / AbortError / StageCancelledError）
+  // 以类型化 StageCancelledError 穿透执行器与图引擎，不被 catch 降级吞掉（S-PAT-012）。
+  const result = await callLlm(provider, 'numeric_range', prompt, {
+    schema: NUMERIC_RANGE_SCHEMA,
+    temperature: 0.1,
+  }, signal)
+  if (!result.ok) {
     return degradedRanges(
       '数值范围专项判定失败（LLM 错误）',
-      `numeric_range LLM 调用失败: ${err instanceof Error ? err.message : String(err)}`,
+      `numeric_range LLM 调用失败: ${result.message}`,
     )
+  }
+  const checked = crossCheckNumericVerdict(analysis, readNumericVerdict(result.raw))
+  return {
+    numeric_range_result: result.raw,
+    numeric_ranges: expressions,
+    numeric_range_verdict: checked.verdict,
+    numeric_range_agreement: checked.llmAgreement,
+    numeric_range_deterministic: checked.summary,
   }
 }
 

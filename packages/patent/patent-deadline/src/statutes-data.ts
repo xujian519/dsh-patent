@@ -92,6 +92,19 @@ export const STATUTORY_NOTICE_PERIODS: ReadonlyMap<NoticeKind, string> = new Map
 ])
 
 /**
+ * Entry ids the report keys its restoration exclusions on. The entry builders
+ * and the report share these constants so renaming an entry cannot silently
+ * drop it from an exclusion set.
+ */
+export const PATENT_TERM_ENTRY_ID = 'patent-term'
+/** Entry id of the priority window (专利法第29条). */
+export const PRIORITY_WINDOW_ENTRY_ID = 'priority-window'
+/** Entry id of the PCT national-phase entry period (细则第120条). */
+export const PCT_NATIONAL_ENTRY_ID = 'pct-national-entry'
+/** Entry id of the PCT national-phase grace period (细则第120条). */
+export const PCT_NATIONAL_ENTRY_GRACE_ID = 'pct-national-entry-grace'
+
+/**
  * The periods that start at a notice's delivery, each beside its article and
  * the kind that starts it. Nothing else starts them, so a case that has not
  * recorded the notice reports a pending entry naming it.

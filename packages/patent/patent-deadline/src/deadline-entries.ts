@@ -24,7 +24,15 @@ import {
 } from './delivery.ts'
 import { periodEnd, type Period } from './period.ts'
 import { WorkCalendarCoverageError } from './work-calendar.ts'
-import { NOTICE_PERIOD_SPECS, statutoryTermYears, type NoticePeriodSpec } from './statutes-data.ts'
+import {
+  NOTICE_PERIOD_SPECS,
+  PATENT_TERM_ENTRY_ID,
+  PCT_NATIONAL_ENTRY_GRACE_ID,
+  PCT_NATIONAL_ENTRY_ID,
+  PRIORITY_WINDOW_ENTRY_ID,
+  statutoryTermYears,
+  type NoticePeriodSpec,
+} from './statutes-data.ts'
 import {
   DEFAULT_ANNUITY_HORIZON_YEARS,
   UNCOVERED_YEAR_CAVEAT_PREFIX,
@@ -119,7 +127,7 @@ function priorityItems(ctx: EntryContext): DeadlineItem[] {
   // ── 专利法第29条 — the window for a later application on the same subject.
   const priorityMonths = ctx.query.kind === 'design' ? 6 : 12
   items.push(periodEntry(ctx, {
-    id: 'priority-window',
+    id: PRIORITY_WINDOW_ENTRY_ID,
     label: `优先权期限（可就相同主题提出后续申请并主张优先权，${String(priorityMonths)}个月自本申请日起算）`,
     legalBasis: ctx.query.kind === 'design' ? '专利法第29条第2款' : '专利法第29条第1款',
   }, filing, { unit: 'month', count: priorityMonths }))
@@ -320,7 +328,7 @@ function patentTermItems(ctx: EntryContext): DeadlineItem[] {
 
   // ── 专利法第42条第1款 — patent term, always counted from the filing date.
   return [periodEntry(ctx, {
-    id: 'patent-term',
+    id: PATENT_TERM_ENTRY_ID,
     label,
     legalBasis: '专利法第42条第1款',
   }, ctx.query.filingDate, { unit: 'year', count: baseYears + compensation })]
@@ -397,12 +405,12 @@ function pctNationalEntryItems(ctx: EntryContext): DeadlineItem[] {
   const baseLabel = priority !== undefined ? '优先权日' : '国际申请日（未主张优先权）'
   return [
     periodEntry(ctx, {
-      id: 'pct-national-entry',
+      id: PCT_NATIONAL_ENTRY_ID,
       label: `办理进入中国国家阶段手续（自${baseLabel}起30个月内；缴纳宽限费后可延至32个月）`,
       legalBasis: '专利法实施细则第120条',
     }, base, { unit: 'month', count: 30 }),
     periodEntry(ctx, {
-      id: 'pct-national-entry-grace',
+      id: PCT_NATIONAL_ENTRY_GRACE_ID,
       label: `宽限期内办理进入中国国家阶段手续（自${baseLabel}起32个月内，须缴宽限费）`,
       legalBasis: '专利法实施细则第120条',
     }, base, { unit: 'month', count: 32 }),

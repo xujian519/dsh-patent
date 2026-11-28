@@ -259,7 +259,7 @@ function annuityLine(item: FeeItem, year: number, reduction: ReductionContext | 
     `${item.name}（第 ${String(year)} 年度）`,
     1,
     `第 ${String(year)} 年度`,
-    tier?.amount ?? (item.tiers.length === 0 ? item.amount : null),
+    annualFeeAmount(item, year),
     reduction,
     year,
   )

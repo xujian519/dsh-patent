@@ -149,7 +149,7 @@
 - 影响：机械类权利要求常见写法被系统性误判，清晰度评分与理由都失真。
 - 可能的修复方向：把判定改成带上下文的模式（「约」限定在数值前后、「左右」要求前接数值或单位），或改为排除已知复合词。
 - 工作量：0.5 小时（含口径确认）。可自动化：是。
-- 状态：**未修，待决策**。中文没有词边界，改判定就是改领域口径；这一项属于代理师判断，不擅自调整。
+- 状态：已修（2026-11-28，第二轮 B3）。「约」仅在前后邻接数值（允许「约为/约是」）时计入，「左右」要求前面是数值及可选单位；新增「约束」「节约」「左右两侧」不误报与数值语境仍扣分的回归用例。
 
 ## F-PAT-073 缓存包装器丢弃 timeout 与 signal，工具声明的超时形同虚设（B4）
 
@@ -310,7 +310,7 @@
 - 严重度：P2。
 - 证据：探针 `温度为20毫米至90毫米` 的 `extractNumericFindings` 返回 20、90、50 三个 `isPoint`。两侧都用中文单位写区间时，「权利要求 20 毫米至 90 毫米 vs 对比文件 25 毫米至 30 毫米」会判 `no_overlap`，正确结论应是覆盖（`overlapped`）。
 - 为什么不随本批修：把中文单位并进共享 alternation 会改变新颖性判定输出（模型可见摘要），需要同批更新 `numeric-range` 用例与相关快照，属于独立变更。
-- 状态：**未修**，建议单独一批处理。
+- 状态：已修（2026-11-28，第二轮 B3）。`RANGE_PATTERN` 与 `SUFFIX_BOUND_PATTERN` 改用中文、拉丁与符号单位的合并词表；新增中文双侧区间的提取、重叠判定及双消费方一致性用例。
 
 ## F-PAT-089 模块 JSDoc 的工具数与实际注册数不一致（B6）
 
@@ -612,7 +612,7 @@
 - 位置：`tool/query-writing-patterns.ts`（`命中 N / M` 的 N 是截断后条数、`category` 在三种模式下语义不同但描述未披露、`limit` 非法抛裸 `Error`）、`pattern-store.ts`（构造器重复 id 文档与实际不符、被数字切出的孤立单字权重高于 bigram）。
 - 严重度：P2（前两条）/ P3（其余）。
 - 为什么不修：命中数文案要改输出字段并连带工具目录与快照；`category` 语义要么改成真过滤（行为变更）要么补描述（模型可见文案变更）；分词权重需要先量对检索排序的影响。
-- 状态：**未修**，待决策。
+- 状态：**部分已修**（2026-11-28，12-patent-r2 B2）。`limit` 非法改抛 `QueryWritingPatternsToolError extends HarnessError`（`invalid_limit`），消息不变；「命中 N / M」文案与 `category` 三模式语义属模型可见文案，待口径确认后改，见 [02-batches/B2.md](../12-patent-r2/02-batches/B2.md)。
 
 ## F-PAT-122 patent-teams 依赖 patent-tools 只为取一个纯函数（B7，P2）
 
@@ -621,7 +621,7 @@
 - 严重度：P2。
 - 证据：`evaluatePatentContent` 是 `patent-tools/src/tool/patent-eval.ts` 里的纯函数（JSDoc 自称 pure entry point），`patent-teams` 只用它做质量门禁评分。结果是安装闭包把 39 个模型工具、附图渲染与 FreeCAD 路径一并拖进团队服务。
 - 为什么不修：正确归属是 `patent-core`（`patent-tools` 与 `patent-teams` 都依赖它），需要移动约 290 行、更新两处导出与两条测试路径，并在 `patent-core` 的导出门禁下登记；这是独立的重构，不应与 B7 的缺陷修复混在一起。
-- 状态：**未修**，建议单列一次重构。
+- 状态：已修（2026-11-28，12-patent-r2 B1）。实现迁到 `patent-core/src/quality/`（含 `slop-engine`），`patent-tools` 保留原导出做再导出，`patent-teams` 改从 `patent-core` 导入并移除对 `patent-tools` 的依赖与 `tsconfig` 引用。
 
 ## F-PAT-123 类型不适用的费用阶段被渲染成「未核对」（B8，P2）
 
@@ -741,7 +741,7 @@
 - 位置：`methodology/src/tool/triz.ts`（参数错误用裸 `Error`，丢失错误码）、`patent-index-asset/src/source.ts`（`verifiedOn` 可脱离 `sourceDoc` 存在）、`patent-index-asset/src/index.ts` + README（文档只写两个消费方，实际 legal-law 也在用）。
 - 严重度：P3。
 - 为什么不修：错误类要新增 `TrizToolError extends HarnessError`；`verifiedOn` 配对校验会改变现有费用资产的合法组合；文档漂移随下一次该包维护一起更新。
-- 状态：**未修**。
+- 状态：**①②③部分已修**（2026-11-28，12-patent-r2 B2）。① `triz` 三处参数校验改抛 `TrizToolError extends HarnessError`（`invalid_parameter_pair`/`invalid_parameter`）；③ 模块 JSDoc 与双语 README 补 `legal-law` 消费方、错误契约补 `LegalLawBaselineError`、包描述改「patent and legal domains」。② `verifiedOn` 配对校验按 B1 口径延后，需与费用资产一起改。
 
 ## F-PAT-137 DAG 几何有两个主人，两行标题节点重叠、依赖边线被节点吞掉（B9，P1，已修）
 

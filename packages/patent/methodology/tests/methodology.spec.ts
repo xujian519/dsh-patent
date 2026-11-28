@@ -252,6 +252,7 @@ describe('dsh-methodology plugin-registered triz tool', () => {
     const host = await setupPlugin()
     const result = await execute(host, 'triz', { improving: 14 }, 'half-pair')
     expect(result.isError).toBe(true)
+    expect(result.error?.info).toMatchObject({ name: 'TrizToolError', code: 'invalid_parameter_pair' })
     expect(text(result)).toContain('both improving and worsening')
   })
 
@@ -306,6 +307,7 @@ describe('dsh-methodology plugin-registered triz tool', () => {
     const host = await setupPlugin()
     const result = await execute(host, 'triz', { improving: 40, worsening: 1 }, 'bad-improving')
     expect(result.isError).toBe(true)
+    expect(result.error?.info).toMatchObject({ name: 'TrizToolError', code: 'invalid_parameter' })
     expect(text(result)).toContain('improving must be an integer 1-39')
   })
 
@@ -313,6 +315,7 @@ describe('dsh-methodology plugin-registered triz tool', () => {
     const host = await setupPlugin()
     const result = await execute(host, 'triz', { improving: 14, worsening: 0 }, 'bad-worsening')
     expect(result.isError).toBe(true)
+    expect(result.error?.info).toMatchObject({ name: 'TrizToolError', code: 'invalid_parameter' })
     expect(text(result)).toContain('worsening must be an integer 1-39')
   })
 

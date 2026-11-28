@@ -5,32 +5,12 @@
  * pid/model-facing 分析报告。
  */
 
+// Package root only publishes buildAnalysisReport plus the PatentAnalysisReport,
+// QualityDomain, and SearchStrategy contracts; other build/extract primitives are
+// imported from their source modules by internal callers and tests.
 export type {
-  AnalysisFeatureType,
-  CheckerFailureSummary,
-  ExtractedFeature,
-  FeatureImportance,
-  FeatureStatistics,
-  GraphConclusionSummary,
-  IpcSummary,
-  KgAnalysisSummary,
   PatentAnalysisReport,
   QualityDomain,
-  QualityScore,
-  ScoreBasis,
   SearchStrategy,
 } from './types.ts'
-export type { AnalysisReportInputs, ModelScoreEntry } from './build.ts'
-export {
-  computeFeatureStatistics,
-  determineFeatureType,
-  determineImportance,
-  extractTechnicalFeatures,
-} from './feature-extract.ts'
-export {
-  buildAnalysisReport,
-  computeClarityScore,
-  computeCompletenessScore,
-  mergeScores,
-  toIpcSummary,
-} from './build.ts'
+export { buildAnalysisReport } from './build.ts'

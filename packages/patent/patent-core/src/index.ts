@@ -92,8 +92,27 @@ export {
   hasNegationContext,
   locateMatch,
   locationAt,
+  /** @public */
   runeSlice,
 } from './rule/text-utils.ts'
+
+// Deterministic work-product evaluation shared by the `patent_eval` tool and the
+// patent-teams worker-output gate, plus the anti-slop engine behind its report
+// mode. Keeping both here is what lets the team service depend on the library
+// instead of the model-tool package.
+export {
+  ABSOLUTE_PHRASES,
+  analyzeSlop,
+  evaluatePatentContent,
+  SLOP_PASS_LINE,
+  visibleChars,
+} from './quality/index.ts'
+export type {
+  PatentEvalDimension,
+  PatentEvalMode,
+  PatentEvalOutput,
+  SlopAnalysis,
+} from './quality/index.ts'
 
 // Statute-citation machinery lives in dsh-law-core. This entry re-exports only
 // the names a patent package imports.

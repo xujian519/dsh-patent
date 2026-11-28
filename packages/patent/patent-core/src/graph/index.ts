@@ -36,7 +36,6 @@ export {
 
 export {
   buildNoveltyGraph,
-  extractNumericRanges,
   type BuildNoveltyGraphOptions,
   buildInventivenessGraph,
   extractInventivenessResult,

@@ -109,7 +109,7 @@ B0 生成「能力基线快照」，之后每批改动后对比，差异必须�
 
 - 包级：`vitest run` 与覆盖率（`src` 逐文件 100%）
 - 类型：`tsc -b`
-- 静态：`lint`、`verify-export-jsdoc`、`verify-no-unknown-casts`、`verify-empty-catch`、`verify-no-shared-primitive-redefs`、`verify-published-imports`
+- 静态：`lint`、`verify-export-jsdoc`、`verify-no-unknown-casts`、`verify-empty-catch`、`verify-no-shared-primitive-redefs`、`verify-published-imports`、`verify-patent-rule-alignment`、`scripts/oxlint-contract.spec.ts`（后两项只在 fork CI 跑，B7 起纳入每批）
 - 接线：`verify-cordis-config`、`verify-agent-preset-config`、`verify-preset-tool-refs`、`verify-preset-mode-baseline`、`verify-module-graph`
 - 行为：`patent-preset-mount.spec`、`test:snapshot -t patent`、`test:docs`
 - 收口：`build:artifacts` 后 `build:check`，并比对能力基线快照
@@ -128,3 +128,4 @@ B0 生成「能力基线快照」，之后每批改动后对比，差异必须�
 - B4 完成：patent-core atoms 与 handlers 实测 38 个 `src` 文件（README 计划记 60，台账把 atoms 标为 B3，口径差异记在 [02-batches/B4.md](02-batches/B4.md)）。审阅未确认新缺陷；4 项 L1 精简已实施：`atoms/index.ts` 的 114 个 builtin 再导出收窄到 16 个，builtin barrel 的 123 个导出收窄到 75 个，`toIsoDate` 与 `findMalformedKey` 两处重复实现各合并为一处。atoms 与 `evidence/date.ts` 覆盖率为 100%（四个包 5,333 个用例），其余门禁见 [02-batches/B4.md](02-batches/B4.md)。下一步按 B5 推进。
 - B5 完成：patent-core 图、工作流与根级设施实测 54 个 `src` 文件。新增并修复 5 条缺陷（S-PAT-014…018，1 项 P2、4 项 P3）：`llmNode` 取消穿透、已中止信号的子进程计时器误报、草稿质量折叠的 `null` 守卫、阶段输出兜底读取的类型校验、`safe-path` 文案；L1（`compileSignal` 收敛）同步落地，L2 保留未接线能力与仅测试导出。汇总见 [01-findings.md](01-findings.md) 与 [02-batches/B5.md](02-batches/B5.md)。B5 范围内全部 `src` 文件覆盖率为 100%（六个包 5,737 个用例），其余门禁见 B5 记录。下一步按 B6 推进。
 - B6 完成：patent-data 与 patent-knowledge 实测 43 个 `src` 文件（14 + 29，与计划一致）。新增并修复 4 条 P3 缺陷（S-PAT-019…022）：重试等待不响应「进入等待前已中止」的信号、节点缓存配置约束后移到首次查询、wiki 目录缺失时静默返回 0 命中、安装期同表迭代更新。L0 三处（`install.ts` 重复 JSDoc 与文案空格、`cnipr-receipt.ts` 模块注释位置）。L2 三项按「保留未接线能力」处置，另列七项已排除候选。范围覆盖率为 100%（三个包 168 个测试文件、2,946 个用例），11 个专利快照无差异，其余门禁见 [02-batches/B6.md](02-batches/B6.md)。下一步按 B7 推进。
+- 2026-11-29 修复 fork CI 的两处红灯（均由 B3 的同一次推送引入，本地门禁矩阵当时未覆盖这两个步骤）：`unity.spec.ts` 恢复被删的对齐锚点测试，`rule-procedure-alignment.yaml` 的 `unity-division` 测试引用重新成立；`oxlint-contract.spec.ts` 的 staged 用例改为断言「未使用指令静默」，与随 B3 落地的 lint 配置（关闭 `reportUnusedDisableDirectives`）一致。两条门禁已加入每批矩阵。

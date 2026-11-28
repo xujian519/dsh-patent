@@ -428,11 +428,13 @@ export function unrelatedRead(): void {
     }
   }, 90_000)
 
-  it('preserves successful fix output channels', async () => {
+  it('stays silent about unused disable directives in the staged config', async () => {
     const suffix = randomUUID()
     const path = join(repositoryRoot, 'scripts', `staged-lint-probe-${suffix}.ts`)
 
     try {
+      // Type-aware rules do not run in the staged hook, so their directives look unused;
+      // `.oxlintrc.staged.json` turns that report off (`pnpm run lint` still reports it).
       await writeFile(path, '// oxlint-disable-next-line no-console\nexport const value = 1\n')
       const result = runRepositoryOxlint([
         '--config',
@@ -445,7 +447,7 @@ export function unrelatedRead(): void {
 
       expect(result.error).toBeUndefined()
       expect(result.status, normalizedOutput(result)).toBe(0)
-      expect(result.stdout).toContain('Unused oxlint-disable directive')
+      expect(result.stdout).toBe('')
       expect(result.stderr).toBe('')
     } finally {
       await rm(path, { force: true })

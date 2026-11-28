@@ -362,6 +362,45 @@ describe('patent-tools plugin wiring', () => {
     expect(JSON.stringify(result.content)).toContain('下载完成：1/1 成功')
   })
 
+  it('resolves the PatSnap fallback through the late-bound patentData lookup', async () => {
+    temp = await mkdtemp(join(tmpdir(), 'dsh-patent-tools-pdf-fallback-'))
+    let lookups = 0
+    const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    ctx.provide('patentData', {
+      createCniprChannel: () => undefined,
+      // 本部署未启用 PatSnap 段：解析器拿到 undefined 后把首次失败原样保留。
+      createPatsnapChannel: () => {
+        lookups += 1
+        return undefined
+      },
+      createEgoSession: () => ({
+        checkAvailability: () => ({ ok: true }),
+        runScript: async () => ({
+          output: 'EGO_DOWNLOAD:{"items":[{"patent":"US1A","status":"fallback","error":"页面没有 PDF 链接"}]}',
+          exitCode: 0,
+          timedOut: false,
+        }),
+        extractTaggedJson: (output: string, tag: string) => {
+          const prefix = `EGO_${tag}:`
+          const idx = output.indexOf(prefix)
+          if (idx < 0) return null
+          return JSON.parse(output.slice(idx + prefix.length)) as unknown
+        },
+      }),
+    })
+    publishWorkspace(ctx)
+    await ctx.plugin(tool, {})
+    // 传 '.' 让输出目录解析为进程工作目录本身；本用例的条目最终失败，不会落盘。
+    const result = await exec(ctx, 'patent_pdf_download', { patents: ['US1A'], outputDir: '.' }, 'w-10b')
+    expect(result.isError).toBe(false)
+    if (result.isError) throw new Error('expected success')
+    expect(lookups).toBe(1)
+    expect(JSON.stringify(result.content)).toContain('页面没有 PDF 链接')
+  })
+
   it('renders generate_patent_figure through the bundled WASM engine without a subprocess service', async () => {
     temp = await mkdtemp(join(tmpdir(), 'dsh-patent-tools-wasm-'))
     const ctx = await mounted({

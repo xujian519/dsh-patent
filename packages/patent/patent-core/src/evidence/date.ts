@@ -199,10 +199,15 @@ export function inferredMonthEnd(date: Date): string {
   return formatIsoDate(lastDay)
 }
 
-function formatIsoDate(d: Date): string {
-  const y = d.getUTCFullYear()
-  const mo = `${d.getUTCMonth() + 1}`.padStart(2, '0')
-  const day = `${d.getUTCDate()}`.padStart(2, '0')
+/**
+ * 把日期格式化为 UTC 日历日（`yyyy-MM-dd`）。
+ * @param date - 待格式化的日期。
+ * @returns UTC 日历日。
+ */
+export function formatIsoDate(date: Date): string {
+  const y = date.getUTCFullYear()
+  const mo = `${date.getUTCMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getUTCDate()}`.padStart(2, '0')
   return `${y}-${mo}-${day}`
 }
 

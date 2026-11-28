@@ -32,55 +32,14 @@
  * 注：rule-lock 原子位于 @deepseek-ai/dsh-patent-law，由插件 effect 注册。
  */
 
-export {
-  searchAtom,
-  SearchHandler,
-  keywordsAtom,
-  KeywordsHandler,
-} from './search.ts'
-export {
-  extractAtom,
-  ExtractHandler,
-  mergeAtom,
-  MergeHandler,
-  type PFETriple,
-  type ProblemInsightEntry,
-} from './extract.ts'
-export {
-  pfeConsistencyAtom,
-  PfeConsistencyHandler,
-  PFE_CONSISTENCY_VIOLATION_IDS,
-  checkPfeConsistency,
-  type PfeConsistencyViolationId,
-  type PfeConsistencyViolation,
-} from './pfe.ts'
-export {
-  compareAtom,
-  CompareHandler,
-  noveltyAtom,
-  NoveltyHandler,
-  evidenceCoverage,
-} from './compare.ts'
-export {
-  reasoningAtom,
-  ReasoningHandler,
-  groundednessAtom,
-  GroundednessHandler,
-  GROUNDEDNESS_THRESHOLD,
-} from './reason.ts'
+export { searchAtom, SearchHandler, keywordsAtom, KeywordsHandler } from './search.ts'
+export { extractAtom, ExtractHandler, mergeAtom, MergeHandler } from './extract.ts'
+export { pfeConsistencyAtom, PfeConsistencyHandler } from './pfe.ts'
+export { compareAtom, CompareHandler, noveltyAtom, NoveltyHandler } from './compare.ts'
+export { reasoningAtom, ReasoningHandler, groundednessAtom, GroundednessHandler } from './reason.ts'
 export { draftClaimsAtom, DraftClaimsHandler } from './draft.ts'
-export {
-  claimStrategyAtom,
-  ClaimStrategyHandler,
-  renderClaimStrategyReport,
-  type ClaimFeatureKind,
-  type ClaimStrategy,
-  type ClaimStrategyFeature,
-  type ClaimStrategyNode,
-  type ConfirmedClaimStrategy,
-  type ConfirmedFeature,
-} from './claim-strategy.ts'
-export { degraded, type DegradedOptions } from './llm.ts'
+export { claimStrategyAtom, ClaimStrategyHandler } from './claim-strategy.ts'
+export { degraded } from './llm.ts'
 export {
   approvalGateAtom,
   ApprovalGateHandler,
@@ -90,7 +49,7 @@ export {
   isApprovalGateHandler,
   isGateApproved,
 } from './gate.ts'
-export { claimChartAtom, ClaimChartHandler, deriveOfficeActionTargets } from './chart.ts'
+export { claimChartAtom, ClaimChartHandler } from './chart.ts'
 export {
   oaParseAtom,
   OaParseHandler,
@@ -98,103 +57,32 @@ export {
   GroundsHandler,
   responsePlanAtom,
   ResponsePlanHandler,
-  GROUND_PROGRAMS,
   type GroundProgram,
 } from './notice.ts'
 export { coverageAtom, CoverageHandler } from './coverage.ts'
-export {
-  citationCheckAtom,
-  CitationCheckHandler,
-  DEFAULT_CITATION_REF_TEXT_KEYS,
-  DEFAULT_CITATION_PRIOR_ART_KEY,
-} from './citation.ts'
+export { citationCheckAtom, CitationCheckHandler } from './citation.ts'
 export { timeBaselineAtom, TimeBaselineHandler } from './time-baseline.ts'
 export {
   disputeFramingAtom,
   DisputeFramingHandler,
   disputeFramingRefineAtom,
   DisputeFramingRefineHandler,
-  frameDispute,
-  refineDispute,
-  scanClaimNumbers,
-  scanDisputeText,
-  type DisputeCandidate,
-  type DisputeFraming,
-  type RefinedDisputeCandidate,
 } from './dispute-framing.ts'
-export {
-  priorArtFilterAtom,
-  PriorArtFilterHandler,
-  A24_EXCEPTION_LABELS,
-  type A24Exception,
-  DEFAULT_PRIOR_ART_PUBLICATION_DATE_KEY,
-  DEFAULT_PRIOR_ART_A24_EXCEPTION_KEY,
-} from './prior-art-filter.ts'
+export { priorArtFilterAtom, PriorArtFilterHandler } from './prior-art-filter.ts'
 export {
   conflictingApplicationAtom,
   ConflictingApplicationHandler,
-  DEFAULT_CONFLICTING_APPLICATIONS_KEY,
-  DEFAULT_TARGET_DATE_KEY,
-  DEFAULT_TARGET_FILING_DATE_KEY,
 } from './conflicting-application.ts'
-export {
-  numericRangeAtom,
-  NumericRangeHandler,
-  DEFAULT_NUMERIC_RANGE_CLAIM_TEXT_KEYS,
-  DEFAULT_NUMERIC_RANGE_FALLBACK_TEXT_KEYS,
-  DEFAULT_NUMERIC_RANGE_PRIOR_ART_KEY,
-} from './numeric-range.ts'
-export {
-  problemCheckAtom,
-  ProblemCheckHandler,
-  DEFAULT_PROBLEM_DIFF_TEXT_KEYS,
-  DEFAULT_PROBLEM_FEATURE_KEYS,
-  type ProblemCheckViolation,
-} from './problem-check.ts'
-export {
-  amendmentBasisAtom,
-  AmendmentBasisHandler,
-  DEFAULT_AMENDMENT_AMENDED_TEXT_KEYS,
-  DEFAULT_AMENDMENT_ORIGINAL_TEXT_KEYS,
-  type AmendmentBasisViolation,
-} from './amendment-basis.ts'
-// registerBuiltinAtoms reads evidenceCheckAtom and EvidenceCheckHandler through
-// the namespace import; the default-state keys and violation types have no
-// barrel consumer (tests import them from the source module).
-export {
-  evidenceCheckAtom,
-  EvidenceCheckHandler,
-} from './evidence-check.ts'
-export {
-  adversaryModelAtom,
-  AdversaryModelHandler,
-} from './adversary-model.ts'
-export {
-  adversaryReviewAtom,
-  AdversaryReviewHandler,
-} from './adversary-review.ts'
-export {
-  enablementReportAtom,
-  EnablementReportHandler,
-  type EnablementRecord,
-  type EnablementResult,
-} from './enablement-report.ts'
-export {
-  claimBreadthAtom,
-  ClaimBreadthHandler,
-  type ClaimBreadthDefect,
-  type ClaimBreadthRecord,
-  type ClaimBreadthResult,
-} from './claim-breadth.ts'
-export {
-  draftReviewAtom,
-  DraftReviewHandler,
-} from './draft-review.ts'
-export {
-  revisionLedgerAtom,
-  RevisionLedgerHandler,
-} from './revision-ledger.ts'
-export {
-  draftQualityLedgerAtom,
-  DraftQualityLedgerHandler,
-} from './draft-quality-ledger.ts'
+export { numericRangeAtom, NumericRangeHandler } from './numeric-range.ts'
+export { problemCheckAtom, ProblemCheckHandler } from './problem-check.ts'
+export { amendmentBasisAtom, AmendmentBasisHandler } from './amendment-basis.ts'
+// registerBuiltinAtoms 经 namespace 导入读取这两个符号；默认状态键与违规类型
+// 没有 barrel 消费者，测试直接从源模块导入。
+export { evidenceCheckAtom, EvidenceCheckHandler } from './evidence-check.ts'
+export { adversaryModelAtom, AdversaryModelHandler } from './adversary-model.ts'
+export { adversaryReviewAtom, AdversaryReviewHandler } from './adversary-review.ts'
+export { enablementReportAtom, EnablementReportHandler } from './enablement-report.ts'
+export { claimBreadthAtom, ClaimBreadthHandler } from './claim-breadth.ts'
+export { draftReviewAtom, DraftReviewHandler } from './draft-review.ts'
+export { revisionLedgerAtom, RevisionLedgerHandler } from './revision-ledger.ts'
+export { draftQualityLedgerAtom, DraftQualityLedgerHandler } from './draft-quality-ledger.ts'

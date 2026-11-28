@@ -25,6 +25,7 @@ import {
   type StageHandler,
 } from '../../handler.ts'
 import {
+  formatIsoDate,
   inferredMonthEnd,
   isMonthOnlyDate,
   parseDateFlexible,
@@ -214,11 +215,7 @@ function readDate(
   }
   const parsed = parseDateFlexible(text)
   if (parsed === null) return { error: `${field} 不是可识别的日期：${text}` }
-  return { date: parsed, text: toIsoDate(parsed) }
-}
-
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10)
+  return { date: parsed, text: formatIsoDate(parsed) }
 }
 
 /**
@@ -286,7 +283,7 @@ function resolveDeadline(state: PipelineState, key: string): DeadlineResolution 
   if (isMonthOnlyDate(text)) return { error: `举证期限（state.${key}）仅精确到月：${text}` }
   const date = parseDateFlexible(text)
   if (date === null) return { error: `举证期限（state.${key}）无法解析：${text}` }
-  return { date, text: toIsoDate(date) }
+  return { date, text: formatIsoDate(date) }
 }
 
 /** 现有技术截止日解析结果。 */
@@ -318,7 +315,7 @@ function resolveReference(
     if (isMonthOnlyDate(text)) return { error: `现有技术截止日（state.${referenceKey}）仅精确到月：${text}` }
     const date = parseDateFlexible(text)
     if (date === null) return { error: `现有技术截止日（state.${referenceKey}）无法解析：${text}` }
-    return { date, text: toIsoDate(date), basis: 'reference-date' }
+    return { date, text: formatIsoDate(date), basis: 'reference-date' }
   }
   if (explicit !== undefined && explicit !== null && typeof explicit !== 'string') {
     return { error: `state.${referenceKey} 必须是字符串` }
@@ -356,7 +353,7 @@ function resolveReference(
   }
   return {
     date,
-    text: toIsoDate(date),
+    text: formatIsoDate(date),
     basis: reference.basis === 'priority-date' ? 'priority-date' : 'filing-date',
   }
 }

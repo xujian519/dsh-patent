@@ -87,3 +87,25 @@ export function readStateText(state: PipelineState, key: string): string | undef
   const text = raw.trim()
   return text.length > 0 ? text : undefined
 }
+
+/**
+ * Find the first candidate key whose value cannot be read as text.
+ * @param state - stage state.
+ * @param keys - candidate keys.
+ * @param allowArray - whether a string array is also readable.
+ * @returns the offending key, or undefined when every present value is readable.
+ */
+export function findMalformedKey(
+  state: PipelineState,
+  keys: readonly string[],
+  allowArray = false,
+): string | undefined {
+  for (const key of keys) {
+    const raw = state[key]
+    if (raw === undefined) continue
+    if (typeof raw === 'string') continue
+    if (allowArray && Array.isArray(raw)) continue
+    return key
+  }
+  return undefined
+}

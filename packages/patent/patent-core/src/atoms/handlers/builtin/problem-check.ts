@@ -22,7 +22,7 @@ import {
   type AtomicCheckResult,
 } from '../../../problem/index.ts'
 import { degraded } from './llm.ts'
-import { isNonEmptyString, resolveKeyList } from './state-keys.ts'
+import { findMalformedKey, isNonEmptyString, resolveKeyList } from './state-keys.ts'
 
 /** 默认 diff 阶段产出键：工作流阶段 id 与图节点输出键。 */
 export const DEFAULT_PROBLEM_DIFF_TEXT_KEYS: readonly string[] = ['diff', 'inventiveness_diff']
@@ -89,26 +89,6 @@ function collectDiffTexts(state: PipelineState, keys: readonly string[]): string
     texts.push(text)
   }
   return texts
-}
-
-/**
- * 判断候选键里是否存在类型错误的值。
- * @param state - 阶段执行态。
- * @param keys - 待检查的键。
- * @param allowArray - 是否接受字符串数组（特征键接受，diff 文本键不接受）。
- * @returns 首个类型错误的键名，否则 undefined。
- */
-function findMalformedKey(
-  state: PipelineState,
-  keys: readonly string[],
-  allowArray: boolean,
-): string | undefined {
-  for (const key of keys) {
-    const raw = state[key]
-    if (raw === undefined) continue
-    if (typeof raw !== 'string' && !(allowArray && Array.isArray(raw))) return key
-  }
-  return undefined
 }
 
 /**

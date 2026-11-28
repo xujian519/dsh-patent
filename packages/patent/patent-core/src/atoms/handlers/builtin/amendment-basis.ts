@@ -20,7 +20,7 @@
 import { type Atom } from '../../atom.ts'
 import { type PipelineState, type StageExecuteInput, type StageHandler } from '../../handler.ts'
 import { degraded } from './llm.ts'
-import { readStateText, resolveKeyList } from './state-keys.ts'
+import { findMalformedKey, readStateText, resolveKeyList } from './state-keys.ts'
 
 /** 默认修改后权利要求文本键：显式修改稿优先，其次是答复正文。 */
 export const DEFAULT_AMENDMENT_AMENDED_TEXT_KEYS: readonly string[] = [
@@ -135,22 +135,6 @@ export const amendmentBasisAtom: Atom = {
     'amendment_basis_violations',
     'amendment_basis_scope',
   ],
-}
-
-/**
- * 检查候选键中是否存在无法作为文本读取的值。
- * @param state - 阶段执行态。
- * @param keys - 候选键。
- * @returns 第一个类型错误的键；全部可读或缺失时返回 undefined。
- */
-function findMalformedKey(state: PipelineState, keys: readonly string[]): string | undefined {
-  for (const key of keys) {
-    const raw = state[key]
-    if (raw === undefined) continue
-    if (typeof raw === 'string') continue
-    return key
-  }
-  return undefined
 }
 
 /**

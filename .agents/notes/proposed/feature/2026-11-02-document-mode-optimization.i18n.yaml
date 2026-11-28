@@ -11,15 +11,18 @@
 /agent-note-document-mode-preview-and-scale-optimization/problem/audit-scope-and-inputs:
   en: 1144ebe039a5775c
   zh: 87c4219ad22d69bd
-/agent-note-document-mode-preview-and-scale-optimization/problem/delivery-timeline-today:
-  en: 10e81dedf900adc4
-  zh: 88ccc3455bb9c669
-/agent-note-document-mode-preview-and-scale-optimization/problem/code-evidence:
-  en: 4289024c29e027f1
-  zh: d3d933c0d180dab3
+/agent-note-document-mode-preview-and-scale-optimization/problem/delivery-timeline-at-proposal-time:
+  en: 6b0c415046f8a88c
+  zh: ec08ef61099faeb2
+/agent-note-document-mode-preview-and-scale-optimization/problem/code-evidence-at-proposal-time:
+  en: 707c22bb292e66ee
+  zh: cc58aeba88584e42
+/agent-note-document-mode-preview-and-scale-optimization/delivered:
+  en: d6847aadf80c9787
+  zh: 36d6319077f76214
 /agent-note-document-mode-preview-and-scale-optimization/proposal:
-  en: 92f77935aa7d2032
-  zh: 0d85da2db3a9b5f5
+  en: d00ff6056a4e4f44
+  zh: 6dc8607195cf810c
 /agent-note-document-mode-preview-and-scale-optimization/proposal/mechanism-selection:
   en: 587ef3c2e8877d17
   zh: c046b583a7a63d44
@@ -72,14 +75,14 @@
   en: 8c79782a15bdb6e5
   zh: 1c513f67042098e9
 /agent-note-document-mode-preview-and-scale-optimization/proposal/sequencing-and-pr-split:
-  en: 06ae8c7b8ec87b35
-  zh: 08c08d86e93036d3
+  en: f74c215976407214
+  zh: 449388d846eafecc
 /agent-note-document-mode-preview-and-scale-optimization/alternatives-considered:
   en: 6560c4ab914e7449
   zh: 655d5b21180f07df
 /agent-note-document-mode-preview-and-scale-optimization/acceptance-criteria:
-  en: 2a0921d8e6fd0c88
-  zh: 61dc17aa1ff3840c
+  en: 1642f1467bfdf5eb
+  zh: bebe140fc7ffd149
 /agent-note-document-mode-preview-and-scale-optimization/risks:
   en: 77f7c2cda35b5200
   zh: 5b6129b7c4d0b765

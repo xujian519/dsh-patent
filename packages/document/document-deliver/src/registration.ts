@@ -11,6 +11,7 @@
 
 import { extname } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import type { FsTarget } from '@deepseek-ai/dsh-fs'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { errorMessage } from '@deepseek-ai/dsh-value'
@@ -304,11 +305,11 @@ export function resolveUnreadableReports(
     resolved.push(report)
   }
   if (needed.length > 0) {
-    throw new Error([
+    throw new HarnessError([
       'document_deliver: 以下交付文件无法核验，且没有 unreadable_ack 说明原因：',
       ...needed.map(report => `- ${report.path}：${report.reason ?? '读取失败'} → ${unreadableAdvice(report)}`),
       '给每个文件补一条 unreadable_ack（path + reason_text）说明为什么仍要交付；修复文件后重新登记也可以。',
-    ].join('\n'))
+    ].join('\n'), 'deliver_unreadable_unacked')
   }
   const warnings: string[] = []
   for (const ack of acks) {

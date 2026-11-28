@@ -7,6 +7,7 @@ import type { Converter, ConverterOptions } from '@deepseek-ai/libreoffice-kit'
 import { afterEach, beforeEach, expect, it, onTestFinished, vi } from 'vitest'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import OfficeKit, { Config, type OfficeSourceKey, type OfficeKitRequest } from '../src/index.ts'
+import { OfficeKitError } from '../src/errors.ts'
 import { resolveKitModule, type KitModuleResolution } from '../src/locate.ts'
 import { expectDefaultOutputsUntouched } from './default-outputs.ts'
 
@@ -95,6 +96,21 @@ async function mount(config: Partial<Config> = {}): Promise<OfficeKit> {
   return ctx.officeKit
 }
 
+/**
+ * The Kit-availability warnings one provider logged.
+ *
+ * The startup scratch sweep shares this logger and warns a string when another
+ * worker removes one of its directories mid-sweep, so a test that counted every
+ * logger call would fail on a race it does not exercise.
+ * @param warn - the logger spy installed before the provider was mounted.
+ * @returns the logged failures the provider created for the Kit.
+ */
+function kitWarnings(warn: { readonly mock: { readonly calls: readonly unknown[][] } }): OfficeKitError[] {
+  return warn.mock.calls
+    .map(([entry]) => entry)
+    .filter((entry): entry is OfficeKitError => entry instanceof OfficeKitError)
+}
+
 it('reports a scratch directory that the startup sweep cannot inspect', async () => {
   const warn = vi.fn()
   ctx.logger.warn = warn
@@ -107,8 +123,13 @@ it('reports a scratch directory that the startup sweep cannot inspect', async ()
   })
   scratchLstat.path = expired
   await mount()
-  await vi.waitFor(() => { expect(warn).toHaveBeenCalledOnce() })
-  expect(warn.mock.calls[0]?.[0]).toContain(expired)
+  // Bound to this directory: a sweep warning about another worker's directory
+  // may also reach this logger.
+  const swept = (): string[] => warn.mock.calls
+    .map(([message]) => String(message))
+    .filter(message => message.includes(expired))
+  await vi.waitFor(() => { expect(swept()).toHaveLength(1) })
+  expect(swept()[0]).toContain('scratch busy')
 })
 
 function resolvedKit(): Extract<KitModuleResolution, { kind: 'available' }> {
@@ -144,7 +165,8 @@ it.each([
     expect(String(failure)).toContain('This deployment does not provide LibreOffice Kit; install or enable it as this deployment requires, then retry.')
   }
   expect(resolveKitModule).toHaveBeenCalledTimes(2)
-  expect(warn).toHaveBeenCalledOnce()
+  expect(kitWarnings(warn)).toHaveLength(1)
+  expect(kitWarnings(warn)[0]?.code).toBe('unavailable')
   expect(kit.create).not.toHaveBeenCalled()
 })
 
@@ -157,7 +179,7 @@ it('reports each distinct Kit failure once', async () => {
   for (const index of failures.keys()) {
     await expect(provider.convert(distinct(index))).rejects.toMatchObject({ code: 'unavailable' })
   }
-  expect(warn.mock.calls.map(([error]) => error.cause)).toEqual([failures[0], failures[1]])
+  expect(kitWarnings(warn).map(error => error.cause)).toEqual([failures[0], failures[1]])
 })
 
 it.each([

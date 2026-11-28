@@ -34,7 +34,7 @@ Read surfaces:
 - `packages/compaction/compaction-tool-result-pruner/`, `packages/spill/*`
 - [document delivery studio](../../implemented/feature/2026-08-23-document-delivery-studio.md), [document mode workbench](2026-08-23-document-mode-workbench.md)
 
-### Delivery timeline today
+### Delivery timeline at proposal time
 
 ```text
 User request
@@ -49,7 +49,7 @@ User request
             └─ ui-document-studio sees a successful registration → setActiveView('document')
 ```
 
-Established facts:
+Established facts at proposal time:
 
 - The deliverables fold already includes `write` / `edit` / mutable `str_replace_editor` paths through `mutationPath` in `document-deliverables.ts`. `brief.md` and `report.md` enter the studio list the moment they are written.
 - Auto-switch fires on a successful `document_deliver` result only. The switch can happen while the final reply is still streaming.
@@ -59,7 +59,7 @@ Established facts:
 - Spill is mounted in the base bundle; the pruner runs only under compaction pressure. Neither addresses a render result that stays below the spill threshold but returns the full document anyway.
 - Preview reads `workspaceFiles.readBytes` from disk, so a pruned tool result never becomes preview content.
 
-### Code evidence
+### Code evidence at proposal time
 
 | Fact | Location | Effect |
 |---|---|---|
@@ -75,9 +75,24 @@ Established facts:
 | The empty-state probe recognizes final extensions only | `ui-document-studio/src/client/workspace-probe.ts` (`DELIVERABLE_EXTENSIONS`, `MAX_DEPTH`) | `chapters/*.md` still list as working drafts; the probe does not own chapter progress |
 | The `file` Resource exposes live metadata | `workspace-files/README.md` § client file resources | The studio can consume version changes without a second watch stream |
 
+## Delivered
+
+P0-1 through P0-6 shipped on 2026-11-28; this note stays a proposal for what remains.
+
+| Item | Shipped as |
+|---|---|
+| P0-1 | `render_doc_template` writes the file and reports `path` and `bytes` without the body (`doc-template/src/tool/render-doc-template.ts`: `writeRenderedDocument`, `renderDocumentResult`); a call without `output_path` still returns `content` / `markdown`, and `docx` without one fails. |
+| P0-2 | `ui-document-studio/src/client/PreviewPane.tsx` reads through `useResource<'file'>` and re-reads on `version`; `autoRefresh` is a localized switch, and a deleted file keeps its last content with a marker. |
+| P0-3 | `.md` renders through `MarkdownText`; `.html` reads completely, and above `Config.htmlPreviewMaxBytes` (8 MiB) offers the sidebar handoff instead of an iframe. |
+| P0-4 | `StudioView.tsx` keeps `follow` (default on), selects the newest added artifact, and a manual selection pauses following. |
+| P0-5 | `auto-switch.ts` (`hasDocumentProduced`, the `turn/end` gate) switches after the reply finishes when the turn registered a deliverable or wrote a working draft. |
+| P0-6 | `skills/document/document-report/SKILL.md` writes `chapters/NN-*.md` and assembles the final file with `cat`. |
+
+P1-A through P1-F and P2 are unbuilt; their sequencing rows and acceptance criteria remain the open work.
+
 ## Proposal
 
-Four user-visible outcomes, delivered in three phases:
+Four user-visible outcomes; P0 delivered them and P1 and P2 remain:
 
 1. **Written means visible.** Any working draft that reaches disk appears in the studio list without waiting for registration.
 2. **Written means refreshed.** A rewritten selected file updates the preview within one second without re-selection.
@@ -297,6 +312,8 @@ For reports and manuals above 20 chapters: after the main agent finishes `outlin
 
 ### Sequencing and PR split
 
+Rows 1–6 shipped on 2026-11-28 (see the Delivered section); rows 7–12 remain.
+
 | Order | Item | Depends on | Estimate |
 |---|---|---|---|
 | 1 | P0-1 render tool returns only the path | — | 1 day |
@@ -344,7 +361,7 @@ PR split: PR-1 is P0-1 (tool contract, skills, snapshots; independently revertib
 
 ## Acceptance criteria
 
-P0 is accepted when all of the following hold:
+P0 acceptance is met as of 2026-11-28; the bullets stay as regression expectations:
 
 - A document session that writes `brief.md` shows it in the deliverables tab without calling `document_deliver`.
 - Rewriting `brief.md` on disk updates the preview within one second without re-selection.

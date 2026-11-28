@@ -23,7 +23,7 @@ kind: "package-reference"
 
 - **`document_deliver`** —— 声明 `files`（`{ path, format }`，format 取值 `markdown | html | pdf | docx | pptx | other`）、`gate`（必填的 `p0`，模型在其中自述质量门技能的稳定 id 已通过；可选 `p1` 列表）、可选的 `unreadable_ack` 原因（每个读不出的文件一条 `{ path, reason_text }`）、可选 `brief_ref`、可选 `style` 风格名、可选 `char_budget` 字数预算。按调用方会话工作区解析每个路径；文件不存在（幽灵文件不算交付物）即报错；随后读取每个交付文件跑确定性核验，回执自述的 P0/P1 项数、所用风格与每个文件一份核验报告。自述只被记录、不被核验：`p0` 里漏填或写法无法识别的 id 以登记提示返回，是否拒绝登记只由确定性核验结论决定。
 
-  每份核验报告用两个名字指向同一个文件：`path` 是调用方写的原始拼写（保留原样，读者认的是它），`identity` 是宿主解析后的规范绝对路径——同一文件的不同拼写共享这一个值。消费方以 `identity` 作为交付物身份键、以 `path` 作为显示文本，因此「写入 `out/report.html` + 登记 `/work/out/report.html`」是一个交付物，而不是两个。该字段出现之前记录的结果没有 `identity`，消费方退回按声明路径匹配（交付工作室即如此）。`unreadable_ack` 条目同样按这一规范身份匹配文件，因此用一种拼写写下的原因也能解释以另一种拼写声明的文件。
+  每份核验报告用两个名字指向同一个文件：`path` 是调用方写的原始拼写（保留原样，读者认的是它），`identity` 是宿主解析后的规范绝对路径——同一文件的不同拼写共享这一个值。消费方以 `identity` 作为交付物身份键、以 `path` 作为显示文本，因此「写入 `out/report.html` + 登记 `/work/out/report.html`」是一个交付物，而不是两个。同一次调用里，同一文件的两种拼写只登记一次、按首次拼写显示，被折叠的拼写写入 `warnings`。该字段出现之前记录的结果没有 `identity`，消费方退回按声明路径匹配（交付工作室即如此）。`unreadable_ack` 条目同样按这一规范身份匹配文件，因此用一种拼写写下的原因也能解释以另一种拼写声明的文件。
 
   除逐文件报告外，结果的 `meta` 还携带消费方与报告并列展示的登记级事实：`style`（确定性核验所用样式）与 `warnings`（登记声明本身写错的地方，每行一条）。两者只在有内容时写入；在它们出现之前记录的结果只是缺少该键。
 
@@ -34,11 +34,11 @@ kind: "package-reference"
 
 | 检查 | 触发条件 | 级别 |
 | --- | --- | --- |
-| `placeholder` | 仍有残余占位符：可填的 `{{变量}}`，或 `[TBD]`、`Lorem ipsum`、`待补充` 等共享词表（定义在 [`@deepseek-ai/dsh-doc-style`](../doc-style/README.zh.md)）里的标记形式 | 引用文本之外 `block`，代码块或行内代码之内 `warn` |
+| `placeholder` | 仍有残余占位符：可填的 `{{变量}}`，或 `[TBD]`、`Lorem ipsum`、`待补充` 等共享词表（定义在 [`@deepseek-ai/dsh-doc-style`](../doc-style/README.zh.md)）里的标记形式 | 引用文本之外 `block`，代码块、行内代码或带闭合标签的展示代码 HTML 元素之内 `warn`；未闭合的引用元素不构成引用，其后的文本仍按正文处理 |
 | `anti_pattern` | 所选风格把该词列为禁用 | 沿用风格自身的 `block` / `warn`；作为代码或示例文本被引用的词一律 `warn` |
-| `empty_section` | 标题到下一个标题之间没有任何内容；直接写在更深标题之上的 H1 是文档标题，其内容在子标题之下 | `warn` |
+| `empty_section` | 标题到下一个标题之间没有任何内容；直接写在更深标题之上的 H1 是文档标题，其内容在子标题之下。HTML 文档的目录只由 `h` 元素构成，引用样例中的标题不计入；只有链接的 Markdown 章节不算空 | `warn` |
 | `broken_anchor` | `](#片段)` 或 `href="#片段"` 指向本文档未声明的 id、命名锚点或标题 slug，且不是渲染器惯例应答的 `top` | `warn` |
-| `length_budget` | 声明的 `char_budget` 偏差超过配置的 `lengthTolerance`（随包默认 20%）。HTML 文档按正文计字数：先剥掉标签、注释与 `script`/`style` 元素的内容 | `warn` |
+| `length_budget` | 声明的 `char_budget` 偏差超过配置的 `lengthTolerance`（随包默认 20%）。预算只核验主文件（`files[0]`），多文件登记中的其余文件不参与篇幅核验。HTML 文档按正文计字数：先剥掉标签、注释与 `script`/`style` 元素的内容 | `warn` |
 
 `block` 级问题直接抛错：拒绝登记，错误信息指出文件、检查项与行号，模型修复文档而不是把它登记出去。`warn` 级问题记录在结果里、登记照常进行——它们都存在评审可以接受的读法。风格取自 `defaultStyle`、篇幅容差取自 `lengthTolerance`，两者都由工具描述给出；未加载的风格名会让调用失败并列出可用名称。每项检查最多列出 `maxFindingsPerCheck` 条（默认 5 条），其余汇总一行，不静默丢弃。
 

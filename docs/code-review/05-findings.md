@@ -101,6 +101,14 @@
 | F-DOC-008 | 同一模板的 Markdown 只出一个标题，HTML 与 DOCX 出两个一级标题 | DOC | E | Medium | 高 | fixed |
 | F-DOC-009 | DOCX 渲染的 Markdown 表格把转义竖线拆成新列，并把整行破折号当分隔行丢弃 | DOC | E | Medium | 中 | fixed |
 | F-DOC-010 | `document_deliver` 的占位符判定不识别 HTML 代码块、注释与属性，代码示例被阻断 | DOC | E | Medium | 中 | fixed |
+| F-DOC-011 | 占位符与禁用词扫描对每条命中重扫行表，1 MiB 文本耗时 29.9 秒，4 MiB 读取上限下可阻塞数分钟 | DOC | C | High | 中 | fixed |
+| F-DOC-012 | 未闭合的 `<pre>`/`<code>` 把余下全文当作引用文本，残余占位符从 block 降为 warn | DOC | E | Medium | 中 | fixed（2026-11-28） |
+| F-DOC-013 | `char_budget` 按每个交付文件逐个套用，多文件登记产生误报 | DOC | E | Low | 高 | fixed（2026-11-28） |
+| F-DOC-014 | 同一文件的两种拼写可在一次调用里重复登记，结果声明为两个交付物 | DOC | E | Low | 中 | fixed（2026-11-28） |
+| F-DOC-015 | `document_deliver` 的缺 ack 与未知样式用裸 `Error`，结果没有错误码 | DOC | B | Low | 高 | fixed（2026-11-28） |
+| F-DOC-016 | 同一扫描混用 Markdown 与 HTML 语法：`<pre>` 内的 `# 标题` 成为幽灵标题，autolink 章节被判空 | DOC | E | Low | 中 | fixed（2026-11-28） |
+| F-DOC-017 | `office-kit` 的 provider 测试在整套并行运行时警告计数抖动 | DOC | D | Medium | 中 | fixed（2026-11-28） |
+| F-DOC-018 | 2026-11-02 的文档模式优化提案仍停在提案态，P0 六项实际已落地 | DOC | B | Low | 高 | fixed（2026-11-28） |
 | F-LEG-001 | `legal-law` 名字表是模块级只增状态，加载不复位 | LEG | E | High | 中 | fixed |
 | F-LEG-002 | `legal-evidence` 的 YAML 通用规则不参与判定 | LEG | E | High | 高 | fixed |
 | F-LEG-003 | 非法 `severity` 与非数值 `weights` 静默回落且无警告 | LEG | E | Medium | 中 | fixed |
@@ -2143,3 +2151,178 @@ F-PAT-012。`patent-tools/src` 不再用 `as unknown as` 穿过工具 JSON。
 - 优化发现必须附证据；没有证据的只标为"可选观察"。
 - 测试缺口写具体用例：输入、期望行为、边界或错误路径。
 - 疑似密钥只记文件、行号、类型和"已脱敏"，不写明文。
+
+## 第二轮：文档模式全量复审（2026-11-28）
+
+范围：`packages/document` 的六个包与 `packages/client/ui-document-studio`，约 1.2 万行 `src`、48 个 spec。共 8 条新编号（F-DOC-011 至 F-DOC-018）：High 1、Medium 2、Low 5。执行记录见 [doc-r2/day-01.md](doc-r2/day-01.md)。
+
+### F-DOC-011 占位符与禁用词扫描对每条命中重扫行表，1 MiB 文本耗时 29.9 秒
+
+- 位置：`packages/document/document-deliver/src/checks.ts:251`（`lineOf`）、`:609`（`placeholderDrafts`）、`:673`（`antiPatternDrafts`）、`:583`（`report` 在收集完成后才截断）、`:548`（`declaredAnchors` 的重复段冲突循环）
+- 维度：C
+- 严重度：High
+- 可能性：中
+- 证据：用构建产物 `packages/document/document-deliver/lib/index.js` 调 `checkDocumentText('{{x}}\n'.repeat(n))`，得到 32 KiB 39 ms、64 KiB 127 ms、128 KiB 501 ms、256 KiB 1959 ms、512 KiB 7553 ms、1024 KiB 29901 ms；同尺寸无占位符正文 3 ms。每翻倍输入耗时约 4 倍，等于 `O(命中数 × 行数)`。
+- 影响：`checkDocumentText` 是同步函数且不接收 abort 信号。达到 `maxCheckBytes`（默认 4 MiB）的密集占位符文档按曲线外推约 8 分钟，期间阻塞 Host 事件循环，该进程上的其他会话、工具调用与流式输出一起停住。输入来自模型写出的文件，不需要恶意构造，模板转储或占位符清单就会命中。
+- 最小修复建议：行号改为一次性构建行起点数组并用二分查找；禁用词与占位符命中先按位置排序再单调推进游标。每个检查收集到 `maxFindingsPerCheck` 后停止构造草稿，用已计数但未保留的数量生成汇总行。检查之间加 `signal.throwIfAborted()`。
+- 预估工作量：0.5 人日
+- 是否可自动化：否。时间断言在 CI 上会抖，改为断言行索引单调推进（同一索引不重复扫描）的算法用例，并在独立基准脚本里复测。
+
+### 修复记录（F-DOC-011，2026-11-28）
+
+- 根因修正：性能损失不在行起点数组本身，而在「为每条命中都解析行号并拼接文案，之后才在 `report` 里截断」。改为 `draftCollector` 在收集阶段就限流：每个检查最多保留 `maxFindingsPerCheck` 条，保留时才调用 `lineOf` 与 `detail`，被丢弃的只累计数量与是否含 `block`。`lineOf` 保持原实现，因为每份文档最多调用约 20 次。
+- 同类路径一并收口：`appendNamedContents` 原实现从每个开标签向后搜索闭合标签，未闭合的 `<code>` 会触发整篇重扫；改为单趟扫描并按元素名配对开闭标签，残留的开标签只在结束时补一条到文末的范围。`declaredAnchors` 原来每个重复标题都从第一个后缀重新探测，改为记录下一个待试后缀。
+- 修复前后（同一测量脚本，直接导入源码）：
+  - 占位符密集文本：修复前 32/64/128/256/512/1024 KiB 为 39/127/501/1959/7553/29901 ms；修复后 256 KiB 15 ms、1 MiB 50 ms、4 MiB 176 ms。
+  - 重复未闭合 `<code>` 的 HTML：修复前 16/32/64/128 KiB 为 11/28/106/420 ms；修复后 128 KiB 10 ms、1 MiB 67 ms、4 MiB 286 ms。
+  - 4 MiB 普通正文 132 ms。
+- 测试：`packages/document/document-deliver/tests/checks.spec.ts` 新增 6 条——未闭合引用元素引到文末、属性内斜杠仍是开标签、3 万个未闭合 `<code>` 单趟配对、被上限切掉的引用占位符计为 warn、5 万行占位符只保留 5 条并汇总、其他标题占用的后缀仍被跳过。包内 116 个用例通过，`checks.ts` 语句/分支/函数/行覆盖率均为 100%。
+- 结构债：`checks.ts` 由 740 行升到 862 行，越过 800 行阈值；按 `verify-tech-debt-counters` 的要求在 `docs/TECH_DEBT.md` 新增「接受」行，`structure.large-files` 由 103 升到 104。
+- 说明：`checkDocumentText` 仍是同步纯函数，没有接入 abort 信号；修复后单个 4 MiB 文件的最坏耗时在数百毫秒内，取消仍由工具在每个文件前后的 `throwIfAborted` 负责。
+
+### F-DOC-012 未闭合的 `<pre>`/`<code>` 把余下全文当作引用文本
+
+- 位置：`packages/document/document-deliver/src/checks.ts:316`-`:319`（`elementContentRange` 无闭合标签时返回 `{ start, end: html.length }`）、`:346`-`:352`（`appendNamedContents`）、`:366`-`:370`（`htmlQuotedRanges`）、`:725`-`:729`（`quoted` 参与占位符判定）、`:616`-`:617`（引用文本内只报 `warn`）
+- 维度：E
+- 严重度：Medium
+- 可能性：中
+- 证据：交付一份正文含 `<code>` 且缺少 `</code>` 的 HTML，其后所有残余占位符都落进 `quoted` 范围，`placeholderDrafts` 只给 `warn`，`blockingLines` 为空，登记成功。浏览器不会把余下全文当代码。
+- 影响：畸形或被截断的 HTML 交付能绕过「无占位残留」这一唯一按 P0 阻断的确定性检查；同一份内容渲染成 Markdown 时会被拒。
+- 最小修复建议：未闭合的引用元素只在能确定块级边界时扩展（空行或下一个块级标签），否则把开标签之后按正文处理（fail closed），或只把开标签所在行视为引用。
+- 预估工作量：0.5 人日
+- 是否可自动化：是。用例：HTML 以未闭合 `<code>` 结尾并含 `{{x}}`，期望仍为 `block`。
+
+### 修复记录（F-DOC-012，2026-11-28）
+
+- 行为变更：`appendNamedContents` 新增 `unclosed` 参数。引用元素（`pre`/`code`/`kbd`/`samp`）未闭合时不记录任何区间，开标签之后的文本按正文处理；`script`/`style` 保持「未闭合延伸到文末」，与 `htmlBodyText` 的渲染口径一致。落在被截断的 `<pre>`/`<code>` 之后的残余占位符与阻断级禁用词仍按 `block` 拒绝登记。
+- 为什么不是「延伸到块级边界」：HTML 源里的空行不是渲染边界（空白会被折叠），按空行或块级标签猜区间会让判定依赖排版；「未闭合即不引用」只有一个可验证口径，并在畸形输入上失败关闭。
+- 修复前后：`<p>正文</p><code>{{case_id}}` 由 `warn` 变 `block`；`<p>正文</p><pre>示例\n\n{{case_id}}` 的第 3 行 `block`；已闭合的 `<code>{{sample}}</code>` 仍是 `warn`，其后的 `{{visible}}` 仍 `block`；未闭合 `<script>` 正文内的占位符仍是 `warn`（对读者不可见）。
+- 测试：`checks.spec.ts` 把「未闭合引用元素引到文末」改写为期望 `block`，新增「闭合标签结束引用区间」与「未闭合 script 仍是 warn」，并把 3 万个未闭合 `<code>` 用例的期望改为 `block` 以保留单趟配对断言。包内 118 个用例通过，`checks.ts` 语句/分支/函数/行覆盖率均为 100%。
+- 结构债：`checks.ts` 由 862 升到 880 行，`docs/TECH_DEBT.md` 的接受上限同步重定；`structure.large-files` 不变（104）。
+
+### F-DOC-013 `char_budget` 按每个交付文件逐个套用
+
+- 位置：`packages/document/document-deliver/src/tool.ts:414`（把 `spec.charBudget` 传给每个文件）、`:318`-`:341`（每个文件都放进 `options`）、`:413`-`:415`（逐文件核验）
+- 维度：E
+- 严重度：Low
+- 可能性：高
+- 证据：调用登记 `report.md`（2 万字）与 `summary.md`（1 千字），`char_budget: 20000`。`report.md` 通过，`summary.md` 报「全文 1000 字，低于声明的 20000 字预算」。
+- 影响：多文件登记时同一预算被核验 N 次，并为非主文件产生误报；模型可能因此改写篇幅正确的摘要。
+- 最小修复建议：在描述与实现里明确预算只作用于声明的主文件（例如 `files[0]`），或把参数改成按文件的预算表。
+- 预估工作量：0.5 人日
+- 是否可自动化：是。用例：两个文件、单一预算，期望只有主文件参与篇幅核验。
+
+### 修复记录（F-DOC-013，2026-11-28）
+
+- 行为变更：`checkDeliverables` 只把 `spec.charBudget` 交给 `files[0]`（主文件），其余文件以 `charBudget: undefined` 核验；`checkDeliverable` 的 `charBudget` 参数口径改为「本文件是声明预算的主文件时」。参数名与类型不变，调用方无迁移。
+- 声明同步：工具描述改为「声明的主文件字数预算（char_budget，本部署按 ±N% 容差核验，只核验 files[0]）」，`char_budget` 的 schema 描述、`DocumentDeliverInput.char_budget` 的 JSDoc、`README.md`／`README.zh.md` 的 `length_budget` 行同口径；`docs/tool-catalog.md` 由 `pnpm run gen-tool-catalog` 重新生成。
+- 修复前后：登记 `report.md`（10 字）与 `summary.md`（5 字）、`char_budget: 10` 时，修复前摘要报「全文 5 字，低于声明的 10 字预算」，修复后两个文件都不报；`char_budget: 20` 时只有 `report.md` 报 `length_budget`。
+- 测试：`document-deliver.spec.ts` 新增一条用例，覆盖「预算内两文件均无提示」与「超出范围时只有主文件报 `length_budget`」。包内 119 个用例通过，`tool.ts` 语句/分支/函数/行覆盖率均为 100%。
+- 结构债：`tool.ts` 行数变化不触发大文件阈值（未超过 800 行），计数不变。
+
+### F-DOC-014 同一文件的两种拼写可在一次调用里重复登记
+
+- 位置：`packages/document/document-deliver/src/tool.ts:212`-`:217`（只按声明拼写去重）、`packages/document/document-deliver/src/registration.ts:214`-`:219`（按 identity 合并 ack）、`packages/document/document-deliver/README.md:25`-`:27`（消费方按 identity 视为一个交付物）
+- 维度：E
+- 严重度：Low
+- 可能性：中
+- 证据：`files: [{ path: 'out/report.html' }, { path: '<workspace>/out/report.html' }]` 通过校验；`resolveTarget` 给出同一 identity，`registered` 与模型可见文本都写「已登记 2 个交付文件」，工作室按 identity 只显示一行。
+- 影响：工具自报的交付物数量与实际交付物不一致；依赖 `registered.length` 的统计会把一次交付记成两次。
+- 最小修复建议：解析出 identity 之后按 identity 去重，保留首次出现的拼写作为显示。
+- 预估工作量：0.5 人日
+- 是否可自动化：是。用例：两种拼写同时登记，期望 `registered` 为一条。
+
+### 修复记录（F-DOC-014，2026-11-28）
+
+- 行为变更：`execute` 在文件存在性核验之后、读取核验之前调用新增的 `uniqueDeliverableFiles`，按宿主规范路径（`ctx.fs.processPath(resolveTarget(...))`）去重；`registered`、`gate.checks`、模型可见文本的「已登记 N 个交付文件」都来自去重后的 `files`，保留 `files[]` 中首次出现的拼写作为 `path`。
+- 声明同步：被折叠的拼写写入登记级 `warnings`（`同一文件重复声明，按 files[] 中首次出现的拼写登记：…`），调用方能看到自己声明了两条；`README.md`／`README.zh.md` 的 identity 段落补了同一次调用内的折叠规则。
+- 修复前后：`files: [{ path: 'report.md' }, { path: '<workspace>/report.md' }]` 由「已登记 2 个交付文件」与两份重复核验报告，变为「已登记 1 个交付文件：report.md」、一份报告、一条折叠提示。
+- 测试：`document-deliver.spec.ts` 新增一条用例，断言 `registered` 只有一条、`gate.checks` 只有一份、`warnings` 点名被折叠的绝对路径、模型可见文本写「已登记 1 个交付文件」。包内 120 个用例通过，`tool.ts` 语句/分支/函数/行覆盖率均为 100%。
+- 边界：文件存在性核验仍按调用方声明的每个路径逐个进行，因此缺文件时错误信息保留调用方的原始拼写；`unreadable_ack` 仍按规范身份匹配，折叠掉的拼写写的 ack 依旧能解释该文件。
+
+### F-DOC-015 `document_deliver` 的缺 ack 与未知样式用裸 `Error`
+
+- 位置：`packages/document/document-deliver/src/registration.ts:307`-`:311`（缺 `unreadable_ack` 时 `throw new Error`）、`packages/document/document-deliver/src/tool.ts:184`（未知样式时 `throw new Error`）；对照 `tool.ts:194`-`:196` 与 `:686`-`:701` 的 `HarnessError` 带 code
+- 维度：B
+- 严重度：Low
+- 可能性：高
+- 证据：两条路径抛出的错误没有 code，`tool/result.error` 只剩文案；同一工具的参数错误（`invalid_tool_input`）、文件缺失（`deliver_files_missing`）与门禁失败（`deliver_gate_failed`）都带 code。
+- 影响：客户端与模型无法按 code 区分「缺 ack」「样式名写错」与内部故障，与 F-CROSS-004 的根因同类。
+- 最小修复建议：改成 `HarnessError`，code 取 `deliver_unreadable_unacked` 与 `deliver_style_unknown`。
+- 预估工作量：0.5 人日
+- 是否可自动化：是。用例：断言两条失败结果的 `error.code`。
+
+### 修复记录（F-DOC-015，2026-11-28）
+
+- 行为变更：`resolveUnreadableReports` 的缺 ack 错误改为 `HarnessError(..., 'deliver_unreadable_unacked')`，`resolveStyle` 的未知样式错误改为 `HarnessError(..., 'deliver_style_unknown')`；文案不变。`registration.ts` 新增 `HarnessError` 值导入。
+- 修复前后：两条失败路径的 `tool/result.error.info` 由 `{ name: 'Error' }` 变为 `{ name: 'HarnessError', code: ... }`，与其他失败码（`invalid_tool_input`、`deliver_files_missing`、`deliver_gate_failed`）同口径。
+- 测试：在既有两条失败用例上补 `expect(result.info).toMatchObject({ name: 'HarnessError', code: ... })`。包内 120 个用例通过，`registration.ts` 与 `tool.ts` 覆盖率均为 100%。
+- 文档：这两个 code 未出现在 README 的错误码表里（该包 README 不维护错误码清单），无需改 README 或工具目录。
+
+### F-DOC-016 同一扫描混用 Markdown 与 HTML 语法
+
+- 位置：`packages/document/document-deliver/src/checks.ts:718`-`:729`（两种格式都收集全部标题、围栏只在原始文本上算）、`:526`-`:547`（`headingSpans`）、`:659`-`:670` 与 `:664`-`:665`（空章节用 `htmlBodyText` 判断正文）、`:443`（`htmlBodyText`）
+- 维度：E
+- 严重度：Low
+- 可能性：中
+- 证据：三种表现。HTML 的 `<pre>` 里写 `# 标题` 会被 `MARKDOWN_HEADING` 认成标题，进入 `emptySectionDrafts` 与 `declaredAnchors`；`<pre>` 里的 `<h2>` 同样成为标题；Markdown 章节只含 `<https://example.com>` 时，`htmlBodyText` 把它当标签删掉，判为空章节。
+- 影响：HTML 交付得到只与代码示例有关的空章节提示与多余锚点；Markdown 交付得到不成立的空章节提示。两者都是 `warn`，但会引导模型改掉正确的文档。
+- 最小修复建议：`format === 'html'` 时只收集 HTML 标题，并从 `<pre>`/`<code>` 内容中排除；Markdown 路径的正文判定只剥离已知 HTML 标签，保留 autolink 文本。
+- 预估工作量：0.5 人日
+- 是否可自动化：是。用例：`<pre># x</pre>` 不产生 `empty_section`；只含 autolink 的章节不报空。
+
+### 修复记录（F-DOC-016，2026-11-28）
+
+- 标题口径：`headingSpans` 增加 `format` 与引用区间参数。`format: 'html'` 时只收集 `h1`–`h6`，不再把 HTML 正文里的 `# 行` 当标题；两种格式都跳过引用区间（`<pre>`/`<code>` 内容、围栏与行内代码）里的标题。引用区间取 `htmlQuotedRanges` 而不是含标签的 markup 区间——`<h2>` 命中点落在标签自身的 markup 区间内，用后者会把所有 HTML 标题都排掉。
+- 正文口径：`htmlBodyText` 改为 `visibleText(text, language)`。`markdown` 下要求标签名后紧跟空白、`/` 或 `>` 才按标签剥离，因此 `<https://example.com>` 这类 autolink 保留为读者可见文本；`html` 下维持原有词法。`emptySectionDrafts` 按格式选择口径，篇幅核验仍按 `html` 口径。
+- 修复前后：`<pre># 示例标题</pre><h2>小节</h2><p>正文。</p>`（html）不再产生幽灵标题与空章节；`<pre><h2>示例</h2></pre>`（html）不再把样例标题计入目录；Markdown 章节只写 `<https://example.com>` 时不再报空，只写 `<span></span>` 时仍报空。
+- 测试：`checks.spec.ts` 新增两条用例（HTML 标题口径与样例排除、Markdown autolink 与真实标签的正文判定），并在 HTML 用例里断言空 `h2` 章节仍会报告。包内 122 个用例通过，`checks.ts` 语句/分支/函数/行覆盖率均为 100%。
+- 结构债：`checks.ts` 由 880 升到 921 行，`docs/TECH_DEBT.md` 的接受上限同步重定；`structure.large-files` 不变（104）。
+
+### F-DOC-017 `office-kit` 的 provider 测试在整套并行运行时警告计数抖动
+
+- 位置：`packages/document/office-kit/tests/provider.spec.ts:133`-`:148`（`:136`-`:137` 替换共享 `ctx.logger.warn`，`:147` 断言 `toHaveBeenCalledOnce`）；`packages/document/office-kit/src/index.ts:166`（mount 时启动 `scratchSweep`）、`:383`（首次转换前再次等待）
+- 维度：D
+- 严重度：Medium
+- 可能性：中
+- 证据：`pnpm exec vitest run packages/document packages/client/ui-document-studio` 第一次运行 1 failed / 927 passed，失败信息为 `expected "vi.fn()" to be called once, but got 2 times`；同一条命令第二次运行 48/48 文件、927/927 用例通过；单跑 `provider.spec.ts` 39/39 通过。
+- 影响：CI 随机红，且失败信息指向一个并不成立的行为（「报告两次」）。审阅本身也会因为基线不确定而无法区分新回归。
+- 最小修复建议：每个用例创建独立 `ctx` 与 logger；用例结束前 `await provider.dispose()` 或等待 `scratchSweep` 结算后再断言；断言绑定到该 provider 的 logger，而不是文件级共享对象。
+- 预估工作量：0.5 人日
+- 是否可自动化：是。用例：重复运行该包、断言不依赖共享 spy 的调用次数。
+
+### 修复记录（F-DOC-017，2026-11-28）
+
+- 根因：失败用例把 `ctx.logger.warn` 换成 spy 后按「总调用次数」断言。同一 logger 上还有启动时的 `sweepScratchDirectories`，它扫描共享 `tmpdir()` 里所有 `dsh-office-kit-*` 目录；整套并行运行时另一个 worker 恰好在 `lstat` 与 `rm` 之间删掉自己正在用的目录，扫描据此报一条字符串警告，计数变成 2。产品路径无缺陷，是断言把无关日志算进来了。
+- 修法：新增 `kitWarnings(warn)`，只保留以 `OfficeKitError` 实例记录的日志（Kit 可用性失败），不再数 logger 的全部调用；`reports the failure once` 与 `reports each distinct Kit failure once` 两条用例改用它，前者另断言 `code: 'unavailable'`。
+- 同类收口：`reports a scratch directory that the startup sweep cannot inspect` 原来取 `warn.mock.calls[0]` 并断言只调用一次，同样会被别的 worker 的扫描警告挤到前面；改为按本用例的目录路径过滤后再等待与断言，并断言报的是 `scratch busy`。
+- 测试：`provider.spec.ts` 39 个用例通过；`pnpm exec vitest run packages/document` 连跑两次均为 38 个文件、756 个用例全绿（修复前同一命令曾 1 failed / 927 passed）。
+- 范围：只改测试，`src` 未动，覆盖率、结构债计数与文档门禁不受影响。
+
+### F-DOC-018 2026-11-02 的文档模式优化提案仍为 proposed
+
+- 位置：`.agents/notes/proposed/feature/2026-11-02-document-mode-optimization.md:3`（`Status: proposed`）；已落地的对应实现：`packages/client/ui-document-studio/src/client/PreviewPane.tsx:158`-`:236`（`useResource` + 版本重读）、`packages/document/doc-template/src/tool/render-doc-template.ts:123`-`:149`、`:181`-`:204`（写盘只回路径）、`packages/client/ui-document-studio/src/client/StudioView.tsx:332`-`:346`（跟随最新产物）
+- 维度：B
+- 严重度：Low
+- 可能性：高
+- 证据：提案的 P0-1 至 P0-4 在代码里已存在；note 状态没有随实现更新。
+- 影响：提案与实现并存，读者无法判断哪些仍是待办；下次改动容易重复实现已有机制。
+- 最小修复建议：按 [.agents/notes/README.md](../../.agents/notes/README.md) 把已落地部分写成 implemented note 或后继 note，并归档被取代的提案；用 `dsh-archive-agent-notes` 做取代检查。
+- 预估工作量：0.5 人日
+- 是否可自动化：否。
+
+### 修复记录（F-DOC-018，2026-11-28）
+
+- 复核范围：逐条对照代码，P0-1 至 P0-6 均已落地（不止发现里的 P0-1 至 P0-4）：渲染写盘只回路径、`PreviewPane.tsx` 经 `useResource` 跟 `version` 重读、`MarkdownText` 与 `htmlPreviewMaxBytes`、`follow` 跟随最新产物、`hasDocumentProduced` 与 `turn/end` 切换、`document-report` 按章落盘。P1-A 分组、P1-B `document_artifact`、P1-C `render_document_file`、P1-D 分页、P1-E、P1-F 与 P2 均未实现（分别核对 `grouping.ts`、`packages/document/document-artifact/`、`readFilePage` 均不存在）。
+- 生命周期判定：按 [.agents/notes/README.md](../../.agents/notes/README.md)，`proposed/` 的定义就是「未建或只建了一部分」，因此 note 保留在提案态、不改 `Status:`；取代检查无其他 note 拥有同一决策（`.agents/notes` 内 `PreviewPane`、`htmlPreviewMaxBytes`、`hasDocumentProduced` 仅命中本 note），不产生 implemented 副本，也不归档（提案不可归档）。
+- 正文修正：新增 `## 已落地` 一节，逐项给出落地位置与形态，并声明 P1/P2 是剩余范围；`## 提案` 开头改为「P0 已交付；P1、P2 余下」；落地顺序表加一行说明「第 1–6 行已落地，第 7–12 行仍待办」；验收标准开头改为「P0 已于 2026-11-28 满足，以下作为回归期望」；三处审计小节标题加「（提案时）」限定，避免把提案时的代码事实误读为现状。
+- 双语：`.zh.md` 同构改写；因配对门禁要求两侧链接目标一致，改用正文引用「已落地」小节而不带锚点链接；重录 `.i18n.yaml`。
+- 门禁：`pnpm run verify-translation-pairing`（1899 对全一致）、`pnpm run verify-agent-note-format`（788 篇全部合规）、`pnpm run test:docs`、`pnpm run lint` 通过。无代码改动，未跑构建。
+
+### 历史开放项复检
+
+| ID | 本轮结论 |
+|---|---|
+| F-DOC-005 | 仍 `confirmed`。`tool-office/src` 现有 8 处类型断言：`formats.ts:73`、`index.ts:206`、`:351`、`:381`、`:430`、`:436`、`:438`、`:445`。其中 `index.ts:445` 的 `ctx.fs.processPathFromHostPath(result.path) as string` 掩盖了 `string \| undefined` 返回（调用方声明见 `packages/llm/llm/src/index.ts:1052`），是这批断言里唯一可能把 `undefined` 当字符串交给客户端的路径。 |
+| F-DOC-007 | 仍 `confirmed`。`packages/document/office-kit/src/queue.ts:199`-`:210` 的 `release` 调用 `reader.cleanup()` 摘除 abort 监听，但 `packages/document/office-kit/tests` 下没有任何用例断言成功返回后监听已摘（`removeEventListener` 零命中）。 |
+| R-87 | 不在本轮范围。它位于 `patent-filing` 的验收读取，与文档模式六个包无关，状态不变。 |

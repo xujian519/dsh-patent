@@ -34,7 +34,7 @@ Status: proposed
 - `packages/compaction/compaction-tool-result-pruner/`、`packages/spill/*`
 - [文档交付工作室](../../implemented/feature/2026-08-23-document-delivery-studio.zh.md)、[文档模式工作台](2026-08-23-document-mode-workbench.zh.md)
 
-### 当前交付时序
+### 交付时序（提案时）
 
 ```text
 User request
@@ -49,7 +49,7 @@ User request
             └─ ui-document-studio sees a successful registration → setActiveView('document')
 ```
 
-已确认的事实：
+已确认的事实（提案时）：
 
 - 交付物折叠已经通过 `document-deliverables.ts` 的 `mutationPath` 包含 `write` / `edit` / 可变 `str_replace_editor` 路径。`brief.md` 与 `report.md` 在写盘成功的那一刻就进入工作室列表。
 - 自动切换只响应成功的 `document_deliver` 结果，且可能发生在最终回复仍在流式输出时。
@@ -59,7 +59,7 @@ User request
 - spill 已挂在 base bundle；pruner 只在 compaction 压力下运行。两者都不解决“渲染结果低于 spill 阈值却仍回灌全文”的问题。
 - 预览通过 `workspaceFiles.readBytes` 从磁盘读取，因此被裁剪的工具结果永远不会成为预览内容。
 
-### 代码证据
+### 代码证据（提案时）
 
 | 事实 | 位置 | 影响 |
 |---|---|---|
@@ -75,9 +75,24 @@ User request
 | 空状态探测只认成品扩展名 | `ui-document-studio/src/client/workspace-probe.ts`（`DELIVERABLE_EXTENSIONS`、`MAX_DEPTH`） | `chapters/*.md` 仍按工作稿列出；探测不承担章节进度 |
 | `file` Resource 提供 live metadata | `workspace-files/README.md` § client file resources | 工作室可以拿到版本变化，无需自建第二条 watch 流 |
 
+## 已落地
+
+P0-1 至 P0-6 已于 2026-11-28 落地；本 note 对剩余部分仍是提案。
+
+| 项 | 落地于 |
+|---|---|
+| P0-1 | `render_doc_template` 写盘后只报 `path` 与 `bytes`，不回正文（`doc-template/src/tool/render-doc-template.ts`：`writeRenderedDocument`、`renderDocumentResult`）；不带 `output_path` 的调用仍返回 `content` / `markdown`，`docx` 不带则失败。 |
+| P0-2 | `ui-document-studio/src/client/PreviewPane.tsx` 通过 `useResource<'file'>` 读取，并在 `version` 变化时重读；`autoRefresh` 是本地化开关，文件被删时保留最后内容并加标记。 |
+| P0-3 | `.md` 经 `MarkdownText` 渲染；`.html` 完整读取，超过 `Config.htmlPreviewMaxBytes`（8 MiB）时给出侧栏 handoff 而不建 iframe。 |
+| P0-4 | `StudioView.tsx` 维护 `follow`（默认开），选中最新加入的产物；手动选中即暂停跟随。 |
+| P0-5 | `auto-switch.ts`（`hasDocumentProduced` 与 `turn/end` 判定）在本轮登记了交付物或写出工作稿时，等回复结束才切换。 |
+| P0-6 | `skills/document/document-report/SKILL.md` 写 `chapters/NN-*.md`，用 `cat` 拼装最终文件。 |
+
+P1-A 至 P1-F 与 P2 尚未实现；它们的落地顺序条目与验收标准仍是待办。
+
 ## 提案
 
-四个用户可见目标，分三个阶段交付：
+四个用户可见目标；P0 已交付它们，剩下的是 P1 与 P2：
 
 1. **写盘即出现。** 任何写盘的工作稿都出现在工作室列表，不需要等登记。
 2. **写盘即刷新。** 已选中的文件被重写后，预览在一秒内更新，用户不需要重新点选。
@@ -297,6 +312,8 @@ HTML：`.html` 改用 `readFileTextComplete`（host 完整读，上限 `maxFileB
 
 ### 落地顺序与 PR 拆分
 
+第 1–6 行已于 2026-11-28 落地（见「已落地」小节）；第 7–12 行仍待办。
+
 | 顺序 | 项 | 依赖 | 估算 |
 |---|---|---|---|
 | 1 | P0-1 渲染工具写盘只回路径 | — | 1 人日 |
@@ -344,7 +361,7 @@ PR 拆分：PR-1 是 P0-1（工具契约、技能、快照，独立可回滚）�
 
 ## 验收标准
 
-P0 在以下全部成立时算完成：
+P0 的验收已于 2026-11-28 满足；以下条目作为回归期望保留：
 
 - 文档会话写出 `brief.md` 后，不调用 `document_deliver`，交付物标签就能看到它。
 - 在磁盘上改写 `brief.md`，预览一秒内更新，不需要重新选中。

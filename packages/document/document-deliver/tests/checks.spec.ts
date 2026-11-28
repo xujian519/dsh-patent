@@ -101,6 +101,46 @@ describe('checkDocumentText', () => {
     }
   })
 
+  it('treats an unclosed quoted element as body text instead of quoting the rest', () => {
+    // A truncated document does not state where its sample ends. Quoting to the
+    // document end would let a residual placeholder anywhere after the opening
+    // tag pass as a sample, so the text stays body text and still blocks.
+    expect(checkDocumentText('<p>正文</p><code>{{case_id}}', { format: 'html' })).toEqual([
+      { check: 'placeholder', level: 'block', detail: '第 1 行仍有残余占位符 "{{case_id}}"', line: 1 },
+    ])
+    expect(checkDocumentText('<p>正文</p><pre>示例\n\n{{case_id}}', { format: 'html' })).toEqual([
+      { check: 'placeholder', level: 'block', detail: '第 3 行仍有残余占位符 "{{case_id}}"', line: 3 },
+    ])
+  })
+
+  it('ends a quoted range at its closing tag, so later body text still blocks', () => {
+    const findings = checkDocumentText('<code>{{sample}}</code>\n\n{{visible}}\n', { format: 'html' })
+    expect(findings.map(finding => [finding.level, finding.line])).toEqual([['block', 3], ['warn', 1]])
+  })
+
+  it('keeps an unclosed script body out of the visible text', () => {
+    // A script body is not body text, so an unclosed one stays a warning rather
+    // than being treated as prose a reader sees.
+    expect(checkDocumentText('<script>var x = "{{y}}";', { format: 'html' })).toEqual([
+      { check: 'placeholder', level: 'warn', detail: '第 1 行仍有残余占位符 "{{y}}"', line: 1 },
+    ])
+  })
+
+  it('keeps a tag that only carries a slash in an attribute an opening tag', () => {
+    expect(checkDocumentText('<p><img src="a/b">{{visible}}</p>', { format: 'html' })).toEqual([
+      { check: 'placeholder', level: 'block', detail: '第 1 行仍有残余占位符 "{{visible}}"', line: 1 },
+    ])
+  })
+
+  it('pairs repeated unclosed code elements in one pass', () => {
+    // Rescanning from each opening tag runs a full document scan per element;
+    // this input is what a document repeating `<code>` turns into minutes.
+    const html = `${'<code>'.repeat(30_000)}{{visible}}`
+    const findings = checkDocumentText(html, { format: 'html' })
+      .filter(finding => finding.check === 'placeholder')
+    expect(findings.map(finding => finding.level)).toEqual(['block'])
+  })
+
   it('still blocks an HTML placeholder that sits in visible body text', () => {
     expect(checkDocumentText('<p>客户名称：{{client_name}}</p>', { format: 'html' })).toEqual([
       { check: 'placeholder', level: 'block', detail: '第 1 行仍有残余占位符 "{{client_name}}"', line: 1 },
@@ -148,6 +188,27 @@ describe('checkDocumentText', () => {
     const findings = checkDocumentText(Array.from({ length: 7 }, () => '{{slot}}').join('\n\n'), { maxFindingsPerCheck: 2 })
     expect(findings).toHaveLength(3)
     expect(findings[2]).toEqual({ check: 'placeholder', level: 'block', detail: '另有 5 处同类问题未逐条列出' })
+  })
+
+  it('counts quoted placeholders the cap slices off as warned', () => {
+    const text = `${Array.from({ length: 5 }, () => '{{slot}}').join('\n\n')}\n\n\`{{quoted}}\` \`{{other}}\`\n`
+    const findings = checkDocumentText(text)
+    expect(findings.filter(finding => finding.check === 'placeholder')).toHaveLength(6)
+    expect(findings.at(-1)).toEqual({ check: 'placeholder', level: 'warn', detail: '另有 2 处同类问题未逐条列出' })
+  })
+
+  it('caps a document that repeats one placeholder without rendering dropped lines', () => {
+    // A line per occurrence is quadratic; this is the size the gate may scan
+    // with a placeholder on every line.
+    const findings = checkDocumentText('{{slot}}\n'.repeat(50_000))
+    expect(findings).toHaveLength(6)
+    expect(findings[5]).toEqual({ check: 'placeholder', level: 'block', detail: '另有 49995 处同类问题未逐条列出' })
+  })
+
+  it('keeps counting a slug collision another heading introduced', () => {
+    expect(checkDocumentText([
+      '# 重复', '', '一二。', '', '# 重复-1', '', '三四。', '', '# 重复', '', '五六。', '', '见 [第三次](#重复-2)。', '',
+    ].join('\n'))).toEqual([])
   })
 
   it('warns about a fragment the document declares no anchor for', () => {
@@ -223,6 +284,27 @@ describe('checkDocumentText', () => {
 
   it('does not treat a fenced hash line as a heading', () => {
     expect(checkDocumentText('# 报告\n\n正文。\n\n```sh\n# 注释\n```\n')).toEqual([])
+  })
+
+  it('reads only HTML headings in an HTML document, and none from sample code', () => {
+    // `#` in HTML is prose, and a heading inside `<pre>` is a sample: neither is
+    // in the outline, so neither opens a section that could be empty.
+    expect(checkDocumentText('<pre># 示例标题</pre>\n<h2>小节</h2>\n<p>正文。</p>\n', { format: 'html' })).toEqual([])
+    expect(checkDocumentText('<pre><h2>示例</h2></pre>\n', { format: 'html' })).toEqual([])
+    // An empty `h` section is still the one an HTML document reports.
+    expect(checkDocumentText(
+      '<h1>报告</h1>\n<p>正文。</p>\n<h2>空节</h2>\n<h2>结论</h2>\n<p>完成。</p>\n', { format: 'html' },
+    )).toEqual([
+      { check: 'empty_section', level: 'warn', detail: '第 3 行的标题 "空节" 下没有任何内容', line: 3 },
+    ])
+  })
+
+  it('keeps a Markdown autolink as section body text', () => {
+    expect(checkDocumentText('# 报告\n\n## 链接\n\n<https://example.com>\n')).toEqual([])
+    // A real HTML tag is still markup, so a tag-only section is empty.
+    expect(checkDocumentText('# 报告\n\n## 空节\n\n<span></span>\n')).toEqual([
+      { check: 'empty_section', level: 'warn', detail: '第 3 行的标题 "空节" 下没有任何内容', line: 3 },
+    ])
   })
 
   it('ignores headings and explicit anchors inside a fence, because a fence registers nothing', () => {

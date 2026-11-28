@@ -9,13 +9,21 @@
 
 import { join } from 'node:path'
 import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { inspectPdfBody, isHtmlContentType, type PdfBodyFault } from '@deepseek-ai/dsh-patent-core'
 import { networkFetch, NetworkFetchError, parseRetryAfterHeader, type NetworkRetryOptions } from '@deepseek-ai/dsh-tool-literature'
 import { GOOGLE_PATENTS_CHANNEL } from './internal/upstream-channel.ts'
 import type { FallbackLink, PatentDownloadItem, PatentPdfDownloadDeps } from './patent-pdf-download.ts'
 
+/** Default retry count for the fallback download; the policy and the budget split read the same value. */
+const DEFAULT_FALLBACK_RETRIES = 2
+
 /** fetch 兜底重试策略：吸收瞬时失败与限流（429/503），按 Retry-After 退避，上限 30s。 */
-export const DEFAULT_FETCH_FALLBACK_RETRY: NetworkRetryOptions = { maxRetries: 2, baseDelayMs: 250, maxDelayMs: 30_000 }
+export const DEFAULT_FETCH_FALLBACK_RETRY: NetworkRetryOptions = {
+  maxRetries: DEFAULT_FALLBACK_RETRIES,
+  baseDelayMs: 250,
+  maxDelayMs: 30_000,
+}
 
 /**
  * Google Patents CDN（patentimages.storage.googleapis.com）对非浏览器 UA 返回
@@ -96,7 +104,7 @@ export async function downloadPdfFromUrl(
   } catch (fetchErr) {
     return {
       ok: false,
-      error: fetchErr instanceof Error ? fetchErr.message : String(fetchErr),
+      error: errorMessage(fetchErr),
       ...(fetchErr instanceof NetworkFetchError ? { networkErrorCode: fetchErr.code } : {}),
       durationMs: Date.now() - start,
     }
@@ -134,31 +142,43 @@ export async function runFallback(
       { timeoutMs: options.timeoutMs, ...(options.signal === undefined ? {} : { signal: options.signal }) },
     )
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error)
+    const detail = errorMessage(error)
     return { items: [], warnings: [`兜底通道不可用（${detail}），${failures.length} 篇保持失败`] }
   }
 
   const byPatent = new Map(links.map(link => [link.patent, link]))
-  const warnings: string[] = []
-  const items = await Promise.all(failures.map(async (failure): Promise<PatentDownloadItem> => {
+  // networkFetch applies timeoutMs per attempt and then retries; divide the leg
+  // budget the same way the first fetch pass does, or one URL can consume the
+  // whole budget several times over.
+  const attempts = Math.max(1, 1 + (options.fetchRetry?.maxRetries ?? DEFAULT_FALLBACK_RETRIES))
+  const downloadOptions = { ...options, timeoutMs: Math.max(1, Math.floor(options.timeoutMs / attempts)) }
+  const outcomes = await Promise.all(failures.map(async (failure): Promise<{
+    item: PatentDownloadItem
+    warning?: string
+  }> => {
     const link = byPatent.get(failure.patent)
-    if (link === undefined) return withFallbackFailure(failure, '兜底通道未返回该号')
-    if (link.pdfUrl === undefined) return withFallbackFailure(failure, link.error ?? '兜底通道未给出 PDF')
-    const attempt = await downloadPdfFromUrl(link.pdfUrl, join(outputDir, `${failure.patent}.pdf`), options)
-    if (!attempt.ok) return withFallbackFailure(failure, `${link.channel}下载失败：${attempt.error}`)
-    warnings.push(`${GOOGLE_PATENTS_CHANNEL} 未取到 ${failure.patent}（${failure.error ?? '无 PDF'}），改由 ${link.channel} 提供`)
+    if (link === undefined) return { item: withFallbackFailure(failure, '兜底通道未返回该号') }
+    if (link.pdfUrl === undefined) return { item: withFallbackFailure(failure, link.error ?? '兜底通道未给出 PDF') }
+    const attempt = await downloadPdfFromUrl(link.pdfUrl, join(outputDir, `${failure.patent}.pdf`), downloadOptions)
+    if (!attempt.ok) return { item: withFallbackFailure(failure, `${link.channel}下载失败：${attempt.error}`) }
     return {
-      patent: failure.patent,
-      status: 'ok',
-      path: attempt.path,
-      method: 'http',
-      channel: link.channel,
-      // 兜底通道的地址可能带签名与有效期：落盘即可，不把签名写进会话结果与 MANIFEST。
-      ...(link.resolvedNumber === undefined || link.resolvedNumber === failure.patent
-        ? {}
-        : { resolvedNumber: link.resolvedNumber }),
-      durationMs: attempt.durationMs,
+      item: {
+        patent: failure.patent,
+        status: 'ok',
+        path: attempt.path,
+        method: 'http',
+        channel: link.channel,
+        // 兜底通道的地址可能带签名与有效期：落盘即可，不把签名写进会话结果与 MANIFEST。
+        ...(link.resolvedNumber === undefined || link.resolvedNumber === failure.patent
+          ? {}
+          : { resolvedNumber: link.resolvedNumber }),
+        durationMs: attempt.durationMs,
+      },
+      warning: `${GOOGLE_PATENTS_CHANNEL} 未取到 ${failure.patent}（${failure.error ?? '无 PDF'}），改由 ${link.channel} 提供`,
     }
   }))
-  return { items, warnings }
+  return {
+    items: outcomes.map(outcome => outcome.item),
+    warnings: outcomes.flatMap(outcome => outcome.warning === undefined ? [] : [outcome.warning]),
+  }
 }

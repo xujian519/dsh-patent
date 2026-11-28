@@ -143,3 +143,30 @@
 | S-PAT-033 | `readRevisions` 校验目录升序；`readArticleLineages` 校验历史修订 id、生效日一致与历史升序。 | `patent-law/tests/lineage.spec.ts`：合法快照、目录乱序、历史未知 id、历史日期不一致、历史乱序 |
 | S-PAT-034 | `ruleLockAtom.inputSchema` 只保留 `rule_lock_provisions`；handler 不再读取 `rule_lock_as_of`；原子描述、模块注释与双语 README 写明时间点回溯未实现。 | `patent-law/tests/rule-lock.spec.ts`：原子输入集合、忽略 `rule_lock_as_of`、`asOf` 不改变判定 |
 | S-PAT-B8-1 | 新增私有 `guideline-view.ts`，`verify.ts` 保留缓存包装，`citator.ts` 直接调用。 | 既有 `verify.spec.ts`、`citator.spec.ts`、`branches.spec.ts` |
+
+## B9 patent-tools 检索与数据
+
+| ID | 级别 | 位置 | 证据与影响 | 最小修复 | 状态 |
+|---|---|---|---|---|---|
+| S-PAT-035 | P2 | `patent-tools/src/tool/matter-log-append.ts:265-273`、`:346-381`、`:145-164` | `changes`/`note` 原样拼入单行条目，`artifacts`/`supersedes` 以 `、` 连接，写入前不校验换行或分隔符。探针传入含换行的 `changes` 后，附加行被 `parseMatterEntries` 读成第二条结构化条目，可伪造交付/取代记录；该日志是案卷唯一事实源。 | `matterLogDefects` 增加单行、路径分隔符与审批人分隔符校验，以稳定 rule id 拒绝；补多行与分隔符用例。 | 已修复 |
+| S-PAT-036 | P3 | `patent-tools/src/tool/patent-pdf-download.ts:649-671`、`patent-pdf-download-transfer.ts:52-108` | 取消只由 `runGoogleLeg` 的 catch 转成 `tool_aborted`；fetch 兜底把 `network_abort` 当普通失败，随后仍调用 PatSnap 并正常返回 `status: failed`。探针在兜底 fetch 中取消后，调用方收到结果而不是 `tool_aborted`。 | 在 Google 腿、首次 fetch 与兜底腿之后检查 `exec.signal.aborted` 并抛 `tool_aborted`；补取消用例。 | 已修复 |
+| S-PAT-037 | P3 | `patent-tools/src/tool/patent-pdf-download-transfer.ts:147`、`patent-pdf-download.ts:644-648` | 首次 fetch 把整体预算按尝试次数均分，兜底下载却把整份 `timeoutMs` 作为每次尝试期限，再由 `networkFetch` 重试。探针：`timeoutMs=300`、重试 2 次实际耗时 916ms。 | 兜底下载同样按 `1 + maxRetries` 均分预算；补预算用例。 | 已修复 |
+| S-PAT-038 | P3 | `patent-tools/src/tool/patent-pdf-download-transfer.ts:141-160` | `warnings.push` 位于 `Promise.all` 的并发回调内，多条兜底成功时顺序取决于完成顺序；探针中 A2 先于 A1 写出。模型可见输出与会话记录不确定。 | 并发回调返回 `{ item, warning }`，完成后按请求顺序汇总。 | 已修复 |
+| S-PAT-039 | P3 | `patent-tools/src/tool/patent-legal-status.ts:153-177` | `needsCniprRetry` 不区分国别，工具描述限定中国号；探针中 `US1A` 失败后 CNIPR 收到 `["US1A"]`，通道不可用时还会对非中国号报「CNIPR 不可用」。 | 只重查 `^CN` 号；无中国号时 consult 记为 `skipped` 并写明原因；补非中国号用例。 | 已修复 |
+| S-PAT-040 | P3 | `patent-search.ts:230,428-429`、`patent-metadata.ts:190,488-489`、`patent-legal-status.ts:186`、`patent-case-search.ts:192,212`、`patent-corpus-status.ts:69`、`patent-pdf-download.ts:526`、`patent-pdf-download-ego.ts:161`、`patent-pdf-download-transfer.ts:99,137` | 非 `Error` 抛值按 `String(value)` 渲染，带 `message` 的对象变成 `[object Object]`；探针中 `throw {message:'socket hang up'}` 后通道原因为 `[object Object]`。 | 统一改用 `errorMessage`，删除两份本地 `thrownMessage`。 | 已修复 |
+
+### B9 实施记录
+
+用户确认「全部修复并补回归」后，S-PAT-035…040 与 L1（`patent-wiki-search` 限额归一）已全部落地；`MANIFEST.sha1` 保留并单列。详见 [02-batches/B9.md](02-batches/B9.md)。
+
+| ID | 实施要点 | 回归测试 |
+|---|---|---|
+| S-PAT-035 | `matterLogDefects` 新增 `multiline_field`、`ambiguous_path`、`ambiguous_approver`；`changes`/`note` 禁止换行，路径禁止 `|`/`、`/换行，审批人禁止 `|`/换行；工具描述同步。 | `patent-tools/tests/matter-log-append.spec.ts`：三类 rule、自由文本保留 `|`/`、`、多行注入被拒且日志不变 |
+| S-PAT-036 | `ensureNotAborted` 在 Google 腿、首次 fetch 与兜底腿后检查信号；已取消调用抛 `tool_aborted`，不再调用兜底通道。 | `patent-pdf-download.spec.ts`：兜底 fetch 中取消 → `tool_aborted`，`resolveFallback` 未被调用 |
+| S-PAT-037 | 兜底下载按 `1 + maxRetries` 均分 `timeoutMs`；默认重试次数提取为 `DEFAULT_FALLBACK_RETRIES`。 | `patent-pdf-download-transfer.spec.ts`：300ms 预算、2 次重试在 600ms 内收敛 |
+| S-PAT-038 | 并发回调返回 `{ item, warning }`，按 failures 顺序生成 warnings。 | `patent-pdf-download-transfer.spec.ts`：US1A 慢于 US2A 时告警仍按 US1A、US2A 排列 |
+| S-PAT-039 | `retryThroughCnipr` 先按 `^CN` 过滤；无中国号时 `skipped`，并区分通道未接线；双语 README 改为「中国号」。 | `data-tools.spec.ts`：非中国失败号不咨询 CNIPR；中国号无通道时仍 `skipped` |
+| S-PAT-040 | 七处工具改用 `errorMessage`；删除 `patent-search`/`patent-metadata` 的 `thrownMessage`。 | `data-tools.spec.ts`、`patent-pdf-download-transfer.spec.ts`：对象抛值按 `message` 渲染且不含 `[object Object]` |
+| S-PAT-B9-1 | `patent-wiki-search` 改用共享 `resolveResultLimit`。 | `data-knowledge.spec.ts`：`limit: 2.9` 归一为 2 |
+| S-PAT-B9-2 | 两份 `thrownMessage` 并入 S-PAT-040 的 `errorMessage`。 | 同上 |
+| S-PAT-B9-3 | `MANIFEST.sha1` 每次下载后重读整份 PDF 计算但无读者；续传只比对 `size`。按 L2 保留，记入收口决策。 | 未改 |

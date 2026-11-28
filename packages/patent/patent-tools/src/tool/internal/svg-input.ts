@@ -10,6 +10,7 @@
 
 import { readFile } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { PatentToolError } from '../../error.ts'
 
 /** 读入的 SVG 输入。 */
@@ -45,7 +46,7 @@ export async function readSvgInput(svgPath: string, cwd: string, tool: string): 
     // 并把系统原因带上，否则模型只会看到「不存在」而反复试同一条路径。
     throw new PatentToolError(
       'invalid_tool_input',
-      `SVG 文件不可读：${svgPath}（${error instanceof Error ? error.message : String(error)}）`,
+      `SVG 文件不可读：${svgPath}（${errorMessage(error)}）`,
       { tool },
     )
   }

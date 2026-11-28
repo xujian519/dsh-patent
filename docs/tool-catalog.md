@@ -6087,6 +6087,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 - 每次撰写、修订、交付、门禁都在这里留档：写清改了什么、为什么、是否影响保护点（changes 字段），并列出本轮产物（artifacts，须已存在）
 - 取代关系显式登记：supersedes 列出本轮产物取代的既有文件。交付物一律另存新文件，禁止覆盖上一轮
 - 确定性判定，拒绝：产物不存在、产物路径与取代路径相同（原地覆盖）、supersedes 指向日志中没有的路径（凭空的取代链）、同一旧版被取代两次（取代链分叉）、撰写/修订轮复用已有产物路径
+- 条目为单行格式：changes 与 note 不得含换行；artifacts 与 supersedes 的路径不得含 | 或 、；approver 不得含 | 或换行
 - 条目只追加，既有行不改写；每条同时记本地时间与 UTC
 
 用法：出件前调用 matter_log_append({case_dir, action, artifacts, changes, supersedes?, approver?})。交付前置门禁要求本会话成功留档过，才允许 render_patent_document / build_patent_filing。

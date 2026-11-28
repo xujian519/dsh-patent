@@ -797,6 +797,34 @@ describe('patent_pdf_download', () => {
     }
   })
 
+  it('reports tool_aborted when the caller cancels during the fetch fallback', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
+    try {
+      const controller = new AbortController()
+      const resolveFallback = vi.fn(async () => [])
+      const hangingFetch: typeof fetch = (_url, init) => new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => { reject(new Error('aborted at the caller signal')) }, { once: true })
+        setTimeout(() => { controller.abort() }, 5)
+      })
+      const tool = createPatentPdfDownloadTool({
+        runEgo: async () => ({
+          items: [{ channel: GOOGLE, patent: 'US1A', status: 'fallback', pdfUrl: 'https://cdn/US1A.pdf' }],
+        }),
+        resolveOutputDir: () => dir,
+        fetchImpl: hangingFetch,
+        fetchFallbackRetry: { maxRetries: 0 },
+        resolveFallback,
+      })
+      await expect(tool.execute(
+        { patents: ['US1A'], timeoutMs: 5_000 },
+        { signal: controller.signal } as never,
+      )).rejects.toMatchObject({ code: 'tool_aborted' })
+      expect(resolveFallback).not.toHaveBeenCalled()
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
   it('uses the runner resolved by resolveRunner', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
     try {

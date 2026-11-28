@@ -11,6 +11,7 @@
 import { existsSync } from 'node:fs'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { CorpusInfo } from '@deepseek-ai/dsh-patent-knowledge'
 import { PatentToolError } from '../error.ts'
 import { CORPUS_SCHEMA, renderCorpusLine } from './internal/corpus.ts'
@@ -66,7 +67,7 @@ export function createPatentCorpusStatusTool(deps: PatentCorpusStatusDeps = {}):
       try {
         return deps.corpusInfo()
       } catch (err) {
-        const detail = err instanceof Error ? err.message : String(err)
+        const detail = errorMessage(err)
         throw new PatentToolError('setup_required', `${INSTALL_GUIDANCE}（读取语料信息失败：${detail}）`, {
           tool: 'patent_corpus_status',
           cause: detail,

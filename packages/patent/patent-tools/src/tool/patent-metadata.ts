@@ -6,6 +6,7 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { isDataRecord, recordList, recordText, recordValue, textList } from './internal/json-read.ts'
 import { toJsonValue } from './internal/json-value.ts'
@@ -187,7 +188,7 @@ async function lookupThroughCnipr(
   try {
     result = await cnipr.search(patent, { limit: CNIPR_SEARCH_PAGE_SIZE, signal })
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error)
+    const detail = errorMessage(error)
     return {
       outcome: 'failed',
       reason: detail,
@@ -444,7 +445,7 @@ export function createPatentMetadataTool(deps: PatentMetadataDeps = {}): ToolDef
       }
 
       const googleConsult: ChannelConsult = settled === undefined
-        ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'failed', reason: thrownMessage(thrown) }
+        ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'failed', reason: errorMessage(thrown) }
         : firstResult?.success === true && firstResult.data !== null
           ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'served' }
           : firstResult?.errorCode === 'NOT_FOUND'
@@ -482,9 +483,4 @@ export function createPatentMetadataTool(deps: PatentMetadataDeps = {}): ToolDef
       })
     },
   })
-}
-
-/** 一次抛错的可读原因（用于把「第一通道失败」写进通道记录）。 */
-function thrownMessage(thrown: unknown): string {
-  return thrown instanceof Error ? thrown.message : String(thrown)
 }

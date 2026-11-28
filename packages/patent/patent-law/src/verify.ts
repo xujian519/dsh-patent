@@ -21,6 +21,7 @@ import {
   truncateProposition,
 } from '@deepseek-ai/dsh-patent-core'
 import { findArticle, findSection } from './baseline.ts'
+import { resolveGuidelineView, staleSectionFor } from './guideline-view.ts'
 import { coversSection } from './section-path.ts'
 import { extractLawReferences, formatLawReference } from './reference.ts'
 import {
@@ -41,7 +42,6 @@ import type {
   LawName,
   LawReference,
   SectionEntry,
-  StaleSection,
 } from './types.ts'
 
 /**
@@ -181,15 +181,8 @@ function finding(
 const guidelineViews = new WeakMap<LawBaseline, Map<string, LawBaseline | null>>()
 
 /**
- * Resolve the guideline baseline to the requested revision.
- *
- * Without a revision, the latest transcribed override is targeted and every
- * transcribed override up to it is applied oldest first; a version that names
- * only some sections leaves the rest at the text the previous version set.
- * With a revision,
- * the base revision selects the base text and an unknown revision selects
- * nothing, so the caller gets an unverified finding instead of a silent
- * fallback.
+ * Resolve the guideline baseline to the requested revision, caching the
+ * per-baseline result so a long text's citations share one merge.
  * @param baseline - the loaded guideline baseline.
  * @param revision - the requested revision, or undefined for the latest.
  * @returns the merged baseline, the base baseline, or null when the revision is unknown.
@@ -203,46 +196,9 @@ function guidelineView(baseline: LawBaseline, revision: string | undefined): Law
   }
   const cachedView = cached.get(key)
   if (cachedView !== undefined) return cachedView
-  const view = buildGuidelineView(baseline, revision)
+  const view = resolveGuidelineView(baseline, revision)
   cached.set(key, view)
   return view
-}
-
-/** Build one merged guideline view; see {@link guidelineView}. */
-function buildGuidelineView(baseline: LawBaseline, revision: string | undefined): LawBaseline | null {
-  // Use the newest transcription when the current revision is among the transcribed
-  // ones. When `supersededBy` names a revision no version covers, target that
-  // revision so the base text's stale marks stay in force.
-  const latest = baseline.versions.at(-1)?.revision
-  const current = baseline.supersededBy
-  const transcribed = current === null || baseline.versions.some(version => version.revision === current)
-  const target = revision ?? (transcribed ? latest : current) ?? null
-  if (target === null || target === baseline.revision) return baseline
-  const targetIndex = baseline.versions.findIndex(candidate => candidate.revision === target)
-  if (targetIndex < 0) return revision === undefined ? baseline : null
-  // Apply every transcribed override up to the target, oldest first. A later
-  // revision that changes only some sections must not drop an earlier one's
-  // changes.
-  const applied = baseline.versions.slice(0, targetIndex + 1)
-  const overridden = new Map<string, SectionEntry>()
-  const added = new Map<string, SectionEntry>()
-  const basePaths = new Set(baseline.sections.map(section => section.path))
-  for (const version of applied) {
-    for (const section of version.sections) {
-      overridden.set(section.path, section)
-      if (!basePaths.has(section.path)) added.set(section.path, section)
-    }
-  }
-  const sections = [
-    ...baseline.sections.map(section => overridden.get(section.path) ?? section),
-    ...added.values(),
-  ].sort((a, b) => a.path.localeCompare(b.path))
-  return {
-    ...baseline,
-    sections,
-    staleSections: baseline.staleSections.filter(stale => !overridden.has(stale.path)),
-    versions: [],
-  }
 }
 
 /** The overlap indices of the guideline baselines, so a baseline's texts are indexed once. */
@@ -347,22 +303,6 @@ function sectionTexts(baseline: LawBaseline, path: string): Array<ComparableEntr
   return comparableEntries(baseline)
     .filter((entry): entry is ComparableEntry & { text: string } =>
       entry.text !== null && coversSection(path, entry.label))
-}
-
-/**
- * Find the stale-text record a citation covers.
- *
- * A citation to a parent section covers the stale subsection, and a citation to
- * a subsection inherits a stale ancestor, so both directions count. Returns
- * undefined when the index targets the current revision or the cited path is
- * unaffected.
- * @param baseline - the guideline baseline.
- * @param path - the cited normalized section path.
- * @returns the stale record covering or inherited by the path, when one exists.
- */
-function staleSectionFor(baseline: LawBaseline, path: string): StaleSection | undefined {
-  return baseline.staleSections.find(stale =>
-    coversSection(path, stale.path) || coversSection(stale.path, path))
 }
 
 /**

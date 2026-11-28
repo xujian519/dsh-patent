@@ -65,6 +65,43 @@ function twoRevisionLineage(): LawLineageSnapshot {
   }
 }
 
+/** A catalogued two-revision snapshot; overrides replace one block to target a loader check. */
+function lineageText(options: { revisions?: string; history?: string } = {}): string {
+  const revisions = options.revisions ?? [
+    '  - id: "v1"',
+    '    label: "v1"',
+    '    effectiveDate: "2001-01-01"',
+    '    source: "test"',
+    '  - id: "v2"',
+    '    label: "v2"',
+    '    effectiveDate: "2021-01-01"',
+    '    source: "test"',
+  ].join('\n')
+  const history = options.history ?? [
+    '      - revision: "v1"',
+    '        effectiveDate: "2001-01-01"',
+    '        text: null',
+    '        changed: false',
+    '      - revision: "v2"',
+    '        effectiveDate: "2021-01-01"',
+    '        text: null',
+    '        changed: true',
+  ].join('\n')
+  return [
+    'law: 专利法',
+    'document: 中华人民共和国专利法',
+    'lineageVersion: "1.0.0"',
+    'revisions:',
+    revisions,
+    'articles:',
+    '  - articleId: 1',
+    '    title: null',
+    '    currentStatus: active',
+    '    revisionHistory:',
+    history,
+  ].join('\n')
+}
+
 describe('parseLawLineage — shipped asset', () => {
   it('loads the cn-patent-law-lineage.yaml without error', () => {
     const snapshot = loadShippedLineage()
@@ -114,6 +151,62 @@ articles:
         text: null
         changed: false
 `, 'test.yaml')).toThrow(LawLineageError)
+  })
+
+  it('parses a catalogued snapshot with ordered history', () => {
+    expect(parseLawLineage(lineageText(), 'test.yaml').articles).toHaveLength(1)
+  })
+
+  it('rejects a history entry whose revision is not in the catalogue', () => {
+    expect(() => parseLawLineage(lineageText({
+      history: [
+        '      - revision: "v9"',
+        '        effectiveDate: "2001-01-01"',
+        '        text: null',
+        '        changed: false',
+      ].join('\n'),
+    }), 'test.yaml')).toThrow(/不存在的修订/)
+  })
+
+  it('rejects a history date that disagrees with the catalogue', () => {
+    expect(() => parseLawLineage(lineageText({
+      history: [
+        '      - revision: "v1"',
+        '        effectiveDate: "2002-01-01"',
+        '        text: null',
+        '        changed: false',
+      ].join('\n'),
+    }), 'test.yaml')).toThrow(/不一致/)
+  })
+
+  it('rejects a revision history that is not in ascending date order', () => {
+    expect(() => parseLawLineage(lineageText({
+      history: [
+        '      - revision: "v2"',
+        '        effectiveDate: "2021-01-01"',
+        '        text: null',
+        '        changed: true',
+        '      - revision: "v1"',
+        '        effectiveDate: "2001-01-01"',
+        '        text: null',
+        '        changed: false',
+      ].join('\n'),
+    }), 'test.yaml')).toThrow(/升序/)
+  })
+
+  it('rejects a revision catalogue that is not in ascending date order', () => {
+    expect(() => parseLawLineage(lineageText({
+      revisions: [
+        '  - id: "v2"',
+        '    label: "v2"',
+        '    effectiveDate: "2021-01-01"',
+        '    source: "test"',
+        '  - id: "v1"',
+        '    label: "v1"',
+        '    effectiveDate: "2001-01-01"',
+        '    source: "test"',
+      ].join('\n'),
+    }), 'test.yaml')).toThrow(/升序/)
   })
 })
 

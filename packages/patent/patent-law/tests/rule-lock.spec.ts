@@ -20,8 +20,9 @@ describe('rule-lock atom declaration', () => {
   it('声明正确的名称、分类与输入输出键', () => {
     expect(ruleLockAtom.name).toBe('rule-lock')
     expect(ruleLockAtom.category).toBe('gate')
-    expect(ruleLockAtom.inputSchema).toContain(DEFAULT_RULE_LOCK_PROVISIONS_KEY)
-    expect(ruleLockAtom.inputSchema).toContain(DEFAULT_RULE_LOCK_AS_OF_KEY)
+    expect(ruleLockAtom.inputSchema).toEqual([DEFAULT_RULE_LOCK_PROVISIONS_KEY])
+    // 时间点回溯未实现：原子不再把保留键声明成输入。
+    expect(ruleLockAtom.inputSchema).not.toContain(DEFAULT_RULE_LOCK_AS_OF_KEY)
     expect(ruleLockAtom.outputSchema).toEqual([
       'rule_lock_report',
       'rule_lock_locked',
@@ -147,12 +148,11 @@ describe('lockProvisions — 多条法条批量判定', () => {
   })
 })
 
-describe('lockProvisions — asOf 时间点判定', () => {
-  it('传入 asOf 不影响当前索引的判定结果（预留扩展）', () => {
+describe('lockProvisions — asOf 参数（保留未用）', () => {
+  it('传入 asOf 不改变判定（时间点回溯未实现）', () => {
     const withoutAsOf = lockProvisions(['专利法第22条第3款'], testBaselines())
     const withAsOf = lockProvisions(['专利法第22条第3款'], testBaselines(), '2025-06-01')
-    expect(withoutAsOf.locked[0]!.validityStatus).toBe(withAsOf.locked[0]!.validityStatus)
-    expect(withAsOf.locked[0]!.provision).toBe('专利法第22条第3款')
+    expect(withoutAsOf).toEqual(withAsOf)
   })
 })
 
@@ -229,7 +229,7 @@ describe('RuleLockHandler.execute', () => {
     expect(out.rule_lock_locked).toEqual([])
   })
 
-  it('读取 rule_lock_as_of 作为判定时间点', async () => {
+  it('忽略 rule_lock_as_of（时间点回溯未实现）', async () => {
     const out = await handler.execute({
       state: {
         rule_lock_provisions: ['专利法第22条第3款'],
@@ -239,6 +239,7 @@ describe('RuleLockHandler.execute', () => {
     const locked = out.rule_lock_locked as RuleLockEntry[]
     expect(locked).toHaveLength(1)
     expect(locked[0]!.validityStatus).toBe('active')
+    expect(out.rule_lock_report).toContain('现行有效')
   })
 
   it('过滤非字符串元素', async () => {

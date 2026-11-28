@@ -408,12 +408,6 @@ function checkStructuralAnalysis(
   return { confidence: total === 0 ? 1 : hit / total, missing }
 }
 
-/**
- * 提取法条引用（存在性检查用）。
- *
- * 同时接受不带书名号的 `专利法第22条` 与中文文书通行的 `《专利法》第二十二条`；
- * N 支持阿拉伯数字与中文数字。书名号只作为可选外层，不进入法名分组。
- */
 /** Article ceilings from the shipped index, filled on the first citation check that needs them. */
 let shippedCeilings: Map<string, number> | undefined
 

@@ -14,7 +14,7 @@
 
 import { articleCitationFocus } from '@deepseek-ai/dsh-patent-core'
 import { findArticle, findSection } from './baseline.ts'
-import { coversSection } from './section-path.ts'
+import { resolveGuidelineView, staleSectionFor } from './guideline-view.ts'
 import { parseLawReference } from './reference.ts'
 import { queryArticleLineage } from './lineage.ts'
 import type {
@@ -22,8 +22,6 @@ import type {
   LawLineageSnapshot,
   LawName,
   LawReference,
-  SectionEntry,
-  StaleSection,
   ValidityQuery,
   ValidityResult,
   ValidityState,
@@ -189,14 +187,6 @@ function decideArticleValidity(
 }
 
 /**
- * The reason a cited paragraph the entry knows to be absent cannot be accepted,
- * or null when the paragraph exists or the entry does not list its paragraphs.
- * @param reference - the parsed article reference.
- * @param entry - the indexed article.
- * @param law - the law name, as the reason states it.
- * @returns the reason, or null.
- */
-/**
  * The reason a cited paragraph or item cannot be accepted, or null when the
  * citation stays inside the entry.
  * @param reference - the parsed article reference.
@@ -259,7 +249,7 @@ function decideSectionValidity(
   // A section covered by staleSections is an old path: the current revision
   // renumbered or deleted it, so its 2023 text cannot be verified against the
   // current numbering.
-  const stale = findStaleCoverage(view, reference.path)
+  const stale = staleSectionFor(view, reference.path)
   if (stale !== undefined) {
     return {
       reference,
@@ -307,54 +297,6 @@ function decideSectionValidity(
     entry,
     ...historyRecord(baseline),
   }
-}
-
-/**
- * Resolve the guideline baseline view for a revision, mirroring the logic in
- * verify.ts but returning the baseline itself when no version merge is needed.
- *
- * When no revision is specified, the latest transcribed override is applied
- * automatically, matching the verifier's default behaviour. When the current
- * revision is transcribed, every version up to it is merged; when it is not,
- * the superseded revision is targeted instead. A revision the caller names but
- * the index does not carry selects nothing, so the citation is reported as
- * unverified rather than decided against the base text.
- * @returns the merged view, the base baseline, or null when the named revision is unknown.
- */
-function resolveGuidelineView(baseline: LawBaseline, revision: string | undefined): LawBaseline | null {
-  const current = baseline.supersededBy
-  const transcribed = current === null || baseline.versions.some(v => v.revision === current)
-  const target = revision ?? (transcribed ? baseline.versions.at(-1)?.revision : current) ?? null
-  if (target === null || target === baseline.revision) return baseline
-  const targetIndex = baseline.versions.findIndex(v => v.revision === target)
-  if (targetIndex < 0) return revision === undefined ? baseline : null
-  const applied = baseline.versions.slice(0, targetIndex + 1)
-  const overridden = new Map<string, SectionEntry>()
-  const added = new Map<string, SectionEntry>()
-  const basePaths = new Set(baseline.sections.map(s => s.path))
-  for (const version of applied) {
-    for (const section of version.sections) {
-      overridden.set(section.path, section)
-      if (!basePaths.has(section.path)) added.set(section.path, section)
-    }
-  }
-  return {
-    ...baseline,
-    sections: [
-      ...baseline.sections.map(s => overridden.get(s.path) ?? s),
-      ...added.values(),
-    ].sort((a, b) => a.path.localeCompare(b.path)),
-    // Intentionally cleared: the resolved view targets a single revision,
-    // so downstream consumers should not recurse into version history.
-    staleSections: baseline.staleSections.filter(s => !overridden.has(s.path)),
-    versions: [],
-  }
-}
-
-/** Find a stale-section record covering the path (parent or child). */
-function findStaleCoverage(baseline: LawBaseline, path: string): StaleSection | undefined {
-  return baseline.staleSections.find(stale =>
-    coversSection(path, stale.path) || coversSection(stale.path, path))
 }
 
 /** Build the revision history spread record; empty when no versions exist. */

@@ -86,8 +86,8 @@ law_verify 读取一段文本中的法条引用（或直接传入的引用），
 - `loadLawBaselines(dir?)` / `parseLawBaseline(source, origin)` / `findArticle` / `findSection` —— 索引加载与校验，缺失即 fail-loud。
 - `verifyCitation(reference, baselines, options)` / `verifyCitations(text, baselines, options)` —— 判定。
 - `queryValidity(query, baselines, lineage?)` / `decideValidity(reference, baselines, query, lineage?)` —— 四态有效性判定；沿革快照登记的是被引用的那部法律时，以沿革记录为准，覆盖索引按转录状态得出的结论。条号跨法重复，因此别部法律的快照被忽略，不会把同号条文的日期与状态借过来。
-- `loadLawLineageFile(path)` / `parseLawLineage(source, origin)` / `queryArticleLineage` / `queryArticleAtDate` / `queryDiffBetween` / `queryStatusSnapshot` —— 随包沿革快照及其时点查询。
-- `ruleLockAtom` / `RuleLockHandler` / `lockProvisions` —— `rule-lock` 规则锁定门。接入沿革数据后，`effectiveDate` 取最近一次修订的生效日期，`effectiveDateSource` 为 `lineage`；未接入时回退到条目的 `verifiedOn` 转录日期，来源标为 `transcription`，报告相应写成「转录核验」而不是「生效」。`stale` 只标记已废止的条文，或现行版本已不再使用该编号的指南旧路径；已修订的法条与索引已带 2026 文本的指南节保持 `stale: false`。
+- `loadLawLineageFile(path)` / `parseLawLineage(source, origin)` / `queryArticleLineage` / `queryArticleAtDate` / `queryDiffBetween` / `queryStatusSnapshot` —— 随包沿革快照及其时点查询。加载期拒绝未登记在修订目录里的历史修订、与目录不一致的生效日，以及目录或单条历史中违反日期升序的记录。
+- `ruleLockAtom` / `RuleLockHandler` / `lockProvisions` —— `rule-lock` 规则锁定门。接入沿革数据后，`effectiveDate` 取最近一次修订的生效日期，`effectiveDateSource` 为 `lineage`；未接入时回退到条目的 `verifiedOn` 转录日期，来源标为 `transcription`，报告相应写成「转录核验」而不是「生效」。`stale` 只标记已废止的条文，或现行版本已不再使用该编号的指南旧路径；已修订的法条与索引已带 2026 文本的指南节保持 `stale: false`。`rule_lock_as_of` 不是原子输入：时间点回溯尚未实现，`lockProvisions` 的 `asOf` 参数保留未用，判定始终基于现行索引与沿革快照。
 - `createOverlapIndex(entries)` / `textOverlap(index, proposition, text)` / `topicOverlap(topics, proposition)` / `PROPOSITION_SUPPORT_DEFAULT` —— 命题比对的两路信号。
 - `resolveCitationPolicy(finding, policies)` / `renderCitationFindings` / `renderCitationRows` —— 处置与渲染。
 

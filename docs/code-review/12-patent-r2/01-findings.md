@@ -124,3 +124,22 @@
 | S-PAT-029 | 回滚发现 attempt 被替换时，仅在成员无在办任务且为 working 时置 idle。 | `scheduler.spec.ts`：新 attempt 仍占任务时保持 working；任务被放回共享池后置 idle |
 | S-PAT-030 | 孤儿成员 retired 名单写入失败时记录 `logger.warn`，原始错误继续上抛。 | `service.spec.ts`：只读目录下告警包含孤儿成员 id |
 | S-PAT-031 | `completed` 要求结果覆盖全部阶段；非中断摘要追加未执行阶段数。 | `workflow.spec.ts`：稀疏阶段、并行后空洞、幽灵回退目标三处改为 `completed: false` 并核对摘要 |
+
+## B8 服务接缝（patent-rule、patent-law）
+
+| ID | 级别 | 位置 | 证据与影响 | 最小修复 | 状态 |
+|---|---|---|---|---|---|
+| S-PAT-032 | P3 | `patent-rule/src/index.ts:319-325` | `Config.citationGate` 的 JSDoc 仍写「民法典和民事诉讼法走 legal-law 索引」；该修复后门禁实际索引四部法（另含劳动合同法、公司法），并跳过未索引法名。部署方据此会误判哪些民事引用会被核验。 | 改为「`INITIAL_LAW_NAMES` 的四部法」并列出名字。 | 已修复 |
+| S-PAT-033 | P3 | `patent-law/src/lineage.ts:218-236`、`:104-120` | 沿革加载器不校验 `revisionHistory[].revision` 是否在 `revisions` 中，也不校验日期升序；`queryArticleAtDate` 对乱序历史提前 `break`，`queryDiffBetween` 对拼错 id 静默返回空。`lineageDir` 是受支持的覆盖项，属持久化边界。 | 加载期校验修订 id 归属、日期与目录一致、目录与历史严格升序；补五类用例。 | 已修复 |
+| S-PAT-034 | P3 | `patent-law/src/rule-lock.ts:76`、`:120-130`、`:310-313` | `rule_lock_as_of` 被声明为判定时间点并读入，但 `queryValidity`/`decideValidity` 从不使用；传入 `1985-06-01` 仍报「现行有效（生效：2021-06-01）」。`ValidityQuery.asOf` 的注释本身写的是 reserved。 | 原子不再声明或读取该键；保留 `DEFAULT_RULE_LOCK_AS_OF_KEY` 与 `lockProvisions` 的 `asOf` 为公开保留面并写明未用。 | 已修复 |
+
+### B8 实施记录
+
+用户确认「全部修复并补回归」后，S-PAT-032…034、三处 L0 与 L1（`guideline-view.ts` 抽取）已全部落地，详见 [02-batches/B8.md](02-batches/B8.md)。
+
+| ID | 实施要点 | 回归测试 |
+|---|---|---|
+| S-PAT-032 | `Config.citationGate` JSDoc 列出四部法并说明索引外民事法名跳过。 | `test:docs` 的文档标准与翻译配对 |
+| S-PAT-033 | `readRevisions` 校验目录升序；`readArticleLineages` 校验历史修订 id、生效日一致与历史升序。 | `patent-law/tests/lineage.spec.ts`：合法快照、目录乱序、历史未知 id、历史日期不一致、历史乱序 |
+| S-PAT-034 | `ruleLockAtom.inputSchema` 只保留 `rule_lock_provisions`；handler 不再读取 `rule_lock_as_of`；原子描述、模块注释与双语 README 写明时间点回溯未实现。 | `patent-law/tests/rule-lock.spec.ts`：原子输入集合、忽略 `rule_lock_as_of`、`asOf` 不改变判定 |
+| S-PAT-B8-1 | 新增私有 `guideline-view.ts`，`verify.ts` 保留缓存包装，`citator.ts` 直接调用。 | 既有 `verify.spec.ts`、`citator.spec.ts`、`branches.spec.ts` |

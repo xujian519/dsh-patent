@@ -370,8 +370,8 @@ describe('patent preset composition', () => {
     } | undefined
     const gate = config?.deliveryGate ?? []
     expect(gate).toHaveLength(11)
-    // 投影 digest 核对先以 shadow 运行:误拒只进日志,回放归因后才切 enforce。
-    expect(config?.deliveryGateDigestMode).toBe('shadow')
+    // 投影 digest 核对已切 enforce:预置不再覆写,缺省值由插件 schema 提供。
+    expect(config?.deliveryGateDigestMode).toBeUndefined()
 
     const compliance = gate.find(entry => entry.tool === 'render_patent_document'
       && entry.requires?.includes('matter_log_append') === true)

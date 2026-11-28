@@ -369,9 +369,9 @@
                   # 另一个 manifest 的收口记录都不算本次交付的证据。
                   # matchesDraftTexts 再把证据绑到内容上：前置结果 evaluated 里的 digest 必须
                   # 覆盖本次 draft 的规范文本投影（与 docx 通道同一份 contentFromDraft 摊平），
-                  # 对旧稿跑过的检查不能给新稿交付作证。先 shadow 观测误拒（只记日志不拒绝），
-                  # 回放确认误拒可归因后切 enforce；缺省值是 enforce，此处显式写 shadow。
-                  deliveryGateDigestMode: shadow
+                  # 对旧稿跑过的检查不能给新稿交付作证。shadow 回放（改稿未重跑检查的交付出现
+                  # 1 条 digest 观测并已归因，正常流程零观测）后切到缺省 enforce；要临时回到
+                  # 只观测模式，在部署 patch 里给 @deepseek-ai/dsh-patent-rule 设 shadow。
                   deliveryGate:
                     # 所有交付渲染与提交格式成文：合规规则库逐条 + 法条引用形式与索引收录，各一次。
                     # build_patent_filing 写出的正是交给 CNIPA 的申请文件 docx，与渲染件同属交付物；

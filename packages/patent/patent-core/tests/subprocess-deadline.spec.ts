@@ -40,11 +40,15 @@ describe('startSpawnDeadline', () => {
   })
 
   it('aborts immediately when the caller signal is already aborted', () => {
+    vi.useFakeTimers()
     const caller = new AbortController()
     caller.abort()
     const deadline = startSpawnDeadline(60_000, caller.signal)
     try {
       expect(deadline.signal.aborted).toBe(true)
+      expect(deadline.timedOut()).toBe(false)
+      // 已中止信号不会再派发事件：计时器必须一并取消，否则收尾期间会误报内部超时。
+      vi.advanceTimersByTime(60_000)
       expect(deadline.timedOut()).toBe(false)
     } finally {
       deadline.dispose()

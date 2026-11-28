@@ -30,9 +30,19 @@
 | S-PAT-012 | P2 | `patent-core/src/graph/domains/novelty.ts:138-154`、`atoms/handlers/builtin/llm.ts:149-175` | `numeric_range` 的 catch 将 `StageCancelledError`、abort 与 `AbortError` 全部降级，最终由图引擎包装成普通 `GraphEngineError`，丢失取消类型与 `stageId`；全图虽停止，取消契约仍错误。 | 复用 `callLlm`，或等价实现调用前检查、取消转换与类型化穿透；补节点内取消测试。 | 已修复 |
 | S-PAT-013 | P3 | `patent-core/src/atoms/handlers/builtin/evidence-check.ts:292-345,696-701` | `resolveReference` 已区分 `reference-date`，报告却把所有非优先权日显示为「申请日」。显式 `reference_date` 因此被误标法律依据。 | 三分支显示「指定截止日／申请日／优先权日」，补报告断言。 | 已修复 |
 
+## B5 图、工作流与根级设施
+
+| ID | 级别 | 位置 | 证据与影响 | 最小修复 | 状态 |
+|---|---|---|---|---|---|
+| S-PAT-014 | P2 | `patent-core/src/graph/domains/shared.ts:67-83` | `llmNode` 把所有异常转成 `llm_unavailable` 降级，取消因此被吞：`RunOptions.signal` 契约是「节点内取消以 StageCancelledError 拒绝」（`graph/types.ts:84`），实际写入伪造降级标记，取消类型在超步边界被换成 `GraphEngineError`。与 S-PAT-012 同类；影响 inventiveness 7 个、enablement 4 个、novelty 1 个 LLM 节点。 | catch 内先抛 `isStageCancelledError(err)`；`signal?.aborted` 或 `isAbortError(err)` 时抛 `new StageCancelledError(outputKey)`；其余错误保持原文案。 | 已修复 |
+| S-PAT-015 | P3 | `patent-core/src/subprocess-deadline.ts:42` | 已中止的调用方信号不会触发 abort 监听，第 42 行直接 `controller.abort()` 跳过 `clearTimeout`；计时器到点后 `timedOut()` 翻成 `true`，正是 35–36 行注释要避免的误报。消费方先查 `timedOut()`（`patent-filing/src/filing/engine.ts:214`、`patent-document/src/document/pdfRenderer.ts:128`），慢收尾的子进程会把用户取消报成「超时」。测试 42–52 行未推进计时器。 | 第 42 行改为 `onCallerAbort()`；补「已中止信号 + 推进 `timeoutMs` 后 `timedOut()` 仍为 false」。 | 已修复 |
+| S-PAT-016 | P3 | `patent-core/src/quality/ledger.ts:88-92` | `null` 通过 `typeof raw !== 'object'` 守卫后 `raw.persisting` 抛 TypeError；与「账本缺失或字段畸形时判未评估」的契约不符，会让 `draft-quality-ledger` 原子整阶段失败。 | 改用 `@deepseek-ai/dsh-value` 的 `isRecord` 做非空对象守卫；补 null 用例。 | 已修复 |
+| S-PAT-017 | P3 | `patent-core/src/graph/adapter.ts:173-182` | `execState[stage.id]` 用 `as string` 断言成字符串且未校验；`execState` 在读取前合并了 `stage.params`（键名不受校验），恢复时也来自检查点未逐键校验的 `state`。同名值非字符串时 `output.trim()` 抛 TypeError。 | 改为 `typeof … === 'string'` 读取；补 params 同名非字符用例。 | 已修复 |
+| S-PAT-018 | P3 | `patent-core/src/safe-path.ts:23,48` | 文档与错误文案只说拒绝尾部空白/点，代码同时拒绝首部空白（测试 `safe-path.spec.ts:20` 断言 `' a'` 被拒）；首部空白输入会收到解释不了原因的文案。 | 文案与 JSDoc 改为「首尾空白」；行为不变。 | 已修复 |
+
 ## 实施记录
 
-用户授权后，S-PAT-001…013 已全部修复并补回归，实施要点如下。测试路径均相对于 `packages/patent`。
+用户授权后，S-PAT-001…013 已全部修复并补回归，实施要点如下。测试路径均相对于 `packages/patent`。B5 的 S-PAT-014…018 同样在用户确认后修复，见文末[B5 实施记录](#b5-实施记录)。
 
 | ID | 实施要点 | 回归测试 |
 |---|---|---|
@@ -51,3 +61,16 @@
 | S-PAT-013 | `evidence-check.ts` 报告依据三分支显示「指定截止日／申请日／优先权日」。 | `patent-core/tests/evidence-check-atom.spec.ts` |
 
 > 兼容性说明：S-PAT-008/009 仅改变 `contentHash`/`digest` 的哈希输入格式，不改变字段或语义；已持久化会话重放时会重算哈希值，哈希值不属于稳定契约。11 个专利 keyless 快照已用 `DSH_SNAPSHOT=refresh` 刷新，其中 4 个 chain 场景的 `contentHash` 随之更新（差异仅含哈希值，`durationMs` 噪声已剥离）。
+
+### B5 实施记录
+
+用户确认「全部修复并补回归」后，S-PAT-014…018 与 L1（`compileSignal` 收敛）已全部落地，既有用例未修改。
+
+| ID | 实施要点 | 回归测试 |
+|---|---|---|
+| S-PAT-014 | `graph/domains/shared.ts` 的 `llmNode` catch 先抛 `isStageCancelledError`，`signal?.aborted` 或 `isAbortError` 时抛 `new StageCancelledError(outputKey)`，其余错误保持原降级文案。 | `patent-core/tests/graph/domains.spec.ts` |
+| S-PAT-015 | `subprocess-deadline.ts` 已中止分支改走 `onCallerAbort()`，与事件回调共用清理路径。 | `patent-core/tests/subprocess-deadline.spec.ts`（假计时器推进 `timeoutMs`） |
+| S-PAT-016 | `quality/ledger.ts` 改用 `isRecord` 做非空对象守卫。 | `patent-core/tests/draft-quality-ledger.spec.ts` |
+| S-PAT-017 | `graph/adapter.ts` 兜底读取改为 `typeof … === 'string'`，非字符串按缺失处理。 | `patent-core/tests/graph/adapter.spec.ts` |
+| S-PAT-018 | `safe-path.ts` JSDoc 与错误文案改为「首尾空白」；校验逻辑不变。 | 既有 `safe-path.spec.ts` |
+| L1 | `graph/adapter.ts` 回退条件边改用 `workflow/signal.ts` 的 `compileSignal`。 | 既有回退路由用例 |

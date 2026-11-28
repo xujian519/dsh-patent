@@ -1,12 +1,13 @@
 /**
  * src/adversary/isolation-check — 信息隔离检查。
  *
- * 三重检查机制确保 adversary-model 输入不泄漏己方中间推理：
- * 1. 声明层：inputSchema 不包含禁止键
- * 2. 运行时层：execute() 入口检测 PipelineState 是否含禁止键
- * 3. 输出层：扫描报告文本是否包含禁止术语
- *
- * Spike 结论：信息隔离可行，三重检查确保隔离严格。
+ * 隔离分三层，判定各自独立：
+ * 1. 声明层：adversary-model 的 inputSchema 只声明可读键，不包含 {@link FORBIDDEN_KEYS}；
+ * 2. 运行时层：{@link checkInputIsolation} 供宿主按 key 列表自检。adversary-model 不调用它，
+ *    因为共享 state 必然含上游产出（claim_chart、draft 等），按整份 state 的键判失败会把
+ *    每次运行都判成泄漏；该原子以"只读 office_action/claims/response_plan/response_plan_summary"
+ *    保证隔离；
+ * 3. 输出层：{@link scanOutputForLeaks} 扫描报告文本是否包含禁止术语。
  */
 
 /** 禁止出现在 adversary 输入中的键（己方中间推理产物）。 */

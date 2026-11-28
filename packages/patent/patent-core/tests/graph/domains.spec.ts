@@ -14,7 +14,7 @@ import {
 import { DEGRADATION_SUFFIX, isDegraded } from '../../src/graph/degradation.ts'
 import { GRAPH_END } from '../../src/graph/types.ts'
 import { GraphBuilder } from '../../src/graph/engine.ts'
-import { isStageCancelledError, type StageCancelledError } from '../../src/atoms/handler.ts'
+import { StageCancelledError, isStageCancelledError } from '../../src/atoms/handler.ts'
 import {
   buildCitationCheckGraph,
   checkCitations,
@@ -29,7 +29,7 @@ import { buildInventivenessGraph, extractInventivenessResult } from '../../src/g
 import { buildNoveltyGraph } from '../../src/graph/domains/novelty.ts'
 import { extractCitationIds, extractDocIds } from '../../src/citation-ids.ts'
 import { extractNumericRanges } from '../../src/novelty/numeric-range.ts'
-import { handlerNode } from '../../src/graph/domains/shared.ts'
+import { handlerNode, llmNode } from '../../src/graph/domains/shared.ts'
 import type { RuleGateRequest } from '../../src/checker/evaluator.ts'
 
 registerBuiltinAtoms()
@@ -754,4 +754,52 @@ it('numeric_range: 调用方取消以 StageCancelledError 穿透，不被降级�
     expect(isStageCancelledError(err)).toBe(true)
     expect((err as StageCancelledError).stageId).toBe('numeric_range')
   }
+})
+
+it('llmNode: 节点内取消以 StageCancelledError 穿透，不写降级标记（S-PAT-014）', async () => {
+  const node = llmNode({ outputKey: 'inventiveness_conclusion', buildPrompt: () => 'prompt' })
+  const controller = new AbortController()
+  const aborting: StageProvider = {
+    callLLM: async () => {
+      controller.abort()
+      throw new DOMException('aborted', 'AbortError')
+    },
+  }
+  try {
+    await node({ state: {}, provider: aborting, signal: controller.signal })
+    throw new Error('预期取消应拒绝，但节点正常返回')
+  } catch (err) {
+    expect(isStageCancelledError(err)).toBe(true)
+    expect((err as StageCancelledError).stageId).toBe('inventiveness_conclusion')
+  }
+
+  // 已中止的信号即使 provider 抛普通错误也按取消处理。
+  const aborted = new AbortController()
+  aborted.abort()
+  await expect(node({
+    state: {},
+    provider: { callLLM: async () => { throw new Error('boom') } },
+    signal: aborted.signal,
+  })).rejects.toBeInstanceOf(StageCancelledError)
+
+  // 已是 StageCancelledError 的错误原样穿透，不包装成新实例。
+  const cancelled = new StageCancelledError('inventiveness_conclusion')
+  await expect(node({
+    state: {},
+    provider: { callLLM: async () => { throw cancelled } },
+  })).rejects.toBe(cancelled)
+
+  // provider 自身抛 AbortError（调用方信号未标记）同样按取消处理。
+  const portAbort = new Error('aborted')
+  portAbort.name = 'AbortError'
+  await expect(node({
+    state: {},
+    provider: { callLLM: async () => { throw portAbort } },
+  })).rejects.toBeInstanceOf(StageCancelledError)
+
+  // 普通失败仍降级为 llm_unavailable，取消修复不改变失败语义。
+  const delta = await node({ state: {}, provider: { callLLM: async () => { throw new Error('timeout') } } })
+  const mark = delta[`inventiveness_conclusion${DEGRADATION_SUFFIX}`] as { reason?: unknown; message?: unknown }
+  expect(mark.reason).toBe('llm_unavailable')
+  expect(String(mark.message)).toContain('timeout')
 })

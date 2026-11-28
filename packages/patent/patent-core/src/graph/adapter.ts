@@ -11,7 +11,7 @@
  */
 
 import { validateWorkflowManifest } from '../workflow/manifest.ts'
-import { signalMatches } from '../workflow/signal.ts'
+import { compileSignal, signalMatches } from '../workflow/signal.ts'
 import type { StageExecutor, WorkflowManifest, WorkflowStage } from '../workflow/types.ts'
 import { clearStageOutputs } from '../workflow/stage-outputs.ts'
 import type { AtomRegistry, StageHandler, StageHandlerRegistry } from '../atoms/index.ts'
@@ -170,8 +170,9 @@ function makeStageNode(
       const raw = mainKey !== undefined ? segment[mainKey] : undefined
       if (typeof raw === 'string') output = raw
       else if (raw !== undefined) output = JSON.stringify(raw, null, 2)
-      // 既有阶段输出兜底：本层写入 stage.id 恒为字符串。
-      const existingOutput = execState[stage.id] as string | undefined
+      // 既有阶段输出兜底：params 与恢复的检查点状态都可能带同名键，只接受字符串。
+      const existing = execState[stage.id]
+      const existingOutput = typeof existing === 'string' ? existing : undefined
       if (output.trim().length === 0) output = existingOutput ?? ''
     } else if (deps.executor !== undefined) {
       // 图路径的执行态同时充当 executor 的运行上下文（图以 ctx 为初始状态），
@@ -210,7 +211,7 @@ function makeRetryRouter(
   const maxRetries = retry.maxRetries ?? 1
   // 结构化触发（whenRevisionRequested）由 workflow 执行器消费；图路径只认识文本信号，
   // 未声明 whenOutputMatches 时该阶段没有条件回退边。
-  const signal = retry.whenOutputMatches === undefined ? undefined : new RegExp(retry.whenOutputMatches, 'gi')
+  const signal = retry.whenOutputMatches === undefined ? undefined : compileSignal(retry.whenOutputMatches)
   // 被回退阶段集合（rewindTo .. 当前阶段），回退时删除其 state 键防陈旧复用。
   const rewindIndex = stages.findIndex(s => s.id === rewindTo)
   const currentIndex = stages.findIndex(s => s.id === stage.id)

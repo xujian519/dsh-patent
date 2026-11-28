@@ -9,6 +9,8 @@
  * 是数值指标，通过线归 patent-tools 的 slop-gate 所有，这里只作信息行展示。
  */
 
+import { isRecord } from '@deepseek-ai/dsh-value'
+
 /** 单行质量判定。 */
 export type DraftQualityVerdict = {
   /** state 键，也是行 id。 */
@@ -76,17 +78,14 @@ function readBooleanVerdict(state: Record<string, unknown>, entry: DraftQualityS
   return { ...entry, status: value ? 'passed' : 'failed' }
 }
 
-/** revision-ledger 结构化明细里本模块需要的部分。 */
-type RevisionLedgerReadback = { persisting?: unknown; roundCount?: unknown }
-
 /**
  * 把修订账本折叠成一行判定。
  * @param state - 共享执行态（读 `revision_ledger_reconciliation`）。
  * @returns 判定行；账本缺失或字段畸形时判未评估。
  */
 export function revisionLedgerVerdict(state: Record<string, unknown>): DraftQualityVerdict {
-  const raw = state.revision_ledger_reconciliation as RevisionLedgerReadback | undefined
-  if (raw === undefined || typeof raw !== 'object') {
+  const raw = state.revision_ledger_reconciliation
+  if (!isRecord(raw)) {
     return { ...REVISION_LEDGER_SIGNAL, status: 'unassessed', reason: '账本缺失：revision-ledger 阶段未运行或已降级' }
   }
   if (typeof raw.persisting !== 'number' || typeof raw.roundCount !== 'number') {

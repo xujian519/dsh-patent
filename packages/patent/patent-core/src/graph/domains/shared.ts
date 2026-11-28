@@ -8,11 +8,18 @@
  * - collectStateText：通用 state 文本汇总（re-export）。
  */
 
+import { isAbortError } from '@deepseek-ai/dsh-value'
 import type { GraphNode, GraphState, StateDelta } from '../types.ts'
 import { absorbHandlerDegradation, markDegraded, isDegraded } from '../degradation.ts'
 import { runStageHandler } from '../adapter.ts'
 import type { StageHandler } from '../../atoms/index.ts'
-import { APPROVAL_GRANTED_KEY, isApprovalGateHandler, isGateApproved } from '../../atoms/index.ts'
+import {
+  APPROVAL_GRANTED_KEY,
+  StageCancelledError,
+  isApprovalGateHandler,
+  isGateApproved,
+  isStageCancelledError,
+} from '../../atoms/index.ts'
 import { collectStateText } from '../../atoms/handler.ts'
 import type { RuleEvaluator, RuleGateAssessment, RuleGateRequest } from '../../checker/index.ts'
 import { LevelMust } from '../../checker/types.ts'
@@ -52,6 +59,9 @@ export type LlmNodeOptions = {
 }
 
 /** 基于 LlmNodeOptions 构造 LLM 图节点：调用 provider.callLLM，缺失/失败时写降级标记。
+ *
+ * 取消不是阶段失败：`RunOptions.signal` 契约要求节点内取消以 {@link StageCancelledError}
+ * 拒绝，故 `StageCancelledError`、abort 与已中止信号都向上抛出，不写降级标记。
  * @param input - LlmNodeOptions。
  * @returns 图节点。
  */
@@ -71,6 +81,8 @@ export function llmNode(input: LlmNodeOptions): GraphNode {
       }, signal)
       return { [outputKey]: raw }
     } catch (err) {
+      if (isStageCancelledError(err)) throw err
+      if (signal?.aborted === true || isAbortError(err)) throw new StageCancelledError(outputKey)
       const delta: StateDelta = {}
       markDegraded(
         delta,

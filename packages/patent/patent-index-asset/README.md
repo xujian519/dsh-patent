@@ -1,5 +1,5 @@
 ---
-description: "Shipped-index asset format for the patent domain: the YAML mapping step, the strict field readers, the source and verification fields every transcribed entry records, and the load error a malformed index raises."
+description: "Shipped-index asset format for the patent and legal domains: the YAML mapping step, the strict field readers, the source and verification fields every transcribed entry records, and the load error a malformed index raises."
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Shipped-index asset format for the patent domain: the YAML mapping step, the strict field readers, the source and verification fields every transcribed entry records, and the load error a malformed index raises.
+Shipped-index asset format for the patent and legal domains: the YAML mapping step, the strict field readers, the source and verification fields every transcribed entry records, and the load error a malformed index raises.
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ Shipped-index asset format for the patent domain: the YAML mapping step, the str
 <a id="why-it-exists"></a>
 ## Why it exists
 
-`@deepseek-ai/dsh-patent-law` and `@deepseek-ai/dsh-patent-fees` each ship a YAML index that a person transcribes by hand and the plugin reads at load; both refuse a malformed field instead of coercing it, and both record where every entry came from. Sharing one implementation is what keeps that rule from drifting between them — a second copy would let the two indexes disagree about what `null` means without either gate noticing.
+`@deepseek-ai/dsh-patent-law`, `@deepseek-ai/dsh-patent-fees`, and `@deepseek-ai/dsh-legal-law` each ship a YAML index that a person transcribes by hand and the plugin reads at load; each refuses a malformed field instead of coercing it, and each records where every entry came from. Sharing one implementation is what keeps that rule from drifting between them — a second copy would let the indexes disagree about what `null` means without either gate noticing.
 
 <a id="field-readers"></a>
 ## Field readers
@@ -42,7 +42,7 @@ Each reader either returns the value the asset declared or refuses the file with
 <a id="error-contract"></a>
 ## Error contract
 
-`IndexAssetError` carries the file the problem came from in `origin`. Readers take an `AssetFail` — a factory the caller binds to one file — instead of an error class, so each index package keeps its own catchable error type (`LawBaselineError`, `FeeTableError`) while sharing the field rules; both extend `IndexAssetError`.
+`IndexAssetError` carries the file the problem came from in `origin`. Readers take an `AssetFail` — a factory the caller binds to one file — instead of an error class, so each index package keeps its own catchable error type (`LawBaselineError`, `FeeTableError`, `LegalLawBaselineError`) while sharing the field rules; all three extend `IndexAssetError`.
 
 <a id="model-experience"></a>
 ## Model Experience

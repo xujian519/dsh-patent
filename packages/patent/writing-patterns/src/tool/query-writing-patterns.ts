@@ -4,6 +4,7 @@
  * @module @deepseek-ai/dsh-writing-patterns/tool/query-writing-patterns
  */
 
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { PatternStore } from '../pattern-store.ts'
@@ -47,6 +48,20 @@ export type QueryWritingPatternsOutput = {
   librarySize: number
   /** Compiled block for `patterns`; `''` when nothing matched. */
   skills: string
+}
+
+/**
+ * Thrown when the tool input cannot select patterns.
+ * Extends {@link HarnessError} so the stable code reaches `tool/result`.
+ */
+export class QueryWritingPatternsToolError extends HarnessError {
+  /**
+   * @param code - stable error code for the model and logs.
+   * @param message - what is wrong with the input.
+   */
+  constructor(code: string, message: string) {
+    super(message, code)
+  }
 }
 
 /** Injected collaborators. */
@@ -174,7 +189,10 @@ export function renderQueryWritingPatterns(
 function resolveLimit(limit: number | undefined, matchLimit: number): number {
   if (limit === undefined) return matchLimit
   if (!Number.isInteger(limit) || limit < 1) {
-    throw new Error(`query_writing_patterns: limit must be a positive integer, got ${String(limit)}`)
+    throw new QueryWritingPatternsToolError(
+      'invalid_limit',
+      `query_writing_patterns: limit must be a positive integer, got ${String(limit)}`,
+    )
   }
   return limit
 }

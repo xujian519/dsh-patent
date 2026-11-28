@@ -15,8 +15,14 @@ import { sectionBodies } from './spec-placeholder.ts'
 import type { PatentType } from './draft-claims.ts'
 import type { SpecViolation } from './spec-types.ts'
 
+/**
+ * A standard citation carries its number or a recognized code prefix. A bare
+ * 「标准」 describes a requirement level, not a document.
+ */
+const STANDARD_REFERENCE = /(?:标准\s*(?:号|编号)|(?:GB|ISO|IEC|ASTM|JIS|DIN|EN|ANSI)\s*[/／\s-]*[A-Z]?\s*\d)/
+
 /** Sentences that claim a specific prior-art document. */
-const CITATION_CLAIM = /(?:专利号|公开号|公告号|对比文件\s*\d|专利文献|非专利文献|期刊|论文|会议|标准)/
+const CITATION_CLAIM = new RegExp(`(?:专利号|公开号|公告号|对比文件\\s*\\d|专利文献|非专利文献|期刊|论文|会议)|${STANDARD_REFERENCE.source}`)
 
 /** A jurisdiction token or number prefix in a patent citation. */
 const CITATION_COUNTRY = /(?:CN|US|EP|JP|KR|WO|DE|FR|GB|TW)\s*\d|中国|美国|欧洲|日本|韩国|德国|英国|世界知识产权组织/
@@ -79,7 +85,7 @@ export function checkBackgroundCitations(text: string): SpecViolation[] {
           suggestion: '按「国别+公开号+公开日」写明引证文件；非专利文献写明出处、作者与日期',
         })
       }
-    } else if (!/《[^》]+》|出版社|标准号/.test(claim)) {
+    } else if (!/《[^》]+》|出版社/.test(claim) && !STANDARD_REFERENCE.test(claim)) {
       violations.push({
         rule: 'background_citation',
         family: 'description',

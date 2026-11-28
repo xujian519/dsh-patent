@@ -223,6 +223,7 @@ describe('query_writing_patterns execution', () => {
     for (const limit of [0, -1]) {
       const result = await execute(ctx, { limit })
       expect(result.isError).toBe(true)
+      expect(result.error?.info).toMatchObject({ name: 'QueryWritingPatternsToolError', code: 'invalid_limit' })
       expect(JSON.stringify(result.content)).toContain('limit must be a positive integer')
     }
   })

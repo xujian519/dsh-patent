@@ -66,6 +66,25 @@ export function stripWhitespace(text: string): string {
 
 const ELEMENT_ID_RE = /^(\d+)([a-z]+)$/
 
+/** 字母后缀转 0 基序号（双射 26 进制：a=0, …, z=25, aa=26, ab=27, …）。 */
+function lettersToIndex(letters: string): number {
+  let value = 0
+  for (const char of letters) value = value * 26 + (char.charCodeAt(0) - 'a'.charCodeAt(0) + 1)
+  return value - 1
+}
+
+/** 0 基序号转字母后缀（双射 26 进制：0→a, 25→z, 26→aa, …）。 */
+function indexToLetters(index: number): string {
+  let remaining = index + 1
+  const chars: string[] = []
+  while (remaining > 0) {
+    const remainder = (remaining - 1) % 26
+    chars.push(String.fromCharCode('a'.charCodeAt(0) + remainder))
+    remaining = Math.floor((remaining - 1) / 26)
+  }
+  return chars.reverse().join('')
+}
+
 /**
  * 按行首 "N. / N、 / N．" 切分权利要求文本为 { claimNo → 段落文本 }。
  * 无编号（单条 claim）或非行首编号时返回空 Map，调用方回退全文校验。
@@ -154,9 +173,10 @@ export function validateElements(elements: ClaimElement[], claimText: string): E
   }
 
   for (const [claimNo, letters] of byClaim) {
-    letters.sort()
+    // 按双射 26 进制序号排序（而非字典序），使 aa 排在 z 之后；第 27 个要素为 aa 而非非法跳号。
+    letters.sort((left, right) => lettersToIndex(left) - lettersToIndex(right))
     for (let i = 0; i < letters.length; i += 1) {
-      const expected = String.fromCharCode('a'.charCodeAt(0) + i)
+      const expected = indexToLetters(i)
       if (letters[i] !== expected) {
         errors.push(`权利要求 ${claimNo} 要素编号跳号：期望 ${claimNo}${expected}，实际含 ${claimNo}${letters[i]}`)
         break

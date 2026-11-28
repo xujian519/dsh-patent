@@ -78,15 +78,17 @@ function retryDelayMs(headers: Headers): number {
   return Math.min(value, MAX_RETRY_DELAY_MS)
 }
 
-/** 等待一段时间；调用方取消时立即结束。 */
+/** 等待一段时间；调用方取消时立即结束（含进入等待前已中止）。 */
 async function sleep(ms: number, signal: AbortSignal | undefined): Promise<void> {
+  if (signal?.aborted === true) return
   await new Promise<void>((resolve) => {
-    const timer = setTimeout(resolve, ms)
-    const abort = (): void => {
+    const finish = (): void => {
       clearTimeout(timer)
+      signal?.removeEventListener('abort', finish)
       resolve()
     }
-    signal?.addEventListener('abort', abort, { once: true })
+    const timer = setTimeout(finish, ms)
+    signal?.addEventListener('abort', finish, { once: true })
   })
 }
 

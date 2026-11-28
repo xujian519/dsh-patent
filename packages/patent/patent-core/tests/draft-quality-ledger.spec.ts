@@ -59,6 +59,10 @@ describe('draft-quality-ledger 判定折叠', () => {
     expect(revisionLedgerVerdict({ revision_ledger_reconciliation: 'corrupted' })).toMatchObject({
       status: 'unassessed', reason: '账本缺失：revision-ledger 阶段未运行或已降级',
     })
+    // null 的 typeof 也是 'object'：必须显式排除，否则读取字段会抛 TypeError。
+    expect(revisionLedgerVerdict({ revision_ledger_reconciliation: null })).toMatchObject({
+      status: 'unassessed', reason: '账本缺失：revision-ledger 阶段未运行或已降级',
+    })
     expect(revisionLedgerVerdict({ revision_ledger_reconciliation: { persisting: 'x' } })).toMatchObject({
       status: 'unassessed', reason: '账本字段类型不符（persisting/roundCount 非数值）',
     })

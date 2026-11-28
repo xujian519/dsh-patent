@@ -111,7 +111,9 @@ describe('runWorkflow — sparse stages defensive guards', () => {
     // 再入循环时 current 为 undefined → 第三条防御分支收尾。
     expect(called).toEqual(['a'])
     expect(result.stages.map(s => s.stageId)).toEqual(['a'])
-    expect(result.completed).toBe(true)
+    // 提前收尾不等于完成：manifest 还有两个阶段没有执行。
+    expect(result.completed).toBe(false)
+    expect(result.summary).toContain('2 个阶段未执行')
   })
 
   it('a hole after a parallel group stops the run at the next current lookup', async () => {
@@ -149,7 +151,9 @@ describe('runWorkflow — sparse stages defensive guards', () => {
       { atoms: atomRegistry(['extract']) },
     )
     expect(result.stages.map(s => s.stageId)).toEqual(['a', 'b'])
-    expect(result.completed).toBe(true)
+    // 第三个槽位缺失，运行没有覆盖整个 manifest。
+    expect(result.completed).toBe(false)
+    expect(result.summary).toContain('1 个阶段未执行')
   })
 })
 
@@ -422,7 +426,8 @@ describe('runWorkflow — retry rewinding edge cases', () => {
     )
     // rewindTo 幽灵阶段 → stageIds 索引不到 → 执行在 c 之后中止，c 的结果不入列。
     expect(result.stages.map(s => s.stageId)).toEqual(['a'])
-    expect(result.completed).toBe(true)
+    expect(result.completed).toBe(false)
+    expect(result.summary).toContain('2 个阶段未执行')
   })
 })
 

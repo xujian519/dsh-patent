@@ -146,6 +146,39 @@ it('manifestToGraph: 简单线性 manifest 输出各阶段结果', async () => {
   }
 })
 
+it('manifestToGraph: params 与阶段 id 同名且非字符串时按缺失处理（S-PAT-017）', async () => {
+  // params 合并进执行态且键名不受校验；兜底读取只接受字符串，旧实现会在 output.trim() 抛 TypeError。
+  const manifest: WorkflowManifest = {
+    id: 'params_collision',
+    name: '参数同名',
+    caseType: 'test',
+    stages: [{ id: 's1', strategy: 'chain', description: '一', params: { s1: { stale: true } } }],
+  }
+  const gr = await manifestToGraph(manifest).run({})
+  expect(gr.completed).toBe(true)
+  expect(gr.state.s1).toBe('')
+  expect(gr.state.s1__degraded).toBe(true)
+
+  // handler 无产出时，同名的字符串 params 仍作为既有产出兜底。
+  const handlers = new StageHandlerRegistry()
+  const atoms = new AtomRegistry()
+  handlers.register({ name: 'empty-atom', category: 'extract', execute: async () => ({}) })
+  atoms.register({
+    name: 'empty-atom',
+    description: '无产出原子',
+    category: 'extract',
+    inputSchema: [],
+    outputSchema: ['result'],
+  })
+  const asText: WorkflowManifest = {
+    ...manifest,
+    stages: [{ id: 's1', strategy: 'chain', description: '一', atom: 'empty-atom', params: { s1: '既有产出' } }],
+  }
+  const reused = await manifestToGraph(asText, { handlers, atoms }).run({})
+  expect(reused.state.s1).toBe('既有产出')
+  expect(reused.state.s1__degraded).toBeUndefined()
+})
+
 it('manifestToGraph: handler 返回 _error → 节点级降级标记且不泄漏内部键', async () => {
   const handlers = new StageHandlerRegistry()
   const atoms = new AtomRegistry()

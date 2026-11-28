@@ -156,6 +156,12 @@ describe('svgToDxf', () => {
     expect(straight.warnings).toEqual([])
     expect(straight.dxf).toContain('\nLINE\n')
 
+    const marked = svgToDxf(svg(`
+      <defs><marker id="arrow" markerWidth="4" markerHeight="4"><path d="M0 0 L4 2"/></marker></defs>
+      <line x1="1" y1="1" x2="10" y2="1" stroke="#000" marker-end="url(#arrow)"/>
+    `))
+    expect(marked.warnings).toContain('`marker-start/mid/end` 端头（箭头）的墨迹未量测')
+
     const collapsed = Array.from({ length: 24 }, () => '5,5').join(' ')
     const flatCircle = svgToDxf(svg(`<polygon points="${collapsed}" fill="none" stroke="#000"/>`))
     expect(flatCircle.dxf).not.toContain('\nCIRCLE\n')

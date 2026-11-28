@@ -97,6 +97,7 @@
     "packages/legal/legal-evidence/src/tool/evaluate-evidence.ts|packages/patent/patent-tools/src/tool/parse-office-action.ts",
     "packages/legal/legal-evidence/src/tool/evaluate-evidence.ts|packages/patent/patent-tools/src/tool/recognize-chemical-structure.ts",
     "packages/legal/legal-evidence/src/tool/evaluate-evidence.ts|packages/patent/tool-literature/src/tool/paper-download.ts",
+    "packages/legal/legal-knowledge/src/install.ts|packages/patent/patent-knowledge/src/install.ts",
     "packages/legal/legal-knowledge/src/types.ts|packages/patent/patent-knowledge/src/types.ts",
     "packages/legal/legal-law/src/asset-location.ts|packages/patent/patent-law/src/asset-location.ts",
     "packages/legal/legal-law/src/baseline.ts|packages/patent/patent-law/src/baseline.ts",

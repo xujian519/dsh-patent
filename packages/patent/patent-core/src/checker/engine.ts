@@ -129,8 +129,12 @@ function checkNovelty(text: string, rule: CheckRule): [boolean, string] {
   }
   if (rule.singleComparison === true) {
     for (const phrase of singleComparisonBanPhrases) {
-      if (text.includes(phrase)) {
-        return [false, '新颖性分析违反单独对比原则：不应将多份对比文件结合']
+      let idx = text.indexOf(phrase)
+      while (idx !== -1) {
+        if (!hasBanPhraseNegation(text, idx)) {
+          return [false, '新颖性分析违反单独对比原则：不应将多份对比文件结合']
+        }
+        idx = text.indexOf(phrase, idx + 1)
       }
     }
   }
@@ -149,14 +153,6 @@ function checkInventiveness(text: string, rule: CheckRule): [boolean, string] {
   return [true, '']
 }
 
-function checkInfringement(text: string, rule: CheckRule): [boolean, string] {
-  return checkRequiredAll(text, rule.requiredElements, '侵权分析缺少必要对比要素（如全面覆盖、技术特征比对）')
-}
-
-function checkDisclosure(text: string, rule: CheckRule): [boolean, string] {
-  return checkRequiredAll(text, rule.requiredAspects, '充分公开分析缺少必要审查维度（如能够实现、技术效果）')
-}
-
 function checkClaimAnalysis(text: string, rule: CheckRule): [boolean, string] {
   for (const dim of rule.dimensions ?? []) {
     const patterns = claimDimensionPatterns[dim]
@@ -166,22 +162,6 @@ function checkClaimAnalysis(text: string, rule: CheckRule): [boolean, string] {
     }
   }
   return [true, '']
-}
-
-function checkDesignComparison(text: string, rule: CheckRule): [boolean, string] {
-  return checkRequiredAll(text, rule.requiredElements, '外观设计对比分析缺少必要要素（如整体视觉效果、产品种类认定）')
-}
-
-function checkPublicAccess(text: string, rule: CheckRule): [boolean, string] {
-  return checkRequiredAll(text, rule.requiredElements, '公开方式判断缺少必要要素（如公开方式认定、公开日核实）')
-}
-
-function checkAmendmentScope(text: string, rule: CheckRule): [boolean, string] {
-  return checkRequiredAll(text, rule.requiredElements, '修改超范围分析缺少必要要素（如原申请文件范围、直接且毫无疑义的确定）')
-}
-
-function checkSubjectMatter(text: string, rule: CheckRule): [boolean, string] {
-  return checkRequiredAll(text, rule.requiredElements, '保护客体分析缺少必要要素（如技术方案认定、排除客体分析）')
 }
 
 /** 禁语否定前缀检测：命中位置前 8 字符内出现否定词且紧邻（≤4 个非标点字符）视为否定语境。 */
@@ -241,25 +221,25 @@ function evaluateRule(rule: CheckRule, text: string): { passed: boolean; detail:
       [passed, detail] = checkInventiveness(text, rule)
       break
     case 'patent_infringement':
-      [passed, detail] = checkInfringement(text, rule)
+      [passed, detail] = checkRequiredAll(text, rule.requiredElements, '侵权分析缺少必要对比要素（如全面覆盖、技术特征比对）')
       break
     case 'patent_disclosure':
-      [passed, detail] = checkDisclosure(text, rule)
+      [passed, detail] = checkRequiredAll(text, rule.requiredAspects, '充分公开分析缺少必要审查维度（如能够实现、技术效果）')
       break
     case 'patent_claim_analysis':
       [passed, detail] = checkClaimAnalysis(text, rule)
       break
     case 'patent_design_comparison':
-      [passed, detail] = checkDesignComparison(text, rule)
+      [passed, detail] = checkRequiredAll(text, rule.requiredElements, '外观设计对比分析缺少必要要素（如整体视觉效果、产品种类认定）')
       break
     case 'patent_public_access':
-      [passed, detail] = checkPublicAccess(text, rule)
+      [passed, detail] = checkRequiredAll(text, rule.requiredElements, '公开方式判断缺少必要要素（如公开方式认定、公开日核实）')
       break
     case 'patent_amendment_scope':
-      [passed, detail] = checkAmendmentScope(text, rule)
+      [passed, detail] = checkRequiredAll(text, rule.requiredElements, '修改超范围分析缺少必要要素（如原申请文件范围、直接且毫无疑义的确定）')
       break
     case 'patent_subject_matter':
-      [passed, detail] = checkSubjectMatter(text, rule)
+      [passed, detail] = checkRequiredAll(text, rule.requiredElements, '保护客体分析缺少必要要素（如技术方案认定、排除客体分析）')
       break
     case 'patent_spec':
       [passed, detail] = checkSpec(text, rule)

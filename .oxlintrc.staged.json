@@ -2,7 +2,9 @@
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "extends": ["./.oxlintrc.json"],
   "options": {
-    "typeAware": false
+    "typeAware": false,
+    // Type-aware rules do not run here, so their disable directives look unused; `pnpm run lint` still reports them.
+    "reportUnusedDisableDirectives": "off"
   },
   "ignorePatterns": [
     "**/lib/**",

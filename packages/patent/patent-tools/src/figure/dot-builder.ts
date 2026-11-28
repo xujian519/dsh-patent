@@ -256,6 +256,25 @@ export function sanitizeId(id: string): string {
   return cleaned
 }
 
+/**
+ * 拒绝规范化后相撞的节点 id。
+ *
+ * `a b` 与 `a_b` 经 {@link sanitizeId} 都变成 `a_b`；若只按原 id 去重，DOT 会出现两条
+ * 同 id 节点声明，后者覆盖前者且后继/连接指向不明的节点。层级图与状态图已在遍历时拒绝。
+ * @param entries - 规范化后的 id 与调用方给出的原始 id。
+ * @param noun - 实体名（`步骤` / `块`）。
+ * @throws DotBuildError('unknown_id') 规范化后的 id 重复。
+ */
+function assertUniqueIds(entries: readonly { id: string; source: string }[], noun: string): void {
+  const seen = new Set<string>()
+  for (const { id, source } of entries) {
+    if (seen.has(id)) {
+      throw new DotBuildError('unknown_id', `${noun} id 重复（经 DOT 规范化后）：${source}`)
+    }
+    seen.add(id)
+  }
+}
+
 /** 提交规格页面尺寸白名单。 */
 export type DotPageSize = 'a4' | 'letter'
 
@@ -295,7 +314,8 @@ const CM_PER_INCH = 2.54
  * 汇总配置默认与 per-call 覆盖后的页面参数。
  * @param input - 四项页面参数（全部缺省时不输出任何布局属性，行为与现状一致）。
  * @returns 传入 buildDotHeader 的 bundle；全部缺省时 undefined。
- * @throws DotBuildError('invalid_page') dpi/marginCm 非正或 dpi 非整数。
+ * @throws DotBuildError('invalid_page') dpi 非正整数、marginCm 非正有限数，或
+ * marginCm 在给定 pageSize 下使可用绘图区归零/为负。
  */
 export function resolvePageBundle(input: DotPageInput): DotPageBundle | undefined {
   const { pageSize, orientation, dpi, marginCm } = input
@@ -303,8 +323,18 @@ export function resolvePageBundle(input: DotPageInput): DotPageBundle | undefine
   if (dpi !== undefined && (!Number.isInteger(dpi) || dpi < 1)) {
     throw new DotBuildError('invalid_page', `dpi 必须为正整数：${String(dpi)}`)
   }
-  if (marginCm !== undefined && marginCm <= 0) {
-    throw new DotBuildError('invalid_page', `页边距必须为正（厘米）：${String(marginCm)}`)
+  if (marginCm !== undefined && (!Number.isFinite(marginCm) || marginCm <= 0)) {
+    throw new DotBuildError('invalid_page', `页边距必须为正有限数（厘米）：${String(marginCm)}`)
+  }
+  if (pageSize !== undefined && marginCm !== undefined) {
+    const { w, h } = PAGE_SIZE_INCHES[pageSize]
+    const maxMarginCm = Math.min(w, h) * CM_PER_INCH / 2
+    if (marginCm >= maxMarginCm) {
+      throw new DotBuildError(
+        'invalid_page',
+        `页边距 ${String(marginCm)}cm 超出 ${pageSize} 页面可用尺寸（须小于 ${String(Math.round(maxMarginCm * 100) / 100)}cm）`,
+      )
+    }
   }
   return {
     ...(pageSize === undefined ? {} : { pageSize }),
@@ -481,7 +511,9 @@ type BuildFlowchartOptions = {
  */
 export function buildFlowchartDOT(steps: readonly FlowchartStep[], options: BuildFlowchartOptions = {}): string {
   if (steps.length === 0) throw new DotBuildError('empty_input', '流程图至少需要一个步骤')
-  const ids = steps.map(step => sanitizeId(step.id))
+  const idEntries = steps.map(step => ({ id: sanitizeId(step.id), source: step.id }))
+  assertUniqueIds(idEntries, '步骤')
+  const ids = idEntries.map(entry => entry.id)
   const byId = new Map<string, FlowchartStep>()
   steps.forEach((step, index) => byId.set(ids[index] as string, step))
   const assignments = assignFor(ids, options)
@@ -589,7 +621,9 @@ export function buildBlockDiagramDOT(
   options: BuildBlockDiagramOptions = {},
 ): string {
   if (blocks.length === 0) throw new DotBuildError('empty_input', '框图至少需要一个块')
-  const ids = blocks.map(block => sanitizeId(block.id))
+  const idEntries = blocks.map(block => ({ id: sanitizeId(block.id), source: block.id }))
+  assertUniqueIds(idEntries, '块')
+  const ids = idEntries.map(entry => entry.id)
   const byId = new Map<string, BlockDiagramBlock>()
   blocks.forEach((block, index) => byId.set(ids[index] as string, block))
   const assignments = assignFor(ids, options)

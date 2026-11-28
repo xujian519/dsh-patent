@@ -108,6 +108,30 @@ export function parseRuleSet(yamlText: string, source: string): { ruleSet: Evide
           dimensions.push({ name: dim.name, weight: dim.weight, levels })
         }
       }
+      let platformCredibility: Record<string, { score: number; label: string }> | undefined
+      let assessmentConditions: Record<string, string> | undefined
+      if (assessment !== null) {
+        const pc = asRecord(assessment.platformCredibility)
+        if (pc !== null) {
+          const entries: Record<string, { score: number; label: string }> = {}
+          for (const [key, valueRaw] of Object.entries(pc)) {
+            const value = asRecord(valueRaw)
+            if (value === null) continue
+            if (typeof value.score !== 'number' || !Number.isFinite(value.score)) continue
+            if (typeof value.label !== 'string') continue
+            entries[key] = { score: value.score, label: value.label }
+          }
+          if (Object.keys(entries).length > 0) platformCredibility = entries
+        }
+        const cond = asRecord(assessment.conditions)
+        if (cond !== null) {
+          const entries: Record<string, string> = {}
+          for (const [key, value] of Object.entries(cond)) {
+            if (typeof value === 'string') entries[key] = value
+          }
+          if (Object.keys(entries).length > 0) assessmentConditions = entries
+        }
+      }
       const check = asRecord(record.check)
       rules.push({
         ruleId: record.ruleId,
@@ -137,6 +161,8 @@ export function parseRuleSet(yamlText: string, source: string): { ruleSet: Evide
                 : 'triple-attribute') as AssessmentType,
               ...(dimensions !== undefined ? { dimensions } : {}),
               exemptions: asStringArray(assessment.exemptions),
+              ...(platformCredibility !== undefined ? { platformCredibility } : {}),
+              ...(assessmentConditions !== undefined ? { conditions: assessmentConditions } : {}),
             },
           }
           : {}),

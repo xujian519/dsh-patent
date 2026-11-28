@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-patent-index-asset",
-  "description": "Shipped-index asset format for the DeepSeek Harness patent domain: the YAML mapping step, the strict field readers, the source and verification fields every transcribed entry records, and the load error a malformed index raises",
+  "description": "Shipped-index asset format for the DeepSeek Harness patent and legal domains: the YAML mapping step, the strict field readers, the source and verification fields every transcribed entry records, and the load error a malformed index raises",
   "version": "0.2.3-alpha.2",
   "publishConfig": {
     "access": "public"

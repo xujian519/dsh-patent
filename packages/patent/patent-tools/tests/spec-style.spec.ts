@@ -53,6 +53,22 @@ describe('checkHeadingSet', () => {
     expect(v?.line).toBe(3)
     expect(v?.matchedSentence).toBe('要解决的技术问题')
   })
+
+  it('reports a repeated section heading at its second occurrence', () => {
+    const text = [
+      '## 技术领域', '本发明涉及一种检测装置。',
+      '## 技术领域', '本发明涉及另一种检测装置。',
+      '## 技术领域', '本发明涉及第三种检测装置。',
+    ].join('\n')
+    const [v, ...rest] = checkHeadingSet(text)
+    expect(rest).toEqual([])
+    expect(v?.rule).toBe('heading_duplicate')
+    expect(v?.severity).toBe('error')
+    expect(v?.message).toContain('技术领域')
+    expect(v?.suggestion).toContain('技术领域')
+    expect(v?.line).toBe(3)
+    expect(v?.matchedSentence).toBe('技术领域')
+  })
 })
 
 describe('checkSectionOrder', () => {

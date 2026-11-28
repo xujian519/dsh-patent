@@ -318,10 +318,12 @@ export interface Config {
   deliveryGateDigestMode: 'shadow' | 'enforce'
   /**
    * Citation gate: before a listed delivery tool runs, every citation in its
-   * text arguments must pass the shipped patent index and, for 民法典 and
-   * 民事诉讼法, the legal-law index. A citation that is out of range, absent
-   * from the index, unverified, or narrowed to a missing paragraph or item
-   * denies the call.
+   * text arguments must pass the shipped patent index and, for the four civil
+   * statutes the legal-law extractor recognizes unconditionally (民法典,
+   * 民事诉讼法, 劳动合同法, 公司法), the legal-law index. A civil statute
+   * outside that index is skipped rather than denied. A citation that is out of
+   * range, absent from the index, unverified, or narrowed to a missing
+   * paragraph or item denies the call.
    */
   citationGate: CitationGateEntry[]
   /** When true, review-level violations block without an approval round-trip (unattended fail-closed). */
@@ -440,11 +442,6 @@ function attachWarn(decision: PostToolDecision, warn: UserMessage | undefined): 
 }
 
 /**
- * Register the patent-rule contribution.
- * @param ctx - registrant context carrying the tool registry.
- * @param config - validated {@link Config}.
- */
-/**
  * Whether a prerequisite result declares its own block.
  *
  * A tool can return successfully while refusing the result it checked
@@ -459,6 +456,11 @@ function isBlockedResult(value: unknown): boolean {
     && (value as { blocked?: unknown }).blocked === true
 }
 
+/**
+ * Register the patent-rule contribution.
+ * @param ctx - registrant context carrying the tool registry.
+ * @param config - validated {@link Config}.
+ */
 export function apply(ctx: Context, config: Config): void {
   const gateToolNames = new Set(config.gateToolNames)
   const approvalDisabled = config.approvalDisabled

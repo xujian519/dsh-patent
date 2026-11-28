@@ -67,7 +67,7 @@ export function parseLawLineage(source: string, origin: string): LawLineageSnaps
   const document = readString(root, 'document', fail)
   const lineageVersion = readString(root, 'lineageVersion', fail)
   const revisions = readRevisions(root['revisions'], fail)
-  const articles = readArticleLineages(root['articles'], fail)
+  const articles = readArticleLineages(root['articles'], fail, revisions)
 
   return {
     law,
@@ -200,6 +200,7 @@ function readRevisions(value: unknown, fail: AssetFail): RevisionDescriptor[] {
     throw fail('字段 revisions 必须是非空数组')
   }
   const seen = new Set<string>()
+  let previousDate: string | undefined
   return value.map((item) => {
     const entry = readMapping(item, 'revisions 的每一项', fail)
     const id = readString(entry, 'id', fail)
@@ -210,15 +211,25 @@ function readRevisions(value: unknown, fail: AssetFail): RevisionDescriptor[] {
     if (!/^\d{4}-\d{2}-\d{2}$/u.test(effectiveDate)) {
       throw fail(`revisions[${id}].effectiveDate 必须是 YYYY-MM-DD 格式`)
     }
+    // 修订目录按生效时间升序：queryDiffBetween 用目录下标作为时间先后。
+    if (previousDate !== undefined && effectiveDate <= previousDate) {
+      throw fail(`revisions 必须按 effectiveDate 升序排列（${id} 的 ${effectiveDate} 不晚于 ${previousDate}）`)
+    }
+    previousDate = effectiveDate
     const source = readString(entry, 'source', fail)
     return { id, label, effectiveDate, source }
   })
 }
 
-function readArticleLineages(value: unknown, fail: AssetFail): ArticleLineage[] {
+function readArticleLineages(
+  value: unknown,
+  fail: AssetFail,
+  revisions: readonly RevisionDescriptor[],
+): ArticleLineage[] {
   if (!Array.isArray(value) || value.length === 0) {
     throw fail('字段 articles 必须是非空数组')
   }
+  const catalogue = new Map(revisions.map(revision => [revision.id, revision.effectiveDate]))
   const seen = new Set<number>()
   return value.map((item) => {
     const entry = readMapping(item, 'articles 的每一项', fail)
@@ -231,8 +242,37 @@ function readArticleLineages(value: unknown, fail: AssetFail): ArticleLineage[] 
     if (revisionHistory.length === 0) {
       throw fail(`第${articleId}条的 revisionHistory 必须至少有一条记录`)
     }
+    validateRevisionHistory(articleId, revisionHistory, catalogue, fail)
     return { articleId, title, currentStatus, revisionHistory }
   })
+}
+
+/**
+ * A history entry must name a catalogued revision, carry that revision's
+ * effective date, and stay in ascending date order. `queryArticleAtDate` stops
+ * at the first later date and `queryDiffBetween` matches revision ids, so an
+ * unvalidated typo or reordering silently mis-decides both queries.
+ */
+function validateRevisionHistory(
+  articleId: number,
+  revisionHistory: readonly ArticleRevision[],
+  catalogue: ReadonlyMap<string, string>,
+  fail: AssetFail,
+): void {
+  let previousDate: string | undefined
+  for (const revision of revisionHistory) {
+    const declaredDate = catalogue.get(revision.revision)
+    if (declaredDate === undefined) {
+      throw fail(`第${articleId}条的 revisionHistory 引用了 revisions 中不存在的修订：${revision.revision}`)
+    }
+    if (revision.effectiveDate !== declaredDate) {
+      throw fail(`第${articleId}条 ${revision.revision} 的 effectiveDate 为 ${revision.effectiveDate}，与 revisions 的 ${declaredDate} 不一致`)
+    }
+    if (previousDate !== undefined && revision.effectiveDate <= previousDate) {
+      throw fail(`第${articleId}条的 revisionHistory 必须按 effectiveDate 升序排列（${revision.revision} 的 ${revision.effectiveDate} 不晚于 ${previousDate}）`)
+    }
+    previousDate = revision.effectiveDate
+  }
 }
 
 function readArticleId(entry: Record<string, unknown>, fail: AssetFail): number {

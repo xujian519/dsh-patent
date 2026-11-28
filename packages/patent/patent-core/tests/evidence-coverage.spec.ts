@@ -357,8 +357,20 @@ it('证据引擎：显式类型覆盖各类型特定分支', () => {
   const witness = engine.judge(span({ snippet: '证人证言' }), undefined, 'witness_testimony')
   expect(witness.typeSpecificJudgment?.witnessCredibility).toBe('medium')
 
+  // 公知常识免证以 EVI-013 两项条件均满足为前提：未提供外部输入时不得宣称「无需举证」
   const ck = engine.judge(span({ snippet: '公知常识' }), undefined, 'common_knowledge')
-  expect(ck.typeSpecificJudgment?.exemptionApplied).toBe('无需举证')
+  expect(ck.typeSpecificJudgment?.exemptionApplied).toBeUndefined()
+  // 仅满足其中一项不构成免证
+  const ckPartial = engine.judge(span({ snippet: '公知常识' }), undefined, 'common_knowledge', {
+    isWellKnown: true,
+  })
+  expect(ckPartial.typeSpecificJudgment?.exemptionApplied).toBeUndefined()
+  // 两项条件均满足 → 免证
+  const ckExempt = engine.judge(span({ snippet: '公知常识' }), undefined, 'common_knowledge', {
+    isWellKnown: true,
+    isUncontested: true,
+  })
+  expect(ckExempt.typeSpecificJudgment?.exemptionApplied).toBe('无需举证')
   expect(ck.reasoning).toMatch(/公知常识/)
 
   const priorArt = engine.judge(
@@ -380,13 +392,20 @@ it('使用公开：日期认定各分支', () => {
   const monthOnly = engine.judge(span({ sourceUri: 'pub_use:x', docVersion: '2023-01' }))
   expect(monthOnly.typeSpecificJudgment?.dateDetermination?.determined).toBe('2023-01-31')
   expect(monthOnly.typeSpecificJudgment?.fourElementsCheck?.timeElement.detail).toMatch(/精度不足/)
-  // 不可解析 docVersion → 从 snippet 提取日期
+  // 不可解析 docVersion → 从 snippet 提取日期；四要件的时间要件应同步判为满足（S-PAT-007）
   const fromSnippet = engine.judge(span({ sourceUri: 'pub_use:x', docVersion: '未知', snippet: '2023年1月销售' }))
   expect(fromSnippet.typeSpecificJudgment?.dateDetermination?.determined).toBe('2023年1月')
   expect(fromSnippet.typeSpecificJudgment?.dateDetermination?.sourceType).toBe('inferred')
-  // 无 docVersion 无 snippet → 保持 unknown（snippet ?? '' 兜底路径）
+  expect(fromSnippet.typeSpecificJudgment?.fourElementsCheck?.timeElement.met).toBe(true)
+  // 无 docVersion 但 snippet 含日期 → 时间要件满足（snippet 回退）
+  const noVersionWithDate = engine.judge(
+    span({ sourceUri: 'pub_use:x', snippet: '该产品已于2023年1月10日公开销售' }),
+  )
+  expect(noVersionWithDate.typeSpecificJudgment?.fourElementsCheck?.timeElement.met).toBe(true)
+  // 无 docVersion 无 snippet → 保持 unknown（snippet ?? '' 兜底路径），时间要件不满足
   const unknown = engine.judge(createSpan({ sourceUri: 'pub_use:x', direction: 'neutral' }))
   expect(unknown.typeSpecificJudgment?.dateDetermination?.determined).toBe('unknown')
+  expect(unknown.typeSpecificJudgment?.fourElementsCheck?.timeElement.met).toBe(false)
   // 提供申请日 → isPriorArt 判定
   const withFiling = engine.judge(span({ sourceUri: 'pub_use:x', docVersion: '2023-01-10' }), {
     filingDate: '2023-06-01',
@@ -639,6 +658,40 @@ rules:
   expect(rule2.check?.method).toBe('')
   expect(rule2.evidenceAssessment?.assessmentType).toBe('triple-attribute')
   expect(rule2.evidenceAssessment?.dimensions).toBeUndefined()
+})
+
+it('规则解析：保留 evidenceAssessment 的 platformCredibility 与 conditions（S-PAT-010）', () => {
+  const engine = new EvidenceEngine(`
+weights:
+  relevance: 0.5
+  legality: 0.25
+  authenticity: 0.25
+rules:
+  - ruleId: EVI-110
+    name: 平台可信度规则
+    evidenceType: internet_publication
+    evidenceAssessment:
+      assessmentType: credibility_scaled
+      platformCredibility:
+        gov.cn: { score: 0.95, label: "政府官方" }
+        bad.gov.cn: { score: not-number, label: "x" }
+        worse.gov.cn: "not-an-object"
+      conditions:
+        key_one: value_one
+        key_two: 42
+  - ruleId: EVI-111
+    name: 无评估字段规则
+    evidenceType: general
+`)
+  const rule = engine.getRules().find(r => r.ruleId === 'EVI-110')!
+  expect(rule.evidenceAssessment?.platformCredibility).toEqual({
+    'gov.cn': { score: 0.95, label: '政府官方' },
+  })
+  expect(rule.evidenceAssessment?.conditions).toEqual({ key_one: 'value_one' })
+
+  const rule2 = engine.getRules().find(r => r.ruleId === 'EVI-111')!
+  expect(rule2.evidenceAssessment?.platformCredibility).toBeUndefined()
+  expect(rule2.evidenceAssessment?.conditions).toBeUndefined()
 })
 
 it('规则条件：全部条件分支与未知条件', () => {

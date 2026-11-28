@@ -23,7 +23,7 @@ const QUANTITY_WORDS = [
 ] as const
 
 /** Name-plus-digits that are figure references or procedural labels, not component marks. */
-const NON_MARK_NAME = /^(?:图|附图|权利要求|实施例|步骤|表|式)$|(?:图|权利要求|实施例|步骤)$/
+const NON_MARK_NAME = /^(?:图|附图|权利要求|实施例|步骤|表|式)$|(?:图|权利要求|实施例|步骤|方案|方式)$/
 
 /**
  * Find a component mark written without parentheses in the abstract.

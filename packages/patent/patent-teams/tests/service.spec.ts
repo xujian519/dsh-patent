@@ -258,8 +258,9 @@ describe('addMember', () => {
     const captain = fakeAgent('captain-1', h.workspace)
     await createTeam(h, captain)
     const { chmod } = await import('node:fs/promises')
+    const warn = vi.spyOn(h.ctx.logger, 'warn').mockImplementation(() => {})
     // Both the team write and the orphan retirement write fail; the retirement
-    // failure is swallowed and the original write error surfaces.
+    // failure is logged and the original write error surfaces.
     await chmod(join(h.workspace, h.stateDir, 'alpha'), 0o555)
     await chmod(join(h.workspace, h.stateDir), 0o555)
     try {
@@ -269,6 +270,7 @@ describe('addMember', () => {
       await chmod(join(h.workspace, h.stateDir, 'alpha'), 0o755)
     }
     expect(h.interrupted).toContain('member-1')
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('failed to retire orphan member member-1'))
   })
 
   it('keeps the team lock free while the member spawn is in flight', async () => {
@@ -477,6 +479,41 @@ describe('reassignTask', () => {
       .rejects.toThrow('task t1 is already being reassigned')
   })
 
+  it('recovers a reassigning flag left by a crashed process', async () => {
+    const h = await makeService()
+    const captain = fakeAgent('captain-1', h.workspace)
+    await createTeam(h, captain)
+    await setupClaimedMemberTask(h, captain)
+    const team = await readTeam(join(h.workspace, h.stateDir), 'alpha')
+    team!.tasks[0]!.reassigning = true
+    team!.tasks[0]!.handoffId = 'stale-handoff'
+    await writeTeam(join(h.workspace, h.stateDir), team!)
+
+    const result = await h.ctx.patentTeams.reassignTask(captain, { task_id: 't1', assignee: 'captain' }, new AbortController().signal)
+    expect(result).toMatchObject({ assignee: 'captain', status: 'claimed' })
+  })
+
+  it('rejects a second reassignment while the first handoff is in flight', async () => {
+    const h = await makeService()
+    const captain = fakeAgent('captain-1', h.workspace)
+    await createTeam(h, captain)
+    await setupClaimedMemberTask(h, captain)
+    const gate = Promise.withResolvers<undefined>()
+    const enteredWait = Promise.withResolvers<undefined>()
+    h.agents.set('member-1', fakeAgent('member-1', h.workspace, {
+      whenIdle: () => {
+        enteredWait.resolve(undefined)
+        return gate.promise
+      },
+    }))
+    const first = h.ctx.patentTeams.reassignTask(captain, { task_id: 't1', assignee: 'captain' }, new AbortController().signal)
+    await enteredWait.promise
+    await expect(h.ctx.patentTeams.reassignTask(captain, { task_id: 't1', assignee: 'alice' }, new AbortController().signal))
+      .rejects.toThrow('task t1 is already being reassigned')
+    gate.resolve(undefined)
+    await first
+  })
+
   it('surfaces a quiescence failure after the handoff', async () => {
     const h = await makeService()
     const captain = fakeAgent('captain-1', h.workspace)
@@ -635,6 +672,29 @@ describe('updateTask', () => {
     })
     expect(updated.status).toBe('completed')
     expect(updated.output).toBe('done')
+  })
+
+  it('rejects updates while a task is being reassigned', async () => {
+    const h = await makeService()
+    const captain = fakeAgent('captain-1', h.workspace)
+    await createTeam(h, captain)
+    await addMember(h, captain, 'alice')
+    await h.ctx.patentTeams.createTask(captain, { subject: 'work', assignee: 'alice' })
+    const claimed = await h.ctx.patentTeams.claimTask(captain, { task_id: 't1', assignee: 'alice' })
+    const team = await readTeam(join(h.workspace, h.stateDir), 'alpha')
+    team!.tasks[0]!.reassigning = true
+    await writeTeam(join(h.workspace, h.stateDir), team!)
+
+    const alice = fakeAgent('member-1', h.workspace)
+    await expect(h.ctx.patentTeams.updateTask(alice, {
+      task_id: 't1',
+      status: 'completed',
+      output: 'late result',
+      attempt_id: claimed.attempt_id!,
+    })).rejects.toThrow('task t1 is being reassigned; wait for the handoff to finish')
+    // Even the captain waits for the handoff's second lock.
+    await expect(h.ctx.patentTeams.updateTask(captain, { task_id: 't1', status: 'cancelled' }))
+      .rejects.toThrow('task t1 is being reassigned; wait for the handoff to finish')
   })
 
   it('records the attempt identity on every task-updated event', async () => {
@@ -1644,6 +1704,8 @@ describe('role contract and quality gate', () => {
     expect(team?.tasks[0]?.status).toBe('in_progress')
     expect(team?.tasks[0]?.gateFeedback?.satisfied).toBe(false)
     expect(team?.tasks[0]?.gateFeedback?.failures.join('')).toContain('契约缺字段')
+    const status = await h.ctx.patentTeams.status(captain)
+    expect(status.tasks[0]?.gate_feedback?.satisfied).toBe(false)
   })
 
   it('accumulates a rejection count across repeated bounces while the attempt stays open', async () => {
@@ -1666,7 +1728,7 @@ describe('role contract and quality gate', () => {
     expect(team?.tasks[0]?.attempt).toBe(claimed.attempt)
   })
 
-  it('keeps the rejection count readable after the task finally completes', async () => {
+  it('clears the stale gate verdict but keeps the rejection count after the task completes', async () => {
     const h = await makeService({ qualityGate: true })
     const captain = fakeAgent('captain-1', h.workspace)
     await createTeam(h, captain)
@@ -1680,8 +1742,10 @@ describe('role contract and quality gate', () => {
     const team = await readTeam(join(h.workspace, h.stateDir), 'alpha')
     expect(team?.tasks[0]?.status).toBe('completed')
     expect(team?.tasks[0]?.gateRejections).toBe(1)
+    expect(team?.tasks[0]?.gateFeedback).toBeUndefined()
     const status = await h.ctx.patentTeams.status(captain)
     expect(status.tasks[0]?.gate_rejections).toBe(1)
+    expect(status.tasks[0]?.gate_feedback).toBeUndefined()
   })
 
   it('bounces a content-thin but contract-complete completion as an empty shell', async () => {

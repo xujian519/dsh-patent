@@ -260,12 +260,24 @@ function materialEntries(state: PipelineState): EvidenceEntry[] {
   return entries
 }
 
-/** Content hash over the fields that identify one record, independent of run metadata. */
+/**
+ * Content hash over the fields that identify one record, independent of run metadata.
+ *
+ * Uses a fixed-position JSON array (undefined serializes to null) so field identity is preserved:
+ * `{title:'x', snippet:'s'}` and `{sourceUri:'x', snippet:'s'}` must not collide.
+ */
 function digestOf(entry: EvidenceEntry): string {
-  const content = [entry.title, entry.sourceUri, entry.publicationDate, entry.snippet, entry.reason, entry.a24Exception]
-    .filter((part): part is string => part !== undefined)
-    .join('\n')
-  return content.length === 0 ? '' : contentHash(content)
+  const fields = [
+    entry.title,
+    entry.sourceUri,
+    entry.publicationDate,
+    entry.snippet,
+    entry.reason,
+    entry.a24Exception,
+  ]
+  // 无任何识别文本时不产生哈希，保持「空来源无 contentHash」语义
+  if (fields.every(part => part === undefined || part === '')) return ''
+  return contentHash(JSON.stringify(fields))
 }
 
 /** Turn one record into the receipt shape the run result and session event carry. */

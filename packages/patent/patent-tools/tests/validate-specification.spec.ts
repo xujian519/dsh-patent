@@ -272,6 +272,7 @@ const SHARED_VOCABULARY_CASES: ReadonlyArray<{
   { text: '20℃至90℃', min: 20, max: 90, unit: '°', specSideRequiresUnit: false },
   { text: '厚度 5mg-10mg', min: 5, max: 10, unit: 'mg', specSideRequiresUnit: false },
   { text: '宽度 10mm~20mm', min: 10, max: 20, unit: 'mm', specSideRequiresUnit: false },
+  { text: '厚度 20毫米至90毫米', min: 20, max: 90, unit: '毫米', specSideRequiresUnit: false },
   { text: '厚度 1-3mm', min: 1, max: 3, unit: 'mm', specSideRequiresUnit: false },
   { text: '温度为20–90℃', min: 20, max: 90, unit: '°', specSideRequiresUnit: false },
   { text: '压力为20到30MPa', min: 20, max: 30, unit: 'MPa', specSideRequiresUnit: false },
@@ -580,6 +581,16 @@ describe('abstract and claim coverage edge cases', () => {
     // 确定性规则不再列为未评估。
     expect(ids).not.toContain('enablement')
     expect(ids).not.toContain('claim-support-breadth')
+  })
+
+  it('lists SMILES validity as not assessed because RDKit is not bundled', () => {
+    const chemical = validateSpecification({ text: VALID_SPEC, tech_domain: 'chemical' })
+    expect(chemical.not_assessed.map(item => item.id)).toContain('smiles-validity')
+    expect(renderSpecification(chemical)).toContain('smiles-validity')
+    const mechanical = validateSpecification({ text: VALID_SPEC })
+    expect(mechanical.not_assessed.map(item => item.id)).not.toContain('smiles-validity')
+    const mentioned = validateSpecification({ text: `${VALID_SPEC}\nSMILES: CCO` })
+    expect(mentioned.not_assessed.map(item => item.id)).toContain('smiles-validity')
   })
 
   it('含算法表述但未声明 tech_domain=software 时显式列为未评估', () => {

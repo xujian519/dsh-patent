@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -84,6 +84,17 @@ describe('runFallback', () => {
     }
   })
 
+  it('renders a non-Error resolver object through its message', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-fallback-'))
+    try {
+      const result = await runFallback([failed('US1A')], deps(async () => { throw { message: 'offline' } }), dir, { timeoutMs: 1 })
+      expect(result.warnings[0]).toContain('offline')
+      expect(result.warnings[0]).not.toContain('[object Object]')
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
   it('downloads served links and keeps a distinct resolved number', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-fallback-'))
     try {
@@ -113,6 +124,51 @@ describe('runFallback', () => {
       expect(result.items[0]?.error).toContain('PatSnap（智慧芽）下载失败')
       expect(result.warnings).toEqual([])
     } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('lists fallback warnings in request order however the downloads finish', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-fallback-'))
+    try {
+      const delayed: typeof fetch = async (input) => {
+        const url = input instanceof Request ? input.url : input instanceof URL ? input.href : input
+        await new Promise(resolve => setTimeout(resolve, url.endsWith('US1A.pdf') ? 30 : 0))
+        return new Response(PDF, { status: 200, headers: { 'content-type': 'application/pdf' } })
+      }
+      const result = await runFallback([failed('US1A'), failed('US2A')], deps(async () => [
+        { patent: 'US1A', channel: PATSNAP_CHANNEL, pdfUrl: 'https://data-pdf.example/US1A.pdf' },
+        { patent: 'US2A', channel: PATSNAP_CHANNEL, pdfUrl: 'https://data-pdf.example/US2A.pdf' },
+      ]), dir, { timeoutMs: 5_000, fetchImpl: delayed, fetchRetry: { maxRetries: 0 } })
+      expect(result.items.map(item => item.patent)).toEqual(['US1A', 'US2A'])
+      expect(result.warnings).toHaveLength(2)
+      expect(result.warnings[0]).toContain('US1A')
+      expect(result.warnings[1]).toContain('US2A')
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('divides the fallback leg budget across retry attempts', async () => {
+    vi.useFakeTimers()
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-fallback-'))
+    try {
+      const hanging: typeof fetch = (_input, init) => new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => { reject(new Error('aborted at attempt deadline')) }, { once: true })
+      })
+      const start = Date.now()
+      let completedAt = 0
+      const pending = runFallback([failed('US1A')], deps(async () => [
+        { patent: 'US1A', channel: PATSNAP_CHANNEL, pdfUrl: 'https://data-pdf.example/US1A.pdf' },
+      ]), dir, { timeoutMs: 300, fetchImpl: hanging, fetchRetry: { maxRetries: 2, baseDelayMs: 0 } })
+        .then((result) => { completedAt = Date.now(); return result })
+      await vi.advanceTimersByTimeAsync(1_000)
+      const result = await pending
+      expect(result.items[0]?.status).toBe('failed')
+      // 三次尝试各 100ms（另有毫秒级退避）；不按尝试均分时同一 300ms 预算会耗到 900ms。
+      expect(completedAt - start).toBeLessThan(600)
+    } finally {
+      vi.useRealTimers()
       await rm(dir, { recursive: true, force: true })
     }
   })

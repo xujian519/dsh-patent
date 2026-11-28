@@ -17436,6 +17436,9 @@ importers:
       '@deepseek-ai/cordis-plugin-loader':
         specifier: workspace:~
         version: link:../../../vendor/loader
+      '@deepseek-ai/dsh-error':
+        specifier: workspace:*
+        version: link:../../util/error
       '@deepseek-ai/dsh-llm':
         specifier: workspace:*
         version: link:../../llm/llm
@@ -17828,9 +17831,12 @@ importers:
       '@deepseek-ai/dsh-llm':
         specifier: workspace:*
         version: link:../../llm/llm
-      '@deepseek-ai/dsh-patent-tools':
+      '@deepseek-ai/dsh-patent-core':
         specifier: workspace:*
-        version: link:../patent-tools
+        version: link:../patent-core
+      '@deepseek-ai/dsh-patent-rule':
+        specifier: workspace:*
+        version: link:../patent-rule
       '@deepseek-ai/dsh-patent-workflow':
         specifier: workspace:*
         version: link:../patent-workflow
@@ -18051,6 +18057,9 @@ importers:
       '@deepseek-ai/cordis-plugin-loader':
         specifier: workspace:~
         version: link:../../../vendor/loader
+      '@deepseek-ai/dsh-error':
+        specifier: workspace:*
+        version: link:../../util/error
       '@deepseek-ai/dsh-llm':
         specifier: workspace:*
         version: link:../../llm/llm

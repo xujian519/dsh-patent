@@ -141,13 +141,43 @@ export function referencedClosure(refs: readonly ClaimRef[], claimNo: number): n
  * 一条权利要求的替代引用路径。
  *
  * 多项从属权利要求（「根据权利要求 1 或 2」）以择一方式引用在前权项，每个直接引用都是
- * 一个独立技术方案；单一引用只有一条路径。路径按引用闭包展开，因为从属权项包含所引用
- * 权项的全部技术特征。
+ * 一个独立技术方案；单一引用只有一条路径。择一传接：若被引用权项本身是多项从属，其替代
+ * 路径继续向下递归展开（权项 3→1 或 2，权项 4→3 则得到 4→3→1 与 4→3→2 两条路径），
+ * 而不是把引用闭包内全部权项并入同一条路径当作合取。
  * @param refs - 引用关系。
  * @param claimNo - 起始权项号。
- * @returns 每个直接引用一条路径（以该引用开头）；独立权利要求为空数组。
+ * @returns 每条择一路径一个数组（以直接引用开头）；独立权利要求为空数组。
  */
 export function referenceAlternatives(refs: readonly ClaimRef[], claimNo: number): number[][] {
+  return expandReferenceAlternatives(refs, claimNo, new Set())
+}
+
+/**
+ * 递归展开择一引用路径。已在当前路径上出现过的权项不再展开，避免引用环导致无限递归
+ * （引用环由 {@link validateClaimRefs} 单独报告；这里只保证终止）。
+ * @param refs - 引用关系。
+ * @param claimNo - 当前展开的权项号。
+ * @param ancestors - 当前路径上已出现的权项号（用于破环）。
+ * @returns 从当前权项出发的全部择一路径。
+ */
+function expandReferenceAlternatives(
+  refs: readonly ClaimRef[],
+  claimNo: number,
+  ancestors: ReadonlySet<number>,
+): number[][] {
   const direct = refs.find(ref => ref.claimNo === claimNo)?.refersTo ?? []
-  return direct.map(target => [target, ...referencedClosure(refs, target).filter(value => value !== target)])
+  const paths: number[][] = []
+  for (const target of direct) {
+    if (ancestors.has(target)) {
+      paths.push([target])
+      continue
+    }
+    const subPaths = expandReferenceAlternatives(refs, target, new Set([...ancestors, target]))
+    if (subPaths.length === 0) {
+      paths.push([target])
+    } else {
+      for (const sub of subPaths) paths.push([target, ...sub])
+    }
+  }
+  return paths
 }

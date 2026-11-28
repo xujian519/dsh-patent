@@ -6,6 +6,7 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { searchPatents as searchPatentsImpl } from '@deepseek-ai/nuo-patent'
 import type { PatentSearchHit, PatentSearchResult } from '@deepseek-ai/nuo-patent'
 import { CNIPR_SEARCH_MAX_HITS, cachedSearchPatents } from '@deepseek-ai/dsh-patent-data'
@@ -227,7 +228,7 @@ async function searchThroughCnipr(
     /* v8 ignore next -- exec.signal is always present on the tool execution context */
     result = await cnipr.search(query, { limit, ...(signal === undefined ? {} : { signal }) })
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error)
+    const detail = errorMessage(error)
     return {
       outcome: 'failed',
       reason: detail,
@@ -374,7 +375,7 @@ export function createPatentSearchTool(deps: PatentSearchDeps = {}): ToolDefinit
         : failure !== undefined
           ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'failed', reason: failure }
           : settled === undefined
-            ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'failed', reason: thrownMessage(thrown) }
+            ? { name: GOOGLE_PATENTS_CHANNEL, outcome: 'failed', reason: errorMessage(thrown) }
             : { name: GOOGLE_PATENTS_CHANNEL, outcome: 'empty', reason: '零命中' }
       const cniprConsult: ChannelConsult = attempt === undefined
         ? { name: CNIPR_CHANNEL, outcome: 'skipped', reason: '第一通道已给出可用答案，未咨询' }
@@ -422,9 +423,4 @@ export function createPatentSearchTool(deps: PatentSearchDeps = {}): ToolDefinit
       }
     },
   })
-}
-
-/** 一次抛错的可读原因（用于把「第一通道失败」写进通道记录）。 */
-function thrownMessage(thrown: unknown): string {
-  return thrown instanceof Error ? thrown.message : String(thrown)
 }

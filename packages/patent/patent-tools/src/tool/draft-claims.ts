@@ -18,6 +18,7 @@ import {
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { PatentToolError } from '../error.ts'
+import { requireNonBlankText } from './internal/tool-input.ts'
 import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
 
 export { DOMAIN_KEYWORDS, draftClaims, validateClaims } from '@deepseek-ai/dsh-patent-core'
@@ -124,6 +125,7 @@ export function createDraftClaimsTool(): ToolDefinition {
     },
     // oxlint-disable-next-line typescript/require-await -- tool contract requires async execute
     async execute(args) {
+      requireNonBlankText(args.invention_name, 'draft_claims', 'invention_name 为空（须为发明名称）')
       // Reject the mutually exclusive sources before the engine runs, so callers
       // get the tool's `invalid_tool_input` code instead of a library error.
       if ((args.optional_features?.length ?? 0) > 0 && (args.dependent_tree?.length ?? 0) > 0) {

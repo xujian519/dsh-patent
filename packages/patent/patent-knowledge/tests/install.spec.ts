@@ -89,6 +89,32 @@ describe('installKnowledgeDb', () => {
     }
     expect(log.some(l => l.includes('VACUUM'))).toBe(true)
   })
+
+  it('compresses long bodies past the first id window', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-patent-knowledge-install-pages-'))
+    cleanups.push(() => { rmSync(dir, { recursive: true, force: true }) })
+    const input = join(dir, 'knowledge.db')
+    const db = new DatabaseSync(input)
+    db.exec('CREATE TABLE documents (id TEXT PRIMARY KEY, title TEXT)')
+    db.exec('CREATE TABLE chunks (id INTEGER PRIMARY KEY, content)')
+    db.prepare('INSERT INTO documents (id, title) VALUES (?, ?)').run('d1', '创造性三步法')
+    const insert = db.prepare('INSERT INTO chunks (content) VALUES (?)')
+    // 500 short rows fill the first window; the long body is only reachable on the next one.
+    db.exec('BEGIN')
+    for (let i = 0; i < 500; i += 1) insert.run(`短文本 ${i}`)
+    insert.run('权利要求所述技术方案具有突出的实质性特点，不属于本领域技术人员容易想到的改进。'.repeat(30))
+    db.exec('COMMIT')
+    db.close()
+
+    const output = join(dir, 'knowledge-lite.db')
+    const result = await installKnowledgeDb({ sourceDbPath: input, output, skipVerify: true })
+    expect(result.compressedChunks).toBe(1)
+    withOutDb(output, (out) => {
+      const rows = out.prepare('SELECT id, content FROM chunks ORDER BY id').all() as Array<{ content: string | Uint8Array }>
+      expect(rows[0]!.content).toBe('短文本 0')
+      expect(rows[rows.length - 1]!.content).toBeInstanceOf(Uint8Array)
+    })
+  })
 })
 
 function withOutDb<T>(output: string, read: (db: DatabaseSync) => T): T {

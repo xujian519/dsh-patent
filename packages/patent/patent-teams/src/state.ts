@@ -108,14 +108,16 @@ export function beginTaskAttempt(task: TeamTask, assignee: string): string {
  * @param task - the task whose generation to revoke.
  * @param nextAssignee - optional member to reassign the task to.
  * @param reassigning - whether this invalidation is part of a reassignment.
+ * @returns the handoff id that now owns the pending generation.
  */
 export function invalidateTaskAttempt(
   task: TeamTask,
   nextAssignee?: string,
   reassigning = false,
-): void {
+): string {
+  const handoffId = randomUUID()
   delete task.attemptId
-  task.handoffId = randomUUID()
+  task.handoffId = handoffId
   task.status = 'pending'
   if (nextAssignee === undefined) {
     delete task.assignee
@@ -125,6 +127,7 @@ export function invalidateTaskAttempt(
   task.reassigning = reassigning
   delete task.output
   task.updatedAt = Date.now()
+  return handoffId
 }
 
 /**

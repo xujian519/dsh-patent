@@ -28,8 +28,8 @@
 
 import { tryParseJson } from '../llm-json.ts'
 import {
+  NUMERIC_ANY_UNIT_ALTERNATION,
   NUMERIC_RANGE_SEPARATOR_CLASS,
-  NUMERIC_UNIT_ALTERNATION,
   normalizeNumericUnit,
   resolveNumericUnit,
 } from './numeric-vocabulary.ts'
@@ -124,7 +124,7 @@ const SIGNED_NUMBER = '[+\\-−－]?\\d+(?:\\.\\d+)?'
  * 词表来自 {@link ./numeric-vocabulary.ts}，与规格校验侧共用。
  */
 const RANGE_PATTERN = new RegExp(
-  `(${SIGNED_NUMBER})\\s*(?:(${NUMERIC_UNIT_ALTERNATION}))?\\s*(?:[${NUMERIC_RANGE_SEPARATOR_CLASS}])\\s*(${SIGNED_NUMBER})`,
+  `(${SIGNED_NUMBER})\\s*(?:(${NUMERIC_ANY_UNIT_ALTERNATION}))?\\s*(?:[${NUMERIC_RANGE_SEPARATOR_CLASS}])\\s*(${SIGNED_NUMBER})`,
   'g',
 )
 
@@ -144,7 +144,7 @@ const BOUNDED_PATTERN = new RegExp(
  * 未消费的「及」并让单位提取落到错误位置。
  */
 const SUFFIX_BOUND_PATTERN = new RegExp(
-  `(${SIGNED_NUMBER})\\s*(?:(${NUMERIC_UNIT_ALTERNATION}))?\\s*(?:及以上|及以下|或以上|或以下|以上|以下)`,
+  `(${SIGNED_NUMBER})\\s*(?:(${NUMERIC_ANY_UNIT_ALTERNATION}))?\\s*(?:及以上|及以下|或以上|或以下|以上|以下)`,
   'g',
 )
 

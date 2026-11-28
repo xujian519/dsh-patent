@@ -8,6 +8,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { WikiCardMeta } from '@deepseek-ai/dsh-patent-knowledge'
 import { PatentToolError } from '../error.ts'
+import { resolveResultLimit } from './internal/query-limit.ts'
 
 /** Drafting-related wiki directories (relative path prefixes under the wiki root). */
 export const PATENT_WIKI_DIRS = {
@@ -145,7 +146,7 @@ export function createPatentWikiSearchTool(deps: PatentWikiSearchDeps): ToolDefi
         throw new PatentToolError('setup_required', 'wiki 卡片目录不可用：请先运行 patent-knowledge:install 准备本地知识数据。', { tool: 'patent_wiki_search' })
       }
       const prefix = args.dir ? PATENT_WIKI_DIRS[args.dir] : ''
-      const limit = Math.min(Math.max(args.limit ?? DEFAULT_RESULT_LIMIT, 1), MAX_RESULT_LIMIT)
+      const limit = resolveResultLimit(args.limit, DEFAULT_RESULT_LIMIT, MAX_RESULT_LIMIT)
       const includeBody = args.include_body === true
       const formatAsContext = deps.formatAsContext
       const metas = deps.searchIn(prefix, args.query, limit)

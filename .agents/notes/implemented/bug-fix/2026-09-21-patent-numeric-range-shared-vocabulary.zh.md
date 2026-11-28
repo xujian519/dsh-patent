@@ -18,17 +18,17 @@ Status: implemented
 
 ## Decision
 
-`packages/patent/patent-core/src/novelty/numeric-vocabulary.ts` 以三个取值持有这份词汇,两侧从 `@deepseek-ai/dsh-patent-core` import。
+`packages/patent/patent-core/src/novelty/numeric-vocabulary.ts` 持有这份词汇,两侧从 `@deepseek-ai/dsh-patent-core` import。
 
 - **`NUMERIC_RANGE_SEPARATOR_CLASS`**——连接符字符类 `~～至到–—-`,写法面向嵌入更大的 pattern,连字符放末位以免被读成字符范围。
-- **`NUMERIC_UNIT_ALTERNATION`**——单位交替集,长者在前,否则 `5mg` 会被读成 `m`、`0.1-2MPa` 会被读成 `m`。其中含摄氏度四种写法 `°C`、`℃`、`°c`、`°`。
+- **`NUMERIC_ANY_UNIT_ALTERNATION`**——中文、拉丁与符号单位的合并交替集,长者在前,否则 `5mg` 会被读成 `m`、`0.1-2MPa` 会被读成 `m`。其中含 `毫米` 等中文单位与摄氏度四种写法 `°C`、`℃`、`°c`、`°`。
 - **`normalizeNumericUnit`**——单位归一,把摄氏度四种写法统一为 `°`,其余单位原样返回。
 
-在这份词汇之上,两侧各自保留自己的 pattern 与接受条件。novelty 侧在 `numeric-range.ts` 里用共享字符类与交替集构造 `RANGE_PATTERN`,对尾随单位保持宽松,因为经连接符写出的无单位区间仍是新颖性证据。规格校验侧在 `packages/patent/patent-tools/src/tool/spec-numeric.ts` 里构造自己的 pattern,并保留尾随单位的硬要求,因为端点与中点覆盖要用同单位的单值比对,需要区间单位被写明。
+在这份词汇之上,两侧各自保留自己的 pattern 与接受条件。novelty 侧在 `numeric-range.ts` 里用共享字符类与合并交替集构造 `RANGE_PATTERN`,对尾随单位保持宽松,因为经连接符写出的无单位区间仍是新颖性证据。规格校验侧在 `packages/patent/patent-tools/src/tool/spec-numeric.ts` 里构造自己的 pattern,并保留尾随单位的硬要求,因为端点与中点覆盖要用同单位的单值比对,需要区间单位被写明。
 
 ## Verification
 
-`pnpm exec vitest run packages/patent/patent-core/tests/novelty/numeric-range.spec.ts packages/patent/patent-tools/tests/validate-specification.spec.ts` 通过。规格校验套件里的 `SHARED_VOCABULARY_CASES` 持有 11 条文本,逐条断言 novelty 侧提取与规格校验侧提取得到相同的区间端点与相同的归一单位,并把规格校验侧的尾随单位要求写成每条用例的显式字段,而不是它 pattern 的偶然结果。用例钉住的是字面端点与字面单位,不是共享常量,因此连接符集、单位表或归一规则中任何改变任一侧读法的改动都会让该套件失败。
+`pnpm exec vitest run packages/patent/patent-core/tests/novelty/numeric-range.spec.ts packages/patent/patent-tools/tests/validate-specification.spec.ts` 通过。规格校验套件里的 `SHARED_VOCABULARY_CASES` 持有 12 条文本,逐条断言 novelty 侧提取与规格校验侧提取得到相同的区间端点与相同的归一单位,并把规格校验侧的尾随单位要求写成每条用例的显式字段,而不是它 pattern 的偶然结果。用例钉住的是字面端点与字面单位,不是共享常量,因此连接符集、单位表或归一规则中任何改变任一侧读法的改动都会让该套件失败。
 
 ## Alternatives considered
 
@@ -40,8 +40,8 @@ Status: implemented
 
 ## Consequences
 
-共享词汇消掉的是这一类分歧而非其中一例:凡两侧必须一致的连接符、单位写法或归一规则,现在只有一处定义,两侧之间只剩各自真正需要的约束。规格校验侧补上了此前漏掉的连接符(`–`、`—`)与小写 `°c` 写法;novelty 侧的提取结果不变。
+共享词汇消掉的是这一类分歧而非其中一例:凡两侧必须一致的连接符、单位写法或归一规则,现在只有一处定义,两侧之间只剩各自真正需要的约束。两侧都接受中文单位与 `–`、`—` 连接符;只有规格校验侧要求尾随单位。
 
 提案偏好的更强形态——共享同一个范围 pattern——没有落地。两处各自保留 pattern,也就是提案记录的退路,因此全部保证由一致性套件承担,而不是由 pattern 的构造承担。这也正是用例表记录字面端点与归一单位、而不从常量派生的原因:共享 pattern 本会让两处按构造保持一致,没有它,测试是唯一能发现漂移的东西。
 
-新增第三个消费方意味着 import 同样这三个取值并保留自己的接受条件,而不是再写一份词汇。
+新增第三个消费方意味着 import 同样的词汇取值并保留自己的接受条件,而不是再写一份词汇。

@@ -5,6 +5,7 @@ import {
   deriveNoveltyCoverageByClaim,
   validateRowMapping,
 } from '../../src/claim-chart/runtime/mapping-machine.ts'
+import { referenceAlternatives } from '../../src/claim-chart/runtime/claim-refs.ts'
 import type { ChartTarget } from '@deepseek-ai/dsh-patent-core'
 import type {
   ChartRow,
@@ -271,4 +272,45 @@ it('逐权项覆盖：多项从属优先选择引用权项都有要素的路径'
   expect(fourth?.covered).toBe(true)
   expect(fourth?.missingReferredClaims).toBeUndefined()
   expect(fourth?.alternatives?.map(alternative => alternative.missingReferredClaims)).toEqual([[1], undefined])
+})
+
+// ── S-PAT-001 回归：嵌套择一引用按替代路径展开，不把父项的择一合取 ────────
+
+it('逐权项覆盖：嵌套择一引用展开为独立替代路径，任一完整路径即覆盖', () => {
+  // 权 3 引用 1 或 2；权 4 仅引用 3。D1 覆盖除 2a 外的全部要素。
+  // 路径 4→3→1 完整 → 权 4 应判覆盖，不得因 2a 缺失而误判未覆盖。
+  const elements: ClaimElement[] = [
+    { id: '1a', claimNo: 1, text: '包括壳体', kind: 'limitation' },
+    { id: '1b', claimNo: 1, text: '和滤芯', kind: 'limitation' },
+    { id: '2a', claimNo: 2, text: '包括底座', kind: 'limitation' },
+    { id: '2b', claimNo: 2, text: '和盖板', kind: 'limitation' },
+    { id: '3a', claimNo: 3, text: '根据权利要求1或2所述的装置', kind: 'preamble' },
+    { id: '3b', claimNo: 3, text: '所述壳体为塑料', kind: 'limitation' },
+    { id: '4a', claimNo: 4, text: '根据权利要求3所述的装置', kind: 'preamble' },
+    { id: '4b', claimNo: 4, text: '所述滤芯为折叠式', kind: 'limitation' },
+  ]
+  const refs: ClaimRef[] = [
+    { claimNo: 1, claimType: 'independent', refersTo: [] },
+    { claimNo: 2, claimType: 'independent', refersTo: [] },
+    { claimNo: 3, claimType: 'dependent', refersTo: [1, 2] },
+    { claimNo: 4, claimType: 'dependent', refersTo: [3] },
+  ]
+  expect(referenceAlternatives(refs, 4)).toEqual([
+    [3, 1],
+    [3, 2],
+  ])
+  const rows = [
+    row('1a', 'D1', 'literal'),
+    row('1b', 'D1', 'literal'),
+    row('2a', 'D1', 'not-found'),
+    row('2b', 'D1', 'literal'),
+    row('3a', 'D1', 'literal'),
+    row('3b', 'D1', 'literal'),
+    row('4a', 'D1', 'literal'),
+    row('4b', 'D1', 'literal'),
+  ]
+  const fourth = deriveNoveltyCoverageByClaim(rows, 'D1', elements, refs).find(entry => entry.claimNo === 4)
+  expect(fourth?.covered).toBe(true)
+  expect(fourth?.missing).toEqual([])
+  expect(fourth?.alternatives?.map(alternative => alternative.missing)).toEqual([[], ['2a']])
 })

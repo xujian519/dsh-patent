@@ -18,17 +18,17 @@ The severity follows from which consumer is wrong, not from the size of the dive
 
 ## Decision
 
-`packages/patent/patent-core/src/novelty/numeric-vocabulary.ts` owns the vocabulary as three values, which both sides import from `@deepseek-ai/dsh-patent-core`.
+`packages/patent/patent-core/src/novelty/numeric-vocabulary.ts` owns the vocabulary, which both sides import from `@deepseek-ai/dsh-patent-core`.
 
 - **`NUMERIC_RANGE_SEPARATOR_CLASS`** — the connector character class `~～至到–—-`, written for embedding in a larger pattern, with the hyphen last so it cannot be read as a range.
-- **`NUMERIC_UNIT_ALTERNATION`** — the unit alternation, longest spelling first so `5mg` cannot be read as `m` and `0.1-2MPa` cannot be read as `m`. It carries the temperature spellings `°C`, `℃`, `°c`, and `°`.
+- **`NUMERIC_ANY_UNIT_ALTERNATION`** — the combined Chinese, Latin, and symbol unit alternation, longest spelling first so `5mg` cannot be read as `m` and `0.1-2MPa` cannot be read as `m`. It carries Chinese units such as `毫米` and the temperature spellings `°C`, `℃`, `°c`, and `°`.
 - **`normalizeNumericUnit`** — the normalization, folding all four temperature spellings to `°` and returning every other unit unchanged.
 
-Each side keeps its own pattern and its own acceptance rule on top of that vocabulary. The novelty side builds `RANGE_PATTERN` in `numeric-range.ts` from the shared class and alternation and stays permissive about the trailing unit, because a unitless range written through the connector is still novelty evidence. The specification side builds its pattern in `packages/patent/patent-tools/src/tool/spec-numeric.ts` and keeps the trailing unit required, because endpoint and midpoint coverage compares single values of the same unit and needs the range unit stated.
+Each side keeps its own pattern and its own acceptance rule on top of that vocabulary. The novelty side builds `RANGE_PATTERN` in `numeric-range.ts` from the shared class and combined alternation and stays permissive about the trailing unit, because a unitless range written through the connector is still novelty evidence. The specification side builds its pattern in `packages/patent/patent-tools/src/tool/spec-numeric.ts` and keeps the trailing unit required, because endpoint and midpoint coverage compares single values of the same unit and needs the range unit stated.
 
 ## Verification
 
-`pnpm exec vitest run packages/patent/patent-core/tests/novelty/numeric-range.spec.ts packages/patent/patent-tools/tests/validate-specification.spec.ts` passes. `SHARED_VOCABULARY_CASES` in the specification suite holds eleven texts and asserts, per text, that the novelty extraction and the specification extraction return the same range boundaries and the same normalized unit, with the specification side's trailing-unit requirement as an explicit field of each case rather than an accident of its pattern. The cases pin literal boundaries and units, not the shared constants, so a connector set, unit table, or normalization that changes what either side reads fails the suite.
+`pnpm exec vitest run packages/patent/patent-core/tests/novelty/numeric-range.spec.ts packages/patent/patent-tools/tests/validate-specification.spec.ts` passes. `SHARED_VOCABULARY_CASES` in the specification suite holds twelve texts and asserts, per text, that the novelty extraction and the specification extraction return the same range boundaries and the same normalized unit, with the specification side's trailing-unit requirement as an explicit field of each case rather than an accident of its pattern. The cases pin literal boundaries and units, not the shared constants, so a connector set, unit table, or normalization that changes what either side reads fails the suite.
 
 ## Alternatives considered
 
@@ -40,8 +40,8 @@ Each side keeps its own pattern and its own acceptance rule on top of that vocab
 
 ## Consequences
 
-The shared vocabulary removes a class of divergence rather than one instance: a connector, a unit spelling, or a normalization rule the two sides must agree on has one definition, and the only remaining difference between the sides is the constraint each genuinely needs. The specification side gained the connectors it missed (`–`, `—`) and the lowercase `°c` spelling; what the novelty side extracts is unchanged.
+The shared vocabulary removes a class of divergence rather than one instance: a connector, a unit spelling, or a normalization rule the two sides must agree on has one definition, and the only remaining difference between the sides is the constraint each genuinely needs. Both sides accept Chinese units and the connectors `–` and `—`; the specification side alone requires a trailing unit.
 
 The stronger shape the proposal preferred — one shared range pattern — did not ship. Each site keeps its own pattern, which is the variant the proposal recorded as its fallback, so the agreement suite carries the whole guarantee rather than the pattern construction. That is why the case table records literal boundaries and normalized units instead of deriving them from the constants: a shared pattern would have made the two sites agree by construction, and without it the test is the only thing that notices a drift.
 
-Adding a third consumer means importing the same three values and keeping its own acceptance rule; it does not mean a new vocabulary.
+Adding a third consumer means importing the same vocabulary values and keeping its own acceptance rule; it does not mean a new vocabulary.

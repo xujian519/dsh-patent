@@ -11,7 +11,9 @@
  * 输入约定：
  * - `rule_lock_provisions`：法条引用列表（string[]），如
  *   `["专利法第22条第3款", "实施细则第20条"]`。
- * - `rule_lock_as_of`：可选判定时间点（YYYY-MM-DD 字符串）。
+ *
+ * 时间点回溯尚未实现：原子只按现行索引与沿革快照判定，`rule_lock_as_of`
+ * 不是原子输入；库函数 `lockProvisions` 的同名参数保留未用。
  *
  * 输出约定：
  * - `rule_lock_report`：面向人工复核的中文报告（主输出）。
@@ -25,7 +27,6 @@ import {
   type PipelineState,
   type StageExecuteInput,
   type StageHandler,
-  getStateString,
 } from '@deepseek-ai/dsh-patent-core'
 import { queryValidity } from './citator.ts'
 import type { LawBaseline, LawLineageSnapshot, LawName, ValidityResult, ValidityState } from './types.ts'
@@ -69,16 +70,19 @@ export type RuleLockOutput = {
 /** rule-lock 原子：法条规则锁定与有效性判定。 */
 export const ruleLockAtom: Atom = {
   name: 'rule-lock',
-  description: '法条规则锁定：逐条判定四态有效性（active/revised/repealed/unverified），输出结构化锁定报告（纯函数，不调用模型）',
+  description: '法条规则锁定：逐条判定四态有效性（active/revised/repealed/unverified），输出结构化锁定报告（纯函数，不调用模型；按现行索引判定，不按时间点回溯）',
   category: 'gate',
-  inputSchema: ['rule_lock_provisions', 'rule_lock_as_of'],
+  inputSchema: ['rule_lock_provisions'],
   outputSchema: ['rule_lock_report', 'rule_lock_locked', 'rule_lock_unverified'],
 }
 
 /** 法条引用列表的默认状态键。 */
 export const DEFAULT_RULE_LOCK_PROVISIONS_KEY = 'rule_lock_provisions'
 
-/** 判定时间点的默认状态键。 */
+/**
+ * 判定时间点的保留状态键。`rule-lock` 原子不读取它，`lockProvisions` 的
+ * `asOf` 参数也保留未用；时间点回溯实现前，传入该键不改变判定。
+ */
 export const DEFAULT_RULE_LOCK_AS_OF_KEY = 'rule_lock_as_of'
 
 /**
@@ -117,7 +121,7 @@ function effectiveDateOf(result: ValidityResult): { date: string; source: Effect
  * 对单条法条引用执行锁定判定。
  * @param provision - 法条引用原文。
  * @param baselines - 法条索引。
- * @param asOf - 可选判定时间点。
+ * @param asOf - 保留未用；时间点回溯尚未实现。
  * @param lineage - 可选法条沿革快照。
  * @returns 锁定结果条目。
  */
@@ -146,7 +150,7 @@ function lockOneProvision(
  * 批量锁定法条并收集 unverified 列表。
  * @param provisions - 法条引用原文列表。
  * @param baselines - 法条索引。
- * @param asOf - 可选判定时间点。
+ * @param asOf - 保留未用；时间点回溯尚未实现。
  * @param lineage - 可选法条沿革快照；给出时四态判定以沿革记录为准。
  * @returns 结构化锁定输出。
  */
@@ -307,10 +311,7 @@ export class RuleLockHandler implements StageHandler {
       }
     }
 
-    const asOfRaw = getStateString(state, DEFAULT_RULE_LOCK_AS_OF_KEY)
-    const asOf = asOfRaw.trim().length > 0 ? asOfRaw.trim() : undefined
-
-    const output = lockProvisions(provisions, this.baselines, asOf, this.lineage)
+    const output = lockProvisions(provisions, this.baselines, undefined, this.lineage)
     return {
       rule_lock_report: renderRuleLockReport(output),
       rule_lock_locked: output.locked,

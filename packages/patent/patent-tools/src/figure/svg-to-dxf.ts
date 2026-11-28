@@ -40,7 +40,7 @@ const CURVE_COMMAND = /[cstqa]/i
 /**
  * 把已落版的 SVG 转成可编辑的 DXF 文本。位图、foreignObject 与 use 一律拒绝。
  * @param svg - 完整 SVG 文本。
- * @returns DXF 文本与警告。
+ * @returns DXF 文本与警告（填充/曲线降级，以及扫描器未能量测的图元原因）。
  * @throws SvgDxfError 含位图、foreignObject、use、无法解析的 viewBox 或变换，或没有画布尺寸时。
  */
 export function svgToDxf(svg: string): { dxf: string; warnings: string[] } {
@@ -67,6 +67,9 @@ export function svgToDxf(svg: string): { dxf: string; warnings: string[] } {
   const warnings: string[] = []
   if (scan.shapes.some(shape => shape.regionFill)) warnings.push('DXF 未写入填充')
   if (hasCurve(source)) warnings.push('曲线已折线化')
+  // 扫描器未量测的墨迹（marker 端头、CSS 样式、未展开的 use 等）不会进入 DXF；
+  // 不转述这些原因会让调用方把「转换成功」误读成「几何完整」。
+  warnings.push(...scan.unmeasured)
   const lines = [
     '0', 'SECTION',
     '2', 'HEADER',

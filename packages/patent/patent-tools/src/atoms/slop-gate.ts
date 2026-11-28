@@ -6,7 +6,8 @@
  * slop 引擎（analyzeSlop / buildSlopRevisionHint），故按依赖方向落在本包。
  *
  * 未通过时输出含「需修订」的 slop_report（retry 信号载体）与 slop_score，并写入
- * 仅含证据的 slop_revision_hint（保密契约，见 retry-hints.ts）。回退由 manifest
+ * 仅含证据的 slop_revision_hint（保密契约，见 retry-hints.ts）；总分过线但实施例块
+ * 超预算时同样写入篇幅证据。回退由 manifest
  * 的 retry 声明，不由本 handler 执行：`patent_oa_response_v1` 的 `slop_gate`
  * 命中「需修订」后回退到 `draft`，重写时注入该提示；`patent_disclosure_v1` 的
  * `slop_clean` 评说明书正文且不声明 retry——权项由策略表确定性渲染，重跑不会
@@ -26,11 +27,13 @@ import {
   type PipelineState,
   type StageExecuteInput,
   type StageHandler,
+  analyzeSlop,
   degraded,
   getStateString,
   resolveKeyList,
+  SLOP_PASS_LINE,
+  visibleChars,
 } from '@deepseek-ai/dsh-patent-core'
-import { analyzeSlop, SLOP_PASS_LINE, visibleChars } from '../internal/slop-engine.ts'
 import { buildSlopRevisionHint } from '../internal/retry-hints.ts'
 import { readCharBudget, readEmbodimentCharBudget } from '../internal/stage-params.ts'
 
@@ -72,13 +75,24 @@ function readFeatureCitedBlocks(state: PipelineState): FeatureCitedBlock[] | und
  * 逐块比较可见字符与预算。
  * @param blocks - 带特征编号的实施例块。
  * @param budget - 每块可见字符预算。
- * @returns 写入报告的一行，以及是否有块超出预算。
+ * @returns 写入报告的一行、超出预算的块（序号与字数），以及是否有块超出预算。
  */
-function embodimentBudgetLine(blocks: readonly FeatureCitedBlock[], budget: number): { text: string; exceeded: boolean } {
-  if (blocks.length === 0) return { text: '实施例块篇幅：无带特征编号的实施例块', exceeded: false }
-  const exceeded = blocks.some(block => visibleChars(block.text) > budget)
+function embodimentBudgetLine(
+  blocks: readonly FeatureCitedBlock[],
+  budget: number,
+): { text: string; exceeded: boolean; overBudget: readonly { index: number; chars: number }[] } {
+  if (blocks.length === 0) {
+    return { text: '实施例块篇幅：无带特征编号的实施例块', exceeded: false, overBudget: [] }
+  }
+  const overBudget = blocks
+    .map(block => ({ index: block.index, chars: visibleChars(block.text) }))
+    .filter(block => block.chars > budget)
   const parts = blocks.map(block => `实施例${block.index} ${visibleChars(block.text)}/${budget}`)
-  return { text: `实施例块篇幅：${parts.join('，')}${exceeded ? '，超出预算' : '，未超出预算'}`, exceeded }
+  return {
+    text: `实施例块篇幅：${parts.join('，')}${overBudget.length > 0 ? '，超出预算' : '，未超出预算'}`,
+    exceeded: overBudget.length > 0,
+    overBudget,
+  }
 }
 
 /** slop-gate 原子：对草稿文本做确定性套话检测，未通过时输出「需修订」并附证据提示。 */
@@ -129,18 +143,28 @@ export class SlopGateHandler implements StageHandler {
     }
     const analysis = analyzeSlop(draft, budget.value === undefined ? {} : { charBudget: budget.value })
     const { score } = analysis
-    const blockBudget = embodimentBudget.value === undefined
+    const budgetValue = embodimentBudget.value
+    const blockBudget = budgetValue === undefined
       ? undefined
-      : embodimentBudgetLine(featureBlocks, embodimentBudget.value)
+      : embodimentBudgetLine(featureBlocks, budgetValue)
     const passed = score.passed && blockBudget?.exceeded !== true
     const headline = `反套话评分门: ${passed ? '✅ 通过' : '⚠️ 需修订'}（总分 ${score.total}，通过线 ${SLOP_GATE_PASS_THRESHOLD}）`
     const segment: PipelineState = {
       slop_report: blockBudget === undefined ? headline : `${headline}\n${blockBudget.text}`,
       slop_score: score.total,
     }
-    if (!score.passed) {
-      const hint = buildSlopRevisionHint(analysis)
-      if (hint !== undefined) segment.slop_revision_hint = hint
+    if (!passed) {
+      const hints: string[] = []
+      const analysisHint = buildSlopRevisionHint(analysis)
+      if (analysisHint !== undefined) hints.push(analysisHint)
+      // 总分已过线但实施例超预算同样回退重写：没有提示时重写没有方向，只会重复同一篇幅。
+      if (blockBudget !== undefined && budgetValue !== undefined && blockBudget.overBudget.length > 0) {
+        const detail = blockBudget.overBudget
+          .map(block => `实施例${block.index} ${block.chars}/${budgetValue}`)
+          .join('，')
+        hints.push(`- 实施例块篇幅超出预算（每块上限 ${budgetValue} 可见字符）：${detail}，请压缩这些实施例。`)
+      }
+      if (hints.length > 0) segment.slop_revision_hint = hints.join('\n')
     }
     return segment
   }

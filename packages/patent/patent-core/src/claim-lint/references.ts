@@ -149,7 +149,7 @@ export function findClaimReference(
   const bareWindow = window === 'clause-start' ? normalized : preambleOf(normalized)
   const candidates: ClaimReferenceMatch[] = []
 
-  const catchAll = CATCH_ALL_REFERENCE_RE.exec(normalized)
+  const catchAll = CATCH_ALL_REFERENCE_RE.exec(bareWindow)
   if (catchAll !== null && earlierClaimNos.length > 0) {
     candidates.push({
       clause: body.slice(catchAll.index, catchAll.index + catchAll[0].length),

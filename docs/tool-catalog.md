@@ -6087,6 +6087,7 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 - 每次撰写、修订、交付、门禁都在这里留档：写清改了什么、为什么、是否影响保护点（changes 字段），并列出本轮产物（artifacts，须已存在）
 - 取代关系显式登记：supersedes 列出本轮产物取代的既有文件。交付物一律另存新文件，禁止覆盖上一轮
 - 确定性判定，拒绝：产物不存在、产物路径与取代路径相同（原地覆盖）、supersedes 指向日志中没有的路径（凭空的取代链）、同一旧版被取代两次（取代链分叉）、撰写/修订轮复用已有产物路径
+- 条目为单行格式：changes 与 note 不得含换行；artifacts 与 supersedes 的路径不得含 | 或 、；approver 不得含 | 或换行
 - 条目只追加，既有行不改写；每条同时记本地时间与 UTC
 
 用法：出件前调用 matter_log_append({case_dir, action, artifacts, changes, supersedes?, approver?})。交付前置门禁要求本会话成功留档过，才允许 render_patent_document / build_patent_filing。
@@ -7228,7 +7229,7 @@ patent_type 未传时按发明检查并给出 warning；has_drawings 未传时�
 
 passed 只表示已运行的确定性规则未发现 error，不表示符合专利法；not_assessed 列出确定性规则不能判断的事项，需人工或实体审查。
 
-注意：SMILES 合法性抽检依赖 RDKit（本环境未内置），自动跳过，不影响其余规则。
+注意：SMILES 合法性抽检依赖 RDKit（本环境未内置），自动跳过并列入 not_assessed，不影响其余规则。
 
 结果末尾的「评估输入」给出本次实际读到的各文本字段的字数与指纹：转述结果时请一并保留，便于与另一次运行对照是否读的是同一份文本。
 
@@ -9775,7 +9776,7 @@ Source: [`packages/patent/patent-teams/src/index.ts`](../packages/patent/patent-
 
 ### `patent_teams_claim_task`
 
-Claim one ready task for a member (or yourself). A member cannot own a second unfinished task. The returned attempt_id is required for that member's updates and becomes stale after retry/reassignment.
+Claim one ready task for a member (or yourself). A member cannot own a second unfinished task. An unassigned task needs a member assignee; the captain takes one over with patent_teams_reassign_task(assignee="captain") first. The returned attempt_id is required for that member's updates and becomes stale after retry/reassignment.
 
 ```json
 {
@@ -9787,7 +9788,7 @@ Claim one ready task for a member (or yourself). A member cannot own a second un
     },
     "assignee": {
       "type": "string",
-      "description": "Member to claim for (captain only; defaults to the task's assignee). Member names only — \"captain\" is not a member; omit it to claim as the captain."
+      "description": "Member to claim for (captain only; defaults to the task's assignee). Member names only — \"captain\" is not a member, and this tool cannot open an unassigned task for the captain; use patent_teams_reassign_task with assignee=\"captain\" first."
     }
   },
   "required": [

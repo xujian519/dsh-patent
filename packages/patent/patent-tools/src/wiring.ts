@@ -36,7 +36,7 @@ import { createPatentLegalStatusTool } from './tool/patent-legal-status.ts'
 import { createPatentCaseSearchTool } from './tool/patent-case-search.ts'
 import { createLawSearchTool } from './tool/law-search.ts'
 import { createPatentCorpusStatusTool } from './tool/patent-corpus-status.ts'
-import { createPatentWikiSearchTool } from './tool/patent-wiki-search.ts'
+import { createPatentWikiSearchTool, type PatentWikiSearchDeps } from './tool/patent-wiki-search.ts'
 import { createPatentKgQueryTool, type KgAdapter } from './tool/patent-kg-query.ts'
 import { createPatentEvalTool } from './tool/patent-eval.ts'
 import { createPatentAnalysisReportTool } from './tool/patent-analysis-report.ts'
@@ -409,11 +409,18 @@ function registerKnowledgeTools(wiring: PatentToolWiring): void {
       corpusInfo: () => knowledge.corpusInfo(),
       dbPath: knowledge.paths.queryDbPath,
     }))
-    wiring.ctx.tools.register(createPatentWikiSearchTool({
-      searchIn: (prefix, keyword, limit) => knowledge.wikiCardsIn(prefix, keyword, limit),
-      formatAsContext: (id, maxChars) => knowledge.wikiContext(id, maxChars),
-      wikiDir: knowledge.paths.wikiDir,
-    }))
+    // The wiki corpus is a separate directory from knowledge.db: without it the
+    // loader degrades to empty results, so wire the searcher only when the data
+    // exists and let the tool report setup_required otherwise (same split as KG).
+    const wikiDir = knowledge.paths.wikiDir
+    const wikiDeps: PatentWikiSearchDeps = existsSync(wikiDir)
+      ? {
+        searchIn: (prefix, keyword, limit) => knowledge.wikiCardsIn(prefix, keyword, limit),
+        formatAsContext: (id, maxChars) => knowledge.wikiContext(id, maxChars),
+        wikiDir,
+      }
+      : { wikiDir }
+    wiring.ctx.tools.register(createPatentWikiSearchTool(wikiDeps))
     if (existsSync(knowledge.paths.queryDbPath)) {
       // The service owns the one read-only knowledge-graph handle and closes it when
       // its fiber unloads; the tool queries that handle, so no second store with

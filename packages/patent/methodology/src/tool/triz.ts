@@ -5,6 +5,7 @@
  * @module @deepseek-ai/dsh-methodology/tool/triz
  */
 
+import { HarnessError } from '@deepseek-ai/dsh-error'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { InferValue, ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { ENGINEERING_PARAMS, loadPrinciples, loadSeparations, lookupMatrixCell, paramLabel, principleById } from '../data.ts'
@@ -43,6 +44,20 @@ export type TrizOutput = InferValue<typeof OUTPUT_SCHEMA>
 
 /** The catalog branch of {@link TrizOutput}. */
 type CatalogOutput = Extract<TrizOutput, { mode: 'catalog' }>
+
+/**
+ * Thrown when the tool input cannot be answered.
+ * Extends {@link HarnessError} so the stable code reaches `tool/result`.
+ */
+export class TrizToolError extends HarnessError {
+  /**
+   * @param code - stable error code for the model and logs.
+   * @param message - what is wrong with the input.
+   */
+  constructor(code: string, message: string) {
+    super(message, code)
+  }
+}
 
 /** The matrix-cell branch of {@link TrizOutput}. */
 type LookupOutput = Extract<TrizOutput, { mode: 'lookup' }>
@@ -227,15 +242,18 @@ export function createTrizTool(): ToolDefinition {
         return Promise.resolve({ mode: 'catalog', parameters: allParameters(), principles: allPrinciples() } as const)
       }
       if (args.improving === undefined || args.worsening === undefined) {
-        throw new Error('triz requires both improving and worsening, or neither (for the full catalog)')
+        throw new TrizToolError(
+          'invalid_parameter_pair',
+          'triz requires both improving and worsening, or neither (for the full catalog)',
+        )
       }
       const improving = args.improving
       const worsening = args.worsening
       if (!Number.isInteger(improving) || improving < 1 || improving > 39) {
-        throw new Error('triz improving must be an integer 1-39')
+        throw new TrizToolError('invalid_parameter', 'triz improving must be an integer 1-39')
       }
       if (!Number.isInteger(worsening) || worsening < 1 || worsening > 39) {
-        throw new Error('triz worsening must be an integer 1-39')
+        throw new TrizToolError('invalid_parameter', 'triz worsening must be an integer 1-39')
       }
       const ids = lookupMatrixCell(improving, worsening)
       return Promise.resolve({

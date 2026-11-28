@@ -48,7 +48,10 @@
       "path": "../../subagent/subagent"
     },
     {
-      "path": "../patent-tools"
+      "path": "../patent-core"
+    },
+    {
+      "path": "../patent-rule"
     },
     {
       "path": "../patent-workflow"

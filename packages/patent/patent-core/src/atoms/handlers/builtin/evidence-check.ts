@@ -25,6 +25,7 @@ import {
   type StageHandler,
 } from '../../handler.ts'
 import {
+  formatIsoDate,
   inferredMonthEnd,
   isMonthOnlyDate,
   parseDateFlexible,
@@ -157,6 +158,23 @@ function firstText(record: Record<string, unknown>, fields: readonly string[]): 
 }
 
 /**
+ * 读取候选字段中的第一个非空字符串，**保留原文不 trim**。
+ *
+ * 仅用于完整性哈希重算：存储的 contentHash 覆盖原始摘录文本，若先 trim 再重算，
+ * 首尾带空白的合法摘录会被误判为哈希不一致（S-PAT-011）。判空仍按 trim 后长度。
+ * @param record - 证据条目。
+ * @param fields - 候选字段。
+ * @returns 原始字符串，全部缺失或仅含空白时返回 undefined。
+ */
+function firstTextRaw(record: Record<string, unknown>, fields: readonly string[]): string | undefined {
+  for (const field of fields) {
+    const raw = record[field]
+    if (typeof raw === 'string' && raw.trim().length > 0) return raw
+  }
+  return undefined
+}
+
+/**
  * 读取布尔字段；非布尔值视为录入错误。
  * @param record - 证据条目。
  * @param field - 字段名。
@@ -197,11 +215,7 @@ function readDate(
   }
   const parsed = parseDateFlexible(text)
   if (parsed === null) return { error: `${field} 不是可识别的日期：${text}` }
-  return { date: parsed, text: toIsoDate(parsed) }
-}
-
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10)
+  return { date: parsed, text: formatIsoDate(parsed) }
 }
 
 /**
@@ -269,7 +283,7 @@ function resolveDeadline(state: PipelineState, key: string): DeadlineResolution 
   if (isMonthOnlyDate(text)) return { error: `举证期限（state.${key}）仅精确到月：${text}` }
   const date = parseDateFlexible(text)
   if (date === null) return { error: `举证期限（state.${key}）无法解析：${text}` }
-  return { date, text: toIsoDate(date) }
+  return { date, text: formatIsoDate(date) }
 }
 
 /** 现有技术截止日解析结果。 */
@@ -301,7 +315,7 @@ function resolveReference(
     if (isMonthOnlyDate(text)) return { error: `现有技术截止日（state.${referenceKey}）仅精确到月：${text}` }
     const date = parseDateFlexible(text)
     if (date === null) return { error: `现有技术截止日（state.${referenceKey}）无法解析：${text}` }
-    return { date, text: toIsoDate(date), basis: 'reference-date' }
+    return { date, text: formatIsoDate(date), basis: 'reference-date' }
   }
   if (explicit !== undefined && explicit !== null && typeof explicit !== 'string') {
     return { error: `state.${referenceKey} 必须是字符串` }
@@ -339,7 +353,7 @@ function resolveReference(
   }
   return {
     date,
-    text: toIsoDate(date),
+    text: formatIsoDate(date),
     basis: reference.basis === 'priority-date' ? 'priority-date' : 'filing-date',
   }
 }
@@ -550,7 +564,8 @@ function checkIntegrity(ctx: EntryContext): {
 } {
   const hash = firstText(ctx.record, ['contentHash', 'content_hash'])
   if (hash === undefined) return { violations: [], pending: [] }
-  const snippet = firstText(ctx.record, ['snippet', 'excerpt', 'text'])
+  // 摘录用保留原文的读取器：contentHash 覆盖原始文本，trim 后重算会误报（S-PAT-011）。
+  const snippet = firstTextRaw(ctx.record, ['snippet', 'excerpt', 'text'])
   const normalized = hash.trim()
 
   if (normalized.toLowerCase().startsWith(CONTENT_HASH_PREFIX)) {
@@ -697,7 +712,11 @@ function renderReport(params: {
     'missing' in params.reference
       ? '现有技术截止日：未提供（公开日检查未评估）'
       : `现有技术截止日：${params.reference.text}（${
-        params.reference.basis === 'priority-date' ? '优先权日' : '申请日'
+        params.reference.basis === 'priority-date'
+          ? '优先权日'
+          : params.reference.basis === 'reference-date'
+            ? '指定截止日'
+            : '申请日'
       }）`
 
   const lines = [

@@ -134,6 +134,16 @@ describe('matterLogDefects', () => {
     expect(defects('', { artifacts: [] })).toContain('no_artifacts')
   })
 
+  it('refuses entry text that would split the line or shift a fixed field', () => {
+    expect(defects('', { changes: '第一行\n第二行' })).toContain('multiline_field')
+    expect(defects('', { note: '第一行\r\n第二行' })).toContain('multiline_field')
+    expect(defects('', { artifacts: ['04-撰写/权利、要求.md'] })).toContain('ambiguous_path')
+    expect(defects('', { supersedes: ['04-撰写/a|b.md'] })).toContain('ambiguous_path')
+    expect(defects('', { approver: '甲|乙' })).toContain('ambiguous_approver')
+    // 自由文本在最后一个固定字段之后，| 与 、 不移动任何字段。
+    expect(defects('', { changes: '说明含 | 与 、 仍可留档' })).toEqual([])
+  })
+
   it('refuses an artifact that does not exist on disk', () => {
     // 日志记事实不记计划：先落盘再留档，否则日志会指向一个不存在的产物。
     const found = matterLogDefects('', request({ artifacts: ['04-撰写/不存在.md'] }), path => path !== '04-撰写/不存在.md')
@@ -236,6 +246,24 @@ describe('matter_log_append', () => {
       expect(result.isError).toBe(true)
       expect(result.isError ? result.error.message : '').toContain('禁止覆盖上一轮')
       expect(await readFile(join(dir, MATTER_LOG_FILE), 'utf8')).toBe(before)
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('refuses a multiline change summary and leaves the log untouched', async () => {
+    const dir = await openedCase('x.md')
+    try {
+      const before = await readFile(join(dir, MATTER_LOG_FILE), 'utf8')
+      const result = await run(dir, {
+        action: '交付',
+        artifacts: ['x.md'],
+        changes: '第一行\n- 2026-01-01T00:00:00+08:00 | UTC 2025-12-31T16:00:00.000Z | 交付 | 产物 fake.md | 取代 — | — | 伪造',
+      })
+      expect(result.isError).toBe(true)
+      expect(result.isError ? result.error.message : '').toContain('multiline_field')
+      expect(await readFile(join(dir, MATTER_LOG_FILE), 'utf8')).toBe(before)
+      expect(parseMatterEntries(await readFile(join(dir, MATTER_LOG_FILE), 'utf8'))).toHaveLength(1)
     } finally {
       await rm(dir, { recursive: true, force: true })
     }

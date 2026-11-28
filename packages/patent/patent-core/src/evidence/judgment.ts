@@ -8,7 +8,6 @@ import {
   extractDateFromText,
   inferredMonthEnd,
   isBeforeReferenceDate,
-  isMonthOnlyDate,
   isPreciseDate,
   parseDateFlexible,
   type PriorArtReference,
@@ -175,7 +174,11 @@ export function evaluateTypeSpecific(
       ts.witnessCredibility = 'medium'
       break
     case 'common_knowledge':
-      ts.exemptionApplied = '无需举证'
+      // 公知常识免证以 EVI-013 的两项条件（待证事实为公知常识、且无争议）均满足为前提；
+      // 外部输入未提供或为 false 时不得宣称「无需举证」，仍按普通证据评分并在 rulesApplied 中标记 pending。
+      if (external.isWellKnown === true && external.isUncontested === true) {
+        ts.exemptionApplied = '无需举证'
+      }
       break
     case 'prior_art_date':
       ts.dateDetermination = determineInternetPublicationDate(span, reference)
@@ -217,17 +220,12 @@ function determinePublicUseDate(span: EvidenceSpan, reference?: PriorArtReferenc
   if (span.docVersion !== undefined && span.docVersion !== '') {
     const parsed = parseDateFlexible(span.docVersion)
     if (parsed !== null) {
-      /* v8 ignore else -- every parseDateFlexible-parseable string is precise or month-only, so the else-if chain's else arm is dead */
       if (isPreciseDate(span.docVersion)) {
         // 精确日期（含英文月份格式 "Jan 15, 2023"）：直接采用，不得截为年-月
         result.determined = span.docVersion
         result.reliability = 'medium'
-      } else if (isMonthOnlyDate(span.docVersion)) {
-        result.determined = inferredMonthEnd(parsed)
-        result.reliability = 'low'
       } else {
-        // 可解析但精度不足的日期：保留解析值（不再落 "unknown"）
-        result.determined = span.docVersion
+        result.determined = inferredMonthEnd(parsed)
         result.reliability = 'low'
       }
       result.isPriorArt = isBeforeReferenceDate(result.determined, reference?.date)

@@ -18,7 +18,7 @@
 
 import { type Atom } from '../../atom.ts'
 import { type PipelineState, type StageExecuteInput, type StageHandler } from '../../handler.ts'
-import { isMonthOnlyDate, parseDateFlexible } from '../../../evidence/date.ts'
+import { formatIsoDate, isMonthOnlyDate, parseDateFlexible } from '../../../evidence/date.ts'
 import { degraded } from './llm.ts'
 import { isRecord, resolveTrimmedKey } from './state-keys.ts'
 
@@ -118,10 +118,6 @@ function optionalText(record: Record<string, unknown>, key: string): string | un
   return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : undefined
 }
 
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10)
-}
-
 /**
  * 读取一个日期字段。缺失与格式错误分开：缺失进入“待定”，格式错误直接降级，
  * 避免把录入错误悄悄当成“未提供”。
@@ -138,7 +134,7 @@ function readDateField(record: Record<string, unknown>, key: string): DateResolu
   if (isMonthOnlyDate(text)) return { error: `${key} 仅精确到月，抵触申请判定需要具体日期：${text}` }
   const date = parseDateFlexible(text)
   if (date === null) return { error: `${key} 不是可识别的日期：${text}` }
-  return { date, text: toIsoDate(date) }
+  return { date, text: formatIsoDate(date) }
 }
 
 /**
@@ -164,7 +160,7 @@ function resolveTargetDate(
     const declared = readStateString(state, 'reference_basis')
     const basis =
       declared === 'priority-date' ? 'priority-date' : declared === 'filing-date' ? 'filing-date' : 'unspecified'
-    return { date, text: toIsoDate(date), basis }
+    return { date, text: formatIsoDate(date), basis }
   }
 
   if (filing !== undefined) {
@@ -173,7 +169,7 @@ function resolveTargetDate(
     }
     const date = parseDateFlexible(filing)
     if (date === null) return { error: `目标申请日（state.${filingKey}）无法解析：${filing}` }
-    return { date, text: toIsoDate(date), basis: 'filing-date' }
+    return { date, text: formatIsoDate(date), basis: 'filing-date' }
   }
 
   return { error: `缺少目标申请日/优先权日（state.${referenceKey} 或 state.${filingKey}）` }

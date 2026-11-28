@@ -109,6 +109,21 @@ export type { IpcClassification, IpcStandardCard } from '@deepseek-ai/dsh-patent
 export type { KgEdge, KgNode, KgNodeType } from './patent/types.ts'
 
 /**
+ * Resolve `Config.nodeCacheMaxEntries` at load. The bound reaches the lazily
+ * constructed `LruCache`, so an invalid value would otherwise surface as a
+ * `RangeError` on the first graph query instead of during loading.
+ * @param value - configured bound, or `undefined` for the default.
+ * @returns the validated bound.
+ */
+function resolveNodeCacheMaxEntries(value: number | undefined): number {
+  if (value === undefined) return DEFAULT_NODE_CACHE_MAX_ENTRIES
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new Error(`patent-knowledge Config: nodeCacheMaxEntries must be a positive integer, got ${String(value)}`)
+  }
+  return value
+}
+
+/**
  * PatentKnowledge service: the knowledge.db query seam (ctx.patentKnowledge).
  * It lazily opens the resolved knowledge.db read-only and delegates to the
  * ported engines; the engines close when the owning fiber unloads. `ipcClassify`
@@ -121,7 +136,7 @@ export class PatentKnowledge extends Service {
   static Config: z<Config> = z.object({
     knowledgeDir: z.string(),
     sourceDbPath: z.string(),
-    nodeCacheMaxEntries: z.number().min(1),
+    nodeCacheMaxEntries: z.natural().min(1),
   })
 
   /** Resolved on-disk paths (query db, wiki dir, install source). */
@@ -139,7 +154,7 @@ export class PatentKnowledge extends Service {
   constructor(ctx: Context, config: Config = {}) {
     super(ctx, 'patentKnowledge')
     this.paths = resolveKnowledgePaths(config)
-    this.nodeCacheMaxEntries = config.nodeCacheMaxEntries ?? DEFAULT_NODE_CACHE_MAX_ENTRIES
+    this.nodeCacheMaxEntries = resolveNodeCacheMaxEntries(config.nodeCacheMaxEntries)
     this.wiki = new WikiCardLoader(this.paths.wikiDir)
     this.ctx.effect(() => () => { this.close() }, 'patent-knowledge: engines')
   }

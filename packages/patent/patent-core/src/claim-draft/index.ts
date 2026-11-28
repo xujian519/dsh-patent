@@ -195,9 +195,6 @@ function buildIndependentClaim(name: string, domain: TechDomain, features: strin
     const normalized = normalizePriorArt(priorArt)
     return `${struct.head(name)}${struct.priorConnector}${normalized}；${struct.withPriorConnector}${featurePart}。`
   }
-  if (domain === 'software') {
-    return `${struct.head(name)}${struct.connector}${features.join('；')}。`
-  }
   return `${struct.head(name)}${struct.connector}${featurePart}。`
 }
 

@@ -1,5 +1,3 @@
-import { asRecord } from '@deepseek-ai/dsh-value'
-
 /**
  * CNIPR（中国知识产权网）通道的纯函数层：号码分类与规范化、脚本收据解析、页面文本解析。
  *
@@ -10,6 +8,7 @@ import { asRecord } from '@deepseek-ai/dsh-value'
  * @module @deepseek-ai/dsh-patent-data/cnipr-receipt
  */
 
+import { asRecord } from '@deepseek-ai/dsh-value'
 import type {
   CniprLegalQuery,
   CniprLegalRecord,

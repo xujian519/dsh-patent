@@ -106,7 +106,9 @@ export class EvidenceExtension implements SatiEvidenceCollector {
     const span = createSpan({
       turnId: receipt.turnId,
       receiptId: receipt.toolCallId,
-      ...(receipt.resultText ? { contentHash: contentHash(receipt.resultText) } : {}),
+      // 哈希必须覆盖最终存入的摘录文本（可能是调用方传入的自定义片段），
+      // 否则完整性校验对 resultText 重算会与存储的 snippet 不一致。
+      ...(spanSnippet ? { contentHash: contentHash(spanSnippet) } : {}),
       ...(spanSnippet !== undefined ? { snippet: spanSnippet } : {}),
       ...(receipt.path ? { sourceUri: `file://${receipt.path}` } : {}),
       direction,

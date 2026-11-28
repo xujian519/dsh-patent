@@ -6,6 +6,7 @@
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { LegalStatusChecker } from '@deepseek-ai/nuo-patent'
 import type { CniprChannel, CniprLegalRecord, CniprLegalStatusItem } from '@deepseek-ai/dsh-patent-data'
 import {
@@ -154,12 +155,16 @@ function needsCniprRetry(item: PatentLegalStatusItem): boolean {
   return item.error !== undefined || item.status === '' || item.status === 'UNKNOWN'
 }
 
+/** CNIPR 只按中国申请号/公开(公告)号检索；其他国别不咨询该通道。 */
+const CNIPR_LEGAL_NUMBER = /^CN/iu
+
 /**
- * 用 CNIPR 第二通道重查 nuo 通道没给出状态的号，就地把成功的重查替换进 `items`。
+ * 用 CNIPR 第二通道重查 nuo 通道没给出状态的中国号，就地把成功的重查替换进 `items`。
  *
- * 只重查「nuo 没给出状态」的号：有状态的条目保持原样，避免用第二通道覆盖第一通道的答案。
- * 通道级失败不是整批失败——条目保留 nuo 通道的原因，失败本身进 warnings，让「第二个通道
- * 不可用」在调用记录里看得见（否则会被读成「不需要它」）。
+ * 只重查「nuo 没给出状态且号以 CN 开头」的条目：有状态的条目保持原样，避免用第二通道
+ * 覆盖第一通道的答案；该通道只按中国号检索，其他国别的失败不咨询它。通道级失败不是
+ * 整批失败——条目保留 nuo 通道的原因，失败本身进 warnings，让「第二个通道不可用」在
+ * 调用记录里看得见（否则会被读成「不需要它」）。
  * @param deps - 工具依赖；`cnipr` 缺省或本部署未启用时不重查。
  * @param items - 本次调用的条目，成功的重查原地替换对应项。
  * @param signal - 调用方取消信号。
@@ -171,19 +176,28 @@ async function retryThroughCnipr(
   signal: AbortSignal | undefined,
 ): Promise<{ warnings: string[]; consult: ChannelConsult }> {
   const cnipr = deps.cnipr?.()
+  const retry = items
+    .filter(item => needsCniprRetry(item) && CNIPR_LEGAL_NUMBER.test(item.patentNumber))
+    .map(item => item.patentNumber)
+  if (retry.length === 0) {
+    return {
+      warnings: [],
+      consult: {
+        name: CNIPR_CHANNEL,
+        outcome: 'skipped',
+        reason: cnipr === undefined ? '本部署未启用该通道' : '没有需要重查的中国申请号/公开(公告)号',
+      },
+    }
+  }
   if (cnipr === undefined) {
     return { warnings: [], consult: { name: CNIPR_CHANNEL, outcome: 'skipped', reason: '本部署未启用该通道' } }
-  }
-  const retry = items.filter(needsCniprRetry).map(item => item.patentNumber)
-  if (retry.length === 0) {
-    return { warnings: [], consult: { name: CNIPR_CHANNEL, outcome: 'skipped', reason: '第一通道均给出状态，未咨询' } }
   }
   let reported: CniprLegalStatusItem[]
   try {
     /* v8 ignore next -- exec.signal is always present on the tool execution context */
     reported = await cnipr.legalStatus(retry, { ...(signal === undefined ? {} : { signal }) })
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error)
+    const detail = errorMessage(error)
     return {
       warnings: [`${CNIPR_CHANNEL}不可用（${detail}），${retry.length} 个号只有 ${GOOGLE_PATENTS_CHANNEL} 的结果`],
       consult: { name: CNIPR_CHANNEL, outcome: 'failed', reason: detail },

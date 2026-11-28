@@ -15,7 +15,7 @@
  * @module @deepseek-ai/dsh-patent-tools/internal/retry-hints
  */
 
-import type { SlopAnalysis } from './slop-engine.ts'
+import type { SlopAnalysis } from '@deepseek-ai/dsh-patent-core'
 
 /** 每条 hint 证据清单的条目上限（防提示过长挤占上下文）。 */
 const MAX_CHANGES = 8

@@ -24,19 +24,32 @@ import { CaseLawSearchEngine } from './case-law/case-law-search.ts'
 import { DEFAULT_KNOWLEDGE_DIR, DEFAULT_SOURCE_DB_PATH } from './config.ts'
 import type { InstallKnowledgeDbOptions, InstallResult } from './types.ts'
 
-/** Compress each long chunks.content body once to a gzip BLOB. Returns the compressed count. */
+/** Chunk rows read per round; keeps the page small without loading the whole table. */
+const COMPRESS_PAGE_SIZE = 500
+
+/**
+ * Compress each long chunks.content body once to a gzip BLOB. Returns the compressed count.
+ * Walks one window at a time: SQLite gives no guarantee for a cursor over a table
+ * that the same connection updates, and rewriting TEXT into a smaller BLOB can move rows.
+ * @param db - the output database connection.
+ * @returns how many chunk bodies were replaced by a compressed BLOB.
+ */
 function compressChunksTable(db: DatabaseSync): number {
-  const select = db.prepare('SELECT id, content FROM chunks')
+  const selectPage = db.prepare('SELECT id, content FROM chunks ORDER BY id LIMIT ? OFFSET ?')
   const update = db.prepare('UPDATE chunks SET content = ? WHERE id = ?')
   let compressed = 0
-  for (const row of select.iterate()) {
-    const content = row.content
-    const id = row.id
-    if (typeof content !== 'string' || typeof id !== 'number') continue
-    const blob = compressIfSmaller(content)
-    if (blob !== null) {
-      update.run(blob, id)
-      compressed += 1
+  for (let offset = 0; ; offset += COMPRESS_PAGE_SIZE) {
+    const rows = selectPage.all(COMPRESS_PAGE_SIZE, offset)
+    if (rows.length === 0) break
+    for (const row of rows) {
+      const content = row.content
+      const id = row.id
+      if (typeof content !== 'string' || typeof id !== 'number') continue
+      const blob = compressIfSmaller(content)
+      if (blob !== null) {
+        update.run(blob, id)
+        compressed += 1
+      }
     }
   }
   return compressed
@@ -151,14 +164,7 @@ function gb(bytes: number): string {
 }
 
 /**
- * Trim a source knowledge.db into knowledgeDir, keeping the full-text and
- * knowledge-graph capability while dropping embeddings.
- *
- * @param options - input/output paths, trimming toggles, and a log sink.
- * @returns the run summary (paths, sizes, dropped tables, compressed count).
- */
-/**
- * patent-knowledge:install 的入口。
+ * patent-knowledge:install 的入口：保留全文检索与知识图谱能力，丢弃 embeddings。
  * @param options - source/输出路径与裁剪开关。
  * @returns 安装结果（输出路径、去表清单与压缩统计）。
  */
@@ -194,7 +200,7 @@ export async function installKnowledgeDb(options: InstallKnowledgeDbOptions = {}
   // 同文件守卫用真实路径比较：文本相等会漏掉 /x/./k.db、symlink 别名等写法，
   // 一旦误判为不同路径，先删后建会把源库不可逆删除。
   if (resolveRealPath(input) === resolveRealPath(output)) {
-    throw new Error('--output 与 --input 指向同一文件（含路径别名），会破坏源库 ，请指定不同输出路径。')
+    throw new Error('--output 与 --input 指向同一文件（含路径别名），会破坏源库，请指定不同输出路径。')
   }
 
   const sourceBytes = statSync(input).size

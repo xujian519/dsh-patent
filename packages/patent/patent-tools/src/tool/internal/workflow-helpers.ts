@@ -22,6 +22,7 @@
 import { basename, isAbsolute, join } from 'node:path'
 import { recordFlag, recordString, recordText } from './json-read.ts'
 import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import {
   caseWorkflowRunsDir,
   collectPortText,
@@ -164,7 +165,7 @@ export async function writeRunArtifacts(
     return result.persistWarning ? `${note}\n${result.persistWarning}` : note
   } catch (err) {
     /* v8 ignore next -- writeFileAtomic only rejects with Error values. */
-    return `持久化失败: ${err instanceof Error ? err.message : String(err)}`
+    return `持久化失败: ${errorMessage(err)}`
   }
 }
 

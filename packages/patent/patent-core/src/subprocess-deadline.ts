@@ -39,7 +39,9 @@ export function startSpawnDeadline(timeoutMs: number, callerSignal?: AbortSignal
     controller.abort()
   }
   callerSignal?.addEventListener('abort', onCallerAbort, { once: true })
-  if (callerSignal?.aborted === true) controller.abort()
+  // 已中止的信号不会再派发事件：这里必须走同一处理函数，否则计时器留到 timeoutMs 后
+  // 把 timedOut() 翻成 true（与上一条注释描述的是同一个误报）。
+  if (callerSignal?.aborted === true) onCallerAbort()
   return {
     signal: controller.signal,
     timedOut: () => timedOut,

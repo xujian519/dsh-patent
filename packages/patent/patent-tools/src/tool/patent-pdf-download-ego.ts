@@ -20,6 +20,7 @@
  * @module @deepseek-ai/dsh-patent-tools/tool/patent-pdf-download-ego
  */
 
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { PatentToolError } from '../error.ts'
 import { GOOGLE_PATENTS_CHANNEL } from './internal/upstream-channel.ts'
 import type { EgoDownloadItem, EgoDownloadRequest, EgoDownloadResult, RunEgo } from './patent-pdf-download.ts'
@@ -158,7 +159,7 @@ export function createEgoDownloadRunner(session: EgoSessionSeam): RunEgo {
     } catch (error) {
       throw new PatentToolError(
         'tool_execution_failed',
-        `ego-browser 启动失败：${error instanceof Error ? error.message : String(error)}`,
+        `ego-browser 启动失败：${errorMessage(error)}`,
         { tool: 'patent_pdf_download' },
       )
     }

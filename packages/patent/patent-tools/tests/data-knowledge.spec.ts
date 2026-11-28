@@ -538,7 +538,8 @@ describe('patent_wiki_search deeper paths', () => {
 
     await execute(ctx, 'patent_wiki_search', { query: '' }, 'pws-cap-1')
     await execute(ctx, 'patent_wiki_search', { query: '', limit: 50 }, 'pws-cap-2')
-    expect(seen).toEqual([5, 10])
+    await execute(ctx, 'patent_wiki_search', { query: '', limit: 2.9 }, 'pws-cap-3')
+    expect(seen).toEqual([5, 10, 2])
   })
 })
 

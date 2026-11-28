@@ -8,7 +8,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { resolveDomain as resolveClaimDomain } from '@deepseek-ai/dsh-patent-core'
-import { createToolInputReader } from './internal/tool-input.ts'
+import { createToolInputReader, requireNonBlankText } from './internal/tool-input.ts'
 import type { PatentType, TechDomain } from './draft-claims.ts'
 import { WARNINGS_SCHEMA } from './internal/tool-output.ts'
 import {
@@ -136,12 +136,13 @@ const DOMAIN_LABELS: Partial<Record<TechDomain, string>> = {
   software: '软件',
 }
 
-function buildTechField(title: string, domain: TechDomain): SpecificationSection {
+function buildTechField(title: string, domain: TechDomain, patentType: PatentType): SpecificationSection {
   const domainLabel = DOMAIN_LABELS[domain] ?? ''
   const subject = title.startsWith('一种') ? title : `一种${title}`
+  const subjectTerm = patentType === 'utility_model' ? '本实用新型' : '本发明'
   const content = domainLabel.length > 0
-    ? `本发明涉及${domainLabel}技术领域，尤其涉及${subject}。`
-    : `本发明涉及${subject}。`
+    ? `${subjectTerm}涉及${domainLabel}技术领域，尤其涉及${subject}。`
+    : `${subjectTerm}涉及${subject}。`
   return { name: '技术领域', content, placeholder: false }
 }
 
@@ -155,11 +156,12 @@ function buildContent(input: DraftSpecificationInput): SpecificationSection {
   const problem = input.technical_problem?.trim()
   const solution = input.technical_solution?.trim()
   const effects = input.beneficial_effects?.trim()
-  if (problem) parts.push(`本发明要解决的技术问题是：${problem}`)
+  const subjectTerm = input.patent_type === 'utility_model' ? '本实用新型' : '本发明'
+  if (problem) parts.push(`${subjectTerm}要解决的技术问题是：${problem}`)
   else parts.push('【撰写指引】记载要解决的技术问题（与背景技术的缺陷对应）。')
-  if (solution) parts.push(`为解决上述技术问题，本发明提供如下技术方案：${solution}`)
+  if (solution) parts.push(`为解决上述技术问题，${subjectTerm}提供如下技术方案：${solution}`)
   else parts.push('【撰写指引】记载技术方案（与权利要求的技术特征对应，问题→方案→效果逻辑链完整）。')
-  if (effects) parts.push(`本发明的有益效果是：${effects}`)
+  if (effects) parts.push(`${subjectTerm}的有益效果是：${effects}`)
   else parts.push('【撰写指引】记载有益效果（与区别技术特征对应，有对比实验或理论推导支撑）。')
   return { name: '发明内容', content: parts.join('\n'), placeholder: !(problem && solution && effects) }
 }
@@ -218,7 +220,8 @@ export function composeAbstract(input: DraftSpecificationInput): string {
   const effects = input.beneficial_effects?.trim() ?? ''
   const keywordSource = subject.replace(/^一种/, '').replace(/[，。；、：:,.;\s]/g, '')
   const keywords = `关键词：${clip(keywordSource, 20)}`
-  const parts = [`本发明公开了${subject}`]
+  const subjectTerm = input.patent_type === 'utility_model' ? '本实用新型' : '本发明'
+  const parts = [`${subjectTerm}公开了${subject}`]
   if (problem.length > 0) parts.push(`，要解决的技术问题是${problem}`)
   if (solution.length > 0) parts.push(`。技术方案：${solution}`)
   if (effects.length > 0) parts.push(`。有益效果：${effects}`)
@@ -280,7 +283,7 @@ export function draftSpecification(input: DraftSpecificationInput): DraftSpecifi
   })
   warnings.push(...amendmentReserveWarnings(amendmentReserve))
   const sections = [
-    buildTechField(title, domain),
+    buildTechField(title, domain, patentType),
     buildBackground(input.background),
     buildContent(input),
     buildDrawings(drawingDescriptions, input.has_drawings, patentType),
@@ -485,6 +488,7 @@ export function createDraftSpecificationTool(): ToolDefinition {
     },
     // oxlint-disable-next-line typescript/require-await -- tool contract requires async execute
     async execute(args) {
+      requireNonBlankText(args.title, 'draft_specification', 'title 为空（须为发明名称）')
       return draftSpecification(parseDraftSpecificationInput(args))
     },
   })

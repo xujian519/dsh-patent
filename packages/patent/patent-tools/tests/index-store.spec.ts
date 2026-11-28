@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { createIndexStore } from '../src/internal/index-store.ts'
 import { figureIndexStore, FIGURE_INDEX_VERSION } from '../src/figure/index-store.ts'
 import { chemistryIndexStore, CHEMISTRY_INDEX_VERSION } from '../src/chemistry/index-store.ts'
 import { createRecognizeChemicalStructureTool, resolveChemicalSourceKey } from '../src/tool/recognize-chemical-structure.ts'
@@ -321,6 +322,29 @@ describe('figureIndexStore.upsert', () => {
       await figureIndexStore.upsert(file, figureEntry({ imagePath: 'c.png', figureNumber: 3 }))
       const { entries } = await figureIndexStore.load(file)
       expect(entries.map(e => e.imagePath)).toEqual(['a.png', 'b.png', 'c.png'])
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('serializes upserts from separate store instances through the file lock', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-index-lock-'))
+    try {
+      const file = join(dir, 'index.json')
+      const options = {
+        version: 1,
+        validateEntry: (value: unknown): value is string => typeof value === 'string',
+        entryKey: (entry: string): string => entry,
+        compare: (a: string, b: string): number => a.localeCompare(b),
+        kindLabel: '测试',
+      }
+      const first = createIndexStore(options)
+      const second = createIndexStore(options)
+      // 两个实例各有自己的进程内队列；没有文件锁时二者会各自读到同一份空索引并互相覆盖。
+      await Promise.all([first.upsert(file, 'a'), second.upsert(file, 'b')])
+      const parsed = JSON.parse(await readFile(file, 'utf8')) as { entries: string[] }
+      expect(parsed.entries).toEqual(['a', 'b'])
+      expect((await readdir(dir)).filter(name => name.endsWith('.lock'))).toEqual([])
     } finally {
       await rm(dir, { recursive: true, force: true })
     }

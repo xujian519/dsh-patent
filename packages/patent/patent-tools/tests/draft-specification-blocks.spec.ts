@@ -195,6 +195,20 @@ describe('draftSpecification embodiment blocks', () => {
     expect(Array.from(out.abstract).length).toBeLessThanOrEqual(300)
   })
 
+  it('does not double the heading of a caller-supplied labeled embodiment', () => {
+    const source = '实施例1：壳体1内设置弹簧2。'
+    const out = draftSpecification({
+      title: '一种检测装置',
+      technical_solution: source,
+      source_text: source,
+      embodiments: [source],
+    })
+    const drafted = out.sections.find(section => section.name === '具体实施方式')?.content ?? ''
+    expect(drafted.match(/实施例1：/g)).toHaveLength(1)
+    expect(drafted).toContain('实施例1：壳体1内设置弹簧2。')
+    expect(renderDraftSpecification(out)).toContain('## 具体实施方式\n\n实施例1：壳体1内设置弹簧2。')
+  })
+
   it('keeps the citation lines clear of figure-mark and spacing violations', () => {
     const source = '实施例1：壳体1内设置弹簧2，弹簧2抵接传感器3。'
     const out = draftSpecification({

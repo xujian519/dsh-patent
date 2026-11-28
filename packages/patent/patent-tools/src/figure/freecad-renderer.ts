@@ -12,8 +12,8 @@
  * `~/Library/Preferences`、`~/Library/Caches` 的写失败仅告警、非致命（本机实测
  * STEP 载入/投影/导出均成功），故 stderr 文本不作为失败依据。子进程 HOME/临时
  * 目录 best-effort 指向 outputDir 内子目录以隔离副作用（Linux 生效；macOS 下
- * FreeCAD 缓存路径不随 HOME 迁移，属已知无害局限），渲染结束后删除该隔离目录
- * 与脚本，不在交付目录留下隐藏残留。
+ * FreeCAD 缓存路径不随 HOME 迁移，属已知无害局限），渲染结束后删除该隔离目录、
+ * 脚本，以及结构投影写入的模板与 transient 目录，不在交付目录留下隐藏残留。
  *
  * @module @deepseek-ai/dsh-patent-tools/figure/freecad-renderer
  */
@@ -44,6 +44,8 @@ import {
 import { SECTION_GEOMETRY_FILENAME, buildSectionScript } from './freecad-section-script.ts'
 import {
   STRUCTURE_MANIFEST_FILENAME,
+  STRUCTURE_TEMPLATE_FILENAME,
+  STRUCTURE_TRANSIENT_DIRNAME,
   buildStructureScript,
   type StructureScriptParams,
 } from './freecad-structure-script.ts'
@@ -220,6 +222,8 @@ type FreeCadScriptRequest = {
   artifactFilename: string
   /** 产物说明（缺产物时的诊断消息用，如 `manifest`）。 */
   artifactLabel: string
+  /** 脚本执行期生成、结束后需清理的交付目录内路径（模板、transient 目录等）。 */
+  cleanupPaths?: readonly string[]
   /** 调用方取消信号。 */
   signal?: AbortSignal
 }
@@ -297,6 +301,9 @@ async function runFreeCadScript(
     // 与交付产物混在一起。清理失败不改变本次渲染结论（产物已生成或错误已分类）。
     await rm(homeDir, { recursive: true, force: true }).catch(() => undefined)
     await rm(scriptPath, { force: true }).catch(() => undefined)
+    for (const path of request.cleanupPaths ?? []) {
+      await rm(path, { recursive: true, force: true }).catch(() => undefined)
+    }
   }
 }
 
@@ -343,6 +350,11 @@ export async function renderStructureViews(
     scriptFilename: STRUCTURE_RENDER_SCRIPT_FILENAME,
     artifactFilename: STRUCTURE_MANIFEST_FILENAME,
     artifactLabel: 'manifest',
+    // 结构脚本在交付目录里写 TechDraw 模板与 transient 子目录；两者都不是交付产物。
+    cleanupPaths: [
+      join(spec.outputDir, STRUCTURE_TEMPLATE_FILENAME),
+      join(spec.outputDir, STRUCTURE_TRANSIENT_DIRNAME),
+    ],
     ...(spec.signal === undefined ? {} : { signal: spec.signal }),
   }, script, options)
   if (!result.ok) return result

@@ -212,8 +212,11 @@ export async function addMember(
       // precedes writeTeam (appendTeamEvent contains its own failure
       // handling), so reaching this catch means the persist never landed.
       // Retire the orphan so it disappears from subagent listings and
-      // cannot be resumed, then surface the failure.
-      await recordRetiredMemberIds(stateRoot, [member.id]).catch(() => undefined)
+      // cannot be resumed, then surface the failure. A failed retirement write
+      // leaves a resumable child behind, so report it instead of dropping it.
+      await recordRetiredMemberIds(stateRoot, [member.id]).catch((retireError: unknown) => {
+        host.ctx.logger.warn(`patent-teams: failed to retire orphan member ${member.id}: ${String(retireError)}`)
+      })
       interruptMember(host.ctx, agent, member.id)
     }
     throw error

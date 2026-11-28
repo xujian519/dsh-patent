@@ -223,16 +223,18 @@ export function buildEmbodimentBlocks(input: EmbodimentBuildInput): EmbodimentBu
 /**
  * 把实施例块渲染成「具体实施方式」正文。
  *
- * 原文自带标题的块沿用标题；调用方直接给出的块补 `实施例N：` 前缀。特征编号与
- * 附图标记写在块末的引用行，没有命中时省略。
+ * 原文自带标题的块沿用标题；调用方直接给出且正文已以实施例标签开头的块同样沿用，
+ * 其余直接给出的块补 `实施例N：` 前缀。特征编号与附图标记写在块末的引用行，
+ * 没有命中时省略。
  * @param blocks - 已复核的实施例块。
  * @returns Markdown 正文；无块时为空串。
  */
 export function renderEmbodimentBlocks(blocks: readonly EmbodimentBlock[]): string {
   return blocks.map((block, index) => {
-    const body = block.preamble === true || block.heading !== undefined
-      ? block.text
-      : `实施例${index + 1}：${block.text}`
+    const labelled = block.preamble === true
+      || block.heading !== undefined
+      || EMBODIMENT_LABEL_RE.test(block.text)
+    const body = labelled ? block.text : `实施例${index + 1}：${block.text}`
     const citations: string[] = []
     if (block.feature_ids.length > 0) citations.push(`对应特征 ${block.feature_ids.join('、')}`)
     if (block.figure_marks.length > 0) {

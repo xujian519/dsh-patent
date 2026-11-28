@@ -97,6 +97,13 @@ const NONE = '—'
 /** Two spaces, one pipe, two spaces: the entry's field separator. */
 const FIELD_SEP = ' | '
 
+/** Characters that end the entry line or shift one of its fixed fields. */
+const LINE_BREAK = /[\r\n]/u
+/** Paths are joined with `、` and the entry's fields with `|`; either would split a path. */
+const PATH_SEPARATOR = /[|、\r\n]/u
+/** The approver is a fixed field before the free text, so `|` would shift it. */
+const APPROVER_SEPARATOR = /[|\r\n]/u
+
 /**
  * The fields an entry line carries, in the order the renderer writes them. Only
  * the fields before the free text are fixed; the change summary runs to the end
@@ -211,6 +218,33 @@ export function matterLogDefects(
       message: '未给出本轮变更说明：写清改了什么、为什么、是否影响保护点，这是留档段要交代的内容。',
     })
   }
+  // 条目按单行解析：自由文本里的换行会另起一行，可能被读成下一条结构化条目；
+  // 路径与审批人属于固定字段，分隔符会移动后续字段的边界。
+  if (LINE_BREAK.test(request.changes)) {
+    defects.push({
+      rule: 'multiline_field',
+      message: 'changes 含换行：留档条目按单行解析，请把变更说明压成一行。',
+    })
+  }
+  if (request.note !== undefined && LINE_BREAK.test(request.note)) {
+    defects.push({
+      rule: 'multiline_field',
+      message: 'note 含换行：留档条目按单行解析，请把备注压成一行。',
+    })
+  }
+  if (request.approver !== undefined && APPROVER_SEPARATOR.test(request.approver)) {
+    defects.push({
+      rule: 'ambiguous_approver',
+      message: 'approver 含换行或 |：条目固定字段以 | 分隔，审批人请写成一行且不含 |。',
+    })
+  }
+  for (const path of new Set([...artifacts, ...supersedes])) {
+    if (!PATH_SEPARATOR.test(path)) continue
+    defects.push({
+      rule: 'ambiguous_path',
+      message: `${path} 含条目分隔符（| 或 、）或换行：路径会被拆成多个字段，请改名后再留档。`,
+    })
+  }
   for (const path of artifacts) {
     if (pathExists(path)) continue
     defects.push({
@@ -292,6 +326,7 @@ const DESCRIPTION = [
   '- 每次撰写、修订、交付、门禁都在这里留档：写清改了什么、为什么、是否影响保护点（changes 字段），并列出本轮产物（artifacts，须已存在）',
   '- 取代关系显式登记：supersedes 列出本轮产物取代的既有文件。交付物一律另存新文件，禁止覆盖上一轮',
   '- 确定性判定，拒绝：产物不存在、产物路径与取代路径相同（原地覆盖）、supersedes 指向日志中没有的路径（凭空的取代链）、同一旧版被取代两次（取代链分叉）、撰写/修订轮复用已有产物路径',
+  '- 条目为单行格式：changes 与 note 不得含换行；artifacts 与 supersedes 的路径不得含 | 或 、；approver 不得含 | 或换行',
   '- 条目只追加，既有行不改写；每条同时记本地时间与 UTC',
   '',
   '用法：出件前调用 matter_log_append({case_dir, action, artifacts, changes, supersedes?, approver?})。交付前置门禁要求本会话成功留档过，才允许 render_patent_document / build_patent_filing。',

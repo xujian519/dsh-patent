@@ -9,6 +9,7 @@
 import { existsSync } from 'node:fs'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { recordText, recordValue, textList } from './internal/json-read.ts'
 import { toJsonValue } from './internal/json-value.ts'
 import type { CaseLawDocType, CaseLawHit, CaseLawSearchOptions, CorpusInfo } from '@deepseek-ai/dsh-patent-knowledge'
@@ -189,7 +190,7 @@ export function createPatentCaseSearchTool(deps: PatentCaseSearchDeps): ToolDefi
       } catch (err) {
         throw new PatentToolError('setup_required', INSTALL_GUIDANCE, {
           tool: 'patent_case_search',
-          cause: err instanceof Error ? err.message : String(err),
+          cause: errorMessage(err),
         })
       }
       const searchStrategy: SearchStrategy = {
@@ -209,7 +210,7 @@ export function createPatentCaseSearchTool(deps: PatentCaseSearchDeps): ToolDefi
         try {
           corpus = deps.corpusInfo()
         } catch (err) {
-          const detail = err instanceof Error ? err.message : String(err)
+          const detail = errorMessage(err)
           throw new PatentToolError('setup_required', `${INSTALL_GUIDANCE}（读取语料信息失败：${detail}）`, {
             tool: 'patent_case_search',
             cause: detail,

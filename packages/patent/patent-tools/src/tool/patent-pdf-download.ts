@@ -18,6 +18,7 @@ import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { resolveConfinedPath, resolveDatedOutputDir } from '@deepseek-ai/dsh-patent-core'
 import type { NetworkRetryOptions } from '@deepseek-ai/dsh-tool-literature'
 import { PatentToolError } from '../error.ts'
@@ -422,6 +423,19 @@ function summarize(results: PatentDownloadItem[], total: number): { total: numbe
   return { total, ok, failed: total - ok }
 }
 
+/**
+ * Stop a cancelled call before the next leg starts. The download seams report an
+ * abort as a per-item failure, so without this check a cancelled call would keep
+ * running the fallback and return a normal batch result.
+ * @param signal - the caller's cancellation signal.
+ * @throws PatentToolError('tool_aborted') when it is already aborted.
+ */
+function ensureNotAborted(signal: AbortSignal): void {
+  if (signal.aborted) {
+    throw new PatentToolError('tool_aborted', 'patent_pdf_download aborted', { tool: 'patent_pdf_download' })
+  }
+}
+
 /** 落盘方式的中文标注（formatSummary 行内后缀）。 */
 const METHOD_LABELS: Record<string, string> = {
   http: '（fetch 兜底）',
@@ -523,7 +537,7 @@ async function runGoogleLeg(
     }
     // 配置类失败（未接线的 fail-loud 桩）保留 setup_required 码，供按码路由的调用方判别。
     if (error instanceof PatentToolError && error.code === 'setup_required') throw error
-    const detail = error instanceof Error ? error.message : String(error)
+    const detail = errorMessage(error)
     if (deps.resolveFallback === undefined) {
       throw new PatentToolError('tool_execution_failed', `patent_pdf_download failed: ${detail}`, {
         tool: 'patent_pdf_download',
@@ -640,11 +654,12 @@ export function createPatentPdfDownloadTool(deps: PatentPdfDownloadDeps): ToolDe
         timeoutMs: timeoutMsValue,
         signal: exec.signal,
       })
+      ensureNotAborted(exec.signal)
 
       // 兜底：浏览器拦截不可用或失败时，用 fetch 下载 CDN PDF。把整体预算均分到
       // 各次尝试（含首次），使每次尝试都有期限；总时长最坏为 尝试次数 × 该值 + 退避。
       const fallbackRetry = deps.fetchFallbackRetry ?? DEFAULT_FETCH_FALLBACK_RETRY
-      const fallbackAttempts = 1 + (fallbackRetry.maxRetries ?? 0)
+      const fallbackAttempts = Math.max(1, 1 + (fallbackRetry.maxRetries ?? 0))
       const fallbackTimeoutMs = Math.max(MIN_FETCH_FALLBACK_TIMEOUT_MS, Math.floor(timeoutMsValue / fallbackAttempts))
       const firstPass = await Promise.all(
         egoResult.items.map(item =>
@@ -656,6 +671,7 @@ export function createPatentPdfDownloadTool(deps: PatentPdfDownloadDeps): ToolDe
           }),
         ),
       )
+      ensureNotAborted(exec.signal)
       const fallback = await runFallback(
         firstPass.filter(item => item.status === 'failed'),
         deps,
@@ -667,6 +683,7 @@ export function createPatentPdfDownloadTool(deps: PatentPdfDownloadDeps): ToolDe
           ...(deps.fetchFallbackRetry === undefined ? {} : { fetchRetry: deps.fetchFallbackRetry }),
         },
       )
+      ensureNotAborted(exec.signal)
       const fallbackByPatent = new Map(fallback.items.map(item => [item.patent, item]))
       const results = firstPass.map(item => fallbackByPatent.get(item.patent) ?? item)
 

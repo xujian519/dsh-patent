@@ -185,6 +185,12 @@ describe('buildStructureScript', () => {
     expect(a).toBe(b)
   })
 
+  it('payload 含 $ 替换模式时原样内嵌（不被 String.replace 展开）', () => {
+    const outputDir = "/abs/out $& $' $`"
+    const script = buildStructureScript(params({ outputDir }))
+    expect(extractPayload(script).outputDir).toBe(outputDir)
+  })
+
   it('callout label 缺省时归一为空字符串（payload 不携带 undefined）', () => {
     const script = buildStructureScript(params({ callouts: [{ numeral: '102', point3d: [1, 2, 3] }] }))
     const payload = extractPayload(script)

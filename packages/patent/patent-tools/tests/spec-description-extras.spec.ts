@@ -39,6 +39,12 @@ describe('checkBackgroundCitations', () => {
     expect(checkBackgroundCitations(spec('《检测技术手册》指出该结构存在缺陷。'))).toEqual([])
   })
 
+  it('标准只在给出标准号或代号时才算引证', () => {
+    expect(checkBackgroundCitations(spec('本发明符合国家标准的要求。'))).toEqual([])
+    expect(checkBackgroundCitations(spec('本发明符合国家标准 GB/T 1234—2016 的要求。'))).toEqual([])
+    expect(checkBackgroundCitations(spec('本发明符合标准号 GB/T 1234 的要求。'))).toEqual([])
+  })
+
   it('没有引证句或没有背景技术时不报', () => {
     expect(checkBackgroundCitations(spec('现有技术存在精度不足的问题。'))).toEqual([])
     expect(checkBackgroundCitations('## 技术领域\n检测。')).toEqual([])

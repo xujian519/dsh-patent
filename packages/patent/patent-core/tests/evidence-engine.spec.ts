@@ -17,6 +17,7 @@ import {
 } from '../src/evidence/date.ts'
 import { inferEvidenceType } from '../src/evidence/judgment.ts'
 import { platformCredibility } from '../src/evidence/credibility.ts'
+import { parseRuleSet } from '../src/evidence/rule-set.ts'
 import type { EvidenceSpan } from '../src/evidence/span.ts'
 
 function span(overrides: Partial<EvidenceSpan> & { snippet?: string }): EvidenceSpan {
@@ -788,4 +789,60 @@ rules:
   const e020 = emptyCase.rulesApplied.find(r => r.ruleId === 'EVI-020')!
   expect(e020.satisfied).toBe(false)
   expect(e020.pendingInputs).toEqual(['case_type_identified'])
+})
+
+it('parseRuleSet：evidenceAssessment 的 platformCredibility/conditions 保留有效值并过滤无效项（S-PAT-010 分支覆盖）', () => {
+  const { ruleSet } = parseRuleSet(
+    `rules:
+  - ruleId: EVI-PC-MIXED
+    name: mixed
+    severity: minor
+    action: apply
+    evidenceType: electronic
+    check:
+      type: keyword_blocklist
+      keywords: ["x"]
+    evidenceAssessment:
+      platformCredibility:
+        gov.cn:
+          score: 0.9
+          label: 官方
+        bad-label:
+          score: 0.5
+          label: 123
+        bad-score:
+          score: nope
+          label: 低
+      conditions:
+        keep: 有效
+        drop: 42
+  - ruleId: EVI-PC-EMPTY
+    name: empty
+    severity: minor
+    action: apply
+    evidenceType: electronic
+    check:
+      type: keyword_blocklist
+      keywords: ["y"]
+    evidenceAssessment:
+      platformCredibility:
+        only-bad:
+          score: 0.5
+          label: false
+      conditions:
+        drop: 99
+`,
+    'inline',
+  )
+
+  const mixed = ruleSet!.rules.find(r => r.ruleId === 'EVI-PC-MIXED')!
+  expect(mixed.evidenceAssessment?.platformCredibility).toEqual({
+    'gov.cn': { score: 0.9, label: '官方' },
+  })
+  expect(mixed.evidenceAssessment?.conditions).toEqual({ keep: '有效' })
+
+  // 全部条目无效时字段不写入（undefined 过滤分支）
+  const empty = ruleSet!.rules.find(r => r.ruleId === 'EVI-PC-EMPTY')!
+  expect(empty.evidenceAssessment?.platformCredibility).toBeUndefined()
+  expect(empty.evidenceAssessment?.conditions).toBeUndefined()
 })

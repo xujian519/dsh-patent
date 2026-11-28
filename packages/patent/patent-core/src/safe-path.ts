@@ -20,12 +20,12 @@ const DELIVERABLE_NAME_CHARS = 'A-Za-z0-9._\\-()\\u4e00-\\u9fa5\\u2460-\\u2473\\
 const DELIVERABLE_NAME_PATTERN = new RegExp(`^(?!.*\\.\\.)[${DELIVERABLE_NAME_CHARS}]{1,120}$`, 'u')
 
 /**
- * 校验一个值可直接作为单段路径名：非空、不是 `.`/`..`、不以空格或点结尾、
- * 不含路径分隔符或 NUL。
+ * 校验一个值可直接作为单段路径名：非空、首尾不带空白、不以点结尾、
+ * 不含路径分隔符或 NUL。`.` 与 `..` 因以点结尾而被拒。
  *
  * 允许中文等非 ASCII 字符：案卷号常写作 `CN2024-0001` 或中文案卷名，但仍不得越出
  * `data/cases/<caseId>/`。尾部空格和点在 Windows 上会被文件系统忽略，`".. "` 因而
- * 可能解析为父目录。
+ * 可能解析为父目录；首部空白同样拒绝，避免带填充的输入被当成另一个名字。
  * @param value - 待校验的路径段。
  * @param what - 错误消息中的对象名（如 "caseId" / "案卷号"）。
  * @param createError - 校验失败时构造领域错误。
@@ -45,7 +45,7 @@ export function assertPathSegment(
     value.includes('\0')
   ) {
     throw createError(
-      `${what} ${JSON.stringify(value)} 不可用：必须是单段路径名，不得为空、含分隔符或 NUL，也不得以空白或点结尾`,
+      `${what} ${JSON.stringify(value)} 不可用：必须是单段路径名，不得为空、含分隔符或 NUL，也不得以首尾空白或点结尾`,
     )
   }
 }

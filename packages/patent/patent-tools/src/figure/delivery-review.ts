@@ -20,7 +20,7 @@
  * @module @deepseek-ai/dsh-patent-tools/figure/delivery-review
  */
 
-import { polyBounds } from './render-check-findings.ts'
+import { RENDER_CURVE_TOLERANCE_MM, polyBounds } from './render-check-findings.ts'
 import { quadCorners, scanSvg, textQuad } from './render-check-scan.ts'
 import type { Point, Scan, ScannedText } from './render-check-scan.ts'
 import { figureWordingWarnings } from './wording-rules.ts'
@@ -52,7 +52,8 @@ const LANDSCAPE_RATIO = 1.05
  */
 export function checkFigureDelivery(svg: string): DeliveryFinding[] {
   const findings: DeliveryFinding[] = []
-  const scan = scanSvg(svg)
+  // 曲线必须展平后量测：弦近似会低估弧的最低点，让压在弧内的图号被错误豁免。
+  const scan = scanSvg(svg, { curveToleranceMm: RENDER_CURVE_TOLERANCE_MM })
 
   if (/<image\b/i.test(svg)) {
     findings.push({

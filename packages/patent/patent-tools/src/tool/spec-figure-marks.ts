@@ -204,8 +204,11 @@ export function checkFigureMarkConsistency(
     })
   }
 
+  // 有图未参与分析时，"附图说明里的标号在分析结果中找不到"不等于"图面上没有该标号"：
+  // 那张图的组件表根本没读出来，据此报悬空会把没核到的数据当成不存在。
+  const analysisComplete = unusable.length === 0
   const dangling = [...listedMarks].filter(n => !figureMarks.has(n))
-  if (dangling.length > 0) {
+  if (analysisComplete && dangling.length > 0) {
     violations.push({
       rule: 'figure_mark_consistency',
       family: 'figures',
@@ -232,7 +235,7 @@ export function checkFigureMarkConsistency(
   }
   const claimedMarks = extractClaimMarks(claims)
   const claimedMissing = claimedMarks.filter(n => !figureMarks.has(n))
-  if (claimedMissing.length > 0) {
+  if (analysisComplete && claimedMissing.length > 0) {
     violations.push({
       rule: 'figure_mark_consistency',
       family: 'figures',

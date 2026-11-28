@@ -1,0 +1,75 @@
+# Test-only overlay over the shipped headless profile. It mounts the sixteen
+# patent rows the `patent` preset declares, so a probe can observe the real
+# plugin apply paths, the isolate realm, and the tools they register. The
+# preset machinery itself is exercised by `patent-preset.spec.ts`; this overlay
+# answers a different question — do these rows actually mount together.
+# Only the runner is disabled: `headless-startup` publishes the workspace root
+# that `sandbox-policy`, `fs`, and `working-directory` chain from, and disabling
+# it silently unmounts the whole host chain (subagents included).
+- id: headless-runner
+  disabled: true
+
+- insert:
+    # The six service providers and their consumers share one entry-local
+    # realm, exactly as `preset-patent` groups them. Keeping the probe inside
+    # the group is what makes `ctx.get('patentData')` resolve this mount's
+    # instance instead of nothing.
+    - id: patent
+      name: cordis:group
+      group: true
+      isolate:
+        patentData: true
+        patentKnowledge: true
+        patentWorkflow: true
+        patentTeams: true
+        patentRuleGate: true
+        writingPatterns: true
+      config:
+        - id: patent-data
+          name: '@deepseek-ai/dsh-patent-data'
+
+        - id: patent-knowledge
+          name: '@deepseek-ai/dsh-patent-knowledge'
+
+        - id: patent-workflow
+          name: '@deepseek-ai/dsh-patent-workflow'
+
+        - id: patent-tools
+          name: '@deepseek-ai/dsh-patent-tools'
+
+        # Negative control: the spec drops this row to prove the probe reports
+        # a missing provider instead of passing vacuously.
+        - id: patent-teams
+          name: '@deepseek-ai/dsh-patent-teams'
+          disabled: !!js Boolean(process.env['PATENT_MOUNT_DROP_TEAMS'])
+
+        - id: patent-rule
+          name: '@deepseek-ai/dsh-patent-rule'
+
+        - id: writing-patterns
+          name: '@deepseek-ai/dsh-writing-patterns'
+
+        - id: patent-mount-probe
+          name: './patent-mount-probe.ts'
+
+    # Tool-only rows provide no service, so they need no realm.
+    - id: patent-document
+      name: '@deepseek-ai/dsh-patent-document'
+
+    - id: patent-filing
+      name: '@deepseek-ai/dsh-patent-filing'
+
+    - id: patent-deadline
+      name: '@deepseek-ai/dsh-patent-deadline'
+
+    - id: patent-fees
+      name: '@deepseek-ai/dsh-patent-fees'
+
+    - id: patent-law
+      name: '@deepseek-ai/dsh-patent-law'
+
+    - id: tool-literature
+      name: '@deepseek-ai/dsh-tool-literature'
+
+    - id: methodology
+      name: '@deepseek-ai/dsh-methodology'

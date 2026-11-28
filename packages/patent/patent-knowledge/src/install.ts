@@ -14,7 +14,7 @@
  */
 
 import { DatabaseSync } from 'node:sqlite'
-import { existsSync, statSync } from 'node:fs'
+import { existsSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { commitTempSibling, countTableRows, formatGigabytes, prepareTempSibling, resolveRealPath } from '@deepseek-ai/dsh-knowledge-core'
 import { compressIfSmaller, decompressChunk } from './shared/chunk-compression.ts'
@@ -212,12 +212,13 @@ export async function installKnowledgeDb(options: InstallKnowledgeDbOptions = {}
       db.close()
     }
   }
-  commitTempSibling(tmpOutput, output, log)
 
   // 2. Build the short-query prefix, compress chunks, drop tables, then vacuum again.
+  // 全部在临时副本上做，成功后（第 3 步）才替换输出：中途失败时上一份可用库仍在原处，
+  // 不会留下「search_prefix 全为 NULL」一类的半裁剪产物。
   let compressedChunks = 0
-  {
-    const db = new DatabaseSync(output)
+  try {
+    const db = new DatabaseSync(tmpOutput)
     try {
       log('[2/3] 裁剪副本（检索辅助列 / 压缩 / 删表）…')
       if (searchPrefix) {
@@ -247,7 +248,11 @@ export async function installKnowledgeDb(options: InstallKnowledgeDbOptions = {}
     } finally {
       db.close()
     }
+  } catch (error) {
+    rmSync(tmpOutput, { force: true })
+    throw error
   }
+  commitTempSibling(tmpOutput, output, log)
 
   const outputBytes = statSync(output).size
   log('')

@@ -158,6 +158,7 @@
     "verify-default-product-isolation": "tsx scripts/verify-default-product-isolation.ts",
     "verify-application-entrypoints": "tsx scripts/verify-application-entrypoints.ts",
     "verify-package-dependencies": "tsx scripts/verify-package-dependencies.ts",
+    "verify-published-imports": "tsx scripts/verify-published-imports.ts",
     "verify-npm-install-layout": "tsx scripts/verify-npm-install-layout.ts",
     "verify-client-packages": "tsx scripts/verify-client-packages.ts",
     "check:i18n": "tsx scripts/run-gates.ts i18n",

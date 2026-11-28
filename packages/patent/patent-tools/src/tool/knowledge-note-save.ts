@@ -15,6 +15,7 @@
 import { createHash } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import { PatentToolError } from '../error.ts'
 
 /** Input for the knowledge_note_save tool. */
@@ -149,7 +150,7 @@ export function createKnowledgeNoteSaveTool(deps: KnowledgeNoteSaveDeps): ToolDe
         if (error instanceof PatentToolError && error.code === 'setup_required') throw error
         throw new PatentToolError(
           'tool_execution_failed',
-          `笔记保存失败：${error instanceof Error ? error.message : String(error)}`,
+          `笔记保存失败：${errorMessage(error)}`,
           { tool: 'knowledge_note_save' },
         )
       }

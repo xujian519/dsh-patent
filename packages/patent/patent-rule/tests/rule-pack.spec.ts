@@ -171,10 +171,10 @@ describe('rule pack', () => {
     expect(result.warnings.some(w => w.includes('规则包 base 层内') && w.includes('LAYER-DUP'))).toBe(true)
   })
 
-  it('loadRulePack warns when an explicit manifest path does not exist', () => {
-    const result = loadRulePack({ manifestPath: join(tmpdir(), 'dsh-no-such-manifest.yml') })
-    expect(result.manifestPath).toBeNull()
-    expect(result.warnings.some(w => w.includes('清单不存在') && w.includes('回退仅加载 base 包'))).toBe(true)
+  it('loadRulePack rejects an explicit manifest path that does not exist', () => {
+    // 退回 base 包会让门禁只剩六条规则却照常运行；显式配置读不到必须加载期失败。
+    expect(() => loadRulePack({ manifestPath: join(tmpdir(), 'dsh-no-such-manifest.yml') }))
+      .toThrow('显式配置的清单必须可读')
   })
 
   it('loadRulePack skips missing domain layer with warning', () => {
@@ -368,9 +368,7 @@ describe('rule pack', () => {
     expect(missingBase.ruleSet.rules.length).toBe(0)
 
     writeFileSync(manifestPath, 'base: [unclosed\n', 'utf8')
-    const broken = loadRulePack({ manifestPath })
-    expect(broken.warnings.some(w => w.includes('规则包清单加载失败'))).toBe(true)
-    expect(broken.ruleSet.rules.length).toBeGreaterThan(0)
+    expect(() => loadRulePack({ manifestPath })).toThrow('规则包清单加载失败')
 
     writeFileSync(manifestPath, 'base: base\ndomains:\n  - missing-domain-pack\n', 'utf8')
     const missingDomain = loadRulePack({ manifestPath })

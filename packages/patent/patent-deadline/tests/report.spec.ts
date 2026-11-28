@@ -185,6 +185,23 @@ describe('deadline report rendering', () => {
     )
   })
 
+  it('keeps a PCT case alive until the 32-month grace window closes', () => {
+    const pctCase = (today: { year: number; month: number; day: number }): DeadlineQuery => ({
+      kind: 'utility-model',
+      filingDate: { year: 2023, month: 7, day: 15 },
+      claimsPriority: false,
+      isPctNationalPhase: true,
+      today,
+    })
+    // 30 个月（2026-01-15）已过、32 个月（2026-03-15）未到：正是缴宽限费的窗口。
+    const inGrace = render(pctCase({ year: 2026, month: 2, day: 1 }))
+    expect(inGrace).toContain('宽限期未满')
+    expect(inGrace).not.toContain('效力终止')
+
+    const afterGrace = render(pctCase({ year: 2026, month: 4, day: 1 }))
+    expect(afterGrace).toContain('效力终止')
+  })
+
   it('reports an empty result without inventing a deadline', () => {
     const empty: DeadlineReport = { computed: [], pending: [], restDayRule: 'apply' }
     expect(renderDeadlineReport(empty, META)).toBe([

@@ -237,6 +237,8 @@ export function createPatentWorkflowTool(deps: PatentWorkflowToolDeps = {}): Too
         async stage => byId.get(stage.id) ?? '',
         {
           handlers: new StageHandlerRegistry(),
+          // 收口重放：用已有产出填充每个阶段，不执行任何 atom handler（含审批门）。
+          atomStagesMayUseExecutor: true,
           ...(persistTarget !== undefined ? { persist: new JsonFileWorkflowRunStore(persistTarget.runsDir) } : {}),
           ...(persistTarget?.runId !== undefined ? { runId: persistTarget.runId } : {}),
         },

@@ -107,10 +107,10 @@ export function TeamsMemberList({ team, runningMemberIds, openSession, t }: {
               key={member.memberId}
               type="button"
               className={css.memberButton}
-              aria-label={t('member.open', { name: member.name })}
-              onClick={() => { openSession(member.memberId as SessionId) }}
+              onClick={() => { openSession(member.memberId) }}
             >
               {content}
+              <span className={css.srOnly}>{t('member.open', { name: member.name })}</span>
             </button>
           )
           : (

@@ -1,10 +1,10 @@
 // installKnowledgeDb test: trims a fixture source db (compress chunks + drop
 // embeddings) and verifies the output database structure.
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_SOURCE_DB_PATH, decompressChunk, installKnowledgeDb } from '@deepseek-ai/dsh-patent-knowledge'
 
 const cleanups: Array<() => void> = []
@@ -28,6 +28,31 @@ function makeSourceDb(dir: string): string {
 }
 
 describe('installKnowledgeDb', () => {
+  it('keeps the previous output and removes the temp copy when the trim step fails', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-patent-knowledge-install-fail-'))
+    cleanups.push(() => { rmSync(dir, { recursive: true, force: true }) })
+    const input = makeSourceDb(dir)
+    const output = join(dir, 'knowledge-lite.db')
+    await installKnowledgeDb({ sourceDbPath: input, output, skipVerify: true })
+    const before = statSync(output).size
+
+    // 裁剪步骤（第二步）在临时副本上的二次 VACUUM 失败：旧输出必须原样保留。
+    const original = Reflect.get(DatabaseSync.prototype, 'exec')
+    const spy = vi.spyOn(DatabaseSync.prototype, 'exec').mockImplementation(function (this: DatabaseSync, sql: string) {
+      if (sql === 'VACUUM') throw new Error('disk full')
+      original.call(this, sql)
+    })
+    try {
+      await expect(installKnowledgeDb({ sourceDbPath: input, output, skipVerify: true }))
+        .rejects.toThrow('disk full')
+    } finally {
+      spy.mockRestore()
+    }
+
+    expect(statSync(output).size).toBe(before)
+    expect(readdirSync(dir).filter(name => name.includes('.tmp-'))).toEqual([])
+  })
+
   it('trims a source db by compressing long chunks and dropping embeddings', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'dsh-patent-knowledge-install-'))
     cleanups.push(() => { rmSync(dir, { recursive: true, force: true }) })

@@ -7,7 +7,6 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { avatarGradient } from './teams-avatar.ts'
 import {
   dagDependencyChain, layoutTeamsDag, memberTaskBinding, taskSegments,
@@ -143,11 +142,13 @@ function DagNodeButton({ node, dim, hot, pinned, onHover, onPin, t }: {
     >
       <span className={css.nodeHead}>
         <span className={css.nodeId}>{task.taskId}</span>
-        {task.gated ? <span className={css.gateBadge}>⊘ {t('task.gated')}</span> : null}
-        <span className={cx(css.nodeState, nodeStateClass(task))} />
+        {task.gated ? <span className={css.gateBadge}><span aria-hidden>⊘</span> {t('task.gated')}</span> : null}
+        <span className={cx(css.nodeState, nodeStateClass(task))} aria-hidden />
       </span>
       <span className={css.nodeSubject}>{task.subject}</span>
       <span className={css.nodeAssignee}>{task.assignee ?? t('task.unassigned')}</span>
+      {/* The dot above carries the task state by colour alone. */}
+      <span className={css.srOnly}>{statusLabel(task.status, t)}</span>
     </button>
   )
 }
@@ -163,7 +164,9 @@ export function TeamsDashboard({ team, running, openSession, t }: {
   const [pinnedId, setPinnedId] = useState<string | null>(null)
   const layout = useMemo(() => layoutTeamsDag(team.tasks), [team.tasks])
   const segments = useMemo(() => taskSegments(team.tasks), [team.tasks])
-  const activeId = pinnedId ?? hoveredId
+  // Hovering previews a chain over the pinned one: a pinned node must not
+  // shadow every later hover, or the hint's promise stops holding.
+  const activeId = hoveredId ?? pinnedId
   const chain = useMemo(
     () => activeId === null ? undefined : dagDependencyChain(team.tasks, activeId),
     [team.tasks, activeId],
@@ -185,12 +188,12 @@ export function TeamsDashboard({ team, running, openSession, t }: {
         </div>
         <div className={css.metrics}>
           <span className={css.metric}>
-            <span className={css.metricLabel}>{t('card.members', { count: team.members.length })}</span>
+            <span className={css.metricLabel}>{t('metric.members')}</span>
             <span className={css.metricValue}>{team.members.length}</span>
           </span>
           {ring}
           <span className={css.metric}>
-            <span className={css.metricLabel}>{t('card.messages', { count: team.messageCount })}</span>
+            <span className={css.metricLabel}>{t('metric.messages')}</span>
             <span className={css.metricValue}>{team.messageCount}</span>
           </span>
         </div>
@@ -202,9 +205,9 @@ export function TeamsDashboard({ team, running, openSession, t }: {
           <span className={css.hint}>{t('dash.tasksProgress', { done: team.completedTasks, total: team.tasks.length })}</span>
         </div>
         <div className={css.segBar} role="img" aria-label={t('dash.tasksProgress', { done: team.completedTasks, total: team.tasks.length })}>
-          <span className={cx(css.seg, css.segDone)} style={{ flexGrow: segments.done }} />
-          <span className={cx(css.seg, css.segRunning)} style={{ flexGrow: segments.running }} />
-          <span className={cx(css.seg, css.segWaiting)} style={{ flexGrow: segments.waiting }} />
+          {segments.done === 0 ? null : <span className={cx(css.seg, css.segDone)} style={{ flexGrow: segments.done }} />}
+          {segments.running === 0 ? null : <span className={cx(css.seg, css.segRunning)} style={{ flexGrow: segments.running }} />}
+          {segments.waiting === 0 ? null : <span className={cx(css.seg, css.segWaiting)} style={{ flexGrow: segments.waiting }} />}
         </div>
         <div className={css.legend}>
           <span className={css.legendItem}>
@@ -236,7 +239,7 @@ export function TeamsDashboard({ team, running, openSession, t }: {
             <span className={css.memberBody}>
               <span className={css.memberTop}>
                 <span className={css.memberName}>{t('member.captain')}</span>
-                <span className={cx(css.stateChip, css.stateIdle)}>★</span>
+                <span className={cx(css.stateChip, css.stateIdle)} aria-hidden>★</span>
               </span>
               <span className={css.memberTask}>
                 <span className={css.taskSubject}>
@@ -288,10 +291,10 @@ export function TeamsDashboard({ team, running, openSession, t }: {
                 key={member.memberId}
                 type="button"
                 className={css.memberButton}
-                aria-label={t('member.open', { name: member.name })}
-                onClick={() => { openSession(member.memberId as SessionId) }}
+                onClick={() => { openSession(member.memberId) }}
               >
                 {body}
+                <span className={css.srOnly}>{t('member.open', { name: member.name })}</span>
               </button>
             ) : (
               <div

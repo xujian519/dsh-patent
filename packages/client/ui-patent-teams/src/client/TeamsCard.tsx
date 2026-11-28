@@ -25,8 +25,11 @@ export type TeamsCardProps =
 
 /**
  * Member ids that are proven live children of this session and currently
- * running — the same navigation proof the workflow-run panel uses, so a
- * stale fold or a foreign subagent never becomes a dead button.
+ * running: an ordinary Session-list row (`ids`), `origin: 'subagent'`, parented
+ * to this Session, and running. The workflow-run panel reaches the same verdict
+ * from the richer `byId` rows plus its status map, so a member it can open from
+ * a catalog row is still briefly inert here until the list row arrives — a
+ * transient race, never a dead button.
  */
 export function runningMemberIds(
   sessions: SessionListState,
@@ -36,9 +39,7 @@ export function runningMemberIds(
   const ordinary = new Set(sessions.ids)
   const result = new Set<string>()
   for (const member of team.members) {
-    // The host contract types memberId as a plain string; at this sessions
-    // boundary it is the member's child session id.
-    const memberId = member.memberId as SessionId
+    const memberId = member.memberId
     const summary = sessions.byId[memberId]
     if (ordinary.has(memberId)
       && summary?.origin === 'subagent'

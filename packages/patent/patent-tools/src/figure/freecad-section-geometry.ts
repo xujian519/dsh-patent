@@ -251,6 +251,17 @@ export function readSectionGeometry(payload: SectionGeometryPayload): SectionGeo
     }
   }
 
+  // 子进程产物属于进程边界：叶子字段与环坐标一样逐项核对，坏值不能静默进入几何结果。
+  if (typeof payload.model.path !== 'string' || payload.model.path.trim() === '') {
+    throw new SectionGeometryError('invalid_payload', `模型路径不是非空字符串：${payload.model.path}`)
+  }
+  if (!Number.isInteger(payload.model.solids) || payload.model.solids < 0) {
+    throw new SectionGeometryError('invalid_payload', `模型实体数不是非负整数：${String(payload.model.solids)}`)
+  }
+  if (!isFiniteNumber(payload.plane.distance)) {
+    throw new SectionGeometryError('invalid_payload', `剖切平面到原点的距离不是有限数：${String(payload.plane.distance)}`)
+  }
+
   return {
     model: {
       path: payload.model.path,

@@ -439,6 +439,27 @@ it('enablement: load 节点确定性结构检查', async () => {
   expect(Array.isArray(missing) && missing.includes('背景技术')).toBe(true)
 })
 
+it('enablement: 提示词带上确定性缺失章节与领域特殊要求', async () => {
+  const prompts: string[] = []
+  const delegate = enablementProvider().callLLM
+  if (delegate === undefined) throw new Error('enablementProvider must declare callLLM')
+  const capturing: StageProvider = {
+    callLLM: async (prompt) => {
+      prompts.push(prompt)
+      return delegate(prompt)
+    },
+  }
+  const graph = buildEnablementGraph({ handlers: passthroughHandlers(), ruleEvaluator: stubRuleEvaluator }).compile('load')
+  await graph.run({ text: '技术领域：化学。具体实施方式…' }, { provider: capturing })
+
+  // Both keys are arrays; reading them as strings would render the missing-section
+  // list as "（无缺失）" and drop the domain requirements entirely.
+  const completeness = prompts.find(p => p.includes('结构完整性')) ?? ''
+  expect(completeness).toContain('背景技术')
+  const conclude = prompts.find(p => p.includes('充分公开审查报告')) ?? ''
+  expect(conclude).toContain('化合物须给出制备方法')
+})
+
 // ---------------------------------------------------------------------------
 // citation-check：引用真实性校验子图（纯函数 + 确定性图）
 // ---------------------------------------------------------------------------

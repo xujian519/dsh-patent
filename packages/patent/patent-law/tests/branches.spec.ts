@@ -295,9 +295,9 @@ describe('citator branches', () => {
     expect(result.revisionHistory?.[0]?.effectiveDate).toBe('2026 年修订版')
   })
 
-  it('labels every lineage status', () => {
+  it('labels every decided lineage status', () => {
     const index = testBaselines()
-    const statuses: ValidityState[] = ['active', 'revised', 'repealed', 'unverified']
+    const statuses: ValidityState[] = ['active', 'revised', 'repealed']
     for (const status of statuses) {
       const result = queryValidity(
         { provision: '专利法第22条' },
@@ -305,8 +305,26 @@ describe('citator branches', () => {
         lineage([[22, status]]),
       )
       expect(result.state).toBe(status)
-      expect(result.reason).toContain(status === 'unverified' ? '沿革状态为unverified' : '沿革数据确认')
+      expect(result.reason).toContain('沿革数据确认')
     }
+  })
+
+  it('keeps the transcription verdict when the lineage chain is unverified', () => {
+    // 沿革的 unverified 指历史版本不可考。现行条文已转录核验时不能因此报「未判定」。
+    const transcribed = queryValidity(
+      { provision: '专利法第22条' },
+      testBaselines(),
+      lineage([[22, 'unverified']]),
+    )
+    expect(transcribed.state).toBe('active')
+    expect(transcribed.reason).not.toContain('沿革状态为unverified')
+
+    const untranscribed = queryValidity(
+      { provision: '专利法实施细则第5条' },
+      testBaselines(),
+      lineage([[5, 'unverified']]),
+    )
+    expect(untranscribed.state).toBe('unverified')
   })
 })
 

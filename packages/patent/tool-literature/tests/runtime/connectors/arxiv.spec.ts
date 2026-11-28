@@ -102,6 +102,18 @@ describe('arxiv connector', () => {
     await expect(connector.search('malformed query')).rejects.toThrow(/arXiv rejected the query/)
   })
 
+  it('does not cache the 200+Error feed, so a retry reaches the network again', async () => {
+    let calls = 0
+    const connector = makeConnector(async () => {
+      calls += 1
+      return atomResponse(ERROR_FEED)
+    })
+    await expect(connector.search('malformed query')).rejects.toThrow(/arXiv rejected the query/)
+    await expect(connector.search('malformed query')).rejects.toThrow(/arXiv rejected the query/)
+    // 缓存住错误会把一次瞬时限流变成整个 TTL 内必然失败的查询。
+    expect(calls).toBe(2)
+  })
+
   it('rejects non-Atom bodies as source errors', async () => {
     const connector = makeConnector(async () => new Response('<html>rate limited</html>', { status: 200 }))
     await expect(connector.search('anything')).rejects.toThrow(/non-Atom response/)

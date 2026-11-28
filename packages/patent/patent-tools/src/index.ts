@@ -1,12 +1,13 @@
 /**
- * Function plugin registering the 38 model-facing patent tools ported from Sati:
+ * Function plugin registering the 39 model-facing patent tools ported from Sati:
  * search, metadata, legal status, case/wiki/kg knowledge queries, claim-chart,
  * office-action parsing, drafting, specification validation, evidence judgment,
- * rule check, claim-set lint, figure analysis + generation, PDF download, chemical recognition,
- * knowledge notes, the workflow/plan state machines, and the personal-workbench
- * case bridge. `render_patent_document` is owned by
- * @deepseek-ai/dsh-patent-document (its apply() registers it); this package
- * re-exports its factory but does not register it.
+ * rule check, claim-set lint, TRIZ contradiction analysis, figure analysis +
+ * generation, PDF download, chemical recognition, knowledge notes, the
+ * workflow/plan state machines, and the personal-workbench case bridge.
+ * `render_patent_document` is owned by @deepseek-ai/dsh-patent-document (its
+ * apply() registers it); this package re-exports its factory but does not
+ * register it.
  * @module @deepseek-ai/dsh-patent-tools
  */
 

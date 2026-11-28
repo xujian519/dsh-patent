@@ -23,14 +23,17 @@ export function parseJsonArray<T>(raw: string): T[] {
   }
 }
 
-/** Extract one string field from a [{"<key>": "..."}] JSON-array string. */
+/**
+ * Extract one string field from a [{"<key>": "..."}] JSON-array string. The
+ * engine's JSON is a wire boundary: an array may hold `null` entries, which
+ * would otherwise throw on property access and fail the whole call.
+ */
 function extractNames(raw: string, key: 'inventor_name' | 'assignee_name'): string[] {
-  return parseJsonArray<Record<string, unknown>>(raw)
-    .map((item) => {
-      const value = item[key]
-      return typeof value === 'string' ? value : ''
-    })
-    .filter(Boolean)
+  return parseJsonArray<unknown>(raw)
+    .map(item => (item !== null && typeof item === 'object'
+      ? (item as Record<string, unknown>)[key]
+      : undefined))
+    .filter((value): value is string => typeof value === 'string' && value !== '')
 }
 
 /**
@@ -67,7 +70,8 @@ export function mapPatentData(data: PatentData, patent: string, url: string): St
     ifiStatus: data.ifi_status,
     estimatedExpiration: data.estimated_expiration,
     pdfUrl: data.pdf_url,
-    classifications: parseJsonArray<string>(data.classifications),
+    classifications: parseJsonArray<unknown>(data.classifications)
+      .filter((value): value is string => typeof value === 'string'),
     backwardCites,
     forwardCites,
     abstractText: data.abstract_text,

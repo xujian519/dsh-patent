@@ -53,6 +53,8 @@ function createEngine(
   insertDoc.run('d2', 'raw', 'judgment', '某专利侵权判决', null, '最高人民法院', null, 200, 1)
   insertDoc.run('d3', 'raw', 'case', '另一无效决定', '999999999', null, '777777', 100, 1)
   insertDoc.run('d4', 'wiki', 'case', '创造性-审查标准-磨削抛光', null, null, null, 150, 1)
+  // documents 表同时存法条/指南（law_article、guideline_rule）；判例引擎必须排除它们。
+  insertDoc.run('d6', 'law', 'law_article', '专利法第二十二条 创造性', null, null, null, 60, 1)
 
   const insertChunk = db.prepare(
     `INSERT INTO chunks (id, document_id, chunk_index, chunk_type, heading, content, char_count)
@@ -63,6 +65,7 @@ function createEngine(
   insertChunk.run(3, 'd2', 0, '判决书正文：创造性判断应采用三步法框架进行认定。', 120)
   insertChunk.run(4, 'd3', 0, '本决定认为权利要求不具备新颖性。', 80)
   insertChunk.run(5, 'd4', 0, '创造性审查标准：技术启示的判断应当结合本领域技术人员认知。', 150)
+  insertChunk.run(6, 'd6', 0, '创造性，是指与现有技术相比，该发明具有突出的实质性特点和显著的进步。', 60)
 
   if (includePrefix) {
     // install 以每文档最长 chunk 的前 N 个码点填充；这里正文都很短，等价于全文。
@@ -72,6 +75,7 @@ function createEngine(
     setPrefix.run('判决书正文：创造性判断应采用三步法框架进行认定。', 'd2')
     setPrefix.run('本决定认为权利要求不具备新颖性。', 'd3')
     setPrefix.run('创造性审查标准：技术启示的判断应当结合本领域技术人员认知。', 'd4')
+    setPrefix.run('创造性，是指与现有技术相比，该发明具有突出的实质性特点和显著的进步。', 'd6')
   }
 
   if (includeFts) {
@@ -83,6 +87,7 @@ function createEngine(
     insertFts.run(3, '某专利侵权判决', '判决书正文：创造性判断应采用三步法框架进行认定。')
     insertFts.run(4, '另一无效决定', '本决定认为权利要求不具备新颖性。')
     insertFts.run(5, '创造性-审查标准-磨削抛光', '创造性审查标准：技术启示的判断应当结合本领域技术人员认知。')
+    insertFts.run(6, '专利法第二十二条 创造性', '创造性，是指与现有技术相比，该发明具有突出的实质性特点和显著的进步。')
   }
   db.close()
   return { engine: new CaseLawSearchEngine(dbPath, stats === undefined ? undefined : { stats }), dir }
@@ -123,6 +128,25 @@ describe('CaseLawSearchEngine', () => {
     const hits = engine.search('创造性', { docType: 'judgment' })
     expect(hits.every(h => h.docType === 'judgment')).toBe(true)
     expect(hits.some(h => h.documentId === 'd2')).toBe(true)
+  })
+
+  it('never returns non case-law rows sharing the documents table (FTS path)', () => {
+    const engine = withEngine()
+    const hits = engine.search('创造性')
+    expect(hits.some(h => h.documentId === 'd5')).toBe(false)
+    expect(hits.every(h => h.docType === 'case' || h.docType === 'judgment')).toBe(true)
+  })
+
+  it('never returns non case-law rows on the LIKE fallback', () => {
+    const engine = withEngine(false)
+    const hits = engine.search('创造性')
+    expect(hits.some(h => h.documentId === 'd5')).toBe(false)
+  })
+
+  it('never returns non case-law rows on the prefix path', () => {
+    const engine = withEngine(false, true)
+    const hits = engine.search('创造性')
+    expect(hits.some(h => h.documentId === 'd5')).toBe(false)
   })
 
   it('filters by court substring', () => {

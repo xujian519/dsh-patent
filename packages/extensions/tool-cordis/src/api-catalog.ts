@@ -13133,7 +13133,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WorkflowRunOptions',
-    declaration: 'export type WorkflowRunOptions = {\n    handlers?: StageHandlerRegistry;\n    atoms?: AtomRegistry;\n    provider?: StageProvider;\n    approvalGrants?: string[];\n    resumeFrom?: WorkflowRunResult;\n    persist?: WorkflowRunStore;\n    runId?: string;\n    maxParallelStages?: number;\n    onStage?: (stageId: string, index: number, total: number) => void;\n    signal?: AbortSignal;\n    now?: () => string;\n    guidelineRevision?: string;\n};',
+    declaration: 'export type WorkflowRunOptions = {\n    handlers?: StageHandlerRegistry;\n    atoms?: AtomRegistry;\n    provider?: StageProvider;\n    approvalGrants?: string[];\n    resumeFrom?: WorkflowRunResult;\n    persist?: WorkflowRunStore;\n    runId?: string;\n    maxParallelStages?: number;\n    onStage?: (stageId: string, index: number, total: number) => void;\n    signal?: AbortSignal;\n    now?: () => string;\n    guidelineRevision?: string;\n    atomStagesMayUseExecutor?: boolean;\n};',
   },
   {
     name: 'WorkflowRunRecovery',

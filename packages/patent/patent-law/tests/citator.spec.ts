@@ -359,3 +359,33 @@ describe('2026 年指南修订的效力口径（随包资产）', () => {
     }
   })
 })
+
+describe('packaged index — 款 coverage', () => {
+  const index = loadLawBaselines()
+
+  it('rejects a 款 the article does not have, single-款 articles included', () => {
+    // 第 1 条只有一款：此前不登记 paragraphs，任何款号都放行。
+    const first = queryValidity({ provision: '专利法第1条第3款' }, index)
+    expect(first.state).toBe('unverified')
+    expect(first.reason).toContain('共 1 款')
+
+    // 第 24 条一款，其（一）至（四）是款内的项，不是款。
+    expect(queryValidity({ provision: '专利法第24条第2款' }, index).state).toBe('unverified')
+
+    // 第 25 条两款：第一款含六项，第二款以「对前款第（四）项」开头。
+    expect(queryValidity({ provision: '专利法第25条第3款' }, index).state).toBe('unverified')
+    expect(queryValidity({ provision: '专利法第25条第2款' }, index).state).toBe('active')
+  })
+
+  it('keeps every transcribed article’s 款 list consistent with its own paragraph breaks', () => {
+    // 项以「（一）」或「1.」编号；款是其余分段。数据与正文一旦分叉，这条会先红。
+    const ITEM = /^[（(][一二三四五六七八九十百]+[）)]|^\d+[.、]/
+    for (const [law, baseline] of index) {
+      for (const entry of baseline.articles) {
+        if (entry.text === null) continue
+        const count = entry.text.split('\n').filter(line => line.trim() !== '' && !ITEM.test(line.trim())).length
+        expect(entry.paragraphs, `${law} 第 ${entry.article} 条`).toEqual(Array.from({ length: count }, (_, i) => i + 1))
+      }
+    }
+  })
+})

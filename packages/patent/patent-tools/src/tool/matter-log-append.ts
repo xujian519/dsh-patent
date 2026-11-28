@@ -22,6 +22,7 @@ import { existsSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { withFileLock } from '@deepseek-ai/dsh-atomic-write'
 import { PatentToolError } from '../error.ts'
 
 /** The case-relative name of the append-only event log this tool owns. */
@@ -344,42 +345,47 @@ export function createMatterLogAppendTool(): ToolDefinition {
     },
     async execute(args) {
       const logPath = join(args.case_dir, MATTER_LOG_FILE)
-      if (!existsSync(logPath) && args.action !== '建案') {
-        throw new PatentToolError(
-          'file_not_found',
-          `${logPath} 不存在：案件先经「建案」动作初始化日志（动作=建案），后续动作才可追加。`,
-          { tool: 'matter_log_append', path: logPath },
-        )
-      }
-      const existing = existsSync(logPath) ? await readFile(logPath, 'utf8') : ''
-      const request: MatterLogRequest = {
-        action: args.action,
-        artifacts: args.artifacts.map(path => toCasePath(args.case_dir, path)),
-        changes: args.changes,
-        ...(args.supersedes === undefined
-          ? {}
-          : { supersedes: args.supersedes.map(path => toCasePath(args.case_dir, path)) }),
-        ...(args.approver === undefined ? {} : { approver: args.approver }),
-        ...(args.note === undefined ? {} : { note: args.note }),
-      }
-      const defects = matterLogDefects(existing, request, path => existsSync(resolve(args.case_dir, path)))
-      if (defects.length > 0) {
-        throw new PatentToolError(
-          'invalid_tool_input',
-          ['留档被拒（条目未写入）：', ...defects.map(defect => `- [${defect.rule}] ${defect.message}`)].join('\n'),
-          { tool: 'matter_log_append', defects },
-        )
-      }
-      const entry = renderMatterEntry(request, new Date())
-      const header = existing.length === 0 || existing.endsWith('\n') ? '' : '\n'
-      await appendFile(logPath, `${header}${entry}\n`, 'utf8')
-      const superseded = request.supersedes ?? []
-      return {
-        logPath,
-        entry,
-        priorEntries: parseMatterEntries(existing).length,
-        ...(superseded.length === 0 ? {} : { superseded }),
-      }
+      // 读快照 → 按快照判定 → 追加，是一段读改写：两个并发留档会基于同一份过期日志
+      // 各自通过校验，把同一产物登记两次或给同一旧版挂两个后继。跨进程写者锁由
+      // atomic-write 提供，锁内重读保证判定看到的是已提交状态。
+      return withFileLock(logPath, async () => {
+        if (!existsSync(logPath) && args.action !== '建案') {
+          throw new PatentToolError(
+            'file_not_found',
+            `${logPath} 不存在：案件先经「建案」动作初始化日志（动作=建案），后续动作才可追加。`,
+            { tool: 'matter_log_append', path: logPath },
+          )
+        }
+        const existing = existsSync(logPath) ? await readFile(logPath, 'utf8') : ''
+        const request: MatterLogRequest = {
+          action: args.action,
+          artifacts: args.artifacts.map(path => toCasePath(args.case_dir, path)),
+          changes: args.changes,
+          ...(args.supersedes === undefined
+            ? {}
+            : { supersedes: args.supersedes.map(path => toCasePath(args.case_dir, path)) }),
+          ...(args.approver === undefined ? {} : { approver: args.approver }),
+          ...(args.note === undefined ? {} : { note: args.note }),
+        }
+        const defects = matterLogDefects(existing, request, path => existsSync(resolve(args.case_dir, path)))
+        if (defects.length > 0) {
+          throw new PatentToolError(
+            'invalid_tool_input',
+            ['留档被拒（条目未写入）：', ...defects.map(defect => `- [${defect.rule}] ${defect.message}`)].join('\n'),
+            { tool: 'matter_log_append', defects },
+          )
+        }
+        const entry = renderMatterEntry(request, new Date())
+        const header = existing.length === 0 || existing.endsWith('\n') ? '' : '\n'
+        await appendFile(logPath, `${header}${entry}\n`, 'utf8')
+        const superseded = request.supersedes ?? []
+        return {
+          logPath,
+          entry,
+          priorEntries: parseMatterEntries(existing).length,
+          ...(superseded.length === 0 ? {} : { superseded }),
+        }
+      })
     },
   })
 }

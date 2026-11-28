@@ -42,7 +42,9 @@ describe('patent-rule apply rule loading', () => {
   })
 
   it('loads a manifest without a rules directory', async () => {
-    const ctx = await mount({ manifestPath: join(tempDir(), 'missing.yaml') })
+    const manifestPath = join(tempDir(), 'rules.yaml')
+    writeFileSync(manifestPath, 'base: base\n')
+    const ctx = await mount({ manifestPath })
     expect(ctx.get('patentRuleGate')).toBeDefined()
   })
 
@@ -72,10 +74,18 @@ describe('patent-rule apply rule loading', () => {
   })
 
   it('loads a manifest with a rules directory', async () => {
+    const manifestPath = join(tempDir(), 'rules.yaml')
+    writeFileSync(manifestPath, 'base: base\n')
     const ctx = await mount({
-      manifestPath: join(tempDir(), 'missing.yaml'),
+      manifestPath,
       rulesDir: join(import.meta.dirname, '..', 'assets', 'rules'),
     })
     expect(ctx.get('patentRuleGate')).toBeDefined()
+  })
+
+  it('fails load when an explicitly configured manifest is missing', async () => {
+    await expect(mount({
+      manifestPath: join(tempDir(), 'missing.yaml'),
+    })).rejects.toThrow('显式配置的清单必须可读')
   })
 })

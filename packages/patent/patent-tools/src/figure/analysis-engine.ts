@@ -142,7 +142,7 @@ export function createTwoStepAnalysisEngine(): FigureAnalysisEngine {
       // 第一步不可解析：跳过第二步，按空组件 best-effort 降级 + 警告，不抛错。
       if (tryParseJson(structureRaw) === undefined) {
         const degraded = normalizeFigureAnalysis(structureRaw, normalizeOptions)
-        degraded.warnings.push('两步分析第一步（结构抽取）未解析出结构，已按空组件降级并跳过第二步说明生成')
+        degraded.warnings.push('附图结构未能识别：本次结果按无组件返回，未生成附图说明；请核对图片清晰度后重试')
         return degraded
       }
       const structure = normalizeFigureAnalysis(structureRaw, normalizeOptions)

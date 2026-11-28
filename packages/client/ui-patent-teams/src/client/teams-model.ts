@@ -15,11 +15,13 @@ import type { SessionEventLike } from '@deepseek-ai/dsh-api-session-controller/c
 import type {
   ConversationLocation, ConversationNodeDefinition, ConversationViewNode,
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {} from '@deepseek-ai/dsh-patent-teams/src/event-types.ts'
 
 /** One folded team member (identity plus removal state). */
 interface TeamsMemberState {
-  readonly memberId: string
+  /** The member's durable child session id, as `patent-teams/member-added` records it. */
+  readonly memberId: SessionId
   readonly name: string
   readonly role?: string
   readonly removed: boolean
@@ -102,7 +104,7 @@ export type PatentTeamsCardStatus = 'active' | 'completed' | 'deleted'
 
 /** One member projected for both renderers. */
 interface PatentTeamsCardMember {
-  readonly memberId: string
+  readonly memberId: SessionId
   readonly name: string
   readonly role?: string
   readonly removed: boolean

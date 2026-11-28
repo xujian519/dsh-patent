@@ -9,8 +9,9 @@
  * @module @deepseek-ai/dsh-tool-literature/tool/paper-download
  */
 
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
+import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { inspectPdfBody, isHtmlContentType, resolveDatedOutputDir, type PdfBodyFault } from '@deepseek-ai/dsh-patent-core'
@@ -441,9 +442,13 @@ function safeFileName(id: string): string {
   return id.replace(/[\\/]/g, '_')
 }
 
-/** Write a PDF body to `<dir>/<id>.pdf` and return the target path. */
+/**
+ * Write a PDF body to `<dir>/<id>.pdf` and return the target path. Atomic like
+ * the sibling patent_pdf_download channel: an interrupted write must not leave a
+ * truncated file that a later call reads as an already-downloaded source.
+ */
 async function writePdf(dir: string, id: string, body: Buffer): Promise<string> {
   const target = join(dir, `${safeFileName(id)}.pdf`)
-  await writeFile(target, body)
+  await writeFileAtomic(target, body, { mode: 0o644 })
   return target
 }

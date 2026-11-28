@@ -58,6 +58,13 @@ type ComputedLine = {
   payableFen: number | null
 }
 
+/**
+ * Prefix of the note naming the items filtered out by patent type. The result
+ * renderer keys its empty-table wording on it: a trigger whose only item is
+ * inapplicable to this patent type is a settled zero, not an unchecked one.
+ */
+export const TYPE_FILTER_NOTE_PREFIX = '已按专利类型过滤'
+
 /** How an item's quantity was counted, or which input it is waiting for. */
 type Counted =
   | { quantity: number; quantityBasis: string }
@@ -116,9 +123,10 @@ export function computeFees(table: FeeTable, query: FeeQuery, options: ComputeOp
   }
 
   if (excludedByType.length > 0) {
-    notes.push(`已按专利类型过滤：${excludedByType.join('、')} 不适用本次类型，未列入本报告。`)
+    notes.push(`${TYPE_FILTER_NOTE_PREFIX}：${excludedByType.join('、')} 不适用本次类型，未列入本报告。`)
   }
   // 已点名但索引没有任何条目的阶段是未知，不是零：保留在 total 里并扣留合计。
+  // 被类型排除的条目不算「未收录」——该阶段对本类型本来就不收费，是确定的零。
   const indexedTriggers = new Set(table.items.map(item => item.trigger))
   const uncoveredTriggers = [...new Set(query.triggers.filter(trigger => !indexedTriggers.has(trigger)))]
   if (uncoveredTriggers.length > 0) {

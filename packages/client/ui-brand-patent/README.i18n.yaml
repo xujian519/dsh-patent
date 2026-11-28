@@ -4,19 +4,19 @@
 #   pnpm run verify-translation-pairing --write packages/client/ui-brand-patent/README.md
 /:
   en: d745b505dd0bd563
-  zh: 539ae2161a421252
+  zh: 68fb53b8bb2edb09
 /deepseek-ai-dsh-client-ui-brand-patent:
   en: 13976dfd1d47eb91
   zh: da3b844e0031b61a
 /deepseek-ai-dsh-client-ui-brand-patent/summary:
-  en: ed5cc4b875c2e5c3
-  zh: 6a0c63bb9bcadfd4
+  en: d6e09dd78cf465df
+  zh: df336ce100004cd3
 /deepseek-ai-dsh-client-ui-brand-patent/table-of-contents:
   en: d152484eb41ac6b4
   zh: 3f32246b8cdaaea1
 /deepseek-ai-dsh-client-ui-brand-patent/use-this-package:
-  en: 211c30a918b4bfef
-  zh: 0069ec6aca1f4763
+  en: 20e821dbac741e22
+  zh: 3be9ea64c072b4b7
 /deepseek-ai-dsh-client-ui-brand-patent/use-this-package/why-it-registers-without-a-profile-gate:
   en: d4f92e674946cd1b
   zh: 9350faebcd21d94a

@@ -139,8 +139,13 @@ export function checkFigureSetConsistency(
   const figureNumbers = sorted.map(figure => figure.figureNumber)
 
   const numericComponents: Record<string, { name: string; figureNumbers: number[] }> = {}
-  /** 每个标记首次出现的图号，只用于冲突报告里的「原值」一侧。 */
-  const firstFigureNumbers: Record<string, number> = {}
+  /**
+   * 每个标记首个非空名称及其所在图号，用于冲突报告里的「原值」一侧。
+   *
+   * 不能把「首个出现该标记的图号」当成原值的归属：首图可以没写名称，名称是后图
+   * 补上的，把补上的名称记到首图号下会指错要改的附图。
+   */
+  const nameOrigins: Record<string, { figureNumber: number; name: string }> = {}
   const conflicts: FigureSetConflict[] = []
   const warnings: string[] = []
 
@@ -153,26 +158,28 @@ export function checkFigureSetConsistency(
       const figureNumbersForRef = [...new Set([...(existing?.figureNumbers ?? []), figure.figureNumber])].sort((a, b) => a - b)
       if (existing === undefined) {
         numericComponents[ref] = { name, figureNumbers: figureNumbersForRef }
-        firstFigureNumbers[ref] = figure.figureNumber
+        if (name.length > 0) nameOrigins[ref] = { figureNumber: figure.figureNumber, name }
         continue
       }
-      const firstFigureNumber = firstFigureNumbers[ref]
-      /* v8 ignore next -- both records are created together for the same ref */
-      if (firstFigureNumber === undefined) continue
       existing.figureNumbers = figureNumbersForRef
-      if (existing.name !== name && existing.name.length > 0 && name.length > 0) {
-        conflicts.push({
-          kind: 'name',
-          ref,
-          figureNumbers: figureNumbersForRef,
-          values: [
-            { figureNumber: firstFigureNumber, value: existing.name },
-            { figureNumber: figure.figureNumber, value: name },
-          ],
-          message: `标记 ${ref} 在图 ${figureNumbersForRef.join(',')} 中名称不一致：${existing.name} / ${name}`,
-        })
+      if (name.length > 0) {
+        const origin = nameOrigins[ref]
+        if (origin === undefined) {
+          nameOrigins[ref] = { figureNumber: figure.figureNumber, name }
+          existing.name = name
+        } else if (origin.name !== name) {
+          conflicts.push({
+            kind: 'name',
+            ref,
+            figureNumbers: figureNumbersForRef,
+            values: [
+              { figureNumber: origin.figureNumber, value: origin.name },
+              { figureNumber: figure.figureNumber, value: name },
+            ],
+            message: `标记 ${ref} 在图 ${origin.figureNumber}、图 ${figure.figureNumber} 中名称不一致：${origin.name} / ${name}`,
+          })
+        }
       }
-      if (existing.name.length === 0 && name.length > 0) existing.name = name
     }
   }
 

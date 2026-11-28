@@ -3468,8 +3468,8 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
       "description": "附图图片路径（工作区相对或绝对路径，支持 jpg/png/gif/webp）"
     },
     "figure_number": {
-      "type": "number",
-      "description": "附图编号（默认 1，用于附图说明「图N」）"
+      "type": "integer",
+      "description": "附图编号（正整数，默认 1，用于附图说明「图N」）"
     },
     "claim_context": {
       "type": "string",
@@ -5638,7 +5638,7 @@ CAD 剖视（sections.source）：复杂件不必手算轮廓——给 model_pat
     },
     "filename": {
       "type": "string",
-      "description": "输出文件名（不含扩展名）"
+      "description": "输出文件名（不含扩展名）；只保留字母、数字、下划线与连字符，其余字符（含中文、空格）会被替换为 _，模型应按实际返回的文件名引用产物"
     },
     "format": {
       "type": "string",
@@ -6457,7 +6457,7 @@ Usage notes:
     },
     "timeoutMs": {
       "type": "number",
-      "description": "整体执行超时（毫秒）；默认 clamp(篇数 × (pageTimeoutSec × 1000 + downloadTimeoutMs) + 15000, 60000, 300000)，上限 300000"
+      "description": "单腿执行预算（毫秒）：CNIPR 腿与 Google 腿各自按它设期限，不是整批墙钟上限，最坏情形两腿各用满预算；CNIPR 腿另有 90 秒下限（ego 会话冷启动）。默认 clamp(篇数 × (pageTimeoutSec × 1000 + downloadTimeoutMs) + 15000, 60000, 300000)，上限 300000"
     },
     "record": {
       "type": "boolean",

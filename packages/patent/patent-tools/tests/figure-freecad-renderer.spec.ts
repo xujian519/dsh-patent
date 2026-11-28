@@ -29,6 +29,20 @@ const TEST_PROBE_TIMEOUT_MS = DEFAULT_FREECAD_PROBE_TIMEOUT_MS
 const INJECTED_RENDER_TIMEOUT_MS = 1_500
 import { STRUCTURE_MANIFEST_FILENAME } from '../src/figure/freecad-structure-script.ts'
 
+// 清理可被置为失败：验证「清理失败不顶掉渲染结果」的收尾分支。
+const mockFsOps = vi.hoisted(() => ({ failRm: false }))
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
+  return {
+    ...actual,
+    rm: ((...args: Parameters<typeof actual.rm>) => {
+      if (mockFsOps.failRm) return Promise.reject(new Error('rm 不可用'))
+      return actual.rm(...args)
+    }),
+  }
+})
+
 // Deterministic discovery: the built-in candidate list is absolute system paths;
 // existsSync returns whether the test put the candidate into the set. The
 // hoisted copy must stay in sync with FREECAD_CMD_CANDIDATES (asserted below).
@@ -238,8 +252,10 @@ describe('renderStructureViews', () => {
     const { exe } = fakeFreecad()
     const outputDir = tempDir()
     try {
+      let scriptAtSpawn = ''
       const { runtime, calls } = fakeSubprocess((spawnSpec) => {
         // 模拟 FreeCAD 子进程：在 cwd（=outputDir）写出 manifest.json 后退出 0。
+        scriptAtSpawn = readFileSync(spawnSpec.argv[1] as string, 'utf8')
         writeFileSync(join(spawnSpec.cwd, STRUCTURE_MANIFEST_FILENAME), '{"views":[{"name":"iso"}]}')
         return handleWith({ exitCode: 0, signal: null })
       })
@@ -254,10 +270,30 @@ describe('renderStructureViews', () => {
       expect(call.env?.HOME).toBe(join(outputDir, '.freecad-home'))
       expect(call.env?.XDG_CACHE_HOME).toContain(outputDir)
       expect(call.graceMs).toBe(3_000)
-      // 脚本已写入且含实测 API
-      const script = readFileSync(call.argv[1] as string, 'utf8')
-      expect(script).toContain('TechDraw.viewPartAsSvg')
+      // 脚本在 spawn 时已写入且含实测 API
+      expect(scriptAtSpawn).toContain('TechDraw.viewPartAsSvg')
+      // 渲染结束后隔离目录与脚本都清掉，不在交付目录留下隐藏残留
+      expect(existsSync(join(outputDir, '.freecad-home'))).toBe(false)
+      expect(existsSync(call.argv[1] as string)).toBe(false)
     } finally {
+      rmSync(outputDir, { recursive: true, force: true })
+    }
+  })
+
+  it('隔离目录清理失败时仍返回渲染结果', async () => {
+    const { exe } = fakeFreecad()
+    const outputDir = tempDir()
+    mockFsOps.failRm = true
+    try {
+      const { runtime } = fakeSubprocess((spawnSpec) => {
+        writeFileSync(join(spawnSpec.cwd, STRUCTURE_MANIFEST_FILENAME), '{"views":[]}')
+        return handleWith({ exitCode: 0, signal: null })
+      })
+      const result = await renderStructureViews(runtime, spec({ outputDir }), { executable: exe, renderTimeoutMs: TEST_RENDER_TIMEOUT_MS })
+      // 残留只是磁盘噪音：不能把已成功的渲染改判为失败。
+      expect(result.ok).toBe(true)
+    } finally {
+      mockFsOps.failRm = false
       rmSync(outputDir, { recursive: true, force: true })
     }
   })

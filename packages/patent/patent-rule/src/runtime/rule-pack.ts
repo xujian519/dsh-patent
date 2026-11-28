@@ -177,17 +177,19 @@ export function loadRulePack(options: { manifestPath?: string; rulesDir?: string
   const layerOrder: Array<{ name: string; ruleSet: RuleSet }> = []
 
   const manifestPath = resolveRulePackManifestPath(options.manifestPath)
-  if (options.manifestPath !== undefined && manifestPath === null) {
-    warnings.push(`规则包清单不存在（${options.manifestPath}）；回退仅加载 base 包`)
-  }
   let manifest: RulePackManifest = { base: 'base', domains: [] }
   let manifestMtimeMs: number | null = null
-  if (manifestPath !== null) {
+  if (manifestPath === null) {
+    // 显式配置的清单读不到是部署错误：静默退回 base 会让门禁只剩六条规则却照常运行。
+    if (options.manifestPath !== undefined) {
+      throw new Error(`规则包清单不存在（${options.manifestPath}）；显式配置的清单必须可读`)
+    }
+  } else {
     try {
       manifest = parseRulePackManifest(readFileSync(manifestPath, 'utf8'))
       manifestMtimeMs = statSync(manifestPath).mtimeMs
     } catch (error) {
-      warnings.push(`规则包清单加载失败（${manifestPath}）: ${(error as Error).message}；回退仅加载 base 包`)
+      throw new Error(`规则包清单加载失败（${manifestPath}）: ${(error as Error).message}`)
     }
   }
 

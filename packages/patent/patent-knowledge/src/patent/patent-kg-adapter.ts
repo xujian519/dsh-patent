@@ -26,31 +26,42 @@ export type PatentKgSearchOptions = {
 }
 
 const SIMILAR_RELATIONS = new Set(['SIMILAR_TO', 'RELATED_TO'])
-const CITE_RELATIONS = new Set(['CITES', 'CITES_LAW', 'FREQUENTLY_CITES', 'REFERENCES'])
+/**
+ * Relations that make one node cite another. `CITES_EVIDENCE`（决定—证据）与
+ * `APPLIES_LAW`（决定—法条）是随包语料里边数最多的两类引用；漏掉它们时
+ * 引用扩展看起来可用，实际只展开很小一部分。`CITES_LAW`/`FREQUENTLY_CITES`
+ * 是旧语料的写法，保留以免旧库检索退化为空。
+ */
+export const CITE_RELATIONS = new Set([
+  'CITES', 'CITES_EVIDENCE', 'APPLIES_LAW', 'CITES_LAW', 'FREQUENTLY_CITES', 'REFERENCES',
+])
 
 /**
- * node_type 别名映射：数据库实际类型与 types.ts 中 KgNodeType 定义不一致
- * （如 KgNodeType 的 "Judgment" 对应 db 中的 SupremeCourtJudgment / RegionalCourtJudgment）。
+ * node_type 别名映射：同一概念在不同语料版本里用过不同名称。展开时保留传入名，
+ * 否则按 `Judgment` 浏览会在只存 `Judgment` 的库上查到 0 行——原名与历史别名
+ * 必须一起查。
  */
 const NODE_TYPE_ALIASES: Record<string, string[]> = {
   Judgment: ['SupremeCourtJudgment', 'RegionalCourtJudgment'],
   LawArticle: ['Clause', 'Chapter'],
-  Concept: ['Concept', 'ConceptDetail', '一级概念', '二级概念', '三级概念'],
+  Concept: ['ConceptDetail', '一级概念', '二级概念', '三级概念'],
 }
 
 /**
- * 解析 node_type（别名展开；未命中别名时按数据库实际类型透传）。
+ * 解析 node_type（原名 + 别名展开；未命中别名时按数据库实际类型透传）。
  * @param raw 数据库 node_type 原始值。
- * @returns 展开后的类型列表。
+ * @returns 展开后的类型列表，首项恒为传入的类型名。
  */
 export function resolveNodeTypes(raw: string): string[] {
   const trimmed = raw.trim()
   if (!trimmed) return []
   const exact = NODE_TYPE_ALIASES[trimmed]
-  if (exact) return exact
+  if (exact) return [trimmed, ...exact.filter(type => type !== trimmed)]
   const lower = trimmed.toLowerCase()
   for (const [alias, types] of Object.entries(NODE_TYPE_ALIASES)) {
-    if (alias.toLowerCase() === lower) return types
+    if (alias.toLowerCase() !== lower) continue
+    // 大小写不敏感命中时仍以传入写法为准，别名里去掉仅大小写不同的重复项。
+    return [trimmed, ...types.filter(type => type.toLowerCase() !== lower)]
   }
   return [trimmed]
 }

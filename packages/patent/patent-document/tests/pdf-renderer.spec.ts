@@ -151,6 +151,27 @@ describe('pdfRenderer', () => {
     }
   })
 
+  it('does not hand back a stale PDF from an earlier run', async () => {
+    const dir = makeTempDir()
+    try {
+      const chromePath = join(dir, 'chrome')
+      const htmlPath = join(dir, 'doc.html')
+      const pdfPath = join(dir, 'doc.pdf')
+      writeFileSync(chromePath, '')
+      writeFileSync(htmlPath, '<html></html>')
+      // 上一次渲染留下的同名产物：Chrome 这次退出 0 但没写文件时不能把它当本次结果。
+      writeFileSync(pdfPath, 'stale pdf bytes')
+
+      const { runtime } = fakeSubprocess(() => successHandle())
+      const result = await renderPdf(runtime, htmlPath, pdfPath, { chromePath, pdfTimeoutMs: TEST_PDF_TIMEOUT_MS })
+      expect(result.ok).toBe(false)
+      if (!result.ok) expect(result.error).toContain('Chrome 未生成 PDF')
+      expect(existsSync(pdfPath)).toBe(false)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('findChrome returns undefined for an explicitly missing override', () => {
     expect(findChrome('/no/such/chrome/binary')).toBeUndefined()
   })

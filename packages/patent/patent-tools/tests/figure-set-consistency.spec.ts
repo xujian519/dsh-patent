@@ -77,6 +77,22 @@ describe('checkFigureSetConsistency', () => {
     expect(report.summary).toContain('跨图标记冲突 1 处')
   })
 
+  it('首图没有名称时，冲突的原值归属到真正写了该名称的那张图', () => {
+    const report = checkFigureSetConsistency([
+      { figureNumber: 1, components: [{ refNumber: '10', name: '' }] },
+      { figureNumber: 2, components: [{ refNumber: '10', name: '立柱' }] },
+      { figureNumber: 3, components: [{ refNumber: '10', name: '立柱体' }] },
+    ])
+    expect(report.conflicts).toHaveLength(1)
+    expect(report.conflicts[0]?.values).toEqual([
+      { figureNumber: 2, value: '立柱' },
+      { figureNumber: 3, value: '立柱体' },
+    ])
+    // 报告不能把图 2 的名称说成图 1 的，否则模型会去改错那张图。
+    expect(report.conflicts[0]?.message).toContain('图 2、图 3')
+    expect(report.conflicts[0]?.message).not.toContain('图 1')
+  })
+
   it('一侧名称为空不算冲突，并用非空名称补齐', () => {
     const report = checkFigureSetConsistency([
       { figureNumber: 1, components: [{ refNumber: '10', name: '' }] },

@@ -174,11 +174,19 @@ export function renderDeadlineReport(report: DeadlineReport, meta: DeadlineRepor
       '已逾期项为专利权期限或优先权期限，二者不适用恢复权利（专利法实施细则第6条第5款）。',
     )
   }
-  if (pctEntries.length > 0) {
+  // 效力终止以 32 个月宽限期届满为准（细则第122条第(二)项）。30 个月已过而宽限期未满
+  // 恰是缴宽限费能救回案件的窗口，此时报「效力终止」会让案件被误放弃。
+  const pctGraceOverdue = pctEntries.some(entry => entry.id === 'pct-national-entry-grace')
+  const pctEntryOverdue = pctEntries.some(entry => entry.id === 'pct-national-entry')
+  if (pctGraceOverdue) {
     lines.push(
-      'PCT 国家阶段的进入期限（专利法实施细则第120条）届满未办理的，国际申请在中国的效力终止，'
-      + '不适用恢复（专利法实施细则第122条）；30个月期限可在缴纳宽限费后延至32个月'
-      + '（宽限期限已单列）。',
+      'PCT 国家阶段的进入期限（专利法实施细则第120条）及宽限期（优先权日起32个月）均已届满未办理，'
+      + '国际申请在中国的效力终止（专利法实施细则第122条第(二)项）。',
+    )
+  } else if (pctEntryOverdue) {
+    lines.push(
+      'PCT 国家阶段的常规进入期限（优先权日起30个月）已届满，但宽限期未满：在优先权日起32个月届满前'
+      + '缴纳宽限费仍可办理进入手续（专利法实施细则第120条）。在此之前国际申请尚未失效。',
     )
   }
 

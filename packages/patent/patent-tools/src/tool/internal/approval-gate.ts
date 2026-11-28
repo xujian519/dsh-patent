@@ -11,6 +11,7 @@
  * @module @deepseek-ai/dsh-patent-tools/tool/internal/approval-gate
  */
 
+import { errorMessage } from '@deepseek-ai/dsh-value'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { ApprovalOutcome, ApprovalService } from '@deepseek-ai/dsh-user-approval'
@@ -130,7 +131,7 @@ export class LiveApprovalGateHandler extends ApprovalGateHandler {
       // leaves no recorded decision; both mean no approval, so the run pauses.
       throw new InterruptStageError(
         'approval-gate',
-        `工作流 ${this.options.manifestId} 的审批门（${reviewContext}）无法取得审批（${String(error)}），按拒绝处理；后续阶段未执行`,
+        `工作流 ${this.options.manifestId} 的审批门（${reviewContext}）无法取得审批（${errorMessage(error)}），按拒绝处理；后续阶段未执行`,
         { outcome: 'unavailable' },
       )
     }

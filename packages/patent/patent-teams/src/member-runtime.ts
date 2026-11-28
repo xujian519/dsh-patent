@@ -246,7 +246,10 @@ export async function removeMember(
     const member = requireMember(fresh, name)
     const requeued: string[] = []
     for (const task of fresh.tasks) {
-      if (task.assignee !== member.name || task.status === 'completed') continue
+      if (task.assignee !== member.name) continue
+      // 终态任务不再复活：cancelled/failed 在状态机里没有出边，把成员移除当成重开
+      // 会静默撤销队长的取消决定并让任务被重新派发。
+      if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') continue
       invalidateTaskAttempt(task)
       task.reassigning = false
       requeued.push(task.id)

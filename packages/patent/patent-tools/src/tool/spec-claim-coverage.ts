@@ -4,10 +4,10 @@
  */
 
 import {
-  NUMERIC_UNIT_ALTERNATION,
+  NUMERIC_ANY_UNIT_ALTERNATION,
+  canonicalNumericUnit,
   checkClaimUnity,
   checkEmbodimentCoverage,
-  normalizeNumericUnit,
   type UnityClaim,
 } from '@deepseek-ai/dsh-patent-core'
 import type { SpecViolation, ValidateSpecificationInput } from './spec-types.ts'
@@ -15,7 +15,7 @@ import type { SpecViolation, ValidateSpecificationInput } from './spec-types.ts'
 const CLAIM_REF_PATTERN =
   /所述([\u4e00-\u9fa5A-Za-z0-9·\-]{2,24}?)(?=与|和|及|或|、|，|,|；|;|用于|包括|连接|设置|固定|安装|位于|设于|[。])/g
 
-const CLAIM_VALUE_PATTERN = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(${NUMERIC_UNIT_ALTERNATION})`, 'g')
+const CLAIM_VALUE_PATTERN = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(${NUMERIC_ANY_UNIT_ALTERNATION})`, 'g')
 
 /** Overly broad generic terms that do not participate in coverage comparison. */
 const GENERIC_TERMS = new Set([
@@ -23,38 +23,77 @@ const GENERIC_TERMS = new Set([
   '技术', '方案', '本发明', '申请', '权利要求', '领域', '信息', '数据',
 ])
 
+/** Claim feature candidates, split by how coverage finds them in the description. */
+type ClaimFeatures = {
+  /** `所述X` nouns, matched as substrings of the description. */
+  terms: string[]
+  /** `数值+单位` values, keyed by value and canonical unit so that 10mm and 10毫米 coincide. */
+  values: string[]
+}
+
 /**
- * Extract technical-feature candidates from claims ("所述X" nouns + number-unit values).
- * @param claims - the claims text.
- * @returns the extracted feature candidates.
+ * One matched value's coverage key: the number plus the canonical unit, so that
+ * 10mm and 10毫米 produce the same key.
+ * @param match - a {@link CLAIM_VALUE_PATTERN} match.
+ * @returns the coverage key.
  */
-export function extractClaimFeatures(claims: string): string[] {
-  const features = new Set<string>()
+function valueKey(match: RegExpExecArray): string {
+  /* v8 ignore next -- both number and unit groups always participate in a match. */
+  return `${match[1] ?? ''}${canonicalNumericUnit(match[2] ?? '')}`
+}
+
+/**
+ * Technical-feature candidates of the claims, kept apart by match kind.
+ * @param claims - the claims text.
+ * @returns the term candidates and the numeric-value candidates.
+ */
+function claimFeatures(claims: string): ClaimFeatures {
+  const terms = new Set<string>()
   let m: RegExpExecArray | null
   CLAIM_REF_PATTERN.lastIndex = 0
   while ((m = CLAIM_REF_PATTERN.exec(claims)) !== null) {
     /* v8 ignore next -- the lookahead pattern always captures the term group. */
     const term = (m[1] ?? '').trim()
-    if (term.length >= 2 && !GENERIC_TERMS.has(term)) features.add(term)
+    if (term.length >= 2 && !GENERIC_TERMS.has(term)) terms.add(term)
   }
+  const values = new Set<string>()
   CLAIM_VALUE_PATTERN.lastIndex = 0
-  while ((m = CLAIM_VALUE_PATTERN.exec(claims)) !== null) {
-    /* v8 ignore next -- both number and unit groups always participate in a match. */
-    features.add(`${m[1] ?? ''}${normalizeNumericUnit(m[2] ?? '')}`)
-  }
-  return [...features]
+  while ((m = CLAIM_VALUE_PATTERN.exec(claims)) !== null) values.add(valueKey(m))
+  return { terms: [...terms], values: [...values] }
+}
+
+/**
+ * Extract technical-feature candidates from claims ("所述X" nouns + number-unit values).
+ * @param claims - the claims text.
+ * @returns the extracted feature candidates; numeric ones carry their canonical unit.
+ */
+export function extractClaimFeatures(claims: string): string[] {
+  const { terms, values } = claimFeatures(claims)
+  return [...terms, ...values]
 }
 
 /**
  * Claim features absent from the specification text.
+ *
+ * Numeric values compare by value and canonical unit rather than by substring, so
+ * a description that writes 10毫米 covers a claim that writes 10mm. The unit is
+ * not converted: 10cm does not cover 100mm, because that would hide a real
+ * mismatch behind a silent arithmetic step.
  * @param claims - the claims text.
  * @param text - the specification text.
  * @returns the missing features and the total feature count.
  */
 export function checkClaimCoverage(claims: string, text: string): { missing: string[]; total: number } {
-  const features = extractClaimFeatures(claims)
-  const missing = features.filter(feature => !text.includes(feature))
-  return { missing, total: features.length }
+  const { terms, values } = claimFeatures(claims)
+  const textValues = new Set<string>()
+  let m: RegExpExecArray | null
+  CLAIM_VALUE_PATTERN.lastIndex = 0
+  while ((m = CLAIM_VALUE_PATTERN.exec(text)) !== null) textValues.add(valueKey(m))
+  const missing = [
+    ...terms.filter(term => !text.includes(term)),
+    ...values.filter(value => !textValues.has(value)),
+  ]
+  return { missing, total: terms.length + values.length }
 }
 
 /**

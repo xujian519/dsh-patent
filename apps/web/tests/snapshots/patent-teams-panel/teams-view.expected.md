@@ -1,9 +1,9 @@
 - text: search-team Active
 - paragraph: Prior-art search across CNIPR and literature
-- text: 2 members 2 1 messages 1 Overall progress 1/2 tasks completed
+- text: Members 2 Messages 1 Overall progress 1/2 tasks completed
 - img "1/2 tasks completed"
-- text: Completed 1 Running 1 Waiting 0 Members 2 Click a working member to open its session Captain ★ Dispatched 2 tasks to 2 members alice researcher Idle t1 Last task · Search CNIPR for the filing family 1 completed bob drafter Idle 0 completed Tasks 2 Hover traces the dependency chain · click pins it
-- button "t1 Search CNIPR for the filing family alice"
-- button "t2 Summarize the search conclusions bob"
-- paragraph: "Nodes flow left to right by dependency depth: green completed, blue running, gray waiting, red sent back by the quality gate."
+- text: Completed 1 Running 1 Waiting 0 Members 2 Click a working member to open its session Captain Dispatched 2 tasks to 2 members alice researcher Idle t1 Last task · Search CNIPR for the filing family 1 completed bob drafter Idle 0 completed Tasks 2 Hover traces the dependency chain · click pins it
+- button "t1 Search CNIPR for the filing family alice Completed"
+- button "t2 Summarize the search conclusions bob In progress"
+- paragraph: "Nodes flow left to right by dependency depth: green completed, blue running, gray waiting, red failed or sent back by the quality gate."
 - text: "Recent activity t2 \"Summarize the search conclusions\" → In progress t1 \"Search CNIPR for the filing family\" contract missing: sources t1 \"Search CNIPR for the filing family\" → Completed captain → alice t1 \"Search CNIPR for the filing family\" → In progress Created task t2 \"Summarize the search conclusions\" Created task t1 \"Search CNIPR for the filing family\""

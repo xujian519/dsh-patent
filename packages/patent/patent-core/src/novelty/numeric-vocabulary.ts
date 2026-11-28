@@ -26,6 +26,19 @@ export const NUMERIC_RANGE_SEPARATOR_CLASS = '~～至到–—-'
 export const NUMERIC_UNIT_ALTERNATION =
   '°C|℃|°c|MPa|kPa|Pa|rpm|min|mol|mm|cm|kg|mg|ml|mL|％|°|m|g|L|h|s|%'
 
+/**
+ * 汉字单位的备选串（两字单位在前、单字在后），与 {@link NUMERIC_UNIT_SCALES} 的汉字键一致。
+ *
+ * 新颖性轨先把数值匹配出来、再从片段末尾读单位，汉字单位因而读得到；需要「单位必须
+ * 写在数值后面」的路径（规格校验的端点/中点比对、权利要求特征覆盖）只有本串才能匹配
+ * 中文写法。不含月、年、倍、次、转：其长度不固定或不是量，见 {@link NUMERIC_UNIT_SCALES}。
+ */
+export const NUMERIC_HAN_UNIT_ALTERNATION =
+  '毫米|厘米|千米|微米|纳米|分钟|小时|毫升|千克|毫克|千帕|兆帕|摩尔|米|克|吨|升|秒|天|日|周|度|帕'
+
+/** 拉丁与汉字单位写法的合并备选串；两组之间没有前缀重叠，前者的长优先顺序得以保留。 */
+export const NUMERIC_ANY_UNIT_ALTERNATION = `${NUMERIC_HAN_UNIT_ALTERNATION}|${NUMERIC_UNIT_ALTERNATION}`
+
 /** 数值单位所属量纲。 */
 type NumericUnitDimension = 'length' | 'mass' | 'volume' | 'time' | 'temperature' | 'pressure' | 'ratio' | 'amount'
 
@@ -107,4 +120,46 @@ export function normalizeNumericUnit(unit: string): string {
  */
 export function resolveNumericUnit(unit: string): NumericUnitScale | undefined {
   return NUMERIC_UNIT_SCALES[unit]
+}
+
+/**
+ * 各单位写法对应的规范键：同一单位的中英文写法归到同一个键（`毫米`→`mm`、`度`→`°`）。
+ *
+ * 键只表示「写的是同一个单位」，不做量纲换算：`米` 与 `毫米` 仍是两个键，换比例由
+ * {@link resolveNumericUnit} 给出。用于比较两处文本是否写了相同单位的相同数值
+ * （权利要求特征覆盖、端点/中点比对），不能用于判断两个量是否相等。
+ */
+const CANONICAL_UNIT_KEYS: Readonly<Record<string, string>> = {
+  毫米: 'mm',
+  厘米: 'cm',
+  千米: 'km',
+  微米: 'um',
+  纳米: 'nm',
+  米: 'm',
+  毫克: 'mg',
+  千克: 'kg',
+  克: 'g',
+  吨: 't',
+  毫升: 'ml',
+  升: 'l',
+  分钟: 'min',
+  小时: 'h',
+  秒: 's',
+  天: 'd',
+  日: 'd',
+  度: '°',
+  千帕: 'kpa',
+  兆帕: 'mpa',
+  帕: 'pa',
+  摩尔: 'mol',
+}
+
+/**
+ * 单位的规范键：先按 {@link normalizeNumericUnit} 归一并统一小写，再映射为跨写法相同的键。
+ * @param unit - 原文单位写法（大小写均可）。
+ * @returns 规范键；表外写法返回归一后的小写写法。
+ */
+export function canonicalNumericUnit(unit: string): string {
+  const normalized = normalizeNumericUnit(unit.trim().toLowerCase())
+  return CANONICAL_UNIT_KEYS[normalized] ?? normalized
 }

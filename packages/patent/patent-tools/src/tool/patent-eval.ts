@@ -233,7 +233,11 @@ function evaluateCitations(text: string, required: string[]): Record<string, Pat
   } else {
     citationScore = text.includes('第') && /第[零一二三四五六七八九十百千\d]+条/.test(text) ? 1.0 : 0.3
   }
-  dims['引用合规性'] = { score: round2(citationScore), passed: citationScore >= 0.7, details: `要求 ${required.length} 条引用，覆盖度 ${Math.round(citationScore * 100)}%` }
+  // 没给要求清单时无法核对覆盖度：details 必须说清这是抽查，不能报「要求 0 条、覆盖度 100%」。
+  const basis = required.length > 0
+    ? `要求 ${required.length} 条引用，覆盖度 ${Math.round(citationScore * 100)}%`
+    : '未提供 required_citations：按正文是否引用法条抽查，未核对覆盖度'
+  dims['引用合规性'] = { score: round2(citationScore), passed: citationScore >= 0.7, details: basis }
   const formatPattern = /第[零一二三四五六七八九十百千\d]+条/g
   const formatMatches = text.match(formatPattern) ?? []
   const formatScore = formatMatches.length > 0 ? 1.0 : 0.3

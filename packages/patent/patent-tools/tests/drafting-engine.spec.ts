@@ -583,6 +583,8 @@ describe('patent_eval deeper paths', () => {
     expect(withList.details['引用合规性']?.score).toBe(0.5)
     const freeForm = evaluatePatentContent('citations', '依据第22条第3款 驳回理由', [])
     expect(freeForm.details['引用合规性']?.score).toBe(1)
+    expect(freeForm.details['引用合规性']?.details).toContain('抽查')
+    expect(freeForm.details['引用合规性']?.details).not.toContain('覆盖度 100')
     expect(freeForm.details['引用格式']?.score).toBe(1)
     const bare = evaluatePatentContent('citations', '涉及第X条的情况', [])
     expect(bare.details['引用合规性']?.score).toBe(0.3)

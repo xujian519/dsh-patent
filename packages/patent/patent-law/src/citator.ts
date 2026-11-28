@@ -26,6 +26,7 @@ import type {
   StaleSection,
   ValidityQuery,
   ValidityResult,
+  ValidityState,
 } from './types.ts'
 
 /**
@@ -147,7 +148,10 @@ function decideArticleValidity(
   // that was never transcribed).
   if (lineage !== undefined && lineage.law === reference.law) {
     const articleLineage = queryArticleLineage(lineage, reference.article)
-    if (articleLineage !== null) {
+    // `unverified` 说的是沿革链里的历史版本不可考，不是现行条文不可核验：
+    // 回落到 baseline 的转录判定，否则已转录并核验的条文（如第 71 条损害赔偿）
+    // 会被报成「未判定」，与同一条引用的 law_verify 结论相反。
+    if (articleLineage !== null && articleLineage.currentStatus !== 'unverified') {
       const revisionHistory = articleLineage.revisionHistory.map(r => ({
         revision: r.revision,
         effectiveDate: r.effectiveDate,
@@ -392,17 +396,21 @@ function fallbackReference(provision: string): LawReference {
 }
 
 /**
+ * A lineage status that decides the article. `unverified` is excluded: it says
+ * the change history is incomplete, so the transcription verdict answers instead.
+ */
+type DecidedStatus = Exclude<ValidityState, 'unverified'>
+
+/** How each decided lineage status reads in a reason. */
+const LINEAGE_STATUS_LABELS: Record<DecidedStatus, string> = {
+  active: '现行有效',
+  revised: '已被修订',
+  repealed: '已被废止',
+}
+
+/**
  * Build a human-readable reason string for a lineage-derived status.
  */
-function buildLineageReason(law: string, article: number, status: string): string {
-  switch (status) {
-    case 'active':
-      return `《${law}》第 ${article} 条经沿革数据确认现行有效`
-    case 'revised':
-      return `《${law}》第 ${article} 条经沿革数据确认已被修订`
-    case 'repealed':
-      return `《${law}》第 ${article} 条经沿革数据确认已被废止`
-    default:
-      return `《${law}》第 ${article} 条沿革状态为${status}`
-  }
+function buildLineageReason(law: string, article: number, status: DecidedStatus): string {
+  return `《${law}》第 ${article} 条经沿革数据确认${LINEAGE_STATUS_LABELS[status]}`
 }

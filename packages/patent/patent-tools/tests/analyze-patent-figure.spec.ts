@@ -104,6 +104,19 @@ describe('analyze_patent_figure image gate', () => {
     })
   })
 
+  it('rejects a fractional figure number at the schema and a non-positive one in execute', async () => {
+    const tool = createAnalyzePatentFigureTool({ ...visionDeps })
+    // integer 由 schema 在边界拒绝；schema 没有最小值，0/-1 由 execute 的显式检查拒绝。
+    await expect(tool.execute({ image_path: 'x.png', figure_number: 2.5 }, exec)).rejects.toMatchObject({
+      code: 'INVALID_ARGS',
+    })
+    for (const figureNumber of [0, -1]) {
+      await expect(tool.execute({ image_path: 'x.png', figure_number: figureNumber }, exec)).rejects.toMatchObject({
+        code: 'invalid_tool_input',
+      })
+    }
+  })
+
   it('runs un-gated when no resolver is wired, proceeding to file access', async () => {
     const tool = createAnalyzePatentFigureTool({ ...visionDeps })
     await expect(tool.execute({ image_path: 'does-not-exist.png' }, exec)).rejects.toMatchObject({
@@ -367,7 +380,7 @@ describe('analyze_patent_figure two-step mode', () => {
       expect(result.components).toEqual([])
       expect(result.usable).toBe(false)
       expect(result.figureType).toBe('unknown')
-      expect(result.warnings.join('\n')).toContain('结构抽取')
+      expect(result.warnings.join('\n')).toContain('附图结构未能识别')
       expect(seen).toHaveLength(1)
     } finally {
       await rm(dir, { recursive: true, force: true })

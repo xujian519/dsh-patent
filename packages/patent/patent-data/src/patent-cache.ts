@@ -136,6 +136,43 @@ export function scrapeCacheKey(patent: string, opts: { returnAbstract: boolean; 
   return `scrape\u0000${patent}\u0000${opts.returnAbstract ? 1 : 0}${opts.returnLegal ? 1 : 0}`
 }
 
+/** The per-call controls every cached engine call accepts. */
+interface CallControls {
+  readonly timeout?: number
+  readonly signal?: AbortSignal
+}
+
+/** Engine options for one cached search: the hit limit plus the caller's controls. */
+interface SearchCallOptions extends CallControls {
+  readonly limit?: number
+}
+
+/** Engine options for one cached scrape: the content toggles plus the caller's controls. */
+interface ScrapeCallOptions extends CallControls {
+  readonly returnAbstract?: boolean
+  readonly returnLegal?: boolean
+}
+
+/**
+ * Copy the per-call timeout and cancellation signal onto an engine options
+ * object. Neither belongs in a cache key — the same input yields the same
+ * content — but both must reach the engine, or a caller's timeout and
+ * cancellation die on the cache leg.
+ * @param base - the content-shaping options for this call.
+ * @param opts - the caller's per-call controls, when any.
+ * @returns the merged options.
+ */
+function withCallerControls<T extends object>(
+  base: T,
+  opts: CallControls | undefined,
+): T & CallControls {
+  return {
+    ...base,
+    ...(opts?.timeout === undefined ? {} : { timeout: opts.timeout }),
+    ...(opts?.signal === undefined ? {} : { signal: opts.signal }),
+  }
+}
+
 /**
  * Wrap a search implementation with LRU cache + in-flight merge.
  * @param impl - the underlying search function.
@@ -143,13 +180,17 @@ export function scrapeCacheKey(patent: string, opts: { returnAbstract: boolean; 
  * @returns the cached search function, whose lookups carry cache-hit and fetch-time facts.
  */
 export function cachedSearchPatents(
-  impl: (query: string, options?: { limit?: number }) => Promise<PatentSearchResult>,
+  impl: (query: string, options?: SearchCallOptions) => Promise<PatentSearchResult>,
   options: PatentCacheOptions = {},
-): (query: string, options?: { limit?: number }) => Promise<CachedLookup<PatentSearchResult>> {
+): (query: string, options?: SearchCallOptions) => Promise<CachedLookup<PatentSearchResult>> {
   const cache = new AsyncResultCache<PatentSearchResult>(options)
   return async (query, opts) => {
     const limit = opts?.limit ?? 10
-    return cache.getOrLoad(searchCacheKey(query, limit), () => impl(query, { limit }), isSearchResultCacheable)
+    return cache.getOrLoad(
+      searchCacheKey(query, limit),
+      () => impl(query, withCallerControls({ limit }, opts)),
+      isSearchResultCacheable,
+    )
   }
 }
 
@@ -160,16 +201,16 @@ export function cachedSearchPatents(
  * @returns the cached scrape function, whose lookups carry cache-hit and fetch-time facts.
  */
 export function cachedScrapePatent(
-  impl: (patent: string, options?: { returnAbstract?: boolean; returnLegal?: boolean }) => Promise<ScrapeResult>,
+  impl: (patent: string, options?: ScrapeCallOptions) => Promise<ScrapeResult>,
   options: PatentCacheOptions = {},
-): (patent: string, options?: { returnAbstract?: boolean; returnLegal?: boolean }) => Promise<CachedLookup<ScrapeResult>> {
+): (patent: string, options?: ScrapeCallOptions) => Promise<CachedLookup<ScrapeResult>> {
   const cache = new AsyncResultCache<ScrapeResult>(options)
   return async (patent, opts) => {
     const returnAbstract = opts?.returnAbstract ?? true
     const returnLegal = opts?.returnLegal ?? true
     return cache.getOrLoad(
       scrapeCacheKey(patent, { returnAbstract, returnLegal }),
-      () => impl(patent, { returnAbstract, returnLegal }),
+      () => impl(patent, withCallerControls({ returnAbstract, returnLegal }, opts)),
       isScrapeResultCacheable,
     )
   }

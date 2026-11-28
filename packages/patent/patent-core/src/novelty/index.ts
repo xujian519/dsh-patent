@@ -6,8 +6,10 @@
  */
 
 export {
+  NUMERIC_ANY_UNIT_ALTERNATION,
   NUMERIC_RANGE_SEPARATOR_CLASS,
   NUMERIC_UNIT_ALTERNATION,
+  canonicalNumericUnit,
   normalizeNumericUnit,
 } from './numeric-vocabulary.ts'
 

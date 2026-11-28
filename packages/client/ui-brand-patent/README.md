@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-This package gives a fork build its own mark in the sidebar and the blank-session hero. `BRAND_GUIDELINES.md` permits the `DSH` abbreviation in a project name but asks it not to present official artwork as though DeepSeek endorsed it; a fork named `DSH Patent` that ships the whale does exactly that. Choose it for a deployment with its own identity. Unlike `dsh-client-ui-brand-official` it registers on every build profile, because a fork's profile is never `official` and a gate would leave the official fallbacks in place. It has no runtime state and does not affect model requests.
+This package gives a fork build its own mark and product name in the sidebar, plus the blank-session hero mark. `BRAND_GUIDELINES.md` permits the `DSH` abbreviation in a project name but asks it not to present official artwork as though DeepSeek endorsed it; a fork named `DSH Patent` that ships the whale does exactly that. Choose it for a deployment with its own identity. Unlike `dsh-client-ui-brand-official` it registers on every build profile, because a fork's profile is never `official` and a gate would leave the official fallbacks in place. It has no runtime state and does not affect model requests.
 
 ## Table of Contents
 
@@ -25,7 +25,7 @@ This package gives a fork build its own mark in the sidebar and the blank-sessio
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount this plugin in the browser roster of a deployment with its own identity. It occupies `sidebar.brand.mark` and `conversation.hero.brand.mark`, replacing the two fallbacks those slots otherwise render: the shared `FishLogo` in the sidebar and the animated `HeroFish` in the hero.
+Mount this plugin in the browser roster of a deployment with its own identity. It occupies `sidebar.brand.mark`, `sidebar.brand.name`, and `conversation.hero.brand.mark`, replacing the three fallbacks those slots otherwise render: the shared `FishLogo`, the local-build product name, and the animated `HeroFish`.
 
 ### Why it registers without a profile gate
 

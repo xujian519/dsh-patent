@@ -18,8 +18,16 @@ export const COMMERCIAL_ADVERTISING_TERMS = [
 /** Internal-process markers that must not reach a filed specification. */
 const INTERNAL_LEAKAGE_TERMS = ['内部复核稿', 'AI 辅助生成', 'AI辅助生成', 'HITL', '内部使用'] as const
 
-/** A description citing a claim by number, which 细则第二十条第三款 forbids. */
-const CLAIM_CITATION_RE = /(?:如|根据|按照|依据)\s*权利要求\s*[\d一二三四五六七八九十百或至、,\s]+\s*所述/
+/**
+ * A description citing a claim by number, which 细则第二十条第三款 forbids.
+ *
+ * The middle class covers the citation forms that appear in filed text: several
+ * numbers joined by 和/与/及/或、a range (`1至3`、`1-3`), the ordinal form
+ * (`第1项`), and the trailing `中任一项`. Leaving one of these out silently lets
+ * that phrasing through, because the whole phrase must reach `所述`.
+ */
+const CLAIM_CITATION_RE =
+  /(?:如|根据|按照|依据|参见)\s*(?:上述|前述)?\s*权利要求\s*[\d一二三四五六七八九十百零〇第项或和与及至到之任中、,，\s\-–—~～]{1,24}所述/
 
 /** Product-model wording that does not belong in an invention title. */
 const MODEL_NUMBER_RE = /[A-Za-z]{2,}[-\s]?\d{2,}/

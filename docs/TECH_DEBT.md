@@ -361,7 +361,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `structure.long-functions` | 209 |
 | `structure.large-files` | 103 |
 | `structure.patent-large-files` | 10 |
-| `lint.v8-ignore` | 1358 |
+| `lint.v8-ignore` | 1357 |
 | `lint.ts-expect-error` | 201 |
 | `packages.patent-directories` | 16 |
 <!-- tech-debt-counters:end -->
@@ -406,6 +406,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
 - **2026-11-27 引线放置：真实轮廓锚点 + 净距/外推**:引线锚点改取节点真实轮廓（多边形保留顶点，射线与边求交；椭圆按解析式），斜边形状不再从包围盒角点出发；放置期按 Config `figureLeaderClearanceMm` / `figureLeaderPushStepMm` / `figureLeaderPushLimitMm` 强制净距并逐级外推，净距取部署值与 `clearanceMmForFigure` 的较大者，避免工具产出被自身渲染复核判负；`leader-line.ts` 由 907 升至 **1114** 行并重定接受上限，`annotateSvgWithLeaderLines` 超过 150 行使 `structure.long-functions` 由 208 升至 **209**；其余计数不变。
+- **2026-11-27 跨图一致性名称归属**:`figure-set-consistency.ts` 去掉「首个出现该标号的图号即冲突原值归属」的错误假设，改为按「首个非空名称 + 所在图号」冻结归属；原来守这条假设的 `v8 ignore` 随旧实现删除，`lint.v8-ignore` 由 1358 降至 **1357**；其余计数不变。
 - **2026-11-27 附图渲染复核曲线折线化**:`render-check-scan.ts` 的路径切分改为按 SVG 数字文法读取（`e`/`E` 只作十进制指数），渲染复核与墨迹范围量测传入 0.05 毫米弦高公差，曲线不再按端点弦近似；该文件由 1034 升至 **1059** 行并重定接受上限；路径切分正则的 `v8 ignore` 随旧实现删除，`lint.v8-ignore` 由 1359 降至 **1358**；其余计数不变。
 - **2026-11-26 附图拒绝栅格与 DXF 导出**:`render-check-scan.ts` 由 798 升至 **1034** 行并新增接受行（矢量扫描前端，位图拒绝、剖面来源与复用键的路径/矩阵/文字量测补齐，无 I/O、无第二消费方）；`structure.large-files` 由 102 升至 **103**、`structure.patent-large-files` 由 9 升至 **10**；`generate-patent-figure.ts` 的 `generateSingleFigure` 由 155 行回落到 150 行以下，`structure.long-functions` 由 209 降至 **208**；`lint.v8-ignore` 由 1345 升至 **1359**；其余计数不变。
 - **2026-11-25 附图视图名与页码关闭**:`generate-patent-figure.ts` 的 `generateSingleFigure` 新增 `view_name` 参数校验与传递后达到 155 行、`generate-structure-figure.ts` 的 `createGenerateStructureFigureTool` 新增 `sheet_number` schema 字段后达到 151 行，两个函数均越过 150 行阈值；`structure.long-functions` 由 207 升至 **209**；其余计数不变。

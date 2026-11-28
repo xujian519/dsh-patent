@@ -349,8 +349,10 @@ export function extractDateFromText(text: string): string {
     const candidate = monthOnly[0]
     if (parseDateFlexible(candidate) !== null) return candidate
   }
-  // ASCII 日期：YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD / YYYYMMDD
-  for (const m of text.matchAll(/\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{8}/g)) {
+  // ASCII 日期：YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD / YYYYMMDD。
+  // 8 位分支要求两侧非数字：中国申请号是 12 位（202310123456），没有边界时
+  // 会截出前 8 位（20231012）并当作 yyyyMMdd 接受。
+  for (const m of text.matchAll(/\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|(?<!\d)\d{8}(?!\d)/g)) {
     if (parseDateFlexible(m[0]) !== null) return m[0]
   }
   return ''

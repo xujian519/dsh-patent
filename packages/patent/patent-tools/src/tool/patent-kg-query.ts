@@ -14,8 +14,14 @@ import { PatentToolError } from '../error.ts'
 import { knowledgeInstallGuidance, truncateSnippet } from './internal/knowledge.ts'
 import { resolveResultLimit } from './internal/query-limit.ts'
 
-/** Citation-class relations used for id-mode neighbor expansion. */
-const CITE_RELATIONS = ['CITES', 'CITES_LAW', 'FREQUENTLY_CITES', 'REFERENCES'] as const
+/**
+ * Citation-class relations used for id-mode neighbor expansion. The knowledge
+ * plugin keeps the same set for its own expansion but cannot export it: a
+ * plugin entry may only export names, config, types, and service classes.
+ */
+const CITE_RELATIONS = [
+  'CITES', 'CITES_EVIDENCE', 'APPLIES_LAW', 'CITES_LAW', 'FREQUENTLY_CITES', 'REFERENCES',
+] as const
 
 /** Hit-path ordering (keyword → similar → cites). */
 const VIA_ORDER: Record<RelevantHit['via'], number> = { keyword: 0, similar: 1, cites: 2 }

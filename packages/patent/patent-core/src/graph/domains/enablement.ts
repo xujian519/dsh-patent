@@ -10,7 +10,7 @@
 
 import { GraphBuilder } from '../engine.ts'
 import type { GraphState } from '../types.ts'
-import { getStateString } from '../state.ts'
+import { getStateArray, getStateString } from '../state.ts'
 import { globalStageHandlerRegistry, type StageHandlerRegistry } from '../../atoms/index.ts'
 import { dataBlock } from '../../prompt-hygiene.ts'
 import {
@@ -183,7 +183,8 @@ export function buildEnablementGraph(options: BuildEnablementGraphOptions = {}):
       outputKey: 'enablement_completeness',
       buildPrompt: (state) => {
         const text = resolveInput(state, ['text', 'source_text', 'spec', 'input'])
-        const missing = getStateString(state, 'spec_sections_missing')
+        // 该键由 load 节点写成数组；按字符串读取会恒得空串，把"缺哪些章节"读成"无缺失"。
+        const missing = getStateArray(state, 'spec_sections_missing').join('、')
         return [
           '专利法 A26.3 充分公开审查——第一步：结构完整性。',
           '说明书应包含：技术领域/背景技术/发明内容/附图说明/具体实施方式（审查指南第二部分第二章 2.1）。',
@@ -246,7 +247,7 @@ export function buildEnablementGraph(options: BuildEnablementGraphOptions = {}):
           '【能够实现性】',
           getStateString(state, 'enablement_enablement'),
           '【技术领域与特殊要求】',
-          `${getStateString(state, 'technical_domain_name')}: ${getStateString(state, 'domain_requirements')}`,
+          `${getStateString(state, 'technical_domain_name')}: ${getStateArray(state, 'domain_requirements').join('；')}`,
         ]
         return [
           '综合三步审查，生成专利法 A26.3 充分公开审查报告：',

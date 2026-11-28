@@ -9,7 +9,8 @@ import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import { createPatentPdfDownloadTool, normalizePatentNumber } from '../src/tool/patent-pdf-download.ts'
-import { GOOGLE_PATENTS_CHANNEL } from '../src/tool/internal/upstream-channel.ts'
+import type { FallbackRequest } from '../src/tool/patent-pdf-download.ts'
+import { GOOGLE_PATENTS_CHANNEL, PATSNAP_CHANNEL } from '../src/tool/internal/upstream-channel.ts'
 import { PatentToolError } from '../src/error.ts'
 import { executeToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 
@@ -33,6 +34,11 @@ function execute(ctx: Context, name: string, args: unknown, label: string) {
 
 function text(result: { content: { type: string; text?: string }[] }): string {
   return result.content.filter(b => b.type === 'text').map(b => b.text ?? '').join('')
+}
+
+/** The URL a fetch stub received, whatever input form the tool used. */
+function inputUrl(input: RequestInfo | URL): string {
+  return input instanceof Request ? input.url : input instanceof URL ? input.href : input
 }
 
 /**
@@ -156,8 +162,167 @@ describe('patent_pdf_download', () => {
     }
   })
 
-  it('skips already-downloaded patents via MANIFEST resume', async () => {
+  it('leaves the fallback channel alone when Google delivers', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
+    try {
+      const resolveFallback = vi.fn()
+      const tool = createPatentPdfDownloadTool({
+        runEgo: async () => ({ items: [{ channel: GOOGLE, patent: 'US1A', status: 'ok', path: join(dir, 'US1A.pdf') }] }),
+        resolveFallback,
+        resolveOutputDir: () => dir,
+      })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'patent_pdf_download', { patents: ['US1A'] }, 'fb-1')
+      expect(result.isError).toBe(false)
+      expect(resolveFallback).not.toHaveBeenCalled()
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('serves a Google miss through PatSnap and names the family substitute', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
+    try {
+      const body = '%PDF-1.4 ' + 'x'.repeat(600)
+      const fetchImpl: typeof fetch = async () => new Response(new TextEncoder().encode(body), {
+        status: 200,
+        headers: { 'content-type': 'application/pdf' },
+      })
+      const resolveFallback = vi.fn(async (
+        _requests: readonly FallbackRequest[],
+        _options: { timeoutMs: number; signal?: AbortSignal },
+      ) => [
+        { patent: 'CN1A', channel: PATSNAP_CHANNEL, pdfUrl: 'https://data-pdf.example/CN1A.pdf', resolvedNumber: 'CN1B' },
+      ])
+      const tool = createPatentPdfDownloadTool({
+        runEgo: async () => ({ items: [{ channel: GOOGLE, patent: 'CN1A', status: 'fallback', error: '页面没有 PDF 链接' }] }),
+        resolveFallback,
+        resolveOutputDir: () => dir,
+        fetchImpl,
+      })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'patent_pdf_download', { patents: ['CN1A'] }, 'fb-2')
+      expect(result.isError).toBe(false)
+      if (result.isError) throw new Error('expected success')
+      expect(text(result)).toContain('下载完成：1/1 成功')
+      expect(text(result)).toContain(`通道：${PATSNAP_CHANNEL}`)
+      expect(text(result)).toContain('同族替代：CN1B')
+      expect(text(result)).toContain(`改由 ${PATSNAP_CHANNEL} 提供`)
+      const [fallbackRequests, fallbackOptions] = resolveFallback.mock.calls[0] ?? []
+      expect(fallbackRequests).toEqual([{ patent: 'CN1A', reason: '页面没有 PDF 链接' }])
+      expect(typeof fallbackOptions?.timeoutMs).toBe('number')
+      expect(await readFile(join(dir, 'CN1A.pdf'))).toBeTruthy()
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('falls back when the Google CDN returns a non-PDF response', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
+    try {
+      const fetchImpl: typeof fetch = async (input) => {
+        if (inputUrl(input).includes('data-pdf.example')) {
+          return new Response(new TextEncoder().encode('%PDF-1.4 ' + 'x'.repeat(600)), {
+            status: 200,
+            headers: { 'content-type': 'application/pdf' },
+          })
+        }
+        return new Response('forbidden', { status: 403, statusText: 'Forbidden' })
+      }
+      const resolveFallback = vi.fn(async () => [
+        { patent: 'US1A', channel: PATSNAP_CHANNEL, pdfUrl: 'https://data-pdf.example/US1A.pdf' },
+      ])
+      const tool = createPatentPdfDownloadTool({
+        runEgo: async () => ({ items: [{ channel: GOOGLE, patent: 'US1A', status: 'fallback', pdfUrl: 'https://cdn/US1A.pdf' }] }),
+        resolveFallback,
+        resolveOutputDir: () => dir,
+        fetchImpl,
+      })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'patent_pdf_download', { patents: ['US1A'] }, 'fb-3')
+      expect(result.isError).toBe(false)
+      if (result.isError) throw new Error('expected success')
+      expect(text(result)).toContain(`通道：${PATSNAP_CHANNEL}`)
+      expect(resolveFallback).toHaveBeenCalledTimes(1)
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('hands a failed Google leg to the fallback channel instead of failing the batch', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
+    try {
+      const fetchImpl: typeof fetch = async () => new Response(new TextEncoder().encode('%PDF-1.4 ' + 'x'.repeat(600)), {
+        status: 200,
+        headers: { 'content-type': 'application/pdf' },
+      })
+      const resolveFallback = vi.fn(async () => [
+        { patent: 'US1A', channel: PATSNAP_CHANNEL, pdfUrl: 'https://data-pdf.example/US1A.pdf' },
+      ])
+      const tool = createPatentPdfDownloadTool({
+        runEgo: async () => { throw new Error('ego crashed') },
+        resolveFallback,
+        resolveOutputDir: () => dir,
+        fetchImpl,
+      })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'patent_pdf_download', { patents: ['US1A'] }, 'fb-4')
+      expect(result.isError).toBe(false)
+      if (result.isError) throw new Error('expected success')
+      expect(text(result)).toContain('下载完成：1/1 成功')
+      expect(text(result)).toContain('通道失败')
+      expect(text(result)).toContain('改由兜底通道处理')
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps both failure reasons when the fallback channel itself is unavailable', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
+    try {
+      const tool = createPatentPdfDownloadTool({
+        runEgo: async () => ({ items: [{ channel: GOOGLE, patent: 'US1A', status: 'fallback', error: '页面没有 PDF 链接' }] }),
+        resolveFallback: async () => { throw new Error('PatSnap 通道失败（quota_exhausted）：余额不足') },
+        resolveOutputDir: () => dir,
+      })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'patent_pdf_download', { patents: ['US1A'] }, 'fb-5')
+      expect(result.isError).toBe(false)
+      if (result.isError) throw new Error('expected success')
+      expect(text(result)).toContain('页面没有 PDF 链接')
+      expect(text(result)).toContain('兜底通道不可用')
+      expect(text(result)).toContain('quota_exhausted')
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('appends the fallback download failure to the original reason', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
+    try {
+      const fetchImpl: typeof fetch = async () => new Response('gone', { status: 410, statusText: 'Gone' })
+      const tool = createPatentPdfDownloadTool({
+        runEgo: async () => ({ items: [{ channel: GOOGLE, patent: 'US1A', status: 'fallback', error: '页面没有 PDF 链接' }] }),
+        resolveFallback: async () => [
+          { patent: 'US1A', channel: PATSNAP_CHANNEL, pdfUrl: 'https://data-pdf.example/US1A.pdf' },
+        ],
+        resolveOutputDir: () => dir,
+        fetchImpl,
+        fetchFallbackRetry: { maxRetries: 0 },
+      })
+      const ctx = await ctxWith(tool)
+      const result = await execute(ctx, 'patent_pdf_download', { patents: ['US1A'] }, 'fb-6')
+      expect(result.isError).toBe(false)
+      if (result.isError) throw new Error('expected success')
+      expect(text(result)).toContain('页面没有 PDF 链接')
+      expect(text(result)).toContain('PatSnap（智慧芽）下载失败')
+      expect(text(result)).toContain('HTTP 410')
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('skips already-downloaded patents via MANIFEST resume', async () => {    const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
     try {
       const file = join(dir, 'US1A.pdf')
       await writeFile(file, '%PDF-1.4 resume body')

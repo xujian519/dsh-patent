@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-11-28-patent-pdf-patsnap-fallback.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-28-patent-pdf-patsnap-fallback.md
+/agent-note-fall-back-to-patsnap-when-google-patents-cannot-deliver-a-pdf:
+  en: da438353d3cb8e29
+  zh: f1333597606d45e2
+/agent-note-fall-back-to-patsnap-when-google-patents-cannot-deliver-a-pdf/problem:
+  en: 0135161374bd0f66
+  zh: edd34eea32a97ee0
+/agent-note-fall-back-to-patsnap-when-google-patents-cannot-deliver-a-pdf/decision:
+  en: b40da9d5504488c2
+  zh: 1438cfafe53eb890
+/agent-note-fall-back-to-patsnap-when-google-patents-cannot-deliver-a-pdf/alternatives-considered:
+  en: 43e313ad69c6ef61
+  zh: 42979f0a314ebcd1
+/agent-note-fall-back-to-patsnap-when-google-patents-cannot-deliver-a-pdf/consequences:
+  en: cbce60787833afc4
+  zh: adf562b53b660ea7

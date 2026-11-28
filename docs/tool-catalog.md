@@ -6423,10 +6423,11 @@ Source: [`packages/patent/patent-tools/src/index.ts`](../packages/patent/patent-
 
 ### `patent_pdf_download`
 
-批量下载专利 PDF。输入 patents 为公开号列表（CN123456789A、US11452699B2、EP1234567A1、WO2023123456A1…），保存为 `<outputDir>/<patent>.pdf`。通道按号族选择并逐篇点名：中国公开(公告)号在部署启用时先走 CNIPR（经 ego lite 登录态取全文直链，`http://pic.cnipr.com/...`）；其余号以及 CNIPR 未能服务的号走 Google Patents——优先经 ego-browser（ego lite）在浏览器内取回 PDF 响应体，取不到时提取 CDN PDF 链接后用 HTTP 直接下载落盘。每篇结果为 status=ok（带 path、method 与 channel）或 status=failed（带 error 与 channel，且保留 pdfUrl 供手动重试）；失败不中断其余专利。
+批量下载专利 PDF。输入 patents 为公开号列表（CN123456789A、US11452699B2、EP1234567A1、WO2023123456A1…），保存为 `<outputDir>/<patent>.pdf`。下载通道按顺序降级并逐篇点名：先走 Google Patents——优先经 ego-browser（ego lite）在浏览器内取回 PDF 响应体，取不到时提取 CDN PDF 链接后用 HTTP 直接下载落盘；该篇仍拿不到有效 PDF 时，在部署启用 PatSnap 的情况下交给 PatSnap 兜底（按公开号换 PDF 直链，同族替代时在结果里写明实际取到的号）。每篇结果为 status=ok（带 path、method 与 channel）或 status=failed（带 error 与 channel，且保留 pdfUrl 供手动重试）；失败不中断其余专利。
 
 Usage notes:
   - 每篇的 channel 是实际产出该篇的通道；某通道被咨询过但未能服务时，结果另在 warnings 里点名，报告据此区分「换通道」与「同通道重试」
+  - 同族替代时 resolvedNumber 是文件里实际印的公开号；报告引用原文号，不要把它当成请求号
   - 重复执行命中 MANIFEST 断点续传（size 匹配即跳过，method=skip），force=true 强制重下；续传条目的 channel 与 retrievedAt 取自 MANIFEST 记录（本字段之前写下的条目没有记录，输出里该篇不带通道/取数时间）
   - retrievedAt 是该篇文件的取数时间（本次落盘时间，或续传命中时 MANIFEST 记录的下载时间），报告据此写明原文是何时取得的
   - record=true 可额外截图留证（输出 `<outputDir>/evidence/`）
@@ -6457,7 +6458,7 @@ Usage notes:
     },
     "timeoutMs": {
       "type": "number",
-      "description": "单腿执行预算（毫秒）：CNIPR 腿与 Google 腿各自按它设期限，不是整批墙钟上限，最坏情形两腿各用满预算；CNIPR 腿另有 90 秒下限（ego 会话冷启动）。默认 clamp(篇数 × (pageTimeoutSec × 1000 + downloadTimeoutMs) + 15000, 60000, 300000)，上限 300000"
+      "description": "单腿执行预算（毫秒）：Google 腿与 PatSnap 兜底腿各自按它设期限，不是整批墙钟上限，最坏情形两腿各用满预算。默认 clamp(篇数 × (pageTimeoutSec × 1000 + downloadTimeoutMs) + 15000, 60000, 300000)，上限 300000"
     },
     "record": {
       "type": "boolean",

@@ -66,6 +66,7 @@ import { createVerifyPatentFigureTool } from './tool/verify-patent-figure.ts'
 import { createMatterLogAppendTool } from './tool/matter-log-append.ts'
 import { createPatentPdfDownloadTool, type RunEgo } from './tool/patent-pdf-download.ts'
 import { createDownloadChannelRunner } from './tool/patent-pdf-download-channel.ts'
+import { createPatsnapFallbackResolver } from './tool/patent-pdf-download-fallback.ts'
 import { createRecognizeChemicalStructureTool } from './tool/recognize-chemical-structure.ts'
 import { createFlexiblePlanTool } from './tool/patent-flexible-plan.ts'
 import { createPatentWorkflowTool } from './tool/patent-workflow.ts'
@@ -682,8 +683,12 @@ function registerFilingTools(wiring: PatentToolWiring): void {
   // stay out of the download path, and a host without a usable browser falls
   // back to a browser-free scrape of the CDN link.
   const runEgo = createDownloadChannelRunner(() => wiring.ctx.get('patentData'))
+  // PatSnap 兜底同样按调用解析：通道由 patent-data 的 Config 决定是否启用，
+  // 缺 Key 时 createPatsnapChannel() 抛错，工具把它记进 warnings 并保留首次失败。
+  const resolveFallback = createPatsnapFallbackResolver(() => wiring.ctx.get('patentData'))
   wiring.ctx.tools.register(createPatentPdfDownloadTool({
     runEgo,
+    resolveFallback,
     fetchImpl: globalThis.fetch,
     resolveRunner: createDownloadRunnerResolver({ runEgo }),
   }))

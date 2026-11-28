@@ -279,8 +279,16 @@
                   # 中国专利全文与法律状态的第二条腿：经 ego lite 的 CNIPR（search.cnipr.com）
                   # 登录态取数。打开它的前提是本机 ego lite 已登录 CNIPR；没有登录态时通道以
                   # login_required 失败、该篇交回 nuo 引擎并在结果告警里点名，不会静默降级。
-                  # 工具按号族选通道：中国公开(公告)号先走 CNIPR，其余号始终走 nuo 引擎。
+                  # 下载路径不再使用 CNIPR：patent_pdf_download 先走 Google Patents，失败后由
+                  # PatSnap 兜底；CNIPR 只服务法律状态、检索与中国著录项。
                   cniprEnabled: true
+                  # 专利 PDF 的兜底通道：Google Patents 交不出有效 PDF 时，按公开号向 PatSnap
+                  # 换 PDF 直链。Key 只从环境变量 PATSNAP_API_KEY 读取；未设置时兜底在首次需要
+                  # 时告警，不会阻断启动，下载仍按 Google 的结果返回。
+                  patsnapEnabled: true
+                  patsnapApiKeyEnv: PATSNAP_API_KEY
+                  # 一次请求最多带 20 个号；P020 按成功返回的篇数计费，无效号不扣费。
+                  patsnapBatchSize: 20
                   # nuo 2.3.2 的 fallback 通道：先用原生 fetch（有直连时最快），连接层失败
                   # （如 UND_ERR_CONNECT_TIMEOUT）时自动经 ego lite 浏览器取原始响应体。
                   # 浏览器通道已改为在页面内 fetch，不再受 JSON 查看器扩展影响；

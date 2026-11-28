@@ -22,6 +22,7 @@ import {
 import { SubprocessEgoSpawnRunner } from './subprocess-runner.ts'
 import { applyNuoRequestChannel } from './nuo-channel.ts'
 import { CniprChannel } from './cnipr-channel.ts'
+import { PatsnapChannel, PatsnapChannelError } from './patsnap-channel.ts'
 import { DEFAULT_CNIPR_PAGE_BUDGETS } from './cnipr-script.ts'
 import { SerialQueue } from './serial-queue.ts'
 import { NUO_REQUEST_CHANNELS } from './types.ts'
@@ -49,6 +50,8 @@ export {
 export { SubprocessEgoSpawnRunner } from './subprocess-runner.ts'
 export { applyNuoRequestChannel, NUO_EGO_BROWSER_ENV } from './nuo-channel.ts'
 export { CniprChannel, CniprChannelError } from './cnipr-channel.ts'
+export { PatsnapChannelError } from './patsnap-channel.ts'
+export type { PatsnapChannel } from './patsnap-channel.ts'
 export { SerialQueue } from './serial-queue.ts'
 export {
   CNIPR_LEGAL_TAG,
@@ -123,6 +126,12 @@ export type {
   EgoSpawnSpec,
   NuoRequestChannel,
   PatentCacheOptions,
+  PatsnapCallOptions,
+  PatsnapChannelOptions,
+  PatsnapFailureCode,
+  PatsnapItemCode,
+  PatsnapPdfLinkItem,
+  PatsnapPdfLinksResult,
   StructuredPatentData,
 } from './types.ts'
 
@@ -179,6 +188,22 @@ export interface Config {
   cniprRenderTimeoutMs: number
   /** CNIPR 详情检索接口的响应期限（毫秒，默认 20000）。 */
   cniprDetailTimeoutMs: number
+  /**
+   * 是否让本部署用 PatSnap 作为专利 PDF 的兜底通道（默认 false）。密钥只从环境变量读取，
+   * 变量名由 {@link patsnapApiKeyEnv} 指定；通道未启用时 `createPatsnapChannel()` 返回
+   * undefined，消费方只走 Google Patents，不会持有一个只能失败的对象。
+   */
+  patsnapEnabled: boolean
+  /** 保存 PatSnap API Key 的环境变量名（默认 `PATSNAP_API_KEY`）。 */
+  patsnapApiKeyEnv: string
+  /** PatSnap API 网关（默认 `https://connect.patsnap.com`）。 */
+  patsnapBaseUrl: string
+  /** PatSnap 单次请求期限（毫秒，默认 30000）。 */
+  patsnapTimeoutMs: number
+  /** 每次请求携带的号码数（默认 20，上限 50）。 */
+  patsnapBatchSize: number
+  /** PDF 缺失时是否用同族替代（默认 true）。 */
+  patsnapReplaceByRelated: boolean
 }
 
 /**
@@ -212,22 +237,45 @@ export class PatentData extends Service {
     cniprResultTimeoutMs: z.natural().min(1).default(DEFAULT_CNIPR_PAGE_BUDGETS.resultTimeoutMs),
     cniprRenderTimeoutMs: z.natural().min(1).default(DEFAULT_CNIPR_PAGE_BUDGETS.renderTimeoutMs),
     cniprDetailTimeoutMs: z.natural().min(1).default(DEFAULT_CNIPR_PAGE_BUDGETS.detailTimeoutMs),
+    patsnapEnabled: z.boolean().default(false),
+    patsnapApiKeyEnv: z.string().min(1).default('PATSNAP_API_KEY'),
+    patsnapBaseUrl: z.string().min(1).default('https://connect.patsnap.com'),
+    patsnapTimeoutMs: z.natural().min(1).default(30_000),
+    patsnapBatchSize: z.natural().min(1).max(50).default(20),
+    patsnapReplaceByRelated: z.boolean().default(true),
   })
 
   private readonly egoDefaults: ResolvedEgoDefaults
   private readonly cniprBudgets: CniprPageBudgets
   private readonly cniprRuns = new SerialQueue()
   private readonly cniprEnabled: boolean
+  private readonly patsnapEnabled: boolean
+  private readonly patsnapApiKeyEnv: string
+  private readonly patsnapBaseUrl: string
+  private readonly patsnapTimeoutMs: number
+  private readonly patsnapBatchSize: number
+  private readonly patsnapReplaceByRelated: boolean
 
   constructor(ctx: Context, config: Config = PatentData.Config({})) {
     // Resolve and validate before super() registers the service: an invalid
     // mount must fail without leaving a half-registered ctx.patentData behind.
     const egoDefaults = resolveEgoDefaults(config)
     const cniprBudgets = resolveCniprBudgets(config)
+    const patsnapTimeoutMs = positiveInteger('patsnapTimeoutMs', config.patsnapTimeoutMs)
+    const patsnapBatchSize = positiveInteger('patsnapBatchSize', config.patsnapBatchSize)
+    if (patsnapBatchSize > 50) {
+      throw new Error(`patent-data Config: patsnapBatchSize must not exceed 50, got ${String(patsnapBatchSize)}`)
+    }
     super(ctx, 'patentData')
     this.egoDefaults = egoDefaults
     this.cniprBudgets = cniprBudgets
     this.cniprEnabled = config.cniprEnabled
+    this.patsnapEnabled = config.patsnapEnabled
+    this.patsnapApiKeyEnv = config.patsnapApiKeyEnv
+    this.patsnapBaseUrl = config.patsnapBaseUrl
+    this.patsnapTimeoutMs = patsnapTimeoutMs
+    this.patsnapBatchSize = patsnapBatchSize
+    this.patsnapReplaceByRelated = config.patsnapReplaceByRelated
     const restoreNuoChannel = applyNuoRequestChannel(config.nuoRequestChannel)
     if (restoreNuoChannel !== undefined) {
       ctx.effect(() => restoreNuoChannel, 'patent-data: nuo request channel')
@@ -273,6 +321,31 @@ export class PatentData extends Service {
       queue: this.cniprRuns,
       pageBudgets: { ...this.cniprBudgets, ...pageBudgets },
       ...rest,
+    })
+  }
+
+  /**
+   * Build the PatSnap channel over the API key named by {@link Config.patsnapApiKeyEnv},
+   * or nothing when this deployment has not enabled it (`Config.patsnapEnabled`,
+   * default false). The key is read per call so a deployment can rotate it without
+   * restarting the service; a missing key throws instead of returning a channel that
+   * can only fail, and the calling tool reports it in `warnings`.
+   * @param overrides - optional per-call timeout and batch-size overrides.
+   * @returns the channel, or undefined while PatSnap is disabled.
+   * @throws {PatsnapChannelError} when the configured key variable is missing or empty.
+   */
+  createPatsnapChannel(overrides: { timeoutMs?: number; batchSize?: number } = {}): PatsnapChannel | undefined {
+    if (!this.patsnapEnabled) return undefined
+    const apiKey = process.env[this.patsnapApiKeyEnv] ?? ''
+    if (apiKey.trim().length === 0) {
+      throw new PatsnapChannelError('missing_key', `环境变量 ${this.patsnapApiKeyEnv} 未设置`)
+    }
+    return new PatsnapChannel({
+      apiKey,
+      baseUrl: this.patsnapBaseUrl,
+      timeoutMs: overrides.timeoutMs ?? this.patsnapTimeoutMs,
+      batchSize: overrides.batchSize ?? this.patsnapBatchSize,
+      replaceByRelated: this.patsnapReplaceByRelated,
     })
   }
 }

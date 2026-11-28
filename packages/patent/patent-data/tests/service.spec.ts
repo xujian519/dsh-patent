@@ -19,6 +19,7 @@ import PatentData, {
   EgoBrowserSession,
 } from '@deepseek-ai/dsh-patent-data'
 import type { EgoSpawnRunner, EgoSpawnSpec } from '@deepseek-ai/dsh-patent-data'
+import { PatsnapChannel } from '../src/patsnap-channel.ts'
 import type { PatentSearchResult } from '@deepseek-ai/nuo-patent'
 
 /** A capture-only spawn runner: records each spec and answers with a fixed result. */
@@ -133,6 +134,12 @@ describe('PatentData service', () => {
       cniprResultTimeoutMs: DEFAULT_CNIPR_PAGE_BUDGETS.resultTimeoutMs,
       cniprRenderTimeoutMs: DEFAULT_CNIPR_PAGE_BUDGETS.renderTimeoutMs,
       cniprDetailTimeoutMs: DEFAULT_CNIPR_PAGE_BUDGETS.detailTimeoutMs,
+      patsnapEnabled: false,
+      patsnapApiKeyEnv: 'PATSNAP_API_KEY',
+      patsnapBaseUrl: 'https://connect.patsnap.com',
+      patsnapTimeoutMs: 30_000,
+      patsnapBatchSize: 20,
+      patsnapReplaceByRelated: true,
     })
   })
 
@@ -150,6 +157,10 @@ describe('PatentData service', () => {
         .toThrow(/cniprLoginRounds must be a positive integer/)
       expect(() => new PatentData(ctx, { ...PatentData.Config({}), cniprDetailTimeoutMs: 1.5 }))
         .toThrow(/cniprDetailTimeoutMs must be a positive integer/)
+      expect(() => new PatentData(ctx, { ...PatentData.Config({}), patsnapBatchSize: 51 }))
+        .toThrow(/patsnapBatchSize must not exceed 50/)
+      expect(() => new PatentData(ctx, { ...PatentData.Config({}), patsnapTimeoutMs: 0 }))
+        .toThrow(/patsnapTimeoutMs must be a positive integer/)
     } finally {
       await ctx.fiber.dispose()
     }
@@ -162,6 +173,43 @@ describe('PatentData service', () => {
     try {
       const channel = ctx.patentData.createCniprChannel({ cwd: '/tmp', timeoutMs: 60_000 })
       expect(channel).toBeInstanceOf(CniprChannel)
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('builds a PatSnap channel from the configured environment variable', async () => {
+    const saved = process.env.DSH_PATSNAP_TEST_KEY
+    process.env.DSH_PATSNAP_TEST_KEY = 'sk-test'
+    const ctx = new Context()
+    await ctx.plugin(LocalSubprocessRuntime)
+    await ctx.plugin(PatentData, { patsnapEnabled: true, patsnapApiKeyEnv: 'DSH_PATSNAP_TEST_KEY' })
+    try {
+      expect(ctx.patentData.createPatsnapChannel()).toBeInstanceOf(PatsnapChannel)
+    } finally {
+      await ctx.fiber.dispose()
+      if (saved === undefined) delete process.env.DSH_PATSNAP_TEST_KEY
+      else process.env.DSH_PATSNAP_TEST_KEY = saved
+    }
+  })
+
+  it('fails loud when PatSnap is enabled without its key', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LocalSubprocessRuntime)
+    await ctx.plugin(PatentData, { patsnapEnabled: true, patsnapApiKeyEnv: 'DSH_PATSNAP_MISSING_KEY' })
+    try {
+      expect(() => ctx.patentData.createPatsnapChannel()).toThrow(/环境变量 DSH_PATSNAP_MISSING_KEY 未设置/)
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('returns no PatSnap channel while the deployment leaves it disabled', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LocalSubprocessRuntime)
+    await ctx.plugin(PatentData)
+    try {
+      expect(ctx.patentData.createPatsnapChannel()).toBeUndefined()
     } finally {
       await ctx.fiber.dispose()
     }

@@ -9,7 +9,6 @@ import { Context } from '@deepseek-ai/cordis'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import PatentData, {
   CniprChannel,
-  PatsnapChannel,
   cachedSearchPatents,
   DEFAULT_CNIPR_PAGE_BUDGETS,
   DEFAULT_EGO_COMMAND_NAME,
@@ -20,6 +19,7 @@ import PatentData, {
   EgoBrowserSession,
 } from '@deepseek-ai/dsh-patent-data'
 import type { EgoSpawnRunner, EgoSpawnSpec } from '@deepseek-ai/dsh-patent-data'
+import { PatsnapChannel } from '../src/patsnap-channel.ts'
 import type { PatentSearchResult } from '@deepseek-ai/nuo-patent'
 
 /** A capture-only spawn runner: records each spec and answers with a fixed result. */

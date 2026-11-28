@@ -36,6 +36,11 @@ function text(result: { content: { type: string; text?: string }[] }): string {
   return result.content.filter(b => b.type === 'text').map(b => b.text ?? '').join('')
 }
 
+/** The URL a fetch stub received, whatever input form the tool used. */
+function inputUrl(input: RequestInfo | URL): string {
+  return input instanceof Request ? input.url : input instanceof URL ? input.href : input
+}
+
 /**
  * 跑一次「fetch 永挂起、只在 signal 中止时 reject」的兜底场景：调用方在 fetch 真正发起后
  * 推进假时钟 `advanceMs`，工具应在期限内自行收敛（没有期限的实现会一直挂住，直到测试超时）。
@@ -179,10 +184,10 @@ describe('patent_pdf_download', () => {
     const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
     try {
       const body = '%PDF-1.4 ' + 'x'.repeat(600)
-      const fetchImpl = (async () => new Response(new TextEncoder().encode(body), {
+      const fetchImpl: typeof fetch = async () => new Response(new TextEncoder().encode(body), {
         status: 200,
         headers: { 'content-type': 'application/pdf' },
-      })) as unknown as typeof fetch
+      })
       const resolveFallback = vi.fn(async (
         _requests: readonly FallbackRequest[],
         _options: { timeoutMs: number; signal?: AbortSignal },
@@ -215,15 +220,15 @@ describe('patent_pdf_download', () => {
   it('falls back when the Google CDN returns a non-PDF response', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
     try {
-      const fetchImpl = (async (url: string) => {
-        if (url.includes('data-pdf.example')) {
+      const fetchImpl: typeof fetch = async (input) => {
+        if (inputUrl(input).includes('data-pdf.example')) {
           return new Response(new TextEncoder().encode('%PDF-1.4 ' + 'x'.repeat(600)), {
             status: 200,
             headers: { 'content-type': 'application/pdf' },
           })
         }
         return new Response('forbidden', { status: 403, statusText: 'Forbidden' })
-      }) as unknown as typeof fetch
+      }
       const resolveFallback = vi.fn(async () => [
         { patent: 'US1A', channel: PATSNAP_CHANNEL, pdfUrl: 'https://data-pdf.example/US1A.pdf' },
       ])
@@ -247,10 +252,10 @@ describe('patent_pdf_download', () => {
   it('hands a failed Google leg to the fallback channel instead of failing the batch', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
     try {
-      const fetchImpl = (async () => new Response(new TextEncoder().encode('%PDF-1.4 ' + 'x'.repeat(600)), {
+      const fetchImpl: typeof fetch = async () => new Response(new TextEncoder().encode('%PDF-1.4 ' + 'x'.repeat(600)), {
         status: 200,
         headers: { 'content-type': 'application/pdf' },
-      })) as unknown as typeof fetch
+      })
       const resolveFallback = vi.fn(async () => [
         { patent: 'US1A', channel: PATSNAP_CHANNEL, pdfUrl: 'https://data-pdf.example/US1A.pdf' },
       ])
@@ -295,7 +300,7 @@ describe('patent_pdf_download', () => {
   it('appends the fallback download failure to the original reason', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'dsh-patent-pdf-'))
     try {
-      const fetchImpl = (async () => new Response('gone', { status: 410, statusText: 'Gone' })) as unknown as typeof fetch
+      const fetchImpl: typeof fetch = async () => new Response('gone', { status: 410, statusText: 'Gone' })
       const tool = createPatentPdfDownloadTool({
         runEgo: async () => ({ items: [{ channel: GOOGLE, patent: 'US1A', status: 'fallback', error: '页面没有 PDF 链接' }] }),
         resolveFallback: async () => [

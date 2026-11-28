@@ -168,7 +168,6 @@ export type { PatentPdfDownloadInput, PatentPdfDownloadOutput, PatentPdfDownload
 export type { EgoSessionSeam } from './tool/patent-pdf-download-ego.ts'
 export { createDownloadChannelRunner, createScrapeChannelRunner } from './tool/patent-pdf-download-channel.ts'
 export type { DownloadChannelDeps, PatentDataLookup, PatentDataSeam, PatentScrape } from './tool/patent-pdf-download-channel.ts'
-export { createPatsnapFallbackResolver } from './tool/patent-pdf-download-fallback.ts'
 export type { PatsnapChannelSeam, PatsnapLookup } from './tool/patent-pdf-download-fallback.ts'
 export { createRecognizeChemicalStructureTool, resolveChemicalSourceKey } from './tool/recognize-chemical-structure.ts'
 export type { RecognizeChemicalStructureInput, RecognizeChemicalStructureDeps, ChemicalStructureResult, ChemicalSmilesCandidate } from './tool/recognize-chemical-structure.ts'

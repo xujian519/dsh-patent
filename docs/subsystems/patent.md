@@ -45,6 +45,18 @@ createEgoSession(options?: EgoSessionOptions): EgoBrowserSession
  * @returns the channel, or undefined while CNIPR is disabled.
  */
 createCniprChannel(options: CniprChannelOverrides = {}): CniprChannel | undefined
+
+/**
+ * Build the PatSnap channel over the API key named by {@link Config.patsnapApiKeyEnv},
+ * or nothing when this deployment has not enabled it (`Config.patsnapEnabled`,
+ * default false). The key is read per call so a deployment can rotate it without
+ * restarting the service; a missing key throws instead of returning a channel that
+ * can only fail, and the calling tool reports it in `warnings`.
+ * @param overrides - optional per-call timeout and batch-size overrides.
+ * @returns the channel, or undefined while PatSnap is disabled.
+ * @throws {PatsnapChannelError} when the configured key variable is missing or empty.
+ */
+createPatsnapChannel(overrides: { timeoutMs?: number; batchSize?: number } = {}): PatsnapChannel | undefined
 ```
 
 Source: [`packages/patent/patent-data/src/index.ts`](../../packages/patent/patent-data/src/index.ts)

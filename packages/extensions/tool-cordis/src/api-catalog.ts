@@ -3020,6 +3020,13 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'options', description: 'optional per-channel overrides; a channel option replaces the same-named field the service resolved, and a `pageBudgets` entry replaces only that wait.' }],
         returns: 'the channel, or undefined while CNIPR is disabled.',
       },
+      {
+        signature: 'createPatsnapChannel(overrides: { timeoutMs?: number; batchSize?: number } = {}): PatsnapChannel | undefined',
+        description: 'Build the PatSnap channel over the API key named by Config.patsnapApiKeyEnv, or nothing when this deployment has not enabled it (`Config.patsnapEnabled`, default false). The key is read per call so a deployment can rotate it without restarting the service; a missing key throws instead of returning a channel that can only fail, and the calling tool reports it in `warnings`.',
+        parameters: [{ name: 'overrides', description: 'optional per-call timeout and batch-size overrides.' }],
+        returns: 'the channel, or undefined while PatSnap is disabled.',
+        throws: ['{PatsnapChannelError} when the configured key variable is missing or empty.'],
+      },
     ],
   },
   {
@@ -10114,6 +10121,30 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'PatentTeamsStatusTask',
     declaration: 'export interface PatentTeamsStatusTask {\n    id: string;\n    subject: string;\n    status: string;\n    assignee: string;\n    dependencies: string[];\n    attempt: number;\n    attempt_id: string;\n    reassigning: boolean;\n    output?: string;\n    worker?: string;\n    contract_validation?: {\n        valid: boolean;\n        missing_hard_fields: string[];\n        degraded: boolean;\n    };\n    gate_feedback?: {\n        score: number;\n        satisfied: boolean;\n        failures: string[];\n        feedback: string;\n    };\n    gate_rejections?: number;\n}',
+  },
+  {
+    name: 'PatsnapCallOptions',
+    declaration: 'export interface PatsnapCallOptions {\n    timeoutMs?: number;\n    signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'PatsnapChannel',
+    declaration: 'export class PatsnapChannel {\n    constructor(options: PatsnapChannelOptions);\n    async pdfLinks(numbers: readonly string[], options: PatsnapCallOptions = {}): Promise<PatsnapPdfLinksResult>;\n}',
+  },
+  {
+    name: 'PatsnapChannelOptions',
+    declaration: 'export interface PatsnapChannelOptions {\n    apiKey: string;\n    baseUrl?: string;\n    timeoutMs?: number;\n    batchSize?: number;\n    replaceByRelated?: boolean;\n    fetchImpl?: typeof fetch;\n}',
+  },
+  {
+    name: 'PatsnapItemCode',
+    declaration: 'export type PatsnapItemCode = (typeof PATSNAP_ITEM_CODES)[number];',
+  },
+  {
+    name: 'PatsnapPdfLinkItem',
+    declaration: 'export interface PatsnapPdfLinkItem {\n    number: string;\n    pdfUrl?: string;\n    resolvedNumber?: string;\n    error?: string;\n    code?: PatsnapItemCode;\n}',
+  },
+  {
+    name: 'PatsnapPdfLinksResult',
+    declaration: 'export interface PatsnapPdfLinksResult {\n    items: PatsnapPdfLinkItem[];\n    amount: number;\n}',
   },
   {
     name: 'PatternCategory',

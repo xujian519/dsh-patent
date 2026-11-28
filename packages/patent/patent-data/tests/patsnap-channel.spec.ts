@@ -2,6 +2,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { PatsnapChannel, PatsnapChannelError } from '../src/patsnap-channel.ts'
 import { classifyPatsnapErrorCode, isPatsnapNumber, readPatsnapPdfPayload } from '../src/patsnap-receipt.ts'
 
+/** The URL a fetch stub received, whatever input form the caller used. */
+function requestUrl(input: RequestInfo | URL): string {
+  return input instanceof Request ? input.url : input instanceof URL ? input.href : input
+}
+
 /** Build a JSON response with the billing header the gateway returns. */
 function jsonResponse(body: unknown, options: { status?: number; amount?: number; headers?: Record<string, string> } = {}): Response {
   const headers = new Headers({ 'content-type': 'application/json' })
@@ -64,10 +69,10 @@ describe('patsnap receipt', () => {
 describe('PatsnapChannel', () => {
   it('batches numbers into one request and sums the billing header', async () => {
     const calls: Array<{ url: string; auth: string | null }> = []
-    const fetchImpl = (async (url: string, init: RequestInit) => {
-      calls.push({ url, auth: new Headers(init.headers).get('authorization') })
+    const fetchImpl: typeof fetch = async (input, init) => {
+      calls.push({ url: requestUrl(input), auth: new Headers(init?.headers).get('authorization') })
       return jsonResponse(OK_PAYLOAD, { amount: 2 })
-    }) as unknown as typeof fetch
+    }
     const channel = new PatsnapChannel({ apiKey: 'sk-test', fetchImpl, batchSize: 10 })
 
     const result = await channel.pdfLinks(['CN115690481A', 'US11452699B2'])
@@ -85,10 +90,10 @@ describe('PatsnapChannel', () => {
 
   it('chunks by batchSize and keeps the request order', async () => {
     let requests = 0
-    const fetchImpl = (async () => {
+    const fetchImpl: typeof fetch = async () => {
       requests += 1
       return jsonResponse({ status: true, data: [] }, { amount: 1 })
-    }) as unknown as typeof fetch
+    }
     const channel = new PatsnapChannel({ apiKey: 'sk-test', fetchImpl, batchSize: 2 })
     const result = await channel.pdfLinks(['CN111111111A', 'CN222222222A', 'CN333333333A'])
     expect(requests).toBe(2)
@@ -98,10 +103,10 @@ describe('PatsnapChannel', () => {
 
   it('does not send invalid numbers and still serves the valid ones', async () => {
     const sent: string[] = []
-    const fetchImpl = (async (url: string) => {
-      sent.push(url)
+    const fetchImpl: typeof fetch = async (input) => {
+      sent.push(requestUrl(input))
       return jsonResponse(OK_PAYLOAD, { amount: 1 })
-    }) as unknown as typeof fetch
+    }
     const channel = new PatsnapChannel({ apiKey: 'sk-test', fetchImpl })
     const result = await channel.pdfLinks(['CN999', 'CN115690481A'])
     expect(sent).toHaveLength(1)
@@ -111,10 +116,10 @@ describe('PatsnapChannel', () => {
 
   it('deduplicates repeated numbers on the wire', async () => {
     let calls = 0
-    const fetchImpl = (async () => {
+    const fetchImpl: typeof fetch = async () => {
       calls += 1
       return jsonResponse(OK_PAYLOAD, { amount: 1 })
-    }) as unknown as typeof fetch
+    }
     const channel = new PatsnapChannel({ apiKey: 'sk-test', fetchImpl })
     const result = await channel.pdfLinks(['CN115690481A', 'CN115690481A'])
     expect(calls).toBe(1)
@@ -138,13 +143,13 @@ describe('PatsnapChannel', () => {
 
   it('retries a 429 once and succeeds', async () => {
     let calls = 0
-    const fetchImpl = (async () => {
+    const fetchImpl: typeof fetch = async () => {
       calls += 1
       if (calls === 1) {
         return jsonResponse({}, { status: 429, headers: { 'retry-after': '0.001' } })
       }
       return jsonResponse(OK_PAYLOAD, { amount: 1 })
-    }) as unknown as typeof fetch
+    }
     const channel = new PatsnapChannel({ apiKey: 'sk-test', fetchImpl })
     const result = await channel.pdfLinks(['CN115690481A'])
     expect(calls).toBe(2)
@@ -152,17 +157,17 @@ describe('PatsnapChannel', () => {
   })
 
   it('reports a persistent 429 as rate limited', async () => {
-    const fetchImpl = (async () => jsonResponse({}, { status: 429, headers: { 'retry-after': '0.001' } })) as unknown as typeof fetch
+    const fetchImpl: typeof fetch = async () => jsonResponse({}, { status: 429, headers: { 'retry-after': '0.001' } })
     const channel = new PatsnapChannel({ apiKey: 'sk-test', fetchImpl })
     await expect(channel.pdfLinks(['CN115690481A'])).rejects.toMatchObject({ code: 'rate_limited' })
   })
 
   it('propagates cancellation as AbortError', async () => {
-    const fetchImpl = ((_url: string, init: RequestInit) => new Promise<Response>((_resolve, reject) => {
+    const fetchImpl: typeof fetch = (_input, init) => new Promise<Response>((_resolve, reject) => {
       init?.signal?.addEventListener('abort', () => {
         reject(new DOMException('aborted', 'AbortError'))
       }, { once: true })
-    })) as unknown as typeof fetch
+    })
     const controller = new AbortController()
     const channel = new PatsnapChannel({ apiKey: 'sk-test', fetchImpl })
     const pending = channel.pdfLinks(['CN115690481A'], { signal: controller.signal })
@@ -221,7 +226,7 @@ describe('patsnap receipt edge cases', () => {
 
 describe('PatsnapChannel edge cases', () => {
   it('returns nothing for an empty request', async () => {
-    const fetchImpl = (async () => { throw new Error('must not fetch') }) as unknown as typeof fetch
+    const fetchImpl: typeof fetch = async () => { throw new Error('must not fetch') }
     const channel = new PatsnapChannel({ apiKey: 'sk-test', fetchImpl })
     await expect(channel.pdfLinks([])).resolves.toEqual({ items: [], amount: 0 })
   })
@@ -229,7 +234,7 @@ describe('PatsnapChannel edge cases', () => {
   it('honours replace_by_related=false and ignores a malformed amount header', async () => {
     let url = ''
     const fetchImpl = async (input: RequestInfo | URL) => {
-      url = input instanceof Request ? input.url : input instanceof URL ? input.href : input
+      url = requestUrl(input)
       return jsonResponse(OK_PAYLOAD, { headers: { 'x-openapi-amount': 'many' } })
     }
     const channel = new PatsnapChannel({ apiKey: 'sk-test', fetchImpl, replaceByRelated: false })
@@ -255,8 +260,13 @@ describe('PatsnapChannel edge cases', () => {
     })
     await expect(badJson.pdfLinks(['CN115690481A'])).rejects.toMatchObject({ code: 'invalid_response' })
 
-    const noFetch = new PatsnapChannel({ apiKey: 'sk-test', fetchImpl: 42 as unknown as typeof fetch })
-    await expect(noFetch.pdfLinks(['CN115690481A'])).rejects.toMatchObject({ code: 'network_error' })
+    vi.stubGlobal('fetch', undefined)
+    try {
+      const noFetch = new PatsnapChannel({ apiKey: 'sk-test' })
+      await expect(noFetch.pdfLinks(['CN115690481A'])).rejects.toMatchObject({ code: 'network_error' })
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('turns a request timeout into a timeout failure', async () => {
@@ -268,21 +278,21 @@ describe('PatsnapChannel edge cases', () => {
   })
 
   it('reports a persistent 503 as an upstream failure', async () => {
-    const fetchImpl = (async () => new Response('busy', {
+    const fetchImpl: typeof fetch = async () => new Response('busy', {
       status: 503,
       headers: { 'retry-after': '0.001' },
-    })) as unknown as typeof fetch
+    })
     const channel = new PatsnapChannel({ apiKey: 'sk-test', fetchImpl })
     await expect(channel.pdfLinks(['CN115690481A'])).rejects.toMatchObject({ code: 'upstream_error' })
   })
 
   it('falls back to a one-second wait for an unparseable Retry-After', async () => {
     let calls = 0
-    const fetchImpl = (async () => {
+    const fetchImpl: typeof fetch = async () => {
       calls += 1
       if (calls === 1) return new Response('busy', { status: 429, headers: { 'retry-after': 'later' } })
       return jsonResponse(OK_PAYLOAD, { amount: 1 })
-    }) as unknown as typeof fetch
+    }
     const channel = new PatsnapChannel({ apiKey: 'sk-test', fetchImpl })
     const result = await channel.pdfLinks(['CN115690481A'])
     expect(calls).toBe(2)

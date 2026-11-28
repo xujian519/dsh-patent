@@ -50,14 +50,8 @@ export {
 export { SubprocessEgoSpawnRunner } from './subprocess-runner.ts'
 export { applyNuoRequestChannel, NUO_EGO_BROWSER_ENV } from './nuo-channel.ts'
 export { CniprChannel, CniprChannelError } from './cnipr-channel.ts'
-export { PatsnapChannel, PatsnapChannelError } from './patsnap-channel.ts'
-export {
-  classifyPatsnapErrorCode,
-  isPatsnapNumber,
-  normalizePatsnapNumber,
-  readPatsnapPdfPayload,
-} from './patsnap-receipt.ts'
-export type { PatsnapPayloadRead } from './patsnap-receipt.ts'
+export { PatsnapChannelError } from './patsnap-channel.ts'
+export type { PatsnapChannel } from './patsnap-channel.ts'
 export { SerialQueue } from './serial-queue.ts'
 export {
   CNIPR_LEGAL_TAG,

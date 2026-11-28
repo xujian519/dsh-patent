@@ -1,7 +1,7 @@
 // PatSnap live probe: drives the real P020 gateway and spends one credit per
 // returned record. Opt-in through DSH_PATSNAP_LIVE=1 plus PATSNAP_API_KEY.
 import { describe, expect, it } from 'vitest'
-import { PatsnapChannel } from '@deepseek-ai/dsh-patent-data'
+import { PatsnapChannel } from '../src/patsnap-channel.ts'
 
 /** Opt-in switch for the live gateway. */
 const LIVE_ENV = 'DSH_PATSNAP_LIVE'

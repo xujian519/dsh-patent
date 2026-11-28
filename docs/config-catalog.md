@@ -3323,7 +3323,7 @@ export interface AutoCommitConfig {
 ## `@deepseek-ai/dsh-patent-data`
 
 - `inject`: `subprocess`
-- `source`: [`packages/patent/patent-data/src/index.ts:154`](../packages/patent/patent-data/src/index.ts)
+- `source`: [`packages/patent/patent-data/src/index.ts:148`](../packages/patent/patent-data/src/index.ts)
 
 ```ts config-catalog
 /**

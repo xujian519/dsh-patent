@@ -359,7 +359,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | 计数 | 值 |
 | --- | --- |
 | `structure.long-functions` | 209 |
-| `structure.large-files` | 103 |
+| `structure.large-files` | 104 |
 | `structure.patent-large-files` | 10 |
 | `lint.v8-ignore` | 1357 |
 | `lint.ts-expect-error` | 201 |
@@ -368,7 +368,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 ### 专利域 >800 行文件裁定（2026-11-01 复测）
 
-`packages/patent` 当前有 10 个 >800 行源文件，全部保留为「接受」；另有 4 个拆分目标已降到 800 行（2026-11-05 D10 把 `statutes.ts` 拆为数据/计算/查询三层，最大文件 737 行）。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，2026-11-01 附图说明校验把 `validate.ts` 推过 800 行后升至 10 个，2026-11-05 拆分后回落至 9 个，2026-11-08 结构线稿每零件投影占位把 `freecad-structure-script.ts` 从 762 推到 826 后回到 10 个；全仓 >800 行文件相应为 96 个（2026-11-12 上游 rc.2 同步把 6 个包内文件推过 800 行，专利域不变）；2026-11-20 R-F9 把 `freecad-structure-script.ts` 的内嵌 Python 模板外置为 `.py` 资产、TS 文件降到 319 行后专利域回到 9 个，2026-11-22 上游 alpha.1 同步把全仓推到 102 个（专利域仍为 9 个），2026-11-26 附图矢量扫描把 `render-check-scan.ts` 由 798 推到 1034 行后专利域回到 10 个、全仓推到 103 个。`packages/legal` 与 `packages/document` 当前无 >800 行文件。
+`packages/patent` 当前有 10 个 >800 行源文件，全部保留为「接受」；另有 4 个拆分目标已降到 800 行（2026-11-05 D10 把 `statutes.ts` 拆为数据/计算/查询三层，最大文件 737 行）。2026-10-27 的裁定曾把专利域从 10 个降到 7 个，后续答复链与工作流执行入口的增长使它回到 9 个，2026-11-01 附图说明校验把 `validate.ts` 推过 800 行后升至 10 个，2026-11-05 拆分后回落至 9 个，2026-11-08 结构线稿每零件投影占位把 `freecad-structure-script.ts` 从 762 推到 826 后回到 10 个；全仓 >800 行文件相应为 96 个（2026-11-12 上游 rc.2 同步把 6 个包内文件推过 800 行，专利域不变）；2026-11-20 R-F9 把 `freecad-structure-script.ts` 的内嵌 Python 模板外置为 `.py` 资产、TS 文件降到 319 行后专利域回到 9 个，2026-11-22 上游 alpha.1 同步把全仓推到 102 个（专利域仍为 9 个），2026-11-26 附图矢量扫描把 `render-check-scan.ts` 由 798 推到 1034 行后专利域回到 10 个、全仓推到 103 个。`packages/legal` 当前无 >800 行文件；`packages/document` 的 `document-deliver/src/checks.ts` 在 2026-11-28 的扫描去二次方改造后由 740 行升到 862 行，裁定见下表。
 
 拆分落点：`generate-patent-figure.ts` 拆出 `figure-panels.ts`（多面板路径）、`figure-delivery.ts`（落版/复核/转路径/导出）与 `figure-run.ts`（共享运行参数与标号）；`evidence/engine.ts` 拆出 `signals.ts`、`judgment.ts`、`public-use.ts`、`conditions.ts` 与 `proof-standard.ts`；`generate-structure-figure.ts` 拆出 `structure-types.ts`、`structure-model.ts` 与 `structure-render.ts`。
 
@@ -391,6 +391,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-core/src/evidence/engine.ts` | 拆分 | 800 | 三性、类型特定、使用公开、证明标准已分模块；类只保留编排 |
 | `packages/patent/patent-tools/src/tool/generate-structure-figure.ts` | 拆分 | 800 | 类型、模型 I/O、渲染收尾已分模块；入口保留 schema 与工具装配 |
 | `packages/patent/patent-deadline/src/statutes.ts` | 拆分 | 800 | D10 已拆为 `types.ts`（词表）、`statutes-data.ts`（法规表）、`deadline-entries.ts`（期限计算）与查询层 `statutes.ts`；四个文件均 ≤ 800 行，最大 737 行 |
+| `packages/document/document-deliver/src/checks.ts` | 接受 | 921 | 纯文本检查集合：占位符、锚点、空章节、禁用词与篇幅五类判据共享同一份行表与引用区间，无 I/O、无第二消费方。2026-11-28 修 F-DOC-011 时新增 `draftCollector`（每检查最多保留 `maxFindingsPerCheck` 条，超限只计数）与单趟 HTML 开闭标签配对，文件由 740 升到 862 行；同日修 F-DOC-012 让未闭合引用元素不产生引用区间、F-DOC-016 让标题与正文判定按文档格式取口径，最终 921 行。拆分会把同一份扫描与区间口径分到两个文件 |
 <!-- structure-baseline:end -->
 
 ### 客户端与实验域大文件裁定（2026-11-02，Issue #654）
@@ -405,6 +406,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 
 重复度基线的两族本轮复核后维持现状：`legal-evidence` 的 11 对里，10 对是 evaluators 之间的评分累积与规则措辞，判定器骨架已由 `createEvaluator` 共享，再抽评分 DSL 会把各法定证据类型的独立措辞绑进共享构造器；`patent-tools` 的 42 对里多数是各工具独立的输入 schema 与通道模板，工具参数各自演进，抽取共用构造器会让无关工具的字段变更互相牵连。两族都不为消除数字而拆数据文件。
 
+- **2026-11-28 F-DOC-011 文档检查去二次方**:`checks.ts` 的占位符/禁用词扫描改为只对保留的草稿解析行号与文案（`draftCollector`），`appendNamedContents` 改为单趟按名配对开闭标签，`declaredAnchors` 记录下一个待试后缀；4 MiB 占位符密集文本由外推约 8 分钟降到 176 毫秒，4 MiB 重复未闭合 `<code>` 由外推约 7 分钟降到 286 毫秒。文件由 740 升到 **862** 行并新增接受行；`structure.large-files` 由 103 升至 **104**；其余计数不变。
 - **2026-11-27 引线放置：真实轮廓锚点 + 净距/外推**:引线锚点改取节点真实轮廓（多边形保留顶点，射线与边求交；椭圆按解析式），斜边形状不再从包围盒角点出发；放置期按 Config `figureLeaderClearanceMm` / `figureLeaderPushStepMm` / `figureLeaderPushLimitMm` 强制净距并逐级外推，净距取部署值与 `clearanceMmForFigure` 的较大者，避免工具产出被自身渲染复核判负；`leader-line.ts` 由 907 升至 **1114** 行并重定接受上限，`annotateSvgWithLeaderLines` 超过 150 行使 `structure.long-functions` 由 208 升至 **209**；其余计数不变。
 - **2026-11-27 跨图一致性名称归属**:`figure-set-consistency.ts` 去掉「首个出现该标号的图号即冲突原值归属」的错误假设，改为按「首个非空名称 + 所在图号」冻结归属；原来守这条假设的 `v8 ignore` 随旧实现删除，`lint.v8-ignore` 由 1358 降至 **1357**；其余计数不变。
 - **2026-11-27 附图渲染复核曲线折线化**:`render-check-scan.ts` 的路径切分改为按 SVG 数字文法读取（`e`/`E` 只作十进制指数），渲染复核与墨迹范围量测传入 0.05 毫米弦高公差，曲线不再按端点弦近似；该文件由 1034 升至 **1059** 行并重定接受上限；路径切分正则的 `v8 ignore` 随旧实现删除，`lint.v8-ignore` 由 1359 降至 **1358**；其余计数不变。

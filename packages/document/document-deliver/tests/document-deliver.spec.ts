@@ -480,6 +480,26 @@ describe('document_deliver deterministic checks', () => {
     expect(result.content).toContain(`- ${path} [length_budget] 全文`)
   })
 
+  it('measures a declared character budget against the primary file only', async () => {
+    const ctx = await mounted()
+    temp = await mkdtemp(join(tmpdir(), 'dsh-deliver-'))
+    const report = join(temp, 'report.md')
+    const summary = join(temp, 'summary.md')
+    await writeFile(report, '# 报告\n\n正文内容够长。\n')
+    await writeFile(summary, '# 摘要\n\n短。\n')
+    const files = [{ path: report, format: 'markdown' }, { path: summary, format: 'markdown' }]
+    // The primary file is ten characters and sits inside a ten-character budget;
+    // the five-character summary would miss that budget if it were measured too.
+    const passed = await register(ctx, { files, gate: { p0: ['命名规范'] }, char_budget: 10 })
+    expect(passed.value.gate.checks.map(check => check.findings)).toEqual([[], []])
+    // Under a twenty-character budget only the primary file is below the floor.
+    const missed = await register(ctx, { files, gate: { p0: ['命名规范'] }, char_budget: 20 })
+    expect(missed.value.gate.checks.map(check => check.findings.map(finding => finding.check)))
+      .toEqual([['length_budget'], []])
+    expect(missed.content).toContain(`- ${report} [length_budget]`)
+    expect(missed.content).not.toContain(`- ${summary} [length_budget]`)
+  })
+
   it('refuses a word the selected style forbids outright', async () => {
     const ctx = await mounted()
     temp = await mkdtemp(join(tmpdir(), 'dsh-deliver-'))
@@ -505,6 +525,7 @@ describe('document_deliver deterministic checks', () => {
     expect(result.isError).toBe(true)
     expect(result.content).toContain('未加载样式 "no-such-style"')
     expect(result.content).toContain('assistant-neutral')
+    expect(result.info).toMatchObject({ name: 'HarnessError', code: 'deliver_style_unknown' })
   })
 
   it('reports the format-level limit of a file it cannot read as text', async () => {
@@ -575,6 +596,7 @@ describe('document_deliver deterministic checks', () => {
     expect(result.content).toContain('not-a-zip')
     expect(result.content).toContain('重新渲染或检查写盘方式')
     expect(result.content).toContain('给每个文件补一条 unreadable_ack')
+    expect(result.info).toMatchObject({ name: 'HarnessError', code: 'deliver_unreadable_unacked' })
   })
 
   it('refuses a text deliverable beyond the configured read cap instead of scanning it', async () => {
@@ -1020,6 +1042,21 @@ describe('deliverable identity', () => {
     // The declared spelling stays verbatim, so display never shows the host path.
     expect(relative.gate.checks[0]?.path).toBe('report.md')
     expect(spelled.gate.checks[0]?.path).toBe(absolute)
+  })
+
+  it('registers two spellings of one file in one call as one deliverable', async () => {
+    temp = await mkdtemp(join(tmpdir(), 'dsh-deliver-'))
+    const ctx = await mountedAt(temp)
+    const absolute = join(temp, 'report.md')
+    await writeFile(absolute, '# 报告\n\n正文。\n')
+    const result = await register(ctx, {
+      files: [{ path: 'report.md', format: 'markdown' }, { path: absolute, format: 'markdown' }],
+      gate: { p0: P0_IDS },
+    })
+    expect(result.value.registered).toEqual([{ path: 'report.md', format: 'markdown' }])
+    expect(result.value.gate.checks).toHaveLength(1)
+    expect(result.value.warnings).toEqual([`同一文件重复声明，按 files[] 中首次出现的拼写登记：${absolute}`])
+    expect(result.content).toContain('已登记 1 个交付文件：report.md')
   })
 
   it('reports identity for a file it did not read, so an unchecked format is still one deliverable', async () => {

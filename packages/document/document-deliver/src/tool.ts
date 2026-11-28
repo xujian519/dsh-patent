@@ -93,7 +93,7 @@ export interface DocumentDeliverInput {
   brief_ref?: string
   /** Writing style to check against; the configured default when omitted. */
   style?: string
-  /** Declared length budget of the delivered document, in characters. */
+  /** Declared length budget of the primary delivered document (`files[0]`), in characters. */
   char_budget?: number
   /** One reason per file the checker reported `unreadable`; the read-cap case needs none. */
   unreadable_ack?: UnreadableAckInput[]
@@ -181,7 +181,7 @@ function resolveStyle(deps: DocumentDeliverDeps, spec: DocumentDeliverSpec): Doc
   const style = findStyleByName(deps.styles, spec.styleName)
   if (style === undefined) {
     const known = deps.styles.map(entry => entry.name).join('、')
-    throw new Error(`document_deliver: 未加载样式 ${JSON.stringify(spec.styleName)}；可用样式：${known}`)
+    throw new HarnessError(`document_deliver: 未加载样式 ${JSON.stringify(spec.styleName)}；可用样式：${known}`, 'deliver_style_unknown')
   }
   return style
 }
@@ -289,6 +289,48 @@ export async function missingDeliverableFiles(
 }
 
 /**
+ * The declared files with the spellings of one file folded into the first one.
+ */
+interface UniqueDeliverables {
+  /** One entry per canonical file, spelled the way the call declared it first. */
+  readonly files: DocumentDeliverSpec['files']
+  /** Declared spellings dropped because an earlier entry named the same file. */
+  readonly duplicates: readonly string[]
+}
+
+/**
+ * Drop the declared files that resolve to a file an earlier entry declared.
+ *
+ * Two spellings of one file — workspace-relative and absolute, a symlink and
+ * its target — are one deliverable: checking it twice reports the same findings
+ * twice, and counting it twice makes the tool's own file count disagree with
+ * what a consumer keys on. The first declared spelling stays as the display
+ * path, and the dropped spellings come back so the result can say what it
+ * folded.
+ * @param ctx - plugin context carrying `ctx.fs`.
+ * @param exec - the current tool execution (signal, agent).
+ * @param files - the declared files, in declaration order.
+ * @returns the files to check and the duplicate spellings folded into them.
+ */
+async function uniqueDeliverableFiles(
+  ctx: Context, exec: ToolRunContext, files: DocumentDeliverSpec['files'],
+): Promise<UniqueDeliverables> {
+  const seen = new Set<string>()
+  const unique: DocumentDeliverSpec['files'] = []
+  const duplicates: string[] = []
+  for (const file of files) {
+    const identity = ctx.fs.processPath(await resolveTarget(ctx, exec, file.path))
+    if (seen.has(identity)) {
+      duplicates.push(file.path)
+      continue
+    }
+    seen.add(identity)
+    unique.push(file)
+  }
+  return { files: unique, duplicates }
+}
+
+/**
  * Read one deliverable and run the deterministic checks over its text.
  *
  * A format with no text reader, a read that fails (an oversized file, a
@@ -309,7 +351,7 @@ export async function missingDeliverableFiles(
  * @param exec - the current tool execution (signal, agent).
  * @param file - the declared path and format.
  * @param style - the style whose forbidden words are enforced.
- * @param charBudget - the declared character budget, when the call declared one.
+ * @param charBudget - the declared character budget, when this file is the primary document the call declared it for.
  * @param limits - the read and tolerance budgets this deployment configured.
  * @returns the check report for this file.
  */
@@ -403,15 +445,21 @@ async function checkDeliverable(
  * own budget, so a concurrent sweep would raise peak memory to the sum of the
  * in-flight reads. Wall-clock is the file count times the per-file check, which
  * is the trade this tool makes deliberately.
+ *
+ * A declared character budget measures the primary document, `files[0]`, and
+ * only that one: a summary delivered beside a long report has its own length,
+ * and measuring it against the report's budget reports a length the call never
+ * declared for it.
  */
 export async function checkDeliverables(
   ctx: Context, exec: ToolRunContext, spec: DocumentDeliverSpec, style: DocumentStyle,
   limits: DeliverableCheckLimits,
 ): Promise<DeliverableCheckReport[]> {
   const reports: DeliverableCheckReport[] = []
-  for (const file of spec.files) {
+  for (const [index, file] of spec.files.entries()) {
     exec.signal.throwIfAborted()
-    reports.push(await checkDeliverable(ctx, exec, file, style, spec.charBudget, limits))
+    const charBudget = index === 0 ? spec.charBudget : undefined
+    reports.push(await checkDeliverable(ctx, exec, file, style, charBudget, limits))
   }
   return reports
 }
@@ -503,7 +551,7 @@ function deliverDescription(lengthTolerance: number): string {
   const percent = Math.round(lengthTolerance * 100 * 100) / 100
   return `登记一份文档交付物：声明成品文件、导出格式与质量门自述（P0/P1 自检项）。在你自己核完 P0 全过之后、向用户交付之前调用一次；文件必须在工作区中存在。
 
-工具会自己读成品并做确定性核验：残余占位符（{{变量}}、[TBD] 等）、本文档未声明的锚点、空章节、所选风格（style）的禁用词、以及声明的字数预算（char_budget，本部署按 ±${String(percent)}% 容差核验）。P0/P1 是你的自述，工具不核验它，只把自述项数与这些核验结论并列写入会话日志，交付物面板同时展示两列。命中禁用级问题（未填变量、风格禁用词）时调用会被拒绝并列出问题，修复后重新登记。
+工具会自己读成品并做确定性核验：残余占位符（{{变量}}、[TBD] 等）、本文档未声明的锚点、空章节、所选风格（style）的禁用词、以及声明的主文件字数预算（char_budget，本部署按 ±${String(percent)}% 容差核验，只核验 files[0]）。P0/P1 是你的自述，工具不核验它，只把自述项数与这些核验结论并列写入会话日志，交付物面板同时展示两列。命中禁用级问题（未填变量、风格禁用词）时调用会被拒绝并列出问题，修复后重新登记。
 
 两条与声明本身有关的判定：文件按扩展名决定用哪种读取器（声明格式与扩展名不一致会提示，并按扩展名核验）；读不出内容的文件必须在 unreadable_ack 里写一条原因（path + reason_text）才允许登记，超出本部署读取上限的文件除外。p0 用质量门技能里的稳定 id（P0-1 … P0-6）填写，工具会把缺失或无法识别的项列出来。`
 }
@@ -552,7 +600,7 @@ const PARAMETERS = {
   },
   char_budget: {
     type: 'integer',
-    description: '全文声明的字数预算（非空白字符数），用于核验篇幅；省略则不核验篇幅',
+    description: '主文件（files[0]）声明的字数预算（非空白字符数），用于核验篇幅；只核验 files[0]，其余交付文件不参与；省略则不核验篇幅',
   },
   unreadable_ack: {
     type: 'array',
@@ -679,16 +727,21 @@ export function createDocumentDeliverTool(ctx: Context, deps: DocumentDeliverDep
     },
     async execute(args, exec) {
       exec.signal.throwIfAborted()
-      const spec = parseDocumentDeliverArgs(args)
-      const style = resolveStyle(deps, spec)
-      const missing = await missingDeliverableFiles(ctx, exec, spec.files.map(file => file.path))
+      const declared = parseDocumentDeliverArgs(args)
+      const style = resolveStyle(deps, declared)
+      const missing = await missingDeliverableFiles(ctx, exec, declared.files.map(file => file.path))
       if (missing.length > 0) {
         throw new HarnessError(
           `document_deliver: 以下交付文件在工作区中不存在，先修复或从登记中移除: ${missing.join('、')}`,
           'deliver_files_missing',
         )
       }
+      const unique = await uniqueDeliverableFiles(ctx, exec, declared.files)
+      const spec: DocumentDeliverSpec = { ...declared, files: unique.files }
       const warnings = p0ChecklistWarnings(spec.gate.p0)
+      if (unique.duplicates.length > 0) {
+        warnings.push(`同一文件重复声明，按 files[] 中首次出现的拼写登记：${unique.duplicates.join('、')}`)
+      }
       if (spec.briefRef !== undefined) {
         warnings.push(...await briefReferenceWarnings(ctx, exec, spec.briefRef))
       }

@@ -95,6 +95,40 @@ interface DraftFinding {
   readonly line: number
 }
 
+/**
+ * One draft before the display cap decides whether it is rendered.
+ *
+ * The line and the detail stay unrendered until a collector keeps the draft, so
+ * a document repeating one match hundreds of thousands of times pays a counter
+ * per occurrence instead of a line lookup and a rendered line.
+ */
+interface DraftHead {
+  /** The 1-based line of the checked text, or 0 for a finding with no position; called only for a kept draft. */
+  readonly line: () => number
+  /** The draft's own level, overriding the check's default. */
+  readonly level?: DocumentCheckLevel
+  /** The finding's one-line detail for a resolved line; called only for a kept draft. */
+  readonly detail: (line: number) => string
+}
+
+/** The drafts one check keeps under its display cap, plus what the cap dropped. */
+interface DraftBatch {
+  /** The drafts to show, in the check's own order. */
+  readonly drafts: readonly DraftFinding[]
+  /** Drafts past the cap: counted and leveled, with no line or detail rendered. */
+  readonly dropped: number
+  /** Whether a dropped draft would block, which the summary line carries. */
+  readonly droppedBlock: boolean
+}
+
+/** One check's drafts under a display cap. */
+interface DraftCollector {
+  /** Keep the draft when the cap allows it; otherwise count it and record its level. */
+  add(head: DraftHead): void
+  /** The kept drafts and what the cap dropped. */
+  batch(): DraftBatch
+}
+
 /** Findings kept per check before the rest are summarized into one line; the shipped quality gate's default cap. */
 export const DEFAULT_MAX_FINDINGS_PER_CHECK = 5
 
@@ -305,18 +339,8 @@ function closingTag(html: string, name: string, from: number): RegExpExecArray |
   return closing.exec(html)
 }
 
-/**
- * The contents of one HTML element, from just past its opening tag to just
- * before its closing tag.
- * @param html - the document text.
- * @param name - the element name, lowercased.
- * @param from - the index just past the element's opening tag.
- * @returns the range of the element's content.
- */
-function elementContentRange(html: string, name: string, from: number): TextRange {
-  const match = closingTag(html, name, from)
-  return { start: from, end: match === null ? html.length : match.index }
-}
+/** The prefix of a tag that closes an element, up to its name. */
+const CLOSING_PREFIX = /^<[ \t]*\/[ \t]*/u
 
 /**
  * The element name one tag opens, lowercased.
@@ -338,16 +362,68 @@ function openedElementName(tag: string): string | undefined {
 }
 
 /**
+ * The element name one tag closes, lowercased.
+ *
+ * A tag that opens an element names none: it starts a range rather than ending
+ * one. The prefix is stripped before the name is read, because a tag carrying a
+ * slash anywhere else (`<img src="a/b">`) opens an element as usual.
+ * @param tag - The matched tag text.
+ * @returns The element name, or undefined for a tag that opens an element.
+ */
+function closingElementName(tag: string): string | undefined {
+  if (!CLOSING_PREFIX.test(tag)) return undefined
+  const closing = tag.replace(CLOSING_PREFIX, '').toLowerCase()
+  return closing.match(/^[a-z][a-z0-9-]*/u)?.[0]
+}
+
+/** One open element whose content range is still being resolved. */
+interface OpenElement {
+  /** Index just past the opening tag. */
+  readonly contentStart: number
+}
+
+/**
  * Append the content ranges of the named elements.
+ *
+ * One pass pairs every closing tag with the nearest open element of the same
+ * name. Rescanning from each opening tag instead costs a full document scan per
+ * unclosed element, which a document repeating `<code>` turns into minutes.
+ *
+ * An element that never closes has no content end the document states. The
+ * `unclosed` argument decides what the callers do with it: `document` runs the
+ * range to the document end, which is where a renderer ends such an element and
+ * what {@link visibleText} already does for `script` and `style`; `none`
+ * records no range, which leaves the text after the opening tag as body text.
+ * Quoted elements take `none`: a truncated document must not turn every
+ * remaining placeholder into a sample the gate only warns about.
  * @param html - the document text.
  * @param names - element names whose contents are recorded.
  * @param ranges - the list to append to.
+ * @param unclosed - whether an element without a closing tag runs to the
+ * document end (`document`) or records no range (`none`).
  */
-function appendNamedContents(html: string, names: readonly string[], ranges: TextRange[]): void {
+function appendNamedContents(
+  html: string, names: readonly string[], ranges: TextRange[], unclosed: 'document' | 'none',
+): void {
+  const open = new Map<string, OpenElement[]>()
   for (const tag of matches(html, HTML_TAG)) {
-    const name = openedElementName(tag.text)
-    if (name === undefined || !names.includes(name)) continue
-    ranges.push(elementContentRange(html, name, tag.index + tag.text.length))
+    const opened = openedElementName(tag.text)
+    if (opened !== undefined) {
+      if (!names.includes(opened)) continue
+      const stack = open.get(opened) ?? []
+      stack.push({ contentStart: tag.index + tag.text.length })
+      open.set(opened, stack)
+      continue
+    }
+    const closing = closingElementName(tag.text)
+    if (closing === undefined || !names.includes(closing)) continue
+    const element = open.get(closing)?.pop()
+    if (element === undefined) continue
+    ranges.push({ start: element.contentStart, end: tag.index })
+  }
+  if (unclosed === 'none') return
+  for (const stack of open.values()) {
+    for (const element of stack) ranges.push({ start: element.contentStart, end: html.length })
   }
 }
 
@@ -360,12 +436,17 @@ function appendNamedContents(html: string, names: readonly string[], ranges: Tex
  * `<pre>` or `<code>` element is a sample rather than a residual placeholder.
  * Without this, the same content passes as Markdown and is refused as HTML,
  * which makes the verdict depend on the export format instead of the document.
+ *
+ * Only an element with a closing tag quotes anything. A truncated document that
+ * leaves a `<code>` open does not state where its sample ends, so treating the
+ * rest of the file as quoted would let a residual placeholder anywhere after it
+ * pass as a sample; the text stays body text and still blocks.
  * @param html - the document text.
  * @returns the ranges, in no particular order.
  */
 function htmlQuotedRanges(html: string): TextRange[] {
   const ranges: TextRange[] = []
-  appendNamedContents(html, QUOTED_ELEMENTS, ranges)
+  appendNamedContents(html, QUOTED_ELEMENTS, ranges, 'none')
   return ranges
 }
 
@@ -377,7 +458,7 @@ function htmlQuotedRanges(html: string): TextRange[] {
  * A reader sees none of it, so a placeholder named in an editing comment, in an
  * attribute such as `alt`, or in a script body is not content the document still
  * owes a reader. The element list is {@link NON_TEXT_ELEMENTS}, the same list
- * {@link htmlBodyText} already treats this way.
+ * {@link visibleText} already treats this way.
  * @param html - the document text.
  * @returns the ranges, in no particular order.
  */
@@ -391,7 +472,7 @@ function htmlMarkupRanges(html: string): TextRange[] {
       ranges.push({ start: tag.index + valueStart, end: tag.index + valueStart + value.group.length })
     }
   }
-  appendNamedContents(html, NON_TEXT_ELEMENTS, ranges)
+  appendNamedContents(html, NON_TEXT_ELEMENTS, ranges, 'document')
   return ranges
 }
 
@@ -428,50 +509,61 @@ function decodeCharacterReferences(text: string): string {
   )
 }
 
+/** The character an HTML tag name must be followed by, for a `<` in Markdown text to open a tag. */
+const TAG_NAME_END = /^[ \t/>]/u
+
 /**
- * The body text of one HTML document: comments, declarations, tags, and the
- * contents of the elements that carry code for the renderer rather than text
- * for a reader (`script`, `style`) removed, character references decoded.
+ * The body text of one document: comments, declarations, tags, and the contents
+ * of the elements that carry code for the renderer rather than text for a
+ * reader (`script`, `style`) removed, character references decoded.
  *
  * The scan stays deliberately small because the checker reads a document, not a
  * browser's build of one: a stray `<` that opens no element stays prose, an
  * unclosed comment, declaration, or non-text element runs to the end the way a
  * renderer takes it, and quoted attributes holding `>` are out of scope.
- * @param html - the document text.
+ *
+ * `language` decides what a `<` followed by letters means. In `html` it opens a
+ * tag, which is how a browser tokenizes a bogus name too. In `markdown` it must
+ * name a tag the way HTML does — the name ends at whitespace, `/`, or `>` — so
+ * an autolink such as `<https://example.com>` stays the link text a reader sees
+ * instead of being removed as markup and leaving its section empty.
+ * @param text - the document text.
+ * @param language - the document language, which decides what counts as a tag.
  * @returns the text a reader sees.
  */
-function htmlBodyText(html: string): string {
+function visibleText(text: string, language: 'html' | 'markdown'): string {
   let body = ''
   let index = 0
-  while (index < html.length) {
-    const opening = html.indexOf('<', index)
+  while (index < text.length) {
+    const opening = text.indexOf('<', index)
     if (opening === -1) {
-      body += html.slice(index)
+      body += text.slice(index)
       break
     }
-    body += html.slice(index, opening)
-    if (html.startsWith('<!--', opening)) {
-      const commentEnd = html.indexOf('-->', opening)
-      index = commentEnd === -1 ? html.length : commentEnd + 3
+    body += text.slice(index, opening)
+    if (text.startsWith('<!--', opening)) {
+      const commentEnd = text.indexOf('-->', opening)
+      index = commentEnd === -1 ? text.length : commentEnd + 3
       continue
     }
-    if (html.startsWith('<!', opening)) {
+    if (text.startsWith('<!', opening)) {
       // A declaration (`<!doctype html>`) is markup, never prose.
-      const declarationEnd = html.indexOf('>', opening)
-      index = declarationEnd === -1 ? html.length : declarationEnd + 1
+      const declarationEnd = text.indexOf('>', opening)
+      index = declarationEnd === -1 ? text.length : declarationEnd + 1
       continue
     }
     TAG_OPENING.lastIndex = opening
-    const tag = TAG_OPENING.exec(html)
-    if (tag === null) {
+    const tag = TAG_OPENING.exec(text)
+    const named = tag !== null && (language === 'html' || TAG_NAME_END.test(text.charAt(TAG_OPENING.lastIndex)))
+    if (!named) {
       // No element name follows the `<`, so it is prose, as in "a < b".
       body += '<'
       index = opening + 1
       continue
     }
-    const tagEnd = html.indexOf('>', TAG_OPENING.lastIndex)
+    const tagEnd = text.indexOf('>', TAG_OPENING.lastIndex)
     if (tagEnd === -1) {
-      body += html.slice(opening)
+      body += text.slice(opening)
       break
     }
     index = tagEnd + 1
@@ -479,7 +571,7 @@ function htmlBodyText(html: string): string {
     const name = tagOpening.replace(TAG_PREFIX, '').toLowerCase()
     // A closing tag of a non-text element carries no opening of its own.
     if (tagOpening.includes('/') || !NON_TEXT_ELEMENTS.includes(name)) continue
-    index = endOfNonTextElement(html, index, name)
+    index = endOfNonTextElement(text, index, name)
   }
   return decodeCharacterReferences(body)
 }
@@ -522,12 +614,27 @@ function htmlLevel(element: string): number {
   return Number(element.charAt(2))
 }
 
-/** Every heading of the text, in order; a `#` line inside a fence is not a heading. */
-function headingSpans(text: string, fences: readonly TextRange[]): HeadingSpan[] {
+/**
+ * Every heading of the text, in order, as the document language spells one.
+ *
+ * A `#` line inside a fence, and any heading inside quoted text, is a sample
+ * rather than an outline entry. An HTML document's outline is its `h` elements
+ * only: Markdown syntax is not in play there, so a `#` line in prose or in a
+ * `<pre>` sample must not become a heading with its own slug and section.
+ * @param text - the document text.
+ * @param fences - the fenced code ranges.
+ * @param quoted - the quoted ranges, whose contents the document shows as samples.
+ * @param format - the document's format; `html` reads `h` elements only.
+ * @returns the headings, in text order.
+ */
+function headingSpans(
+  text: string, fences: readonly TextRange[], quoted: readonly TextRange[],
+  format: DocumentTextCheckOptions['format'],
+): HeadingSpan[] {
   const spans: HeadingSpan[] = []
   const collect = (pattern: RegExp, levelOf: (line: string) => number): void => {
     for (const match of matches(text, pattern)) {
-      if (within(fences, match.index)) continue
+      if (within(fences, match.index) || within(quoted, match.index)) continue
       spans.push({
         start: match.index,
         end: match.index + match.text.length,
@@ -536,8 +643,11 @@ function headingSpans(text: string, fences: readonly TextRange[]): HeadingSpan[]
       })
     }
   }
-  collect(MARKDOWN_HEADING, markdownLevel)
-  collect(HTML_HEADING, htmlLevel)
+  if (format === 'html') collect(HTML_HEADING, htmlLevel)
+  else {
+    collect(MARKDOWN_HEADING, markdownLevel)
+    collect(HTML_HEADING, htmlLevel)
+  }
   return spans.sort((left, right) => left.start - right.start)
 }
 
@@ -550,13 +660,15 @@ function declaredAnchors(text: string, fences: readonly TextRange[], headings: r
   const bumps = new Map<string, number>()
   for (const heading of headings) {
     const base = headingSlug(heading.text)
-    let candidate = base
     let bump = bumps.get(base) ?? 0
+    let candidate = bump === 0 ? base : `${base}-${bump}`
     while (anchors.has(candidate)) {
       bump += 1
       candidate = `${base}-${bump}`
     }
-    bumps.set(base, bump)
+    // The next heading with this slug starts past the suffix just taken, so a
+    // document repeating one heading does not re-probe every earlier suffix.
+    bumps.set(base, bump + 1)
     anchors.add(candidate)
   }
   for (const match of matches(text, EXPLICIT_ANCHOR)) {
@@ -578,13 +690,12 @@ function declaredAnchors(text: string, fences: readonly TextRange[], headings: r
  * @param into - the finding list to append to.
  * @param check - the check the drafts belong to.
  * @param level - the level a draft without its own carries.
- * @param drafts - the drafts, in text order.
+ * @param batch - the drafts the check kept and what its cap dropped.
  */
 function report(
-  into: DocumentCheckFinding[], check: DocumentCheckId, level: DocumentCheckLevel, drafts: readonly DraftFinding[],
-  maxFindings: number,
+  into: DocumentCheckFinding[], check: DocumentCheckId, level: DocumentCheckLevel, batch: DraftBatch,
 ): void {
-  for (const draft of drafts.slice(0, maxFindings)) {
+  for (const draft of batch.drafts) {
     into.push({
       check,
       level: draft.level ?? level,
@@ -592,13 +703,43 @@ function report(
       ...draft.line === 0 ? {} : { line: draft.line },
     })
   }
-  if (drafts.length > maxFindings) {
-    const dropped = drafts.slice(maxFindings)
-    into.push({
-      check,
-      level: dropped.some(draft => (draft.level ?? level) === 'block') ? 'block' : 'warn',
-      detail: `另有 ${String(dropped.length)} 处同类问题未逐条列出`,
-    })
+  if (batch.dropped === 0) return
+  into.push({
+    check,
+    level: batch.droppedBlock ? 'block' : 'warn',
+    detail: `另有 ${String(batch.dropped)} 处同类问题未逐条列出`,
+  })
+}
+
+/**
+ * Collect one check's drafts under its display cap.
+ *
+ * A draft past the cap is counted without rendering its line or detail: a
+ * delivered document can repeat one match hundreds of thousands of times, and
+ * rendering findings the result never shows is what made the scan quadratic.
+ * @param limit - drafts kept before the rest are summarized into one line.
+ * @param defaultLevel - the level a draft without its own carries.
+ * @returns the collector.
+ */
+function draftCollector(limit: number, defaultLevel: DocumentCheckLevel): DraftCollector {
+  const drafts: DraftFinding[] = []
+  let dropped = 0
+  let droppedBlock = false
+  return {
+    add(head: DraftHead): void {
+      if (drafts.length >= limit) {
+        dropped += 1
+        if ((head.level ?? defaultLevel) === 'block') droppedBlock = true
+        return
+      }
+      const line = head.line()
+      drafts.push({
+        detail: head.detail(line),
+        line,
+        ...head.level === undefined ? {} : { level: head.level },
+      })
+    },
+    batch: (): DraftBatch => ({ drafts, dropped, droppedBlock }),
   }
 }
 
@@ -606,26 +747,40 @@ function report(
  * Residual placeholders; one shown as quoted text (fenced block or inline code) is
  * only reported, everything else blocks.
  */
-function placeholderDrafts(text: string, starts: readonly number[], quoted: readonly TextRange[]): DraftFinding[] {
-  const outside: DraftFinding[] = []
-  const inside: DraftFinding[] = []
+function placeholderDrafts(
+  text: string, starts: readonly number[], quoted: readonly TextRange[], limit: number,
+): DraftBatch {
+  const outside = draftCollector(limit, 'block')
+  const inside = draftCollector(limit, 'warn')
   for (const pattern of PLACEHOLDER_PATTERNS) {
     for (const match of matches(text, pattern)) {
-      const line = lineOf(starts, match.index)
-      const draft = { detail: `第 ${String(line)} 行仍有残余占位符 ${JSON.stringify(match.text)}`, line }
-      if (within(quoted, match.index)) inside.push({ ...draft, level: 'warn' })
-      else outside.push(draft)
+      const head: DraftHead = {
+        line: () => lineOf(starts, match.index),
+        detail: line => `第 ${String(line)} 行仍有残余占位符 ${JSON.stringify(match.text)}`,
+      }
+      if (within(quoted, match.index)) inside.add({ ...head, level: 'warn' })
+      else outside.add(head)
     }
   }
-  return [...outside, ...inside]
+  const unquoted = outside.batch()
+  const fenced = inside.batch()
+  const merged = [...unquoted.drafts, ...fenced.drafts]
+  return {
+    // Unquoted drafts come first and are already capped, so whatever this slice
+    // drops is a quoted draft, which only ever warns.
+    drafts: merged.slice(0, limit),
+    dropped: unquoted.dropped + fenced.dropped + Math.max(0, merged.length - limit),
+    droppedBlock: unquoted.droppedBlock || fenced.droppedBlock,
+  }
 }
 
 /** Same-document fragments the text links to but does not declare. */
 function anchorDrafts(
   text: string, starts: readonly number[], fences: readonly TextRange[], headings: readonly HeadingSpan[],
-): DraftFinding[] {
+  limit: number,
+): DraftBatch {
   const anchors = declaredAnchors(text, fences, headings)
-  const drafts: DraftFinding[] = []
+  const collector = draftCollector(limit, 'warn')
   const seen = new Set<string>()
   for (const pattern of [MARKDOWN_FRAGMENT, HTML_FRAGMENT]) {
     for (const match of matches(text, pattern)) {
@@ -640,11 +795,14 @@ function anchorDrafts(
       }
       if (fragment === '' || RENDERER_ANCHORS.includes(fragment) || anchors.has(fragment) || seen.has(fragment)) continue
       seen.add(fragment)
-      const line = lineOf(starts, match.index)
-      drafts.push({ detail: `第 ${String(line)} 行链接到本文档未声明的锚点 "#${fragment}"`, line })
+      collector.add({
+        line: () => lineOf(starts, match.index),
+        detail: line => `第 ${String(line)} 行链接到本文档未声明的锚点 "#${fragment}"`,
+      })
     }
   }
-  return drafts.sort((left, right) => left.line - right.line)
+  const batch = collector.batch()
+  return { ...batch, drafts: [...batch.drafts].sort((left, right) => left.line - right.line) }
 }
 
 /**
@@ -655,57 +813,77 @@ function anchorDrafts(
  * H1's own section, so the pair is not an empty section. An H1 with no heading
  * after it, and one followed by another H1, still are empty sections, and a
  * deeper heading keeps the rule it always had.
+ *
+ * The body is read the way the document's language says: an HTML document
+ * removes its markup, while a Markdown document keeps text that only looks like
+ * markup, such as an autolink, so a link-only section is not reported empty.
+ * @param text - the document text.
+ * @param starts - the line-start indices of the text.
+ * @param headings - the headings to test.
+ * @param format - the document's format, which decides how much markup the body scan removes.
+ * @param limit - drafts kept before the rest are summarized into one line.
+ * @returns the drafts and what the display cap dropped.
  */
-function emptySectionDrafts(text: string, starts: readonly number[], headings: readonly HeadingSpan[]): DraftFinding[] {
-  const drafts: DraftFinding[] = []
+function emptySectionDrafts(
+  text: string, starts: readonly number[], headings: readonly HeadingSpan[],
+  format: DocumentTextCheckOptions['format'], limit: number,
+): DraftBatch {
+  const collector = draftCollector(limit, 'warn')
   for (const [index, heading] of headings.entries()) {
     const next = headings[index + 1]
     if (heading.level === 1 && next !== undefined && next.level > 1) continue
     const body = text.slice(heading.end, next?.start ?? text.length)
-    if (htmlBodyText(body).trim() !== '') continue
-    const line = lineOf(starts, heading.start)
-    drafts.push({ detail: `第 ${String(line)} 行的标题 ${JSON.stringify(heading.text)} 下没有任何内容`, line })
+    if (visibleText(body, format === 'html' ? 'html' : 'markdown').trim() !== '') continue
+    collector.add({
+      line: () => lineOf(starts, heading.start),
+      detail: line => `第 ${String(line)} 行的标题 ${JSON.stringify(heading.text)} 下没有任何内容`,
+    })
   }
-  return drafts
+  return collector.batch()
 }
 
 /** Occurrences of the style's forbidden words, at the severity the style declares. */
 function antiPatternDrafts(
   text: string, starts: readonly number[], patterns: readonly AntiPattern[], quoted: readonly TextRange[],
-): DraftFinding[] {
-  const drafts: DraftFinding[] = []
+  limit: number,
+): DraftBatch {
+  const collector = draftCollector(limit, 'warn')
   for (const pattern of patterns) {
     for (const match of matches(text, literal(pattern.word))) {
-      const line = lineOf(starts, match.index)
       const quotedHit = within(quoted, match.index)
-      drafts.push({
+      collector.add({
+        line: () => lineOf(starts, match.index),
         level: pattern.severity === 'block' && !quotedHit ? 'block' : 'warn',
-        detail: quotedHit
+        detail: line => quotedHit
           ? `第 ${String(line)} 行引用文本中出现样式禁用词 ${JSON.stringify(pattern.word)}（不影响判定）`
           : `第 ${String(line)} 行出现样式禁用词 ${JSON.stringify(pattern.word)}，建议改用 ${JSON.stringify(pattern.replace)}`,
-        line,
       })
     }
   }
-  return drafts.sort((left, right) => left.line - right.line)
+  const batch = collector.batch()
+  return { ...batch, drafts: [...batch.drafts].sort((left, right) => left.line - right.line) }
 }
 
 /**
  * The declared character budget against the body text's non-whitespace
- * character count. An HTML document is measured after {@link htmlBodyText}, so
+ * character count. An HTML document is measured after {@link visibleText}, so
  * its markup, stylesheet, and script never inflate the count.
  */
 function budgetDrafts(
   text: string, charBudget: number, tolerance: number, format: DocumentTextCheckOptions['format'],
-): DraftFinding[] {
-  const actual = (format === 'html' ? htmlBodyText(text) : text).replace(/\s/gu, '').length
+): DraftBatch {
+  const actual = (format === 'html' ? visibleText(text, 'html') : text).replace(/\s/gu, '').length
   const minimum = Math.floor(charBudget * (1 - tolerance))
   const maximum = Math.ceil(charBudget * (1 + tolerance))
-  if (actual >= minimum && actual <= maximum) return []
-  return [{
-    detail: `全文 ${String(actual)} 字，${actual < minimum ? '低于' : '超出'}声明的 ${String(charBudget)} 字预算（允许 ${String(minimum)}–${String(maximum)} 字）`,
-    line: 0,
-  }]
+  if (actual >= minimum && actual <= maximum) return { drafts: [], dropped: 0, droppedBlock: false }
+  return {
+    drafts: [{
+      detail: `全文 ${String(actual)} 字，${actual < minimum ? '低于' : '超出'}声明的 ${String(charBudget)} 字预算（允许 ${String(minimum)}–${String(maximum)} 字）`,
+      line: 0,
+    }],
+    dropped: 0,
+    droppedBlock: false,
+  }
 }
 
 /**
@@ -718,22 +896,25 @@ function budgetDrafts(
 export function checkDocumentText(text: string, options: DocumentTextCheckOptions = {}): DocumentCheckFinding[] {
   const starts = lineStarts(text)
   const fences = fenceRanges(text)
-  const headings = headingSpans(text, fences)
   const isHtml = options.format === 'html'
-  const quoted = isHtml
-    ? [...htmlQuotedRanges(text), ...htmlMarkupRanges(text)]
-    : quotedRanges(text)
+  // A heading is excluded by the quoted ranges, not by the markup ranges: an
+  // HTML heading starts at its own tag, which the markup scan records.
+  const quotedText = isHtml ? htmlQuotedRanges(text) : quotedRanges(text)
+  const quoted = isHtml ? [...quotedText, ...htmlMarkupRanges(text)] : quotedText
+  const headings = headingSpans(text, fences, quotedText, options.format)
   const findings: DocumentCheckFinding[] = []
   const maxFindings = options.maxFindingsPerCheck ?? DEFAULT_MAX_FINDINGS_PER_CHECK
-  report(findings, 'placeholder', 'block', placeholderDrafts(text, starts, quoted), maxFindings)
-  report(findings, 'broken_anchor', 'warn', anchorDrafts(text, starts, fences, headings), maxFindings)
-  report(findings, 'empty_section', 'warn', emptySectionDrafts(text, starts, headings), maxFindings)
-  report(findings, 'anti_pattern', 'warn', antiPatternDrafts(text, starts, options.style?.sections.antiPatterns ?? [], quoted), maxFindings)
+  report(findings, 'placeholder', 'block', placeholderDrafts(text, starts, quoted, maxFindings))
+  report(findings, 'broken_anchor', 'warn', anchorDrafts(text, starts, fences, headings, maxFindings))
+  report(findings, 'empty_section', 'warn', emptySectionDrafts(text, starts, headings, options.format, maxFindings))
+  report(
+    findings, 'anti_pattern', 'warn',
+    antiPatternDrafts(text, starts, options.style?.sections.antiPatterns ?? [], quoted, maxFindings),
+  )
   if (options.charBudget !== undefined) {
     report(
       findings, 'length_budget', 'warn',
       budgetDrafts(text, options.charBudget, options.lengthTolerance ?? DEFAULT_LENGTH_TOLERANCE, options.format),
-      maxFindings,
     )
   }
   return findings

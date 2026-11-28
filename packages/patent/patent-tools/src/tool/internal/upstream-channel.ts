@@ -18,6 +18,13 @@ export const GOOGLE_PATENTS_CHANNEL = 'Google Patents（nuo 引擎）'
 export const CNIPR_CHANNEL = 'CNIPR（中国知识产权网）'
 
 /**
+ * PatSnap 通道的模型可见名称：`patent_pdf_download` 在 Google Patents 交不出有效
+ * PDF 时的兜底通道，经 PatSnap Open Platform 的 P020 接口换 PDF 直链
+ * （`@deepseek-ai/dsh-patent-data` 的 PatSnap 通道）。
+ */
+export const PATSNAP_CHANNEL = 'PatSnap（智慧芽）'
+
+/**
  * 上游以 429/503 答复被限流或过载的请求；nuo 把 HTTP 类失败的原文放进 detail
  * （`HTTP <status>[ …]`），因此这一族可以按状态码认出来，与超时、断连分开措辞。
  */

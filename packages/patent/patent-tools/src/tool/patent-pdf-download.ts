@@ -18,22 +18,12 @@ import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
-import {
-  inspectPdfBody,
-  isHtmlContentType,
-  resolveConfinedPath,
-  resolveDatedOutputDir,
-  type PdfBodyFault,
-} from '@deepseek-ai/dsh-patent-core'
-import {
-  networkFetch,
-  NetworkFetchError,
-  parseRetryAfterHeader,
-  type NetworkRetryOptions,
-} from '@deepseek-ai/dsh-tool-literature'
+import { resolveConfinedPath, resolveDatedOutputDir } from '@deepseek-ai/dsh-patent-core'
+import type { NetworkRetryOptions } from '@deepseek-ai/dsh-tool-literature'
 import { PatentToolError } from '../error.ts'
 import { WARNINGS_SCHEMA, warningSection } from './internal/tool-output.ts'
+import { GOOGLE_PATENTS_CHANNEL } from './internal/upstream-channel.ts'
+import { DEFAULT_FETCH_FALLBACK_RETRY, downloadPdfFromUrl, runFallback } from './patent-pdf-download-transfer.ts'
 
 const MAX_PATENTS = 50
 /**
@@ -45,26 +35,13 @@ const MAX_PATENTS = 50
 const PER_BATCH_OVERHEAD_MS = 15_000
 const MIN_DEFAULT_TIMEOUT_MS = 60_000
 const MAX_DEFAULT_TIMEOUT_MS = 300_000
-/**
- * Google Patents CDN（patentimages.storage.googleapis.com）对非浏览器 UA 返回
- * 403，因此 fetch 兜底刻意使用浏览器 UA。
- */
-const PATENT_DOWNLOAD_USER_AGENT =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 /** 断点续传 MANIFEST 文件名（`<outputDir>/.MANIFEST.jsonl`，append 追加式）。 */
 const MANIFEST_FILE = '.MANIFEST.jsonl'
-/** fetch 兜底重试策略：吸收瞬时失败与限流（429/503），按 Retry-After 退避，上限 30s。 */
-const DEFAULT_FETCH_FALLBACK_RETRY: NetworkRetryOptions = { maxRetries: 2, baseDelayMs: 250, maxDelayMs: 30_000 }
 /**
  * fetch 兜底每次尝试的期限下限。整体预算按尝试次数均分后可能小于 1s（调用方显式传很小的
  * `timeoutMs`），而 `networkFetch` 只在正整数时才装计时器——无下限会让兜底重新变成无期限。
  */
 const MIN_FETCH_FALLBACK_TIMEOUT_MS = 1_000
-
-/** 限流重试提示（模型可见，用于替代盲 sleep）。 */
-function rateLimitHint(retryAfterMs: number): string {
-  return `，等待约 ${Math.max(1, Math.round(retryAfterMs / 1000))}s 后重试`
-}
 
 /** Input for the patent_pdf_download tool. */
 export type PatentPdfDownloadInput = {
@@ -85,7 +62,7 @@ export type PatentPdfDownloadInput = {
 }
 
 /** One patent PDF download result. */
-type PatentDownloadItem = {
+export type PatentDownloadItem = {
   patent: string
   status: 'ok' | 'failed'
   /** status=ok 时的落盘路径。 */
@@ -106,6 +83,8 @@ type PatentDownloadItem = {
   channel: string
   /** 该篇文件的取数时间（ISO-8601）：本次落盘的时间，或续传命中时 MANIFEST 记录的下载时间。 */
   retrievedAt?: string
+  /** 同族替代时实际取到的公开号（PatSnap 的 `pn_related`）；与 `patent` 相同时省略。 */
+  resolvedNumber?: string
 }
 
 /** Output of the patent_pdf_download tool. */
@@ -156,6 +135,34 @@ export type EgoDownloadRequest = {
 /** 注入的 ego-browser 批量下载 runner。 */
 export type RunEgo = (request: EgoDownloadRequest) => Promise<EgoDownloadResult>
 
+/** 一次兜底请求：哪篇、Google 腿给出的失败原因。 */
+export type FallbackRequest = {
+  /** 专利公开号。 */
+  patent: string
+  /** Google 腿未能交付该篇的原因。 */
+  reason: string
+}
+
+/** 兜底通道给出的结果：下载地址，或该篇失败的原因。 */
+export type FallbackLink = {
+  /** 专利公开号。 */
+  patent: string
+  /** 可直接下载的 PDF 地址；失败时省略。 */
+  pdfUrl?: string
+  /** 实际服务的通道名（模型可见）。 */
+  channel: string
+  /** 同族替代时实际取到的公开号。 */
+  resolvedNumber?: string
+  /** 该篇在兜底通道上的失败原因。 */
+  error?: string
+}
+
+/** 注入的兜底通道：一次拿到整批失败项的下载地址。 */
+export type ResolveFallback = (
+  requests: readonly FallbackRequest[],
+  options: { timeoutMs: number; signal?: AbortSignal },
+) => Promise<readonly FallbackLink[]>
+
 /** MANIFEST 条目（与 Sati 契约一致）。 */
 type PatentManifestEntry = {
   patent: string
@@ -202,6 +209,11 @@ export type PatentPdfDownloadDeps = {
   fetchFallbackRetry?: NetworkRetryOptions
   /** Resolve the batch runner from a browser-backend cold decision (defaults to runEgo). */
   resolveRunner?: () => Promise<RunEgo> | RunEgo
+  /**
+   * 兜底通道：Google 腿交付不了的篇目交给它（生产接线到 PatSnap）。
+   * 未注入时行为与之前一致：这些篇以失败结束。
+   */
+  resolveFallback?: ResolveFallback
 }
 
 /**
@@ -214,13 +226,6 @@ export function normalizePatentNumber(value: string): string {
     .trim()
     .toUpperCase()
     .replace(/[\s\-:/]/g, '')
-}
-
-/** 三检失败文案（专利工具的措辞：魔数失配时带上实际前缀）。 */
-function pdfBodyFaultMessage(fault: PdfBodyFault): string {
-  return fault.code === 'magic'
-    ? `invalid PDF magic: ${JSON.stringify(fault.prefix)}`
-    : `response too small (${fault.bytes} bytes), likely an error page`
 }
 
 /**
@@ -386,65 +391,29 @@ async function fetchPdfFallback(
       ...(item.error === undefined ? {} : { error: item.error }),
     }
   }
-  // 闭包须捕获已收窄的 URL；属性访问在闭包内不被窄化。
   const pdfUrl: string = item.pdfUrl
-  const start = Date.now()
-  const target = join(outputDir, `${item.patent}.pdf`)
+  const attempt = await downloadPdfFromUrl(pdfUrl, join(outputDir, `${item.patent}.pdf`), options)
+  if (attempt.ok) {
+    return {
+      patent: item.patent,
+      status: 'ok',
+      path: attempt.path,
+      pdfUrl,
+      method: 'http',
+      channel: item.channel,
+      durationMs: attempt.durationMs,
+    }
+  }
   const base = item.error ? `${item.error}; ` : ''
-  let networkErrorCode: string | undefined
-  let retryAfterMs: number | undefined
-  const failed = (reason: string): PatentDownloadItem => ({
+  return {
     patent: item.patent,
     status: 'failed',
     pdfUrl,
     channel: item.channel,
-    ...(networkErrorCode === undefined ? {} : { networkErrorCode }),
-    ...(retryAfterMs === undefined ? {} : { retryAfterMs }),
-    error: `${base}fetch fallback failed: ${reason}`,
-    durationMs: Date.now() - start,
-  })
-  const fetchFn = options.fetchImpl ?? globalThis.fetch
-  if (typeof fetchFn !== 'function') {
-    return failed('no fetch implementation available')
-  }
-  try {
-    const res = await networkFetch(
-      pdfUrl,
-      { headers: { 'User-Agent': PATENT_DOWNLOAD_USER_AGENT, Accept: 'application/pdf' } },
-      {
-        /* v8 ignore next -- execute always passes exec.signal through. */
-        ...(options.signal === undefined ? {} : { signal: options.signal }),
-        timeoutMs: options.timeoutMs,
-        fetchImpl: fetchFn,
-        retry: options.fetchRetry ?? DEFAULT_FETCH_FALLBACK_RETRY,
-      },
-    )
-    if (!res.ok) {
-      if (res.status === 429) {
-        networkErrorCode = 'network_rate_limited'
-        retryAfterMs = parseRetryAfterHeader(res.headers.get('retry-after'))
-        return failed(`HTTP 429 (rate limited)${retryAfterMs === undefined ? '' : rateLimitHint(retryAfterMs)}`)
-      }
-      return failed(`HTTP ${res.status} ${res.statusText}`)
-    }
-    const contentType = res.headers.get('content-type') ?? ''
-    if (isHtmlContentType(contentType)) return failed(`unexpected Content-Type: ${contentType}`)
-    const buf = Buffer.from(await res.arrayBuffer())
-    const fault = inspectPdfBody(buf)
-    if (fault !== undefined) return failed(pdfBodyFaultMessage(fault))
-    await writeFileAtomic(target, buf, { mode: 0o644 })
-    return {
-      patent: item.patent,
-      status: 'ok',
-      path: target,
-      pdfUrl,
-      method: 'http',
-      channel: item.channel,
-      durationMs: Date.now() - start,
-    }
-  } catch (fetchErr) {
-    networkErrorCode = fetchErr instanceof NetworkFetchError ? fetchErr.code : undefined
-    return failed(fetchErr instanceof Error ? fetchErr.message : String(fetchErr))
+    ...(attempt.networkErrorCode === undefined ? {} : { networkErrorCode: attempt.networkErrorCode }),
+    ...(attempt.retryAfterMs === undefined ? {} : { retryAfterMs: attempt.retryAfterMs }),
+    error: `${base}fetch fallback failed: ${attempt.error}`,
+    durationMs: attempt.durationMs,
   }
 }
 
@@ -478,7 +447,8 @@ function renderPdfDownload(value: PatentPdfDownloadOutput): string {
     } else {
       /* v8 ignore next -- fallback results always carry a method for ok items. */
       const method = METHOD_LABELS[r.method ?? ''] ?? ''
-      lines.push(`- ${r.patent}: ${r.path ?? 'ok'}${method}${channelNote}`)
+      const resolved = r.resolvedNumber === undefined ? '' : ` · 同族替代：${r.resolvedNumber}`
+      lines.push(`- ${r.patent}: ${r.path ?? 'ok'}${method}${channelNote}${resolved}`)
     }
   }
   const warningLines = warningSection(value.warnings, '通道告警')
@@ -500,19 +470,78 @@ const ITEM_SCHEMA = {
     retryAfterMs: { type: 'number' },
     channel: { type: 'string', required: true },
     retrievedAt: { type: 'string' },
+    resolvedNumber: { type: 'string' },
   },
 } as const
 
 const DESCRIPTION = [
-  '批量下载专利 PDF。输入 patents 为公开号列表（CN123456789A、US11452699B2、EP1234567A1、WO2023123456A1…），保存为 `<outputDir>/<patent>.pdf`。通道按号族选择并逐篇点名：中国公开(公告)号在部署启用时先走 CNIPR（经 ego lite 登录态取全文直链，`http://pic.cnipr.com/...`）；其余号以及 CNIPR 未能服务的号走 Google Patents——优先经 ego-browser（ego lite）在浏览器内取回 PDF 响应体，取不到时提取 CDN PDF 链接后用 HTTP 直接下载落盘。每篇结果为 status=ok（带 path、method 与 channel）或 status=failed（带 error 与 channel，且保留 pdfUrl 供手动重试）；失败不中断其余专利。',
+  '批量下载专利 PDF。输入 patents 为公开号列表（CN123456789A、US11452699B2、EP1234567A1、WO2023123456A1…），保存为 `<outputDir>/<patent>.pdf`。下载通道按顺序降级并逐篇点名：先走 Google Patents——优先经 ego-browser（ego lite）在浏览器内取回 PDF 响应体，取不到时提取 CDN PDF 链接后用 HTTP 直接下载落盘；该篇仍拿不到有效 PDF 时，在部署启用 PatSnap 的情况下交给 PatSnap 兜底（按公开号换 PDF 直链，同族替代时在结果里写明实际取到的号）。每篇结果为 status=ok（带 path、method 与 channel）或 status=failed（带 error 与 channel，且保留 pdfUrl 供手动重试）；失败不中断其余专利。',
   '',
   'Usage notes:',
   '  - 每篇的 channel 是实际产出该篇的通道；某通道被咨询过但未能服务时，结果另在 warnings 里点名，报告据此区分「换通道」与「同通道重试」',
+  '  - 同族替代时 resolvedNumber 是文件里实际印的公开号；报告引用原文号，不要把它当成请求号',
   '  - 重复执行命中 MANIFEST 断点续传（size 匹配即跳过，method=skip），force=true 强制重下；续传条目的 channel 与 retrievedAt 取自 MANIFEST 记录（本字段之前写下的条目没有记录，输出里该篇不带通道/取数时间）',
   '  - retrievedAt 是该篇文件的取数时间（本次落盘时间，或续传命中时 MANIFEST 记录的下载时间），报告据此写明原文是何时取得的',
   '  - record=true 可额外截图留证（输出 `<outputDir>/evidence/`）',
   '  - HTTP 兜底对瞬时失败/限流（429/503）自动重试并按 Retry-After 退避；重试后仍 429 时 error 会注明限流与建议等待时长（并可结合 retryAfterMs），此时应等待后再重试而非立即重试',
 ].join('\n')
+/**
+ * Run the Google Patents leg. A channel-level failure is not a batch failure when a
+ * fallback is wired: the leg's items become per-patent failures carrying the reason,
+ * and the tool's fallback pass takes over. Without a fallback the failure stays loud.
+ * @param patents - pending numbers.
+ * @param deps - tool dependencies (runner plus optional fallback).
+ * @param options - output directory, per-page and per-download budgets, batch budget, recording, and cancellation.
+ * @returns the Google leg's items and warnings.
+ */
+async function runGoogleLeg(
+  patents: readonly string[],
+  deps: PatentPdfDownloadDeps,
+  options: {
+    outputDir: string
+    pageTimeoutSec: number
+    downloadTimeoutMs: number
+    record: boolean
+    timeoutMs: number
+    signal: AbortSignal
+  },
+): Promise<EgoDownloadResult> {
+  try {
+    const runner = deps.resolveRunner !== undefined ? await deps.resolveRunner() : deps.runEgo
+    return await runner({
+      patents: [...patents],
+      outputDir: options.outputDir,
+      pageTimeoutSec: options.pageTimeoutSec,
+      downloadTimeoutMs: options.downloadTimeoutMs,
+      record: options.record,
+      timeoutMs: options.timeoutMs,
+      signal: options.signal,
+    })
+  } catch (error) {
+    if (options.signal.aborted) {
+      throw new PatentToolError('tool_aborted', 'patent_pdf_download aborted', { tool: 'patent_pdf_download' })
+    }
+    // 配置类失败（未接线的 fail-loud 桩）保留 setup_required 码，供按码路由的调用方判别。
+    if (error instanceof PatentToolError && error.code === 'setup_required') throw error
+    const detail = error instanceof Error ? error.message : String(error)
+    if (deps.resolveFallback === undefined) {
+      throw new PatentToolError('tool_execution_failed', `patent_pdf_download failed: ${detail}`, {
+        tool: 'patent_pdf_download',
+      })
+    }
+    // Google 整腿失败不是整批失败：这批号交给兜底通道，失败原因保留在每篇上。
+    return {
+      items: patents.map((patent): EgoDownloadItem => ({
+        patent,
+        status: 'fallback',
+        channel: GOOGLE_PATENTS_CHANNEL,
+        error: `通道失败：${detail}`,
+      })),
+      warnings: [`${GOOGLE_PATENTS_CHANNEL} 通道失败（${detail}），${patents.length} 篇改由兜底通道处理`],
+    }
+  }
+}
+
 /**
  * Build the `patent_pdf_download` tool over an injected ego-browser runner.
  * @param deps - the runner plus optional cwd / output-dir resolver / fetch impl.
@@ -528,7 +557,7 @@ export function createPatentPdfDownloadTool(deps: PatentPdfDownloadDeps): ToolDe
       outputDir: { type: 'string', description: '输出目录（相对当前工作目录；越出工作目录的路径会被拒绝）；默认 <cwd>/专利原文/YYYY-MM-DD' },
       pageTimeoutSec: { type: 'number', description: '每页打开超时（秒），默认 20' },
       downloadTimeoutMs: { type: 'number', description: '每篇取回 PDF 响应体的超时（毫秒），默认 60000' },
-      timeoutMs: { type: 'number', description: '单腿执行预算（毫秒）：CNIPR 腿与 Google 腿各自按它设期限，不是整批墙钟上限，最坏情形两腿各用满预算；CNIPR 腿另有 90 秒下限（ego 会话冷启动）。默认 clamp(篇数 × (pageTimeoutSec × 1000 + downloadTimeoutMs) + 15000, 60000, 300000)，上限 300000' },
+      timeoutMs: { type: 'number', description: '单腿执行预算（毫秒）：Google 腿与 PatSnap 兜底腿各自按它设期限，不是整批墙钟上限，最坏情形两腿各用满预算。默认 clamp(篇数 × (pageTimeoutSec × 1000 + downloadTimeoutMs) + 15000, 60000, 300000)，上限 300000' },
       record: { type: 'boolean', description: '是否截图留证（默认 false）' },
       force: { type: 'boolean', description: '忽略 MANIFEST 断点续传，强制重下全部（默认 false）' },
     },
@@ -603,37 +632,21 @@ export function createPatentPdfDownloadTool(deps: PatentPdfDownloadDeps): ToolDe
         return { results: skipped, summary, outputDir, warnings: [] }
       }
 
-      let egoResult: EgoDownloadResult
-      try {
-        const runner = deps.resolveRunner !== undefined ? await deps.resolveRunner() : deps.runEgo
-        egoResult = await runner({
-          patents: pending,
-          outputDir,
-          pageTimeoutSec: pageTimeoutSecValue,
-          downloadTimeoutMs: downloadTimeoutMsValue,
-          record,
-          timeoutMs: timeoutMsValue,
-          signal: exec.signal,
-        })
-      } catch (error) {
-        if (exec.signal.aborted) {
-          throw new PatentToolError('tool_aborted', 'patent_pdf_download aborted', { tool: 'patent_pdf_download' })
-        }
-        // 配置类失败（未接线的 fail-loud 桩）保留 setup_required 码，供按码路由的调用方判别。
-        if (error instanceof PatentToolError && error.code === 'setup_required') throw error
-        throw new PatentToolError(
-          'tool_execution_failed',
-          `patent_pdf_download failed: ${error instanceof Error ? error.message : String(error)}`,
-          { tool: 'patent_pdf_download' },
-        )
-      }
+      const egoResult = await runGoogleLeg(pending, deps, {
+        outputDir,
+        pageTimeoutSec: pageTimeoutSecValue,
+        downloadTimeoutMs: downloadTimeoutMsValue,
+        record,
+        timeoutMs: timeoutMsValue,
+        signal: exec.signal,
+      })
 
       // 兜底：浏览器拦截不可用或失败时，用 fetch 下载 CDN PDF。把整体预算均分到
       // 各次尝试（含首次），使每次尝试都有期限；总时长最坏为 尝试次数 × 该值 + 退避。
       const fallbackRetry = deps.fetchFallbackRetry ?? DEFAULT_FETCH_FALLBACK_RETRY
       const fallbackAttempts = 1 + (fallbackRetry.maxRetries ?? 0)
       const fallbackTimeoutMs = Math.max(MIN_FETCH_FALLBACK_TIMEOUT_MS, Math.floor(timeoutMsValue / fallbackAttempts))
-      const results = await Promise.all(
+      const firstPass = await Promise.all(
         egoResult.items.map(item =>
           fetchPdfFallback(item, outputDir, {
             signal: exec.signal,
@@ -643,6 +656,19 @@ export function createPatentPdfDownloadTool(deps: PatentPdfDownloadDeps): ToolDe
           }),
         ),
       )
+      const fallback = await runFallback(
+        firstPass.filter(item => item.status === 'failed'),
+        deps,
+        outputDir,
+        {
+          signal: exec.signal,
+          timeoutMs: timeoutMsValue,
+          ...(deps.fetchImpl === undefined ? {} : { fetchImpl: deps.fetchImpl }),
+          ...(deps.fetchFallbackRetry === undefined ? {} : { fetchRetry: deps.fetchFallbackRetry }),
+        },
+      )
+      const fallbackByPatent = new Map(fallback.items.map(item => [item.patent, item]))
+      const results = firstPass.map(item => fallbackByPatent.get(item.patent) ?? item)
 
       // 下载成功的条目追加进 MANIFEST；落盘文件不可读时放弃续传记录，不阻断结果。
       for (const r of results) {
@@ -662,7 +688,7 @@ export function createPatentPdfDownloadTool(deps: PatentPdfDownloadDeps): ToolDe
         results: allResults,
         summary,
         outputDir,
-        warnings: egoResult.warnings ?? [],
+        warnings: [...(egoResult.warnings ?? []), ...fallback.warnings],
         ...(egoResult.recorded === undefined ? {} : { recorded: egoResult.recorded }),
       }
     },

@@ -9,10 +9,9 @@ import PatentData from '@deepseek-ai/dsh-patent-data'
 import { PatentToolError } from '../src/error.ts'
 import { createDownloadChannelRunner, createScrapeChannelRunner } from '../src/tool/patent-pdf-download-channel.ts'
 import type { PatentDataSeam } from '../src/tool/patent-pdf-download-channel.ts'
-import { CNIPR_CHANNEL, GOOGLE_PATENTS_CHANNEL } from '../src/tool/internal/upstream-channel.ts'
+import { GOOGLE_PATENTS_CHANNEL } from '../src/tool/internal/upstream-channel.ts'
 import type { EgoDownloadRequest } from '../src/tool/patent-pdf-download.ts'
 import type { EgoSessionSeam } from '../src/tool/patent-pdf-download-ego.ts'
-import type { CniprChannel, CniprPdfLinkItem } from '@deepseek-ai/dsh-patent-data'
 
 // The default scrape seam is the LRU-cached nuo scrape; stub the engine call so
 // the dependency-free path stays off the network.
@@ -47,8 +46,8 @@ function scrapeResult(pdfUrl: string | null, errorMessage = ''): ScrapeResult {
 }
 
 /** Patent-data stand-in exposing only the surface the channel reads. */
-function patentDataWith(session: EgoSessionSeam, cnipr?: Pick<CniprChannel, 'pdfLinks'>): PatentDataSeam {
-  return { createEgoSession: () => session, createCniprChannel: () => cnipr }
+function patentDataWith(session: EgoSessionSeam): PatentDataSeam {
+  return { createEgoSession: () => session }
 }
 
 function egoSession(overrides: Partial<EgoSessionSeam> = {}): EgoSessionSeam {
@@ -109,74 +108,16 @@ describe('createDownloadChannelRunner', () => {
     expect(result.items).toEqual([{
       patent: 'US1A', status: 'ok', path: '/tmp/US1A.pdf', channel: GOOGLE_PATENTS_CHANNEL,
     }])
+    expect(result.warnings).toBeUndefined()
   })
 
-  it('serves China publication numbers from CNIPR and leaves the rest to Google Patents', async () => {
-    const cniprRequest = vi.fn(async (): Promise<CniprPdfLinkItem[]> => [
-      { number: 'CN122072823A', urls: ['http://pic.cnipr.com/pdfcn/a/PDF_PID/x.PDF'], unexamined: true, authorized: false },
-    ])
-    const runner = createDownloadChannelRunner(() => patentDataWith(egoSession(), { pdfLinks: cniprRequest }), {
+  it('sends every number to the Google leg, including China publication numbers', async () => {
+    const runner = createDownloadChannelRunner(() => patentDataWith(egoSession()), {
       scrape: async () => scrapeResult(null, 'scrape must not run'),
     })
-
-    const result = await runner({ ...request, patents: ['CN122072823A', 'US1A'] })
-
-    expect(result.items).toEqual([
-      { patent: 'CN122072823A', status: 'fallback', pdfUrl: 'http://pic.cnipr.com/pdfcn/a/PDF_PID/x.PDF', channel: CNIPR_CHANNEL },
-      { patent: 'US1A', status: 'ok', path: '/tmp/US1A.pdf', channel: GOOGLE_PATENTS_CHANNEL },
-    ])
-    expect(result.warnings).toEqual([])
-    // 只有中国公开号进 CNIPR 段，非中国号直接走 Google 腿。
-    expect(cniprRequest).toHaveBeenCalledWith(['CN122072823A'], expect.anything())
-  })
-
-  it('notes a number CNIPR could not serve and lets Google Patents take it', async () => {
-    const cniprRequest = vi.fn(async (): Promise<CniprPdfLinkItem[]> => [
-      { number: 'CN122072823A', urls: [], unexamined: false, authorized: false, error: '检索不到该号' },
-    ])
-    // 浏览器不可用：Google 腿落到无浏览器的 scrape 通道，按请求逐篇回报。
-    const unavailable = egoSession({ checkAvailability: () => ({ ok: false, reason: 'ego lite not installed' }) })
-    const runner = createDownloadChannelRunner(() => patentDataWith(unavailable, { pdfLinks: cniprRequest }), {
-      scrape: async () => scrapeResult(CDN_URL),
-    })
-
     const result = await runner({ ...request, patents: ['CN122072823A'] })
-
-    expect(result.items).toEqual([{ patent: 'CN122072823A', status: 'fallback', pdfUrl: CDN_URL, channel: GOOGLE_PATENTS_CHANNEL }])
-    expect(result.warnings).toEqual([
-      `CNIPR 通道未取到 CN122072823A 的全文直链（检索不到该号），该篇改走 ${GOOGLE_PATENTS_CHANNEL}`,
-    ])
-  })
-
-  it('reports an unusable CNIPR channel and still downloads through Google Patents', async () => {
-    const failing: Pick<CniprChannel, 'pdfLinks'> = {
-      pdfLinks: async () => { throw new Error('CNIPR 通道失败（login_required）：未检测到 CNIPR 登录态') },
-    }
-    const unavailable = egoSession({ checkAvailability: () => ({ ok: false, reason: 'ego lite not installed' }) })
-    const runner = createDownloadChannelRunner(() => patentDataWith(unavailable, failing), {
-      scrape: async () => scrapeResult(CDN_URL),
-    })
-
-    const result = await runner({ ...request, patents: ['CN122072823A'] })
-
-    expect(result.items).toEqual([{ patent: 'CN122072823A', status: 'fallback', pdfUrl: CDN_URL, channel: GOOGLE_PATENTS_CHANNEL }])
-    expect(result.warnings?.[0]).toContain('CNIPR 通道不可用')
-    expect(result.warnings?.[0]).toContain('未检测到 CNIPR 登录态')
-  })
-
-  it('skips the CNIPR leg while the deployment leaves the channel disabled', async () => {
-    // createCniprChannel() 返回 undefined 就是「本部署没打开这条通道」：中国号与其它号一样走 Google 腿。
-    const unavailable = egoSession({ checkAvailability: () => ({ ok: false, reason: 'ego lite not installed' }) })
-    const runner = createDownloadChannelRunner(() => patentDataWith(unavailable, undefined), {
-      scrape: async () => scrapeResult(CDN_URL),
-    })
-
-    const result = await runner({ ...request, patents: ['CN122072823A'] })
-
-    expect(result.items).toEqual([{
-      patent: 'CN122072823A', status: 'fallback', pdfUrl: CDN_URL, channel: GOOGLE_PATENTS_CHANNEL,
-    }])
-    expect(result.warnings).toEqual([])
+    // 中国号同样走 Google 腿：PatSnap 兜底在下载失败之后由工具启动。
+    expect(result.items[0]?.channel).toBe(GOOGLE_PATENTS_CHANNEL)
   })
 
   it('falls back to the scrape channel when the service is absent', async () => {
@@ -204,61 +145,7 @@ describe('createDownloadChannelRunner', () => {
     await expect(runner(request)).rejects.toBeInstanceOf(PatentToolError)
   })
 
-  it('passes the caller signal to the CNIPR channel', async () => {
-    const controller = new AbortController()
-    const cniprRequest = vi.fn(async (_numbers: string[], options?: { signal?: AbortSignal }): Promise<CniprPdfLinkItem[]> => {
-      expect(options?.signal).toBe(controller.signal)
-      return [{ number: 'CN122072823A', urls: ['http://pic.cnipr.com/a.PDF'], unexamined: true, authorized: false }]
-    })
-    const runner = createDownloadChannelRunner(() => patentDataWith(egoSession(), { pdfLinks: cniprRequest }), {
-      scrape: async () => scrapeResult(CDN_URL),
-    })
-    const result = await runner({ ...request, patents: ['CN122072823A'], signal: controller.signal })
-    expect(result.items[0]?.channel).toBe(CNIPR_CHANNEL)
-  })
-
-  it('names a CNIPR entry with neither a link nor an error', async () => {
-    const cniprRequest = vi.fn(async (): Promise<CniprPdfLinkItem[]> => [
-      { number: 'CN122072823A', urls: [], unexamined: false, authorized: false },
-    ])
-    const unavailable = egoSession({ checkAvailability: () => ({ ok: false, reason: 'ego lite not installed' }) })
-    const runner = createDownloadChannelRunner(() => patentDataWith(unavailable, { pdfLinks: cniprRequest }), {
-      scrape: async () => scrapeResult(CDN_URL),
-    })
-    const result = await runner({ ...request, patents: ['CN122072823A'] })
-    expect(result.warnings?.[0]).toContain('无直链')
-    expect(result.items[0]?.pdfUrl).toBe(CDN_URL)
-  })
-
-  it('returns after the CNIPR leg when every number was served', async () => {
-    const cniprRequest = vi.fn(async (): Promise<CniprPdfLinkItem[]> => [
-      { number: 'CN122072823A', urls: ['http://pic.cnipr.com/a.PDF'], unexamined: true, authorized: false },
-    ])
-    const scrape = vi.fn(async () => scrapeResult(null, 'must not run'))
-    const runner = createDownloadChannelRunner(() => patentDataWith(egoSession(), { pdfLinks: cniprRequest }), { scrape })
-    const result = await runner({ ...request, patents: ['CN122072823A'] })
-    expect(result.items).toHaveLength(1)
-    expect(scrape).not.toHaveBeenCalled()
-  })
-
-  it('reports a non-Error CNIPR failure with its string form', async () => {
-    const failing: Pick<CniprChannel, 'pdfLinks'> = {
-      pdfLinks: async () => {
-        throw 'channel offline'
-      },
-    }
-    const unavailable = egoSession({ checkAvailability: () => ({ ok: false, reason: 'ego lite not installed' }) })
-    const runner = createDownloadChannelRunner(() => patentDataWith(unavailable, failing), {
-      scrape: async () => scrapeResult(CDN_URL),
-    })
-    const result = await runner({ ...request, patents: ['CN122072823A'] })
-    expect(result.warnings?.[0]).toContain('channel offline')
-  })
-
-  it('forwards the Google leg recorded directory alongside CNIPR items', async () => {
-    const cniprRequest = vi.fn(async (): Promise<CniprPdfLinkItem[]> => [
-      { number: 'CN122072823A', urls: ['http://pic.cnipr.com/a.PDF'], unexamined: true, authorized: false },
-    ])
+  it('forwards the Google leg recorded directory', async () => {
     const session = egoSession({
       runScript: async () => ({
         output: 'EGO_DOWNLOAD:{"items":[{"patent":"US1A","status":"ok","path":"/tmp/US1A.pdf"}],"recorded":"/tmp/evidence"}',
@@ -266,10 +153,9 @@ describe('createDownloadChannelRunner', () => {
         timedOut: false,
       }),
     })
-    const runner = createDownloadChannelRunner(() => patentDataWith(session, { pdfLinks: cniprRequest }))
-    const result = await runner({ ...request, patents: ['CN122072823A', 'US1A'], record: true })
+    const runner = createDownloadChannelRunner(() => patentDataWith(session))
+    const result = await runner({ ...request, record: true })
     expect(result.recorded).toBe('/tmp/evidence')
-    expect(result.items).toHaveLength(2)
   })
 })
 

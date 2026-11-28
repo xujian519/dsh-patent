@@ -330,3 +330,77 @@ export interface EgoSpawnRunner {
    */
   spawn(spec: EgoSpawnSpec): Promise<EgoSpawnResult>
 }
+
+/**
+ * PatSnap 通道的失败分类。凭证类（`auth_failed`、`permission_denied`、`missing_key`）
+ * 要改部署配置；`quota_exhausted` 要充值或换 Key；`rate_limited`、`timeout`、`network_error`
+ * 可稍后重试；`upstream_error` 与 `invalid_response` 是上游或协议变化。
+ * 调用方取消不是通道失败：它按 `AbortError` 传播，不占用这里的分类码。
+ */
+export const PATSNAP_FAILURE_CODES = [
+  'missing_key',
+  'auth_failed',
+  'permission_denied',
+  'quota_exhausted',
+  'rate_limited',
+  'bad_request',
+  'upstream_error',
+  'network_error',
+  'timeout',
+  'invalid_response',
+] as const
+
+/** One PatSnap channel failure: see {@link PATSNAP_FAILURE_CODES}. */
+export type PatsnapFailureCode = (typeof PATSNAP_FAILURE_CODES)[number]
+
+/** 单条号码的结果分类；通道级失败不进这里。 */
+export const PATSNAP_ITEM_CODES = ['invalid_number', 'not_found', 'no_pdf'] as const
+
+/** One per-number PatSnap result: see {@link PATSNAP_ITEM_CODES}. */
+export type PatsnapItemCode = (typeof PATSNAP_ITEM_CODES)[number]
+
+/** 一条号码的 PatSnap 结果。 */
+export interface PatsnapPdfLinkItem {
+  /** 请求里原样的号（已归一）。 */
+  number: string
+  /** 可直接下载的 PDF 地址。 */
+  pdfUrl?: string
+  /** 同族替代时实际取到的公开号（响应里的 `pn_related`）。 */
+  resolvedNumber?: string
+  /** 该号单条失败的原因（不中断同批其余号）。 */
+  error?: string
+  /** 该号单条失败的分类。 */
+  code?: PatsnapItemCode
+}
+
+/** 一次批量取链接的结果：按请求顺序对齐的条目加上服务端计费量。 */
+export interface PatsnapPdfLinksResult {
+  /** 与请求顺序一一对应的每条号结果。 */
+  items: PatsnapPdfLinkItem[]
+  /** 本次所有请求的 `x-openapi-amount` 之和；缺头时为 0。 */
+  amount: number
+}
+
+/** Options for constructing the PatSnap channel. */
+export interface PatsnapChannelOptions {
+  /** API Key（`sk-` 前缀）；调用方从环境变量读取后传入。 */
+  apiKey: string
+  /** API 网关地址（默认 `https://connect.patsnap.com`）。 */
+  baseUrl?: string
+  /** 单次请求期限（毫秒，默认 30_000）。 */
+  timeoutMs?: number
+  /** 每次请求携带的号码数（默认 20）。 */
+  batchSize?: number
+  /** PDF 缺失时是否用同族替代（默认 true）。 */
+  replaceByRelated?: boolean
+  /** fetch 注入（测试用；默认 globalThis.fetch）。 */
+  fetchImpl?: typeof fetch
+}
+
+/** Per-call options for the PatSnap channel. */
+export interface PatsnapCallOptions {
+  /** 覆盖本次调用的期限（毫秒）；只能收紧通道构造时的 `timeoutMs`，不能放大。 */
+  timeoutMs?: number
+  /** 调用方取消信号；取消按 `AbortError` 传播。 */
+  signal?: AbortSignal
+}

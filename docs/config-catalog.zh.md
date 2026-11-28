@@ -3325,7 +3325,7 @@ export interface AutoCommitConfig {
 ## `@deepseek-ai/dsh-patent-data`
 
 - `inject`: `subprocess`
-- `source`: [`packages/patent/patent-data/src/index.ts:139`](../packages/patent/patent-data/src/index.ts)
+- `source`: [`packages/patent/patent-data/src/index.ts:154`](../packages/patent/patent-data/src/index.ts)
 
 ```ts config-catalog
 /**
@@ -3381,6 +3381,22 @@ export interface Config {
   cniprRenderTimeoutMs: number
   /** CNIPR 详情检索接口的响应期限（毫秒，默认 20000）。 */
   cniprDetailTimeoutMs: number
+  /**
+   * 是否让本部署用 PatSnap 作为专利 PDF 的兜底通道（默认 false）。密钥只从环境变量读取，
+   * 变量名由 {@link patsnapApiKeyEnv} 指定；通道未启用时 `createPatsnapChannel()` 返回
+   * undefined，消费方只走 Google Patents，不会持有一个只能失败的对象。
+   */
+  patsnapEnabled: boolean
+  /** 保存 PatSnap API Key 的环境变量名（默认 `PATSNAP_API_KEY`）。 */
+  patsnapApiKeyEnv: string
+  /** PatSnap API 网关（默认 `https://connect.patsnap.com`）。 */
+  patsnapBaseUrl: string
+  /** PatSnap 单次请求期限（毫秒，默认 30000）。 */
+  patsnapTimeoutMs: number
+  /** 每次请求携带的号码数（默认 20，上限 50）。 */
+  patsnapBatchSize: number
+  /** PDF 缺失时是否用同族替代（默认 true）。 */
+  patsnapReplaceByRelated: boolean
 }
 
 /** One nuo request channel: see {@link NUO_REQUEST_CHANNELS}. */
@@ -3823,9 +3839,13 @@ export interface Config {
   /**
    * LLM provider route for the LLM-consuming tools (claim_chart_build / workflow run / figure analysis).
    * When this and `model` are unset, the route comes from the host `agentDefaultModel` selection.
+   * Setting only this or only `model` fails plugin load instead of falling back silently.
    */
   provider?: string
-  /** LLM model id for the LLM-consuming tools; resolved with `provider` and falling back to `agentDefaultModel`. */
+  /**
+   * LLM model id for the LLM-consuming tools; resolved with `provider` and falling back to
+   * `agentDefaultModel`. Setting only one of the two fails plugin load.
+   */
   model?: string
   /** Dedicated figure/image model route whose input modalities gate analyze_patent_figure. */
   imageModel?: ImageModelConfig

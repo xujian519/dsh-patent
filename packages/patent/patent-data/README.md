@@ -1,5 +1,5 @@
 ---
-description: "Service Definition for the patent data seam (`ctx.patentData`): the LRU-cached search provider factory over the vendored [`@deepseek-ai/nuo-patent`](../../../vendor/nuo-patent/README.md) engine, the structured metadata mapper, the patent result cache, the ego-browser anti-crawl session runner over the injected subprocess service, and the CNIPR (search.cnipr.com) channel that serves Chinese patent full text, legal status, and keyword search over that session, plus the persistence and case-path helpers ported from Sati. Consumers own every model-facing surface; this package resolves and serves patent data."
+description: "Service Definition for the patent data seam (`ctx.patentData`): the LRU-cached search provider factory over the vendored [`@deepseek-ai/nuo-patent`](../../../vendor/nuo-patent/README.md) engine, the structured metadata mapper, the patent result cache, the ego-browser anti-crawl session runner over the injected subprocess service, the CNIPR (search.cnipr.com) channel that serves Chinese patent full text, legal status, and keyword search over that session, and the PatSnap (Open Platform P020) channel that resolves patent PDF links for the download fallback, plus the persistence and case-path helpers ported from Sati. Consumers own every model-facing surface; this package resolves and serves patent data."
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Service Definition for the patent data seam (`ctx.patentData`): the LRU-cached search provider factory over the vendored [`@deepseek-ai/nuo-patent`](../../../vendor/nuo-patent/README.md) engine, the structured metadata mapper, the patent result cache, the ego-browser anti-crawl session runner over the injected subprocess service, and the CNIPR (search.cnipr.com) channel that serves Chinese patent full text, legal status, and keyword search over that session, plus the persistence and case-path helpers ported from Sati. Consumers own every model-facing surface; this package resolves and serves patent data.
+Service Definition for the patent data seam (`ctx.patentData`): the LRU-cached search provider factory over the vendored [`@deepseek-ai/nuo-patent`](../../../vendor/nuo-patent/README.md) engine, the structured metadata mapper, the patent result cache, the ego-browser anti-crawl session runner over the injected subprocess service, the CNIPR (search.cnipr.com) channel that serves Chinese patent full text, legal status, and keyword search over that session, and the PatSnap (Open Platform P020) channel that resolves patent PDF links for the download fallback, plus the persistence and case-path helpers ported from Sati. Consumers own every model-facing surface; this package resolves and serves patent data.
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@ Service Definition for the patent data seam (`ctx.patentData`): the LRU-cached s
 
 ## Service
 
-The `PatentData` service injects `subprocess` and exposes three capability methods.
+The `PatentData` service injects `subprocess` and exposes four capability methods.
 
 ### createSearchProvider(options?)
 
@@ -34,9 +34,13 @@ Builds an `EgoBrowserSession` over the injected `ctx.subprocess`. The runner che
 
 Builds the CNIPR channel over an ego-browser session, or returns nothing while the deployment leaves `Config.cniprEnabled` off — the caller then keeps its own channel for every number instead of holding an object that can only fail. The channel resolves the number form itself (`classifyCniprNumber`): publication numbers (`CN122072823A`) get their full-text PDF links, application numbers (`202311356097.5` / `2023113560975`, dotted before the check digit) get their legal-status records, and anything else is reported per number as unsupported; a keyword query gets the result page rows. All three capabilities run one generated script through the injected session (`cnipr-script.ts`), parse its receipt in this package (`cnipr-receipt.ts`), and reuse one named task space so the ego lite login state and tab carry over between calls. A per-number failure (number not found, no application number resolved) is a result entry; a channel failure (ego-browser missing or failing to start, deadline exceeded, no receipt, expired login, a keyword result page whose rows no longer parse) throws `CniprChannelError` with a code the caller routes on; a caller cancellation is not a channel failure and surfaces as `AbortError`.
 
+### createPatsnapChannel(options?)
+
+Builds the PatSnap channel over the API key named by `Config.patsnapApiKeyEnv`, or returns nothing while `Config.patsnapEnabled` is off. The key is read per call so a deployment can rotate it without restarting; a missing key throws `PatsnapChannelError('missing_key')` instead of returning a channel that can only fail. `pdfLinks(numbers, { timeoutMs, signal })` sends publication numbers in batches (`Config.patsnapBatchSize`) to the Open Platform P020 endpoint, maps responses back to the request order, and returns each number's PDF URL plus the gateway's `x-openapi-amount` total. A number the service omits is `not_found` (it is not billed); a number without a PDF is `no_pdf`; a malformed number is `invalid_number` and never leaves the process. Channel-level failures (auth, permission, quota, rate limit, timeout, protocol drift) throw `PatsnapChannelError` with a code the caller routes on; a caller cancellation surfaces as `AbortError`.
+
 ## Configuration
 
-cordis.yml `Config` declares the ego-browser values and the CNIPR page waits a deployment varies; a per-call option overrides the same-named field.
+cordis.yml `Config` declares the ego-browser values, the CNIPR page waits, and the PatSnap gateway/batch values a deployment varies; a per-call option overrides the same-named field.
 
 | Key | Default | Meaning |
 | --- | --- | --- |
@@ -55,6 +59,12 @@ cordis.yml `Config` declares the ego-browser values and the CNIPR page waits a d
 | `cniprResultTimeoutMs` | `30000` | Deadline in milliseconds for the result-page structures: detail-search form, legal-status form and result URL, pagination marker. |
 | `cniprRenderTimeoutMs` | `20000` | Deadline in milliseconds for rendered content: result rows, application number, legal-status result heading. |
 | `cniprDetailTimeoutMs` | `20000` | Deadline in milliseconds for the detail-search XHR that carries the full-text link. |
+| `patsnapEnabled` | `false` | Whether this deployment may fall back to PatSnap for patent PDF links. The key comes from the environment; disabled means `createPatsnapChannel()` returns nothing and the download tool keeps Google's result. |
+| `patsnapApiKeyEnv` | `PATSNAP_API_KEY` | Environment variable holding the Open Platform key (`sk-…`). The key is not a config field, so it never enters `cordis.yml` or logs. |
+| `patsnapBaseUrl` | `https://connect.patsnap.com` | API gateway. |
+| `patsnapTimeoutMs` | `30000` | Deadline for one P020 request. |
+| `patsnapBatchSize` | `20` | Numbers per P020 request (1–50). Billing is per returned record, so batch size trades round trips for latency, not credits. |
+| `patsnapReplaceByRelated` | `true` | Substitute the family PDF when the requested number has none; the response's `pn_related` comes back as `resolvedNumber`. |
 
 The remaining options are per-call only: they are test seams or values this service cannot know.
 
@@ -67,6 +77,8 @@ The remaining options are per-call only: they are test seams or values this serv
 | `createEgoSession` | `env` | `process.env` | Source for the child allowlist: `PATH` (plus `pathEntries`), `HOME`, `LANG`, `LANGUAGE`, `LC_*`, `DISPLAY`, `WAYLAND_DISPLAY`, `XAUTHORITY`, `XDG_RUNTIME_DIR`, and `DBUS_SESSION_BUS_ADDRESS`. Other names are omitted. |
 | `createEgoSession` | `runner` | subprocess-backed runner | Spawn runner injection for tests. |
 | `createCniprChannel` | `timeoutMs` | session `defaultTimeoutMs` | Deadline for one CNIPR script run. |
+| `createPatsnapChannel` | `timeoutMs` | `Config.patsnapTimeoutMs` | Deadline for one P020 request. |
+| `createPatsnapChannel` | `batchSize` | `Config.patsnapBatchSize` | Numbers per P020 request. |
 | `createCniprChannel` | `pageBudgets` | the resolved `Config` values | Per-wait overrides for one channel; a field replaces only that wait. |
 | `createCniprChannel` | `cwd` | `process.cwd()` | Working directory of the script subprocess; the script writes nothing. |
 
@@ -81,10 +93,12 @@ Independent; the data seam registers no prompt, tool schema, or result of its ow
 ## Known Limitations and Deferred Work
 
 - **External `ego-browser` CLI dependency** — the anti-crawl scrape path needs the external `ego-browser` (ego-lite) CLI installed and on the PATH (macOS only); the package ships no ego-browser script assets (Sati's `skills/ego-browser/` holds only learnings), so site anti-crawl upgrades are maintained outside this package.
+- **PatSnap live probe** — `tests/patsnap-live.e2e.ts` calls the real P020 gateway and spends one credit per returned record; it skips unless `DSH_PATSNAP_LIVE=1` and `PATSNAP_API_KEY` are set.
+- **PatSnap channel scope and billing** — the channel calls the Open Platform P020 API over HTTP with the key from `Config.patsnapApiKeyEnv`; it needs network access to the gateway and a key with P020 permission. A returned record costs one `x-openapi-amount` unit, an omitted or PDF-less number costs nothing, and a mixed batch returns only the numbers it could serve. The gateway answers HTTP 200 for business failures, so the channel parses `status`/`error_code`: `68300008` means the batch had no PDF and becomes per-number `not_found`, while `6720000x` codes are channel failures. The trial tier allows 10 requests per minute, which the batch size absorbs for a 50-patent call.
 - **nuo's browser path opens its own `ego-browser` process** — nuo 2.3.2 reads the browser response body through an in-page `fetch`, so a JSON viewer extension no longer turns the search XHR into HTML; `fallback` keeps the plain fetch first and retries connection failures through the browser. The browser path still spawns `ego-browser nodejs` outside the harness `ctx.subprocess` seam (128 MB output cap, no tree kill on abort), so a deployment that must keep all subprocesses under the seam sets `nuoRequestChannel: native`. The dsh-side ego session still covers the pdf-download path through the seam.
 - **CNIPR channel scope and upkeep** — the channel drives `search.cnipr.com` through ego lite, so it needs that login state and it inherits the platform's limits: the site states it does not support scraping, which is why the channel takes one number at a time through ordinary page interaction and never batches or parallelizes. The channels created by one `PatentData` service share a serial queue, because every script reuses the same named task space and tab; concurrent tool calls in that service wait instead of driving the same page. The queue is service-scoped: separate dsh processes, and multiple services mounted against one ego lite profile, can still collide, so a deployment should run one CNIPR-serving patent-data mount per ego profile. Its page contracts (search box, detail-search POST, legal-status form, the result-row fields, the `pic.cnipr.com/pdfcn/...` link pattern) are the site's, so a site change surfaces as `page_state` on the first call rather than as a silent empty answer — the receipt either parses or it does not, and a keyword result row that loses its publication number fails the call the same way instead of silently shrinking the hit list. Legal-status records come from the results page text, and a page that lists no records yields a null count rather than an invented zero. Search reads the result rows directly (they carry title, applicant, publication date, and abstract, so no per-record detail fetch is needed); the page shows ten rows and its 20/30-row options are refused for this deployment's account tier, so a larger `limit` is served by turning the site's own result pages, capped at three pages per call. Those two limits are site/account protocol values and stay fixed; every other page wait is a `Config` field so a slow host, a login-state refresh, or a site change is tuned without a release.
 - **CNIPR live probe** — `tests/cnipr-live.e2e.ts` drives the real site end to end and is opt-in through `DSH_CNIPR_LIVE=1`; it skips without that switch or without `ego-browser`, and it consumes the deployment's CNIPR login state.
-- **Consumer wiring** — the search provider and ego-session runner are consumed by `dsh-patent-tools` (patent_search/metadata/legal_status and patent_pdf_download); the CNIPR channel is consumed by `patent_pdf_download` (China full text), `patent_legal_status` (China legal-status records), `patent_search` (China keyword search when the engine fails or returns no hits), and `patent_metadata` (China publication numbers the engine fails, throws on, or cannot find). The cache, mapper, persistence, and path modules stay library exports for those consumers.
+- **Consumer wiring** — the search provider and ego-session runner are consumed by `dsh-patent-tools` (patent_search/metadata/legal_status and the Google leg of patent_pdf_download); the CNIPR channel is consumed by `patent_legal_status` (China legal-status records), `patent_search` (China keyword search when the engine fails or returns no hits), and `patent_metadata` (China publication numbers the engine fails, throws on, or cannot find). The PatSnap channel is consumed by `patent_pdf_download` as its fallback when the Google leg yields no valid PDF. The cache, mapper, persistence, and path modules stay library exports for those consumers.
 
 ### Dev Note
 

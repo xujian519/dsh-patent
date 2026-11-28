@@ -3,20 +3,20 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/patent/patent-data/README.md
 /:
-  en: 53a2d8d94bfb9f60
-  zh: d4346b8c75b5874f
+  en: 6d15e5109541fc53
+  zh: 617a6009ecbb66e4
 /deepseek-ai-dsh-patent-data:
   en: fc8f90822af1ae2f
   zh: 0e838135fc20b6e1
 /deepseek-ai-dsh-patent-data/summary:
-  en: 16168720e4f1d453
-  zh: 33a0f3c409aec2d1
+  en: da360d4f82d1e004
+  zh: da6ef7d978456ee9
 /deepseek-ai-dsh-patent-data/table-of-contents:
   en: ede6c1b44c95ae45
   zh: 1206ced0d45ad7ec
 /deepseek-ai-dsh-patent-data/service:
-  en: 06402dc9000b5618
-  zh: a49adba758e66abe
+  en: e6f638380b835a5a
+  zh: 11784d30f2078f7b
 /deepseek-ai-dsh-patent-data/service/createsearchprovider-options:
   en: d6bc9bd7ddaa7081
   zh: cbf30764def6c65d
@@ -25,10 +25,13 @@
   zh: fa07b0055127c1f0
 /deepseek-ai-dsh-patent-data/service/createcniprchannel-options:
   en: d7aa9b67174d8ddc
-  zh: edca69ec9c58cd5a
+  zh: 5db146797a53aea4
+/deepseek-ai-dsh-patent-data/service/createpatsnapchannel-options:
+  en: 5cc2dfa75444cd57
+  zh: 3356373658f8636b
 /deepseek-ai-dsh-patent-data/configuration:
-  en: 9b727ab2254550bb
-  zh: 34ab961571991001
+  en: 86cdcdbc5242e41b
+  zh: 9f87e897a85dc574
 /deepseek-ai-dsh-patent-data/model-experience:
   en: 71e174c5dbaf919a
   zh: 71e174c5dbaf919a
@@ -36,8 +39,8 @@
   en: aea4bc8ad7771295
   zh: 55a9c3df422c90db
 /deepseek-ai-dsh-patent-data/known-limitations-and-deferred-work:
-  en: e636befe44d69eca
-  zh: 901f7619dc33ee72
+  en: 3ecfac4428b262c0
+  zh: c782e5784de0d844
 /deepseek-ai-dsh-patent-data/known-limitations-and-deferred-work/dev-note:
   en: 92716222a20aade0
   zh: 312f7a63f4de2b91

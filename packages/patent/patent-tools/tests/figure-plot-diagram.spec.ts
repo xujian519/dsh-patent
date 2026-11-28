@@ -332,6 +332,29 @@ describe('buildPlotDiagram 校验', () => {
       expect(error.message).toContain('画布尺寸')
     }
   })
+
+  it('画布扣除边距、轴带与图例后没有绘图区时抛 invalid_input', () => {
+    const tooNarrow = raisedError({ series: [{ points: [[0, 0]] }], xLabel: '温度', yLabel: '时间', widthMm: 20, heightMm: 80 })
+    expect(tooNarrow.code).toBe('invalid_input')
+    expect(tooNarrow.message).toContain('画布宽度')
+
+    const tooShort = raisedError({ series: [{ points: [[0, 0]] }], xLabel: '温度', yLabel: '时间', widthMm: 120, heightMm: 18 })
+    expect(tooShort.code).toBe('invalid_input')
+    expect(tooShort.message).toContain('画布高度')
+
+    const legendEatsHeight = raisedError({
+      series: [
+        { name: '序列一', points: [[0, 0]] },
+        { name: '序列二', points: [[1, 1]] },
+      ],
+      xLabel: '温度',
+      yLabel: '时间',
+      widthMm: 120,
+      heightMm: 20,
+    })
+    expect(legendEatsHeight.code).toBe('invalid_input')
+    expect(legendEatsHeight.message).toContain('图例')
+  })
 })
 
 describe('fmt 分支（vector-figure 接缝）', () => {

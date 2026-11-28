@@ -364,6 +364,15 @@ describe('buildHatchScript', () => {
     expect(embeddedRegions[1]?.holes).toHaveLength(1)
   })
 
+  it('outputDir 含 $ 替换模式时原样内嵌', () => {
+    const outputDir = "/tmp/out $& $' $`"
+    const script = buildHatchScript({ pattern, regions, outputDir })
+    const match = /^PARAMS = json\.loads\((.*)\)$/m.exec(script)
+    expect(match).not.toBeNull()
+    const embedded = JSON.parse(JSON.parse(match?.[1] as string) as string) as Record<string, unknown>
+    expect(embedded.outputDir).toBe(outputDir)
+  })
+
   it('三条硬约束与两条静默失败路径都落在源码里', () => {
     const script = buildHatchScript({ pattern, regions, outputDir: '/tmp/out' })
     // 硬约束 3：必须显式传 patFile（少传即 SIGSEGV 139，实测）——第四个位置参数就是 pat_path。

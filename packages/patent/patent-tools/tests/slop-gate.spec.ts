@@ -225,7 +225,8 @@ describe('SlopGateHandler', () => {
     expect(over.slop_score).toBe(analyzeSlop(CLEAN_DRAFT).score.total)
     expect(String(over.slop_report)).toMatch(/需修订/)
     expect(String(over.slop_report)).toContain('超出预算')
-    expect(over.slop_revision_hint).toBeUndefined()
+    // 总分过线但实施例超预算同样回退重写：提示必须指出哪一块超了多少。
+    expect(String(over.slop_revision_hint)).toContain('实施例2 1501/1500')
   })
 
   it('ignores blocks without feature ids and rejects a malformed embodiment budget', async () => {

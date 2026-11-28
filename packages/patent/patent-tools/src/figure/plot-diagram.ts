@@ -280,7 +280,8 @@ function legendRows(entries: readonly LegendEntry[], availableMm: number): Legen
  * 数值、序列名，去重后按出现顺序）。
  * @throws VectorFigureError('empty_input') 未给出任何数据序列时。
  * @throws VectorFigureError('invalid_input') 序列无数据点、坐标非有限数、轴范围
- * 非递增或含非有限数、刻度数量越界、画布尺寸非正时。
+ * 非递增或含非有限数、刻度数量越界、画布尺寸非正，或画布扣除边距、轴带与图例后
+ * 没有可用绘图区时。
  */
 export function buildPlotDiagram(input: PlotDiagramInput): VectorFigureSpec {
   if (input.series.length === 0) {
@@ -323,6 +324,18 @@ export function buildPlotDiagram(input: PlotDiagramInput): VectorFigureSpec {
   const plotTop = MARGIN_TOP_MM
   const plotWidth = plotRight - plotLeft
   const plotHeight = plotBottom - plotTop
+  if (plotWidth <= 0) {
+    throw new VectorFigureError(
+      'invalid_input',
+      `画布宽度不足以容纳左右边距：${String(widthMm)}mm 须大于 ${String(MARGIN_LEFT_MM + MARGIN_RIGHT_MM)}mm`,
+    )
+  }
+  if (plotHeight <= 0) {
+    throw new VectorFigureError(
+      'invalid_input',
+      `画布高度不足以容纳上边距、横轴带与图例：${String(heightMm)}mm 扣除后无绘图区`,
+    )
+  }
   const mapX = (value: number): number => plotLeft + ((value - xRange[0]) / (xRange[1] - xRange[0])) * plotWidth
   const mapY = (value: number): number => plotBottom - ((value - yRange[0]) / (yRange[1] - yRange[0])) * plotHeight
 

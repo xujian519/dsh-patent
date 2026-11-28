@@ -315,5 +315,6 @@ export function buildStructureScript(params: StructureScriptParams): string {
   // 双引号字符串字面量（JSON 与 Python 的 \" \\ \n \uXXXX 转义规则一致）。
   const payloadLiteral = JSON.stringify(JSON.stringify(payload))
   pythonTemplate ??= readStructureScriptTemplate(import.meta.url)
-  return pythonTemplate.replace('__PAYLOAD_LITERAL__', payloadLiteral)
+  // 替换值用函数返回：字符串参数会解释 `$&`/`$'` 等替换模式，破坏含这些字符的路径。
+  return pythonTemplate.replace('__PAYLOAD_LITERAL__', () => payloadLiteral)
 }

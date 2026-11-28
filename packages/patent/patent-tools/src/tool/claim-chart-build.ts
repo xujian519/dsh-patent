@@ -17,7 +17,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
-import { readInvalidityConclusion } from './internal/invalidity-json.ts'
+import { readInvalidityConclusion, renderInvalidityReadDefects } from './internal/invalidity-json.ts'
 import { dataList, namedLabel, numberList, recordChild, recordList, recordNumberOr, recordText, recordValue, textList } from './internal/json-read.ts'
 import { toJsonValue } from './internal/json-value.ts'
 import {
@@ -184,10 +184,11 @@ function renderClaimChart(value: {
   }
   if (value.infringement_conclusion !== undefined) lines.push(...renderConclusion(value.infringement_conclusion))
   if (value.invalidity_conclusion !== undefined) {
-    lines.push('', ...renderInvalidityConclusion(readInvalidityConclusion(value.invalidity_conclusion), {
+    const invalidity = readInvalidityConclusion(value.invalidity_conclusion)
+    lines.push('', ...renderInvalidityConclusion(invalidity.conclusion, {
       claimNos,
       claims: recordList(chart, 'claims'),
-    }).split('\n'))
+    }).split('\n'), ...renderInvalidityReadDefects(invalidity.defects))
   }
   if (value.json_path !== undefined && value.md_path !== undefined) {
     lines.push('', `落盘: ${value.json_path} + ${value.md_path}`)

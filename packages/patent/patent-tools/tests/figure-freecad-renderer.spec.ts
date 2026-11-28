@@ -27,7 +27,11 @@ const TEST_PROBE_TIMEOUT_MS = DEFAULT_FREECAD_PROBE_TIMEOUT_MS
 
 /** 渲染超时用例注入的非默认预算（毫秒）：证明期限取自注入值而非渲染器模块默认值。 */
 const INJECTED_RENDER_TIMEOUT_MS = 1_500
-import { STRUCTURE_MANIFEST_FILENAME } from '../src/figure/freecad-structure-script.ts'
+import {
+  STRUCTURE_MANIFEST_FILENAME,
+  STRUCTURE_TEMPLATE_FILENAME,
+  STRUCTURE_TRANSIENT_DIRNAME,
+} from '../src/figure/freecad-structure-script.ts'
 
 // 清理可被置为失败：验证「清理失败不顶掉渲染结果」的收尾分支。
 const mockFsOps = vi.hoisted(() => ({ failRm: false }))
@@ -275,6 +279,26 @@ describe('renderStructureViews', () => {
       // 渲染结束后隔离目录与脚本都清掉，不在交付目录留下隐藏残留
       expect(existsSync(join(outputDir, '.freecad-home'))).toBe(false)
       expect(existsSync(call.argv[1] as string)).toBe(false)
+    } finally {
+      rmSync(outputDir, { recursive: true, force: true })
+    }
+  })
+
+  it('清理结构脚本写入的模板与 transient 目录', async () => {
+    const { exe } = fakeFreecad()
+    const outputDir = tempDir()
+    try {
+      const { runtime } = fakeSubprocess((spawnSpec) => {
+        writeFileSync(join(spawnSpec.cwd, STRUCTURE_MANIFEST_FILENAME), '{"views":[]}')
+        writeFileSync(join(spawnSpec.cwd, STRUCTURE_TEMPLATE_FILENAME), '<svg/>')
+        mkdirSync(join(spawnSpec.cwd, STRUCTURE_TRANSIENT_DIRNAME), { recursive: true })
+        writeFileSync(join(spawnSpec.cwd, STRUCTURE_TRANSIENT_DIRNAME, 'part.svg'), '<svg/>')
+        return handleWith({ exitCode: 0, signal: null })
+      })
+      const result = await renderStructureViews(runtime, spec({ outputDir }), { executable: exe, renderTimeoutMs: TEST_RENDER_TIMEOUT_MS })
+      expect(result.ok).toBe(true)
+      expect(existsSync(join(outputDir, STRUCTURE_TEMPLATE_FILENAME))).toBe(false)
+      expect(existsSync(join(outputDir, STRUCTURE_TRANSIENT_DIRNAME))).toBe(false)
     } finally {
       rmSync(outputDir, { recursive: true, force: true })
     }

@@ -309,6 +309,15 @@ describe('buildSectionScript', () => {
     })
   })
 
+  it('modelPath 含 $ 替换模式时原样内嵌', () => {
+    const modelPath = "/tmp/a$& $' $`.step"
+    const script = buildSectionScript({ modelPath, frame, outputDir: '/tmp/out' })
+    const match = /^PARAMS = json\.loads\((.*)\)$/m.exec(script)
+    expect(match).not.toBeNull()
+    const embedded = JSON.parse(JSON.parse(match?.[1] as string) as string) as Record<string, unknown>
+    expect(embedded.modelPath).toBe(modelPath)
+  })
+
   it('不建 Document/Page/模板，也不加载 TechDraw（G3 的无文档约束）', () => {
     const script = buildSectionScript({ modelPath: '/tmp/a.step', frame, outputDir: '/tmp/out' })
     for (const forbidden of ['newDocument', 'addObject', 'TransientDir', 'TechDraw', 'DrawPage', 'DrawSVGTemplate']) {

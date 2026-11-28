@@ -78,7 +78,9 @@ export function buildHatchScript(params: HatchScriptParams): string {
   }
   // 双重序列化：内层是脚本要 json.loads 的对象文本，外层把它转成一个 Python
   // 双引号字符串字面量（JSON 与 Python 的 \" \\ \n \uXXXX 转义规则一致）。
-  return PYTHON_TEMPLATE.replace('__PAYLOAD_LITERAL__', JSON.stringify(JSON.stringify(payload)))
+  // 替换值用函数返回：字符串参数会解释 `$&`/`$'` 等替换模式，破坏含这些字符的路径。
+  const payloadLiteral = JSON.stringify(JSON.stringify(payload))
+  return PYTHON_TEMPLATE.replace('__PAYLOAD_LITERAL__', () => payloadLiteral)
 }
 
 /**

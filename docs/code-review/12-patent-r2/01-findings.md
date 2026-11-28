@@ -198,3 +198,38 @@
 | S-PAT-047 | 技术领域、发明内容、摘要按 `patent_type` 使用「本实用新型」。 | `drafting-engine.spec.ts`：实用新型草案含本实用新型、不含本发明 |
 | F-PAT-086 | `STANDARD_REFERENCE` 区分标准代号与裸「标准」；非专利文献分支按该词表放行。 | `spec-description-extras.spec.ts`：裸标准、GB/T 代号、标准号均不报 |
 | F-PAT-087 | `notAssessedItems` 增加 `smiles-validity`；描述、双语 README、工具目录与快照 pin 同步。 | `validate-specification.spec.ts`：化学域、显式 SMILES、机械域三条断言 |
+
+## B11 patent-tools 分析与附图
+
+| ID | 级别 | 位置 | 证据与影响 | 最小修复 | 状态 |
+|---|---|---|---|---|---|
+| S-PAT-048 | P3 | `patent-tools/src/figure/freecad-section-script.ts:94`、`freecad-hatch-script.ts:82`、`freecad-structure-script.ts:316` | 三处脚本构建器用字符串参数调用 `String.replace('__PAYLOAD_LITERAL__', payload)`，替换值里的 `$&`、`$'`、`` $` `` 会被当作替换模式展开。探针：`modelPath` 含 `$&` 时内嵌 JSON 变成 `__PAYLOAD_LITERAL__`，含 `$'` 时 JSON 被截断，Python 侧 `json.loads` 失败；路径含这些字符的模型无法剖切/打剖面线/投影。 | 替换值改用函数返回（`() => payloadLiteral`），三处同改。 | 已修复 |
+| S-PAT-049 | P3 | `patent-tools/src/figure/dot-builder.ts:515`、`:625` | 流程图与框图只按原始 id 建索引，`a b` 与 `a_b` 经 `sanitizeId` 都变成 `a_b` 后输出两条同 id 节点声明，后者覆盖前者且后继/连接指向合并后的节点。层级图与状态图已在遍历时拒绝重复 id。 | 新增 `assertUniqueIds`，在两个 builder 分配标号前按规范化 id 去重并抛 `DotBuildError('unknown_id')`。 | 已修复 |
+| S-PAT-050 | P3 | `patent-tools/src/figure/freecad-renderer.ts:304`、`:354` | 结构投影脚本在交付目录写 `.freecad-structure-template.svg` 与 `.freecad-transient`，渲染结束只清 `.freecad-home` 与 `.py`。真实 FreeCAD 渲染后模板 SVG 留在输出目录，与交付图混在一起。 | `FreeCadScriptRequest` 增加 `cleanupPaths`，结构链路传入模板与 transient 目录，`finally` 内递归清理。 | 已修复 |
+| S-PAT-051 | P3 | `patent-tools/src/atoms/slop-gate.ts:156` | 实施例块超预算但总分过线时 `passed` 为 false，报告写「需修订」，提示却只在 `!score.passed` 时生成，回退重写没有篇幅方向。探针：总分 35、实施例 200/50 时无 `slop_revision_hint`。 | 只要 `!passed` 就组装提示；总分提示与逐块超预算明细（序号、字数、上限）合并。 | 已修复 |
+| S-PAT-052 | P3 | `patent-tools/src/figure/dot-builder.ts:320` | `resolvePageBundle` 只检查 `marginCm <= 0`，`NaN` 比较为 false 直接放行；A4 + 100cm 边距也放行并输出 `size="-70.47,-67.05"` 与 `margin="NaN,NaN"`，交给 Graphviz 的页面尺寸无效。 | 边距改查 `Number.isFinite` 与正数；同时给 `pageSize` 时要求两倍边距小于页面短边，否则 `invalid_page`。 | 已修复 |
+| S-PAT-053 | P3 | `patent-tools/src/figure/svg-to-dxf.ts:72` | `scanSvg.unmeasured` 记录 marker 端头、CSS 样式、未展开引用等未量测原因，`svgToDxf` 只转述填充与曲线降级。探针：带 `marker-end` 的箭头 SVG 转换成功但 `warnings` 为空，调用方会把「缺箭头墨迹」当成几何完整。 | 把剩余 `unmeasured` 原因并入 `warnings`；已导致拒绝的 viewBox/变换原因在此之前已抛出。 | 已修复 |
+| S-PAT-054 | P3 | `patent-tools/src/figure/plot-diagram.ts:327` | 画布只校验正有限数，不校验扣除左右边距、下轴带与图例后是否仍有绘图区。探针：20×20mm 得到 `plotWidth=-10`，横轴落在 x=22 的画布外；多序列图例还会继续吃掉高度。 | 计算后要求 `plotWidth > 0` 且 `plotHeight > 0`，否则 `invalid_input` 并说明是宽度还是高度不足。 | 已修复 |
+
+### B11 第一轮遗留落地
+
+| ID | 级别 | 位置 | 证据与影响 | 最小修复 | 状态 |
+|---|---|---|---|---|---|
+| F-PAT-078 | P3 | `patent-tools/src/tool/internal/invalidity-json.ts`、`tool/claim-chart-build.ts` | `claimNo` 缺失或非法时一律回退 0，而权项从 1 起编号；损坏/旧版记录以「权项 0」进入模型可见报告，无法与合法数据区分。 | 读取层把 `claimNo`、`referredClaimNo` 与成环 `claimNos` 校验为正整数；非法条目丢弃并记录 `{path, reason}`。`claim_chart_build` 在结论后追加「读取缺陷」小节。 | 已修复 |
+| F-PAT-079 | P2 | `patent-tools/src/internal/index-store.ts:104-122` | 按文件路径的 Promise 队列只覆盖单进程；两个进程并发 upsert 时各自读同一份 `entries`，后写者覆盖前者且无告警。 | upsert 先建父目录，再在 `withFileLock` 内无条件重读磁盘、合并、原子写回；进程内队列保留用于同实例排序。 | 已修复 |
+
+### B11 实施记录
+
+用户确认「全部修复 + F-PAT-078/079」后，7 条新发现与两项遗留全部落地，详见 [02-batches/B11.md](02-batches/B11.md)。
+
+| ID | 实施要点 | 回归测试 |
+|---|---|---|
+| S-PAT-048 | 三处 payload 替换改为函数返回。 | 三个 FreeCAD 脚本 spec：`$&`、`$'`、`` $` `` 路径往返一致 |
+| S-PAT-049 | 流程图/框图按规范化 id 去重。 | `figure-dot-builder.spec.ts`：`a b` 与 `a_b` 均抛 id 重复 |
+| S-PAT-050 | 结构渲染清理模板与 transient 目录。 | `figure-freecad-renderer.spec.ts`：子进程写出两者后均被删除；真实 FreeCAD 全套通过 |
+| S-PAT-051 | 超预算实施例写入证据型提示。 | `slop-gate.spec.ts`：总分过线、实施例 1501/1500 时提示含明细 |
+| S-PAT-052 | 页边距有限性与页面适配校验。 | `figure-dot-builder.spec.ts`：NaN/Infinity、A4 10.51cm/100cm 拒绝，10cm 放行 |
+| S-PAT-053 | `svgToDxf` 透传未量测原因。 | `figure-svg-to-dxf.spec.ts`：marker 端头警告出现 |
+| S-PAT-054 | 曲线图最小绘图区校验。 | `figure-plot-diagram.spec.ts`：过窄、过矮、图例吃掉高度三种输入拒绝 |
+| F-PAT-078 | 读取层丢弃非法 claimNo 并记录缺陷。 | `invalidity-json.spec.ts`：非法 novelty/distinguishing/从属/引用条目被丢弃，缺陷路径逐条断言 |
+| F-PAT-079 | `withFileLock` 包裹 upsert 并在锁内重读。 | `index-store.spec.ts`：两个独立 store 并发 upsert 均保留，锁文件清理 |

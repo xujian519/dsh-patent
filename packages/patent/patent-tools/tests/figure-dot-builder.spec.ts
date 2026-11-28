@@ -190,6 +190,15 @@ describe('buildFlowchartDOT', () => {
     ).toThrow(/不能为空/)
   })
 
+  it('拒绝经 DOT 规范化后相撞的 id', () => {
+    expect(() =>
+      buildFlowchartDOT(
+        [{ id: 'a b', label: 'A', next: [] }, { id: 'a_b', label: 'B', next: [] }],
+        {},
+      ),
+    ).toThrow(/id 重复/)
+  })
+
   it('拒绝非法形状', () => {
     expect(() =>
       buildFlowchartDOT(
@@ -238,6 +247,9 @@ describe('buildBlockDiagramDOT', () => {
     expect(() => buildBlockDiagramDOT([], [])).toThrow(/至少需要一个块/)
     expect(() => buildBlockDiagramDOT(blocks, [{ from: 'ghost', to: 'cpu' }])).toThrow(/连接源块不存在/)
     expect(() => buildBlockDiagramDOT(blocks, [{ from: 'in', to: 'ghost' }])).toThrow(/连接目标块不存在/)
+    expect(() =>
+      buildBlockDiagramDOT([{ id: 'a b', label: 'A' }, { id: 'a_b', label: 'B' }], []),
+    ).toThrow(/id 重复/)
   })
 })
 
@@ -347,11 +359,20 @@ describe('resolvePageBundle', () => {
     expect(() => resolvePageBundle({ dpi: -300 })).toThrow(DotBuildError)
     expect(() => resolvePageBundle({ dpi: 2.5 })).toThrow(/正整数/)
     expect(() => resolvePageBundle({ marginCm: -1 })).toThrow(DotBuildError)
+    expect(() => resolvePageBundle({ marginCm: Number.NaN })).toThrow(/有限数/)
+    expect(() => resolvePageBundle({ marginCm: Number.POSITIVE_INFINITY })).toThrow(/有限数/)
     try {
       resolvePageBundle({ dpi: 0 })
     } catch (error) {
       expect((error as DotBuildError).code).toBe('invalid_page')
     }
+  })
+
+  it('页边距占满页面可用尺寸时抛 invalid_page', () => {
+    // A4 短边 8.27in ≈ 21.0cm，两倍页边距必须小于它。
+    expect(() => resolvePageBundle({ pageSize: 'a4', marginCm: 10.51 })).toThrow(/超出/)
+    expect(() => resolvePageBundle({ pageSize: 'a4', marginCm: 100 })).toThrow(/超出/)
+    expect(resolvePageBundle({ pageSize: 'a4', marginCm: 10 })).toEqual({ pageSize: 'a4', marginCm: 10 })
   })
 })
 

@@ -2,16 +2,19 @@
  * 通用单文件索引存储（figure / chemistry 共用）。
  *
  * 一个索引是一个 JSON 文件：`{ version, updatedAt, entries }`。写入走原子写
- * （同目录临时文件 + rename），同一文件路径的并发 upsert 在进程内串行化，避免
- * "读-改-写"竞态丢条目；命中损坏/版本不兼容/含无效条目的旧索引时先备份原文件
- * 再合并，避免静默丢弃原有有效条目。解析结果按文件路径进程内缓存：load 命中
- * 缓存不读盘、save/upsert 同步更新，避免 search_patent_figure 每次调用全量重读
- * 重解析；外部文件改动在实例生命周期内不感知。参考 Sati 的 figure / chemistry index-store。
+ * （同目录临时文件 + rename），同一文件路径的并发 upsert 先按进程内队列排序，
+ * 再在 `<file>.lock` 文件锁下重新读盘并合并，避免多个进程各自"读-改-写"时后者
+ * 覆盖前者；命中损坏/版本不兼容/含无效条目的旧索引时先备份原文件再合并，避免
+ * 静默丢弃原有有效条目。解析结果按文件路径进程内缓存：load 命中缓存不读盘、
+ * save/upsert 同步更新，避免 search_patent_figure 每次调用全量重读重解析；外部
+ * 文件改动只在 upsert 的锁内被感知（load 仍走缓存）。参考 Sati 的 figure /
+ * chemistry index-store。
  * @module @deepseek-ai/dsh-patent-tools/internal/index-store
  */
 
 import { copyFile, mkdir, readFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
+import { withFileLock } from '@deepseek-ai/dsh-atomic-write'
 import { atomicWriteJson } from '@deepseek-ai/dsh-patent-core'
 
 /** 索引加载结果：条目列表 + 非致命异常提示。 */
@@ -53,12 +56,17 @@ type IndexStoreOptions<TEntry> = {
 export function createIndexStore<TEntry>(options: IndexStoreOptions<TEntry>): IndexStore<TEntry> {
   /** 进程内写队列：同一文件路径的 upsert 串行执行（防读-改-写竞态）。 */
   const upsertQueues = new Map<string, Promise<unknown>>()
-  /** 进程内解析缓存：load 命中不读盘，save/upsert 同步更新；外部文件改动在实例生命周期内不感知。 */
+  /** 进程内解析缓存：load 命中不读盘；save 与锁内 readIndex 同步更新。 */
   const cache = new Map<string, IndexStoreLoadResult<TEntry>>()
 
   async function load(filePath: string): Promise<IndexStoreLoadResult<TEntry>> {
     const cached = cache.get(filePath)
     if (cached !== undefined) return { ...cached, entries: [...cached.entries] }
+    return readIndex(filePath)
+  }
+
+  /** 无条件读盘并刷新缓存（upsert 在文件锁内必须看到其他进程刚写入的条目）。 */
+  async function readIndex(filePath: string): Promise<IndexStoreLoadResult<TEntry>> {
     let raw: string
     try {
       raw = await readFile(filePath, 'utf8')
@@ -100,15 +108,20 @@ export function createIndexStore<TEntry>(options: IndexStoreOptions<TEntry>): In
   async function upsert(filePath: string, entry: TEntry): Promise<void> {
     const previous = upsertQueues.get(filePath) ?? Promise.resolve()
     const run = previous.then(async () => {
-      const { entries, warning } = await load(filePath)
-      // 命中损坏/版本不兼容/含无效条目的旧索引时，先保留原始文件备份，
-      // 避免用仅含新条目的内容静默覆盖掉原有的有效条目。
-      if (warning !== undefined) await backupCorruptIndex(filePath)
-      const key = options.entryKey(entry)
-      const next = entries.filter(existing => options.entryKey(existing) !== key)
-      next.push(entry)
-      next.sort(options.compare)
-      await save(filePath, next)
+      // 锁文件写在索引同目录；目录不存在时先建，否则 withFileLock 的独占创建会 ENOENT。
+      await mkdir(dirname(filePath), { recursive: true })
+      await withFileLock(filePath, async () => {
+        // 锁内重新读盘：进程内缓存可能落后于其他进程上次写入。
+        const { entries, warning } = await readIndex(filePath)
+        // 命中损坏/版本不兼容/含无效条目的旧索引时，先保留原始文件备份，
+        // 避免用仅含新条目的内容静默覆盖掉原有的有效条目。
+        if (warning !== undefined) await backupCorruptIndex(filePath)
+        const key = options.entryKey(entry)
+        const next = entries.filter(existing => options.entryKey(existing) !== key)
+        next.push(entry)
+        next.sort(options.compare)
+        await save(filePath, next)
+      })
     })
     // 队列吞掉失败，避免一条失败阻塞后续写入；调用方 await run 感知自身失败。
     const tail = run.catch(() => {})

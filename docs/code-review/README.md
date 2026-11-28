@@ -21,6 +21,7 @@
 | [daily/day-01.md](daily/day-01.md) | 每日一页执行记录；`day-01` 至 `day-45` 同目录，另含计划外补充轮 [day-05b.md](daily/day-05b.md) |
 | [metrics/day-01.md](metrics/day-01.md) | 工具指标的执行记录与试点题库；`day-01` 至 `day-45` 同目录，20 题在 [metrics/pilot-questions.md](metrics/pilot-questions.md)。D9–D12 的直接调用记录从 [metrics/day-09.md](metrics/day-09.md) 起 |
 | [metrics/ci-boundary.md](metrics/ci-boundary.md) | 工具指标的 CI 与周期评测分界清单；12 条 CI 检查各带一个反例，真实模型五项维持周期评测 |
+| [doc-r2/day-01.md](doc-r2/day-01.md) | 第二轮：文档模式全量复审（`packages/document` 六包与 `ui-document-studio`）的执行记录；新发现从 F-DOC-011 起编号 |
 
 ## 每日节奏
 
@@ -79,6 +80,8 @@
 - Day 44 已完成（2026-11-18）：抽样 10 条回到源码取证（P0 全取、P1 按域各取、另取 1 条 deferred）。9 条仍成立、1 条维持 deferred、误报 0。见 [daily/day-44.md](daily/day-44.md) 与 [05-findings.md](05-findings.md) 的「Day 44 抽样复核」。
 - Day 45 已完成（2026-11-18）：复盘四张表填完。98 条发现、修复率 57%、误报 0、根因型 19 条；假设命中 1 条、部分命中 5 条、推翻 4 条。下一周期建议为专利域 30 天紧凑版、维度顺序改为先 E 后 B。见 [08-retrospective.md](08-retrospective.md)。
 - 当前进度：D1–D45 全部完成，共 98 条编号发现，60 条已修复、38 条未修。未修 38 条按 P0 0 / P1 6 / P2 26 / P3 6 分布，分派顺序见 [06-priority.md](06-priority.md) 的「未修条目打分（Day 44）」与「批次 R-F1 首轮修复」。下一周期的范围、天数与待确认事项见 [08-retrospective.md](08-retrospective.md)。
+- 2026-11-28 第二轮·文档模式全量复审完成：覆盖 `packages/document` 六包与 `packages/client/ui-document-studio`，约 1.2 万行 `src`、48 个 spec、927 个用例，新增 F-DOC-011 至 F-DOC-018（High 1 / Medium 2 / Low 5）；F-DOC-005、F-DOC-007 复检后仍确认，R-87 属专利域不在本轮。七包聚焦测试两次运行中一次失败，已作为 F-DOC-017 记录。执行记录见 [doc-r2/day-01.md](doc-r2/day-01.md)。
+- 2026-11-28 第二轮八条发现全部修复（F-DOC-011 至 F-DOC-018）：`checks.ts` 的占位符限流、未闭合引用元素 fail closed、HTML/Markdown 口径分离与篇幅预算只核验主文件；`document_deliver` 同一文件两种拼写去重、两条失败路径改用带码的 `HarnessError`；`office-kit` 警告断言绑定到具体失败；文档模式优化提案补记 P0 落地范围。每条均附修复记录与验证命令。
 - 工具指标周期：P0 已完成；P1 直接调用通过线在 [metrics/day-12.md](metrics/day-12.md)；P2 脚本场景（D13–D22）的闭环与恢复基线是 10/14 与 12/12，10/14 不是通过线，F-PAT-056 只登记。基线见 [metrics/script-baseline.md](metrics/script-baseline.md)，执行记录从 [metrics/day-13.md](metrics/day-13.md) 起。P3 真实模型（D23–D30）20 题各 3 轮共 60 次已完成：任务成功 40/60，选择 48/48，参数 48/48，拒绝 7/12；四族各 15 个样本，只记分子与分母。执行记录见 [metrics/day-23.md](metrics/day-23.md) 至 [metrics/day-30.md](metrics/day-30.md)。P4 扩域（D31–D38）35 题各 3 轮共 105 次已完成：任务成功 66/102，选择 71/81，语法 74/74，语义 67/74，外部判定 59/81（剔除 5 处冻结判定差后 59/66），拒绝 14/21；DOC-03 因本机无 Office Kit 记未测。七族与试点四族的共用记分表见 [metrics/scorecard.md](metrics/scorecard.md)，执行记录见 [metrics/day-31.md](metrics/day-31.md) 至 [metrics/day-38.md](metrics/day-38.md)。P5 低于通过线的族（D39–D42）已完成：按直接调用通过线与扩域通过线逐格归属，名单是 LAW、SPC、CLM、FEE、WF、LGL 六族；新增 F-LEG-015、F-PAT-057、F-PAT-058，另记 1 条文本工具超长样本的通过线口径建议。执行记录见 [metrics/day-39.md](metrics/day-39.md) 至 [metrics/day-42.md](metrics/day-42.md)。P6 收敛（D43–D45）已完成：分界清单裁定 12 条 CI 检查（8 条采纳、4 条条件采纳）与真实模型五项周期评测，十项指标逐项给出分子、分母与未测原因；见 [metrics/ci-boundary.md](metrics/ci-boundary.md) 与 [metrics/day-43.md](metrics/day-43.md) 至 [metrics/day-45.md](metrics/day-45.md)。
 - 已确认：45 天周期、包含 `packages/law`、视频按实验特性、在 Node 24 补跑构建与覆盖率基线。
 - 本目录的中文单语文档已加入 `scripts/translation-pairing.manifest.json` 的豁免清单；`verify-translation-pairing` 复跑通过。

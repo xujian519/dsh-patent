@@ -24,6 +24,16 @@ describe('checkAbstract', () => {
     }
   })
 
+  it('方案与方式编号不当作未加括号的附图标记', () => {
+    for (const abstract of [
+      '本发明提供方案1，采用壳体（1）与盖板（2）。关键词：装置',
+      '本发明采用方式2，设置壳体（1）。关键词：装置',
+    ]) {
+      const violations = checkAbstract({ abstract }, false)
+      expect(violations.some(violation => violation.rule === 'abstract_mark_parentheses')).toBe(false)
+    }
+  })
+
   it('商业宣传用语报 error', () => {
     const violations = checkAbstract({ abstract: '本发明世界领先。关键词：装置' }, false)
     expect(violations.find(violation => violation.rule === 'abstract_commercial_advertising')?.severity).toBe('error')

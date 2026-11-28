@@ -153,6 +153,13 @@ function notAssessedItems(input: ValidateSpecificationInput, hasDrawings: boolea
   if (input.title !== undefined && input.title.trim().length > 0) {
     items.push({ id: 'title-name-place', label: '发明名称中的人名、地名', reason: '名称是否属于非技术词语需要语义判断' })
   }
+  if (input.tech_domain === 'chemical' || /SMILES/i.test(input.text ?? '')) {
+    items.push({
+      id: 'smiles-validity',
+      label: '化学结构式（SMILES）合法性',
+      reason: '本环境未内置 RDKit，结构式合法性未核',
+    })
+  }
   if (input.tech_domain !== 'software' && looksLikeComputerProgram(input.text ?? '', input.claims ?? '')) {
     items.push({
       id: 'software-domain-rules',
@@ -419,7 +426,7 @@ const DESCRIPTION = [
   '',
   'passed 只表示已运行的确定性规则未发现 error，不表示符合专利法；not_assessed 列出确定性规则不能判断的事项，需人工或实体审查。',
   '',
-  '注意：SMILES 合法性抽检依赖 RDKit（本环境未内置），自动跳过，不影响其余规则。',
+  '注意：SMILES 合法性抽检依赖 RDKit（本环境未内置），自动跳过并列入 not_assessed，不影响其余规则。',
   '',
   '结果末尾的「评估输入」给出本次实际读到的各文本字段的字数与指纹：转述结果时请一并保留，便于与另一次运行对照是否读的是同一份文本。',
 ].join('\n')

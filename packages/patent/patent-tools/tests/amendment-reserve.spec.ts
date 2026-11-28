@@ -99,6 +99,16 @@ describe('buildAmendmentReserve', () => {
     expect(result.indexText).not.toContain('从权不要求另两条')
   })
 
+  it('leaves the check unassessed when no disclosure text is supplied', () => {
+    const result = buildAmendmentReserve({ sourceText: '   ', claimsText: CLAIMS })
+    expect(result).toEqual({ status: 'not-assessed', entries: [], gaps: [], indexText: '' })
+
+    const out = draftSpecification({ title: '壳体', claims: CLAIMS })
+    expect(out.amendment_reserve.status).toBe('not-assessed')
+    expect(out.warnings.some(warning => warning.includes('未在交底原文中定位'))).toBe(false)
+    expect(out.sections.find(section => section.name === '具体实施方式')?.content).not.toContain('实施例索引')
+  })
+
   it('leaves the check unassessed when the claims have no numbers', () => {
     const result = buildAmendmentReserve({
       sourceText: `结构等同：${STRUCTURAL}`,

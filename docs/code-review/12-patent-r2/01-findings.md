@@ -170,3 +170,31 @@
 | S-PAT-B9-1 | `patent-wiki-search` 改用共享 `resolveResultLimit`。 | `data-knowledge.spec.ts`：`limit: 2.9` 归一为 2 |
 | S-PAT-B9-2 | 两份 `thrownMessage` 并入 S-PAT-040 的 `errorMessage`。 | 同上 |
 | S-PAT-B9-3 | `MANIFEST.sha1` 每次下载后重读整份 PDF 计算但无读者；续传只比对 `size`。按 L2 保留，记入收口决策。 | 未改 |
+
+## B10 patent-tools 撰写与校核
+
+| ID | 级别 | 位置 | 证据与影响 | 最小修复 | 状态 |
+|---|---|---|---|---|---|
+| S-PAT-041 | P2 | `patent-tools/src/tool/draft-specification.ts:491`、`draft-claims.ts:128` | 必填名称只校验类型，不校验空白。探针：`title: '   '` 且其余字段齐全时 `complete: true`，渲染出 `**说明书草案（）**` 与「本发明公开了一种…关键词：」；`invention_name: '   '` 生成「一种，其特征在于，包括：壳体。」且无 warning。 | 工具 `execute` 用 `requireNonBlankText` 拒绝空白 `title` / `invention_name`，返回 `invalid_tool_input`；补工具边界用例。 | 已修复 |
+| S-PAT-042 | P3 | `patent-tools/src/tool/spec-abstract.ts:26`、`:35-47` | 摘要标号检测把「方案1，」读成未加括号的附图标记并报 error，引用整段「本发明提供方案1」；`spec-style` 与 `spec-description-extras` 的程序性标签词表都已排除「方案」。 | `NON_MARK_NAME` 的后缀分支补 `方案`、`方式`；补不误报与仍报真标号用例。 | 已修复 |
+| S-PAT-043 | P3 | `patent-tools/src/tool/spec-blocks.ts:232-245` | 调用方传入已带标题的实施例时，渲染器再补 `实施例N：`，输出「实施例1：实施例1：采用新结构。」；既有用例只断言子串包含，未发现重复。 | 正文已以实施例标签开头时不再补前缀；补单次出现断言。 | 已修复 |
+| S-PAT-044 | P3 | `patent-tools/src/tool/amendment-reserve.ts:249`、`draft-specification.ts:278-282` | 只给权利要求、未给 `source_text` / `technical_solution` 时，空原文被读成「原文没有替代」，返回 `failed` 并为每条独权产生三个 `missing` 缺口与定位警告。 | 原文为空且权利要求可解析时返回 `not-assessed`，不产生缺口与警告。 | 已修复 |
+| S-PAT-045 | P3 | `patent-tools/src/tool/spec-style.ts:88-126` | 重复的规定章节标题无人检测。探针：两个 `## 技术领域`（都有正文）时 `checkHeadingSet`、`checkSectionOrder` 与 `validateSpecification` 全部零违规。 | `checkHeadingSet` 增加 `heading_duplicate` error，列出重复标题并定位。 | 已修复 |
+| S-PAT-046 | P3 | `patent-tools/src/tool/claim-chart-build.ts:281-286` | `risk.remedyExposureRatio` 只校验 `typeof number`；传 `1.5` 时内核 `scoreInfringement` 抛裸 `RangeError`，工具返回只有 message、没有 `info.code` 的错误。 | 解析层校验有限且 0–1，抛 `invalid_tool_input`；用例断言错误码。 | 已修复 |
+| S-PAT-047 | P3 | `patent-tools/src/tool/draft-specification.ts:139-166`、`:222` | 实用新型草案仍写「本发明涉及…」「本发明要解决的技术问题…」「本发明公开了…」，与申请类型不一致。 | 按 `patent_type` 选择「本实用新型」/「本发明」，覆盖技术领域、发明内容与摘要。 | 已修复 |
+
+### B10 实施记录
+
+用户确认「全部修复」后，S-PAT-041…047 与 F-PAT-086、F-PAT-087 已全部落地，详见 [02-batches/B10.md](02-batches/B10.md)。
+
+| ID | 实施要点 | 回归测试 |
+|---|---|---|
+| S-PAT-041 | `draft_specification` 与 `draft_claims` 在 `execute` 拒绝空白必填名称；错误码 `invalid_tool_input`。 | `drafting-engine.spec.ts`：空白 title / invention_name 各一条工具边界用例 |
+| S-PAT-042 | `NON_MARK_NAME` 后缀补 `方案`、`方式`。 | `spec-abstract.spec.ts`：方案1、方式2 不报，壳体1 仍报 |
+| S-PAT-043 | `renderEmbodimentBlocks` 以实施例标签开头的正文不再补前缀。 | `draft-specification-blocks.spec.ts`：具体实施方式中「实施例1：」恰好一次 |
+| S-PAT-044 | `buildAmendmentReserve` 在原文为空时返回 `not-assessed`。 | `amendment-reserve.spec.ts`：空原文无缺口、无定位警告、无实施例索引 |
+| S-PAT-045 | `checkHeadingSet` 统计重复标题并报 `heading_duplicate`。 | `spec-style.spec.ts`：重复技术领域报 error 并定位 |
+| S-PAT-046 | `parseConclusionInput` 校验 `remedyExposureRatio` 为 0–1 的有限数。 | `drafting-engine.spec.ts`：`1.5` 返回 `invalid_tool_input` |
+| S-PAT-047 | 技术领域、发明内容、摘要按 `patent_type` 使用「本实用新型」。 | `drafting-engine.spec.ts`：实用新型草案含本实用新型、不含本发明 |
+| F-PAT-086 | `STANDARD_REFERENCE` 区分标准代号与裸「标准」；非专利文献分支按该词表放行。 | `spec-description-extras.spec.ts`：裸标准、GB/T 代号、标准号均不报 |
+| F-PAT-087 | `notAssessedItems` 增加 `smiles-validity`；描述、双语 README、工具目录与快照 pin 同步。 | `validate-specification.spec.ts`：化学域、显式 SMILES、机械域三条断言 |

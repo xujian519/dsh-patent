@@ -583,6 +583,16 @@ describe('abstract and claim coverage edge cases', () => {
     expect(ids).not.toContain('claim-support-breadth')
   })
 
+  it('lists SMILES validity as not assessed because RDKit is not bundled', () => {
+    const chemical = validateSpecification({ text: VALID_SPEC, tech_domain: 'chemical' })
+    expect(chemical.not_assessed.map(item => item.id)).toContain('smiles-validity')
+    expect(renderSpecification(chemical)).toContain('smiles-validity')
+    const mechanical = validateSpecification({ text: VALID_SPEC })
+    expect(mechanical.not_assessed.map(item => item.id)).not.toContain('smiles-validity')
+    const mentioned = validateSpecification({ text: `${VALID_SPEC}\nSMILES: CCO` })
+    expect(mentioned.not_assessed.map(item => item.id)).toContain('smiles-validity')
+  })
+
   it('含算法表述但未声明 tech_domain=software 时显式列为未评估', () => {
     const out = validateSpecification({
       text: VALID_SPEC,

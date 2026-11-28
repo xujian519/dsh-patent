@@ -238,14 +238,15 @@ export function amendmentReserveWarnings(result: AmendmentReserveResult): string
 /**
  * 为每条独立权利要求建立三条替代的实施例索引。
  *
- * 未评估时不产生条目和缺口。已评估但有缺项时 `status` 为 `failed`，索引只含
- * 已经定位的原文，不含补写句子。
+ * 未评估时不产生条目和缺口：权利要求书没有可判断的独立权利要求，或没有交底原文
+ * 可供定位。已评估但有缺项时 `status` 为 `failed`，索引只含已经定位的原文，不含
+ * 补写句子。
  * @param input - 交底原文、权利要求书，以及可选的候选摘录。
  * @returns 索引、缺口与是否通过。
  */
 export function buildAmendmentReserve(input: AmendmentReserveInput): AmendmentReserveResult {
   const independents = independentClaimNumbers(input.claimsText)
-  if (independents === undefined) {
+  if (independents === undefined || input.sourceText.trim().length === 0) {
     return { status: 'not-assessed', entries: [], gaps: [], indexText: '' }
   }
   const candidates = input.reserves ?? scanCandidates(input.sourceText)

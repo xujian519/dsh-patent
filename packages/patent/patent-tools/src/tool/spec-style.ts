@@ -74,32 +74,59 @@ function headings(text: string): Array<{ line: number; text: string }> {
 }
 
 /**
- * Headings other than the five parts 《专利法实施细则》第二十条 names.
+ * Headings other than the five parts 《专利法实施细则》第二十条 names, and
+ * repeated headings of the allowed set.
  *
  * Drafting labels inside 发明内容 (要解决的技术问题 / 技术方案 / 有益效果) and
  * inside 具体实施方式 (实施例一, 替代实施方式) are content, not specification
- * parts; written as headings they are extra headings.
+ * parts; written as headings they are extra headings. A part written twice is
+ * malformed in the same way: its content sits under two headings instead of one.
  * @param text - the specification text.
- * @returns one violation naming every heading outside the allowed set.
+ * @returns one violation naming every heading outside the allowed set, and one
+ * naming repeated allowed headings.
  */
 export function checkHeadingSet(text: string): SpecViolation[] {
   if (text.trim().length === 0) return []
   const allowed = new Set<string>([...SPEC_SECTION_HEADINGS, ...WRAPPER_HEADINGS])
-  const extra = headings(text).filter(h => !allowed.has(h.text))
-  if (extra.length === 0) return []
-  // oxlint-disable-next-line typescript/no-non-null-assertion -- guarded by the length check above
-  const first = extra[0]!
-  return [
-    {
+  const found = headings(text)
+  const extra = found.filter(h => !allowed.has(h.text))
+  const firstByName = new Map<string, { line: number; text: string }>()
+  const duplicates: Array<{ name: string; second: { line: number; text: string } }> = []
+  for (const heading of found) {
+    const first = firstByName.get(heading.text)
+    if (first === undefined) {
+      firstByName.set(heading.text, heading)
+      continue
+    }
+    if (duplicates.some(pair => pair.name === heading.text)) continue
+    duplicates.push({ name: heading.text, second: heading })
+  }
+  const violations: SpecViolation[] = []
+  const firstExtra = extra[0]
+  if (firstExtra !== undefined) {
+    violations.push({
       rule: 'heading_set',
       family: 'structure',
       severity: 'error',
       message: `说明书出现 ${extra.length} 个规定之外的标题：${extra.map(h => h.text).join('、')}（《专利法实施细则》第二十条只规定技术领域、背景技术、发明内容、附图说明、具体实施方式五部分标题）`,
       suggestion: '删除这些标题，其下内容以自然段落平铺书写；发明名称写在说明书首页正文上方居中，不作标题',
-      line: first.line,
-      matchedSentence: first.text,
-    },
-  ]
+      line: firstExtra.line,
+      matchedSentence: firstExtra.text,
+    })
+  }
+  const firstDuplicate = duplicates[0]
+  if (firstDuplicate !== undefined) {
+    violations.push({
+      rule: 'heading_duplicate',
+      family: 'structure',
+      severity: 'error',
+      message: `说明书重复出现章节标题：${duplicates.map(pair => pair.name).join('、')}（每个章节只应有一个标题）`,
+      suggestion: `删除重复的「${firstDuplicate.name}」标题，把该部分内容合并到唯一标题下`,
+      line: firstDuplicate.second.line,
+      matchedSentence: firstDuplicate.second.text,
+    })
+  }
+  return violations
 }
 
 /**

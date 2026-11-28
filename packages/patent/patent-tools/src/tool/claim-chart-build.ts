@@ -278,6 +278,11 @@ function parseConclusionInput(raw: unknown): InfringementConclusionInput | undef
   if (typeof input.remedyExposureRatio !== 'number') {
     throw invalidToolInput('risk.remedyExposureRatio 必须是 0–1 的数（按案件金额量程归一）')
   }
+  if (!Number.isFinite(input.remedyExposureRatio)
+    || input.remedyExposureRatio < 0
+    || input.remedyExposureRatio > 1) {
+    throw invalidToolInput(`risk.remedyExposureRatio 必须是 0–1 内的有限数，收到 ${String(input.remedyExposureRatio)}（按案件金额量程归一）`)
+  }
   return {
     ...(input.equivalents !== undefined ? { triplets: parseEquivalents(input.equivalents) } : {}),
     scoring: {

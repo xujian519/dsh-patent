@@ -257,6 +257,16 @@ describe('draft_claims deeper paths', () => {
     }, { signal } as never)).rejects.toMatchObject({ code: 'invalid_tool_input' })
   })
 
+  it('rejects a blank invention name instead of drafting a nameless claim', async () => {
+    const ctx = await ctxWith(createDraftClaimsTool())
+    const result = await execute(ctx, 'draft_claims', {
+      invention_name: '   ',
+      technical_features: ['壳体'],
+    }, 'dc-blank')
+    expect(result.isError).toBe(true)
+    expect(result.error?.info).toMatchObject({ name: 'PatentToolError', code: 'invalid_tool_input' })
+  })
+
   it('applies the claim ceiling and the additional-fee warning to a tree', () => {
     const tree = Array.from({ length: 10 }, (_, index) => ({
       number: index + 2,
@@ -376,6 +386,36 @@ describe('draft_specification deeper paths', () => {
     const out = draftSpecification({ title: '装置', patent_type: 'utility_model', technical_solution: '包含电路' })
     expect(out.warnings.some(w => w.includes('附图'))).toBe(true)
     expect(out.tech_domain).toBe('electrical')
+  })
+
+  it('rejects a blank title instead of drafting a complete nameless specification', async () => {
+    const ctx = await ctxWith(createDraftSpecificationTool())
+    const result = await execute(ctx, 'draft_specification', {
+      title: '   ',
+      technical_problem: '精度不足',
+      technical_solution: '采用新结构',
+      beneficial_effects: '精度提升',
+      background: '现有技术精度不足。',
+      embodiments: ['实施例1：采用新结构。'],
+    }, 'ds-blank')
+    expect(result.isError).toBe(true)
+    expect(result.error?.info).toMatchObject({ name: 'PatentToolError', code: 'invalid_tool_input' })
+  })
+
+  it('uses 本实用新型 wording for a utility model draft', () => {
+    const out = draftSpecification({
+      title: '一种检测装置',
+      patent_type: 'utility_model',
+      technical_problem: '精度不足',
+      technical_solution: '采用新结构',
+      beneficial_effects: '精度提升',
+      has_drawings: true,
+    })
+    const prose = `${out.abstract}\n${out.sections.map(section => section.content).join('\n')}`
+    expect(prose).toContain('本实用新型涉及')
+    expect(prose).toContain('本实用新型要解决的技术问题')
+    expect(prose).toContain('本实用新型公开了')
+    expect(prose).not.toContain('本发明')
   })
 
   it('renders the warnings section through the tool', async () => {
@@ -1036,6 +1076,19 @@ describe('claim_chart_build 侵权确定性结论', () => {
     await bad({ remedyExposureRatio: 0.5, equivalents: [{ ...equivalentTriplet, elementId: 7 }] }, 'cc-19')
     await bad({ remedyExposureRatio: 0.5, equivalents: [{ ...equivalentTriplet, elementId: undefined }] }, 'cc-20')
     await bad({ remedyExposureRatio: 0.5, defenses: 'high' }, 'cc-21')
+  })
+
+  it('reports an out-of-range exposure ratio as invalid_tool_input', async () => {
+    const ctx = await ctxWith(createClaimChartBuildTool({ model: jsonModel(chartJson) }))
+    const outcome = await execute(ctx, 'claim_chart_build', {
+      mode: 'infringement',
+      claim_text: claimText,
+      targets: [{ id: '产品A', kind: 'accused-product' }],
+      risk: { remedyExposureRatio: 1.5 },
+    }, 'cc-10-code')
+    expect(outcome.isError).toBe(true)
+    expect(outcome.error?.info).toMatchObject({ name: 'PatentToolError', code: 'invalid_tool_input' })
+    expect(outcome.error?.message).toContain('remedyExposureRatio')
   })
 
   it('无效模式给单篇全覆盖结论段，不给侵权结论段；无可判定的模式两者都不给', async () => {

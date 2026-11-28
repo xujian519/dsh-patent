@@ -383,11 +383,11 @@ describe('patent-tools plugin wiring', () => {
           exitCode: 0,
           timedOut: false,
         }),
-        extractTaggedJson: (output: string, tag: string) => {
+        extractTaggedJson: (output: string, tag: string): unknown => {
           const prefix = `EGO_${tag}:`
           const idx = output.indexOf(prefix)
           if (idx < 0) return null
-          return JSON.parse(output.slice(idx + prefix.length)) as unknown
+          return JSON.parse(output.slice(idx + prefix.length))
         },
       }),
     })

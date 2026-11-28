@@ -9775,7 +9775,7 @@ Source: [`packages/patent/patent-teams/src/index.ts`](../packages/patent/patent-
 
 ### `patent_teams_claim_task`
 
-Claim one ready task for a member (or yourself). A member cannot own a second unfinished task. The returned attempt_id is required for that member's updates and becomes stale after retry/reassignment.
+Claim one ready task for a member (or yourself). A member cannot own a second unfinished task. An unassigned task needs a member assignee; the captain takes one over with patent_teams_reassign_task(assignee="captain") first. The returned attempt_id is required for that member's updates and becomes stale after retry/reassignment.
 
 ```json
 {
@@ -9787,7 +9787,7 @@ Claim one ready task for a member (or yourself). A member cannot own a second un
     },
     "assignee": {
       "type": "string",
-      "description": "Member to claim for (captain only; defaults to the task's assignee). Member names only — \"captain\" is not a member; omit it to claim as the captain."
+      "description": "Member to claim for (captain only; defaults to the task's assignee). Member names only — \"captain\" is not a member, and this tool cannot open an unassigned task for the captain; use patent_teams_reassign_task with assignee=\"captain\" first."
     }
   },
   "required": [

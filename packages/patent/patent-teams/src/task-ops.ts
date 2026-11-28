@@ -149,6 +149,13 @@ export interface UpdateTaskArgs {
   attempt_id?: string
 }
 
+/**
+ * In-process handoffs whose second lock has not settled yet. A persisted
+ * `reassigning` flag whose handoff id is absent from this set was left by a
+ * process that died mid-handoff, so a later captain may recover it.
+ */
+const activeHandoffs = new Set<string>()
+
 /** The task's state after an accepted update. */
 export interface UpdateTaskResult {
   task_id: string
@@ -374,7 +381,11 @@ export async function reassignTask(
     const fresh = await freshCaptainTeam(stateRoot, team.id, agent.id)
     const task = requireTask(fresh, args.task_id)
     if (task.status === 'completed') throw new PatentTeamsError('TASK_TERMINAL', `completed task ${task.id} is immutable and cannot be reassigned`)
-    if (task.reassigning === true) throw new Error(`task ${task.id} is already being reassigned`)
+    // A live handoff is in this process's set; a persisted flag outside it was
+    // left by a crashed process and must be recoverable.
+    if (task.reassigning === true && (task.handoffId === undefined || activeHandoffs.has(task.handoffId))) {
+      throw new Error(`task ${task.id} is already being reassigned`)
+    }
     const targetMember = target === CAPTAIN_KEY ? undefined : requireMember(fresh, target)
     if (targetMember !== undefined) {
       const busy = memberOpenTask(fresh, targetMember.name, task.id)
@@ -387,12 +398,13 @@ export async function reassignTask(
       || task.assignee === undefined || task.assignee === CAPTAIN_KEY
       ? undefined
       : fresh.members.find(member => member.name === task.assignee && member.status !== 'removed')
-    invalidateTaskAttempt(task, target, true)
+    const handoffId = invalidateTaskAttempt(task, target, true)
     await writeTeam(stateRoot, fresh)
+    activeHandoffs.add(handoffId)
     return {
       previousAssignee,
       previousMember: previousMember === undefined ? undefined : { ...previousMember },
-      handoffId: task.handoffId,
+      handoffId,
     }
   })
 
@@ -406,18 +418,22 @@ export async function reassignTask(
     }
   }
 
-  await withTeamLock(teamLockKey(stateRoot, team.id), async () => {
-    const fresh = await freshCaptainTeam(stateRoot, team.id, agent.id)
-    const task = requireTask(fresh, args.task_id)
-    if (task.handoffId !== revoked.handoffId || task.assignee !== target || task.reassigning !== true) {
-      throw new Error(`task ${task.id} changed during reassignment; refusing to overwrite the newer state`)
-    }
-    task.reassigning = false
-    if (quiescenceError === undefined && target === CAPTAIN_KEY) beginTaskAttempt(task, CAPTAIN_KEY)
-    await writeTeam(stateRoot, fresh)
-    emitTaskUpdated(host, fresh, task, agent.session, args.reason === undefined ? undefined : `Reassigned: ${args.reason}`)
-    host.activity.notify(fresh.id)
-  })
+  try {
+    await withTeamLock(teamLockKey(stateRoot, team.id), async () => {
+      const fresh = await freshCaptainTeam(stateRoot, team.id, agent.id)
+      const task = requireTask(fresh, args.task_id)
+      if (task.handoffId !== revoked.handoffId || task.assignee !== target || task.reassigning !== true) {
+        throw new Error(`task ${task.id} changed during reassignment; refusing to overwrite the newer state`)
+      }
+      task.reassigning = false
+      if (quiescenceError === undefined && target === CAPTAIN_KEY) beginTaskAttempt(task, CAPTAIN_KEY)
+      await writeTeam(stateRoot, fresh)
+      emitTaskUpdated(host, fresh, task, agent.session, args.reason === undefined ? undefined : `Reassigned: ${args.reason}`)
+      host.activity.notify(fresh.id)
+    })
+  } finally {
+    activeHandoffs.delete(revoked.handoffId)
+  }
   if (quiescenceError !== undefined) {
     // v8 ignore next -- waitForMemberIdle only rejects with Errors, so the non-Error wrap is defensive
     throw quiescenceError instanceof Error
@@ -546,6 +562,11 @@ export async function updateTask(
   const { workspace, stateRoot, team } = await participantTeam(agent, host.stateDir)
   const updated = await withParticipant(stateRoot, team.id, agent.id, async (fresh, identity) => {
     const task = requireTask(fresh, args.task_id)
+    // A handoff owns the task until its second lock clears the flag; a write from
+    // either side of the handoff would race the reassignment's final write.
+    if (task.reassigning === true) {
+      throw new Error(`task ${task.id} is being reassigned; wait for the handoff to finish`)
+    }
     if (identity.kind === 'captain'
       && task.assignee !== undefined
       && task.assignee !== CAPTAIN_KEY) {
@@ -618,6 +639,9 @@ export async function updateTask(
       const transition = transitionFailure(task.status, args.status as TaskStatus)
       if (transition !== undefined) throw transition
       task.status = args.status as never
+      // 通过的完成不再保留上一次打回的判定；打回详情仍在 patent-teams/task-gated
+      // 事件里，gateRejections 仍记录返工次数。
+      if (args.status === 'completed') delete task.gateFeedback
     }
     if (args.output !== undefined) task.output = args.output
     let validated: TaskContractValidation | undefined

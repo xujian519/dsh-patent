@@ -345,10 +345,10 @@ function registerTaskOwnershipTools(ctx: Context, teams: PatentTeamsService): vo
 function registerTaskAttemptTools(ctx: Context, teams: PatentTeamsService): void {
   ctx.tools.register(defineTool({
     name: 'patent_teams_claim_task',
-    description: 'Claim one ready task for a member (or yourself). A member cannot own a second unfinished task. The returned attempt_id is required for that member\'s updates and becomes stale after retry/reassignment.',
+    description: 'Claim one ready task for a member (or yourself). A member cannot own a second unfinished task. An unassigned task needs a member assignee; the captain takes one over with patent_teams_reassign_task(assignee="captain") first. The returned attempt_id is required for that member\'s updates and becomes stale after retry/reassignment.',
     parameters: {
       task_id: { type: 'string', required: true, description: 'The task id to claim.' },
-      assignee: { type: 'string', description: 'Member to claim for (captain only; defaults to the task\'s assignee). Member names only — "captain" is not a member; omit it to claim as the captain.' },
+      assignee: { type: 'string', description: 'Member to claim for (captain only; defaults to the task\'s assignee). Member names only — "captain" is not a member, and this tool cannot open an unassigned task for the captain; use patent_teams_reassign_task with assignee="captain" first.' },
     },
     output: {
       schema: {

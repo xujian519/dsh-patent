@@ -379,15 +379,46 @@ describe('toJSON / fromJSON', () => {
     expect(restored).toEqual(confirmed)
   })
 
+  it('roundtrips a stage carrying an atom and params', () => {
+    const plan = createFlexiblePlan('c', 'invalidation', {
+      stages: [{ ...stage('s1'), atom: 'reasoning', params: { mode: 'novelty' } }],
+    })
+    expect(fromJSON(toJSON(plan))).toEqual(plan)
+  })
+
+  it('roundtrips the optional plan fields', () => {
+    const plan = createFlexiblePlan('c', 'invalidation', {
+      technicalField: 'H01:基本电气元件',
+      inputText: '交底书正文',
+      stages: [stage('s1')],
+    })
+    const abandoned = abandon(plan, '用户取消')
+    expect(fromJSON(toJSON(abandoned))).toEqual(abandoned)
+  })
+
   it('fromJSON rejects invalid snapshots', () => {
     expect(() => fromJSON('{}')).toThrow(FlexiblePlanError)
     expect(() => fromJSON(JSON.stringify({ caseId: 'c', caseType: 'x' }))).toThrow(FlexiblePlanError)
-    expect(() => fromJSON(JSON.stringify({ caseId: 'c', caseType: 'x', stages: [], status: 'weird' }))).toThrow(FlexiblePlanError)
+    expect(() => fromJSON(JSON.stringify({
+      caseId: 'c',
+      caseType: 'x',
+      stages: [],
+      status: 'weird',
+      createdAt: 'now',
+      updatedAt: 'now',
+    }))).toThrow(FlexiblePlanError)
     expect(() => fromJSON('{not-json')).toThrow(SyntaxError)
   })
 
   it('fromJSON rejects stage-level / pointer-level invalid snapshots', () => {
-    const base = { caseId: 'c', caseType: 'invalidation', status: 'active', stages: [stage('s1')] }
+    const base = {
+      caseId: 'c',
+      caseType: 'invalidation',
+      status: 'active',
+      stages: [stage('s1')],
+      createdAt: 'now',
+      updatedAt: 'now',
+    }
     expect(() => fromJSON(JSON.stringify({ ...base, stages: [{ ...stage('s1'), goal: '' }] }))).toThrow(FlexiblePlanError)
     expect(() => fromJSON(JSON.stringify({ ...base, stages: [{ ...stage('s1'), strategy: 'bogus' }] }))).toThrow(FlexiblePlanError)
     expect(() => fromJSON(JSON.stringify({ ...base, stages: [{ ...stage('s1'), status: 'weird' }] }))).toThrow(FlexiblePlanError)
@@ -398,7 +429,14 @@ describe('toJSON / fromJSON', () => {
   })
 
   it('fromJSON rejects header-level type errors beyond the existing cases', () => {
-    const base = { caseId: 'c', caseType: 'invalidation', status: 'active', stages: [stage('s1')] }
+    const base = {
+      caseId: 'c',
+      caseType: 'invalidation',
+      status: 'active',
+      stages: [stage('s1')],
+      createdAt: 'now',
+      updatedAt: 'now',
+    }
     expect(() => fromJSON(JSON.stringify({ ...base, caseType: 42 }))).toThrow(FlexiblePlanError)
     expect(() => fromJSON(JSON.stringify({ ...base, caseType: '' }))).toThrow(FlexiblePlanError)
     expect(() => fromJSON(JSON.stringify({ ...base, stages: 'nope' }))).toThrow(FlexiblePlanError)
@@ -426,6 +464,38 @@ describe('toJSON / fromJSON', () => {
     const withOptionals = { ...withoutAt, after: 'y', evidence: 'state.x', at: '2026-10-22T00:00:00.000Z' }
     expect(fromJSON(JSON.stringify({ ...base, revisions: [withOptionals] })).revisions?.[0]).toMatchObject(withOptionals)
     expect(() => fromJSON(JSON.stringify({ ...base, revisions: [{ ...withoutAt, at: 42 }] }))).toThrow(FlexiblePlanError)
+  })
+
+  it('fromJSON rejects malformed optional fields and stage collections', () => {
+    const base = {
+      caseId: 'c',
+      caseType: 'invalidation',
+      status: 'active',
+      stages: [stage('s1')],
+      createdAt: 'now',
+      updatedAt: 'now',
+    }
+    for (const [field, value] of [
+      ['technicalField', 42],
+      ['inputText', {}],
+      ['abandonReason', false],
+      ['createdAt', 42],
+      ['updatedAt', null],
+      ['currentStageId', 42],
+    ] as const) {
+      expect(() => fromJSON(JSON.stringify({ ...base, [field]: value }))).toThrow(FlexiblePlanError)
+    }
+    for (const overrides of [
+      { artifacts: [42] },
+      { constraintIds: [null] },
+      { articleJudgments: [false] },
+      { atom: 42 },
+      { atom: ' ' },
+      { params: [] },
+      { params: 'mode' },
+    ]) {
+      expect(() => fromJSON(JSON.stringify({ ...base, stages: [{ ...stage('s1'), ...overrides }] }))).toThrow(FlexiblePlanError)
+    }
   })
 })
 

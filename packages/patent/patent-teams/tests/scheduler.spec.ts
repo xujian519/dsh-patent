@@ -407,9 +407,34 @@ describe('installTeamScheduler kickMember', () => {
     await createTeamDir(join(workspace, stateDir), makeState({ tasks: [makeTask()] }))
     await scheduler.kickMember(workspace, 'team1', 'alice', fakeAgent('captain-1', workspace))
     const afterDispatch = await readTeam(join(workspace, stateDir), 'team1')
-    // The newer attempt survived the failed dispatch.
+    // The newer attempt survived the failed dispatch, and the member stays
+    // working because that attempt is its open task.
     expect(afterDispatch!.tasks[0]!.attemptId).toBe('newer-attempt')
     expect(afterDispatch!.tasks[0]!.status).toBe('claimed')
+    expect(afterDispatch!.members[0]!.status).toBe('working')
+  })
+
+  it('marks the member idle when a newer handoff left it no open task', async () => {
+    const { workspace, stateDir, scheduler } = await makeHarness({
+      sendMessage: async () => {
+        const current = await readTeam(join(workspace, stateDir), 'team1')
+        const task = current!.tasks[0]!
+        // A concurrent handoff moved the task back to the shared pool with a
+        // newer capability, so this dispatch no longer owns it.
+        task.status = 'pending'
+        delete task.assignee
+        task.attemptId = 'newer-attempt'
+        task.updatedAt = Date.now()
+        await writeTeam(join(workspace, stateDir), current!)
+        throw new Error('delivery failed')
+      },
+    })
+    await createTeamDir(join(workspace, stateDir), makeState({ tasks: [makeTask()] }))
+    await scheduler.kickMember(workspace, 'team1', 'alice', fakeAgent('captain-1', workspace))
+    const afterDispatch = await readTeam(join(workspace, stateDir), 'team1')
+    expect(afterDispatch!.tasks[0]!.attemptId).toBe('newer-attempt')
+    expect(afterDispatch!.tasks[0]!.status).toBe('pending')
+    expect(afterDispatch!.members[0]!.status).toBe('idle')
   })
 
   it('leaves an already idle member untouched when the snapshot task vanished', async () => {

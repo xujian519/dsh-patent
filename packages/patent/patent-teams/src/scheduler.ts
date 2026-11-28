@@ -291,7 +291,17 @@ async function rollbackFailedDispatch(args: {
     const fresh = await readTeam(stateRoot, teamId)
     if (fresh === undefined) return
     const task = fresh.tasks.find(candidate => candidate.id === ticket.taskId)
-    if (task?.attemptId !== ticket.attemptId) return
+    if (task?.attemptId !== ticket.attemptId) {
+      // A newer attempt/handoff won the task. Release this dispatch's working
+      // marker only when the member owns no open task; otherwise that newer
+      // attempt is the work the member is actually running.
+      const currentMember = fresh.members.find(candidate => candidate.name === ticket.memberName)
+      if (currentMember?.status === 'working' && memberOpenTask(fresh, currentMember.name) === undefined) {
+        currentMember.status = 'idle'
+        await writeTeam(stateRoot, fresh)
+      }
+      return
+    }
     task.status = 'pending'
     if (ticket.previousAssignee === undefined) {
       delete task.assignee

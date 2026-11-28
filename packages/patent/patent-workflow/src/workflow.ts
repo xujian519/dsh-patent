@@ -286,12 +286,6 @@ function assertNotAborted(signal: AbortSignal | undefined): void {
 }
 
 /**
- * 把一次阶段产出记入结果列表：空输出与降级标记都算 degraded。
- * @param run - 执行态。
- * @param stage - 产出所属阶段。
- * @param outcome - 阶段的输出与重试次数。
- */
-/**
  * The stage's declared input keys, recorded only when its atom opts in.
  * @param run - 执行态，携带本次运行的原子契约。
  * @param stage - 产出所属阶段。
@@ -321,6 +315,12 @@ function stageResult(
   }
 }
 
+/**
+ * 把一次阶段产出记入结果列表：空输出与降级标记都算 degraded。
+ * @param run - 执行态。
+ * @param stage - 产出所属阶段。
+ * @param outcome - 阶段的输出、重试次数与可选的显式降级标记。
+ */
 function pushStageResult(
   run: StageRun,
   stage: WorkflowStage,
@@ -600,9 +600,12 @@ async function runStages(run: StageRun, startIndex: number): Promise<WorkflowInt
  */
 async function assembleRunResult(run: StageRun, interrupted: WorkflowInterrupt | undefined): Promise<WorkflowRunResult> {
   const degradedSteps = run.results.filter(r => r.degraded).map(r => r.stageId)
+  const unexecutedStages = run.manifest.stages.length - run.results.length
   // 中断（审批门暂停）≠ 完成：即使 requireAllSteps=false（容忍降级），暂停中的
   // 运行也必须报告 incomplete，否则"未确认"会被误读为"已完成"。
+  // 提前收尾（稀疏阶段等防御路径）同样不算完成：结果必须覆盖 manifest 的每个阶段。
   const completed = interrupted === undefined
+    && unexecutedStages === 0
     && (run.requireAll ? degradedSteps.length === 0 : true)
   const okCount = run.results.filter(r => !r.degraded).length
 
@@ -610,7 +613,7 @@ async function assembleRunResult(run: StageRun, interrupted: WorkflowInterrupt |
   if (interrupted) {
     summary = `工作流 ${run.manifest.id}（${run.manifest.name}）: 已执行 ${run.results.length}/${run.manifest.stages.length} 阶段，在 "${interrupted.stageId}" 暂停等待人工确认`
   } else {
-    summary = `工作流 ${run.manifest.id}（${run.manifest.name}）: ${okCount}/${run.results.length} 阶段完成${degradedSteps.length > 0 ? `，降级阶段: ${degradedSteps.join('、')}` : ''}`
+    summary = `工作流 ${run.manifest.id}（${run.manifest.name}）: ${okCount}/${run.results.length} 阶段完成${degradedSteps.length > 0 ? `，降级阶段: ${degradedSteps.join('、')}` : ''}${unexecutedStages > 0 ? `，${unexecutedStages} 个阶段未执行` : ''}`
   }
 
   const evidenceLedger = buildWorkflowEvidenceLedger(run.state, {

@@ -49,6 +49,20 @@
 | S-PAT-021 | P3 | `patent-tools/src/wiring.ts:412-416`、`:417`；`patent-tools/src/tool/patent-wiki-search.ts:143-145` | 同一接线块中 KG 分支按 `existsSync(queryDbPath)` 决定是否注入（缺库报 `setup_required`），wiki 分支无条件注入。wiki 目录缺失时加载器扫描失败（服务未注入 logger），`search` 返回空数组，工具给出 `total: 0` 而非自带的 install 诊断。 | 与 KG 分支对称，按 `existsSync(wikiDir)` 决定注入；改动在 `patent-tools` 接线，跨出 B6 包边界。 | 已修复 |
 | S-PAT-022 | P3 | `patent-knowledge/src/install.ts:27-43` | 同连接上 `SELECT id, content FROM chunks` 迭代期间 `UPDATE chunks`；SQLite 不保证同表游标扫描结果，可能跳过或重复行。跳过使部分 chunk 保持明文（可读、无数据损失），实际影响是 `compressedChunks` 计数与余量不符且无提示。fixture 只有 2 行，覆盖不到。 | 改为按 id 窗口分批查询再更新，保持流式内存占用。未在真实大库上复现。 | 已修复 |
 
+## B7 服务接缝（patent-workflow、patent-teams）
+
+| ID | 级别 | 位置 | 证据与影响 | 最小修复 | 状态 |
+|---|---|---|---|---|---|
+| S-PAT-023 | P3 | `patent-workflow/README.md:33`、`README.zh.md:34` | 文档写 `draft_review` 最多两次回退、第三次失败即收口；manifest 为 `maxRetries: 3`，v0.2.3 升级指南也写三次（第四次失败才收口）。 | 双语改为三次回退、第四次失败收口，并重录配对。 | 已修复 |
+| S-PAT-024 | P3 | `patent-workflow/README.md:39`、`README.zh.md:40` | 文档写「39 个不同原子、30 个核心原子」；实测 41 个不同原子、32 个由 `registerBuiltinAtoms()` 注册，缺口仍是九个 patent-tools 原子。 | 双语改为 41 / 32；外部原子名单不变。 | 已修复 |
+| S-PAT-025 | P3 | `patent-workflow/src/flexible-plan.ts:426-520` | `fromJSON` 接受 `createdAt: 42`、`updatedAt: null`、`technicalField: 7`、`artifacts: [null]`、`params: []`、`atom: 42` 等非法快照并断言成 `FlexiblePlanState`；`params` 会在执行器里展开进执行态。 | 补齐可选头字段、时间戳、`currentStageId`、阶段 `atom`/`params` 与三个字符串数组校验；补非法与合法往返用例。 | 已修复 |
+| S-PAT-026 | P3 | `patent-teams/src/tools.ts:349-350`；`service.ts:313-317` | `claim_task` 文案说「省略 assignee 即以队长身份认领」，但未分配任务会被 `claiming an unassigned task needs an assignee` 拒绝；支持路径是 `reassign_task(assignee="captain")`。 | 工具描述、参数描述与服务 JSDoc 改为指向 reassign；重生成工具目录。 | 已修复 |
+| S-PAT-027 | P3 | `patent-teams/src/task-ops.ts:620-631` | 质量门禁打回后再次成功完成，`gateFeedback` 不清除，`status` 仍把已完成任务渲染成 `gated ×N`；打回详情已有 `patent-teams/task-gated` 事件。 | 接受 `completed` 时删除 `gateFeedback`，保留 `gateRejections`。 | 已修复 |
+| S-PAT-028 | P3 | `patent-teams/src/task-ops.ts:545-575`、`state.ts:112-131` | `claimTask` 拒绝 `reassigning` 中的任务，`updateTask` 不拒绝；改派等待静默期间新 assignee 可改写任务，第二次锁会接受被改写的状态。直接加守卫会让进程在两次锁之间崩溃后任务永久停在 `reassigning`。 | `updateTask` 加同样的守卫；`invalidateTaskAttempt` 返回 handoff id，`reassignTask` 用进程内 `activeHandoffs` 区分进行中的 handoff 与崩溃遗留标记，后者可被队长重新改派恢复。 | 已修复 |
+| S-PAT-029 | P3 | `patent-teams/src/scheduler.ts:292-306` | 派发失败回滚发现 attempt 已被替换时直接返回，不把成员从 `working` 置回 `idle`；成员无在办任务时会长期显示 working。 | 仅在成员无 claimed/in_progress 任务时置 idle，仍持有新 attempt 的成员保持 working。 | 已修复 |
+| S-PAT-030 | P3 | `patent-teams/src/member-runtime.ts:211-213` | 孤儿成员写 retired 名单失败时静默吞掉；子会话仍可被列出或冷恢复且无诊断。 | 失败时 `logger.warn` 记录成员 id 与原因，原始持久化错误继续上抛。 | 已修复 |
+| S-PAT-031 | P3 | `patent-workflow/src/workflow.ts:603-620` | 稀疏阶段或幽灵回退目标让主循环提前收尾，结果只覆盖部分阶段，但 `completed` 仍为 true、摘要写「1/1 阶段完成」。 | `completed` 要求结果覆盖全部阶段；摘要追加未执行阶段数。 | 已修复 |
+
 ## 实施记录
 
 用户授权后，S-PAT-001…013 已全部修复并补回归，实施要点如下。测试路径均相对于 `packages/patent`。B5 的 S-PAT-014…018 同样在用户确认后修复，见文末[B5 实施记录](#b5-实施记录)。
@@ -94,3 +108,19 @@
 | S-PAT-020 | `index.ts` schema 改 `z.natural().min(1)`，新增 `resolveNodeCacheMaxEntries` 在构造期拒绝非安全正整数。 | `patent-knowledge/tests/service.spec.ts`（`1.5` 构造抛错、显式正整数正常构造） |
 | S-PAT-021 | `wiring.ts` 仅当 `existsSync(wikiDir)` 时注入 `searchIn`/`formatAsContext`，缺目录时工具走既有 `setup_required`。 | `patent-tools/tests/wiring-composition.spec.ts`（目录缺失/存在两分支） |
 | S-PAT-022 | `install.ts` 的 `compressChunksTable` 改为 `ORDER BY id LIMIT ? OFFSET ?` 的 500 行窗口再更新。 | `patent-knowledge/tests/install.spec.ts`（跨窗口的长 chunk 被压缩，首行保持明文） |
+
+### B7 实施记录
+
+用户确认「全部修复并补回归」后，S-PAT-023…031 与两处 L0 已全部落地，详见 [02-batches/B7.md](02-batches/B7.md)。
+
+| ID | 实施要点 | 回归测试 |
+|---|---|---|
+| S-PAT-023 | 双语 README 的 `draft_review` 回退上限改为三次。 | `test:docs` 的翻译配对与文档标准 |
+| S-PAT-024 | 双语 README 的原子计数改为 41 个不同原子、32 个核心原子。 | 同上 |
+| S-PAT-025 | `fromJSON` 校验可选头字段、时间戳、`currentStageId`、阶段 `atom`/`params` 与三个字符串数组；新增两个私有谓词。 | `patent-workflow/tests/flexible-plan.spec.ts`：合法 atom/params 与可选字段往返、六类头字段与七类阶段集合的非法快照 |
+| S-PAT-026 | `claim_task` 的工具/参数描述与服务 JSDoc 指向 `reassign_task(assignee="captain")`；重生成双语工具目录。 | `verify-tool-catalog`、`verify-translation-pairing`；既有拒绝路径用例不变 |
+| S-PAT-027 | 接受 `completed` 时删除 `gateFeedback`，保留 `gateRejections`。 | `patent-teams/tests/service.spec.ts`：完成后记录与 status 均无 `gate_feedback`，`gate_rejections` 仍为 1；打回中仍带 `gate_feedback` |
+| S-PAT-028 | `updateTask` 读取任务后拒绝 `reassigning === true`；`invalidateTaskAttempt` 返回 handoff id，`reassignTask` 用 `activeHandoffs` 拒绝进行中的二次改派并恢复崩溃遗留标记。 | `service.spec.ts`：成员与队长在改派中更新均被拒绝；进行中 handoff 拒绝二次改派；遗留 handoff 可恢复 |
+| S-PAT-029 | 回滚发现 attempt 被替换时，仅在成员无在办任务且为 working 时置 idle。 | `scheduler.spec.ts`：新 attempt 仍占任务时保持 working；任务被放回共享池后置 idle |
+| S-PAT-030 | 孤儿成员 retired 名单写入失败时记录 `logger.warn`，原始错误继续上抛。 | `service.spec.ts`：只读目录下告警包含孤儿成员 id |
+| S-PAT-031 | `completed` 要求结果覆盖全部阶段；非中断摘要追加未执行阶段数。 | `workflow.spec.ts`：稀疏阶段、并行后空洞、幽灵回退目标三处改为 `completed: false` 并核对摘要 |

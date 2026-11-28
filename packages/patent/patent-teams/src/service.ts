@@ -310,9 +310,11 @@ export class PatentTeamsService extends Service {
   }
 
   /**
-   * Claim one ready task for a member (or yourself). A member cannot own a
-   * second unfinished task. The returned attempt_id is required for that
-   * member's updates and becomes stale after retry/reassignment.
+   * Claim one ready task for a member (or yourself). An unassigned task must
+   * name a member; the captain takes one over by reassigning it to `captain`
+   * first. A member cannot own a second unfinished task. The returned
+   * attempt_id is required for that member's updates and becomes stale after
+   * retry/reassignment.
    * @param agent - the calling captain or member.
    * @param args - task id, optional assignee (captain only).
    * @returns the claimed task's capability.

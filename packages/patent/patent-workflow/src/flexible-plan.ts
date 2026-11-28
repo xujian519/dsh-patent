@@ -425,16 +425,16 @@ export function toJSON(state: FlexiblePlanState): string {
   return JSON.stringify(state, null, 2)
 }
 
-/**
- * 反序列化（轻量守卫，非法快照抛错）。
- * @param text - 计划状态快照的 JSON 字符串。
- * @returns 校验通过的计划状态快照。
- */
 /** fromJSON 解析目标的宽松形态：校验字段保持未收窄类型，校验通过后再收窄为 FlexiblePlanState。 */
 type LoosePlanState = {
   caseId: string
   caseType: string
   status: string | undefined
+  technicalField?: unknown
+  inputText?: unknown
+  abandonReason?: unknown
+  createdAt: unknown
+  updatedAt: unknown
   stages: Array<{
     id: string
     name: string
@@ -444,9 +444,21 @@ type LoosePlanState = {
     artifacts: unknown
     constraintIds: unknown
     articleJudgments: unknown
+    atom?: unknown
+    params?: unknown
   } | null>
-  currentStageId: string | undefined
+  currentStageId?: unknown
   revisions: unknown
+}
+
+/** 值是否为字符串数组（空数组合法）。 */
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(entry => typeof entry === 'string')
+}
+
+/** 值是否为可用于阶段参数的普通对象。 */
+function isParamsRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /**
@@ -467,6 +479,18 @@ export function fromJSON(text: string): FlexiblePlanState {
   }
   if (typeof data.caseType !== 'string' || data.caseType.trim() === '') {
     throw new FlexiblePlanError('fromJSON: 非法计划快照（caseType 缺失）')
+  }
+  if (data.technicalField !== undefined && typeof data.technicalField !== 'string') {
+    throw new FlexiblePlanError('fromJSON: technicalField 必须是字符串')
+  }
+  if (data.inputText !== undefined && typeof data.inputText !== 'string') {
+    throw new FlexiblePlanError('fromJSON: inputText 必须是字符串')
+  }
+  if (data.abandonReason !== undefined && typeof data.abandonReason !== 'string') {
+    throw new FlexiblePlanError('fromJSON: abandonReason 必须是字符串')
+  }
+  if (typeof data.createdAt !== 'string' || typeof data.updatedAt !== 'string') {
+    throw new FlexiblePlanError('fromJSON: createdAt/updatedAt 必须是字符串')
   }
   if (data.status !== 'active' && data.status !== 'completed' && data.status !== 'abandoned') {
     throw new FlexiblePlanError(`fromJSON: 未知计划状态 "${String(data.status)}"`)
@@ -498,15 +522,24 @@ export function fromJSON(text: string): FlexiblePlanState {
     if (stage.status !== 'pending' && stage.status !== 'confirmed' && stage.status !== 'rolled_back') {
       throw new FlexiblePlanError(`fromJSON: 阶段 ${stage.id} 的 status 非法`)
     }
-    if (!Array.isArray(stage.artifacts)) {
-      throw new FlexiblePlanError(`fromJSON: 阶段 ${stage.id} 的 artifacts 非法`)
+    if (stage.atom !== undefined && (typeof stage.atom !== 'string' || stage.atom.trim() === '')) {
+      throw new FlexiblePlanError(`fromJSON: 阶段 ${stage.id} 的 atom 非法`)
     }
-    if (!Array.isArray(stage.constraintIds)) {
-      throw new FlexiblePlanError(`fromJSON: 阶段 ${stage.id} 的 constraintIds 非法`)
+    if (stage.params !== undefined && !isParamsRecord(stage.params)) {
+      throw new FlexiblePlanError(`fromJSON: 阶段 ${stage.id} 的 params 必须是对象`)
     }
-    if (!Array.isArray(stage.articleJudgments)) {
-      throw new FlexiblePlanError(`fromJSON: 阶段 ${stage.id} 的 articleJudgments 非法`)
+    if (!isStringArray(stage.artifacts)) {
+      throw new FlexiblePlanError(`fromJSON: 阶段 ${stage.id} 的 artifacts 必须是字符串数组`)
     }
+    if (!isStringArray(stage.constraintIds)) {
+      throw new FlexiblePlanError(`fromJSON: 阶段 ${stage.id} 的 constraintIds 必须是字符串数组`)
+    }
+    if (!isStringArray(stage.articleJudgments)) {
+      throw new FlexiblePlanError(`fromJSON: 阶段 ${stage.id} 的 articleJudgments 必须是字符串数组`)
+    }
+  }
+  if (data.currentStageId !== undefined && typeof data.currentStageId !== 'string') {
+    throw new FlexiblePlanError('fromJSON: currentStageId 必须是字符串')
   }
   if (data.currentStageId !== undefined && !ids.has(data.currentStageId)) {
     throw new FlexiblePlanError(`fromJSON: currentStageId "${data.currentStageId}" 不属于任何阶段`)

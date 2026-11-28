@@ -391,7 +391,7 @@ L5 的余下条目(魔法哨兵、`whenIdle()` 自旋、`isAborted` 平凡包装
 | `packages/patent/patent-core/src/evidence/engine.ts` | 拆分 | 800 | 三性、类型特定、使用公开、证明标准已分模块；类只保留编排 |
 | `packages/patent/patent-tools/src/tool/generate-structure-figure.ts` | 拆分 | 800 | 类型、模型 I/O、渲染收尾已分模块；入口保留 schema 与工具装配 |
 | `packages/patent/patent-deadline/src/statutes.ts` | 拆分 | 800 | D10 已拆为 `types.ts`（词表）、`statutes-data.ts`（法规表）、`deadline-entries.ts`（期限计算）与查询层 `statutes.ts`；四个文件均 ≤ 800 行，最大 737 行 |
-| `packages/document/document-deliver/src/checks.ts` | 接受 | 921 | 纯文本检查集合：占位符、锚点、空章节、禁用词与篇幅五类判据共享同一份行表与引用区间，无 I/O、无第二消费方。2026-11-28 修 F-DOC-011 时新增 `draftCollector`（每检查最多保留 `maxFindingsPerCheck` 条，超限只计数）与单趟 HTML 开闭标签配对，文件由 740 升到 862 行；同日修 F-DOC-012 让未闭合引用元素不产生引用区间、F-DOC-016 让标题与正文判定按文档格式取口径，最终 921 行。拆分会把同一份扫描与区间口径分到两个文件 |
+| `packages/document/document-deliver/src/checks.ts` | 接受 | 934 | 纯文本检查集合：占位符、锚点、空章节、禁用词与篇幅五类判据共享同一份行表与引用区间，无 I/O、无第二消费方。2026-11-28 修 F-DOC-011 时新增 `draftCollector`（每检查最多保留 `maxFindingsPerCheck` 条，超限只计数）与单趟 HTML 开闭标签配对，文件由 740 升到 862 行；同日修 F-DOC-012 让未闭合引用元素不产生引用区间、F-DOC-016 让标题与正文判定按文档格式取口径（`visibleText`），并抽出 `lineOrderedBatch` 收掉锚点与禁用词两处相同的收尾排序，最终 934 行。拆分会把同一份扫描与区间口径分到两个文件 |
 <!-- structure-baseline:end -->
 
 ### 客户端与实验域大文件裁定（2026-11-02，Issue #654）

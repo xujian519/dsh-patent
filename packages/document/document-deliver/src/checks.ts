@@ -801,6 +801,20 @@ function anchorDrafts(
       })
     }
   }
+  return lineOrderedBatch(collector)
+}
+
+/**
+ * A collector's batch with its drafts in text order.
+ *
+ * The anchor and forbidden-word checks report matches in whatever order their
+ * scans produce, which is not text order across several patterns; the
+ * placeholder check keeps its own order so unfenced findings stay ahead of
+ * fenced ones.
+ * @param collector - the check's collector.
+ * @returns the kept drafts sorted by line, and what the display cap dropped.
+ */
+function lineOrderedBatch(collector: DraftCollector): DraftBatch {
   const batch = collector.batch()
   return { ...batch, drafts: [...batch.drafts].sort((left, right) => left.line - right.line) }
 }
@@ -860,8 +874,7 @@ function antiPatternDrafts(
       })
     }
   }
-  const batch = collector.batch()
-  return { ...batch, drafts: [...batch.drafts].sort((left, right) => left.line - right.line) }
+  return lineOrderedBatch(collector)
 }
 
 /**
